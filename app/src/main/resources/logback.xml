@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="stdout_json" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+
+<!--    TODO: bruk secure log fra dp-oppdrag-felles -->
+<!--    <appender name="secureLoggerRestAppender" class="no.nav.dagpenger.felles.log.appender.SecureLoggerRestAppender"/>-->
+<!--    <logger name="secureLogger" level="INFO" additivity="false">-->
+<!--        <appender-ref ref="secureLoggerRestAppender"/>-->
+<!--    </logger>-->
+
+    <root level="INFO">
+        <appender-ref ref="stdout_json"/>
+    </root>
+
+    <logger name="secureLogger" level="INFO"/>
+
+</configuration>

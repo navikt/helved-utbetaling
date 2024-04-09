@@ -1,0 +1,23 @@
+# Idea project files
+*.iml
+.idea/
+!.idea/codeStyles/
+.run
+
+# Gradle files
+out/
+build/
+.gradle/
+
+# Generated sources
+src/generated
+
+# OS specific
+.DS_Store
+.devcontainer
+
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
