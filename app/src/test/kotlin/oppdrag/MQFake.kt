@@ -37,6 +37,14 @@ class MQFake(private val config: OppdragConfig) : MessageListener {
         connection.start()
     }
 
+    fun createMessage(xml: String): TextMessage {
+        factory.createConnection(config.mq.username, config.mq.password).use {
+            it.createSession(false, Session.AUTO_ACKNOWLEDGE).use { session ->
+                return session.createTextMessage(xml)
+            }
+        }
+    }
+
     override fun onMessage(message: Message?) {
         val mmel = Mmel().apply {
             this.alvorlighetsgrad = Kvitteringstatus.OK.kode
