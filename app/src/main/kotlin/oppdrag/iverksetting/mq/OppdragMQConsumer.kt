@@ -3,6 +3,7 @@ package oppdrag.iverksetting.mq
 import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import felles.appLog
+import felles.secureLog
 import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.kvitteringstatus
@@ -39,7 +40,10 @@ class OppdragMQConsumer(
     override fun onMessage(message: Message) {
         when (message) {
             is TextMessage -> tryBehandleMelding(message)
-            else -> appLog.error("Meldingstype er ikke støttet: ${message.jmsType}")
+            else -> {
+                appLog.error("Meldingstype er ikke støttet: ${message.jmsType}")
+                secureLog.error("Melding (kvittering) kan ikke leses: $message")
+            }
         }
     }
 
@@ -52,10 +56,9 @@ class OppdragMQConsumer(
                     Feilet lesing av kvitteringsmelding fra MQ
                         JMS ID: ${message.jmsMessageID}
                         Innhold: ${message.text}
-                """.trimIndent(),
-                it
+                """.trimIndent()
             )
-            throw it
+            secureLog.error("Feilet håndtering av melding", it)
         }
     }
 
