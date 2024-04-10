@@ -1,6 +1,6 @@
 package oppdrag.grensesnittavstemming
 
-import felles.log.appLog
+import felles.appLog
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Metrics
 import no.nav.dagpenger.kontrakter.felles.Fagsystem

@@ -1,7 +1,7 @@
 package oppdrag.iverksetting.tilstand
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import felles.log.appLog
+import felles.appLog
 import no.nav.dagpenger.kontrakter.felles.Fagsystem
 import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Mmel
