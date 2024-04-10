@@ -1,6 +1,7 @@
 package oppdrag
 
 import oppdrag.postgres.Postgres
+import oppdrag.postgres.map
 import oppdrag.postgres.transaction
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.PostgreSQLContainer
@@ -10,8 +11,8 @@ import javax.sql.DataSource
 // todo: @AfterAll: close resources
 object TestEnvironment {
     val config: Config
-    private val datasource: DataSource
-    private val mqFake: MQFake
+    val datasource: DataSource
+    val mqFake: MQFake
 
     init {
         val postgres = PostgreSQLContainer<Nothing>("postgres:16").apply { start() }
@@ -26,8 +27,8 @@ object TestEnvironment {
         mqFake = MQFake(config.oppdrag).apply { start() }
     }
 
-    fun transaction(block: (Connection) -> Unit) {
-        datasource.transaction(block)
+    fun <T> transaction(block: (Connection) -> T) : T {
+        return datasource.transaction(block)
     }
 
     fun clearTables() {
@@ -37,7 +38,17 @@ object TestEnvironment {
             con.prepareStatement("TRUNCATE TABLE mellomlagring_konsistensavstemming").execute()
         }
     }
+
+    fun tableSize(table: String): Int? =
+        transaction { con ->
+            val stmt = con.prepareStatement("SELECT count(*) FROM $table")
+            val resultSet = stmt.executeQuery()
+            resultSet.map { row -> row.getInt(1) }.singleOrNull()
+        }
 }
+
+fun resources(filename: String): String =
+    {}::class.java.getResource(filename)!!.openStream().bufferedReader().readText()
 
 private fun init(config: PostgresConfig) =
     Postgres.createAndMigrate(config) {
