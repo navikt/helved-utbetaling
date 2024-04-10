@@ -70,7 +70,7 @@ fun Application.oppdrag(config: Config = Config()) {
 
     routing {
         iverksettingRoute(oppdragService, datasource)
-        openAPI(path="openapi", swaggerFile = "openapi/documentation.yaml")
+        openAPI(path="api", swaggerFile = "openapi.yml")
 
         actuators(prometheus)
     }
