@@ -2,7 +2,7 @@ package oppdrag.iverksetting.mq
 
 import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
-import felles.log.appLog
+import felles.appLog
 import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.kvitteringstatus

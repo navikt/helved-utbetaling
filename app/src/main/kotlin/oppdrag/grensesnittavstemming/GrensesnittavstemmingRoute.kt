@@ -1,6 +1,6 @@
 package oppdrag.grensesnittavstemming
 
-import felles.log.appLog
+import felles.appLog
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
