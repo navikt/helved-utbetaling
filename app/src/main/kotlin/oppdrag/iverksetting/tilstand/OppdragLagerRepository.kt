@@ -1,10 +1,10 @@
 package oppdrag.iverksetting.tilstand
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import felles.log.appLog
 import no.nav.dagpenger.kontrakter.felles.Fagsystem
 import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Mmel
-import oppdrag.logger
 import oppdrag.postgres.jackson
 import oppdrag.postgres.map
 import java.sql.Connection
@@ -61,13 +61,13 @@ object OppdragLagerRepository {
 
         return when (listeAvOppdrag.size) {
             0 -> {
-                logger.error("Feil ved henting av oppdrag. Fant ingen oppdrag med id $oppdragId")
+                appLog.error("Feil ved henting av oppdrag. Fant ingen oppdrag med id $oppdragId")
                 throw NoSuchElementException("Feil ved henting av oppdrag. Fant ingen oppdrag med id $oppdragId")
             }
 
             1 -> listeAvOppdrag.single()
             else -> {
-                logger.error("Feil ved henting av oppdrag. Fant fler oppdrag med id $oppdragId")
+                appLog.error("Feil ved henting av oppdrag. Fant fler oppdrag med id $oppdragId")
                 error("Feil ved henting av oppdrag. Fant fler oppdrag med id $oppdragId")
             }
         }
@@ -157,7 +157,7 @@ object OppdragLagerRepository {
             setObject(4, oppdragId.behandlingId)
             setObject(5, versjon)
         }.executeUpdate()
-        logger.debug("Updated oppdrag-Lager with kvitteringsmelding for oppdragId: $oppdragId")
+        appLog.debug("Updated oppdrag-Lager with kvitteringsmelding for oppdragId: $oppdragId")
     }
 
     fun hentIverksettingerForGrensesnittavstemming(

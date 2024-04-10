@@ -1,11 +1,11 @@
 package oppdrag.grensesnittavstemming
 
+import felles.log.appLog
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Metrics
 import no.nav.dagpenger.kontrakter.felles.Fagsystem
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Grunnlagsdata
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
-import oppdrag.logger
 import oppdrag.postgres.transaction
 import java.time.LocalDateTime
 import java.util.*
@@ -40,17 +40,17 @@ class GrensesnittavstemmingService(
             val meldinger = avstemmingMapper.lagAvstemmingsmeldinger()
 
             if (meldinger.isEmpty()) {
-                logger.info("Ingen oppdrag å gjennomføre grensesnittavstemming for.")
+                appLog.info("Ingen oppdrag å gjennomføre grensesnittavstemming for.")
                 return@transaction
             }
 
-            logger.info("Utfører grensesnittavstemming for id: ${avstemmingMapper.avstemmingId}, ${meldinger.size} antall meldinger.")
+            appLog.info("Utfører grensesnittavstemming for id: ${avstemmingMapper.avstemmingId}, ${meldinger.size} antall meldinger.")
 
             meldinger.forEach {
                 avstemmingSender.sendGrensesnittAvstemming(it)
             }
 
-            logger.info("Fullført grensesnittavstemming for id: ${avstemmingMapper.avstemmingId}")
+            appLog.info("Fullført grensesnittavstemming for id: ${avstemmingMapper.avstemmingId}")
 
             oppdaterMetrikker(fagsystem, meldinger[1].grunnlag)
         }

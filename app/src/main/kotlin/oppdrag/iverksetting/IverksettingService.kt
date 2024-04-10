@@ -1,6 +1,7 @@
 package oppdrag.iverksetting
 
 import com.ibm.mq.jms.MQConnectionFactory
+import felles.log.appLog
 import no.nav.dagpenger.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
@@ -8,7 +9,6 @@ import oppdrag.iverksetting.mq.OppdragMQProducer
 import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
-import oppdrag.logger
 import oppdrag.postgres.transaction
 import org.postgresql.util.PSQLException
 import java.sql.Connection
@@ -27,7 +27,7 @@ class OppdragService(
         versjon: Int,
     ) {
         try {
-            logger.debug("Lagrer oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} i databasen")
+            appLog.debug("Lagrer oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} i databasen")
 
             val oppdragLager = OppdragLager.lagFraOppdrag(utbetalingsoppdrag, oppdrag)
 
@@ -41,7 +41,7 @@ class OppdragService(
             }
         }
 
-        logger.debug("Legger oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} på kø")
+        appLog.debug("Legger oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} på kø")
         mqFactory.createConnection(config.mq.username, config.mq.password).use { con ->
             oppdragSender.sendOppdrag(oppdrag, con)
         }
@@ -57,12 +57,12 @@ class OppdragService(
 
 class OppdragAlleredeSendtException(saksnummer: String) : RuntimeException() {
     init {
-        logger.info("Oppdrag med saksnummer $saksnummer er allerede sendt.")
+        appLog.info("Oppdrag med saksnummer $saksnummer er allerede sendt.")
     }
 }
 
 class UkjentOppdragLagerException(saksnummer: String) : RuntimeException() {
     init {
-        logger.info("Ukjent feil ved opprettelse av oppdrag med saksnummer $saksnummer.")
+        appLog.info("Ukjent feil ved opprettelse av oppdrag med saksnummer $saksnummer.")
     }
 }

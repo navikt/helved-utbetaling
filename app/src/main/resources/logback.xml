@@ -1,20 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <appender name="stdout_json" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
 
-<!--    TODO: bruk secure log fra dp-oppdrag-felles -->
-<!--    <appender name="secureLoggerRestAppender" class="no.nav.dagpenger.felles.log.appender.SecureLoggerRestAppender"/>-->
-<!--    <logger name="secureLogger" level="INFO" additivity="false">-->
-<!--        <appender-ref ref="secureLoggerRestAppender"/>-->
-<!--    </logger>-->
+    <appender name="secureLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/secure-logs/secure.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>/secure-logs/secure.log.%i</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>1</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>50MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+
+    <logger name="secureLog" level="INFO" additivity="false">
+        <appender-ref ref="secureLog"/>
+    </logger>
 
     <root level="INFO">
-        <appender-ref ref="stdout_json"/>
+        <appender-ref ref="stdout"/>
     </root>
-
-    <logger name="secureLogger" level="INFO"/>
 
 </configuration>
