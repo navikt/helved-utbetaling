@@ -2,12 +2,12 @@ package oppdrag.iverksetting.mq
 
 import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
+import felles.log.appLog
 import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
-import oppdrag.logger
 import oppdrag.postgres.transaction
 import javax.jms.Message
 import javax.jms.MessageListener
@@ -39,7 +39,7 @@ class OppdragMQConsumer(
     override fun onMessage(message: Message) {
         when (message) {
             is TextMessage -> tryBehandleMelding(message)
-            else -> logger.error("Meldingstype er ikke støttet: ${message.jmsType}")
+            else -> appLog.error("Meldingstype er ikke støttet: ${message.jmsType}")
         }
     }
 
@@ -47,7 +47,7 @@ class OppdragMQConsumer(
         runCatching {
             behandleMelding(message)
         }.onFailure {
-            logger.error(
+            appLog.error(
                 """
                     Feilet lesing av kvitteringsmelding fra MQ
                         JMS ID: ${message.jmsMessageID}
@@ -63,9 +63,9 @@ class OppdragMQConsumer(
         val kvittering = OppdragXmlMapper.tilOppdrag(leggTilNamespacePrefiks(melding.text))
         val oppdragIdKvittering = kvittering.id
 
-        logger.debug("Henter oppdrag {} fra databasen", oppdragIdKvittering)
+        appLog.debug("Henter oppdrag {} fra databasen", oppdragIdKvittering)
 
-        logger.info(
+        appLog.info(
             """
             Mottatt melding på kvitteringskø for 
                 Fagsak: $oppdragIdKvittering 
@@ -82,7 +82,7 @@ class OppdragMQConsumer(
             }
 
         if (førsteOppdragUtenKvittering == null) {
-            logger.warn("Oppdraget tilknyttet mottatt kvittering har uventet status i databasen. Oppdraget er: $oppdragIdKvittering")
+            appLog.warn("Oppdraget tilknyttet mottatt kvittering har uventet status i databasen. Oppdraget er: $oppdragIdKvittering")
             return
         }
         val oppdragId = førsteOppdragUtenKvittering.id

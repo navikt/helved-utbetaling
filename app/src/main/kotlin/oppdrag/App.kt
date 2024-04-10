@@ -3,6 +3,7 @@ package oppdrag
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import felles.log.appLog
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -10,6 +11,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.openapi.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
@@ -22,7 +24,7 @@ import oppdrag.iverksetting.mq.OppdragMQFactory
 import oppdrag.postgres.Postgres
 
 fun main() {
-    Thread.currentThread().setUncaughtExceptionHandler { _, e -> logger.error("Uhåndtert feil", e) }
+    Thread.currentThread().setUncaughtExceptionHandler { _, e -> appLog.error("Uhåndtert feil", e) }
     embeddedServer(Netty, port = 8080, module = Application::oppdrag).start(wait = true)
 }
 
@@ -68,6 +70,8 @@ fun Application.oppdrag(config: Config = Config()) {
 
     routing {
         iverksettingRoute(oppdragService, datasource)
+        openAPI(path="openapi", swaggerFile = "openapi/documentation.yaml")
+
         actuators(prometheus)
     }
 }

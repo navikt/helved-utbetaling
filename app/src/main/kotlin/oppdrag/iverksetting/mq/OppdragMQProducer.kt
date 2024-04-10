@@ -1,9 +1,9 @@
 package oppdrag.iverksetting.mq
 
 import com.ibm.mq.jms.MQQueue
+import felles.log.appLog
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
-import oppdrag.logger
 import javax.jms.Connection
 import javax.jms.JMSException
 
@@ -25,14 +25,14 @@ class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
 
     fun sendOppdrag(oppdrag: Oppdrag, con: Connection): String {
         if (!config.enabled) {
-            logger.info("MQ-integrasjon mot oppdrag er skrudd av")
+            appLog.info("MQ-integrasjon mot oppdrag er skrudd av")
             error("Kan ikke sende melding til oppdrag. Integrasjonen er skrudd av.")
         }
 
         val oppdragId = oppdrag.oppdrag110?.oppdragsLinje150?.lastOrNull()?.henvisning
         val oppdragXml = OppdragXmlMapper.tilXml(oppdrag)
 
-        logger.info(
+        appLog.info(
             "Sender oppdrag for fagsystem=${oppdrag.oppdrag110.kodeFagomraade} og " +
                     "fagsak=${oppdrag.oppdrag110.fagsystemId} behandling=$oppdragId til Oppdragsystemet",
         )
@@ -41,7 +41,7 @@ class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
             send(oppdragXml, con)
         } catch (e: JMSException) {
             // todo: skal vi sjekke om MQ er utilgjengelig?
-            logger.error("Klarte ikke sende Oppdrag til OS. Feil: ", e)
+            appLog.error("Klarte ikke sende Oppdrag til OS. Feil: ", e)
             throw e
         }
 

@@ -1,12 +1,12 @@
 package oppdrag.grensesnittavstemming
 
+import felles.log.appLog
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import no.nav.dagpenger.kontrakter.oppdrag.GrensesnittavstemmingRequest
-import oppdrag.logger
 
 // todo: azuread auth
 fun Route.grensesnittavstemmingRoute(
@@ -15,7 +15,7 @@ fun Route.grensesnittavstemmingRoute(
     route("/grensesnittavstemming") {
         post {
             val request = call.receive<GrensesnittavstemmingRequest>()
-            logger.info("Grensesnittavstemming: Kjører for ${request.fagsystem}-oppdrag fra ${request.fra} til ${request.til}")
+            appLog.info("Grensesnittavstemming: Kjører for ${request.fagsystem}-oppdrag fra ${request.fra} til ${request.til}")
 
             runCatching {
                 service.utførGrensesnittavstemming(
