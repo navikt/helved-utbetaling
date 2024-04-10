@@ -1,0 +1,268 @@
+openapi: "3.0.3"
+info:
+  title: "dp_oppdrag API"
+  description: "dp_oppdrag API"
+  version: "1.0.0"
+servers:
+- url: "https://dp_oppdrag"
+paths:
+  /actuator/live:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "live"
+  /actuator/metrics:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+  /actuator/ready:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "ready"
+  /oppdrag:
+    post:
+      description: ""
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: "#/components/schemas/Utbetalingsoppdrag"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+        "409":
+          description: "Conflict"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+  /oppdragPaaNytt/{versjon}:
+    post:
+      description: ""
+      parameters:
+      - name: "versjon"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: "#/components/schemas/Utbetalingsoppdrag"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+  /status:
+    post:
+      description: ""
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: "#/components/schemas/OppdragIdDto"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OppdragStatusDto"
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+components:
+  schemas:
+    Opphør:
+      type: "object"
+      properties:
+        fom:
+          type: "string"
+          format: "date"
+      required:
+      - "fom"
+    BigDecimal:
+      type: "object"
+      properties: {}
+    Utbetalingsperiode:
+      type: "object"
+      properties:
+        erEndringPåEksisterendePeriode:
+          type: "boolean"
+        opphør:
+          $ref: "#/components/schemas/Opphør"
+        periodeId:
+          type: "integer"
+          format: "int64"
+        forrigePeriodeId:
+          type: "integer"
+          format: "int64"
+        vedtaksdato:
+          type: "string"
+          format: "date"
+        klassifisering:
+          type: "string"
+        fom:
+          type: "string"
+          format: "date"
+        tom:
+          type: "string"
+          format: "date"
+        sats:
+          $ref: "#/components/schemas/BigDecimal"
+        satstype:
+          type: "string"
+          enum:
+          - "DAGLIG"
+          - "MÅNEDLIG"
+          - "ENGANGS"
+        utbetalesTil:
+          type: "string"
+        behandlingId:
+          type: "string"
+        utbetalingsgrad:
+          type: "integer"
+          format: "int32"
+      required:
+      - "vedtaksdato"
+      - "klassifisering"
+      - "fom"
+      - "tom"
+      - "sats"
+      - "satstype"
+      - "utbetalesTil"
+      - "behandlingId"
+    Utbetalingsoppdrag:
+      type: "object"
+      properties:
+        erFørsteUtbetalingPåSak:
+          type: "boolean"
+        fagsystem:
+          type: "string"
+          enum:
+          - "DAGPENGER"
+          - "TILTAKSPENGER"
+          - "TILLEGGSSTØNADER"
+        saksnummer:
+          type: "string"
+        iverksettingId:
+          type: "string"
+        aktør:
+          type: "string"
+        saksbehandlerId:
+          type: "string"
+        beslutterId:
+          type: "string"
+        avstemmingstidspunkt:
+          type: "string"
+          format: "date-time"
+        utbetalingsperiode:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Utbetalingsperiode"
+        brukersNavKontor:
+          type: "string"
+      required:
+      - "fagsystem"
+      - "saksnummer"
+      - "aktør"
+      - "saksbehandlerId"
+      - "avstemmingstidspunkt"
+      - "utbetalingsperiode"
+    OppdragIdDto:
+      type: "object"
+      properties:
+        fagsystem:
+          type: "string"
+          enum:
+          - "DAGPENGER"
+          - "TILTAKSPENGER"
+          - "TILLEGGSSTØNADER"
+        sakId:
+          type: "string"
+        behandlingId:
+          type: "string"
+        iverksettingId:
+          type: "string"
+      required:
+      - "fagsystem"
+      - "sakId"
+      - "behandlingId"
+    OppdragStatusDto:
+      type: "object"
+      properties:
+        status:
+          type: "string"
+          enum:
+          - "LAGT_PÅ_KØ"
+          - "KVITTERT_OK"
+          - "KVITTERT_MED_MANGLER"
+          - "KVITTERT_FUNKSJONELL_FEIL"
+          - "KVITTERT_TEKNISK_FEIL"
+          - "KVITTERT_UKJENT"
+          - "OK_UTEN_UTBETALING"
+        feilmelding:
+          type: "string"
+      required:
+      - "status"
