@@ -6,7 +6,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import no.nav.dagpenger.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 
 // todo: azuread auth
 fun Route.grensesnittavstemmingRoute(

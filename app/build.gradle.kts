@@ -12,7 +12,7 @@ val ktorVersion = "2.3.9"
 dependencies {
     implementation(project(":felles"))
 
-    implementation("no.nav.dagpenger.kontrakter:oppdrag:3.0_20240321094104_fcbc34f")
+    implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240408113510_4a2db84")
 
     // server
     implementation("io.ktor:ktor-server-core:$ktorVersion")

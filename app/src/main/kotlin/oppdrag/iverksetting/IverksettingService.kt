@@ -2,7 +2,7 @@ package oppdrag.iverksetting
 
 import com.ibm.mq.jms.MQConnectionFactory
 import felles.appLog
-import no.nav.dagpenger.kontrakter.oppdrag.Utbetalingsoppdrag
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.mq.OppdragMQProducer

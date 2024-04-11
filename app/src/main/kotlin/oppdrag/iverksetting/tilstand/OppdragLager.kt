@@ -1,7 +1,7 @@
 package oppdrag.iverksetting.tilstand
 
-import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
-import no.nav.dagpenger.kontrakter.oppdrag.Utbetalingsoppdrag
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.iverksetting.mq.OppdragXmlMapper

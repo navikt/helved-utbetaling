@@ -1,6 +1,6 @@
 package oppdrag.iverksetting.mq
 
-import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import oppdrag.TestEnvironment
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.iverksetting.domene.Kvitteringstatus
