@@ -22,7 +22,6 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.12.4")
 
     implementation("io.ktor:ktor-server-openapi:$ktorVersion")
-    implementation("io.swagger.codegen.v3:swagger-codegen-generators:1.0.36")
 
     // json
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
