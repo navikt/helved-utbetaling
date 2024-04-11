@@ -10,8 +10,8 @@ import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.withTimeout
-import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
-import no.nav.dagpenger.kontrakter.oppdrag.Utbetalingsoppdrag
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import oppdrag.TestEnvironment
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.iverksetting.tilstand.OppdragId

@@ -1,10 +1,10 @@
 package oppdrag
 
-import no.nav.dagpenger.kontrakter.felles.Fagsystem
-import no.nav.dagpenger.kontrakter.felles.Satstype
-import no.nav.dagpenger.kontrakter.oppdrag.Opphør
-import no.nav.dagpenger.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.dagpenger.kontrakter.oppdrag.Utbetalingsperiode
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.Satstype
+import no.nav.utsjekk.kontrakter.oppdrag.Opphør
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
 import oppdrag.iverksetting.domene.OppdragMapper
 import oppdrag.iverksetting.tilstand.OppdragLager
 import java.time.LocalDate

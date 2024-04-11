@@ -1,7 +1,7 @@
 package oppdrag.iverksetting.tilstand
 
-import no.nav.dagpenger.kontrakter.felles.Fagsystem
-import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import oppdrag.TestEnvironment
 import oppdrag.etUtbetalingsoppdrag

@@ -3,7 +3,7 @@ package oppdrag.grensesnittavstemming
 import felles.appLog
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Metrics
-import no.nav.dagpenger.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Grunnlagsdata
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.postgres.transaction

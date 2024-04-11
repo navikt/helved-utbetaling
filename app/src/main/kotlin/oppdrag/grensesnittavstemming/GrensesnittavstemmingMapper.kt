@@ -1,7 +1,7 @@
 package oppdrag.grensesnittavstemming
 
-import no.nav.dagpenger.kontrakter.felles.Fagsystem
-import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Aksjonsdata
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AvstemmingType

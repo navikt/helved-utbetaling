@@ -1,6 +1,6 @@
 package oppdrag.iverksetting.tilstand
 
-import no.nav.dagpenger.kontrakter.felles.*
+import no.nav.utsjekk.kontrakter.felles.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.util.*
 

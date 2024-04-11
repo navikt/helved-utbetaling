@@ -4,7 +4,7 @@ import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import felles.appLog
 import felles.secureLog
-import no.nav.dagpenger.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
