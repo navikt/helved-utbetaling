@@ -16,14 +16,25 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.12.4")
 
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-client-logging:$ktorVersion")
+
     implementation("no.nav.familie.tjenestespesifikasjoner:nav-system-os-simuler-fp-service-tjenestespesifikasjon:1.0_20230718100517_1e1beb0")
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240408113510_4a2db84")
-    implementation("no.nav.common:cxf:3.2024.04.10_12.03-fddb587e3a68")
+//    implementation("no.nav.common:cxf:3.2024.04.10_12.03-fddb587e3a68")
+
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.17.0")
+
+    testImplementation(kotlin("test"))
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }
 
 repositories {
     mavenCentral()
     maven("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
+    maven("https://build.shibboleth.net/maven/releases")
+
 }
 
 tasks {
