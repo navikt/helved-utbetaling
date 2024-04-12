@@ -16,13 +16,21 @@ import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import simulering.routing.actuators
 import simulering.routing.simulering
+import simulering.ws.Soap
+import simulering.ws.SoapClient
+import simulering.ws.Sts
+import simulering.ws.StsClient
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e -> appLog.error("Uhåndtert feil", e) }
     embeddedServer(Netty, port = 8080, module = Application::app).start(wait = true)
 }
 
-fun Application.app(config: Config = Config()) {
+fun Application.app(
+    config: Config = Config(),
+    sts: Sts = StsClient(config.simulering.sts),
+    soap: Soap = SoapClient(config.simulering, sts),
+) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(MicrometerMetrics) {
@@ -39,7 +47,7 @@ fun Application.app(config: Config = Config()) {
         }
     }
 
-    val simulering = SimuleringService(config)
+    val simulering = SimuleringService(soap)
 
     routing {
         actuators(prometheus)
