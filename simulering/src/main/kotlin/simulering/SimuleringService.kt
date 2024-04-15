@@ -9,18 +9,23 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import felles.secureLog
 import jakarta.xml.ws.WebServiceException
 import jakarta.xml.ws.soap.SOAPFaultException
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningFeilUnderBehandling
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.SimulerBeregningRequest
 import org.intellij.lang.annotations.Language
 import simulering.dto.SimuleringRequestBody
 import simulering.dto.SimuleringRequestBuilder
-import simulering.ws.Soap
-import simulering.ws.SoapResponse
-import simulering.ws.deserializeSoap
+import simulering.ws.*
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.time.LocalDate
 import javax.net.ssl.SSLException
+
+private object SimulerAction {
+    private const val SIMULER =
+        "http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt/simulerFpService/"
+
+    const val BEREGNING = "$SIMULER/simulerBeregningRequest"
+    const val SEND_OPPDRAG = "$SIMULER/sendInnOppdragRequest"
+}
 
 class SimuleringService(
     private val client: Soap,
@@ -28,17 +33,12 @@ class SimuleringService(
         disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
     },
 ) {
-    private val SIMULER =
-        "http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt/simulerFpService/"
-    private val BEREGNING = "simulerBeregningRequest"
-    private val OPPDRAG = "sendInnOppdragRequest"
-
     suspend fun simuler(request: SimuleringRequestBody): Simulering? {
         val request = SimuleringRequestBuilder(request).build()
         val xml = xml(request.request)
 
         val response = client.call(
-            action = SIMULER + BEREGNING,
+            action = SimulerAction.BEREGNING,
             body = xml,
         )
 
@@ -48,13 +48,45 @@ class SimuleringService(
     }
 
     private fun json(xml: String): JsonNode {
-        return runCatching {
-            xmlMapper.deserializeSoap<JsonNode>(xml)
-        }.onFailure {
-            secureLog.error("Kunne ikke deserialisere simulering", it)
-        }.getOrThrow()
+        try {
+            secureLog.info("Forsøker å deserialisere simulering")
+            return tryInto<JsonNode>(xml).also {
+                if (it.has("Fault")) {
+                    error("simulering sin body inneholder en fault")
+                }
+            }
+        } catch (e: Throwable) {
+            secureLog.warn("Forsøker å deserialisere fault", e)
+            failure(xml)
+        }
     }
 
+    private fun failure(xml: String): Nothing {
+        try {
+            secureLog.warn("Forsøker å deserialisere fault")
+            val soapFault = tryInto<SoapFault>(xml)
+            throw soapError(soapFault.fault)
+        } catch (e: Throwable) {
+            throw when (e) {
+                is SoapException -> expload(e)
+                else -> {
+                    secureLog.error("Klarte ikke å deserialisere fault", e)
+                    soapError("Ukjent feil ved simulering: ${e.message}", e)
+                }
+            }
+        }
+    }
+
+    private inline fun <reified T> tryInto(xml: String): T {
+        return runCatching {
+            val soap = xmlMapper.readValue<SoapResponse<T>>(xml)
+            requireNotNull(soap.body)
+        }.getOrElse {
+            throw soapError("Failed to deserialize soap message: ${it.message}", it)
+        }
+    }
+
+    // se SimulerBeregningResponse?.tilSimulering() i Simulering.kt
     private fun simulering(json: JsonNode): Simulering {
         // todo: returner null eller kast exception ved feil?
         val simulering = json["simulerBeregningResponse"]["response"]["simulering"]
@@ -101,12 +133,12 @@ class SimuleringService(
         )
     }
 
-    private fun simuleringFeilet(e: SimulerBeregningFeilUnderBehandling) {
-        with(e.faultInfo.errorMessage) {
+    private fun expload(e: SoapException): RuntimeException {
+        return with(e.msg) {
             when {
-                contains("Personen finnes ikke") -> throw PersonFinnesIkkeException(this)
-                contains("ugyldig") -> throw RequestErUgyldigException(this)
-                else -> throw e
+                contains("Personen finnes ikke") -> PersonFinnesIkkeException(this)
+                contains("ugyldig") -> RequestErUgyldigException(this)
+                else -> e
             }
         }
     }
@@ -153,7 +185,7 @@ private fun logSoapFaultException(e: SOAPFaultException) {
 @Language("XML")
 private fun xml(request: SimulerBeregningRequest): String {
     return """<ns2:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"
-                             xmlns:ns3="http://nav.no/system/os/entiteter/oppdragSkjema">
+                             >
     <request>
         <simuleringsPeriode>
             <datoSimulerFom>${request.simuleringsPeriode.datoSimulerFom}</datoSimulerFom>

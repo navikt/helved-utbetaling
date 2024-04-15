@@ -7,7 +7,6 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import org.intellij.lang.annotations.Language
 import simulering.http.HttpClientFactory
 import java.net.URL
 import java.time.Duration
@@ -28,12 +27,10 @@ class StsClient(
     private val config: StsConfig,
     private val http: HttpClient = HttpClientFactory.create(),
     private val jackson: ObjectMapper = jacksonObjectMapper(),
-//    private val proxyAuth: (() -> String),
 ) : Sts {
     override suspend fun samlToken(): SamlToken {
         val response = http.get("${config.host}/rest/v1/sts/samltoken") {
             basicAuth(config.user, config.pass)
-//            header("X-Proxy-Authorization", proxyAuth())
             contentType(ContentType.Application.Json)
         }
 

@@ -39,7 +39,7 @@ class SimuleringTest {
                 app(
                     config = config,
                     sts = FakeSts(),
-                    soap = FakeSoap(),
+                    soap = FakeSoap.with(resources("/simuler-body-response.xml")),
                 )
             }
 
@@ -63,6 +63,40 @@ class SimuleringTest {
 
             assertEquals(HttpStatusCode.OK, res.status)
             assertEquals(expected, res.body())
+        }
+    }
+
+    @Test
+    fun `svarer med 400 Bad Request ved feil på request body`() {
+        testApplication {
+            application {
+                app(
+                    config = config,
+                    sts = FakeSts(),
+                    soap = FakeSoap.with(resources("/soap-fault.xml")) {
+                        it.replace("\$errorCode", "lol dummy 123")
+                            .replace("\$errorMessage", "Fødselsnummeret er ugyldig")
+                    },
+                )
+            }
+
+            val http = createClient {
+                install(ContentNegotiation) {
+                    jackson {
+                        registerModule(JavaTimeModule())
+                        JavaTimeModule()
+                        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                    }
+                }
+            }
+
+            val res = http.post("/simulering") {
+                contentType(ContentType.Application.Json)
+                setBody(enSimuleringRequestBody())
+            }
+
+            assertEquals(HttpStatusCode.BadRequest, res.status)
         }
     }
 
@@ -165,24 +199,6 @@ class SimuleringTest {
         ),
     )
 }
-
-//class SimulerFpFake private constructor(
-//    private val beregningResponse: SimulerBeregningResponse? = null,
-//    private val oppdragResponse: SendInnOppdragResponse? = null,
-//) : SimulerFpService {
-//    companion object {
-//        fun fakeWith(res: SimulerBeregningResponse) = SimulerFpFake(beregningResponse = res)
-//        fun fakeWith(res: SendInnOppdragResponse) = SimulerFpFake(oppdragResponse = res)
-//    }
-//
-//    override fun simulerBeregning(req: SimulerBeregningRequest): SimulerBeregningResponse {
-//        return beregningResponse ?: error("fake initiated without SimulerBeregningResponse")
-//    }
-//
-//    override fun sendInnOppdrag(req: SendInnOppdragRequest): SendInnOppdragResponse {
-//        return oppdragResponse ?: error("fake initiated without SendInnOppdragResponse")
-//    }
-//}
 
 private fun enSimuleringRequestBody(): SimuleringRequestBody {
     return SimuleringRequestBody(
