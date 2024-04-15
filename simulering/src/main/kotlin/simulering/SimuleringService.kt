@@ -16,6 +16,7 @@ import simulering.dto.SimuleringRequestBody
 import simulering.dto.SimuleringRequestBuilder
 import simulering.ws.Soap
 import simulering.ws.SoapResponse
+import simulering.ws.deserializeSoap
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.time.LocalDate
@@ -47,13 +48,11 @@ class SimuleringService(
     }
 
     private fun json(xml: String): JsonNode {
-        val soap = xmlMapper.readValue<SoapResponse<JsonNode>>(xml)
-        return requireNotNull(soap.body)
-//        return runCatching {
-//            xmlMapper.deserializeSoap<JsonNode>(xml)
-//        }.onFailure {
-//            secureLog.error("Kunne ikke deserialisere simulering", it)
-//        }.getOrThrow()
+        return runCatching {
+            xmlMapper.deserializeSoap<JsonNode>(xml)
+        }.onFailure {
+            secureLog.error("Kunne ikke deserialisere simulering", it)
+        }.getOrThrow()
     }
 
     private fun simulering(json: JsonNode): Simulering {
