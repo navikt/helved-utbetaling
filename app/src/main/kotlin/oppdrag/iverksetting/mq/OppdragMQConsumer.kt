@@ -10,12 +10,10 @@ import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
 import oppdrag.postgres.transaction
-import javax.jms.Message
-import javax.jms.MessageListener
-import javax.jms.TextMessage
+import javax.jms.*
 import javax.sql.DataSource
 
-interface MQConsumer : MessageListener, AutoCloseable {
+interface MQConsumer : MessageListener, ExceptionListener, AutoCloseable {
     fun start()
 }
 
@@ -45,6 +43,10 @@ class OppdragMQConsumer(
                 secureLog.error("Melding (kvittering) kan ikke leses: $message")
             }
         }
+    }
+
+    override fun onException(exception: JMSException) {
+        secureLog.error("Feil ved lesing av melding fra MQ", exception)
     }
 
     private fun tryBehandleMelding(message: TextMessage) {
