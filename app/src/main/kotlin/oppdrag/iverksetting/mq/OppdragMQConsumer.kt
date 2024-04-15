@@ -24,7 +24,9 @@ class OppdragMQConsumer(
 ) : MQConsumer {
 
     private val queue = MQQueue(config.kvitteringsKø)
-    private val connection = factory.createConnection(config.mq.username, config.mq.password)
+    private val connection = factory.createConnection(config.mq.username, config.mq.password).apply {
+        exceptionListener = this@OppdragMQConsumer
+    }
     private val session = connection.createSession().apply {
         createConsumer(queue).apply {
             messageListener = this@OppdragMQConsumer
@@ -46,6 +48,7 @@ class OppdragMQConsumer(
     }
 
     override fun onException(exception: JMSException) {
+        session.acknowledgeMode
         secureLog.error("Feil ved lesing av melding fra MQ", exception)
     }
 
