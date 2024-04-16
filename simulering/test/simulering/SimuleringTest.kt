@@ -9,15 +9,14 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
+import libs.ws.SoapConfig
+import libs.ws.StsConfig
 import no.nav.utsjekk.kontrakter.felles.Personident
 import org.junit.jupiter.api.Test
 import simulering.dto.*
-import simulering.ws.SoapConfig
-import simulering.ws.StsConfig
 import java.net.URI
 import java.time.LocalDate
 import kotlin.test.assertEquals
-
 
 class SimuleringTest {
 

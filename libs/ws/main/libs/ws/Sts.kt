@@ -1,4 +1,4 @@
-package simulering.ws
+package libs.ws
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper

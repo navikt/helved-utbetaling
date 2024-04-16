@@ -1,4 +1,4 @@
-package simulering.ws
+package libs.ws
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
@@ -114,14 +114,3 @@ fun soapError(fault: Fault) = SoapException(
         """.trimIndent(),
     code = fault.code,
 )
-
-//fun soapError(fault: Fault) = SoapException(
-//    msg = """
-//        SOAP fault.
-//        Code: ${fault.code}
-//        Message: ${fault.messsage}
-//        Details: ${fault.detail?.toPrettyString()}
-//        """.trimIndent(),
-//    code = fault.code,
-//    details = fault.detail?.toPrettyString()
-//)

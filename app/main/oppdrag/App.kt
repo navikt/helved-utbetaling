@@ -32,10 +32,10 @@ import oppdrag.postgres.Postgres
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e -> appLog.error("Uhåndtert feil", e) }
-    embeddedServer(Netty, port = 8080, module = Application::oppdrag).start(wait = true)
+    embeddedServer(Netty, port = 8080, module = Application::server).start(wait = true)
 }
 
-fun Application.oppdrag(config: Config = Config()) {
+fun Application.server(config: Config = Config()) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(MicrometerMetrics) {
