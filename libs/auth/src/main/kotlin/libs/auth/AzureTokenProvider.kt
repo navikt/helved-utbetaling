@@ -2,16 +2,15 @@ package libs.auth
 
 import libs.http.HttpClientFactory
 import libs.utils.env
-import java.net.URI
 import java.net.URL
 
 data class AzureConfig(
     val tokenEndpoint: URL = env("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT"),
-    val clientId: String = env("AZURE_APP_CLIENT_ID"),
-    val clientSecret: String = env("AZURE_APP_CLIENT_SECRET"),
-    val jwksUri: URI = env("AZURE_OPENID_CONFIG_JWKS_URI"),
-    val issuer: String = env("AZURE_OPENID_CONFIG_ISSUER")
-)
+    override val jwks: URL = env("AZURE_OPENID_CONFIG_JWKS_URI"),
+    override val issuer: String = env("AZURE_OPENID_CONFIG_ISSUER"),
+    override val clientId: String = env("AZURE_APP_CLIENT_ID"),
+    val clientSecret: String = env("AZURE_APP_CLIENT_SECRET")
+) : TokenConfig(clientId, jwks, issuer)
 
 class AzureTokenProvider(
     private val config: AzureConfig = AzureConfig(),
