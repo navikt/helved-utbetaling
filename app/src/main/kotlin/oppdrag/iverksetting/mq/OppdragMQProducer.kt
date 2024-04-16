@@ -12,12 +12,14 @@ interface MQProducer {
 }
 
 class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
+    // todo: check queue depth (size) to avoid throttling oppdrag
+    private val queue = MQQueue(config.kvitteringsKø)
 
     override fun send(xml: String, con: Connection) {
         con.createSession().use { session ->
             session.createProducer(session.createQueue(config.sendKø)).use { producer ->
                 val msg = session.createTextMessage(xml)
-                msg.jmsReplyTo = MQQueue(config.kvitteringsKø)
+                msg.jmsReplyTo = queue
                 producer.send(msg)
             }
         }
