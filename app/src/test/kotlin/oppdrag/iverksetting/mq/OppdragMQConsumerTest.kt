@@ -1,6 +1,7 @@
 package oppdrag.iverksetting.mq
 
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import oppdrag.Resource
 import oppdrag.TestEnvironment
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.iverksetting.domene.Kvitteringstatus
@@ -9,13 +10,8 @@ import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
-import oppdrag.resources
 import oppdrag.somOppdragLager
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.*
 import kotlin.test.assertEquals
 
 class OppdragMQConsumerTest {
@@ -27,15 +23,15 @@ class OppdragMQConsumerTest {
 
     @Test
     fun `skal tolke kvittering riktig ved ok`() {
-        val xml = resources("/kvittering-akseptert.xml")
+        val xml = Resource.read("/kvittering-akseptert.xml")
         val oppdrag = OppdragXmlMapper.tilOppdrag(xml)
         assertEquals(Kvitteringstatus.OK, oppdrag.kvitteringstatus)
     }
 
     @Test
     fun `skal deserialisere kvittering som feilet i testmiljø`() {
-        val xml = resources("/kvittering-test.xml")
-        val kvittering = TestEnvironment.mqFake.createMessage(xml)
+        val xml = Resource.read("/kvittering-test.xml")
+        val kvittering = TestEnvironment.createSoapMessage(xml)
         val oppdragXml = consumer.leggTilNamespacePrefiks(kvittering.text)
 
         assertDoesNotThrow {
@@ -45,7 +41,7 @@ class OppdragMQConsumerTest {
 
     @Test
     fun `skal tolke kvittering riktig ved feil`() {
-        val xml = resources("/kvittering-avvist.xml")
+        val xml = Resource.read("/kvittering-avvist.xml")
         val oppdrag = OppdragXmlMapper.tilOppdrag(xml)
         assertEquals(Kvitteringstatus.AVVIST_FUNKSJONELLE_FEIL, oppdrag.kvitteringstatus)
     }
@@ -58,8 +54,8 @@ class OppdragMQConsumerTest {
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
-        val xml = resources("/kvittering-test.xml")
-        val kvittering = TestEnvironment.mqFake.createMessage(xml)
+        val xml = Resource.read("/kvittering-test.xml")
+        val kvittering = TestEnvironment.createSoapMessage(xml)
 
         consumer.onMessage(kvittering)
 
@@ -84,8 +80,8 @@ class OppdragMQConsumerTest {
             OppdragLagerRepository.opprettOppdrag(oppdragLagerV1, con)
         }
 
-        val xml = resources("/kvittering-akseptert.xml")
-        val kvittering = TestEnvironment.mqFake.createMessage(xml)
+        val xml = Resource.read("/kvittering-akseptert.xml")
+        val kvittering = TestEnvironment.createSoapMessage(xml)
         consumer.onMessage(kvittering)
 
         // todo: better assertions
@@ -94,8 +90,8 @@ class OppdragMQConsumerTest {
 
     @Test
     fun `oppretter ikke oppdrag hvis henting av oppdrag feiler`() {
-        val xml = resources("/kvittering-akseptert.xml")
-        val kvittering = TestEnvironment.mqFake.createMessage(xml)
+        val xml = Resource.read("/kvittering-akseptert.xml")
+        val kvittering = TestEnvironment.createSoapMessage(xml)
 
 //        assertThrows<Exception> {
         consumer.onMessage(kvittering)
@@ -115,8 +111,8 @@ class OppdragMQConsumerTest {
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
-        val xml = resources("/kvittering-akseptert.xml")
-        val kvittering = TestEnvironment.mqFake.createMessage(xml)
+        val xml = Resource.read("/kvittering-akseptert.xml")
+        val kvittering = TestEnvironment.createSoapMessage(xml)
         consumer.onMessage(kvittering)
 
         // todo: better assertions
@@ -124,11 +120,11 @@ class OppdragMQConsumerTest {
     }
 
     internal companion object {
-        val consumer = OppdragMQConsumer(
-            config = TestEnvironment.config.oppdrag,
-            postgres = TestEnvironment.datasource,
-            factory = OppdragMQFactory.default(TestEnvironment.config.oppdrag),
-        )
+        val consumer = TestEnvironment.withDatasource {
+            val config = TestEnvironment.config
+            val factory = OppdragMQFactory.default(config.oppdrag)
+            OppdragMQConsumer(config.oppdrag, it, factory)
+        }
 
         @BeforeAll
         @JvmStatic
