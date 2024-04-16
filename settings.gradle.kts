@@ -4,6 +4,7 @@ include(
     "app",
     "simulering",
     "libs:auth",
+    "libs:auth-test",
     "libs:http",
     "libs:utils",
 )

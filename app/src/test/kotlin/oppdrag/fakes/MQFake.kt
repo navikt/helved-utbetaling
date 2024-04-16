@@ -1,10 +1,11 @@
-package oppdrag
+package oppdrag.fakes
 
 import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
 import no.trygdeetaten.skjema.oppdrag.Mmel
+import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.Kvitteringstatus
 import oppdrag.iverksetting.mq.OppdragXmlMapper
 import javax.jms.Message
@@ -46,12 +47,10 @@ class MQFake(private val config: OppdragConfig) : MessageListener {
     }
 
     override fun onMessage(message: Message?) {
-        val mmel = Mmel().apply {
-            this.alvorlighetsgrad = Kvitteringstatus.OK.kode
-        }
-
         val oppdrag = OppdragXmlMapper.tilOppdrag((message as TextMessage).text).apply {
-            this.mmel = mmel
+            mmel = Mmel().apply {
+                alvorlighetsgrad = Kvitteringstatus.OK.kode
+            }
         }
 
         val kvitteringXml = OppdragXmlMapper.tilXml(oppdrag)

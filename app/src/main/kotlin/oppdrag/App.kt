@@ -91,7 +91,6 @@ fun Application.oppdrag(config: Config = Config()) {
             iverksettingRoute(oppdragService, datasource)
             grensesnittavstemmingRoute(avstemmingService)
         }
-
         openAPI(path = "api", swaggerFile = "openapi.yml")
         actuators(prometheus)
     }
