@@ -1,13 +1,12 @@
 package simulering.ws
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import simulering.http.HttpClientFactory
+import libs.http.HttpClientFactory
 import java.net.URL
 import java.util.*
 
@@ -23,7 +22,7 @@ data class SoapConfig(
 class SoapClient(
     private val config: SoapConfig,
     private val sts: Sts,
-    private val http: HttpClient = HttpClientFactory.create(),
+    private val http: HttpClient = HttpClientFactory.new(),
 ) : Soap {
     override suspend fun call(
         action: String,

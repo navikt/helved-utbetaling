@@ -1,4 +1,4 @@
-package felles
+package libs.utils
 
 import java.net.URI
 import java.net.URL

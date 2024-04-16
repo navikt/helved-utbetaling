@@ -2,8 +2,8 @@ package oppdrag.iverksetting.mq
 
 import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
-import felles.appLog
-import felles.secureLog
+import libs.utils.appLog
+import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.kvitteringstatus

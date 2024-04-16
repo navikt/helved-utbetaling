@@ -10,7 +10,7 @@ application {
 val ktorVersion = "2.3.9"
 
 dependencies {
-    implementation(project(":felles"))
+    implementation(project(":libs:utils"))
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240408113510_4a2db84")
 

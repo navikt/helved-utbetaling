@@ -2,8 +2,10 @@ rootProject.name = "dp-oppdrag"
 
 include(
     "app",
-    "felles",
-    "simulering"
+    "simulering",
+    "libs:auth",
+    "libs:http",
+    "libs:utils",
 )
 
 

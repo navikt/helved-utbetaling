@@ -1,6 +1,6 @@
 package simulering
 
-import felles.env
+import libs.utils.env
 import simulering.ws.SoapConfig
 import simulering.ws.StsConfig
 

@@ -5,7 +5,11 @@ plugins {
 val ktorVersion = "2.3.9"
 
 dependencies {
-    implementation("ch.qos.logback:logback-classic:1.5.3")
+    api(project(":libs:utils"))
+    api(project(":libs:http"))
+
+    api("io.ktor:ktor-client-auth:$ktorVersion")
+    runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.0")
 }
 
 repositories {

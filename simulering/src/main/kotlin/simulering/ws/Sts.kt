@@ -7,7 +7,7 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import simulering.http.HttpClientFactory
+import libs.http.HttpClientFactory
 import java.net.URL
 import java.time.Duration
 import java.time.LocalDateTime
@@ -25,7 +25,7 @@ data class StsConfig(
 
 class StsClient(
     private val config: StsConfig,
-    private val http: HttpClient = HttpClientFactory.create(),
+    private val http: HttpClient = HttpClientFactory.new(),
     private val jackson: ObjectMapper = jacksonObjectMapper(),
 ) : Sts {
     override suspend fun samlToken(): SamlToken {
