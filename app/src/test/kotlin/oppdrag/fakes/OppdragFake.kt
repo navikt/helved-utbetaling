@@ -8,12 +8,9 @@ import no.trygdeetaten.skjema.oppdrag.Mmel
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.Kvitteringstatus
 import oppdrag.iverksetting.mq.OppdragXmlMapper
-import javax.jms.Message
-import javax.jms.MessageListener
-import javax.jms.Session
-import javax.jms.TextMessage
+import javax.jms.*
 
-class MQFake(private val config: OppdragConfig) : MessageListener {
+class OppdragFake(private val config: OppdragConfig) : MessageListener, AutoCloseable {
     private val request = MQQueue(config.sendKø)
     private val reply = MQQueue(config.kvitteringsKø)
 
@@ -26,15 +23,14 @@ class MQFake(private val config: OppdragConfig) : MessageListener {
         setBooleanProperty(JmsConstants.USER_AUTHENTICATION_MQCSP, true)
     }
 
-    private lateinit var session: Session
-
-    fun start() {
-        val connection = factory.createConnection(config.mq.username, config.mq.password)
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE).apply {
-            createConsumer(request).apply {
-                messageListener = this@MQFake
-            }
+    private val connection: Connection = factory.createConnection(config.mq.username, config.mq.password)
+    private val session: Session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE).apply {
+        createConsumer(request).apply {
+            messageListener = this@OppdragFake
         }
+    }
+
+    init {
         connection.start()
     }
 
@@ -59,5 +55,10 @@ class MQFake(private val config: OppdragConfig) : MessageListener {
             val msg = session.createTextMessage(kvitteringXml)
             producer.send(msg)
         }
+    }
+
+    override fun close() {
+        session.close()
+        connection.close()
     }
 }

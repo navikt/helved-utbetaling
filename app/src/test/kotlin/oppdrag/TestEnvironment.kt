@@ -3,108 +3,61 @@ package oppdrag
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import kotlinx.coroutines.runBlocking
-import libs.auth.AzureConfig
 import libs.auth.JwkGenerator
+import oppdrag.containers.MQTestContainer
+import oppdrag.containers.PostgresTestContainer
 import oppdrag.fakes.AzureFake
-import oppdrag.fakes.MQFake
-import oppdrag.postgres.Postgres
+import oppdrag.fakes.OppdragFake
 import oppdrag.postgres.map
-import oppdrag.postgres.transaction
-import org.testcontainers.containers.GenericContainer
-import org.testcontainers.containers.PostgreSQLContainer
 import java.sql.Connection
+import javax.jms.TextMessage
 import javax.sql.DataSource
 
-// todo: @AfterAll: close resources
-object TestEnvironment {
-    val config: Config
-    val datasource: DataSource
-    val mqFake: MQFake
-    private val azureFake: AzureFake = AzureFake()
-    private val jwksGenerator: JwkGenerator
+object TestEnvironment : AutoCloseable {
+    private val postgres: PostgresTestContainer = PostgresTestContainer()
+    private val mq: MQTestContainer = MQTestContainer()
+    private val azure: AzureFake = AzureFake()
 
-    init {
-        val postgres = PostgreSQLContainer<Nothing>("postgres:16").apply { start() }
-        val mq = GenericContainer<Nothing>("ibmcom/mq").apply {
-            withEnv("LICENSE", "accept")
-            withEnv("MQ_QMGR_NAME", "QM1")
-            withExposedPorts(1414)
-            start()
-        }
-        config = config(postgres, mq, azureFake.config)
-        datasource = init(config.postgres)
-        mqFake = MQFake(config.oppdrag).apply { start() }
-        jwksGenerator = JwkGenerator(azureFake.config.issuer, azureFake.config.clientId)
+    val config: Config = testConfig(postgres.config, mq.config, azure.config)
+
+    private val oppdrag = OppdragFake(config.oppdrag)
+    private val jwksGenerator = JwkGenerator(azure.config.issuer, azure.config.clientId)
+
+    fun <T> transaction(block: (Connection) -> T): T = postgres.transaction(block)
+    fun <T> withDatasource(block: (DataSource) -> T): T = postgres.withDatasource(block)
+    fun generateToken(): String = jwksGenerator.generate()
+    fun createSoapMessage(xml: String): TextMessage = oppdrag.createMessage(xml)
+
+    fun clearTables() = transaction { con ->
+        con.prepareStatement("TRUNCATE TABLE oppdrag_lager").execute()
+        con.prepareStatement("TRUNCATE TABLE simulering_lager").execute()
+        con.prepareStatement("TRUNCATE TABLE mellomlagring_konsistensavstemming").execute()
     }
 
-    fun generateToken(): String {
-        return jwksGenerator.generate()
+    fun tableSize(table: String): Int? = transaction { con ->
+        val stmt = con.prepareStatement("SELECT count(*) FROM $table")
+        val resultSet = stmt.executeQuery()
+        resultSet.map { row -> row.getInt(1) }.singleOrNull()
     }
 
-    fun <T> transaction(block: (Connection) -> T): T {
-        return datasource.transaction(block)
+    override fun close() {
+        postgres.close()
+        mq.close()
+        azure.close()
+        oppdrag.close()
     }
-
-    fun clearTables() {
-        transaction { con ->
-            con.prepareStatement("TRUNCATE TABLE oppdrag_lager").execute()
-            con.prepareStatement("TRUNCATE TABLE simulering_lager").execute()
-            con.prepareStatement("TRUNCATE TABLE mellomlagring_konsistensavstemming").execute()
-        }
-    }
-
-    fun tableSize(table: String): Int? =
-        transaction { con ->
-            val stmt = con.prepareStatement("SELECT count(*) FROM $table")
-            val resultSet = stmt.executeQuery()
-            resultSet.map { row -> row.getInt(1) }.singleOrNull()
-        }
 }
 
-fun resources(filename: String): String =
-    {}::class.java.getResource(filename)!!.openStream().bufferedReader().readText()
+object Resource {
+    fun read(file: String): String {
+        return this::class.java.getResource(file)!!.openStream().bufferedReader().readText()
+    }
+}
 
 fun NettyApplicationEngine.port(): Int = runBlocking {
     resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
 }
 
-private fun init(config: PostgresConfig) =
-    Postgres.createAndMigrate(config) {
-        initializationFailTimeout = 30_000
-        idleTimeout = 10_000
-        connectionTimeout = 10_000
-        maxLifetime = 900_000
-        connectionTestQuery = "SELECT 1"
-    }
 
-private fun config(
-    postgres: PostgreSQLContainer<Nothing>,
-    mq: GenericContainer<Nothing>,
-    azureConfig: AzureConfig,
-): Config =
-    Config(
-        avstemming = AvstemmingConfig(
-            enabled = true,
-        ),
-        oppdrag = OppdragConfig(
-            enabled = true,
-            mq = MQConfig(
-                host = "localhost",
-                port = mq.firstMappedPort,
-                channel = "DEV.ADMIN.SVRCONN",
-                manager = "QM1", // todo: hent fra det som er konfigurert i testcontaineren
-                username = "admin",
-                password = "passw0rd",
-            ),
-            kvitteringsKø = "DEV.QUEUE.2",
-            sendKø = "DEV.QUEUE.1"
-        ),
-        postgres = PostgresConfig(
-            host = postgres.host,
-            port = postgres.firstMappedPort.toString(),
-            database = postgres.databaseName,
-            username = postgres.username,
-            password = postgres.password
-        ),
-        azure = azureConfig,
-    )
+
+

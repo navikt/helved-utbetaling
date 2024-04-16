@@ -15,14 +15,13 @@ import java.net.URI
 class AzureFake : AutoCloseable {
     private val azure = embeddedServer(Netty, port = 0, module = Application::azure).apply { start() }
 
-    val config: AzureConfig
-        get() = AzureConfig(
-            tokenEndpoint = "http://localhost:${azure.port()}/token".let(::URI).toURL(),
-            jwks = "http://localhost:${azure.port()}/jwks".let(::URI).toURL(),
-            issuer = "test",
-            clientId = "hei",
-            clientSecret = "på deg"
-        )
+    val config = AzureConfig(
+        tokenEndpoint = "http://localhost:${azure.port()}/token".let(::URI).toURL(),
+        jwks = "http://localhost:${azure.port()}/jwks".let(::URI).toURL(),
+        issuer = "test",
+        clientId = "hei",
+        clientSecret = "på deg"
+    )
 
     override fun close() {
         azure.stop(0, 0)

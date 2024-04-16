@@ -4,10 +4,10 @@ import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.*
+import oppdrag.Resource
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.iverksetting.mq.OppdragXmlMapper
 import oppdrag.iverksetting.tilstand.OppdragLager
-import oppdrag.resources
 import oppdrag.somOppdragLager
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -212,7 +212,7 @@ internal class GrensesnittavstemmingMapperTest {
     }
 
     private fun avvistKvitteringsmelding() =
-        OppdragXmlMapper.tilOppdrag(resources("/kvittering-avvist.xml")).mmel
+        OppdragXmlMapper.tilOppdrag(Resource.read("/kvittering-avvist.xml")).mmel
 
     companion object {
         private val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
