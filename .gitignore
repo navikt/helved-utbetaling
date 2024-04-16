@@ -22,5 +22,5 @@ src/generated
 # Ignore Gradle build output directory
 build
 
-# ignore kotlin LSP
-kls_database.db
+# ignore LSP
+*.db

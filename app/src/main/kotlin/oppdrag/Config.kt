@@ -1,6 +1,6 @@
 package oppdrag
 
-import felles.env
+import libs.utils.env
 
 data class Config(
     val avstemming: AvstemmingConfig = AvstemmingConfig(),

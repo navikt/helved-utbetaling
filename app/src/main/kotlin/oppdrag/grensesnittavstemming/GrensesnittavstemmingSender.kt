@@ -1,6 +1,6 @@
 package oppdrag.grensesnittavstemming
 
-import felles.appLog
+import libs.utils.appLog
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import oppdrag.AvstemmingConfig
 import java.io.StringWriter

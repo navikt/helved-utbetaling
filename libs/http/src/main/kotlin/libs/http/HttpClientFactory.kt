@@ -1,21 +1,25 @@
-package simulering.http
+package libs.http
 
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import felles.appLog
-import felles.secureLog
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.serialization.jackson.*
+import libs.utils.appLog
+import libs.utils.secureLog
 
-internal object HttpClientFactory {
-    fun create(
+object HttpClientFactory {
+
+    fun new(
         logLevel: LogLevel = LogLevel.INFO,
+        configure: (ObjectMapper.() -> Unit) = { defaults() }
     ): HttpClient = HttpClient(CIO) {
+
         install(HttpTimeout) {
             requestTimeoutMillis = 30_000
             connectTimeoutMillis = 5_000
@@ -30,11 +34,15 @@ internal object HttpClientFactory {
 
         install(ContentNegotiation) {
             jackson {
-                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                registerModule(JavaTimeModule())
+                this.configure()
             }
         }
+    }
+
+    private fun ObjectMapper.defaults() {
+        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+        registerModule(JavaTimeModule())
     }
 }
 
