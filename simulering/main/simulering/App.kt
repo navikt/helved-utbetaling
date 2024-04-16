@@ -3,7 +3,6 @@ package simulering
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import libs.utils.appLog
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -14,12 +13,13 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
+import libs.utils.appLog
+import libs.ws.Soap
+import libs.ws.SoapClient
+import libs.ws.Sts
+import libs.ws.StsClient
 import simulering.routing.actuators
 import simulering.routing.simulering
-import simulering.ws.Soap
-import simulering.ws.SoapClient
-import simulering.ws.Sts
-import simulering.ws.StsClient
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e -> appLog.error("Uhåndtert feil", e) }

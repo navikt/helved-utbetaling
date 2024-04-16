@@ -7,6 +7,5 @@ include(
     "libs:auth-test",
     "libs:http",
     "libs:utils",
+    "libs:ws",
 )
-
-

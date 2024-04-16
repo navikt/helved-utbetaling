@@ -16,7 +16,7 @@ import oppdrag.TestEnvironment
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
-import oppdrag.oppdrag
+import oppdrag.server
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -28,7 +28,7 @@ class OppdragControllerTest {
         var oppdragStatus: OppdragStatus = OppdragStatus.LAGT_PÅ_KØ
 
         testApplication {
-            application { oppdrag(TestEnvironment.config) }
+            application { server(TestEnvironment.config) }
 
             httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
@@ -53,7 +53,7 @@ class OppdragControllerTest {
         var oppdragStatus: OppdragStatus = OppdragStatus.LAGT_PÅ_KØ
 
         testApplication {
-            application { oppdrag(TestEnvironment.config) }
+            application { server(TestEnvironment.config) }
 
             httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)

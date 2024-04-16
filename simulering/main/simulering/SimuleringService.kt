@@ -1,3 +1,5 @@
+@file:Suppress("NAME_SHADOWING")
+
 package simulering
 
 import com.ctc.wstx.exc.WstxEOFException
@@ -6,14 +8,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import libs.utils.secureLog
 import jakarta.xml.ws.WebServiceException
 import jakarta.xml.ws.soap.SOAPFaultException
+import libs.utils.secureLog
+import libs.ws.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.SimulerBeregningRequest
 import org.intellij.lang.annotations.Language
 import simulering.dto.SimuleringRequestBody
 import simulering.dto.SimuleringRequestBuilder
-import simulering.ws.*
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.time.LocalDate
@@ -33,6 +35,7 @@ class SimuleringService(
         disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
     },
 ) {
+
     suspend fun simuler(request: SimuleringRequestBody): Simulering? {
         val request = SimuleringRequestBuilder(request).build()
         val xml = xml(request.request)

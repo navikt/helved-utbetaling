@@ -1,9 +1,9 @@
 package simulering
 
-import simulering.ws.SamlToken
-import simulering.ws.Soap
-import simulering.ws.SoapXml
-import simulering.ws.Sts
+import libs.ws.SamlToken
+import libs.ws.Soap
+import libs.ws.SoapXml
+import libs.ws.Sts
 import java.net.URI
 import java.time.LocalDateTime
 import java.util.*

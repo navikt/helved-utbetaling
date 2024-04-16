@@ -1,8 +1,8 @@
 package simulering
 
 import libs.utils.env
-import simulering.ws.SoapConfig
-import simulering.ws.StsConfig
+import libs.ws.SoapConfig
+import libs.ws.StsConfig
 
 data class Config(
     val simulering: SoapConfig = SoapConfig(
