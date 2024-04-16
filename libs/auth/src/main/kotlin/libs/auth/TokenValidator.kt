@@ -21,7 +21,7 @@ fun JWTAuthenticationProvider.Config.configure(
  * Usage:
  * ```
  *  install(Authentication) {
- *      jwt(TokenProvider.TOKENX) {
+ *      jwt(TokenProvider.AZURE) {
  *          configure(AzureConfig()) { jwt ->
  *              jwt.getClaim("pid", String::class) != null
  *          }

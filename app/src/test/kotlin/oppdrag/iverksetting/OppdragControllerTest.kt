@@ -10,6 +10,7 @@ import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.withTimeout
+import libs.auth.JwkGenerator
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import oppdrag.TestEnvironment
@@ -32,6 +33,7 @@ class OppdragControllerTest {
 
             httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
+                bearerAuth(TestEnvironment.generateToken())
                 setBody(utbetalingsoppdrag)
             }
 

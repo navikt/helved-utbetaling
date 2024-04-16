@@ -1,5 +1,12 @@
 package oppdrag
 
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import kotlinx.coroutines.runBlocking
+import libs.auth.AzureConfig
+import libs.auth.JwkGenerator
+import oppdrag.fakes.AzureFake
+import oppdrag.fakes.MQFake
 import oppdrag.postgres.Postgres
 import oppdrag.postgres.map
 import oppdrag.postgres.transaction
@@ -13,6 +20,8 @@ object TestEnvironment {
     val config: Config
     val datasource: DataSource
     val mqFake: MQFake
+    private val azureFake: AzureFake = AzureFake()
+    private val jwksGenerator: JwkGenerator
 
     init {
         val postgres = PostgreSQLContainer<Nothing>("postgres:16").apply { start() }
@@ -22,12 +31,17 @@ object TestEnvironment {
             withExposedPorts(1414)
             start()
         }
-        config = config(postgres, mq)
+        config = config(postgres, mq, azureFake.config)
         datasource = init(config.postgres)
         mqFake = MQFake(config.oppdrag).apply { start() }
+        jwksGenerator = JwkGenerator(azureFake.config.issuer, azureFake.config.clientId)
     }
 
-    fun <T> transaction(block: (Connection) -> T) : T {
+    fun generateToken(): String {
+        return jwksGenerator.generate()
+    }
+
+    fun <T> transaction(block: (Connection) -> T): T {
         return datasource.transaction(block)
     }
 
@@ -50,6 +64,10 @@ object TestEnvironment {
 fun resources(filename: String): String =
     {}::class.java.getResource(filename)!!.openStream().bufferedReader().readText()
 
+fun NettyApplicationEngine.port(): Int = runBlocking {
+    resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
+}
+
 private fun init(config: PostgresConfig) =
     Postgres.createAndMigrate(config) {
         initializationFailTimeout = 30_000
@@ -62,6 +80,7 @@ private fun init(config: PostgresConfig) =
 private fun config(
     postgres: PostgreSQLContainer<Nothing>,
     mq: GenericContainer<Nothing>,
+    azureConfig: AzureConfig,
 ): Config =
     Config(
         avstemming = AvstemmingConfig(
@@ -86,5 +105,6 @@ private fun config(
             database = postgres.databaseName,
             username = postgres.username,
             password = postgres.password
-        )
+        ),
+        azure = azureConfig,
     )
