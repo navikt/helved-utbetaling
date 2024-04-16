@@ -14,8 +14,7 @@ import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.postgres.transaction
 import javax.sql.DataSource
 
-// todo: azuread auth
-fun Routing.iverksettingRoute(
+fun Route.iverksettingRoute(
     oppdragService: OppdragService,
     postgres: DataSource,
 ) {

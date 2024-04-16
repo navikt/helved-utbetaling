@@ -1,11 +1,13 @@
 package oppdrag
 
+import libs.auth.AzureConfig
 import libs.utils.env
 
 data class Config(
     val avstemming: AvstemmingConfig = AvstemmingConfig(),
     val oppdrag: OppdragConfig = OppdragConfig(),
-    val postgres: PostgresConfig = PostgresConfig()
+    val postgres: PostgresConfig = PostgresConfig(),
+    val azure: AzureConfig = AzureConfig(),
 )
 
 data class AvstemmingConfig(

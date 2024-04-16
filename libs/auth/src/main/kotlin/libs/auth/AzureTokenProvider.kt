@@ -16,7 +16,7 @@ class AzureTokenProvider(
     private val config: AzureConfig = AzureConfig(),
     private val client: TokenClient = TokenClient(
         http = HttpClientFactory.new(),
-        name = TokenProvider.AzureAd,
+        name = TokenProvider.AZURE,
         cache = TokenCache(),
     )
 ) {

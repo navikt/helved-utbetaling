@@ -17,7 +17,7 @@ import javax.sql.DataSource
 class OppdragService(
     private val config: OppdragConfig,
     private val postgres: DataSource,
-    private val mqFactory: MQConnectionFactory,
+    private val factory: MQConnectionFactory,
 ) {
     private val oppdragSender = OppdragMQProducer(config)
 
@@ -42,7 +42,7 @@ class OppdragService(
         }
 
         appLog.debug("Legger oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} på kø")
-        mqFactory.createConnection(config.mq.username, config.mq.password).use { con ->
+        factory.createConnection(config.mq.username, config.mq.password).use { con ->
             oppdragSender.sendOppdrag(oppdrag, con)
         }
     }
