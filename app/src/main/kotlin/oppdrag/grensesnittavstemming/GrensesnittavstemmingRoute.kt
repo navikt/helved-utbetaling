@@ -8,7 +8,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 
-// todo: azuread auth
 fun Route.grensesnittavstemmingRoute(
     service: GrensesnittavstemmingService,
 ) {

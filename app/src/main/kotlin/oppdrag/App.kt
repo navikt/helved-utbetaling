@@ -3,10 +3,11 @@ package oppdrag
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import libs.utils.appLog
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
@@ -17,6 +18,12 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
+import libs.auth.TokenProvider
+import libs.auth.configure
+import libs.utils.appLog
+import oppdrag.grensesnittavstemming.GrensesnittavstemmingProducer
+import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
+import oppdrag.grensesnittavstemming.grensesnittavstemmingRoute
 import oppdrag.iverksetting.OppdragService
 import oppdrag.iverksetting.iverksettingRoute
 import oppdrag.iverksetting.mq.OppdragMQConsumer
@@ -45,6 +52,12 @@ fun Application.oppdrag(config: Config = Config()) {
         }
     }
 
+    install(Authentication) {
+        jwt(TokenProvider.AZURE) {
+            configure(config.azure)
+        }
+    }
+
     val datasource = Postgres.createAndMigrate(config.postgres)
     val mqFactory = OppdragMQFactory.default(config.oppdrag)
 
@@ -57,7 +70,12 @@ fun Application.oppdrag(config: Config = Config()) {
     val oppdragService = OppdragService(
         config = config.oppdrag,
         postgres = datasource,
-        mqFactory = mqFactory,
+        factory = mqFactory,
+    )
+
+    val avstemmingService = GrensesnittavstemmingService(
+        producer = GrensesnittavstemmingProducer(config.avstemming),
+        postgres = datasource,
     )
 
     environment.monitor.subscribe(ApplicationStopping) {
@@ -69,12 +87,16 @@ fun Application.oppdrag(config: Config = Config()) {
     }
 
     routing {
-        iverksettingRoute(oppdragService, datasource)
-        openAPI(path="api", swaggerFile = "openapi.yml")
+        authenticate(TokenProvider.AZURE) {
+            iverksettingRoute(oppdragService, datasource)
+            grensesnittavstemmingRoute(avstemmingService)
+        }
 
+        openAPI(path = "api", swaggerFile = "openapi.yml")
         actuators(prometheus)
     }
 }
+
 
 private fun Routing.actuators(prometheus: PrometheusMeterRegistry) {
     route("/actuator") {

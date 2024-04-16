@@ -9,15 +9,16 @@ import libs.utils.appLog
 import libs.utils.secureLog
 import java.net.URL
 
-enum class TokenProvider {
-    AzureAd,
-    TokenX,
-    Maskinporten,
+object TokenProvider {
+    const val AZURE = "Azure AD"
+    const val TOKENX = "Token X"
+    const val MASKINPORTEN = "Maskinporten"
+    const val IDPORTEN = "ID Porten"
 }
 
 class TokenClient(
     private val http: HttpClient,
-    private val name: TokenProvider,
+    private val name: String,
     private val cache: Cache = TokenCache()
 ) {
     suspend fun getAccessToken(

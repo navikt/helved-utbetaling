@@ -3,14 +3,15 @@ package oppdrag.grensesnittavstemming
 import libs.utils.appLog
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import oppdrag.AvstemmingConfig
+import oppdrag.iverksetting.mq.MQProducer
 import java.io.StringWriter
+import javax.jms.Connection
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller
 
-class GrensesnittavstemmingSender(
-//    private val jmsTemplate: JmsTemplate,
+class GrensesnittavstemmingProducer(
     private val config: AvstemmingConfig,
-) {
+) : MQProducer {
     private val context: JAXBContext = JAXBContext.newInstance(Avstemmingsdata::class.java)
 
     fun sendGrensesnittAvstemming(avstemmingsdata: Avstemmingsdata) {
@@ -35,4 +36,8 @@ class GrensesnittavstemmingSender(
                 setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
             }.marshal(avstemming, stringWriter)
         }.toString()
+
+    override fun send(xml: String, con: Connection) {
+        TODO("Not yet implemented")
+    }
 }
