@@ -8,6 +8,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import libs.auth.AzureConfig
+import libs.auth.JwkGenerator
 import libs.auth.TEST_JWKS
 import oppdrag.port
 import java.net.URI
@@ -23,13 +24,18 @@ class AzureFake : AutoCloseable {
         clientSecret = "på deg"
     )
 
-    override fun close() {
-        azure.stop(0, 0)
-    }
+    private val jwksGenerator = JwkGenerator(config.issuer, config.clientId)
+
+    fun generateToken() = jwksGenerator.generate()
+
+    override fun close() = azure.stop(0, 0)
 }
 
 private fun Application.azure() {
-    install(ContentNegotiation) { jackson() }
+    install(ContentNegotiation) {
+        jackson()
+    }
+
     routing {
         get("/jwks") {
             call.respondText(TEST_JWKS)

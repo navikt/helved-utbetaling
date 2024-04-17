@@ -1,22 +1,13 @@
 package oppdrag.grensesnittavstemming
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.ktor.client.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
-import oppdrag.TestEnvironment
-import oppdrag.etUtbetalingsoppdrag
+import oppdrag.*
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
-import oppdrag.server
-import oppdrag.somOppdragLager
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.io.StringWriter
@@ -36,30 +27,31 @@ class GrensesnittAvstemmingTest {
 
     @Test
     fun `skal avstemme eksisterende oppdrag`() {
+        val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
         val avstemming = GrensesnittavstemmingRequest(
             fagsystem = Fagsystem.DAGPENGER,
             fra = LocalDateTime.now().withDayOfMonth(1),
             til = LocalDateTime.now().plusMonths(1)
         )
 
-        val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
-
         testApplication {
-            application { server(TestEnvironment.config) }
+            application {
+                server(TestEnvironment.config)
+            }
 
-            TestEnvironment.transaction {
+            TestEnvironment.postgres.transaction {
                 OppdragLagerRepository.opprettOppdrag(oppdragLager, it)
             }
 
             val response = httpClient.post("/grensesnittavstemming") {
                 contentType(ContentType.Application.Json)
-                bearerAuth(TestEnvironment.generateToken())
+                bearerAuth(TestEnvironment.azure.generateToken())
                 setBody(avstemming)
             }
 
             assertEquals(HttpStatusCode.Created, response.status)
 
-            val actual = TestEnvironment.oppdrag.avstemmingKøListener
+            val actual = TestEnvironment.oppdrag.avstemmingKø
                 .getReceived()
                 .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
 
@@ -99,15 +91,3 @@ private fun xml(avstemming: Avstemmingsdata): String {
     marshaller.marshal(jaxbWrapper, stringWriter)
     return stringWriter.toString()
 }
-
-private val ApplicationTestBuilder.httpClient: HttpClient
-    get() =
-        createClient {
-            install(ContentNegotiation) {
-                jackson {
-                    registerModule(JavaTimeModule())
-                    disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                }
-            }
-        }

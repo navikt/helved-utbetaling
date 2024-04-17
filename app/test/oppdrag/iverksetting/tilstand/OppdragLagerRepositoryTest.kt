@@ -28,12 +28,12 @@ class OppdragLagerRepositoryTest {
     fun `skal ikke lagre duplikat`() {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
         val psqlException = assertThrows<PSQLException> {
-            TestEnvironment.transaction { con ->
+            TestEnvironment.postgres.transaction { con ->
                 OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
             }
         }
@@ -44,12 +44,12 @@ class OppdragLagerRepositoryTest {
     fun `skal lagre to ulike iverksettinger samme behandling`() {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager.copy(iverksetting_id = "1")
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
         assertDoesNotThrow {
-            TestEnvironment.transaction { con ->
+            TestEnvironment.postgres.transaction { con ->
                 OppdragLagerRepository.opprettOppdrag(oppdragLager.copy(iverksetting_id = "2"), con)
             }
         }
@@ -62,11 +62,11 @@ class OppdragLagerRepositoryTest {
                 status = OppdragStatus.LAGT_PÅ_KØ
             )
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             val hentetOppdrag = OppdragLagerRepository.hentOppdrag(oppdragLager.id, con)
 
             assertEquals(OppdragStatus.LAGT_PÅ_KØ, hentetOppdrag.status)
@@ -84,11 +84,11 @@ class OppdragLagerRepositoryTest {
                 status = OppdragStatus.LAGT_PÅ_KØ
             )
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             val hentetOppdrag = OppdragLagerRepository.hentOppdrag(oppdragLager.id, con)
             val kvitteringsmelding = avvistKvitteringsmelding()
 
@@ -109,12 +109,12 @@ class OppdragLagerRepositoryTest {
         val baOppdragLager = etUtbetalingsoppdrag(dag).somOppdragLager
         val baOppdragLager2 = etUtbetalingsoppdrag(dag.minusDays(1)).somOppdragLager
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(baOppdragLager, con)
             OppdragLagerRepository.opprettOppdrag(baOppdragLager2, con)
         }
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             val oppdrageneTilGrensesnittavstemming =
                 OppdragLagerRepository.hentIverksettingerForGrensesnittavstemming(
                     startenPåDagen,
