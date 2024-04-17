@@ -51,7 +51,7 @@ class OppdragMQConsumerTest {
     fun `skal lagre status og mmel fra kvittering`() {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
@@ -76,7 +76,7 @@ class OppdragMQConsumerTest {
             OppdragLager.lagFraOppdrag(utbet, oppdrag, 0)
         }
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
             OppdragLagerRepository.opprettOppdrag(oppdragLagerV1, con)
         }
@@ -108,7 +108,7 @@ class OppdragMQConsumerTest {
             status = OppdragStatus.KVITTERT_OK
         }
 
-        TestEnvironment.transaction { con ->
+        TestEnvironment.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
@@ -121,7 +121,7 @@ class OppdragMQConsumerTest {
     }
 
     internal companion object {
-        val consumer = TestEnvironment.withDatasource {
+        val consumer = TestEnvironment.postgres.withDatasource {
             val config = TestEnvironment.config
             val factory = MQFactory.new(config.mq)
             OppdragMQConsumer(config, it, factory)

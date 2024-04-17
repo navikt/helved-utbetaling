@@ -1,19 +1,14 @@
 package oppdrag.iverksetting
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.ktor.client.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.withTimeout
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import oppdrag.TestEnvironment
 import oppdrag.etUtbetalingsoppdrag
+import oppdrag.httpClient
 import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.server
@@ -32,12 +27,12 @@ class IverksettingTest {
 
             httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
-                bearerAuth(TestEnvironment.generateToken())
+                bearerAuth(TestEnvironment.azure.generateToken())
                 setBody(utbetalingsoppdrag)
             }
 
             withTimeout(1_000) {
-                TestEnvironment.transaction { con ->
+                TestEnvironment.postgres.transaction { con ->
                     while (oppdragStatus == OppdragStatus.LAGT_PÅ_KØ) {
                         oppdragStatus = OppdragLagerRepository.hentOppdrag(utbetalingsoppdrag.oppdragId, con).status
                     }
@@ -57,7 +52,7 @@ class IverksettingTest {
 
             httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
-                bearerAuth(TestEnvironment.generateToken())
+                bearerAuth(TestEnvironment.azure.generateToken())
                 setBody(utbetalingsoppdrag)
             }.also {
                 assertEquals(HttpStatusCode.Created, it.status)
@@ -65,14 +60,14 @@ class IverksettingTest {
 
             httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
-                bearerAuth(TestEnvironment.generateToken())
+                bearerAuth(TestEnvironment.azure.generateToken())
                 setBody(utbetalingsoppdrag)
             }.also {
                 assertEquals(HttpStatusCode.Conflict, it.status)
             }
 
             withTimeout(1_000) {
-                TestEnvironment.transaction { con ->
+                TestEnvironment.postgres.transaction { con ->
                     while (oppdragStatus == OppdragStatus.LAGT_PÅ_KØ) {
                         oppdragStatus = OppdragLagerRepository.hentOppdrag(utbetalingsoppdrag.oppdragId, con).status
                     }
@@ -82,18 +77,6 @@ class IverksettingTest {
             assertEquals(OppdragStatus.KVITTERT_OK, oppdragStatus)
         }
     }
-
-    private val ApplicationTestBuilder.httpClient: HttpClient
-        get() =
-            createClient {
-                install(ContentNegotiation) {
-                    jackson {
-                        registerModule(JavaTimeModule())
-                        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                    }
-                }
-            }
 }
 
 private val Utbetalingsoppdrag.oppdragId
