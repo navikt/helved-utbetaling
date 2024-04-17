@@ -19,8 +19,7 @@ object TestEnvironment : AutoCloseable {
     private val azure: AzureFake = AzureFake()
 
     val config: Config = testConfig(postgres.config, mq.config, azure.config)
-
-    private val oppdrag = OppdragFake(config)
+    val oppdrag = OppdragFake(config)
     private val jwksGenerator = JwkGenerator(azure.config.issuer, azure.config.clientId)
 
     fun <T> transaction(block: (Connection) -> T): T = postgres.transaction(block)
@@ -32,6 +31,11 @@ object TestEnvironment : AutoCloseable {
         con.prepareStatement("TRUNCATE TABLE oppdrag_lager").execute()
         con.prepareStatement("TRUNCATE TABLE simulering_lager").execute()
         con.prepareStatement("TRUNCATE TABLE mellomlagring_konsistensavstemming").execute()
+    }
+
+    fun clearMQ() {
+        oppdrag.sendKøListener.reset()
+        oppdrag.avstemmingKøListener.reset()
     }
 
     fun tableSize(table: String): Int? = transaction { con ->

@@ -20,7 +20,7 @@ import oppdrag.server
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class OppdragControllerTest {
+class IverksettingTest {
 
     @Test
     fun `skal lagre oppdrag for utbetalingoppdrag`() {
