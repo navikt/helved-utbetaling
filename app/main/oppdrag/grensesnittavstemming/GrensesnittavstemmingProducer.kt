@@ -9,14 +9,19 @@ import oppdrag.mq.MQProducer
 import java.io.StringWriter
 import javax.jms.Connection
 import javax.xml.bind.JAXBContext
+import javax.xml.bind.JAXBElement
 import javax.xml.bind.Marshaller
+import javax.xml.namespace.QName
 
 class GrensesnittavstemmingProducer(
     private val config: Config,
     private val factory: MQConnectionFactory,
 ) : MQProducer {
-    private val context: JAXBContext = JAXBContext.newInstance(Avstemmingsdata::class.java)
-//    private val queueName = "queue:///${config.utKø}?targetClient=1"
+    //    private val queueName = "queue:///${config.utKø}?targetClient=1"
+    private val marshaller = JAXBContext
+        .newInstance(Avstemmingsdata::class.java)
+        .createMarshaller()
+        .apply { setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true) }
 
     fun sendGrensesnittAvstemming(avstemmingsdata: Avstemmingsdata) {
         if (!config.avstemming.enabled) {
@@ -37,14 +42,10 @@ class GrensesnittavstemmingProducer(
 
     private fun xml(avstemming: Avstemmingsdata): String {
         val stringWriter = StringWriter()
-
-        val marshaller = context.createMarshaller().apply {
-            setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
-        }
-
-        return marshaller
-            .marshal(avstemming, stringWriter)
-            .toString()
+        // see https://stackoverflow.com/a/5870064
+        val jaxbWrapper = JAXBElement(QName("uri", "local"), Avstemmingsdata::class.java, avstemming)
+        marshaller.marshal(jaxbWrapper, stringWriter)
+        return stringWriter.toString()
     }
 
     override fun send(xml: String, con: Connection) {
