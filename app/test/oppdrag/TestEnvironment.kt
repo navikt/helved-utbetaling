@@ -20,7 +20,7 @@ object TestEnvironment : AutoCloseable {
 
     val config: Config = testConfig(postgres.config, mq.config, azure.config)
 
-    private val oppdrag = OppdragFake(config.oppdrag)
+    private val oppdrag = OppdragFake(config)
     private val jwksGenerator = JwkGenerator(azure.config.issuer, azure.config.clientId)
 
     fun <T> transaction(block: (Connection) -> T): T = postgres.transaction(block)

@@ -10,6 +10,7 @@ import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
+import oppdrag.mq.MQFactory
 import oppdrag.somOppdragLager
 import org.junit.jupiter.api.*
 import kotlin.test.assertEquals
@@ -122,8 +123,8 @@ class OppdragMQConsumerTest {
     internal companion object {
         val consumer = TestEnvironment.withDatasource {
             val config = TestEnvironment.config
-            val factory = OppdragMQFactory.default(config.oppdrag)
-            OppdragMQConsumer(config.oppdrag, it, factory)
+            val factory = MQFactory.new(config.mq)
+            OppdragMQConsumer(config, it, factory)
         }
 
         @BeforeAll

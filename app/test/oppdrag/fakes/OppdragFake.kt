@@ -5,14 +5,15 @@ import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
 import no.trygdeetaten.skjema.oppdrag.Mmel
-import oppdrag.OppdragConfig
+import oppdrag.Config
 import oppdrag.iverksetting.domene.Kvitteringstatus
 import oppdrag.iverksetting.mq.OppdragXmlMapper
 import javax.jms.*
 
-class OppdragFake(private val config: OppdragConfig) : MessageListener, AutoCloseable {
-    private val request = MQQueue(config.sendKø)
-    private val reply = MQQueue(config.kvitteringsKø)
+// todo: verifiser at dev.queue.3 blir kalt (avstemming.utkø)
+class OppdragFake(private val config: Config) : MessageListener, AutoCloseable {
+    private val request = MQQueue(config.oppdrag.sendKø)
+    private val reply = MQQueue(config.oppdrag.kvitteringsKø)
 
     private val factory = MQConnectionFactory().apply {
         hostName = config.mq.host
@@ -42,7 +43,7 @@ class OppdragFake(private val config: OppdragConfig) : MessageListener, AutoClos
         }
     }
 
-    override fun onMessage(message: Message?) {
+    override fun onMessage(message: Message) {
         val oppdrag = OppdragXmlMapper.tilOppdrag((message as TextMessage).text).apply {
             mmel = Mmel().apply {
                 alvorlighetsgrad = Kvitteringstatus.OK.kode

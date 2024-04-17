@@ -4,7 +4,7 @@ import com.ibm.mq.jms.MQConnectionFactory
 import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import oppdrag.OppdragConfig
+import oppdrag.Config
 import oppdrag.iverksetting.mq.OppdragMQProducer
 import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLager
@@ -15,11 +15,11 @@ import java.sql.Connection
 import javax.sql.DataSource
 
 class OppdragService(
-    private val config: OppdragConfig,
+    private val config: Config,
     private val postgres: DataSource,
     private val factory: MQConnectionFactory,
 ) {
-    private val oppdragSender = OppdragMQProducer(config)
+    private val oppdragSender = OppdragMQProducer(config.oppdrag)
 
     fun opprettOppdrag(
         utbetalingsoppdrag: Utbetalingsoppdrag,

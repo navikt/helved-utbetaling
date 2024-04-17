@@ -27,7 +27,7 @@ import oppdrag.grensesnittavstemming.grensesnittavstemmingRoute
 import oppdrag.iverksetting.OppdragService
 import oppdrag.iverksetting.iverksettingRoute
 import oppdrag.iverksetting.mq.OppdragMQConsumer
-import oppdrag.iverksetting.mq.OppdragMQFactory
+import oppdrag.mq.MQFactory
 import oppdrag.postgres.Postgres
 
 fun main() {
@@ -59,22 +59,22 @@ fun Application.server(config: Config = Config()) {
     }
 
     val datasource = Postgres.createAndMigrate(config.postgres)
-    val mqFactory = OppdragMQFactory.default(config.oppdrag)
+    val mqFactory = MQFactory.new(config.mq)
 
     val oppdragConsumer = OppdragMQConsumer(
-        config = config.oppdrag,
+        config = config,
         postgres = datasource,
         factory = mqFactory,
     )
 
     val oppdragService = OppdragService(
-        config = config.oppdrag,
+        config = config,
         postgres = datasource,
         factory = mqFactory,
     )
 
     val avstemmingService = GrensesnittavstemmingService(
-        producer = GrensesnittavstemmingProducer(config.avstemming),
+        producer = GrensesnittavstemmingProducer(config, mqFactory),
         postgres = datasource,
     )
 
