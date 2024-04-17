@@ -4,22 +4,18 @@ import com.ibm.mq.jms.MQQueue
 import libs.utils.appLog
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
+import oppdrag.mq.MQProducer
 import javax.jms.Connection
 import javax.jms.JMSException
 
-interface MQProducer {
-    fun send(xml: String, con: Connection)
-}
-
 class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
-    // todo: check queue depth (size) to avoid throttling oppdrag
-    private val queue = MQQueue(config.kvitteringsKø)
 
     override fun send(xml: String, con: Connection) {
         con.createSession().use { session ->
+            // todo: check queue depth
             session.createProducer(session.createQueue(config.sendKø)).use { producer ->
                 val msg = session.createTextMessage(xml)
-                msg.jmsReplyTo = queue
+                msg.jmsReplyTo = MQQueue(config.kvitteringsKø)
                 producer.send(msg)
             }
         }

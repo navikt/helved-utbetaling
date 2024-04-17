@@ -5,25 +5,24 @@ import com.ibm.mq.jms.MQQueue
 import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import oppdrag.OppdragConfig
+import oppdrag.Config
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
+import oppdrag.mq.MQConsumer
 import oppdrag.postgres.transaction
-import javax.jms.*
+import javax.jms.JMSException
+import javax.jms.Message
+import javax.jms.TextMessage
 import javax.sql.DataSource
 
-interface MQConsumer : MessageListener, ExceptionListener, AutoCloseable {
-    fun start()
-}
-
 class OppdragMQConsumer(
-    config: OppdragConfig,
+    config: Config,
     private val postgres: DataSource,
     factory: MQConnectionFactory,
 ) : MQConsumer {
 
-    private val queue = MQQueue(config.kvitteringsKø)
+    private val queue = MQQueue(config.oppdrag.kvitteringsKø)
     private val connection = factory.createConnection(config.mq.username, config.mq.password).apply {
         exceptionListener = this@OppdragMQConsumer
     }
@@ -48,7 +47,7 @@ class OppdragMQConsumer(
     }
 
     override fun onException(exception: JMSException) {
-        session.acknowledgeMode
+//        session.rollback()
         secureLog.error("Feil ved lesing av melding fra MQ", exception)
     }
 
