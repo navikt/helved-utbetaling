@@ -34,6 +34,7 @@ class OppdragMQConsumer(
     }
 
     override fun onException(exception: JMSException) {
+        appLog.error("Feil ved lesing av melding fra MQ ErrorCode: ${exception.errorCode}")
         secureLog.error("Feil ved lesing av melding fra MQ", exception)
     }
 
