@@ -9,13 +9,11 @@ import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
 import javax.jms.Connection
-import javax.jms.JMSException
 
 class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
     override fun send(xml: String, con: Connection) {
-        // todo: undersøk hvilke exceptions som kan bli kastet
         con.transaction { session ->
             session.createProducer(session.createQueue(config.sendKø)).use { producer ->
                 val msg = session.createTextMessage(xml)
@@ -39,14 +37,13 @@ class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
                     "fagsak=${oppdrag.oppdrag110.fagsystemId} behandling=$oppdragId til Oppdragsystemet",
         )
 
-        try {
+        runCatching {
             send(oppdragXml, con)
-        } catch (e: JMSException) {
-            // todo: skal vi sjekke om MQ er utilgjengelig?
-            appLog.error("Klarte ikke sende Oppdrag til OS. ErrorCode: ${e.errorCode}")
-            secureLog.error("Klarte ikke sende Oppdrag til OS. Feil: ", e)
-            throw e
-        }
+        }.onFailure {
+            // TODO: sjekk om feil er relatert til MQ-utilgjengelighet
+            appLog.error("Klarte ikke sende Oppdrag til OS.")
+            secureLog.error("Klarte ikke sende Oppdrag til OS. Feil: ", it)
+        }.getOrThrow()
 
         return oppdrag.oppdrag110.fagsystemId
     }

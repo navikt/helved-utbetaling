@@ -23,7 +23,7 @@ data class MQConfig(
 
 abstract class MQConsumer(
     config: MQConfig,
-    queue: String,
+    private val queue: String,
 ) : MessageListener, ExceptionListener, AutoCloseable {
     private val factory = MQFactory.new(config)
 
@@ -31,9 +31,15 @@ abstract class MQConsumer(
         exceptionListener = this@MQConsumer
     }
 
-    private val session = connection.createSession().apply {
+    private val session = connection.createSession(Session.SESSION_TRANSACTED).apply {
         createConsumer(MQQueue(queue)).apply {
             messageListener = this@MQConsumer
+        }
+    }
+
+    fun depth(): Int = connection.transaction {
+        it.createBrowser(it.createQueue(queue)).use { browsed ->
+            browsed.enumeration.toList().size
         }
     }
 
@@ -66,6 +72,7 @@ object MQFactory {
         }
 }
 
+// TODO: encapsulate connection with a new class to force usage of this transaction method
 fun <T> Connection.transaction(block: (Session) -> T): T =
     createSession(Session.SESSION_TRANSACTED).use { session ->
         runCatching {
