@@ -1,66 +1,70 @@
 package oppdrag.fakes
 
 import com.ibm.mq.jms.MQQueue
+import libs.mq.MQConsumer
+import libs.mq.MQFactory
+import libs.mq.MQProducer
+import libs.mq.transaction
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.Config
 import oppdrag.iverksetting.domene.Kvitteringstatus
-import libs.mq.MQConsumer
-import libs.mq.MQFactory
 import javax.jms.*
 
 class OppdragFake(private val config: Config) : AutoCloseable {
-    val sendKø = SendKøListener(mutableListOf())
-    val avstemmingKø = AvstemmingKøListener(mutableListOf())
-
-    private val oppdragQueue = MQQueue(config.oppdrag.sendKø)
-    private val kvitteringQueue = MQQueue(config.oppdrag.kvitteringsKø)
-    private val avstemmingQueue = MQQueue(config.avstemming.utKø)
-
     private val factory = MQFactory.new(config.mq)
-    private val connection: Connection = factory.createConnection(config.mq.username, config.mq.password)
-    private val session: Session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE).apply {
-        createConsumer(oppdragQueue).apply { messageListener = sendKø }
-        createConsumer(avstemmingQueue).apply { messageListener = avstemmingKø }
-    }
+
+    val sendKø = SendKøListener().apply { start() }
+    val avstemmingKø = AvstemmingKøListener().apply { start() }
 
     /**
      * Oppdrag sin send-kø må svare med en faked kvittering
      */
-    inner class SendKøListener(private val received: MutableList<TextMessage>) : MQConsumer {
+    inner class SendKøListener : MQConsumer(config.mq, config.oppdrag.sendKø), MQProducer {
+        private val received: MutableList<TextMessage> = mutableListOf()
         private val mapper = XMLMapper<Oppdrag>()
+        private val kvitteringQueue = MQQueue(config.oppdrag.kvitteringsKø)
 
         fun getReceived() = received.toList()
-        override fun start() = received.clear()
-        override fun close() = received.clear()
+        fun clearReceived() = received.clear()
 
         override fun onMessage(message: Message) {
             received.add(message as TextMessage)
 
-            val oppdrag = mapper.readValue(message.text)
-                .apply { mmel = Mmel().apply { alvorlighetsgrad = Kvitteringstatus.OK.kode } }
+            val oppdrag = mapper.readValue(message.text).apply {
+                mmel = Mmel().apply {
+                    alvorlighetsgrad = Kvitteringstatus.OK.kode
+                }
+            }
 
-            session.createProducer(kvitteringQueue).use { producer ->
-                val xml = mapper.writeValueAsString(oppdrag)
-                val msg = session.createTextMessage(xml)
-                producer.send(msg)
+            factory.createConnection(config.mq.username, config.mq.password).use { con ->
+                send(mapper.writeValueAsString(oppdrag), con)
             }
         }
 
         override fun onException(exception: JMSException) {
-            error("$oppdragQueue feilet med ${exception.message}")
+            error("${config.oppdrag.sendKø} feilet med ${exception.message}")
+        }
+
+        override fun send(xml: String, con: Connection) {
+            con.transaction { session ->
+                session.createProducer(kvitteringQueue).use { producer ->
+                    producer.send(createMessage(xml))
+                }
+            }
         }
     }
 
     /**
      * Avstemming-køen må bli verifisert i bruk ved grensesnittavstemming.
      */
-    inner class AvstemmingKøListener(private val received: MutableList<TextMessage>) : MQConsumer {
-        fun getReceived() = received.toList()
+    inner class AvstemmingKøListener : MQConsumer(config.mq, config.avstemming.utKø) {
+        private val received: MutableList<TextMessage> = mutableListOf()
+        private val avstemmingQueue = MQQueue(config.avstemming.utKø)
 
-        override fun start() = received.clear()
-        override fun close() = received.clear()
+        fun getReceived() = received.toList()
+        fun clearReceived() = received.clear()
 
         override fun onMessage(message: Message) {
             received.add(message as TextMessage)
@@ -69,10 +73,6 @@ class OppdragFake(private val config: Config) : AutoCloseable {
         override fun onException(exception: JMSException) {
             error("$avstemmingQueue feilet med ${exception.message}")
         }
-    }
-
-    init {
-        connection.start()
     }
 
     /**
@@ -87,7 +87,7 @@ class OppdragFake(private val config: Config) : AutoCloseable {
     }
 
     override fun close() {
-        session.close()
-        connection.close()
+        avstemmingKø.close()
+        sendKø.close()
     }
 }

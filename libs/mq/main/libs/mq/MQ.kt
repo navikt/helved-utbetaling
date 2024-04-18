@@ -2,6 +2,7 @@ package libs.mq
 
 import com.ibm.mq.constants.CMQC
 import com.ibm.mq.jms.MQConnectionFactory
+import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
 import javax.jms.Connection
@@ -18,8 +19,30 @@ data class MQConfig(
     val password: String,
 )
 
-interface MQConsumer : MessageListener, ExceptionListener, AutoCloseable {
-    fun start()
+abstract class MQConsumer(
+    config: MQConfig,
+    queue: String,
+) : MessageListener, ExceptionListener, AutoCloseable {
+    private val factory = MQFactory.new(config)
+
+    private val connection = factory.createConnection(config.username, config.password).apply {
+        exceptionListener = this@MQConsumer
+    }
+
+    private val session = connection.createSession().apply {
+        createConsumer(MQQueue(queue)).apply {
+            messageListener = this@MQConsumer
+        }
+    }
+
+    fun start() {
+        connection.start()
+    }
+
+    override fun close() {
+        session.close()
+        connection.close()
+    }
 }
 
 interface MQProducer {

@@ -12,7 +12,6 @@ import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
-import libs.mq.MQFactory
 import oppdrag.somOppdragLager
 import org.junit.jupiter.api.*
 import kotlin.test.assertEquals
@@ -35,7 +34,7 @@ class OppdragMQConsumerTest {
     @Test
     fun `skal deserialisere kvittering som feilet i testmiljø`() {
         val xml = Resource.read("/kvittering-test.xml")
-        val kvittering = TestEnvironment.createSoapMessage(xml)
+        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
         val oppdragXml = consumer.leggTilNamespacePrefiks(kvittering.text)
 
         assertDoesNotThrow {
@@ -59,7 +58,7 @@ class OppdragMQConsumerTest {
         }
 
         val xml = Resource.read("/kvittering-test.xml")
-        val kvittering = TestEnvironment.createSoapMessage(xml)
+        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
 
         consumer.onMessage(kvittering)
 
@@ -85,7 +84,7 @@ class OppdragMQConsumerTest {
         }
 
         val xml = Resource.read("/kvittering-akseptert.xml")
-        val kvittering = TestEnvironment.createSoapMessage(xml)
+        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
         consumer.onMessage(kvittering)
 
         // todo: better assertions
@@ -95,7 +94,7 @@ class OppdragMQConsumerTest {
     @Test
     fun `oppretter ikke oppdrag hvis henting av oppdrag feiler`() {
         val xml = Resource.read("/kvittering-akseptert.xml")
-        val kvittering = TestEnvironment.createSoapMessage(xml)
+        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
 
 //        assertThrows<Exception> {
         consumer.onMessage(kvittering)
@@ -116,7 +115,7 @@ class OppdragMQConsumerTest {
         }
 
         val xml = Resource.read("/kvittering-akseptert.xml")
-        val kvittering = TestEnvironment.createSoapMessage(xml)
+        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
         consumer.onMessage(kvittering)
 
         // todo: better assertions
@@ -124,10 +123,8 @@ class OppdragMQConsumerTest {
     }
 
     internal companion object {
-        val consumer = TestEnvironment.postgres.withDatasource {
-            val config = TestEnvironment.config
-            val factory = MQFactory.new(config.mq)
-            OppdragMQConsumer(config, it, factory)
+        val consumer = TestEnvironment.postgres.withDatasource { datasource ->
+            OppdragMQConsumer(TestEnvironment.config, datasource)
         }
 
         @BeforeAll
