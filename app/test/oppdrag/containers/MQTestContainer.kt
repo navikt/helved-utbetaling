@@ -1,6 +1,6 @@
 package oppdrag.containers
 
-import oppdrag.MQConfig
+import libs.mq.MQConfig
 import org.testcontainers.containers.GenericContainer
 
 class MQTestContainer : AutoCloseable {

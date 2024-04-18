@@ -9,7 +9,6 @@ import javax.xml.stream.XMLInputFactory
 import javax.xml.transform.stream.StreamSource
 import kotlin.reflect.KClass
 
-
 class XMLMapper<T : Any>(private val type: KClass<T>) {
     private val context = JAXBContext.newInstance(type.java)
     private val marshaller = context.createMarshaller()

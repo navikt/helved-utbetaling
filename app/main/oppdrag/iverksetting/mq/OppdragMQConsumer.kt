@@ -11,7 +11,7 @@ import oppdrag.Config
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
-import oppdrag.mq.MQConsumer
+import libs.mq.MQConsumer
 import oppdrag.postgres.transaction
 import javax.jms.JMSException
 import javax.jms.Message

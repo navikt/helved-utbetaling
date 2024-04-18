@@ -12,7 +12,7 @@ import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
-import oppdrag.mq.MQFactory
+import libs.mq.MQFactory
 import oppdrag.somOppdragLager
 import org.junit.jupiter.api.*
 import kotlin.test.assertEquals

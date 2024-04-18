@@ -1,6 +1,7 @@
 package oppdrag
 
 import libs.auth.AzureConfig
+import libs.mq.MQConfig
 import libs.utils.env
 
 data class Config(
@@ -8,7 +9,14 @@ data class Config(
     val oppdrag: OppdragConfig = OppdragConfig(),
     val postgres: PostgresConfig = PostgresConfig(),
     val azure: AzureConfig = AzureConfig(),
-    val mq: MQConfig = MQConfig(),
+    val mq: MQConfig = MQConfig(
+        host = env("MQ_HOSTNAME"),
+        port = env("MQ_PORT"),
+        channel = env("MQ_CHANNEL"),
+        manager = env("MQ_QUEUE_MANAGER"),
+        username = env("SERVICEUSER_NAME"),
+        password = env("SERVICEUSER_PASSWORD"),
+    ),
 )
 
 data class AvstemmingConfig(
@@ -23,15 +31,6 @@ data class OppdragConfig(
 )
 
 typealias Queue = String
-
-data class MQConfig(
-    val host: String = env("MQ_HOSTNAME"),
-    val port: Int = env("MQ_PORT"),
-    val channel: String = env("MQ_CHANNEL"),
-    val manager: String = env("MQ_QUEUE_MANAGER"),
-    val username: String = env("SERVICEUSER_NAME"),
-    val password: String = env("SERVICEUSER_PASSWORD"),
-)
 
 data class PostgresConfig(
     val host: String = env("NAIS_DATABASE_INNSENDING_INNSENDING_HOST"),

@@ -11,6 +11,7 @@ val ktorVersion = "2.3.9"
 dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":libs:auth"))
+    implementation(project(":libs:mq"))
     implementation(project(":libs:xml"))
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240408113510_4a2db84")

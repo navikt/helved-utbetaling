@@ -6,8 +6,8 @@ import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.Config
 import oppdrag.iverksetting.domene.Kvitteringstatus
-import oppdrag.mq.MQConsumer
-import oppdrag.mq.MQFactory
+import libs.mq.MQConsumer
+import libs.mq.MQFactory
 import javax.jms.*
 
 class OppdragFake(private val config: Config) : AutoCloseable {

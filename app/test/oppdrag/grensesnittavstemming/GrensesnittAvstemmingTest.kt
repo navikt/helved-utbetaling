@@ -74,21 +74,13 @@ class GrensesnittAvstemmingTest {
     }
 }
 
+/**
+ * Replaces the content between the XML tags with the given replacement.
+ * @example <tag>original</tag> -> <tag>replacement</tag>
+ */
 private fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
     return replace(
         regex = Regex("(?<=<$tag>).*(?=</$tag>)"),
         replacement = replacement
     )
 }
-
-//private fun xml(avstemming: Avstemmingsdata): String {
-//    val context: JAXBContext = JAXBContext.newInstance(Avstemmingsdata::class.java)
-//    val marshaller = context.createMarshaller().apply {
-//        setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
-//    }
-//    val stringWriter = StringWriter()
-//    // see https://stackoverflow.com/a/5870064
-//    val jaxbWrapper = JAXBElement(QName("uri", "local"), Avstemmingsdata::class.java, avstemming)
-//    marshaller.marshal(jaxbWrapper, stringWriter)
-//    return stringWriter.toString()
-//}

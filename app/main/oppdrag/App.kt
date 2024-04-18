@@ -27,7 +27,7 @@ import oppdrag.grensesnittavstemming.grensesnittavstemmingRoute
 import oppdrag.iverksetting.OppdragService
 import oppdrag.iverksetting.iverksettingRoute
 import oppdrag.iverksetting.mq.OppdragMQConsumer
-import oppdrag.mq.MQFactory
+import libs.mq.MQFactory
 import oppdrag.postgres.Postgres
 
 fun main() {
