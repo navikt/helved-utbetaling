@@ -1,12 +1,13 @@
 package oppdrag.iverksetting.mq
 
 import com.ibm.mq.jms.MQQueue
+import libs.mq.MQProducer
+import libs.mq.transaction
 import libs.utils.appLog
+import libs.utils.secureLog
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
-import libs.mq.MQProducer
-import libs.mq.transaction
 import javax.jms.Connection
 import javax.jms.JMSException
 
@@ -42,7 +43,8 @@ class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
             send(oppdragXml, con)
         } catch (e: JMSException) {
             // todo: skal vi sjekke om MQ er utilgjengelig?
-            appLog.error("Klarte ikke sende Oppdrag til OS. Feil: ", e)
+            appLog.error("Klarte ikke sende Oppdrag til OS. ErrorCode: ${e.errorCode}")
+            secureLog.error("Klarte ikke sende Oppdrag til OS. Feil: ", e)
             throw e
         }
 

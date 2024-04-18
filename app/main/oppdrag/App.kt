@@ -22,6 +22,7 @@ import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.mq.MQFactory
 import libs.utils.appLog
+import libs.utils.secureLog
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingProducer
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
 import oppdrag.grensesnittavstemming.grensesnittavstemmingRoute
@@ -31,7 +32,10 @@ import oppdrag.iverksetting.mq.OppdragMQConsumer
 import oppdrag.postgres.Postgres
 
 fun main() {
-    Thread.currentThread().setUncaughtExceptionHandler { _, e -> appLog.error("Uhåndtert feil", e) }
+    Thread.currentThread().setUncaughtExceptionHandler { _, e ->
+        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")
+        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+    }
     embeddedServer(Netty, port = 8080, module = Application::server).start(wait = true)
 }
 

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import jakarta.xml.ws.WebServiceException
 import jakarta.xml.ws.soap.SOAPFaultException
+import libs.utils.appLog
 import libs.utils.secureLog
 import libs.ws.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.SimulerBeregningRequest
@@ -74,6 +75,7 @@ class SimuleringService(
             throw when (e) {
                 is SoapException -> expload(e)
                 else -> {
+                    appLog.error("Klarte ikke å deserialisere fault")
                     secureLog.error("Klarte ikke å deserialisere fault", e)
                     soapError("Ukjent feil ved simulering: ${e.message}", e)
                 }

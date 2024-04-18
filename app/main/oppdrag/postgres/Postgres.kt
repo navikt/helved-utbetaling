@@ -48,7 +48,7 @@ fun <T> DataSource.transaction(block: (Connection) -> T): T {
             connection.commit()
             connection.autoCommit = true
         }.onFailure {
-            appLog.error("Rolling back database transaction, please check secureLogs")
+            appLog.error("Rolling back database transaction, stacktrace in secureLogs")
             secureLog.error("Rolling back database transaction", it)
             connection.rollback()
             connection.autoCommit = true
