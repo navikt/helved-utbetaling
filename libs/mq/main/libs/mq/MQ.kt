@@ -1,14 +1,22 @@
-package oppdrag.mq
+package libs.mq
 
 import com.ibm.mq.constants.CMQC
 import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
-import oppdrag.MQConfig
 import javax.jms.Connection
 import javax.jms.ExceptionListener
 import javax.jms.MessageListener
 import javax.jms.Session
+
+data class MQConfig(
+    val host: String,
+    val port: Int,
+    val channel: String,
+    val manager: String,
+    val username: String,
+    val password: String,
+)
 
 interface MQConsumer : MessageListener, ExceptionListener, AutoCloseable {
     fun start()

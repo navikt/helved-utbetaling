@@ -6,8 +6,8 @@ import libs.utils.secureLog
 import libs.xml.XMLMapper
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import oppdrag.Config
-import oppdrag.mq.MQProducer
-import oppdrag.mq.transaction
+import libs.mq.MQProducer
+import libs.mq.transaction
 import javax.jms.Connection
 import javax.xml.namespace.QName
 

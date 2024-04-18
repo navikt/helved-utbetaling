@@ -1,6 +1,7 @@
 package oppdrag
 
 import libs.auth.AzureConfig
+import libs.mq.MQConfig
 
 fun testConfig(
     postgres: PostgresConfig,

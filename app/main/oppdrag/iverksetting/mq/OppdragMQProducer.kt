@@ -5,8 +5,8 @@ import libs.utils.appLog
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
-import oppdrag.mq.MQProducer
-import oppdrag.mq.transaction
+import libs.mq.MQProducer
+import libs.mq.transaction
 import javax.jms.Connection
 import javax.jms.JMSException
 
