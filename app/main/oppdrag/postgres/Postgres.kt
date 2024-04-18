@@ -22,7 +22,7 @@ internal object Postgres {
                 jdbcUrl = "jdbc:postgresql://${config.host}:${config.port}/${config.database}"
                 driverClassName = "org.postgresql.Driver"
                 minimumIdle = 1
-                maximumPoolSize = 3 // todo: hvor stor skal poolen være?
+                maximumPoolSize = 8
             }.apply(hikariConfig)
         ).apply {
             Flyway
