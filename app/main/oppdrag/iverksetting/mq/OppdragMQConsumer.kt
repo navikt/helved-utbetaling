@@ -4,7 +4,9 @@ import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import libs.utils.appLog
 import libs.utils.secureLog
+import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.Config
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
@@ -21,7 +23,7 @@ class OppdragMQConsumer(
     private val postgres: DataSource,
     factory: MQConnectionFactory,
 ) : MQConsumer {
-
+    private val mapper: XMLMapper<Oppdrag> = XMLMapper()
     private val queue = MQQueue(config.oppdrag.kvitteringsKø)
     private val connection = factory.createConnection(config.mq.username, config.mq.password).apply {
         exceptionListener = this@OppdragMQConsumer
@@ -36,6 +38,7 @@ class OppdragMQConsumer(
         connection.start()
     }
 
+    // todo: how to do session transactions on a consumer?
     override fun onMessage(message: Message) {
         when (message) {
             is TextMessage -> tryBehandleMelding(message)
@@ -47,7 +50,6 @@ class OppdragMQConsumer(
     }
 
     override fun onException(exception: JMSException) {
-//        session.rollback()
         secureLog.error("Feil ved lesing av melding fra MQ", exception)
     }
 
@@ -67,7 +69,7 @@ class OppdragMQConsumer(
     }
 
     private fun behandleMelding(melding: TextMessage) {
-        val kvittering = OppdragXmlMapper.tilOppdrag(leggTilNamespacePrefiks(melding.text))
+        val kvittering = mapper.readValue(leggTilNamespacePrefiks(melding.text))
         val oppdragIdKvittering = kvittering.id
 
         appLog.debug("Henter oppdrag {} fra databasen", oppdragIdKvittering)

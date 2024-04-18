@@ -8,6 +8,7 @@ import oppdrag.MQConfig
 import javax.jms.Connection
 import javax.jms.ExceptionListener
 import javax.jms.MessageListener
+import javax.jms.Session
 
 interface MQConsumer : MessageListener, ExceptionListener, AutoCloseable {
     fun start()
@@ -31,3 +32,12 @@ object MQFactory {
             setIntProperty(JmsConstants.JMS_IBM_CHARACTER_SET, JmsConstants.CCSID_UTF8)
         }
 }
+
+fun <T> Connection.transaction(block: (Session) -> T): T =
+    createSession(Session.SESSION_TRANSACTED).use { session ->
+        session
+            .runCatching(block)
+            .onSuccess { session.commit() }
+            .onFailure { session.rollback() }
+            .getOrThrow()
+    }

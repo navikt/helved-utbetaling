@@ -22,11 +22,11 @@ import java.time.LocalDate
 import javax.net.ssl.SSLException
 
 private object SimulerAction {
-    private const val SIMULER =
-        "http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt/simulerFpService/"
-
-    const val BEREGNING = "$SIMULER/simulerBeregningRequest"
-    const val SEND_OPPDRAG = "$SIMULER/sendInnOppdragRequest"
+    private const val HOST = "http://nav.no"
+    private const val PATH = "system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"
+    private const val SERVICE = "simulerFpService"
+    const val BEREGNING = "$HOST/$PATH/$SERVICE/simulerBeregningRequest"
+    const val SEND_OPPDRAG = "$HOST/$PATH/$SERVICE/sendInnOppdragRequest"
 }
 
 class SimuleringService(
@@ -36,6 +36,7 @@ class SimuleringService(
     },
 ) {
 
+    // todo: kan/når er svar fra simulering tom?
     suspend fun simuler(request: SimuleringRequestBody): Simulering? {
         val request = SimuleringRequestBuilder(request).build()
         val xml = xml(request.request)
