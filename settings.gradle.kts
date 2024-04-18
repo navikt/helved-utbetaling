@@ -8,4 +8,5 @@ include(
     "libs:http",
     "libs:utils",
     "libs:ws",
+    "libs:xml",
 )

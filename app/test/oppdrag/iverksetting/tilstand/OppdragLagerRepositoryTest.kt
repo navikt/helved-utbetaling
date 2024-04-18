@@ -1,11 +1,13 @@
 package oppdrag.iverksetting.tilstand
 
+import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Mmel
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import oppdrag.Resource
 import oppdrag.TestEnvironment
 import oppdrag.etUtbetalingsoppdrag
-import oppdrag.iverksetting.mq.OppdragXmlMapper
 import oppdrag.somOppdragLager
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -135,11 +137,11 @@ class OppdragLagerRepositoryTest {
         }
     }
 
-    private fun avvistKvitteringsmelding() =
-        OppdragXmlMapper.tilOppdrag(
-            this::class.java.getResourceAsStream("/kvittering-avvist.xml")
-                ?.bufferedReader().use { it?.readText() ?: "" },
-        ).mmel
+    private val mapper = XMLMapper<Oppdrag>()
+
+    private fun avvistKvitteringsmelding(): Mmel {
+        return mapper.readValue(Resource.read("/kvittering-avvist.xml")).mmel
+    }
 
     private fun Mmel.erLik(andre: Mmel) =
         systemId == andre.systemId &&

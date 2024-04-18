@@ -1,12 +1,13 @@
 package oppdrag.grensesnittavstemming
 
+import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.*
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.Resource
 import oppdrag.etUtbetalingsoppdrag
-import oppdrag.iverksetting.mq.OppdragXmlMapper
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.somOppdragLager
 import org.junit.jupiter.api.Test
@@ -211,8 +212,8 @@ internal class GrensesnittavstemmingMapperTest {
         assertEquals(Fortegn.T, actual.avvistFortegn)
     }
 
-    private fun avvistKvitteringsmelding() =
-        OppdragXmlMapper.tilOppdrag(Resource.read("/kvittering-avvist.xml")).mmel
+    private val mapper = XMLMapper<Oppdrag>()
+    private fun avvistKvitteringsmelding() = mapper.readValue(Resource.read("/kvittering-avvist.xml")).mmel
 
     companion object {
         private val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")

@@ -1,6 +1,8 @@
 package oppdrag.iverksetting.mq
 
+import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.Resource
 import oppdrag.TestEnvironment
 import oppdrag.etUtbetalingsoppdrag
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.*
 import kotlin.test.assertEquals
 
 class OppdragMQConsumerTest {
+    private val mapper = XMLMapper<Oppdrag>()
 
     @BeforeEach
     fun clear() {
@@ -25,7 +28,7 @@ class OppdragMQConsumerTest {
     @Test
     fun `skal tolke kvittering riktig ved ok`() {
         val xml = Resource.read("/kvittering-akseptert.xml")
-        val oppdrag = OppdragXmlMapper.tilOppdrag(xml)
+        val oppdrag = mapper.readValue(xml)
         assertEquals(Kvitteringstatus.OK, oppdrag.kvitteringstatus)
     }
 
@@ -36,14 +39,14 @@ class OppdragMQConsumerTest {
         val oppdragXml = consumer.leggTilNamespacePrefiks(kvittering.text)
 
         assertDoesNotThrow {
-            OppdragXmlMapper.tilOppdrag(oppdragXml).id
+            mapper.readValue(oppdragXml).id
         }
     }
 
     @Test
     fun `skal tolke kvittering riktig ved feil`() {
         val xml = Resource.read("/kvittering-avvist.xml")
-        val oppdrag = OppdragXmlMapper.tilOppdrag(xml)
+        val oppdrag = mapper.readValue(xml)
         assertEquals(Kvitteringstatus.AVVIST_FUNKSJONELLE_FEIL, oppdrag.kvitteringstatus)
     }
 

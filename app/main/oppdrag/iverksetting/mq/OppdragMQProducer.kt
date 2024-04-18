@@ -2,17 +2,20 @@ package oppdrag.iverksetting.mq
 
 import com.ibm.mq.jms.MQQueue
 import libs.utils.appLog
+import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
 import oppdrag.mq.MQProducer
+import oppdrag.mq.transaction
 import javax.jms.Connection
 import javax.jms.JMSException
 
 class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
+    private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
     override fun send(xml: String, con: Connection) {
-        con.createSession().use { session ->
-            // todo: check queue depth
+        // todo: undersøk hvilke exceptions som kan bli kastet
+        con.transaction { session ->
             session.createProducer(session.createQueue(config.sendKø)).use { producer ->
                 val msg = session.createTextMessage(xml)
                 msg.jmsReplyTo = MQQueue(config.kvitteringsKø)
@@ -28,7 +31,7 @@ class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
         }
 
         val oppdragId = oppdrag.oppdrag110?.oppdragsLinje150?.lastOrNull()?.henvisning
-        val oppdragXml = OppdragXmlMapper.tilXml(oppdrag)
+        val oppdragXml = mapper.writeValueAsString(oppdrag)
 
         appLog.info(
             "Sender oppdrag for fagsystem=${oppdrag.oppdrag110.kodeFagomraade} og " +

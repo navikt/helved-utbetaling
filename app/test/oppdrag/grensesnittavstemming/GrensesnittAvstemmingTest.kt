@@ -3,6 +3,7 @@ package oppdrag.grensesnittavstemming
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
+import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
@@ -10,15 +11,12 @@ import oppdrag.*
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import java.io.StringWriter
 import java.time.LocalDateTime
-import javax.xml.bind.JAXBContext
-import javax.xml.bind.JAXBElement
-import javax.xml.bind.Marshaller
 import javax.xml.namespace.QName
 import kotlin.test.assertEquals
 
 class GrensesnittAvstemmingTest {
+    private val mapper = XMLMapper<Avstemmingsdata>()
 
     @AfterEach
     fun cleanup() {
@@ -64,7 +62,10 @@ class GrensesnittAvstemmingTest {
 
             val expected = avstemmingMapper
                 .lagAvstemmingsmeldinger()
-                .map(::xml)
+                .map {
+                    val avstem = mapper.wrapInTag(it, QName("uri", "local"))
+                    mapper.writeValueAsString(avstem)
+                }
                 .map(TestEnvironment::createSoapMessage)
                 .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
 
@@ -80,14 +81,14 @@ private fun String.replaceBetweenXmlTag(tag: String, replacement: String): Strin
     )
 }
 
-private fun xml(avstemming: Avstemmingsdata): String {
-    val context: JAXBContext = JAXBContext.newInstance(Avstemmingsdata::class.java)
-    val marshaller = context.createMarshaller().apply {
-        setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
-    }
-    val stringWriter = StringWriter()
-    // see https://stackoverflow.com/a/5870064
-    val jaxbWrapper = JAXBElement(QName("uri", "local"), Avstemmingsdata::class.java, avstemming)
-    marshaller.marshal(jaxbWrapper, stringWriter)
-    return stringWriter.toString()
-}
+//private fun xml(avstemming: Avstemmingsdata): String {
+//    val context: JAXBContext = JAXBContext.newInstance(Avstemmingsdata::class.java)
+//    val marshaller = context.createMarshaller().apply {
+//        setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
+//    }
+//    val stringWriter = StringWriter()
+//    // see https://stackoverflow.com/a/5870064
+//    val jaxbWrapper = JAXBElement(QName("uri", "local"), Avstemmingsdata::class.java, avstemming)
+//    marshaller.marshal(jaxbWrapper, stringWriter)
+//    return stringWriter.toString()
+//}

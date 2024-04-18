@@ -1,10 +1,10 @@
 package oppdrag.iverksetting.tilstand
 
+import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import oppdrag.iverksetting.mq.OppdragXmlMapper
 import java.time.LocalDateTime
 import java.util.*
 
@@ -23,6 +23,8 @@ data class OppdragLager(
     val versjon: Int = 0,
 ) {
     companion object {
+        private val mapper: XMLMapper<Oppdrag> = XMLMapper()
+
         fun lagFraOppdrag(
             utbetalingsoppdrag: Utbetalingsoppdrag,
             oppdrag: Oppdrag,
@@ -34,7 +36,7 @@ data class OppdragLager(
             iverksetting_id = utbetalingsoppdrag.iverksettingId,
             avstemming_tidspunkt = utbetalingsoppdrag.avstemmingstidspunkt,
             utbetalingsoppdrag = utbetalingsoppdrag,
-            utgaaende_oppdrag = OppdragXmlMapper.tilXml(oppdrag),
+            utgaaende_oppdrag = mapper.writeValueAsString(oppdrag),
             kvitteringsmelding = null,
             versjon = versjon,
         )
