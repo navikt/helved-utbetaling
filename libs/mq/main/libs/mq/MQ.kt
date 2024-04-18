@@ -5,6 +5,8 @@ import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
+import libs.utils.appLog
+import libs.utils.secureLog
 import javax.jms.Connection
 import javax.jms.ExceptionListener
 import javax.jms.MessageListener
@@ -66,9 +68,13 @@ object MQFactory {
 
 fun <T> Connection.transaction(block: (Session) -> T): T =
     createSession(Session.SESSION_TRANSACTED).use { session ->
-        session
-            .runCatching(block)
-            .onSuccess { session.commit() }
-            .onFailure { session.rollback() }
-            .getOrThrow()
+        runCatching {
+            block(session)
+        }.onSuccess {
+            session.commit()
+        }.onFailure {
+            appLog.error("Rolling back MQ transaction, please check secureLogs or BOQ (backout queue)")
+            secureLog.error("Rolling back MQ transaction", it)
+            session.rollback()
+        }.getOrThrow()
     }
