@@ -20,6 +20,7 @@ import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import libs.auth.TokenProvider
 import libs.auth.configure
+import libs.mq.MQFactory
 import libs.utils.appLog
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingProducer
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
@@ -27,7 +28,6 @@ import oppdrag.grensesnittavstemming.grensesnittavstemmingRoute
 import oppdrag.iverksetting.OppdragService
 import oppdrag.iverksetting.iverksettingRoute
 import oppdrag.iverksetting.mq.OppdragMQConsumer
-import libs.mq.MQFactory
 import oppdrag.postgres.Postgres
 
 fun main() {
@@ -64,7 +64,6 @@ fun Application.server(config: Config = Config()) {
     val oppdragConsumer = OppdragMQConsumer(
         config = config,
         postgres = datasource,
-        factory = mqFactory,
     )
 
     val oppdragService = OppdragService(

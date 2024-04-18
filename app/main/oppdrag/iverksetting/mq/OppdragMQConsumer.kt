@@ -1,7 +1,6 @@
 package oppdrag.iverksetting.mq
 
-import com.ibm.mq.jms.MQConnectionFactory
-import com.ibm.mq.jms.MQQueue
+import libs.mq.MQConsumer
 import libs.utils.appLog
 import libs.utils.secureLog
 import libs.xml.XMLMapper
@@ -11,7 +10,6 @@ import oppdrag.Config
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
-import libs.mq.MQConsumer
 import oppdrag.postgres.transaction
 import javax.jms.JMSException
 import javax.jms.Message
@@ -21,22 +19,8 @@ import javax.sql.DataSource
 class OppdragMQConsumer(
     config: Config,
     private val postgres: DataSource,
-    factory: MQConnectionFactory,
-) : MQConsumer {
-    private val mapper: XMLMapper<Oppdrag> = XMLMapper()
-    private val queue = MQQueue(config.oppdrag.kvitteringsKø)
-    private val connection = factory.createConnection(config.mq.username, config.mq.password).apply {
-        exceptionListener = this@OppdragMQConsumer
-    }
-    private val session = connection.createSession().apply {
-        createConsumer(queue).apply {
-            messageListener = this@OppdragMQConsumer
-        }
-    }
-
-    override fun start() {
-        connection.start()
-    }
+    private val mapper: XMLMapper<Oppdrag> = XMLMapper(),
+) : MQConsumer(config.mq, config.oppdrag.kvitteringsKø) {
 
     // todo: how to do session transactions on a consumer?
     override fun onMessage(message: Message) {
@@ -121,10 +105,5 @@ class OppdragMQConsumer(
         return xml
             .replace("<oppdrag xmlns=", "<ns2:oppdrag xmlns:ns2=", ignoreCase = true)
             .replace("</oppdrag>", "</ns2:oppdrag>", ignoreCase = true)
-    }
-
-    override fun close() {
-        session.close()
-        connection.close()
     }
 }

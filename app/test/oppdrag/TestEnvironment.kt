@@ -15,7 +15,6 @@ import oppdrag.containers.PostgresTestContainer
 import oppdrag.fakes.AzureFake
 import oppdrag.fakes.OppdragFake
 import oppdrag.postgres.map
-import javax.jms.TextMessage
 
 object TestEnvironment : AutoCloseable {
     val mq: MQTestContainer = MQTestContainer()
@@ -24,8 +23,6 @@ object TestEnvironment : AutoCloseable {
     val config: Config = testConfig(postgres.config, mq.config, azure.config)
     val oppdrag = OppdragFake(config)
 
-    fun createSoapMessage(xml: String): TextMessage = oppdrag.createMessage(xml)
-
     fun clearTables() = postgres.transaction { con ->
         con.prepareStatement("TRUNCATE TABLE oppdrag_lager").execute()
         con.prepareStatement("TRUNCATE TABLE simulering_lager").execute()
@@ -33,8 +30,8 @@ object TestEnvironment : AutoCloseable {
     }
 
     fun clearMQ() {
-        oppdrag.sendKø.start()
-        oppdrag.avstemmingKø.start()
+        oppdrag.sendKø.clearReceived()
+        oppdrag.avstemmingKø.clearReceived()
     }
 
     fun tableSize(table: String): Int? = postgres.transaction { con ->
@@ -47,6 +44,7 @@ object TestEnvironment : AutoCloseable {
         postgres.close()
         mq.close()
         azure.close()
+        oppdrag.close()
         oppdrag.close()
     }
 }
@@ -71,3 +69,14 @@ val ApplicationTestBuilder.httpClient: HttpClient
             }
         }
     }
+
+/**
+ * Replaces the content between the XML tags with the given replacement.
+ * @example <tag>original</tag> -> <tag>replacement</tag>
+ */
+fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
+    return replace(
+        regex = Regex("(?<=<$tag>).*(?=</$tag>)"),
+        replacement = replacement
+    )
+}

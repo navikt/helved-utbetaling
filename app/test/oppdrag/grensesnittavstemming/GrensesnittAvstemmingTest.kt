@@ -66,21 +66,10 @@ class GrensesnittAvstemmingTest {
                     val avstem = mapper.wrapInTag(it, QName("uri", "local"))
                     mapper.writeValueAsString(avstem)
                 }
-                .map(TestEnvironment::createSoapMessage)
+                .map(TestEnvironment.oppdrag::createMessage)
                 .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
 
             assertEquals(expected, actual)
         }
     }
-}
-
-/**
- * Replaces the content between the XML tags with the given replacement.
- * @example <tag>original</tag> -> <tag>replacement</tag>
- */
-private fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
-    return replace(
-        regex = Regex("(?<=<$tag>).*(?=</$tag>)"),
-        replacement = replacement
-    )
 }
