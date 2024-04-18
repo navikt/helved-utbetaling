@@ -2,12 +2,12 @@ package oppdrag.postgres
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import libs.utils.appLog
+import libs.utils.secureLog
 import oppdrag.PostgresConfig
 import org.flywaydb.core.Flyway
 import java.sql.Connection
-import java.sql.PreparedStatement
 import java.sql.ResultSet
-import java.util.*
 import javax.sql.DataSource
 
 internal object Postgres {
@@ -41,26 +41,17 @@ fun <T : Any> ResultSet.map(block: (ResultSet) -> T): List<T> =
 
 fun <T> DataSource.transaction(block: (Connection) -> T): T {
     return this.connection.use { connection ->
-        try {
+        runCatching {
             connection.autoCommit = false
-            val result = block(connection)
+            block(connection)
+        }.onSuccess {
             connection.commit()
-            result
-        } catch (e: Throwable) {
-            connection.rollback()
-            throw e
-        } finally {
             connection.autoCommit = true
-        }
-    }
-}
-
-fun ResultSet.getUUID(columnLabel: String): UUID = UUID.fromString(this.getString(columnLabel))
-
-fun PreparedStatement.setNullableObject(index: Int, obj: Any?, type: Int) {
-    if (obj != null) {
-        this.setObject(index, obj)
-    } else {
-        this.setNull(index, type)
+        }.onFailure {
+            appLog.error("Rolling back database transaction, please check secureLogs")
+            secureLog.error("Rolling back database transaction", it)
+            connection.rollback()
+            connection.autoCommit = true
+        }.getOrThrow()
     }
 }
