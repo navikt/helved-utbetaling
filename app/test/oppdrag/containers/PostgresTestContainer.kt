@@ -34,7 +34,7 @@ class PostgresTestContainer : AutoCloseable {
     fun <T> withDatasource(block: (DataSource) -> T): T = block(datasource)
 
     override fun close() {
-//        postgres.stop() // dont stop on local machine - reusable testcontainers
+//        postgres.stop() // dont stop if using reusable testcontainers
     }
 
     private fun init(config: PostgresConfig): DataSource =
@@ -43,6 +43,5 @@ class PostgresTestContainer : AutoCloseable {
             idleTimeout = 10_000
             connectionTimeout = 5_000
             maxLifetime = 900_000
-//            connectionTestQuery = "SELECT 1"
         }
 }

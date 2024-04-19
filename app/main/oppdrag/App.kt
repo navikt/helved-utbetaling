@@ -12,7 +12,6 @@ import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.openapi.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
@@ -94,7 +93,7 @@ fun Application.server(config: Config = Config()) {
             iverksettingRoute(oppdragService, datasource)
             grensesnittavstemmingRoute(avstemmingService)
         }
-        openAPI(path = "api", swaggerFile = "openapi.yml")
+//        openAPI(path = "api", swaggerFile = "openapi.yml")
         actuators(prometheus)
     }
 }
