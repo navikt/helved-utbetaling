@@ -5,9 +5,9 @@ import org.testcontainers.containers.GenericContainer
 
 class MQTestContainer : AutoCloseable {
     private val mq = GenericContainer<Nothing>("ibmcom/mq").apply {
-        withReuse(true) // FIXME: feil i transaksjoner eller må jeg gjøre cleanup?
-        withLabel("app", "oppdrag")
-        withCreateContainerCmdModifier { it.withName("oppdrag-mq") }
+//        withReuse(true)
+//        withLabel("app", "oppdrag")
+//        withCreateContainerCmdModifier { it.withName("oppdrag-mq") }
         withEnv("LICENSE", "accept")
         withEnv("MQ_QMGR_NAME", "QM1")
         withNetwork(null)
@@ -25,6 +25,6 @@ class MQTestContainer : AutoCloseable {
         )
 
     override fun close() {
-//        mq.stop()
+//        mq.stop() // dont stop if using reusable testcontainers
     }
 }
