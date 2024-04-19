@@ -8,7 +8,9 @@ import libs.utils.secureLog
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
+import java.lang.Exception
 import javax.jms.Connection
+import javax.jms.Message
 
 class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
@@ -18,9 +20,19 @@ class OppdragMQProducer(private val config: OppdragConfig) : MQProducer {
             session.createProducer(session.createQueue(config.sendKø)).use { producer ->
                 val msg = session.createTextMessage(xml)
                 msg.jmsReplyTo = MQQueue(config.kvitteringsKø)
-                producer.send(msg)
+                producer.send(msg, this)
             }
         }
+    }
+
+    override fun onCompletion(message: Message) {
+        appLog.info("Melding sendt til Oppdragsystemet: ${message.acknowledge()}}")
+        secureLog.info("Melding sendt til Oppdragsystemet: $message}")
+    }
+
+    override fun onException(message: Message, exception: Exception) {
+        appLog.error("Feil ved sending til Oppdragsystemet: $message")
+        secureLog.error("Feil ved sending til Oppdragsystemet: $message", exception)
     }
 
     fun sendOppdrag(oppdrag: Oppdrag, con: Connection): String {
