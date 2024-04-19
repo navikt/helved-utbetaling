@@ -7,10 +7,7 @@ import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
 import libs.utils.appLog
 import libs.utils.secureLog
-import javax.jms.Connection
-import javax.jms.ExceptionListener
-import javax.jms.MessageListener
-import javax.jms.Session
+import javax.jms.*
 
 data class MQConfig(
     val host: String,
@@ -23,7 +20,7 @@ data class MQConfig(
 
 abstract class MQConsumer(
     config: MQConfig,
-    private val queue: String,
+    private val queueName: String,
 ) : MessageListener, ExceptionListener, AutoCloseable {
     private val factory = MQFactory.new(config)
 
@@ -31,14 +28,14 @@ abstract class MQConsumer(
         exceptionListener = this@MQConsumer
     }
 
-    private val session = connection.createSession(Session.SESSION_TRANSACTED).apply {
-        createConsumer(MQQueue(queue)).apply {
+    private val session = connection.createSession(true, 0).apply {
+        createConsumer(MQQueue(queueName)).apply {
             messageListener = this@MQConsumer
         }
     }
 
-    fun depth(): Int = connection.transaction {
-        it.createBrowser(it.createQueue(queue)).use { browsed ->
+    fun queueDepth(): Int = connection.transaction {
+        it.createBrowser(it.createQueue(queueName)).use { browsed ->
             browsed.enumeration.toList().size
         }
     }
@@ -53,7 +50,7 @@ abstract class MQConsumer(
     }
 }
 
-interface MQProducer {
+interface MQProducer : CompletionListener {
     fun send(xml: String, con: Connection)
 }
 
@@ -72,16 +69,19 @@ object MQFactory {
         }
 }
 
-// TODO: encapsulate connection with a new class to force usage of this transaction method
 fun <T> Connection.transaction(block: (Session) -> T): T =
-    createSession(Session.SESSION_TRANSACTED).use { session ->
+    createSession(true, 0).use { session ->
         runCatching {
+            appLog.debug("Session created {}}", session)
             block(session)
         }.onSuccess {
+            appLog.debug("Session committed successfully {}", session)
             session.commit()
+            session.close()
         }.onFailure {
             appLog.error("Rolling back MQ transaction, please check secureLogs or BOQ (backout queue)")
             secureLog.error("Rolling back MQ transaction", it)
             session.rollback()
+            session.close()
         }.getOrThrow()
     }

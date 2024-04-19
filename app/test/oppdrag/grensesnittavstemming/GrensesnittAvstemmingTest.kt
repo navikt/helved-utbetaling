@@ -20,7 +20,10 @@ class GrensesnittAvstemmingTest {
 
     @AfterEach
     fun cleanup() {
+        TestEnvironment.clearTables()
         TestEnvironment.clearMQ()
+        assertEquals(0, TestEnvironment.oppdrag.sendKø.queueDepth())
+        assertEquals(0, TestEnvironment.oppdrag.avstemmingKø.queueDepth())
     }
 
     @Test
@@ -41,6 +44,7 @@ class GrensesnittAvstemmingTest {
                 OppdragLagerRepository.opprettOppdrag(oppdragLager, it)
             }
 
+            TestEnvironment.clearMQ() // hack for å fjerne meldinger som henger igjen i testcontaineren
             val response = httpClient.post("/grensesnittavstemming") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestEnvironment.azure.generateToken())

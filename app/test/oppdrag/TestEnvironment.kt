@@ -10,6 +10,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
+import libs.utils.appLog
 import oppdrag.containers.MQTestContainer
 import oppdrag.containers.PostgresTestContainer
 import oppdrag.fakes.AzureFake
@@ -17,6 +18,14 @@ import oppdrag.fakes.OppdragFake
 import oppdrag.postgres.map
 
 object TestEnvironment : AutoCloseable {
+
+    init {
+        Runtime.getRuntime().addShutdownHook(Thread {
+            appLog.info("Shutting down test environment")
+            close()
+        })
+    }
+
     val mq: MQTestContainer = MQTestContainer()
     val azure: AzureFake = AzureFake()
     val postgres: PostgresTestContainer = PostgresTestContainer()
@@ -44,7 +53,6 @@ object TestEnvironment : AutoCloseable {
         postgres.close()
         mq.close()
         azure.close()
-        oppdrag.close()
         oppdrag.close()
     }
 }

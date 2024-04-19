@@ -1,8 +1,10 @@
 package libs.mq
 
+import libs.utils.appLog
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.lang.Exception
 import javax.jms.Connection
 import javax.jms.JMSException
 import javax.jms.Message
@@ -20,25 +22,6 @@ class TestMQ {
         consumer.received.clear()
     }
 
-//    @Test
-//    fun `transaction rollback`() {
-//        val factory = MQFactory.new(mq.config)
-//        consumer.start()
-//
-//        val msg = assertThrows<IllegalStateException> {
-//            factory.createConnection(mq.config.username, mq.config.password).use {
-//                it.transaction {
-//                    producer.send("data")
-//                    error("woops")
-//                }
-//            }
-//        }
-//
-//        assertEquals("woops", msg.message)
-//        assertEquals(0, consumer.depth())
-//        assertTrue(consumer.received.isEmpty())
-//    }
-
     @Test
     fun depth() {
         producer.send("<xml>test1</xml>")
@@ -46,14 +29,14 @@ class TestMQ {
         producer.send("<xml>test3</xml>")
         producer.send("<xml>test4</xml>")
 
-        assertEquals(4, consumer.depth())
+        assertEquals(4, consumer.queueDepth())
         assertEquals(0, consumer.received.size)
         consumer.start()
 
         // give test time to process all 4 messages
         Thread.sleep(50)
 
-        assertEquals(0, consumer.depth())
+        assertEquals(0, consumer.queueDepth())
         assertEquals(4, consumer.received.size)
     }
 }
@@ -80,8 +63,17 @@ class Producer(private val config: MQConfig, private val queue: String) : MQProd
     override fun send(xml: String, con: Connection) {
         con.transaction { session ->
             session.createProducer(session.createQueue(queue)).use { producer ->
-                producer.send(session.createTextMessage(xml))
+                producer.send(session.createTextMessage(xml), this)
             }
         }
+    }
+
+    override fun onCompletion(message: Message) {
+        appLog.info("Kvittering sendt tilbake fra fake til app: $message}")
+    }
+
+    override fun onException(message: Message, exception: Exception) {
+        appLog.error("message")
+        throw exception
     }
 }
