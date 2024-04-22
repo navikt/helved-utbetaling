@@ -7,7 +7,10 @@ import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
 import libs.utils.appLog
 import libs.utils.secureLog
-import javax.jms.*
+import javax.jms.JMSContext
+import javax.jms.JMSProducer
+import javax.jms.MessageListener
+import javax.jms.TextMessage
 
 data class MQConfig(
     val host: String,
@@ -18,70 +21,103 @@ data class MQConfig(
     val password: String,
 )
 
-abstract class MQConsumer(
-    config: MQConfig,
-    private val queueName: String,
-) : MessageListener, ExceptionListener, AutoCloseable {
-    private val factory = MQFactory.new(config)
-
-    private val connection = factory.createConnection(config.username, config.password).apply {
-        exceptionListener = this@MQConsumer
-    }
-
-    private val session = connection.createSession(true, 0).apply {
-        createConsumer(MQQueue(queueName)).apply {
-            messageListener = this@MQConsumer
+class MQProducer(
+    private val mq: MQ,
+    private val queue: MQQueue,
+) {
+    fun produce(
+        message: String,
+        config: JMSProducer.() -> Unit = {},
+    ) {
+        appLog.debug("Producing message on ${queue.baseQueueName}")
+        mq.transaction { ctx ->
+            val producer = ctx.createProducer().apply(config)
+            producer.send(queue, message)
         }
     }
+}
 
-    fun queueDepth(): Int = connection.transaction {
-        it.createBrowser(it.createQueue(queueName)).use { browsed ->
-            browsed.enumeration.toList().size
+internal interface MQListener {
+    fun onMessage(message: TextMessage)
+}
+
+abstract class MQConsumer(
+    private val mq: MQ,
+    queue: MQQueue,
+) : AutoCloseable, MQListener {
+    private val context = mq.context.apply {
+        autoStart = false
+    }
+
+    private val consumer = context.createConsumer(queue).apply {
+        messageListener = MessageListener {
+            appLog.debug("Consuming message on ${queue.baseQueueName}")
+            mq.transacted(context) {
+                onMessage(it as TextMessage)
+            }
         }
     }
 
     fun start() {
-        connection.start()
+        context.start()
     }
 
     override fun close() {
-        session.close()
-        connection.close()
+        consumer.close()
+        context.close()
     }
 }
 
-interface MQProducer : CompletionListener {
-    fun send(xml: String, con: Connection)
-}
+class MQ(private val config: MQConfig) {
+    private val factory: MQConnectionFactory = MQConnectionFactory().apply {
+        hostName = config.host
+        port = config.port
+        queueManager = config.manager
+        channel = config.channel
+        transportType = WMQConstants.WMQ_CM_CLIENT
+        ccsid = JmsConstants.CCSID_UTF8
+        setBooleanProperty(JmsConstants.USER_AUTHENTICATION_MQCSP, true)
+        setIntProperty(JmsConstants.JMS_IBM_ENCODING, CMQC.MQENC_NATIVE)
+        setIntProperty(JmsConstants.JMS_IBM_CHARACTER_SET, JmsConstants.CCSID_UTF8)
+    }
 
-object MQFactory {
-    fun new(config: MQConfig): MQConnectionFactory =
-        MQConnectionFactory().apply {
-            hostName = config.host
-            port = config.port
-            queueManager = config.manager
-            channel = config.channel
-            transportType = WMQConstants.WMQ_CM_CLIENT
-            ccsid = JmsConstants.CCSID_UTF8
-            setBooleanProperty(JmsConstants.USER_AUTHENTICATION_MQCSP, true)
-            setIntProperty(JmsConstants.JMS_IBM_ENCODING, CMQC.MQENC_NATIVE)
-            setIntProperty(JmsConstants.JMS_IBM_CHARACTER_SET, JmsConstants.CCSID_UTF8)
+    internal val context: JMSContext
+        get() = factory.createContext(
+            config.username,
+            config.password,
+            JMSContext.SESSION_TRANSACTED
+        )
+
+    fun depth(queue: MQQueue): Int {
+        appLog.debug("Checking queue depth for ${queue.baseQueueName}")
+        return transaction { ctx ->
+            ctx.createBrowser(queue).use { browse ->
+                browse.enumeration.toList().size
+            }
+        }
+    }
+
+    internal fun <T : Any> transacted(ctx: JMSContext, block: () -> T): T {
+        appLog.debug("MQ transaction created {}", ctx)
+
+        val result = runCatching {
+            block()
+        }.onSuccess {
+            ctx.commit()
+            appLog.debug("MQ transaction committed {}", ctx)
+        }.onFailure {
+            ctx.rollback()
+            appLog.error("MQ transaction rolled back {}, please check secureLogs or BOQ (backout queue)", ctx)
+            secureLog.error("MQ transaction rolled back {}", ctx, it)
+        }
+
+        return result.getOrThrow()
+    }
+
+    fun <T : Any> transaction(block: (JMSContext) -> T): T =
+        context.use { ctx ->
+            transacted(ctx) {
+                block(ctx)
+            }
         }
 }
-
-fun <T> Connection.transaction(block: (Session) -> T): T =
-    createSession(true, 0).use { session ->
-        runCatching {
-            appLog.debug("Session created {}}", session)
-            block(session)
-        }.onSuccess {
-            appLog.debug("Session committed successfully {}", session)
-            session.commit()
-            session.close()
-        }.onFailure {
-            appLog.error("Rolling back MQ transaction, please check secureLogs or BOQ (backout queue)")
-            secureLog.error("Rolling back MQ transaction", it)
-            session.rollback()
-            session.close()
-        }.getOrThrow()
-    }
