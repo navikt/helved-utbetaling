@@ -1,0 +1,87 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: utsjekk-oppdrag
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  image: {{image}}
+  ingresses:
+    - https://utsjekk-oppdrag.intern.dev.nav.no
+  accessPolicy:
+    inbound:
+      rules:
+        - application: utsjekk
+    outbound:
+      external:
+        - host: mqls02.preprod.local
+          ports:
+            - port: 1413
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      memory: 256Mi
+      cpu: 50m
+  replicas:
+    min: 1
+    max: 1
+  gcp:
+    sqlInstances:
+      - type: POSTGRES_15 # WARNING: IF This is changed, all data will be lost. Read on nais.io how to upgrade
+        databases:
+          - name: utsjekk-oppdrag
+            envVarPrefix: DB
+        diskAutoresize: true
+        tier: db-f1-micro
+        cascadingDelete: false
+        highAvailability: true
+        pointInTimeRecovery: true
+        collation: nb_NO.UTF8
+        diskType: SSD
+        maintenance:
+          day: 4
+          hour: 23
+        flags:
+          - name: max_connections
+            value: "100"
+  azure:
+    application:
+      enabled: true
+  secureLogs:
+    enabled: true
+  liveness:
+    path: /actuator/live
+  readiness:
+    path: /actuator/ready
+  prometheus:
+    enabled: true
+    path: /actuator/metrics
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+  envFrom:
+    - secret: utsjekk-oppdrag
+  env:
+    - name: JAVA_OPTS
+      value: "-XX:MinRAMPercentage=25.0 -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
+    - name: OPPDRAG_ENABLED
+      value: "true"
+    - name: AVSTEMMING_ENABLED
+      value: "true"
+    - name: MQ_HOSTNAME
+      value: mqls02.preprod.local
+    - name: MQ_PORT
+      value: "1413"
+    - name: MQ_MANAGER
+      value: MQLS02
+    - name: MQ_CHANNEL
+      value: Q1_DP_OPPDRAG
+    - name: MQ_OPPDRAG_QUEUE
+      value: QA.Q1_231.OB04_OPPDRAG_XML
+    - name: MQ_OPPDRAG_KVITTERING_QUEUE
+      value: QA.Q1_DP_OPPDRAG.OPPDRAG_DP_XML_KVITT
+    - name: MQ_AVSTEMMING_QUEUE
+      value: QA.Q1_234.OB29_AVSTEMMING_XML
