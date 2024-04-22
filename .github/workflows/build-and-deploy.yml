@@ -15,16 +15,17 @@ jobs:
       id-token: write
       actions: read
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-java@v4.0.0
         with:
           java-version: 21
           distribution: temurin
 
-      - uses: gradle/gradle-build-action@v3
-        with:
-          arguments: apps:utsjekk:build
-      #      - uses: gradle/actions/setup-gradle@v3
-      #      - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue --no-daemon
+            #      - uses: gradle/gradle-build-action@v3
+            #        with:
+            #          arguments: apps:utsjekk:build
+      - uses: gradle/actions/setup-gradle@v3
+      - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue --no-daemon
 
       - uses: nais/docker-build-push@v0
         with:
