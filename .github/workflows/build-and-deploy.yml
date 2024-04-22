@@ -22,6 +22,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
 
       - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue --no-daemon
+        shell: sh
 
       - uses: nais/docker-build-push@v0
         with:
