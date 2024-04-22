@@ -1,9 +1,10 @@
 package oppdrag.containers
 
 import libs.mq.MQConfig
+import libs.utils.env
 import org.testcontainers.containers.GenericContainer
 
-class MQTestContainer {
+class MQTestContainer : AutoCloseable {
     private val mq = GenericContainer<Nothing>("ibmcom/mq").apply {
         withReuse(true)
         withLabel("app", "oppdrag")
@@ -23,4 +24,12 @@ class MQTestContainer {
             username = "admin",
             password = "passw0rd",
         )
+
+    override fun close() {
+        runCatching {
+            if (env("GITHUB_ACTIONS")) {
+                mq.close()
+            }
+        }
+    }
 }
