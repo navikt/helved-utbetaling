@@ -39,12 +39,6 @@ object TestEnvironment : AutoCloseable {
     }
 
     fun clearMQ() {
-//        while (oppdrag.sendKø.queueDepth() > 0) {
-//            oppdrag.sendKø.clearReceived()
-//        }
-//        while (oppdrag.avstemmingKø.queueDepth() > 0) {
-//            oppdrag.avstemmingKø.clearReceived()
-//        }
         oppdrag.sendKø.clearReceived()
         oppdrag.avstemmingKø.clearReceived()
         appLog.info("received messages in fakes cleared")
@@ -57,8 +51,6 @@ object TestEnvironment : AutoCloseable {
     }
 
     override fun close() {
-        postgres.close()
-        mq.close()
         azure.close()
         oppdrag.close()
     }

@@ -1,5 +1,6 @@
 package oppdrag.iverksetting.mq
 
+import libs.mq.MQ
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -124,7 +125,7 @@ class OppdragMQConsumerTest {
 
     internal companion object {
         val consumer = TestEnvironment.postgres.withDatasource { datasource ->
-            OppdragMQConsumer(TestEnvironment.config, datasource)
+            OppdragMQConsumer(TestEnvironment.config, MQ(TestEnvironment.mq.config), datasource)
         }
 
         @BeforeAll

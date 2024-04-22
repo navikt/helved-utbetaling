@@ -3,11 +3,11 @@ package oppdrag.containers
 import libs.mq.MQConfig
 import org.testcontainers.containers.GenericContainer
 
-class MQTestContainer : AutoCloseable {
+class MQTestContainer {
     private val mq = GenericContainer<Nothing>("ibmcom/mq").apply {
-//        withReuse(true)
-//        withLabel("app", "oppdrag")
-//        withCreateContainerCmdModifier { it.withName("oppdrag-mq") }
+        withReuse(true)
+        withLabel("app", "oppdrag")
+        withCreateContainerCmdModifier { it.withName("oppdrag-mq") }
         withEnv("LICENSE", "accept")
         withEnv("MQ_QMGR_NAME", "QM1")
         withNetwork(null)
@@ -23,8 +23,4 @@ class MQTestContainer : AutoCloseable {
             username = "admin",
             password = "passw0rd",
         )
-
-    override fun close() {
-//        mq.stop() // dont stop if using reusable testcontainers
-    }
 }
