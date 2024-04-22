@@ -21,9 +21,6 @@ jobs:
           java-version: 21
           distribution: temurin
 
-            #      - uses: gradle/gradle-build-action@v3
-            #        with:
-            #          arguments: apps:utsjekk:build
       - uses: gradle/actions/setup-gradle@v3
       - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue --no-daemon
 
