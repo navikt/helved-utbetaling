@@ -1,6 +1,6 @@
 package oppdrag.iverksetting
 
-import com.ibm.mq.jms.MQConnectionFactory
+import libs.mq.MQ
 import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -15,11 +15,11 @@ import java.sql.Connection
 import javax.sql.DataSource
 
 class OppdragService(
-    private val config: Config,
+    config: Config,
+    mq: MQ,
     private val postgres: DataSource,
-    private val factory: MQConnectionFactory,
 ) {
-    private val oppdragSender = OppdragMQProducer(config.oppdrag)
+    private val oppdragSender = OppdragMQProducer(config.oppdrag, mq)
 
     fun opprettOppdrag(
         utbetalingsoppdrag: Utbetalingsoppdrag,
@@ -42,9 +42,7 @@ class OppdragService(
         }
 
         appLog.debug("Legger oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} på kø")
-        factory.createConnection(config.mq.username, config.mq.password).use { con ->
-            oppdragSender.sendOppdrag(oppdrag, con)
-        }
+        oppdragSender.sendOppdrag(oppdrag)
     }
 
     fun hentStatusForOppdrag(

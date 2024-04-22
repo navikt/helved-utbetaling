@@ -7,7 +7,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import java.sql.Connection
 import javax.sql.DataSource
 
-class PostgresTestContainer : AutoCloseable {
+class PostgresTestContainer {
     private val postgres = PostgreSQLContainer("postgres:16").apply {
         withReuse(true)
         withLabel("app", "oppdrag")
@@ -32,10 +32,6 @@ class PostgresTestContainer : AutoCloseable {
     }
 
     fun <T> withDatasource(block: (DataSource) -> T): T = block(datasource)
-
-    override fun close() {
-//        postgres.stop() // dont stop if using reusable testcontainers
-    }
 
     private fun init(config: PostgresConfig): DataSource =
         Postgres.createAndMigrate(config) {
