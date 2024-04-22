@@ -1,5 +1,6 @@
 package oppdrag.containers
 
+import libs.utils.env
 import oppdrag.PostgresConfig
 import oppdrag.postgres.Postgres
 import oppdrag.postgres.transaction
@@ -7,7 +8,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import java.sql.Connection
 import javax.sql.DataSource
 
-class PostgresTestContainer {
+class PostgresTestContainer : AutoCloseable {
     private val postgres = PostgreSQLContainer("postgres:16").apply {
         withReuse(true)
         withLabel("app", "oppdrag")
@@ -40,4 +41,12 @@ class PostgresTestContainer {
             connectionTimeout = 5_000
             maxLifetime = 900_000
         }
+
+    override fun close() {
+        runCatching {
+            if (env("GITHUB_ACTIONS")) {
+                postgres.close()
+            }
+        }
+    }
 }

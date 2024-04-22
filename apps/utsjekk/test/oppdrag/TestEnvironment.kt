@@ -53,6 +53,8 @@ object TestEnvironment : AutoCloseable {
     override fun close() {
         azure.close()
         oppdrag.close()
+        mq.close()
+        postgres.close()
     }
 }
 
