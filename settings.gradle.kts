@@ -1,8 +1,11 @@
 rootProject.name = "dp-oppdrag"
 
 include(
-    "app",
-    "simulering",
+    "apps:utsjekk",
+    "apps:simulering"
+)
+
+include(
     "libs:auth",
     "libs:auth-test",
     "libs:http",
