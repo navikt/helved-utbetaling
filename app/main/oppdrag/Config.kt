@@ -13,7 +13,7 @@ data class Config(
         host = env("MQ_HOSTNAME"),
         port = env("MQ_PORT"),
         channel = env("MQ_CHANNEL"),
-        manager = env("MQ_QUEUE_MANAGER"),
+        manager = env("MQ_MANAGER"),
         username = env("SERVICEUSER_NAME"),
         password = env("SERVICEUSER_PASSWORD"),
     ),
@@ -21,13 +21,13 @@ data class Config(
 
 data class AvstemmingConfig(
     val enabled: Boolean = env("AVSTEMMING_ENABLED"),
-    val utKø: Queue = env("AVSTEMMING_KØ"),
+    val utKø: Queue = env("MQ_AVSTEMMING_QUEUE"),
 )
 
 data class OppdragConfig(
     val enabled: Boolean = env("OPPDRAG_ENABLED"),
-    val kvitteringsKø: Queue = env("OPPDRAG_KVITTERINGSKØ"),
-    val sendKø: Queue = env("OPPDRAG_SENDKØ"),
+    val kvitteringsKø: Queue = env("MQ_OPPDRAG_KVITTERING_QUEUE"),
+    val sendKø: Queue = env("MQ_OPPDRAG_QUEUE"),
 )
 
 typealias Queue = String
