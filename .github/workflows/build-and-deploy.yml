@@ -33,7 +33,7 @@ jobs:
           identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
           tag: ${{ github.sha }}
-          docker_context: apps/utsjekk
+          docker_context: ./apps/utsjekk
 
   deploy:
     runs-on: ubuntu-latest
