@@ -29,6 +29,7 @@ jobs:
           team: helved
           identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+          image_suffix: /utsjekk
           tag: ${{ github.sha }}
           docker_context: ./apps/utsjekk
           dockerfile: ./apps/utsjekk/Dockerfile
