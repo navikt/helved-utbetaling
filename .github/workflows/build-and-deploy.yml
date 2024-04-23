@@ -39,7 +39,7 @@ jobs:
           team: helved
           identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
-          image_suffix: /utsjekk
+          image_suffix: utsjekk
           tag: ${{ github.sha }}
           docker_context: ./apps/utsjekk
           dockerfile: ./apps/utsjekk/Dockerfile
@@ -64,4 +64,4 @@ jobs:
           PRINT_PAYLOAD: true
           CLUSTER: dev-gcp
           RESOURCE: apps/utsjekk/application-dev.yml
-          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}/utsjekk:${{ github.sha }}
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}utsjekk:${{ github.sha }}
