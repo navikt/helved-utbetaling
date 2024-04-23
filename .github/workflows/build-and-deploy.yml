@@ -2,6 +2,16 @@ name: deploy utsjekk
 
 on:
   workflow_dispatch:
+    inputs:
+      jobs:
+        description: Jobs to run
+        required: true
+        default: build_and_deploy
+        type: choice
+        options:
+          - build
+          - deploy
+          - build_and_deploy
   push:
     paths:
       - 'apps/utsjekk/**'
@@ -10,6 +20,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.event.inputs.jobs != 'deploy'
     timeout-minutes: 10
     permissions:
       contents: read
@@ -46,6 +57,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    if: github.event.inputs.jobs != 'build'
     timeout-minutes: 10
     needs: build
     permissions:
@@ -64,4 +76,4 @@ jobs:
           PRINT_PAYLOAD: true
           CLUSTER: dev-gcp
           RESOURCE: apps/utsjekk/application-dev.yml
-          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}utsjekk:${{ github.sha }}
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-utsjekk:${{ github.sha }}
