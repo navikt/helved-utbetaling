@@ -28,7 +28,7 @@ class MQTestContainer : AutoCloseable {
     override fun close() {
         runCatching {
             if (env("GITHUB_ACTIONS")) {
-                mq.close()
+//                mq.close()
             }
         }
     }
