@@ -22,7 +22,7 @@ jobs:
           distribution: temurin
 
       - uses: gradle/actions/setup-gradle@v3
-      - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue
+      - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue --no-daemon
 
       - uses: nais/docker-build-push@v0
         with:
@@ -31,7 +31,6 @@ jobs:
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
           tag: ${{ github.sha }}
           docker_context: ./apps/utsjekk
-          dockerfile: ./apps/utsjekk/Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
