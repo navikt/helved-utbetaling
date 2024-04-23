@@ -2,6 +2,7 @@ package oppdrag
 
 import libs.auth.AzureConfig
 import libs.mq.MQConfig
+import libs.utils.env
 
 fun testConfig(
     postgres: PostgresConfig,
@@ -21,3 +22,9 @@ fun testConfig(
     azure = azureConfig,
     mq = mq,
 )
+
+fun isGHA(): Boolean {
+    return runCatching {
+        env<Boolean>("GITHUB_ACTIONS")
+    } .getOrDefault(false)
+}

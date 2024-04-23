@@ -2,13 +2,16 @@ package oppdrag.containers
 
 import libs.mq.MQConfig
 import libs.utils.env
+import oppdrag.isGHA
 import org.testcontainers.containers.GenericContainer
 
 class MQTestContainer : AutoCloseable {
     private val mq = GenericContainer<Nothing>("ibmcom/mq").apply {
-        withReuse(true)
-        withLabel("app", "oppdrag")
-        withCreateContainerCmdModifier { it.withName("oppdrag-mq") }
+        if (!isGHA()) {
+            withReuse(true)
+            withLabel("app", "oppdrag")
+            withCreateContainerCmdModifier { it.withName("oppdrag-mq") }
+        }
         withEnv("LICENSE", "accept")
         withEnv("MQ_QMGR_NAME", "QM1")
         withNetwork(null)
@@ -26,10 +29,8 @@ class MQTestContainer : AutoCloseable {
         )
 
     override fun close() {
-        runCatching {
-            if (env("GITHUB_ACTIONS")) {
-//                mq.close()
-            }
+        if (isGHA()) {
+            mq.close()
         }
     }
 }
