@@ -1,4 +1,4 @@
-rootProject.name = "utsjekk-tmp"
+rootProject.name = "dp-oppdrag"
 
 include(
     "apps:utsjekk",
