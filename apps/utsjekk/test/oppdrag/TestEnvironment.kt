@@ -11,8 +11,8 @@ import io.ktor.server.netty.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import libs.utils.appLog
-import oppdrag.containers.MQTestContainer
-import oppdrag.containers.PostgresTestContainer
+import oppdrag.containers.MQTestcontainer
+import oppdrag.containers.PostgresTestcontainer
 import oppdrag.fakes.AzureFake
 import oppdrag.fakes.OppdragFake
 import oppdrag.postgres.map
@@ -26,9 +26,9 @@ object TestEnvironment : AutoCloseable {
         })
     }
 
-    val mq: MQTestContainer = MQTestContainer()
     val azure: AzureFake = AzureFake()
-    val postgres: PostgresTestContainer = PostgresTestContainer()
+    val postgres: PostgresTestcontainer = PostgresTestcontainer()
+    val mq: MQTestcontainer = MQTestcontainer()
     val config: Config = testConfig(postgres.config, mq.config, azure.config)
     val oppdrag = OppdragFake(config)
 
@@ -53,7 +53,6 @@ object TestEnvironment : AutoCloseable {
     override fun close() {
         azure.close()
         oppdrag.close()
-        mq.close()
         postgres.close()
     }
 }

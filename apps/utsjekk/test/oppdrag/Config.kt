@@ -20,7 +20,7 @@ fun testConfig(
     ),
     postgres = postgres,
     azure = azureConfig,
-    mq = mq,
+    mq = mq
 )
 
 fun isGHA(): Boolean {

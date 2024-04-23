@@ -8,7 +8,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import java.sql.Connection
 import javax.sql.DataSource
 
-class PostgresTestContainer : AutoCloseable {
+class PostgresTestcontainer : AutoCloseable {
     private val postgres = PostgreSQLContainer("postgres:16").apply {
         if (!isGHA()) {
             withReuse(true)
