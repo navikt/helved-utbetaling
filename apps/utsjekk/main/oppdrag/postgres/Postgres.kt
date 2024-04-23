@@ -28,7 +28,6 @@ internal object Postgres {
             Flyway
                 .configure()
                 .dataSource(this)
-                .validateMigrationNaming(true)
                 .load()
                 .migrate()
         }
