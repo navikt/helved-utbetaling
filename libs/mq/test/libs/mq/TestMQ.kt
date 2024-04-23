@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import javax.jms.TextMessage
 
 class TestMQ {
-    private val container = MQTestContainer()
+    private val container = MQTestcontainer()
     private val mq = MQ(container.config)
     private val QUEUE_1 = MQQueue("DEV.QUEUE.1")
     private val consumer = Consumer()
