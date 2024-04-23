@@ -24,7 +24,7 @@ fun testConfig(
 )
 
 fun isGHA(): Boolean {
-    return runCatching {
-        env<Boolean>("GITHUB_ACTIONS")
-    } .getOrDefault(false)
+    val isGHA = runCatching { env<Boolean>("GITHUB_ACTIONS") }.getOrDefault(false)
+    println("isGHA: $isGHA")
+    return isGHA
 }
