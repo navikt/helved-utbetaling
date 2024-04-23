@@ -14,8 +14,8 @@ data class Config(
         port = env("MQ_PORT"),
         channel = env("MQ_CHANNEL"),
         manager = env("MQ_MANAGER"),
-        username = env("SERVICEUSER_NAME"),
-        password = env("SERVICEUSER_PASSWORD"),
+        username = env("MQ_PASSWORD"),
+        password = "srvdp-oppdrag",
     ),
 )
 
