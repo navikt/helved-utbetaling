@@ -19,12 +19,10 @@ jobs:
         image: ibmcom/mq
         ports:
           - 1414:1414
-          - 9157:9157
         env:
           LICENSE: accept
           MQ_QMGR_NAME: MQ1
           MQ_APP_PASSWORD: passw0rd
-          MQ_ENABLE_METRICS: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4.0.0
@@ -33,7 +31,7 @@ jobs:
           distribution: temurin
 
       - uses: gradle/actions/setup-gradle@v3
-      - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue
+      - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue --no-daemon
 
       - uses: nais/docker-build-push@v0
         with:
