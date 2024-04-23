@@ -1,4 +1,4 @@
-name: build & deploy - utsjekk-oppdrag
+name: deploy utsjekk
 
 on:
   workflow_dispatch:
