@@ -30,6 +30,7 @@ class MQTestContainer : AutoCloseable {
 
     override fun close() {
         if (isGHA()) {
+            Thread.sleep(50)
             mq.close()
         }
     }
