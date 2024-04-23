@@ -54,6 +54,7 @@ object TestEnvironment : AutoCloseable {
         azure.close()
         oppdrag.close()
         postgres.close()
+        mq.close()
     }
 }
 
