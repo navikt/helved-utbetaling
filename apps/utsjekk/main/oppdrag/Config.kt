@@ -33,9 +33,9 @@ data class OppdragConfig(
 typealias Queue = String
 
 data class PostgresConfig(
-    val host: String = env("NAIS_DATABASE_INNSENDING_INNSENDING_HOST"),
-    val port: String = env("NAIS_DATABASE_INNSENDING_INNSENDING_PORT"),
-    val database: String = env("NAIS_DATABASE_INNSENDING_INNSENDING_DATABASE"),
-    val username: String = env("NAIS_DATABASE_INNSENDING_INNSENDING_USERNAME"),
-    val password: String = env("NAIS_DATABASE_INNSENDING_INNSENDING_PASSWORD"),
+    val host: String = env("DB_HOST"),
+    val port: String = env("DB_PORT"),
+    val database: String = env("DB_DATABASE"),
+    val username: String = env("DB_USERNAME"),
+    val password: String = env("DB_PASSWORD"),
 )
