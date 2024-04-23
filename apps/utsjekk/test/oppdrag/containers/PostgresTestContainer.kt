@@ -1,7 +1,7 @@
 package oppdrag.containers
 
-import libs.utils.env
 import oppdrag.PostgresConfig
+import oppdrag.isGHA
 import oppdrag.postgres.Postgres
 import oppdrag.postgres.transaction
 import org.testcontainers.containers.PostgreSQLContainer
@@ -10,9 +10,11 @@ import javax.sql.DataSource
 
 class PostgresTestContainer : AutoCloseable {
     private val postgres = PostgreSQLContainer("postgres:16").apply {
-        withReuse(true)
-        withLabel("app", "oppdrag")
-        withCreateContainerCmdModifier { it.withName("oppdrag-postgres") }
+        if (!isGHA()) {
+            withReuse(true)
+            withLabel("app", "oppdrag")
+            withCreateContainerCmdModifier { it.withName("oppdrag-postgres") }
+        }
         withNetwork(null)
         start()
     }
@@ -43,10 +45,8 @@ class PostgresTestContainer : AutoCloseable {
         }
 
     override fun close() {
-        runCatching {
-            if (env("GITHUB_ACTIONS")) {
-                postgres.close()
-            }
+        if (isGHA()) {
+            postgres.close()
         }
     }
 }
