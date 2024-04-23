@@ -22,7 +22,7 @@ jobs:
           distribution: temurin
 
       - uses: gradle/actions/setup-gradle@v3
-      - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue --no-daemon
+      - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue
 
       - uses: nais/docker-build-push@v0
         with:
