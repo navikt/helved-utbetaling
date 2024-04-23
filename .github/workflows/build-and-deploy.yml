@@ -31,6 +31,7 @@ jobs:
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
           tag: ${{ github.sha }}
           docker_context: ./apps/utsjekk
+          dockerfile: ./apps/utsjekk/Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
