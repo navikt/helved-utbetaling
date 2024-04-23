@@ -22,7 +22,7 @@ class MQTestcontainer {
     val config
         get() = MQConfig(
             host = "localhost",
-            port = mq?.firstMappedPort ?: 1414,
+            port = mq?.firstMappedPort ?: 9157,
             channel = "DEV.ADMIN.SVRCONN",
             manager = "QM1",
             username = "admin",
