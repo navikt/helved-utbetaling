@@ -42,7 +42,6 @@ class AvstemmingTest {
                 OppdragLagerRepository.opprettOppdrag(oppdragLager, it)
             }
 
-            TestRuntime.clearMQ() // hack for å fjerne meldinger som henger igjen i testcontaineren
             val response = httpClient.post("/grensesnittavstemming") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
