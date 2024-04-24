@@ -68,15 +68,9 @@ class OppdragFake(private val config: Config) : AutoCloseable {
     }
 
     override fun close() {
-        sendKø.close()
-        avstemmingKø.close()
-//        fun closeWhenEmpty(listener: MQConsumer) {
-//            while (mq.depth(avstemmingQueue) != 0)
-//                while (listener.queueDepth() != 0) println("Queue $listener not empty.")
-//            listener.close()
-//        }
-//
-//        closeWhenEmpty(sendKø)
-//        closeWhenEmpty(avstemmingKø)
+        runCatching {
+            sendKø.close()
+            avstemmingKø.close()
+        }
     }
 }
