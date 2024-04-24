@@ -11,13 +11,13 @@ import io.ktor.server.netty.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import libs.utils.appLog
-import oppdrag.containers.MQTestcontainer
-import oppdrag.containers.PostgresTestcontainer
+import oppdrag.containers.MQContainer
+import oppdrag.containers.PostgresContainer
 import oppdrag.fakes.AzureFake
 import oppdrag.fakes.OppdragFake
 import oppdrag.postgres.map
 
-object TestEnvironment : AutoCloseable {
+object TestRuntime : AutoCloseable {
 
     init {
         Runtime.getRuntime().addShutdownHook(Thread {
@@ -27,9 +27,9 @@ object TestEnvironment : AutoCloseable {
     }
 
     val azure: AzureFake = AzureFake()
-    val postgres: PostgresTestcontainer = PostgresTestcontainer()
-    val mq: MQTestcontainer = MQTestcontainer()
-    val config: Config = testConfig(postgres.config, mq.config, azure.config)
+    val postgres: PostgresContainer = PostgresContainer()
+    val mq: MQContainer = MQContainer()
+    val config: Config = TestConfig.create(postgres.config, mq.config, azure.config)
     val oppdrag = OppdragFake(config)
 
     fun clearTables() = postgres.transaction { con ->

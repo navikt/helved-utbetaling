@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import javax.jms.TextMessage
 
-class TestMQ {
+class MQTest {
     private val container = MQTestcontainer()
     private val mq = MQ(container.config)
     private val QUEUE_1 = MQQueue("DEV.QUEUE.1")

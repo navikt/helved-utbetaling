@@ -1,11 +1,11 @@
-package oppdrag.iverksetting.mq
+package oppdrag.iverksetting
 
 import libs.mq.MQ
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.Resource
-import oppdrag.TestEnvironment
+import oppdrag.TestRuntime
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.iverksetting.domene.Kvitteringstatus
 import oppdrag.iverksetting.domene.OppdragMapper
@@ -22,7 +22,7 @@ class OppdragMQConsumerTest {
 
     @BeforeEach
     fun clear() {
-        TestEnvironment.clearTables()
+        TestRuntime.clearTables()
     }
 
     @Test
@@ -35,7 +35,7 @@ class OppdragMQConsumerTest {
     @Test
     fun `skal deserialisere kvittering som feilet i testmiljø`() {
         val xml = Resource.read("/kvittering-test.xml")
-        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
+        val kvittering = TestRuntime.oppdrag.createMessage(xml)
         val oppdragXml = consumer.leggTilNamespacePrefiks(kvittering.text)
 
         assertDoesNotThrow {
@@ -54,17 +54,17 @@ class OppdragMQConsumerTest {
     fun `skal lagre status og mmel fra kvittering`() {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
 
-        TestEnvironment.postgres.transaction { con ->
+        TestRuntime.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
         val xml = Resource.read("/kvittering-test.xml")
-        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
+        val kvittering = TestRuntime.oppdrag.createMessage(xml)
 
         consumer.onMessage(kvittering)
 
         // todo: better assertions
-        assertEquals(1, TestEnvironment.tableSize("oppdrag_lager"))
+        assertEquals(1, TestRuntime.tableSize("oppdrag_lager"))
     }
 
     @Test
@@ -79,30 +79,30 @@ class OppdragMQConsumerTest {
             OppdragLager.lagFraOppdrag(utbet, oppdrag, 0)
         }
 
-        TestEnvironment.postgres.transaction { con ->
+        TestRuntime.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
             OppdragLagerRepository.opprettOppdrag(oppdragLagerV1, con)
         }
 
         val xml = Resource.read("/kvittering-akseptert.xml")
-        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
+        val kvittering = TestRuntime.oppdrag.createMessage(xml)
         consumer.onMessage(kvittering)
 
         // todo: better assertions
-        assertEquals(2, TestEnvironment.tableSize("oppdrag_lager"))
+        assertEquals(2, TestRuntime.tableSize("oppdrag_lager"))
     }
 
     @Test
     fun `oppretter ikke oppdrag hvis henting av oppdrag feiler`() {
         val xml = Resource.read("/kvittering-akseptert.xml")
-        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
+        val kvittering = TestRuntime.oppdrag.createMessage(xml)
 
 //        assertThrows<Exception> {
         consumer.onMessage(kvittering)
 //        }
 
         // todo: better assertions
-        assertEquals(0, TestEnvironment.tableSize("oppdrag_lager"))
+        assertEquals(0, TestRuntime.tableSize("oppdrag_lager"))
     }
 
     @Test
@@ -111,21 +111,21 @@ class OppdragMQConsumerTest {
             status = OppdragStatus.KVITTERT_OK
         }
 
-        TestEnvironment.postgres.transaction { con ->
+        TestRuntime.postgres.transaction { con ->
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
         val xml = Resource.read("/kvittering-akseptert.xml")
-        val kvittering = TestEnvironment.oppdrag.createMessage(xml)
+        val kvittering = TestRuntime.oppdrag.createMessage(xml)
         consumer.onMessage(kvittering)
 
         // todo: better assertions
-        assertEquals(1, TestEnvironment.tableSize("oppdrag_lager"))
+        assertEquals(1, TestRuntime.tableSize("oppdrag_lager"))
     }
 
     internal companion object {
-        val consumer = TestEnvironment.postgres.withDatasource { datasource ->
-            OppdragMQConsumer(TestEnvironment.config, MQ(TestEnvironment.mq.config), datasource)
+        val consumer = TestRuntime.postgres.withDatasource { datasource ->
+            OppdragMQConsumer(TestRuntime.config.oppdrag, MQ(TestRuntime.config.mq), datasource)
         }
 
         @BeforeAll

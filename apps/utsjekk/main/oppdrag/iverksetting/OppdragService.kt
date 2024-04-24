@@ -4,8 +4,7 @@ import libs.mq.MQ
 import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import oppdrag.Config
-import oppdrag.iverksetting.mq.OppdragMQProducer
+import oppdrag.OppdragConfig
 import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
@@ -15,11 +14,11 @@ import java.sql.Connection
 import javax.sql.DataSource
 
 class OppdragService(
-    config: Config,
+    config: OppdragConfig,
     mq: MQ,
     private val postgres: DataSource,
 ) {
-    private val oppdragSender = OppdragMQProducer(config.oppdrag, mq)
+    private val oppdragSender = OppdragMQProducer(config, mq)
 
     fun opprettOppdrag(
         utbetalingsoppdrag: Utbetalingsoppdrag,

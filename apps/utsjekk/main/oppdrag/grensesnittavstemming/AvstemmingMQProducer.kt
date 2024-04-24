@@ -10,7 +10,7 @@ import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import oppdrag.AvstemmingConfig
 import javax.xml.namespace.QName
 
-class GrensesnittavstemmingProducer(
+class AvstemmingMQProducer(
     mq: MQ,
     private val config: AvstemmingConfig,
 ) {

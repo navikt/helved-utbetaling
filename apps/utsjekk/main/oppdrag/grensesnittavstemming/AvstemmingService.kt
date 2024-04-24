@@ -12,7 +12,7 @@ import java.util.*
 import javax.sql.DataSource
 
 class GrensesnittavstemmingService(
-    private val producer: GrensesnittavstemmingProducer,
+    private val producer: AvstemmingMQProducer,
     private val postgres: DataSource,
 ) {
     private val tellere: MutableMap<Fagsystem, Map<String, Counter>> = EnumMap(Fagsystem::class.java)
@@ -36,7 +36,7 @@ class GrensesnittavstemmingService(
                 con,
             )
 
-            val avstemmingMapper = GrensesnittavstemmingMapper(oppdragSomSkalAvstemmes, fagsystem, fra, til)
+            val avstemmingMapper = AvstemmingMapper(oppdragSomSkalAvstemmes, fagsystem, fra, til)
             val meldinger = avstemmingMapper.lagAvstemmingsmeldinger()
 
             if (meldinger.isEmpty()) {

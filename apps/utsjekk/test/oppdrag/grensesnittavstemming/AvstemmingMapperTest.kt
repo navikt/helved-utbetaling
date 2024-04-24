@@ -17,12 +17,12 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.test.assertEquals
 
-internal class GrensesnittavstemmingMapperTest {
+internal class AvstemmingMapperTest {
 
     @Test
     fun `test mapping av tom liste`() {
         val mapper =
-            GrensesnittavstemmingMapper(
+            AvstemmingMapper(
                 oppdragsliste = emptyList(),
                 fagsystem = Fagsystem.DAGPENGER,
                 fom = LocalDateTime.now(),
@@ -45,7 +45,7 @@ internal class GrensesnittavstemmingMapperTest {
             )
         val oppdragLager = utbetalingsoppdrag.somOppdragLager
         val mapper =
-            GrensesnittavstemmingMapper(listOf(oppdragLager), Fagsystem.DAGPENGER, fom, tom)
+            AvstemmingMapper(listOf(oppdragLager), Fagsystem.DAGPENGER, fom, tom)
         val meldinger = mapper.lagAvstemmingsmeldinger()
 
         assertEquals(3, meldinger.size)
@@ -84,7 +84,7 @@ internal class GrensesnittavstemmingMapperTest {
                 status = OppdragStatus.KVITTERT_FUNKSJONELL_FEIL,
             )
         val mapper =
-            GrensesnittavstemmingMapper(listOf(oppdragLager, oppdragLager2), Fagsystem.DAGPENGER, fom, tom)
+            AvstemmingMapper(listOf(oppdragLager, oppdragLager2), Fagsystem.DAGPENGER, fom, tom)
         val meldinger = mapper.lagAvstemmingsmeldinger()
 
         assertEquals(3, meldinger.size)
@@ -123,7 +123,7 @@ internal class GrensesnittavstemmingMapperTest {
                 Fagsystem.DAGPENGER,
             ).somOppdragLager
         val mapper =
-            GrensesnittavstemmingMapper(
+            AvstemmingMapper(
                 listOf(baOppdragLager1, baOppdragLager2),
                 Fagsystem.DAGPENGER,
                 avstemmingFom,

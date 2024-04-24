@@ -1,9 +1,10 @@
-package libs.mq
+package oppdrag.containers
 
-import libs.utils.env
+import libs.mq.MQConfig
+import oppdrag.isGHA
 import org.testcontainers.containers.GenericContainer
 
-class MQTestcontainer {
+class MQContainer : AutoCloseable {
     private val mq: GenericContainer<Nothing> =
         GenericContainer<Nothing>("ibmcom/mq").apply {
             if (!isGHA()) {
@@ -27,10 +28,12 @@ class MQTestcontainer {
             username = "admin",
             password = "passw0rd",
         )
-}
 
-fun isGHA(): Boolean {
-    return runCatching {
-        env<Boolean>("GITHUB_ACTIONS")
-    }.getOrDefault(false)
+    override fun close() {
+        if (isGHA()) {
+            runCatching {
+                mq.close()
+            }
+        }
+    }
 }

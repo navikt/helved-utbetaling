@@ -4,7 +4,6 @@ import java.net.URI
 import java.net.URL
 
 inline fun <reified T : Any> env(variable: String): T {
-
     val env = System.getenv(variable)
         ?: error("missing envVar $variable")
 
@@ -17,4 +16,8 @@ inline fun <reified T : Any> env(variable: String): T {
         URL::class -> URI(env).toURL() as T
         else -> error("unsupported type $type")
     }
+}
+
+inline fun <reified T : Any> env(variable: String, default: T): T {
+    return runCatching { env<T>(variable) }.getOrDefault(default)
 }

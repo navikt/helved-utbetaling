@@ -6,7 +6,7 @@ import io.ktor.server.testing.*
 import kotlinx.coroutines.withTimeout
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import oppdrag.TestEnvironment
+import oppdrag.TestRuntime
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.httpClient
 import oppdrag.iverksetting.tilstand.OppdragId
@@ -15,7 +15,7 @@ import oppdrag.server
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class IverksettingTest {
+class OppdragTest {
 
     @Test
     fun `skal lagre oppdrag for utbetalingoppdrag`() {
@@ -23,16 +23,16 @@ class IverksettingTest {
         var oppdragStatus: OppdragStatus = OppdragStatus.LAGT_PÅ_KØ
 
         testApplication {
-            application { server(TestEnvironment.config) }
+            application { server(TestRuntime.config) }
 
             httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
-                bearerAuth(TestEnvironment.azure.generateToken())
+                bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag)
             }
 
             withTimeout(1_000) {
-                TestEnvironment.postgres.transaction { con ->
+                TestRuntime.postgres.transaction { con ->
                     while (oppdragStatus == OppdragStatus.LAGT_PÅ_KØ) {
                         oppdragStatus = OppdragLagerRepository.hentOppdrag(utbetalingsoppdrag.oppdragId, con).status
                     }
@@ -48,11 +48,11 @@ class IverksettingTest {
         var oppdragStatus: OppdragStatus = OppdragStatus.LAGT_PÅ_KØ
 
         testApplication {
-            application { server(TestEnvironment.config) }
+            application { server(TestRuntime.config) }
 
             httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
-                bearerAuth(TestEnvironment.azure.generateToken())
+                bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag)
             }.also {
                 assertEquals(HttpStatusCode.Created, it.status)
@@ -60,14 +60,14 @@ class IverksettingTest {
 
             httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
-                bearerAuth(TestEnvironment.azure.generateToken())
+                bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag)
             }.also {
                 assertEquals(HttpStatusCode.Conflict, it.status)
             }
 
             withTimeout(1_000) {
-                TestEnvironment.postgres.transaction { con ->
+                TestRuntime.postgres.transaction { con ->
                     while (oppdragStatus == OppdragStatus.LAGT_PÅ_KØ) {
                         oppdragStatus = OppdragLagerRepository.hentOppdrag(utbetalingsoppdrag.oppdragId, con).status
                     }

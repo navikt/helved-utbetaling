@@ -1,4 +1,4 @@
-package oppdrag.iverksetting.mq
+package oppdrag.iverksetting
 
 import com.ibm.mq.jms.MQQueue
 import libs.mq.MQ
