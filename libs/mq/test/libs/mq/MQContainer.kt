@@ -8,8 +8,13 @@ class MQTestcontainer {
         GenericContainer<Nothing>("ibmcom/mq").apply {
             if (!isGHA()) {
                 withReuse(true)
-                withLabel("app", "oppdrag")
-                withCreateContainerCmdModifier { it.withName("oppdrag-mq") }
+                withCreateContainerCmdModifier { cmd ->
+                    cmd.withName("mq")
+                    cmd.hostConfig?.apply {
+                        withMemory(512 * 1024 * 1024)
+                        withMemorySwap(2 * 512 * 1024 * 1024)
+                    }
+                }
             }
             withEnv("LICENSE", "accept")
             withEnv("MQ_QMGR_NAME", "QM1")

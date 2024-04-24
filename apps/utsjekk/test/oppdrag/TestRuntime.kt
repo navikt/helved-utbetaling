@@ -18,14 +18,6 @@ import oppdrag.fakes.OppdragFake
 import oppdrag.postgres.map
 
 object TestRuntime : AutoCloseable {
-
-    init {
-        Runtime.getRuntime().addShutdownHook(Thread {
-            appLog.info("Shutting down test environment")
-            close()
-        })
-    }
-
     val azure: AzureFake = AzureFake()
     val postgres: PostgresContainer = PostgresContainer()
     val mq: MQContainer = MQContainer()
@@ -41,7 +33,6 @@ object TestRuntime : AutoCloseable {
     fun clearMQ() {
         oppdrag.sendKø.clearReceived()
         oppdrag.avstemmingKø.clearReceived()
-        appLog.info("received messages in fakes cleared")
     }
 
     fun tableSize(table: String): Int? = postgres.transaction { con ->
@@ -55,6 +46,13 @@ object TestRuntime : AutoCloseable {
         oppdrag.close()
         postgres.close()
         mq.close()
+    }
+
+    init {
+        Runtime.getRuntime().addShutdownHook(Thread {
+            appLog.info("Shutting down test environment")
+            close()
+        })
     }
 }
 
