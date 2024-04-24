@@ -34,6 +34,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
       - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue --no-daemon
 
+      - uses: dorny/test-reporter@v1.8.0
+        if: success() || failure()
+        with:
+          name: tests
+          path: "**/**/build/test-results/test/TEST-*.xml"
+          reporter: java-junit
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: nais/docker-build-push@v0
         with:
           team: helved
