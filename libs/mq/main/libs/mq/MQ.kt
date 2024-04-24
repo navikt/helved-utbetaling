@@ -12,15 +12,6 @@ import javax.jms.JMSProducer
 import javax.jms.MessageListener
 import javax.jms.TextMessage
 
-data class MQConfig(
-    val host: String,
-    val port: Int,
-    val channel: String,
-    val manager: String,
-    val username: String,
-    val password: String,
-)
-
 class MQProducer(
     private val mq: MQ,
     private val queue: MQQueue,
@@ -121,3 +112,12 @@ class MQ(private val config: MQConfig) {
             }
         }
 }
+
+data class MQConfig(
+    val host: String,
+    val port: Int,
+    val channel: String,
+    val manager: String,
+    val username: String,
+    val password: String,
+)

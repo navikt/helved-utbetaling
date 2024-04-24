@@ -1,4 +1,4 @@
-package oppdrag.grensesnittavstemming
+package oppdrag.routing
 
 import libs.utils.appLog
 import io.ktor.http.*
@@ -7,8 +7,9 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
 
-fun Route.grensesnittavstemmingRoute(
+fun Route.avstemmingRoutes(
     service: GrensesnittavstemmingService,
 ) {
     route("/grensesnittavstemming") {

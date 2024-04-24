@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-class GrensesnittavstemmingMapper(
+class AvstemmingMapper(
     private val oppdragsliste: List<OppdragLager>,
     private val fagsystem: Fagsystem,
     private val fom: LocalDateTime,

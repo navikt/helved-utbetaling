@@ -1,4 +1,4 @@
-package oppdrag.iverksetting.mq
+package oppdrag.iverksetting
 
 import com.ibm.mq.jms.MQQueue
 import libs.mq.MQ
@@ -7,7 +7,7 @@ import libs.utils.appLog
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import oppdrag.Config
+import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
@@ -16,11 +16,11 @@ import javax.jms.TextMessage
 import javax.sql.DataSource
 
 class OppdragMQConsumer(
-    config: Config,
+    config: OppdragConfig,
     mq: MQ,
     private val postgres: DataSource,
     private val mapper: XMLMapper<Oppdrag> = XMLMapper(),
-) : MQConsumer(mq, MQQueue(config.oppdrag.kvitteringsKø)) {
+) : MQConsumer(mq, MQQueue(config.kvitteringsKø)) {
 
     override fun onMessage(message: TextMessage) {
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
@@ -39,8 +39,7 @@ class OppdragMQConsumer(
 
         val førsteOppdragUtenKvittering =
             postgres.transaction { con ->
-                OppdragLagerRepository
-                    .hentAlleVersjonerAvOppdrag(oppdragIdKvittering, con)
+                OppdragLagerRepository.hentAlleVersjonerAvOppdrag(oppdragIdKvittering, con)
                     .find { lager -> lager.status == OppdragStatus.LAGT_PÅ_KØ }
             }
 

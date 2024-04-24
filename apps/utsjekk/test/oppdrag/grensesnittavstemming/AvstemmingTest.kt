@@ -15,15 +15,13 @@ import java.time.LocalDateTime
 import javax.xml.namespace.QName
 import kotlin.test.assertEquals
 
-class GrensesnittAvstemmingTest {
+class AvstemmingTest {
     private val mapper = XMLMapper<Avstemmingsdata>()
 
     @AfterEach
     fun cleanup() {
-        TestEnvironment.clearTables()
-        TestEnvironment.clearMQ()
-//        assertEquals(0, TestEnvironment.oppdrag.sendKø.queueDepth())
-//        assertEquals(0, TestEnvironment.oppdrag.avstemmingKø.queueDepth())
+        TestRuntime.clearTables()
+        TestRuntime.clearMQ()
     }
 
     @Test
@@ -37,27 +35,27 @@ class GrensesnittAvstemmingTest {
 
         testApplication {
             application {
-                server(TestEnvironment.config)
+                server(TestRuntime.config)
             }
 
-            TestEnvironment.postgres.transaction {
+            TestRuntime.postgres.transaction {
                 OppdragLagerRepository.opprettOppdrag(oppdragLager, it)
             }
 
-            TestEnvironment.clearMQ() // hack for å fjerne meldinger som henger igjen i testcontaineren
+            TestRuntime.clearMQ() // hack for å fjerne meldinger som henger igjen i testcontaineren
             val response = httpClient.post("/grensesnittavstemming") {
                 contentType(ContentType.Application.Json)
-                bearerAuth(TestEnvironment.azure.generateToken())
+                bearerAuth(TestRuntime.azure.generateToken())
                 setBody(avstemming)
             }
 
             assertEquals(HttpStatusCode.Created, response.status)
 
-            val actual = TestEnvironment.oppdrag.avstemmingKø
+            val actual = TestRuntime.oppdrag.avstemmingKø
                 .getReceived()
                 .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
 
-            val avstemmingMapper = GrensesnittavstemmingMapper(
+            val avstemmingMapper = AvstemmingMapper(
                 oppdragsliste = listOf(oppdragLager),
                 fagsystem = avstemming.fagsystem,
                 fom = avstemming.fra,
@@ -70,7 +68,7 @@ class GrensesnittAvstemmingTest {
                     val avstem = mapper.wrapInTag(it, QName("uri", "local"))
                     mapper.writeValueAsString(avstem)
                 }
-                .map(TestEnvironment.oppdrag::createMessage)
+                .map(TestRuntime.oppdrag::createMessage)
                 .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
 
             assertEquals(expected, actual)
