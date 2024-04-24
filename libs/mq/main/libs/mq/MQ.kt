@@ -71,7 +71,7 @@ class MQ(private val config: MQConfig) {
         channel = config.channel
         transportType = WMQConstants.WMQ_CM_CLIENT
         ccsid = JmsConstants.CCSID_UTF8
-        setBooleanProperty(JmsConstants.USER_AUTHENTICATION_MQCSP, true)
+        userAuthenticationMQCSP = true
         setIntProperty(JmsConstants.JMS_IBM_ENCODING, CMQC.MQENC_NATIVE)
         setIntProperty(JmsConstants.JMS_IBM_CHARACTER_SET, JmsConstants.CCSID_UTF8)
     }
