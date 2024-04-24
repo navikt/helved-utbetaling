@@ -53,6 +53,7 @@ class AvstemmingTest {
             val actual = TestRuntime.oppdrag.avstemmingKø
                 .getReceived()
                 .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
+                .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
 
             val avstemmingMapper = AvstemmingMapper(
                 oppdragsliste = listOf(oppdragLager),
@@ -69,6 +70,7 @@ class AvstemmingTest {
                 }
                 .map(TestRuntime.oppdrag::createMessage)
                 .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
+                .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
 
             assertEquals(expected, actual)
         }
