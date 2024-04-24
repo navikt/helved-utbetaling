@@ -2,17 +2,7 @@ package oppdrag.grensesnittavstemming
 
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Aksjonsdata
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AvstemmingType
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.DetaljType
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Detaljdata
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Fortegn
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Grunnlagsdata
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.KildeType
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Periodedata
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Totaldata
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.*
 import oppdrag.iverksetting.tilstand.OppdragLager
 import java.math.BigDecimal
 import java.nio.ByteBuffer
