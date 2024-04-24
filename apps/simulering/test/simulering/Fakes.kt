@@ -39,6 +39,8 @@ class FakeSoap private constructor(private val resource: String) : Soap {
     }
 }
 
-internal fun resources(filename: String): String =
-    {}::class.java.getResource(filename)!!.openStream().bufferedReader().readText()
-
+object Resource {
+    fun read(file: String): String {
+        return this::class.java.getResource(file)!!.openStream().bufferedReader().readText()
+    }
+}

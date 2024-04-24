@@ -34,7 +34,7 @@ internal interface MQListener {
 
 abstract class MQConsumer(
     private val mq: MQ,
-    queue: MQQueue,
+    private val queue: MQQueue,
 ) : AutoCloseable, MQListener {
     private val context = mq.context.apply {
         autoStart = false
@@ -47,6 +47,10 @@ abstract class MQConsumer(
                 onMessage(it as TextMessage)
             }
         }
+    }
+
+    fun depth(): Int {
+        return mq.depth(queue)
     }
 
     fun start() {

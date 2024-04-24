@@ -9,44 +9,47 @@ import java.sql.Connection
 import javax.sql.DataSource
 
 class PostgresContainer : AutoCloseable {
-    private val postgres = PostgreSQLContainer("postgres:16").apply {
+    private val container = PostgreSQLContainer("postgres:16").apply {
         if (!isGHA()) {
             withReuse(true)
-            withLabel("app", "oppdrag")
-            withCreateContainerCmdModifier { it.withName("oppdrag-postgres") }
+            withCreateContainerCmdModifier { cmd ->
+                cmd.withName("postgres")
+                cmd.hostConfig?.apply {
+                    withMemory(512 * 1024 * 1024)
+                    withMemorySwap(1024 * 1024 * 1024)
+                }
+            }
         }
         withNetwork(null)
         start()
     }
 
-    private val datasource = init(config)
-
-    val config
-        get() = PostgresConfig(
-            host = postgres.host,
-            port = postgres.firstMappedPort.toString(),
-            database = postgres.databaseName,
-            username = postgres.username,
-            password = postgres.password
-        )
-
-    fun <T> transaction(block: (Connection) -> T): T {
-        return datasource.transaction(block)
-    }
-
-    fun <T> withDatasource(block: (DataSource) -> T): T = block(datasource)
-
-    private fun init(config: PostgresConfig): DataSource =
+    private val datasource by lazy {
         Postgres.createAndMigrate(config) {
             initializationFailTimeout = 5_000
             idleTimeout = 10_000
             connectionTimeout = 5_000
             maxLifetime = 900_000
         }
+    }
+
+    val config by lazy {
+        PostgresConfig(
+            host = container.host,
+            port = container.firstMappedPort.toString(),
+            database = container.databaseName,
+            username = container.username,
+            password = container.password
+        )
+    }
+
+    fun <T> transaction(block: (Connection) -> T): T = datasource.transaction(block)
+    fun <T> withDatasource(block: (DataSource) -> T): T = block(datasource)
 
     override fun close() {
+        // GitHub Actions service containers or testcontainers is not reusable and must be closed
         if (isGHA()) {
-            postgres.close()
+            container.close()
         }
     }
 }

@@ -38,7 +38,7 @@ class SimuleringTest {
                 app(
                     config = config,
                     sts = FakeSts(),
-                    soap = FakeSoap.with(resources("/simuler-body-response.xml")),
+                    soap = FakeSoap.with(Resource.read("/simuler-body-response.xml")),
                 )
             }
 
@@ -71,7 +71,7 @@ class SimuleringTest {
                 app(
                     config = config,
                     sts = FakeSts(),
-                    soap = FakeSoap.with(resources("/soap-fault.xml")) {
+                    soap = FakeSoap.with(Resource.read("/soap-fault.xml")) {
                         it.replace("\$errorCode", "lol dummy 123")
                             .replace("\$errorMessage", "Fødselsnummeret er ugyldig")
                     },
