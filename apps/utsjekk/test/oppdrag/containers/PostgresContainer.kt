@@ -12,6 +12,7 @@ class PostgresContainer : AutoCloseable {
     private val container = PostgreSQLContainer("postgres:16").apply {
         if (!isGHA()) {
             withReuse(true)
+            withNetwork(null)
             withCreateContainerCmdModifier { cmd ->
                 cmd.withName("postgres")
                 cmd.hostConfig?.apply {
@@ -20,7 +21,6 @@ class PostgresContainer : AutoCloseable {
                 }
             }
         }
-        withNetwork(null)
         start()
     }
 

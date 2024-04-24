@@ -9,6 +9,7 @@ class MQContainer : AutoCloseable {
         GenericContainer<Nothing>("ibmcom/mq").apply {
             if (!isGHA()) {
                 withReuse(true)
+                withNetwork(null)
                 withCreateContainerCmdModifier { cmd ->
                     cmd.withName("mq")
                     cmd.hostConfig?.apply {
@@ -19,7 +20,6 @@ class MQContainer : AutoCloseable {
             }
             withEnv("LICENSE", "accept")
             withEnv("MQ_QMGR_NAME", "QM1")
-            withNetwork(null)
             withExposedPorts(1414)
             start()
         }
