@@ -140,7 +140,7 @@ class OppdragLagerRepositoryTest {
     private val mapper = XMLMapper<Oppdrag>()
 
     private fun avvistKvitteringsmelding(): Mmel {
-        return mapper.readValue(Resource.read("/kvittering-avvist.xml")).mmel
+        return mapper.readValue(Resource.read("/kvittering-funksjonell-feil.xml")).mmel
     }
 
     private fun Mmel.erLik(andre: Mmel) =

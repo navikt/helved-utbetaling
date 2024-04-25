@@ -157,7 +157,7 @@ object OppdragLagerRepository {
             setObject(4, oppdragId.behandlingId)
             setObject(5, versjon)
         }.executeUpdate()
-        appLog.debug("Updated oppdrag-Lager with kvitteringsmelding for oppdragId: $oppdragId")
+        appLog.debug("Updated oppdrag-Lager with kvitteringsmelding for oppdragId: {}", oppdragId)
     }
 
     fun hentIverksettingerForGrensesnittavstemming(

@@ -74,6 +74,17 @@ val ApplicationTestBuilder.httpClient: HttpClient
         }
     }
 
+val TestApplication.httpClient: HttpClient
+    get() = createClient {
+        install(ContentNegotiation) {
+            jackson {
+                registerModule(JavaTimeModule())
+                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            }
+        }
+    }
+
 /**
  * Replaces the content between the XML tags with the given replacement.
  * @example <tag>original</tag> -> <tag>replacement</tag>

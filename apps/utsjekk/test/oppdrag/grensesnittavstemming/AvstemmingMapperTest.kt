@@ -83,8 +83,7 @@ internal class AvstemmingMapperTest {
                 kvitteringsmelding = avvistKvitteringsmelding(),
                 status = OppdragStatus.KVITTERT_FUNKSJONELL_FEIL,
             )
-        val mapper =
-            AvstemmingMapper(listOf(oppdragLager, oppdragLager2), Fagsystem.DAGPENGER, fom, tom)
+        val mapper = AvstemmingMapper(listOf(oppdragLager, oppdragLager2), Fagsystem.DAGPENGER, fom, tom)
         val meldinger = mapper.lagAvstemmingsmeldinger()
 
         assertEquals(3, meldinger.size)
@@ -213,7 +212,7 @@ internal class AvstemmingMapperTest {
     }
 
     private val mapper = XMLMapper<Oppdrag>()
-    private fun avvistKvitteringsmelding() = mapper.readValue(Resource.read("/kvittering-avvist.xml")).mmel
+    private fun avvistKvitteringsmelding() = mapper.readValue(Resource.read("/kvittering-funksjonell-feil.xml")).mmel
 
     companion object {
         private val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")

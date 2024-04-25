@@ -26,8 +26,6 @@ class OppdragFake(
     inner class SendKøListener : MQConsumer(mq, MQQueue(config.oppdrag.sendKø)) {
         private val received: MutableList<TextMessage> = mutableListOf()
         private val mapper = XMLMapper<Oppdrag>()
-        private val kvitteringQueue = MQQueue(config.oppdrag.kvitteringsKø)
-        private val producer = MQProducer(mq, kvitteringQueue)
 
         fun getReceived() = received.toList()
         fun clearReceived() = received.clear()
@@ -41,7 +39,7 @@ class OppdragFake(
                 }
             }
 
-            producer.produce(mapper.writeValueAsString(oppdrag))
+            kvitteringsKø.produce(mapper.writeValueAsString(oppdrag))
         }
     }
 
