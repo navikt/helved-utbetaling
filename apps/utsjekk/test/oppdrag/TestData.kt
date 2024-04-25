@@ -6,6 +6,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.Opphør
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
 import oppdrag.iverksetting.domene.OppdragMapper
+import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLager
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -55,6 +56,7 @@ fun enUtbetalingsperiode(
     tom: LocalDate = LocalDate.now().plusYears(6),
     opphør: Opphør? = null,
     satstype: Satstype = Satstype.MÅNEDLIG,
+    behandlingId: String = RandomOSURId.generate(),
 ) = Utbetalingsperiode(
     erEndringPåEksisterendePeriode = false,
     opphør = opphør,
@@ -67,7 +69,7 @@ fun enUtbetalingsperiode(
     sats = beløp.toBigDecimal(),
     satstype = satstype,
     utbetalesTil = aktør,
-    behandlingId = RandomOSURId.generate(),
+    behandlingId = behandlingId,
     utbetalingsgrad = 50,
 )
 
@@ -77,3 +79,12 @@ internal val Utbetalingsoppdrag.somOppdragLager: OppdragLager
         val oppdrag = OppdragMapper.tilOppdrag(tilOppdrag110)
         return OppdragLager.lagFraOppdrag(this, oppdrag)
     }
+
+internal val Utbetalingsoppdrag.oppdragId
+    get() =
+        OppdragId(
+            fagsystem = this.fagsystem,
+            fagsakId = this.saksnummer,
+            behandlingId = this.utbetalingsperiode[0].behandlingId,
+            iverksettingId = this.iverksettingId,
+        )

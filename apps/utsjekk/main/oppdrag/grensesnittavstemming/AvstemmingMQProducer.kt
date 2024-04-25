@@ -19,6 +19,7 @@ class AvstemmingMQProducer(
     }
     private val producer = MQProducer(mq, queue)
     private val mapper: XMLMapper<Avstemmingsdata> = XMLMapper()
+    private val namespaceURI = "http://nav.no/virksomhet/tjenester/avstemming/meldinger/v1"
 
     fun sendGrensesnittAvstemming(avstemmingsdata: Avstemmingsdata) {
         if (!config.enabled) {
@@ -28,8 +29,8 @@ class AvstemmingMQProducer(
 
         runCatching {
             appLog.info("Sender avstemming til oppdrag")
-            val rootTag = mapper.wrapInTag(avstemmingsdata, QName("uri", "local"))
-            val xml = mapper.writeValueAsString(rootTag)
+            val xmlRootTag = mapper.wrapInTag(avstemmingsdata, QName(namespaceURI, "avstemmingsdata"))
+            val xml = mapper.writeValueAsString(xmlRootTag)
             producer.produce(xml)
         }.onFailure {
             appLog.error("Klarte ikke sende avstemming til OS")

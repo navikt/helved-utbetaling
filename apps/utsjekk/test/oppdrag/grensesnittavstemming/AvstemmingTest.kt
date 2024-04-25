@@ -19,10 +19,7 @@ class AvstemmingTest {
     private val mapper = XMLMapper<Avstemmingsdata>()
 
     @AfterEach
-    fun cleanup() {
-        TestRuntime.clearTables()
-        TestRuntime.clearMQ()
-    }
+    fun cleanup() = TestRuntime.cleanup()
 
     @Test
     fun `skal avstemme eksisterende oppdrag`() {
@@ -42,13 +39,13 @@ class AvstemmingTest {
                 OppdragLagerRepository.opprettOppdrag(oppdragLager, it)
             }
 
-            val response = httpClient.post("/grensesnittavstemming") {
+            httpClient.post("/grensesnittavstemming") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
                 setBody(avstemming)
+            }.also {
+                assertEquals(HttpStatusCode.Created, it.status)
             }
-
-            assertEquals(HttpStatusCode.Created, response.status)
 
             val actual = TestRuntime.oppdrag.avstemmingKø
                 .getReceived()
@@ -65,7 +62,8 @@ class AvstemmingTest {
             val expected = avstemmingMapper
                 .lagAvstemmingsmeldinger()
                 .map {
-                    val avstem = mapper.wrapInTag(it, QName("uri", "local"))
+                    val ns = "http://nav.no/virksomhet/tjenester/avstemming/meldinger/v1"
+                    val avstem = mapper.wrapInTag(it, QName(ns, "avstemmingsdata"))
                     mapper.writeValueAsString(avstem)
                 }
                 .map(TestRuntime.oppdrag::createMessage)

@@ -23,7 +23,7 @@ class OppdragLagerRepositoryTest {
 
     @AfterEach
     fun cleanup() {
-        TestRuntime.clearTables()
+        TestRuntime.cleanup()
     }
 
     @Test

@@ -21,13 +21,11 @@ class OppdragMQConsumerTest {
     private val mapper = XMLMapper<Oppdrag>()
 
     @BeforeEach
-    fun clear() {
-        TestRuntime.clearTables()
-    }
+    fun clear() = TestRuntime.cleanup()
 
     @Test
     fun `skal tolke kvittering riktig ved ok`() {
-        val xml = Resource.read("/kvittering-akseptert.xml")
+        val xml = Resource.read("/kvittering-ok.xml")
         val oppdrag = mapper.readValue(xml)
         assertEquals(Kvitteringstatus.OK, oppdrag.kvitteringstatus)
     }
@@ -84,7 +82,7 @@ class OppdragMQConsumerTest {
             OppdragLagerRepository.opprettOppdrag(oppdragLagerV1, con)
         }
 
-        val xml = Resource.read("/kvittering-akseptert.xml")
+        val xml = Resource.read("/kvittering-ok.xml")
         val kvittering = TestRuntime.oppdrag.createMessage(xml)
         consumer.onMessage(kvittering)
 
@@ -94,7 +92,7 @@ class OppdragMQConsumerTest {
 
     @Test
     fun `oppretter ikke oppdrag hvis henting av oppdrag feiler`() {
-        val xml = Resource.read("/kvittering-akseptert.xml")
+        val xml = Resource.read("/kvittering-ok.xml")
         val kvittering = TestRuntime.oppdrag.createMessage(xml)
 
 //        assertThrows<Exception> {
@@ -115,7 +113,7 @@ class OppdragMQConsumerTest {
             OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
         }
 
-        val xml = Resource.read("/kvittering-akseptert.xml")
+        val xml = Resource.read("/kvittering-ok.xml")
         val kvittering = TestRuntime.oppdrag.createMessage(xml)
         consumer.onMessage(kvittering)
 
