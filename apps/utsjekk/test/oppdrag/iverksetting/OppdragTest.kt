@@ -3,7 +3,6 @@ package oppdrag.iverksetting
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
@@ -14,16 +13,17 @@ import oppdrag.iverksetting.domene.Kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class OppdragTest {
 
     @BeforeEach
     @AfterEach
-    fun cleanup() {
-        TestRuntime.cleanup()
-    }
+    fun cleanup() = TestRuntime.cleanup()
 
     @Nested
     inner class Routes {
@@ -32,7 +32,7 @@ class OppdragTest {
         fun `POST oppdrag svarer 201`(): Unit = runBlocking {
             val utbetalingsoppdrag = etUtbetalingsoppdrag()
 
-            app.httpClient.post("/oppdrag") {
+            httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag)
@@ -45,7 +45,7 @@ class OppdragTest {
         fun `POST oppdrag svarer 409 ved uplikat`(): Unit = runBlocking {
             val utbetalingsoppdrag = etUtbetalingsoppdrag()
 
-            app.httpClient.post("/oppdrag") {
+            httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag)
@@ -53,7 +53,7 @@ class OppdragTest {
                 assertEquals(HttpStatusCode.Created, it.status)
             }
 
-            app.httpClient.post("/oppdrag") {
+            httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag)
@@ -67,7 +67,7 @@ class OppdragTest {
             val utbetalingsoppdrag = etUtbetalingsoppdrag()
 
 
-            app.httpClient.post("/oppdrag") {
+            httpClient.post("/oppdrag") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag)
@@ -81,7 +81,7 @@ class OppdragTest {
                 assertEquals(0, it.single().versjon)
             }
 
-            app.httpClient.post("/oppdragPaaNytt/1") {
+            httpClient.post("/oppdragPaaNytt/1") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag)
@@ -112,7 +112,7 @@ class OppdragTest {
                 iverksettingId = iverksettingId
             )
 
-            app.httpClient.post("/status") {
+            httpClient.post("/status") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag.oppdragId.toDto())
@@ -135,7 +135,7 @@ class OppdragTest {
                 iverksettingId = iverksettingId
             )
 
-            app.httpClient.post("/status") {
+            httpClient.post("/status") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag.oppdragId.toDto())
@@ -151,7 +151,8 @@ class OppdragTest {
         @Test
         fun `utbetaling kvitterer ok`(): Unit = runBlocking {
             val periode = enUtbetalingsperiode(behandlingId = "p6AF4PE5kd4HxDeIfcs8")
-            val utbetaling = etUtbetalingsoppdrag(fagsak = "fhU2NI7YWJDsnZpRjJfz", utbetalingsperiode = arrayOf(periode))
+            val utbetaling =
+                etUtbetalingsoppdrag(fagsak = "fhU2NI7YWJDsnZpRjJfz", utbetalingsperiode = arrayOf(periode))
 
             TestRuntime.postgres.transaction {
                 OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
@@ -265,22 +266,6 @@ class OppdragTest {
             assertEquals(OppdragStatus.KVITTERT_UKJENT, oppdrag.status)
             assertEquals(Kvitteringstatus.UKJENT, oppdrag.kvitteringstatus)
         }
-    }
-
-    companion object {
-        private val app = TestApplication {
-            application {
-                server(TestRuntime.config)
-            }
-        }
-
-        @BeforeAll
-        @JvmStatic
-        fun start() = app.start()
-
-        @AfterAll
-        @JvmStatic
-        fun stop() = app.stop()
     }
 }
 

@@ -15,7 +15,6 @@ import oppdrag.containers.MQContainer
 import oppdrag.containers.PostgresContainer
 import oppdrag.fakes.AzureFake
 import oppdrag.fakes.OppdragFake
-import oppdrag.postgres.map
 
 object TestRuntime : AutoCloseable {
     val azure: AzureFake = AzureFake()
@@ -23,6 +22,7 @@ object TestRuntime : AutoCloseable {
     val mq: MQContainer = MQContainer()
     val config: Config = TestConfig.create(postgres.config, mq.config, azure.config)
     val oppdrag = OppdragFake(config)
+    val ktor = testApplication.apply { start() }
 
     fun cleanup() = postgres.transaction { con ->
         con.prepareStatement("TRUNCATE TABLE oppdrag_lager").execute()
@@ -32,17 +32,12 @@ object TestRuntime : AutoCloseable {
         oppdrag.avstemmingKø.clearReceived()
     }
 
-    fun tableSize(table: String): Int? = postgres.transaction { con ->
-        val stmt = con.prepareStatement("SELECT count(*) FROM $table")
-        val resultSet = stmt.executeQuery()
-        resultSet.map { row -> row.getInt(1) }.singleOrNull()
-    }
-
     override fun close() {
         azure.close()
         oppdrag.close()
         postgres.close()
         mq.close()
+        ktor.stop()
     }
 
     init {
@@ -63,19 +58,16 @@ fun NettyApplicationEngine.port(): Int = runBlocking {
     resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
 }
 
-val ApplicationTestBuilder.httpClient: HttpClient
-    get() = createClient {
-        install(ContentNegotiation) {
-            jackson {
-                registerModule(JavaTimeModule())
-                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            }
+private val testApplication: TestApplication by lazy {
+    TestApplication {
+        application {
+            server(TestRuntime.config)
         }
     }
+}
 
-val TestApplication.httpClient: HttpClient
-    get() = createClient {
+val httpClient: HttpClient by lazy {
+    testApplication.createClient {
         install(ContentNegotiation) {
             jackson {
                 registerModule(JavaTimeModule())
@@ -84,6 +76,7 @@ val TestApplication.httpClient: HttpClient
             }
         }
     }
+}
 
 /**
  * Replaces the content between the XML tags with the given replacement.
