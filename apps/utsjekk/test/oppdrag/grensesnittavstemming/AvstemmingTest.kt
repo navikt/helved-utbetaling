@@ -2,7 +2,7 @@ package oppdrag.grensesnittavstemming
 
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.server.testing.*
+import kotlinx.coroutines.runBlocking
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
@@ -22,7 +22,7 @@ class AvstemmingTest {
     fun cleanup() = TestRuntime.cleanup()
 
     @Test
-    fun `skal avstemme eksisterende oppdrag`() {
+    fun `skal avstemme eksisterende oppdrag`(): Unit = runBlocking {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
         val avstemming = GrensesnittavstemmingRequest(
             fagsystem = Fagsystem.DAGPENGER,
@@ -30,47 +30,41 @@ class AvstemmingTest {
             til = LocalDateTime.now().plusMonths(1)
         )
 
-        testApplication {
-            application {
-                server(TestRuntime.config)
-            }
-
-            TestRuntime.postgres.transaction {
-                OppdragLagerRepository.opprettOppdrag(oppdragLager, it)
-            }
-
-            httpClient.post("/grensesnittavstemming") {
-                contentType(ContentType.Application.Json)
-                bearerAuth(TestRuntime.azure.generateToken())
-                setBody(avstemming)
-            }.also {
-                assertEquals(HttpStatusCode.Created, it.status)
-            }
-
-            val actual = TestRuntime.oppdrag.avstemmingKø
-                .getReceived()
-                .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
-                .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
-
-            val avstemmingMapper = AvstemmingMapper(
-                oppdragsliste = listOf(oppdragLager),
-                fagsystem = avstemming.fagsystem,
-                fom = avstemming.fra,
-                tom = avstemming.til
-            )
-
-            val expected = avstemmingMapper
-                .lagAvstemmingsmeldinger()
-                .map {
-                    val ns = "http://nav.no/virksomhet/tjenester/avstemming/meldinger/v1"
-                    val avstem = mapper.wrapInTag(it, QName(ns, "avstemmingsdata"))
-                    mapper.writeValueAsString(avstem)
-                }
-                .map(TestRuntime.oppdrag::createMessage)
-                .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
-                .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
-
-            assertEquals(expected, actual)
+        TestRuntime.postgres.transaction {
+            OppdragLagerRepository.opprettOppdrag(oppdragLager, it)
         }
+
+        httpClient.post("/grensesnittavstemming") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(avstemming)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val actual = TestRuntime.oppdrag.avstemmingKø
+            .getReceived()
+            .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
+            .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
+
+        val avstemmingMapper = AvstemmingMapper(
+            oppdragsliste = listOf(oppdragLager),
+            fagsystem = avstemming.fagsystem,
+            fom = avstemming.fra,
+            tom = avstemming.til
+        )
+
+        val expected = avstemmingMapper
+            .lagAvstemmingsmeldinger()
+            .map {
+                val ns = "http://nav.no/virksomhet/tjenester/avstemming/meldinger/v1"
+                val avstem = mapper.wrapInTag(it, QName(ns, "avstemmingsdata"))
+                mapper.writeValueAsString(avstem)
+            }
+            .map(TestRuntime.oppdrag::createMessage)
+            .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
+            .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
+
+        assertEquals(expected, actual)
     }
 }
