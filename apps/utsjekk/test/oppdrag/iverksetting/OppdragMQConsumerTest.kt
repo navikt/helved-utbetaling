@@ -43,7 +43,7 @@ class OppdragMQConsumerTest {
 
     @Test
     fun `skal tolke kvittering riktig ved feil`() {
-        val xml = Resource.read("/kvittering-avvist.xml")
+        val xml = Resource.read("/kvittering-funksjonell-feil.xml")
         val oppdrag = mapper.readValue(xml)
         assertEquals(Kvitteringstatus.AVVIST_FUNKSJONELLE_FEIL, oppdrag.kvitteringstatus)
     }

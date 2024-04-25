@@ -9,6 +9,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.kvitteringstatus
+import oppdrag.iverksetting.domene.status
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
 import oppdrag.postgres.transaction
@@ -63,7 +64,7 @@ class OppdragMQConsumer(
         postgres.transaction { con ->
             OppdragLagerRepository.oppdaterStatus(
                 oppdragId,
-                OppdragStatus.KVITTERT_OK,
+                kvittering.status,
                 con,
                 førsteOppdragUtenKvittering.versjon
             )

@@ -7,6 +7,7 @@ import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
 import libs.utils.appLog
 import libs.utils.secureLog
+import java.util.*
 import javax.jms.JMSContext
 import javax.jms.JMSProducer
 import javax.jms.MessageListener
@@ -22,6 +23,7 @@ class MQProducer(
     ) {
         appLog.debug("Producing message on ${queue.baseQueueName}")
         mq.transaction { ctx ->
+            ctx.clientID = UUID.randomUUID().toString()
             val producer = ctx.createProducer().apply(config)
             producer.send(queue, message)
         }

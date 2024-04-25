@@ -9,7 +9,7 @@ import java.sql.Connection
 import javax.sql.DataSource
 
 class PostgresContainer : AutoCloseable {
-    private val container = PostgreSQLContainer("postgres:16").apply {
+    private val container = PostgreSQLContainer("postgres:15").apply {
         if (!isGHA()) {
             withReuse(true)
             withNetwork(null)

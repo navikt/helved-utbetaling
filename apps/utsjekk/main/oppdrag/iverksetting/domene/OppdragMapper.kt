@@ -3,15 +3,11 @@ package oppdrag.iverksetting.domene
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
-import no.trygdeetaten.skjema.oppdrag.ObjectFactory
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import no.trygdeetaten.skjema.oppdrag.Oppdrag110
-import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
-import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
+import no.trygdeetaten.skjema.oppdrag.*
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.GregorianCalendar
+import java.util.*
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 
@@ -23,7 +19,8 @@ internal object OppdragMapper {
     fun tilOppdrag110(utbetalingsoppdrag: Utbetalingsoppdrag): Oppdrag110 =
         objectFactory.createOppdrag110().apply {
             kodeAksjon = OppdragSkjemaConstants.KODE_AKSJON
-            kodeEndring = if (utbetalingsoppdrag.erFørsteUtbetalingPåSak) Endringskode.NY.kode else Endringskode.ENDRING.kode
+            kodeEndring =
+                if (utbetalingsoppdrag.erFørsteUtbetalingPåSak) Endringskode.NY.kode else Endringskode.ENDRING.kode
             kodeFagomraade = utbetalingsoppdrag.fagsystem.kode
             fagsystemId = utbetalingsoppdrag.saksnummer
             utbetFrekvens = Utbetalingsfrekvens.MÅNEDLIG.kode
@@ -126,15 +123,23 @@ internal object OppdragMapper {
         }
 }
 
-internal val Oppdrag.status: OppdragStatus
-    get() =
-        when (Kvitteringstatus.fraKode(mmel?.alvorlighetsgrad ?: "Ukjent")) {
-            Kvitteringstatus.OK -> OppdragStatus.KVITTERT_OK
-            Kvitteringstatus.AKSEPTERT_MEN_NOE_ER_FEIL -> OppdragStatus.KVITTERT_MED_MANGLER
-            Kvitteringstatus.AVVIST_FUNKSJONELLE_FEIL -> OppdragStatus.KVITTERT_FUNKSJONELL_FEIL
-            Kvitteringstatus.AVVIST_TEKNISK_FEIL -> OppdragStatus.KVITTERT_TEKNISK_FEIL
-            Kvitteringstatus.UKJENT -> OppdragStatus.KVITTERT_UKJENT
-        }
+val Oppdrag.kvitteringstatus: Kvitteringstatus
+    get() = when (mmel?.alvorlighetsgrad) {
+        "00" -> Kvitteringstatus.OK
+        "04" -> Kvitteringstatus.AKSEPTERT_MEN_NOE_ER_FEIL
+        "08" -> Kvitteringstatus.AVVIST_FUNKSJONELLE_FEIL
+        "12" -> Kvitteringstatus.AVVIST_TEKNISK_FEIL
+        else -> Kvitteringstatus.UKJENT
+    }
+
+val Oppdrag.status: OppdragStatus
+    get() = when (kvitteringstatus) {
+        Kvitteringstatus.OK -> OppdragStatus.KVITTERT_OK
+        Kvitteringstatus.AKSEPTERT_MEN_NOE_ER_FEIL -> OppdragStatus.KVITTERT_MED_MANGLER
+        Kvitteringstatus.AVVIST_FUNKSJONELLE_FEIL -> OppdragStatus.KVITTERT_FUNKSJONELL_FEIL
+        Kvitteringstatus.AVVIST_TEKNISK_FEIL -> OppdragStatus.KVITTERT_TEKNISK_FEIL
+        Kvitteringstatus.UKJENT -> OppdragStatus.KVITTERT_UKJENT
+    }
 
 internal fun LocalDate.toXMLDate(): XMLGregorianCalendar =
     DatatypeFactory.newInstance()
