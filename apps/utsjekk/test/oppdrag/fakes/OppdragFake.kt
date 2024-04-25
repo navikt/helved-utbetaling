@@ -12,11 +12,13 @@ import oppdrag.Config
 import oppdrag.iverksetting.domene.Kvitteringstatus
 import javax.jms.TextMessage
 
-class OppdragFake(private val config: Config) : AutoCloseable {
-    private val mq = MQ(config.mq)
-
+class OppdragFake(
+    private val config: Config,
+    private val mq: MQ = MQ(config.mq),
+) : AutoCloseable {
     val sendKø = SendKøListener().apply { start() }
     val avstemmingKø = AvstemmingKøListener().apply { start() }
+    val kvitteringsKø = MQProducer(mq, MQQueue(config.oppdrag.kvitteringsKø))
 
     /**
      * Oppdrag sin send-kø må svare med en faked kvittering

@@ -24,13 +24,10 @@ object TestRuntime : AutoCloseable {
     val config: Config = TestConfig.create(postgres.config, mq.config, azure.config)
     val oppdrag = OppdragFake(config)
 
-    fun clearTables() = postgres.transaction { con ->
+    fun cleanup() = postgres.transaction { con ->
         con.prepareStatement("TRUNCATE TABLE oppdrag_lager").execute()
         con.prepareStatement("TRUNCATE TABLE simulering_lager").execute()
         con.prepareStatement("TRUNCATE TABLE mellomlagring_konsistensavstemming").execute()
-    }
-
-    fun clearMQ() {
         oppdrag.sendKø.clearReceived()
         oppdrag.avstemmingKø.clearReceived()
     }

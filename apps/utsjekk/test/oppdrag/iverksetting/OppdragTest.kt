@@ -5,22 +5,21 @@ import io.ktor.http.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.withTimeout
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import oppdrag.TestRuntime
-import oppdrag.etUtbetalingsoppdrag
-import oppdrag.httpClient
-import oppdrag.iverksetting.tilstand.OppdragId
+import oppdrag.*
+import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
-import oppdrag.server
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class OppdragTest {
 
+    @AfterEach
+    fun cleanup() = TestRuntime.cleanup()
+
     @Test
-    fun `skal lagre oppdrag for utbetalingoppdrag`() {
+    fun `POST oppdrag svarer 201`() {
         val utbetalingsoppdrag = etUtbetalingsoppdrag()
-        var oppdragStatus: OppdragStatus = OppdragStatus.LAGT_PÅ_KØ
 
         testApplication {
             application { server(TestRuntime.config) }
@@ -29,23 +28,15 @@ class OppdragTest {
                 contentType(ContentType.Application.Json)
                 bearerAuth(TestRuntime.azure.generateToken())
                 setBody(utbetalingsoppdrag)
+            }.also {
+                assertEquals(HttpStatusCode.Created, it.status)
             }
-
-            withTimeout(1_000) {
-                TestRuntime.postgres.transaction { con ->
-                    while (oppdragStatus == OppdragStatus.LAGT_PÅ_KØ) {
-                        oppdragStatus = OppdragLagerRepository.hentOppdrag(utbetalingsoppdrag.oppdragId, con).status
-                    }
-                }
-            }
-            assertEquals(OppdragStatus.KVITTERT_OK, oppdragStatus)
         }
     }
 
     @Test
-    fun `skal returnere https statuscode 409 ved dobbel sending`() {
+    fun `POST oppdrag svarer 409 ved uplikat`() {
         val utbetalingsoppdrag = etUtbetalingsoppdrag()
-        var oppdragStatus: OppdragStatus = OppdragStatus.LAGT_PÅ_KØ
 
         testApplication {
             application { server(TestRuntime.config) }
@@ -65,25 +56,72 @@ class OppdragTest {
             }.also {
                 assertEquals(HttpStatusCode.Conflict, it.status)
             }
+        }
+    }
 
-            withTimeout(1_000) {
-                TestRuntime.postgres.transaction { con ->
-                    while (oppdragStatus == OppdragStatus.LAGT_PÅ_KØ) {
-                        oppdragStatus = OppdragLagerRepository.hentOppdrag(utbetalingsoppdrag.oppdragId, con).status
-                    }
+    @Test
+    fun `utbetaling kvitterer ok`() {
+        val periode = enUtbetalingsperiode(behandlingId = "7pptdD10zemjwgB8YWez")
+        val utbetaling = etUtbetalingsoppdrag(fagsak = "6rouSucMUIX10SikRKcq", utbetalingsperiode = arrayOf(periode))
+
+        testApplication {
+            application {
+                server(TestRuntime.config)
+            }
+
+            httpClient.post("/oppdrag") {
+                contentType(ContentType.Application.Json)
+                bearerAuth(TestRuntime.azure.generateToken())
+                setBody(utbetaling)
+            }.also {
+                assertEquals(HttpStatusCode.Created, it.status)
+            }
+
+            val xml = Resource.read("/kvittering-ok.xml")
+
+            TestRuntime.oppdrag.kvitteringsKø.produce(xml)
+
+            val oppdrag = repeatUntil(::statusChanged) {
+                TestRuntime.postgres.transaction {
+                    OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId, it)
                 }
             }
 
-            assertEquals(OppdragStatus.KVITTERT_OK, oppdragStatus)
+            assertEquals(OppdragStatus.KVITTERT_OK, oppdrag.status)
         }
+    }
+
+    @Test
+    fun `utbetaling kvitterer med mangler`() {
+
+    }
+
+    @Test
+    fun `utbetaling kvitterer funksjonell feil`() {
+
+    }
+
+    @Test
+    fun `utbetaling kvitterer teknisk feil`() {
+
+    }
+
+    @Test
+    fun `utbetaling kvitterer ukjent`() {
+
     }
 }
 
-private val Utbetalingsoppdrag.oppdragId
-    get() =
-        OppdragId(
-            fagsystem = this.fagsystem,
-            fagsakId = this.saksnummer,
-            behandlingId = this.utbetalingsperiode[0].behandlingId,
-            iverksettingId = this.iverksettingId,
-        )
+private fun statusChanged(oppdrag: OppdragLager): Boolean {
+    return oppdrag.status != OppdragStatus.LAGT_PÅ_KØ
+}
+
+private suspend fun <T> repeatUntil(
+    predicate: (T) -> Boolean,
+    timeoutMs: Long = 1_000,
+    action: () -> T,
+): T = withTimeout(timeoutMs) {
+    var result = action()
+    while (!predicate(result)) result = action()
+    result
+}
