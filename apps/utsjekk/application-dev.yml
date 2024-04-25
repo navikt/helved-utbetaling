@@ -65,8 +65,6 @@ spec:
   envFrom:
     - secret: utsjekk-oppdrag
   env:
-    - name: JAVA_OPTS
-      value: "-XX:MinRAMPercentage=25.0 -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
     - name: OPPDRAG_ENABLED
       value: "true"
     - name: AVSTEMMING_ENABLED

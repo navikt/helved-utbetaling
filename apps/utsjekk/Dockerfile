@@ -6,8 +6,7 @@ COPY build/libs/utsjekk-all.jar /app.jar
 
 ENTRYPOINT [ \
     "java",  \
-    "-XX:MaxRAMPercentage=75.0",  \
-    "-XX:MinRAMPercentage=25.0",  \
+    "-XX:MaxRAMPercentage=60.0",  \
     "-XX:+HeapDumpOnOutOfMemoryError",  \
     "-XX:HeapDumpPath=/tmp",  \
     "-XX:ActiveProcessorCount=2",  \
