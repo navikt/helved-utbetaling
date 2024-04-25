@@ -16,7 +16,15 @@ If containers are shut down and you get 409 conflict in the tests trying to setu
 just manually start them again
 
 ```sh
-docker start oppdrag-mq oppdrag-postgres 
+docker start mq postgres 
+```
+
+If the testcontainer is updated, the running containers on your machine needs to be replaced.
+Just delete them with
+
+```shell
+docker stop mq postgres
+docker container prune
 ```
 
 # References
