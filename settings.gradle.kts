@@ -1,7 +1,7 @@
 rootProject.name = "dp-oppdrag"
 
 include(
-    "apps:utsjekk",
+    "apps:oppdrag",
     "apps:simulering"
 )
 

@@ -1,10 +1,10 @@
-name: deploy utsjekk
+name: deploy oppdrag
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'apps/utsjekk/**'
+      - 'apps/oppdrag/**'
       - 'libs/**'
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
         with:
           dependency-graph: generate-and-submit
 
-      - run: ./gradlew apps:utsjekk:test apps:utsjekk:buildFatJar --continue --no-daemon --parallel
+      - run: ./gradlew apps:oppdrag:test apps:oppdrag:buildFatJar --continue --no-daemon --parallel
 
       - uses: dorny/test-reporter@v1.8.0
         if: success() || failure()
@@ -42,10 +42,10 @@ jobs:
           team: helved
           identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
-          image_suffix: utsjekk
+          image_suffix: oppdrag
           tag: ${{ github.sha }}
-          docker_context: ./apps/utsjekk
-          dockerfile: ./apps/utsjekk/Dockerfile
+          docker_context: ./apps/oppdrag
+          dockerfile: ./apps/oppdrag/Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
@@ -66,5 +66,5 @@ jobs:
         env:
           PRINT_PAYLOAD: true
           CLUSTER: dev-gcp
-          RESOURCE: apps/utsjekk/application-dev.yml
-          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-utsjekk:${{ github.sha }}
+          RESOURCE: apps/oppdrag/application-dev.yml
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-oppdrag:${{ github.sha }}
