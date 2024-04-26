@@ -3,10 +3,10 @@ package oppdrag.grensesnittavstemming
 import libs.utils.appLog
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Metrics
+import libs.postgres.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Grunnlagsdata
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
-import oppdrag.postgres.transaction
 import java.time.LocalDateTime
 import java.util.*
 import javax.sql.DataSource

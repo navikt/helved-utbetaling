@@ -1,9 +1,9 @@
 package oppdrag.containers
 
-import oppdrag.PostgresConfig
+import libs.postgres.Postgres
+import libs.postgres.PostgresConfig
+import libs.postgres.transaction
 import oppdrag.isGHA
-import oppdrag.postgres.Postgres
-import oppdrag.postgres.transaction
 import org.testcontainers.containers.PostgreSQLContainer
 import java.sql.Connection
 import javax.sql.DataSource

@@ -3,6 +3,7 @@ package oppdrag.iverksetting
 import com.ibm.mq.jms.MQQueue
 import libs.mq.MQ
 import libs.mq.MQConsumer
+import libs.postgres.transaction
 import libs.utils.appLog
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
@@ -12,7 +13,6 @@ import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.domene.status
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
-import oppdrag.postgres.transaction
 import javax.jms.TextMessage
 import javax.sql.DataSource
 

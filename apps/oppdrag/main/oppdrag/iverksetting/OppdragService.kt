@@ -1,6 +1,7 @@
 package oppdrag.iverksetting
 
 import libs.mq.MQ
+import libs.postgres.transaction
 import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -8,7 +9,6 @@ import oppdrag.OppdragConfig
 import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
-import oppdrag.postgres.transaction
 import org.postgresql.util.PSQLException
 import java.sql.Connection
 import javax.sql.DataSource
