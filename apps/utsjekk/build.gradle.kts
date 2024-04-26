@@ -11,6 +11,7 @@ val ktorVersion = "2.3.9"
 dependencies {
     implementation(project(":libs:auth"))
     implementation(project(":libs:postgres"))
+    implementation(project(":libs:job"))
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240408113510_4a2db84")
 

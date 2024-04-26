@@ -24,6 +24,8 @@ import libs.postgres.Postgres
 import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.routing.actuators
+import utsjekk.task.TaskScheduler
+import utsjekk.task.TaskService
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -68,6 +70,12 @@ fun Application.utsjekk(config: Config = Config()) {
     }
 
     val postgres = Postgres.createAndMigrate(config.postgres)
+    val service = TaskService(postgres)
+    val scheduler = TaskScheduler(postgres)
+
+    environment.monitor.subscribe(ApplicationStopping) {
+        scheduler.close()
+    }
 
 
     routing {

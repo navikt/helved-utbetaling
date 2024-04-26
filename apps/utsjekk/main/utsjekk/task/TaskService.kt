@@ -1,16 +1,16 @@
 package utsjekk.task
 
+import libs.postgres.transaction
 import libs.utils.secureLog
-import utsjekk.ayncTransaction
 import javax.sql.DataSource
 
 class TaskService(private val postgres: DataSource) {
 
     private fun <T> tryInto(data: T) = Ressurs.success(data)
 
-    suspend fun finnAntallTaskerSomKreverOppfølging(): Ressurs<Long> {
+    fun finnAntallTaskerSomKreverOppfølging(): Ressurs<Long> {
         val data = runCatching {
-            postgres.ayncTransaction {
+            postgres.transaction {
                 TaskDao.countBy(listOf(Status.MANUELL_OPPFØLGING), it)
             }
         }
@@ -22,24 +22,24 @@ class TaskService(private val postgres: DataSource) {
         }
     }
 
-    suspend fun finnAntallTaskerMedStatusFeiletOgManuellOppfølging(): Ressurs<TaskerMedStatusFeiletOgManuellOppfølging> {
+    fun finnAntallTaskerMedStatusFeiletOgManuellOppfølging(): Ressurs<TaskerMedStatusFeiletOgManuellOppfølging> {
         TODO()
     }
 
-    suspend fun hentTasksForCallId(
+    fun hentTasksForCallId(
         callId: String,
         saksbehandlerId: String
     ): Ressurs<List<TaskDto>>? {
         TODO()
     }
 
-    suspend fun hentTasksSomErFerdigNåMenFeiletFør(
+    fun hentTasksSomErFerdigNåMenFeiletFør(
         brukernavn: String
     ): Ressurs<List<TaskDto>>? {
         TODO()
     }
 
-    suspend fun hentTasks(
+    fun hentTasks(
         statuses: List<Status>,
         saksbehandlerId: String,
         page: Int,
@@ -48,28 +48,28 @@ class TaskService(private val postgres: DataSource) {
         TODO()
     }
 
-    suspend fun hentTaskLogg(
+    fun hentTaskLogg(
         id: Long,
         saksbehandlerId: String
     ): Ressurs<List<TaskloggDto>> {
         TODO()
     }
 
-    suspend fun rekjørTask(
+    fun rekjørTask(
         Id: Long,
         behandlerId: String
     ): Ressurs<String> {
         TODO()
     }
 
-    suspend fun rekjørTasks(
+    fun rekjørTasks(
         status: Status,
         saksbehandlerId: String
     ): Ressurs<String> {
         TODO()
     }
 
-    suspend fun avvikshåndterTask(
+    fun avvikshåndterTask(
         taskId: Long,
         avvikstype: Avvikstype,
         årsak: String,
@@ -78,7 +78,7 @@ class TaskService(private val postgres: DataSource) {
         TODO()
     }
 
-    suspend fun kommenterTask(
+    fun kommenterTask(
         taskId: Long,
         kommentarDTO: KommentarDTO,
         saksbehandlerId: String
@@ -86,7 +86,7 @@ class TaskService(private val postgres: DataSource) {
         TODO()
     }
 
-    suspend fun hentTaskMedId(
+    fun hentTaskMedId(
         id: Long,
         saksbehandlerId: String
     ): Ressurs<TaskDto>? {

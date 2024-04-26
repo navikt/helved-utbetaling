@@ -8,43 +8,43 @@ typealias TriggeredBeforeTime = LocalDateTime
 
 object TaskDao {
 
-    suspend fun findBy(status: List<Status>, time: TriggeredBeforeTime, con: Connection): List<Task> {
+    fun findBy(status: List<Status>, time: TriggeredBeforeTime, con: Connection): List<Task> {
         TODO()
     }
 
-    suspend fun findBy(status: Status, con: Connection): List<Task> {
+    fun findBy(status: Status, con: Connection): List<Task> {
         TODO()
     }
 
-    suspend fun findBy(status: List<Status>, con: Connection): List<Task> {
+    fun findBy(status: List<Status>, con: Connection): List<Task> {
         TODO()
     }
 
-    suspend fun countBy(status: List<Status>, con: Connection): Long {
+    fun countBy(status: List<Status>, con: Connection): Long {
         TODO()
     }
 
-    suspend fun findBy(status: List<Status>, type: String, con: Connection): List<Task> {
+    fun findBy(status: List<Status>, type: String, con: Connection): List<Task> {
         TODO()
     }
 
-    suspend fun findOne(payload: String, type: String, con: Connection): Task? {
+    fun findOne(payload: String, type: String, con: Connection): Task? {
         TODO()
     }
 
-    suspend fun countOpenTasks(con: Connection): List<AntallÅpneTask> {
+    fun countOpenTasks(con: Connection): List<AntallÅpneTask> {
         TODO()
     }
 
-    suspend fun finnTasksSomErFerdigNåMenFeiletFør(con: Connection): List<Task> {
+    fun finnTasksSomErFerdigNåMenFeiletFør(con: Connection): List<Task> {
         TODO()
     }
 
-    suspend fun findByCallId(callId: String, con: Connection): List<Task> {
+    fun findByCallId(callId: String, con: Connection): List<Task> {
         TODO()
     }
 
-    suspend fun findBy(status: Status, time: LastProcessedTime, con: Connection): List<Task> {
+    fun findBy(status: Status, time: LastProcessedTime, con: Connection): List<Task> {
         TODO()
     }
 
