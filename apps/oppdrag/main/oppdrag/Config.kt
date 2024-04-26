@@ -2,6 +2,7 @@ package oppdrag
 
 import libs.auth.AzureConfig
 import libs.mq.MQConfig
+import libs.postgres.PostgresConfig
 import libs.utils.env
 
 data class Config(
@@ -31,11 +32,3 @@ data class OppdragConfig(
 )
 
 typealias Queue = String
-
-data class PostgresConfig(
-    val host: String = env("DB_HOST"),
-    val port: String = env("DB_PORT"),
-    val database: String = env("DB_DATABASE"),
-    val username: String = env("DB_USERNAME"),
-    val password: String = env("DB_PASSWORD"),
-)

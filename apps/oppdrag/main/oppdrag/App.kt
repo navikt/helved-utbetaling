@@ -11,7 +11,6 @@ import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheus.PrometheusConfig
@@ -19,13 +18,13 @@ import io.micrometer.prometheus.PrometheusMeterRegistry
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.mq.MQ
+import libs.postgres.Postgres
 import libs.utils.appLog
 import libs.utils.secureLog
 import oppdrag.grensesnittavstemming.AvstemmingMQProducer
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
-import oppdrag.iverksetting.OppdragService
 import oppdrag.iverksetting.OppdragMQConsumer
-import oppdrag.postgres.Postgres
+import oppdrag.iverksetting.OppdragService
 import oppdrag.routing.actuators
 import oppdrag.routing.avstemmingRoutes
 import oppdrag.routing.iverksettingRoutes

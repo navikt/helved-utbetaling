@@ -11,6 +11,7 @@ val ktorVersion = "2.3.9"
 dependencies {
     implementation(project(":libs:auth"))
     implementation(project(":libs:mq"))
+    implementation(project(":libs:postgres"))
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240408113510_4a2db84")
 
@@ -21,16 +22,9 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.12.4")
 
-//    implementation("io.ktor:ktor-server-openapi:$ktorVersion")
-
     // json
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
-
-    // Databse
-    implementation("org.postgresql:postgresql:42.7.3")
-    implementation("com.zaxxer:HikariCP:5.1.0")
-    implementation("org.flywaydb:flyway-database-postgresql:10.8.1")
 
     // XSD to Java
     implementation("no.nav.tjenestespesifikasjoner:avstemming-v1-tjenestespesifikasjon:1.858e92e")

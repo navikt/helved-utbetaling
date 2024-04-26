@@ -2,6 +2,7 @@ package oppdrag
 
 import libs.auth.AzureConfig
 import libs.mq.MQConfig
+import libs.postgres.PostgresConfig
 import libs.utils.env
 
 object TestConfig {

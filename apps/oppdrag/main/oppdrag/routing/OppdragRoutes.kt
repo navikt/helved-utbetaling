@@ -6,6 +6,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
+import libs.postgres.transaction
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
@@ -13,7 +14,6 @@ import oppdrag.iverksetting.OppdragAlleredeSendtException
 import oppdrag.iverksetting.OppdragService
 import oppdrag.iverksetting.domene.OppdragMapper
 import oppdrag.iverksetting.tilstand.OppdragId
-import oppdrag.postgres.transaction
 import javax.sql.DataSource
 
 fun Route.iverksettingRoutes(
