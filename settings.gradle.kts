@@ -10,6 +10,7 @@ include(
     "libs:auth",
     "libs:auth-test",
     "libs:http",
+    "libs:job",
     "libs:mq",
     "libs:postgres",
     "libs:utils",
