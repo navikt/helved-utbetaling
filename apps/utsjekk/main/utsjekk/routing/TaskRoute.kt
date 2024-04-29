@@ -6,7 +6,7 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import utsjekk.task.TaskService
+import libs.task.TaskService
 
 fun Routing.task(service: TaskService) {
 
