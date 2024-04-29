@@ -27,10 +27,6 @@ class OppdragMQConsumer(
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
         val oppdragIdKvittering = kvittering.id
 
-        if (kvittering.oppdrag110.fagsystemId == "denne_skal_sprenge") {
-            error("Boom!")
-        }
-
         appLog.debug("Henter oppdrag {} fra databasen", oppdragIdKvittering)
 
         appLog.info(
