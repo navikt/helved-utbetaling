@@ -13,6 +13,7 @@ include(
     "libs:job",
     "libs:mq",
     "libs:postgres",
+    "libs:task",
     "libs:utils",
     "libs:ws",
     "libs:xml",
