@@ -21,11 +21,10 @@ import io.micrometer.prometheus.PrometheusMeterRegistry
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.postgres.Postgres
+import libs.task.TaskService
 import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.routing.actuators
-import utsjekk.task.TaskScheduler
-import utsjekk.task.TaskService
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
