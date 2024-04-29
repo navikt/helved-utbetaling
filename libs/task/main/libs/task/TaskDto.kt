@@ -1,4 +1,4 @@
-package utsjekk.task
+package libs.task
 
 import java.time.LocalDateTime
 import java.util.*
