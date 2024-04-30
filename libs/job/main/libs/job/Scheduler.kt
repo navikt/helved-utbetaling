@@ -15,18 +15,19 @@ import kotlin.time.Duration.Companion.milliseconds
 abstract class Scheduler<T>(
     private val feedRPM: Int = 1,
     private val errorCooldownMs: Long = 500,
+    scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) : AutoCloseable {
 
     /**
      * Feed the scheduler with some data,
      * Example from datasources like Kafka, Postgres, A RESTful-poll, in-memory-database.
      */
-    abstract fun feed(): List<T>
+    abstract suspend fun feed(): List<T>
 
     /**
      * What to do with each feeded element
      */
-    abstract fun task(feeded: T)
+    abstract suspend fun task(feeded: T)
 
     /**
      * What to do when an error occurs
@@ -51,7 +52,7 @@ abstract class Scheduler<T>(
         }
     }
 
-    private val job: Job = CoroutineScope(Dispatchers.IO).launch {
+    private val job: Job = scope.launch {
         while (isActive) {
             try {
                 flow().distinctUntilChanged().collect(::task)
