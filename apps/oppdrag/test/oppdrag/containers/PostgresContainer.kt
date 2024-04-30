@@ -1,6 +1,7 @@
 package oppdrag.containers
 
 import libs.postgres.Postgres
+import libs.postgres.Postgres.migrate
 import libs.postgres.PostgresConfig
 import libs.postgres.transaction
 import oppdrag.isGHA
@@ -25,11 +26,13 @@ class PostgresContainer : AutoCloseable {
     }
 
     private val datasource by lazy {
-        Postgres.createAndMigrate(config) {
+        Postgres.initialize(config) {
             initializationFailTimeout = 5_000
             idleTimeout = 10_000
             connectionTimeout = 5_000
             maxLifetime = 900_000
+        }.apply {
+            migrate()
         }
     }
 

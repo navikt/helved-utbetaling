@@ -10,7 +10,7 @@ import java.sql.ResultSet
 import javax.sql.DataSource
 
 object Postgres {
-    fun createAndMigrate(
+    fun initialize(
         config: PostgresConfig,
         hikariConfig: HikariConfig.() -> Unit = {},
     ): DataSource =
@@ -23,13 +23,15 @@ object Postgres {
                 minimumIdle = 1
                 maximumPoolSize = 8
             }.apply(hikariConfig)
-        ).apply {
-            Flyway
-                .configure()
-                .dataSource(this)
-                .load()
-                .migrate()
-        }
+        )
+
+    fun DataSource.migrate() {
+        Flyway
+            .configure()
+            .dataSource(this)
+            .load()
+            .migrate()
+    }
 }
 
 fun <T : Any> ResultSet.map(block: (ResultSet) -> T): List<T> =

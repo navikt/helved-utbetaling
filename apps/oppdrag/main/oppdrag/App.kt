@@ -19,6 +19,7 @@ import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.mq.MQ
 import libs.postgres.Postgres
+import libs.postgres.Postgres.migrate
 import libs.utils.appLog
 import libs.utils.secureLog
 import oppdrag.grensesnittavstemming.AvstemmingMQProducer
@@ -59,7 +60,9 @@ fun Application.server(config: Config = Config()) {
         }
     }
 
-    val postgres = Postgres.createAndMigrate(config.postgres)
+    val postgres = Postgres.initialize(config.postgres).apply {
+        migrate()
+    }
     val mq = MQ(config.mq)
 
     val oppdragConsumer = OppdragMQConsumer(config.oppdrag, mq, postgres)
