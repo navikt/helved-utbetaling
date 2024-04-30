@@ -6,9 +6,9 @@ CREATE TABLE task
     type          VARCHAR     NOT NULL,
     versjon       BIGINT      NOT NULL,
     opprettet_tid TIMESTAMP   NOT NULL,
-    metadata      VARCHAR     NOT NULL,
-    avvikstype    VARCHAR     NOT NULL,
-    trigger_tid   TIMESTAMP
+    metadata      VARCHAR,
+    avvikstype    VARCHAR,
+    trigger_tid   TIMESTAMP   NOT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS task_payload_type_idx ON task (payload, type);
