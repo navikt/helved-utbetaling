@@ -1,7 +1,9 @@
 package libs.task
 
 import libs.postgres.coroutines.connection
+import libs.postgres.map
 import java.sql.Connection
+import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.util.*
@@ -50,28 +52,50 @@ data class TaskDao(
         }
     }
 
+    suspend fun update(status: Status) {
+        coroutineContext.connection.prepareStatement(
+            """
+                UPDATE task
+                SET status = ?
+                WHERE id = ?
+            """.trimIndent()
+        ).use { stmt ->
+            stmt.setString(1, status.name)
+            stmt.setObject(2, id)
+            stmt.executeUpdate()
+        }
+    }
+
     companion object {
         fun findBy(status: List<Status>, time: TriggeredBeforeTime, con: Connection): List<TaskDao> {
             TODO()
         }
 
-        fun findBy(status: Status, con: Connection): List<TaskDao> {
+        suspend fun findBy(status: Status): List<TaskDao> {
+            return coroutineContext.connection.prepareStatement(
+                """
+                    SELECT * FROM task
+                    WHERE status = ?
+                """.trimIndent()
+            ).use { stmt ->
+                stmt.setString(1, status.name)
+                stmt.executeQuery().map(::from)
+            }
+        }
+
+        fun findBy(status: List<Status>): List<TaskDao> {
             TODO()
         }
 
-        fun findBy(status: List<Status>, con: Connection): List<TaskDao> {
+        suspend fun countBy(status: List<Status>): Long {
             TODO()
         }
 
-        fun countBy(status: List<Status>, con: Connection): Long {
+        fun findBy(status: List<Status>, type: String): List<TaskDao> {
             TODO()
         }
 
-        fun findBy(status: List<Status>, type: String, con: Connection): List<TaskDao> {
-            TODO()
-        }
-
-        fun findOne(payload: String, type: String, con: Connection): TaskDao? {
+        fun findOne(payload: String, type: String): TaskDao? {
             TODO()
         }
 
@@ -83,13 +107,26 @@ data class TaskDao(
             TODO()
         }
 
-        fun findByCallId(callId: String, con: Connection): List<TaskDao> {
+        fun findByCallId(callId: String): List<TaskDao> {
             TODO()
         }
 
-        fun findBy(status: Status, time: LastProcessedTime, con: Connection): List<TaskDao> {
+        fun findBy(status: Status, time: LastProcessedTime): List<TaskDao> {
             TODO()
         }
+
+        private fun from(rs: ResultSet): TaskDao =
+            TaskDao(
+                payload = rs.getString("payload"),
+                type = rs.getString("type"),
+                metadata = rs.getString("metadata"),
+                avvikstype = rs.getString("avvikstype"),
+                trigger_tid = rs.getTimestamp("trigger_tid")?.toLocalDateTime(),
+                id = UUID.fromString(rs.getString("id")),
+                status = Status.valueOf(rs.getString("status")),
+                opprettet_tid = rs.getTimestamp("opprettet_tid").toLocalDateTime(),
+                versjon = rs.getLong("versjon"),
+            )
     }
 
     data class AntallÅpneTask(

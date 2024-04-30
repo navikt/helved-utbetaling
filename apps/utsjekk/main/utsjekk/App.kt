@@ -73,10 +73,10 @@ fun Application.utsjekk(config: Config = Config()) {
         migrate()
     }
     val service = TaskService(postgres)
-    val scheduler = TaskScheduler(postgres)
+//    val scheduler = TaskScheduler(postgres)
 
     environment.monitor.subscribe(ApplicationStopping) {
-        scheduler.close()
+//        scheduler.close()
     }
 
 

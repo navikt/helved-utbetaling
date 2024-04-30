@@ -7,6 +7,7 @@ import libs.postgres.transaction
 import libs.utils.appLog
 import libs.utils.env
 import org.testcontainers.containers.PostgreSQLContainer
+import javax.sql.DataSource
 
 fun isGHA(): Boolean = env("GITHUB_ACTIONS", false)
 
@@ -27,13 +28,14 @@ class PostgresContainer : AutoCloseable {
     }
 
     fun clearTables() = datasource.transaction { con ->
-        con.prepareStatement("TRUNCATE TABLE task").execute()
-//        con.prepareStatement("DROP TABLE task flyway_schema_history").execute()
+//        con.prepareStatement("TRUNCATE TABLE task").execute()
     }
 
-    fun deleteTables() = datasource.transaction { con ->
-        con.prepareStatement("DROP SCHEMA public CASCADE").execute()
-        con.prepareStatement("CREATE SCHEMA public")
+    private fun DataSource.deleteTables() {
+        transaction { con ->
+            con.prepareStatement("DROP SCHEMA public CASCADE").execute()
+            con.prepareStatement("CREATE SCHEMA public").execute()
+        }
     }
 
     val datasource by lazy {
@@ -42,8 +44,14 @@ class PostgresContainer : AutoCloseable {
             idleTimeout = 10_000
             connectionTimeout = 5_000
             maxLifetime = 900_000
+            maximumPoolSize = 10
         }.apply {
-            migrate()
+            runCatching {
+                migrate()
+            }.onFailure {
+                deleteTables()
+                migrate()
+            }
         }
     }
 

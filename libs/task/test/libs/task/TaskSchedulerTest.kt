@@ -7,26 +7,30 @@ import libs.postgres.coroutines.CoroutineDatasource
 import libs.postgres.coroutines.connection
 import libs.postgres.coroutines.transaction
 import libs.postgres.map
-import org.junit.jupiter.api.Test
+import java.util.*
 import kotlin.coroutines.coroutineContext
+import kotlin.system.measureTimeMillis
 
 private object Repo {
-    suspend fun count(): Int = coroutineContext.connection
-        .prepareStatement("select count(*) from task")
-        .executeQuery()
-        .map { it.getInt(1) }
-        .singleOrNull() ?: 0
+    suspend fun count(status: Status): Int = coroutineContext.connection
+        .prepareStatement("SELECT count(*) FROM task WHERE status = ?").use { stmt ->
+            stmt.setString(1, status.name)
+            stmt.executeQuery()
+                .map { it.getInt(1) }
+                .singleOrNull() ?: 0
+        }
 }
 
 class TaskSchedulerTest {
     private val pg = PostgresContainer()
-    private val scope = CoroutineScope(Dispatchers.IO + CoroutineDatasource(pg.datasource))
+//    private val scope = CoroutineScope(Dispatchers.IO + CoroutineDatasource(pg.datasource))
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun CoroutineScope.produceTasks(gen: IdGen) =
+    private fun CoroutineScope.produceTasks() =
         produce(capacity = 100) {
             while (true) {
-                val id = gen.next()
+                val id = UUID.randomUUID()
                 val task = TaskDao(
                     payload = "$id",
                     type = "awesome $id",
@@ -40,53 +44,58 @@ class TaskSchedulerTest {
     private suspend fun saveTasks(tasks: ReceiveChannel<TaskDao>) {
         for (task in tasks) {
             transaction {
-                task.insert()
+                runCatching {
+                    task.insert()
+                }
             }
         }
     }
 
-    private suspend fun count(): Int {
-        return transaction {
-            Repo.count()
-        }
-    }
+    private suspend fun count(status: Status): Int = transaction { Repo.count(status) }
 
-    class IdGen(private var id: Int) {
-        fun next(): Int {
-            return id++
-        }
-    }
+    //    @Test
+    fun `schedule task UBEHANDLET`() = runBlocking {
+        scope.async {
+            val job = TaskTestScheduler(scope)
 
-//    @Test
-    fun populate() {
-        runBlocking {
-
-            scope.async {
-                println("Size before: ${count()}")
-
-                val jobs = (0..99).map {
-                    scope.launch {
-                        println("launching: ${currentCoroutineContext()}")
-                        val generator = IdGen(it * 11000)
-                        val producer = produceTasks(generator)
-                        saveTasks(producer)
-                    }
-                }
-                var prev = count()
-                while (count() < 10_000) {
+            val time = measureTimeMillis {
+                while (count(Status.UBEHANDLET) != 0) {
                     delay(1000)
-                    val new = count()
-                    val diff = new - prev
-                    prev = new
-                    println("saved $diff tasks/s")
+                    val ubehandlet = count(Status.UBEHANDLET)
+                    val klartTilPlukk = count(Status.KLAR_TIL_PLUKK)
+                    println("$klartTilPlukk of ${ubehandlet + klartTilPlukk} KLAR_TIL_PLUKK")
                 }
+            }
 
+            println("Completed in ${time / 1000}s")
+
+            job.close()
+        }.await()
+    }
+
+    //    @Test
+    fun `populate 10K UBEHANDLET tasks`() = runBlocking {
+        scope.async {
+            println("Size before: ${count(Status.UBEHANDLET)}")
+
+            val coroutines = (1..20).map {
+                scope.launch {
+                    saveTasks(produceTasks())
+                }
+            }
+
+            while (count(Status.UBEHANDLET) < 10_000) {
+                println("saved ${count(Status.UBEHANDLET)} tasks")
+                delay(1000)
+            }
+
+            coroutines.forEach {
                 runCatching {
-                    jobs.forEach { it.cancelAndJoin() }
+                    it.cancelAndJoin()
                 }
+            }
 
-                println("Size after: ${count()}")
-            }.await()
-        }
+            println("Size after: ${count(Status.UBEHANDLET)}")
+        }.await()
     }
 }
