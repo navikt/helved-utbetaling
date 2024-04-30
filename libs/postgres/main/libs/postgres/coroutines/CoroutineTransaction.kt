@@ -10,7 +10,8 @@ import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
-class CoroutineTransaction : AbstractCoroutineContextElement(CoroutineTransaction) {
+@PublishedApi
+internal class CoroutineTransaction : AbstractCoroutineContextElement(CoroutineTransaction) {
     companion object Key : CoroutineContext.Key<CoroutineTransaction>
 
     var completed: Boolean = false
@@ -50,8 +51,9 @@ suspend inline fun <T> transaction(crossinline block: suspend CoroutineScope.() 
     }
 }
 
+@PublishedApi
 @OptIn(ExperimentalContracts::class)
-suspend inline fun <T> runTransactionally(crossinline block: suspend CoroutineScope.() -> T): T {
+internal suspend inline fun <T> runTransactionally(crossinline block: suspend CoroutineScope.() -> T): T {
     contract {
         callsInPlace(block, InvocationKind.EXACTLY_ONCE)
     }
@@ -75,8 +77,9 @@ suspend inline fun <T> runTransactionally(crossinline block: suspend CoroutineSc
     }
 }
 
+@PublishedApi
 @OptIn(ExperimentalContracts::class)
-inline fun <T> Connection.runWithManuelCommit(block: Connection.() -> T): T {
+internal inline fun <T> Connection.runWithManuelCommit(block: Connection.() -> T): T {
     contract {
         callsInPlace(block, InvocationKind.EXACTLY_ONCE)
     }

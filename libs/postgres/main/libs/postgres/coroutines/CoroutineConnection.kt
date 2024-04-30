@@ -47,12 +47,14 @@ suspend inline fun <T> withConnection(crossinline block: suspend CoroutineScope.
     }
 }
 
-fun CoroutineContext.hasOpenConnection(): Boolean {
+@PublishedApi
+internal fun CoroutineContext.hasOpenConnection(): Boolean {
     val con = get(CoroutineConnection)?.connection
     return con != null && !con.isClosedCatching()
 }
 
-fun Connection.closeCatching() {
+@PublishedApi
+internal fun Connection.closeCatching() {
     try {
         close()
     } catch (e: SQLException) {
@@ -61,7 +63,8 @@ fun Connection.closeCatching() {
     }
 }
 
-fun Connection.isClosedCatching(): Boolean {
+@PublishedApi
+internal fun Connection.isClosedCatching(): Boolean {
     return try {
         isClosed
     } catch (e: SQLException) {
