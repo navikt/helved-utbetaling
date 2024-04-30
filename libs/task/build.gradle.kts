@@ -7,5 +7,6 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
 
     testImplementation(kotlin("test"))
+    testImplementation(project(":libs:job"))
     testImplementation("org.testcontainers:postgresql:1.19.7")
 }

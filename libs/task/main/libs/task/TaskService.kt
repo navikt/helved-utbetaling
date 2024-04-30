@@ -1,6 +1,6 @@
 package libs.task
 
-import libs.postgres.transaction
+import libs.postgres.coroutines.transaction
 import libs.utils.secureLog
 import javax.sql.DataSource
 
@@ -8,10 +8,10 @@ class TaskService(private val postgres: DataSource) {
 
     private fun <T> tryInto(data: T) = Ressurs.success(data)
 
-    fun finnAntallTaskerSomKreverOppfølging(): Ressurs<Long> {
+    suspend fun finnAntallTaskerSomKreverOppfølging(): Ressurs<Long> {
         val data = runCatching {
-            postgres.transaction {
-                TaskDao.countBy(listOf(Status.MANUELL_OPPFØLGING), it)
+            transaction {
+                TaskDao.countBy(listOf(Status.MANUELL_OPPFØLGING))
             }
         }
 
