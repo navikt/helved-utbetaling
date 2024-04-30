@@ -1,79 +1,92 @@
 package libs.task
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import libs.postgres.coroutines.CoroutineDatasource
+import libs.postgres.coroutines.connection
 import libs.postgres.coroutines.transaction
 import libs.postgres.map
 import org.junit.jupiter.api.Test
-import utsjekk.task.TaskDao
-import kotlin.system.measureTimeMillis
-import kotlin.test.assertEquals
+import kotlin.coroutines.coroutineContext
+
+private object Repo {
+    suspend fun count(): Int = coroutineContext.connection
+        .prepareStatement("select count(*) from task")
+        .executeQuery()
+        .map { it.getInt(1) }
+        .singleOrNull() ?: 0
+}
 
 class TaskSchedulerTest {
     private val pg = PostgresContainer()
     private val scope = CoroutineScope(Dispatchers.IO + CoroutineDatasource(pg.datasource))
 
-    private val dataflow: Flow<TaskDao> = flow {
-        repeat(10_000) {
-            emit(
-                TaskDao(
-                    payload = "$it",
-                    type = "awesome $it",
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun CoroutineScope.produceTasks(gen: IdGen) =
+        produce(capacity = 100) {
+            while (true) {
+                val id = gen.next()
+                val task = TaskDao(
+                    payload = "$id",
+                    type = "awesome $id",
                     metadata = "splendid",
                     avvikstype = "avvik",
                 )
-            )
+                send(task)
+            }
+        }
+
+    private suspend fun saveTasks(tasks: ReceiveChannel<TaskDao>) {
+        for (task in tasks) {
+            transaction {
+                task.insert()
+            }
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun <T> Flow<T>.buffer(size: Int = 0): Flow<T> = flow {
-        coroutineScope {
-            val channel = produce(capacity = size) {
-                println("Produces batch size of $size")
-                collect { send(it) }
-            }
-            channel.consumeEach { emit(it) }
+    private suspend fun count(): Int {
+        return transaction {
+            Repo.count()
+        }
+    }
+
+    class IdGen(private var id: Int) {
+        fun next(): Int {
+            return id++
         }
     }
 
     @Test
-    fun verify() {
-        assertEquals(10_000, count())
-    }
+    fun populate() {
+        runBlocking {
 
-    private fun count(): Int {
-        return pg.transaction {
-            it.prepareStatement("SELECT count(*) from task")
-                .executeQuery()
-                .map { rs -> rs.getInt(1) }
-                .singleOrNull() ?: 0
-        }
-    }
+            scope.async {
+                println("Size before: ${count()}")
 
-    private suspend fun populateDatabase() {
-        val time = measureTimeMillis {
-            dataflow.buffer(100).collect {
-                transaction {
-                    it.insert()
+                val jobs = (0..99).map {
+                    scope.launch {
+                        println("launching: ${currentCoroutineContext()}")
+                        val generator = IdGen(it * 11000)
+                        val producer = produceTasks(generator)
+                        saveTasks(producer)
+                    }
                 }
-            }
-        }
-        println("Populated db in $time ms")
-    }
+                var prev = count()
+                while (count() < 10_000) {
+                    delay(1000)
+                    val new = count()
+                    val diff = new - prev
+                    prev = new
+                    println("saved $diff tasks/s")
+                }
 
-    @Test
-    fun populate() = runBlocking {
-        println("Size before: ${count()}")
-        scope.launch {
-            populateDatabase()
+                runCatching {
+                    jobs.forEach { it.cancelAndJoin() }
+                }
+
+                println("Size after: ${count()}")
+            }.await()
         }
-        delay(5_000)
-        coroutineContext.cancelChildren()
-        println("Size after: ${count()}")
     }
 }

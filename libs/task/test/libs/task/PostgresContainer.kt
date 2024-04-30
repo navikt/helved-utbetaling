@@ -1,13 +1,12 @@
 package libs.task
 
 import libs.postgres.Postgres
+import libs.postgres.Postgres.migrate
 import libs.postgres.PostgresConfig
 import libs.postgres.transaction
 import libs.utils.appLog
 import libs.utils.env
 import org.testcontainers.containers.PostgreSQLContainer
-import java.sql.Connection
-import javax.sql.DataSource
 
 fun isGHA(): Boolean = env("GITHUB_ACTIONS", false)
 
@@ -27,17 +26,24 @@ class PostgresContainer : AutoCloseable {
         start()
     }
 
-    fun cleanup() = datasource.transaction { con ->
+    fun clearTables() = datasource.transaction { con ->
         con.prepareStatement("TRUNCATE TABLE task").execute()
-//        con.prepareStatement("DROP TABLE flyway_schema_history").execute()
+//        con.prepareStatement("DROP TABLE task flyway_schema_history").execute()
+    }
+
+    fun deleteTables() = datasource.transaction { con ->
+        con.prepareStatement("DROP SCHEMA public CASCADE").execute()
+        con.prepareStatement("CREATE SCHEMA public")
     }
 
     val datasource by lazy {
-        Postgres.createAndMigrate(config) {
+        Postgres.initialize(config) {
             initializationFailTimeout = 5_000
             idleTimeout = 10_000
             connectionTimeout = 5_000
             maxLifetime = 900_000
+        }.apply {
+            migrate()
         }
     }
 
@@ -51,16 +57,13 @@ class PostgresContainer : AutoCloseable {
         )
     }
 
-    fun <T> transaction(block: (Connection) -> T): T = datasource.transaction(block)
-    fun <T> withDatasource(block: (DataSource) -> T): T = block(datasource)
-
     override fun close() {
         // GitHub Actions service containers or testcontainers is not reusable and must be closed
         if (isGHA()) {
             container.close()
         }
 
-        cleanup()
+        clearTables()
     }
 
     init {
