@@ -7,6 +7,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import libs.postgres.transaction
+import libs.utils.appLog
+import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
@@ -28,6 +30,8 @@ fun Route.iverksettingRoutes(
         }.onSuccess {
             call.respond(HttpStatusCode.Created)
         }.onFailure {
+            appLog.error("Feil ved iverksetting av oppdrag, se securelog for mer info")
+            secureLog.error("Feil ved iverksetting av oppdrag", it)
             when (it) {
                 is OppdragAlleredeSendtException -> oppdragAlleredeSendt(utbetalingsoppdrag)
                 else -> klarteIkkeSendeOppdrag(utbetalingsoppdrag)
