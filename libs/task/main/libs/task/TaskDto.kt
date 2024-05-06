@@ -100,6 +100,15 @@ enum class Status {
     UBEHANDLET;
 
     fun kanPlukkes() = listOf(KLAR_TIL_PLUKK, UBEHANDLET).contains(this)
+
+    companion object {
+        fun open(): List<Status> = listOf(
+            UBEHANDLET,
+            BEHANDLER,
+            PLUKKET,
+            KLAR_TIL_PLUKK
+        )
+    }
 }
 
 enum class Avvikstype {
