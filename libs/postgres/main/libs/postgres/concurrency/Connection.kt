@@ -1,4 +1,4 @@
-package libs.postgres.coroutines
+package libs.postgres.concurrency
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
@@ -9,20 +9,8 @@ import java.sql.SQLException
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
-import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
-
-class CoroutineConnection(
-    val connection: Connection
-) : AbstractCoroutineContextElement(CoroutineConnection) {
-    companion object Key : CoroutineContext.Key<CoroutineConnection>
-
-    override fun toString(): String = "CoroutineConnection($connection)"
-}
-
-val CoroutineContext.connection: Connection
-    get() = get(CoroutineConnection)?.connection ?: error("Connection not in context")
 
 @OptIn(ExperimentalContracts::class)
 suspend inline fun <T> withConnection(crossinline block: suspend CoroutineScope.() -> T): T {

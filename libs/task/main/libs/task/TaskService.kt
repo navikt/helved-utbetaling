@@ -1,6 +1,6 @@
 package libs.task
 
-import libs.postgres.coroutines.transaction
+import libs.postgres.concurrency.transaction
 import libs.utils.secureLog
 import javax.sql.DataSource
 

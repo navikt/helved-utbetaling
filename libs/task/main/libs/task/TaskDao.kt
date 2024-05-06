@@ -1,6 +1,6 @@
 package libs.task
 
-import libs.postgres.coroutines.connection
+import libs.postgres.concurrency.connection
 import libs.postgres.map
 import java.sql.Connection
 import java.sql.ResultSet
