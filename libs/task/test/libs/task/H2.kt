@@ -33,7 +33,10 @@ abstract class H2 {
     fun clear() = runBlocking {
         scope.async {
             transaction {
+                coroutineContext.connection.prepareStatement("SET REFERENTIAL_INTEGRITY FALSE").execute()
                 coroutineContext.connection.prepareStatement("TRUNCATE TABLE task").execute()
+                coroutineContext.connection.prepareStatement("TRUNCATE TABLE task_logg").execute()
+                coroutineContext.connection.prepareStatement("SET REFERENTIAL_INTEGRITY TRUE").execute()
             }
         }.await()
         appLog.info("table 'task' trunctated.")
