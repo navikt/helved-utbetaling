@@ -1,6 +1,7 @@
 package libs.task
 
 import libs.postgres.concurrency.transaction
+import libs.utils.appLog
 import libs.utils.secureLog
 import javax.sql.DataSource
 
@@ -9,37 +10,67 @@ class TaskService(private val postgres: DataSource) {
     private fun <T> tryInto(data: T) = Ressurs.success(data)
 
     suspend fun finnAntallTaskerSomKreverOppfølging(): Ressurs<Long> {
-        val data = runCatching {
+        val result = runCatching {
             transaction {
-                TaskDao.countBy(listOf(Status.MANUELL_OPPFØLGING))
+                TaskDao.countBy(Status.MANUELL_OPPFØLGING)
             }
         }
 
-        return data.fold(::tryInto) { err ->
-            val msg = "Henting av antall tasker som krever oppfølging feilet"
+        return result.fold(::tryInto) { err ->
+            val msg = "Feilet ved henting av antall tasker som krever oppfølging"
             secureLog.error(msg, err)
             Ressurs.failure(msg, err)
         }
     }
 
-    fun finnAntallTaskerMedStatusFeiletOgManuellOppfølging(): Ressurs<TaskerMedStatusFeiletOgManuellOppfølging> {
-        TODO()
+    suspend fun finnAntallTaskerMedStatusFeiletOgManuellOppfølging(): Ressurs<TaskerMedStatusFeiletOgManuellOppfølging> {
+        val result = runCatching {
+            transaction {
+                TaskerMedStatusFeiletOgManuellOppfølging(
+                    antallFeilet = TaskDao.countBy(Status.FEILET),
+                    antallManuellOppfølging = TaskDao.countBy(Status.MANUELL_OPPFØLGING)
+                )
+            }
+        }
+
+        return result.fold(::tryInto) { err ->
+            val msg = "Feilet ved henting av antall tasker som har feilet eller satt til manuell oppfølging"
+            secureLog.error(msg, err)
+            Ressurs.failure(msg, err)
+        }
     }
 
-    fun hentTasksForCallId(
-        callId: String,
-        saksbehandlerId: String
-    ): Ressurs<List<TaskDto>>? {
-        TODO()
+    // TODO: bytt ut med open telemetry sin (x_trace_id)
+//    suspend fun hentTasksForCallId(
+//        callId: String,
+//        saksbehandlerId: String
+//    ): Ressurs<List<TaskDto>>?
+
+    suspend fun hentTasksSomErFerdigNåMenFeiletFør(
+        brukernavn: String,
+    ): Ressurs<List<TaskDto>> {
+        appLog.info("$brukernavn henter oppgraver som er ferdige nå, men feilet før")
+
+        val result = runCatching {
+            transaction {
+                val taskWithMetadata = TaskDao.finnTasksSomErFerdigNåMenFeiletFør().associateWith {
+                    TaskLoggDao.findMetadataBy(listOf(it.id))
+                }
+
+                taskWithMetadata.map { (task, meta) ->
+                    TaskDto.from(task, meta.singleOrNull())
+                }
+            }
+        }
+
+        return result.fold(::tryInto) { err ->
+            val msg = "Feilet ved henting av oppgaver som er ferdig nå, men feilet før"
+            secureLog.error(msg, err)
+            Ressurs.failure(msg, err)
+        }
     }
 
-    fun hentTasksSomErFerdigNåMenFeiletFør(
-        brukernavn: String
-    ): Ressurs<List<TaskDto>>? {
-        TODO()
-    }
-
-    fun hentTasks(
+    suspend fun hentTasks(
         statuses: List<Status>,
         saksbehandlerId: String,
         page: Int,
@@ -48,28 +79,28 @@ class TaskService(private val postgres: DataSource) {
         TODO()
     }
 
-    fun hentTaskLogg(
+    suspend fun hentTaskLogg(
         id: Long,
         saksbehandlerId: String
-    ): Ressurs<List<TaskloggDto>> {
+    ): Ressurs<List<TaskLoggDto>> {
         TODO()
     }
 
-    fun rekjørTask(
+    suspend fun rekjørTask(
         Id: Long,
         behandlerId: String
     ): Ressurs<String> {
         TODO()
     }
 
-    fun rekjørTasks(
+    suspend fun rekjørTasks(
         status: Status,
         saksbehandlerId: String
     ): Ressurs<String> {
         TODO()
     }
 
-    fun avvikshåndterTask(
+    suspend fun avvikshåndterTask(
         taskId: Long,
         avvikstype: Avvikstype,
         årsak: String,
@@ -78,7 +109,7 @@ class TaskService(private val postgres: DataSource) {
         TODO()
     }
 
-    fun kommenterTask(
+    suspend fun kommenterTask(
         taskId: Long,
         kommentarDTO: KommentarDTO,
         saksbehandlerId: String
@@ -86,7 +117,7 @@ class TaskService(private val postgres: DataSource) {
         TODO()
     }
 
-    fun hentTaskMedId(
+    suspend fun hentTaskMedId(
         id: Long,
         saksbehandlerId: String
     ): Ressurs<TaskDto>? {
