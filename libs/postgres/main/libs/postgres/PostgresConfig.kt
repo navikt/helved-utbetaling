@@ -8,4 +8,6 @@ data class PostgresConfig(
     val database: String = env("DB_DATABASE"),
     val username: String = env("DB_USERNAME"),
     val password: String = env("DB_PASSWORD"),
+    val url: String = "jdbc:postgresql://$host:$port/$database",
+    val driver: String = "org.postgresql.Driver",
 )

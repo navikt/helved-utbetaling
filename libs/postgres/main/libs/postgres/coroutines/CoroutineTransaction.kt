@@ -10,20 +10,6 @@ import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
-@PublishedApi
-internal class CoroutineTransaction : AbstractCoroutineContextElement(CoroutineTransaction) {
-    companion object Key : CoroutineContext.Key<CoroutineTransaction>
-
-    var completed: Boolean = false
-        private set
-
-    fun complete() {
-        completed = true
-    }
-
-    override fun toString(): String = "CoroutineTransaction(completed=$completed)"
-}
-
 @OptIn(ExperimentalContracts::class)
 suspend inline fun <T> transaction(crossinline block: suspend CoroutineScope.() -> T): T {
     contract {
@@ -49,6 +35,20 @@ suspend inline fun <T> transaction(crossinline block: suspend CoroutineScope.() 
 
         else -> error("Nested transactions not supported")
     }
+}
+
+@PublishedApi
+internal class CoroutineTransaction : AbstractCoroutineContextElement(CoroutineTransaction) {
+    companion object Key : CoroutineContext.Key<CoroutineTransaction>
+
+    var completed: Boolean = false
+        private set
+
+    fun complete() {
+        completed = true
+    }
+
+    override fun toString(): String = "CoroutineTransaction(completed=$completed)"
 }
 
 @PublishedApi

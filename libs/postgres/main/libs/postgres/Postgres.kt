@@ -18,8 +18,8 @@ object Postgres {
             HikariConfig().apply {
                 username = config.username
                 password = config.password
-                jdbcUrl = "jdbc:postgresql://${config.host}:${config.port}/${config.database}"
-                driverClassName = "org.postgresql.Driver"
+                jdbcUrl = config.url
+                driverClassName = config.driver
                 minimumIdle = 1
                 maximumPoolSize = 8
             }.apply(hikariConfig)
@@ -33,6 +33,11 @@ object Postgres {
             .migrate()
     }
 }
+
+fun <T : Any> ResultSet.asyncMap(block: (ResultSet) -> T): Sequence<T> =
+    sequence {
+        while (next()) yield(block(this@asyncMap))
+    }
 
 fun <T : Any> ResultSet.map(block: (ResultSet) -> T): List<T> =
     sequence {
