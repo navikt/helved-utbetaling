@@ -1,26 +1,22 @@
 package libs.postgres
 
-import libs.postgres.Postgres.migrate
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.sql.Connection
 import java.util.*
-import javax.sql.DataSource
 import kotlin.test.assertEquals
 
-class TransactionTest {
-    private val h2: DataSource = Postgres.initialize(config).apply { migrate() }
-
+class TransactionTest : H2() {
     @Test
     fun transaction() {
-        h2.transaction {
+        datasource.transaction {
             Dao(UUID.randomUUID(), "one").insert(it)
         }
     }
 
     @Test
     fun rollback() {
-        h2.transaction {
+        datasource.transaction {
             val err = assertThrows<IllegalStateException> {
                 Dao(UUID.randomUUID(), "two").insertAndThrow(it)
             }
@@ -55,14 +51,3 @@ internal data class Dao(
             }
     }
 }
-
-private val config = PostgresConfig(
-    host = "stub",
-    port = "5432",
-    database = "test_db",
-    username = "sa",
-    password = "",
-    url = "jdbc:h2:mem:test_db;MODE=PostgreSQL",
-    driver = "org.h2.Driver",
-)
-
