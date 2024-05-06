@@ -57,7 +57,7 @@ data class TaskDao(
             coroutineContext.connection.prepareStatement(
                 """
                    SELECT * FROM task
-                    WHERE status in (?) and trigger_tid < ?
+                   WHERE status in (?) and trigger_tid < ?
                 """.trimIndent()
             ).use { stmt ->
                 stmt.setString(1, status.joinToString(", ") { it.name })
@@ -87,14 +87,14 @@ data class TaskDao(
                 stmt.executeQuery().map(::from)
             }
 
-        suspend fun countBy(status: List<Status>): Long =
+        suspend fun countBy(status: Status): Long =
             coroutineContext.connection.prepareStatement(
                 """
                     SELECT count(*) FROM task
-                    WHERE status in (?)
+                    WHERE status = ?
                 """.trimIndent()
             ).use { stmt ->
-                stmt.setString(1, status.joinToString(", ") { it.name })
+                stmt.setString(1, status.name)
                 stmt.executeQuery().map { it.getLong(1) }.single()
             }
 
@@ -134,38 +134,38 @@ data class TaskDao(
                 stmt.executeQuery().map(AntallÅpneTask::from)
             }
 
-//        suspend fun finnTasksSomErFerdigNåMenFeiletFør(): List<TaskDao> =
-//            coroutineContext.connection.prepareStatement(
-//                """
-//                SELECT distinct t.*
-//                FROM task t
-//                JOIN task_logg l on t.id = l.task_id
-//                WHERE t.status = ? and l.type in (?)
-//            """.trimIndent()
-//            ).use { stmt ->
-//                stmt.setString(1, Status.FERDIG.name)
-//                stmt.setString(2, listOf(Status.FEILET, Status.MANUELL_OPPFØLGING).joinToString(", ") { it.name })
-//                stmt.executeQuery().map(::from)
-//            }
+        suspend fun finnTasksSomErFerdigNåMenFeiletFør(): List<TaskDao> =
+            coroutineContext.connection.prepareStatement(
+                """
+                SELECT distinct t.*
+                FROM task t
+                JOIN task_logg l on t.id = l.task_id
+                WHERE t.status = ? and l.type in (?)
+            """.trimIndent()
+            ).use { stmt ->
+                stmt.setString(1, Status.FERDIG.name)
+                stmt.setString(2, listOf(Status.FEILET, Status.MANUELL_OPPFØLGING).joinToString(", ") { it.name })
+                stmt.executeQuery().map(::from)
+            }
 
-//        suspend fun findBy(status: Status, opprettet_tid: BeforeOpprettetTid): List<TaskDao> =
-//            coroutineContext.connection.prepareStatement(
-//                """
-//                    WITH q AS (
-//                        SELECT t.id, l.type, l.opprettet_tid, row_number() OVER (PARTITION BY t.id ORDER BY l.opprettet_tid DESC) rn
-//                        FROM task t
-//                        JOIN task_logg l on t.id = l.task_id
-//                        WHERE t.status = ?
-//                    )
-//                    SELECT t.*
-//                    FROM task t JOIN q t2 on t.id = t2.id
-//                    WHERE t2.rn = 1 AND t2.opprettet_tid < ?
-//                """.trimIndent()
-//            ).use { stmt ->
-//                stmt.setString(1, status.name)
-//                stmt.setObject(2, Timestamp.valueOf(opprettet_tid))
-//                stmt.executeQuery().map(::from)
-//            }
+        suspend fun findBy(status: Status, opprettet_tid: BeforeOpprettetTid): List<TaskDao> =
+            coroutineContext.connection.prepareStatement(
+                """
+                    WITH q AS (
+                        SELECT t.id, l.type, l.opprettet_tid, row_number() OVER (PARTITION BY t.id ORDER BY l.opprettet_tid DESC) rn
+                        FROM task t
+                        JOIN task_logg l on t.id = l.task_id
+                        WHERE t.status = ?
+                    )
+                    SELECT t.*
+                    FROM task t JOIN q t2 on t.id = t2.id
+                    WHERE t2.rn = 1 AND t2.opprettet_tid < ?
+                """.trimIndent()
+            ).use { stmt ->
+                stmt.setString(1, status.name)
+                stmt.setObject(2, Timestamp.valueOf(opprettet_tid))
+                stmt.executeQuery().map(::from)
+            }
 
         suspend fun findBy(x_trace_id: String): List<TaskDao> = TODO()
     }

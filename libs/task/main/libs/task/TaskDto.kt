@@ -54,21 +54,36 @@ data class AvvikshåndterDTO(
 )
 
 data class TaskDto(
-    val id: Long,
+    val id: UUID,
     val antallLogger: Int,
     val avvikstype: Avvikstype?,
-    val callId: String,
     val kommentar: String?,
-    val metadata: Properties,
+    val metadata: String?,
     val opprettetTidspunkt: LocalDateTime,
     val payload: String,
     val sistKjørt: LocalDateTime?,
     val status: Status = Status.UBEHANDLET,
     val taskStepType: String,
     val triggerTid: LocalDateTime?,
-)
+) {
+    companion object {
+        fun from(task: TaskDao, taskLogg: TaskLoggMetadata?) = TaskDto(
+            id = task.id,
+            status = task.status,
+            avvikstype = task.avvikstype?.let(Avvikstype::valueOf),
+            opprettetTidspunkt = task.opprettet_tid,
+            triggerTid = task.trigger_tid,
+            taskStepType = task.type,
+            metadata = task.metadata,
+            payload = task.payload,
+            antallLogger = taskLogg?.antall_logger ?: 0,
+            sistKjørt = taskLogg?.siste_opprettet_tid,
+            kommentar = taskLogg?.siste_kommentar,
+        )
+    }
+}
 
-data class TaskloggDto(
+data class TaskLoggDto(
     val id: Long,
     val endretAv: String?,
     val melding: String?,
