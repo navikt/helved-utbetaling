@@ -14,10 +14,11 @@ fun isGHA(): Boolean = env("GITHUB_ACTIONS", false)
 class PostgresContainer : AutoCloseable {
     private val container = PostgreSQLContainer("postgres:15").apply {
         if (!isGHA()) {
+            withLabel("service", "task-lib")
             withReuse(true)
             withNetwork(null)
             withCreateContainerCmdModifier { cmd ->
-                cmd.withName("postgres")
+                cmd.withName("postgres2")
                 cmd.hostConfig?.apply {
                     withMemory(512 * 1024 * 1024)
                     withMemorySwap(1024 * 1024 * 1024)
@@ -28,7 +29,8 @@ class PostgresContainer : AutoCloseable {
     }
 
     fun clearTables() = datasource.transaction { con ->
-//        con.prepareStatement("TRUNCATE TABLE task").execute()
+        con.prepareStatement("TRUNCATE TABLE task").execute()
+        appLog.info("Cleared table task")
     }
 
     private fun DataSource.deleteTables() {
@@ -47,9 +49,6 @@ class PostgresContainer : AutoCloseable {
             maximumPoolSize = 10
         }.apply {
             runCatching {
-                migrate()
-            }.onFailure {
-                deleteTables()
                 migrate()
             }
         }

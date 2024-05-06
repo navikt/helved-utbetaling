@@ -7,8 +7,8 @@ import libs.utils.secureLog
 import java.util.concurrent.atomic.AtomicLong
 
 class TaskTestScheduler(scope: CoroutineScope) : Scheduler<TaskDao>(
-    feedRPM = 600,
-    errorCooldownMs = 500,
+    feedRPM = 60,
+    errorCooldownMs = 100,
     scope = scope,
 ) {
 
@@ -24,14 +24,10 @@ class TaskTestScheduler(scope: CoroutineScope) : Scheduler<TaskDao>(
     }
 
     override suspend fun task(feeded: TaskDao) {
-        val size = counter.incrementAndGet()
+        counter.incrementAndGet()
 
         transaction {
             feeded.update(Status.KLAR_TIL_PLUKK)
-        }
-
-        if (size % 20_000 == 0L) {
-            println("Tasks completed: ${size / 1000}K")
         }
     }
 }
