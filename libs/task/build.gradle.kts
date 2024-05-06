@@ -8,5 +8,5 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:job"))
-    testImplementation("org.testcontainers:postgresql:1.19.7")
+    testImplementation("com.h2database:h2:2.2.224")
 }

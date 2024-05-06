@@ -2,26 +2,20 @@ package libs.task
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.produce
-import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.postgres.map
 import libs.utils.appLog
 import org.junit.jupiter.api.Test
 import java.util.*
-import kotlin.coroutines.coroutineContext
 import kotlin.system.measureTimeMillis
 
-
-class TaskSchedulerTest {
-    private val pg = PostgresContainer()
-    private val databaseScope = CoroutineScope(Dispatchers.IO + CoroutineDatasource(pg.datasource))
-
+class TaskSchedulerTest : H2() {
 
     @Test
     fun `populated UBEHANDLET tasks is set to KLAR_TIL_PLUKK by scheduler`() {
         runBlocking {
-            databaseScope.async {
+            scope.async {
                 appLog.info("initially ${count(Status.UBEHANDLET)} UBEHANDLET tasks")
 
                 produceWhile {
@@ -36,7 +30,7 @@ class TaskSchedulerTest {
     }
 
     private suspend fun consumeWhile(predicate: suspend () -> Boolean) {
-        TaskTestScheduler(databaseScope).use {
+        Scheduler(scope).use {
             val timed = measureTimeMillis {
                 while (predicate()) continue
             }
@@ -49,7 +43,7 @@ class TaskSchedulerTest {
     }
 
     private suspend fun produceWhile(predicate: suspend () -> Boolean) {
-        val producer = databaseScope.launch {
+        val producer = scope.launch {
             for (task in infiniteTasks) {
                 transaction {
                     task.insert()
@@ -69,18 +63,14 @@ class TaskSchedulerTest {
 
 private suspend fun count(status: Status): Int =
     transaction {
-        Repo.count(status)
+        coroutineContext.connection
+            .prepareStatement("SELECT count(*) FROM task WHERE status = ?").use { stmt ->
+                stmt.setString(1, status.name)
+                stmt.executeQuery()
+                    .map { it.getInt(1) }
+                    .singleOrNull() ?: 0
+            }
     }
-
-private object Repo {
-    suspend fun count(status: Status): Int = coroutineContext.connection
-        .prepareStatement("SELECT count(*) FROM task WHERE status = ?").use { stmt ->
-            stmt.setString(1, status.name)
-            stmt.executeQuery()
-                .map { it.getInt(1) }
-                .singleOrNull() ?: 0
-        }
-}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 private val CoroutineScope.infiniteTasks

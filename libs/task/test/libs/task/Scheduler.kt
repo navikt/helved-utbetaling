@@ -6,7 +6,7 @@ import libs.postgres.concurrency.transaction
 import libs.utils.secureLog
 import java.util.concurrent.atomic.AtomicLong
 
-class TaskTestScheduler(scope: CoroutineScope) : Scheduler<TaskDao>(
+class Scheduler(scope: CoroutineScope) : Scheduler<TaskDao>(
     feedRPM = 60,
     errorCooldownMs = 100,
     scope = scope,
