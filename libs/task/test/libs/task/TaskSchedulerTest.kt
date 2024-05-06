@@ -2,9 +2,9 @@ package libs.task
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.produce
-import libs.postgres.coroutines.CoroutineDatasource
-import libs.postgres.coroutines.connection
-import libs.postgres.coroutines.transaction
+import libs.postgres.concurrency.CoroutineDatasource
+import libs.postgres.concurrency.connection
+import libs.postgres.concurrency.transaction
 import libs.postgres.map
 import libs.utils.appLog
 import org.junit.jupiter.api.Test

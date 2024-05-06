@@ -2,7 +2,7 @@ package libs.task
 
 import kotlinx.coroutines.CoroutineScope
 import libs.job.Scheduler
-import libs.postgres.coroutines.transaction
+import libs.postgres.concurrency.transaction
 import libs.utils.secureLog
 import java.util.concurrent.atomic.AtomicLong
 

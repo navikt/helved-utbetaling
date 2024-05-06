@@ -1,4 +1,4 @@
-package libs.postgres.coroutines
+package libs.postgres.concurrency
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
@@ -6,8 +6,6 @@ import java.sql.Connection
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
 @OptIn(ExperimentalContracts::class)
@@ -35,20 +33,6 @@ suspend inline fun <T> transaction(crossinline block: suspend CoroutineScope.() 
 
         else -> error("Nested transactions not supported")
     }
-}
-
-@PublishedApi
-internal class CoroutineTransaction : AbstractCoroutineContextElement(CoroutineTransaction) {
-    companion object Key : CoroutineContext.Key<CoroutineTransaction>
-
-    var completed: Boolean = false
-        private set
-
-    fun complete() {
-        completed = true
-    }
-
-    override fun toString(): String = "CoroutineTransaction(completed=$completed)"
 }
 
 @PublishedApi
