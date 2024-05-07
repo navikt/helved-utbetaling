@@ -1,7 +1,11 @@
 package libs.task.scheduler
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.postgres.map
@@ -16,24 +20,20 @@ import kotlin.system.measureTimeMillis
 class SchedulerTest : H2() {
 
     @Test
-    fun `populated UBEHANDLET tasks is set to KLAR_TIL_PLUKK by scheduler`() {
-        runBlocking {
-            scope.async {
-                appLog.info("initially ${count(Status.UBEHANDLET)} UBEHANDLET tasks")
+    fun `populated UBEHANDLET tasks is set to KLAR_TIL_PLUKK by scheduler`() = runTest(h2) {
+        appLog.info("initially ${count(Status.UBEHANDLET)} UBEHANDLET tasks")
 
-                produceWhile {
-                    count(Status.UBEHANDLET) < 10
-                }
+        produceWhile {
+            count(Status.UBEHANDLET) < 10
+        }
 
-                consumeWhile {
-                    count(Status.UBEHANDLET) > 1
-                }
-            }.await()
+        consumeWhile {
+            count(Status.UBEHANDLET) > 1
         }
     }
 
     private suspend fun consumeWhile(predicate: suspend () -> Boolean) {
-        Scheduler(scope).use {
+        Scheduler(h2).use {
             val timed = measureTimeMillis {
                 while (predicate()) continue
             }
