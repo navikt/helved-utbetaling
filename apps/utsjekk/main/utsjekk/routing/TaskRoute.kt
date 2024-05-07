@@ -4,65 +4,125 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import libs.task.AvvikshåndterDTO
+import libs.task.KommentarDTO
+import libs.task.Status
 import libs.task.TaskService
 
-fun Routing.task(service: TaskService) {
+private fun ApplicationCall.navident(): String? {
+    return principal<JWTPrincipal>()
+        ?.getClaim("NAVident", String::class)
+}
+
+fun Route.task(service: TaskService) {
 
     route("/api/task") {
 
         get("/{id}") {
             val id = call.parameters["id"]?.toLong()
-                ?: return@get call.respond(HttpStatusCode.BadRequest)
+                ?: return@get call.respond(HttpStatusCode.BadRequest, "mangler param id")
 
-            val pid = call.principal<JWTPrincipal>()?.getClaim("pid", String::class)
+            val navident = call.navident()
                 ?: return@get call.respond(HttpStatusCode.Unauthorized)
 
-            val task = service.hentTaskMedId(id, pid)
+            val task = service.hentTaskMedId(id, navident)
                 ?: return@get call.respond(HttpStatusCode.NotFound)
 
             call.respond(task)
         }
 
         get("/v2") {
-            TODO("not implemented")
-        }
+            val status = call.request.queryParameters["status"]
+                ?.let { listOf(Status.valueOf(it)) }
+                ?: emptyList()
 
-        get("/callId/{callId}") {
-            TODO("not implemented")
+            val type = call.request.queryParameters["type"]
+
+            val navident = call.navident()
+                ?: return@get call.respond(HttpStatusCode.Unauthorized)
+
+            val tasks = service.hentTasks(status, navident, type)
+            call.respond(tasks)
         }
 
         get("/ferdigNaaFeiletFoer") {
-            TODO("not implemented")
+            val navident = call.navident()
+                ?: return@get call.respond(HttpStatusCode.Unauthorized)
+
+            val tasks = service.hentTasksSomErFerdigNåMenFeiletFør(navident)
+            call.respond(tasks)
         }
 
         get("/antall-til-oppfolging") {
-            TODO("not implemented")
+            val antall = service.finnAntallTaskerSomKreverOppfølging()
+            call.respond(antall)
         }
 
         get("antall-feilet-og-manuell-oppfolging") {
-            TODO("not implemented")
+            val antall = service.finnAntallTaskerMedStatusFeiletOgManuellOppfølging()
+            call.respond(antall)
         }
 
         get("/logg/{id}") {
-            TODO("not implemented")
+            val id = call.parameters["id"]?.toLong()
+                ?: return@get call.respond(HttpStatusCode.BadRequest)
+
+            val navident = call.navident()
+                ?: return@get call.respond(HttpStatusCode.Unauthorized)
+
+            val taskLogs = service.getTaskLogs(id, navident)
+            call.respond(taskLogs)
         }
 
         put("/rekjor") {
-            TODO("not implemented")
+            val taskId = call.request.queryParameters["taskId"]?.toLong()
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler query param taskId")
+
+            val navident = call.navident()
+                ?: return@put call.respond(HttpStatusCode.Unauthorized)
+
+            val result = service.rekjørTask(taskId, navident)
+            call.respond(result)
         }
 
         put("/rekjorAlle") {
-            TODO("not implemented")
+            val status = call.request.header("status")?.let { Status.valueOf(it) }
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler header status")
+
+            val navident = call.navident()
+                ?: return@put call.respond(HttpStatusCode.Unauthorized)
+
+            val result = service.rekjørTasks(status, navident)
+            call.respond(result)
         }
 
         put("/avvikshaandter") {
-            TODO("not implemented")
+            val navident = call.navident()
+                ?: return@put call.respond(HttpStatusCode.Unauthorized)
+
+            val taskId = call.request.queryParameters["taskId"]?.toLong()
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler query param taskId")
+
+            val avvikshåndter = call.receive<AvvikshåndterDTO>()
+
+            val result = service.avvikshåndterTask(taskId, avvikshåndter.avvikstype, avvikshåndter.årsak, navident)
+            call.respond(result)
         }
 
         put("/kommenter") {
-            TODO("not implemented")
+            val navident = call.navident()
+                ?: return@put call.respond(HttpStatusCode.Unauthorized)
+
+            val taskId = call.request.queryParameters["taskId"]?.toLong()
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler query param taskId")
+
+            val kommentar = call.receive<KommentarDTO>()
+
+            val result = service.kommenterTask(taskId, kommentar, navident)
+            call.respond(result)
         }
     }
 }
