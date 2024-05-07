@@ -10,18 +10,19 @@ import java.util.*
 import kotlin.test.assertEquals
 
 class TaskServiceTest : H2() {
+    private val navident = "Æ000000"
 
     @Nested
     inner class finnAntallTaskerSomKreverOppfølging {
         @Test
         fun `found 0 MANUELL_OPPFØLGING`() = runTest(h2) {
-            assertEquals(0, TaskService.finnAntallTaskerSomKreverOppfølging().data)
-
             transaction {
                 enTask(Status.UBEHANDLET).insert()
             }
 
-            assertEquals(0, TaskService.finnAntallTaskerSomKreverOppfølging().data)
+            val ressurs = TaskService.finnAntallTaskerSomKreverOppfølging()
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(0, ressurs.data)
         }
 
         @Test
@@ -30,20 +31,20 @@ class TaskServiceTest : H2() {
                 enTask(Status.MANUELL_OPPFØLGING).insert()
             }
 
-            val long = TaskService.finnAntallTaskerSomKreverOppfølging()
-            assertEquals(1, long.data)
+            val ressurs = TaskService.finnAntallTaskerSomKreverOppfølging()
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(1, ressurs.data)
         }
-
     }
 
     @Nested
     inner class finnAntallTaskerMedStatusFeiletOgManuellOppfølging {
-
         @Test
         fun `found 0 FEILET and 0 MANUELL_OPPFØLGIN`() = runTest(h2) {
-            val antall = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging().data!!
-            assertEquals(0, antall.antallFeilet)
-            assertEquals(0, antall.antallManuellOppfølging)
+            val ressurs = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging()
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(0, ressurs.data!!.antallFeilet)
+            assertEquals(0, ressurs.data!!.antallManuellOppfølging)
         }
 
         @Test
@@ -51,9 +52,10 @@ class TaskServiceTest : H2() {
             transaction {
                 enTask(Status.FEILET).insert()
             }
-            val antall = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging().data!!
-            assertEquals(1, antall.antallFeilet)
-            assertEquals(0, antall.antallManuellOppfølging)
+            val ressurs = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging()
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(1, ressurs.data!!.antallFeilet)
+            assertEquals(0, ressurs.data!!.antallManuellOppfølging)
         }
 
         @Test
@@ -61,9 +63,10 @@ class TaskServiceTest : H2() {
             transaction {
                 enTask(Status.MANUELL_OPPFØLGING).insert()
             }
-            val antall = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging().data!!
-            assertEquals(0, antall.antallFeilet)
-            assertEquals(1, antall.antallManuellOppfølging)
+            val ressurs = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging()
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(0, ressurs.data!!.antallFeilet)
+            assertEquals(1, ressurs.data!!.antallManuellOppfølging)
         }
 
         @Test
@@ -72,16 +75,15 @@ class TaskServiceTest : H2() {
                 enTask(Status.MANUELL_OPPFØLGING).insert()
                 enTask(Status.FEILET).insert()
             }
-            val antall = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging().data!!
-            assertEquals(1, antall.antallFeilet)
-            assertEquals(1, antall.antallManuellOppfølging)
+            val ressurs = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging()
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(1, ressurs.data!!.antallFeilet)
+            assertEquals(1, ressurs.data!!.antallManuellOppfølging)
         }
     }
 
     @Nested
     inner class hentTasksSomErFerdigNåMenFeiletFør {
-        private val navident = "Æ000000"
-
         @Test
         fun `found 0 FERDIG with previous FEILET`() = runTest(h2) {
             val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident).data!!
@@ -95,8 +97,9 @@ class TaskServiceTest : H2() {
                 enTaskLog(task, Loggtype.FEILET).insert()
             }
 
-            val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident).data!!
-            assertEquals(1, tasks.size)
+            val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident)
+            assertEquals(Ressurs.Status.SUKSESS, tasks.status)
+            assertEquals(1, tasks.data!!.size)
         }
 
         @Test
@@ -106,8 +109,35 @@ class TaskServiceTest : H2() {
                 enTaskLog(task, Loggtype.MANUELL_OPPFØLGING).insert()
             }
 
-            val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident).data!!
-            assertEquals(1, tasks.size)
+            val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident)
+            assertEquals(Ressurs.Status.SUKSESS, tasks.status)
+            assertEquals(1, tasks.data!!.size)
+        }
+    }
+
+    @Nested
+    inner class hentTasks {
+        @Test
+        fun `found 0 FERDIG`() = runTest(h2) {
+            val tasks = TaskService.hentTasks(listOf(Status.FERDIG), navident, null)
+            assertEquals(Ressurs.Status.SUKSESS, tasks.status)
+            assertEquals(0, tasks.data!!.size)
+        }
+
+        @Test
+        fun `found 0 ALL STATUSES`() = runTest(h2) {
+            val allStatuses = listOf(
+                Status.AVVIKSHÅNDTERT,
+                Status.BEHANDLER,
+                Status.FEILET,
+                Status.FERDIG,
+                Status.KLAR_TIL_PLUKK,
+                Status.MANUELL_OPPFØLGING,
+                Status.PLUKKET,
+                Status.UBEHANDLET
+            )
+            val tasks = TaskService.hentTasks(allStatuses, navident, null).data!!
+            assertEquals(0, tasks.size)
         }
     }
 }
