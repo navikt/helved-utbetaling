@@ -1,16 +1,19 @@
-package libs.task
+package libs.task.scheduler
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.produce
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.postgres.map
+import libs.task.H2
+import libs.task.Status
+import libs.task.TaskDao
 import libs.utils.appLog
 import org.junit.jupiter.api.Test
 import java.util.*
 import kotlin.system.measureTimeMillis
 
-class TaskSchedulerTest : H2() {
+class SchedulerTest : H2() {
 
     @Test
     fun `populated UBEHANDLET tasks is set to KLAR_TIL_PLUKK by scheduler`() {

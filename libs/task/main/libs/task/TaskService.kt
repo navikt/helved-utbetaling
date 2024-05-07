@@ -16,7 +16,7 @@ object TaskService {
         }
 
         return result.fold(::tryInto) { err ->
-            val msg = "Feilet ved henting av antall tasker som krever oppfølging"
+            val msg = "Feilet ved henting av antall tasks som krever oppfølging"
             secureLog.error(msg, err)
             Ressurs.failure(msg, err)
         }
@@ -33,7 +33,7 @@ object TaskService {
         }
 
         return result.fold(::tryInto) { err ->
-            val msg = "Feilet ved henting av antall tasker som har feilet eller satt til manuell oppfølging"
+            val msg = "Feilet ved henting av antall tasks som har feilet eller satt til manuell oppfølging"
             secureLog.error(msg, err)
             Ressurs.failure(msg, err)
         }
@@ -42,33 +42,52 @@ object TaskService {
     suspend fun hentTasksSomErFerdigNåMenFeiletFør(
         navident: String,
     ): Ressurs<List<TaskDto>> {
-        appLog.info("$navident henter oppgraver som er ferdige nå, men feilet før")
+        appLog.info("$navident henter tasks som er ferdige nå, men feilet før")
 
         val result = runCatching {
             transaction {
-                val taskWithMetadata = TaskDao.finnTasksSomErFerdigNåMenFeiletFør().associateWith {
-                    TaskLogDao.findMetadataBy(listOf(it.id))
-                }
-
-                taskWithMetadata.map { (task, meta) ->
-                    TaskDto.from(task, meta.singleOrNull())
-                }
+                TaskDao.finnTasksSomErFerdigNåMenFeiletFør()
+                    .associateWith { task ->
+                        TaskLogDao.findMetadataBy(listOf(task.id))
+                    }
+                    .map { (task, metadata) ->
+                        TaskDto.from(task, metadata.singleOrNull())
+                    }
             }
         }
 
         return result.fold(::tryInto) { err ->
-            val msg = "Feilet ved henting av oppgaver som er ferdig nå, men feilet før"
+            val msg = "Feilet ved henting av tasks som er ferdig nå, men feilet før"
             secureLog.error(msg, err)
             Ressurs.failure(msg, err)
         }
     }
 
     suspend fun hentTasks(
-        statuses: List<Status>,
+        statuser: List<Status>,
         navident: String,
         type: String?
     ): Ressurs<List<TaskDto>> {
-        TODO()
+        appLog.info("$navident henter $type tasks med statuser $statuser")
+
+        val result = runCatching {
+            transaction {
+                when (type) {
+                    null -> TaskDao.findBy(statuser)
+                    else -> TaskDao.findBy(statuser, type)
+                }.associateWith { task ->
+                    TaskLogDao.findMetadataBy(listOf(task.id))
+                }.map { (task, metadata) ->
+                    TaskDto.from(task, metadata.singleOrNull())
+                }
+            }
+        }
+
+        return result.fold(::tryInto) { err ->
+            val msg = "Feilet ved henting av tasks med statuser $statuser"
+            secureLog.error(msg, err)
+            Ressurs.failure(msg, err)
+        }
     }
 
     suspend fun getTaskLogs(
