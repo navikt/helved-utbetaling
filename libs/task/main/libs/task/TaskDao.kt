@@ -84,18 +84,15 @@ data class TaskDao(
         }
 
         suspend fun findBy(status: List<Status>): List<TaskDao> {
-
-            fun args(num: Int): String {
-                return (1..num).joinToString(",") { "?" }
-            }
-
             val sql = """
                 SELECT * FROM task
-                WHERE status IN (${args(status.size)})
+                WHERE status IN (${prepare(status)})
             """
+
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                val startIdx = 1 // prepared statements are 1 indexed.
                 status.forEachIndexed { idx, status ->
-                    stmt.setString(idx + 1, status.name)
+                    stmt.setString(startIdx + idx, status.name)
                 }
                 stmt.executeQuery().map(::from)
             }.also {
@@ -196,6 +193,10 @@ data class TaskDao(
 
         suspend fun findBy(x_trace_id: String): List<TaskDao> = TODO()
     }
+}
+
+fun prepare(list: List<Any>): String {
+    return list.joinToString(",") { "?" }
 }
 
 fun TaskDao.Companion.from(rs: ResultSet) = TaskDao(
