@@ -17,7 +17,7 @@ private fun ApplicationCall.navident(): String? {
         ?.getClaim("NAVident", String::class)
 }
 
-fun Route.task(service: TaskService) {
+fun Route.task() {
 
     route("/api/task") {
 
@@ -28,7 +28,7 @@ fun Route.task(service: TaskService) {
             val navident = call.navident()
                 ?: return@get call.respond(HttpStatusCode.Unauthorized)
 
-            val task = service.hentTaskMedId(id, navident)
+            val task = TaskService.hentTaskMedId(id, navident)
                 ?: return@get call.respond(HttpStatusCode.NotFound)
 
             call.respond(task)
@@ -44,7 +44,7 @@ fun Route.task(service: TaskService) {
             val navident = call.navident()
                 ?: return@get call.respond(HttpStatusCode.Unauthorized)
 
-            val tasks = service.hentTasks(status, navident, type)
+            val tasks = TaskService.hentTasks(status, navident, type)
             call.respond(tasks)
         }
 
@@ -52,17 +52,17 @@ fun Route.task(service: TaskService) {
             val navident = call.navident()
                 ?: return@get call.respond(HttpStatusCode.Unauthorized)
 
-            val tasks = service.hentTasksSomErFerdigNåMenFeiletFør(navident)
+            val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident)
             call.respond(tasks)
         }
 
         get("/antall-til-oppfolging") {
-            val antall = service.finnAntallTaskerSomKreverOppfølging()
+            val antall = TaskService.finnAntallTaskerSomKreverOppfølging()
             call.respond(antall)
         }
 
         get("antall-feilet-og-manuell-oppfolging") {
-            val antall = service.finnAntallTaskerMedStatusFeiletOgManuellOppfølging()
+            val antall = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging()
             call.respond(antall)
         }
 
@@ -73,7 +73,7 @@ fun Route.task(service: TaskService) {
             val navident = call.navident()
                 ?: return@get call.respond(HttpStatusCode.Unauthorized)
 
-            val taskLogs = service.getTaskLogs(id, navident)
+            val taskLogs = TaskService.getTaskLogs(id, navident)
             call.respond(taskLogs)
         }
 
@@ -84,7 +84,7 @@ fun Route.task(service: TaskService) {
             val navident = call.navident()
                 ?: return@put call.respond(HttpStatusCode.Unauthorized)
 
-            val result = service.rekjørTask(taskId, navident)
+            val result = TaskService.rekjørTask(taskId, navident)
             call.respond(result)
         }
 
@@ -95,7 +95,7 @@ fun Route.task(service: TaskService) {
             val navident = call.navident()
                 ?: return@put call.respond(HttpStatusCode.Unauthorized)
 
-            val result = service.rekjørTasks(status, navident)
+            val result = TaskService.rekjørTasks(status, navident)
             call.respond(result)
         }
 
@@ -108,7 +108,7 @@ fun Route.task(service: TaskService) {
 
             val avvikshåndter = call.receive<AvvikshåndterDTO>()
 
-            val result = service.avvikshåndterTask(taskId, avvikshåndter.avvikstype, avvikshåndter.årsak, navident)
+            val result = TaskService.avvikshåndterTask(taskId, avvikshåndter.avvikstype, avvikshåndter.årsak, navident)
             call.respond(result)
         }
 
@@ -121,7 +121,7 @@ fun Route.task(service: TaskService) {
 
             val kommentar = call.receive<KommentarDTO>()
 
-            val result = service.kommenterTask(taskId, kommentar, navident)
+            val result = TaskService.kommenterTask(taskId, kommentar, navident)
             call.respond(result)
         }
     }
