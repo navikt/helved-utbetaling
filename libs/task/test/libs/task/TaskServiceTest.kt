@@ -1,7 +1,9 @@
 package libs.task
 
 import kotlinx.coroutines.test.runTest
+import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
+import libs.postgres.map
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.util.*
@@ -92,12 +94,33 @@ class TaskServiceTest : H2() {
                 val task = enTask(Status.FERDIG).apply { insert() }
                 enTaskLog(task, Loggtype.FEILET).insert()
             }
+
+            val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident).data!!
+            assertEquals(1, tasks.size)
+        }
+
+        @Test
+        fun `found 1 FERDIG with previous MANUELL_OPPFØLGING`() = runTest(h2) {
+            transaction {
+                val task = enTask(Status.FERDIG).apply { insert() }
+                enTaskLog(task, Loggtype.MANUELL_OPPFØLGING).insert()
+            }
+
             val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident).data!!
             assertEquals(1, tasks.size)
         }
     }
-
 }
+
+private suspend fun count(table: String): Int =
+    transaction {
+        coroutineContext.connection
+            .prepareStatement("SELECT count(*) FROM $table")
+            .executeQuery()
+            .map { it.getInt(1) }
+            .single()
+    }
+
 
 fun enTask(status: Status = Status.UBEHANDLET) = TaskDao(
     payload = UUID.randomUUID().toString(),

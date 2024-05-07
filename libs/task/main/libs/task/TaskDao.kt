@@ -153,14 +153,13 @@ data class TaskDao(
 
         suspend fun finnTasksSomErFerdigNåMenFeiletFør(): List<TaskDao> {
             val sql = """
-                SELECT distinct t.*
+                SELECT DISTINCT t.*
                 FROM task t
-                JOIN task_logg l on t.id = l.task_id
-                WHERE t.status = ? and l.type in (?)
+                JOIN task_logg l ON t.id = l.task_id
+                WHERE t.status = ? AND l.type IN ('FEILET', 'MANUELL_OPPFØLGING')
             """
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 stmt.setString(1, Status.FERDIG.name)
-                stmt.setString(2, listOf(Status.FEILET, Status.MANUELL_OPPFØLGING).joinToString(", ") { it.name })
                 stmt.executeQuery().map(::from)
             }.also {
                 appLog.debug(sql)

@@ -68,7 +68,7 @@ object TaskService {
         navident: String,
         type: String?
     ): Ressurs<List<TaskDto>> {
-        appLog.info("$navident henter $type tasks med statuser $statuser")
+        appLog.info("$navident henter ${type ?: ""} tasks med statuser $statuser")
 
         val result = runCatching {
             transaction {
