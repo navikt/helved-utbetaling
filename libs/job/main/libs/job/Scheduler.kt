@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -15,7 +16,7 @@ import kotlin.time.Duration.Companion.milliseconds
 abstract class Scheduler<T>(
     private val feedRPM: Int = 1,
     private val errorCooldownMs: Long = 500,
-    scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+    context: CoroutineContext = Dispatchers.IO
 ) : AutoCloseable {
 
     /**
@@ -52,7 +53,7 @@ abstract class Scheduler<T>(
         }
     }
 
-    private val job: Job = scope.launch {
+    private val job: Job = CoroutineScope(context).launch {
         while (isActive) {
             try {
                 flow().distinctUntilChanged().collect(::task)

@@ -1,17 +1,17 @@
 package libs.task.scheduler
 
-import kotlinx.coroutines.CoroutineScope
 import libs.job.Scheduler
 import libs.postgres.concurrency.transaction
 import libs.task.Status
 import libs.task.TaskDao
 import libs.utils.secureLog
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.CoroutineContext
 
-class Scheduler(scope: CoroutineScope) : Scheduler<TaskDao>(
+class Scheduler(context: CoroutineContext) : Scheduler<TaskDao>(
     feedRPM = 60,
     errorCooldownMs = 100,
-    scope = scope,
+    context = context,
 ) {
 
     private val counter = AtomicLong()
