@@ -57,14 +57,23 @@ data class TaskLogDao(
             }
         }
 
+        suspend fun findKommentarBy(task_id: UUID): String? {
+            val sql = """
+               SELECT melding
+               FROM task_logg
+               WHERE task_id = ? AND type = ${Loggtype.KOMMENTAR} ORDER BY opprettet_tid DESC LIMIT 1
+            """
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                stmt.setObject(1, task_id)
+                stmt.executeQuery().map { it.getString(1) }.singleOrNull()
+            }.also {
+                appLog.debug(sql)
+            }
+        }
+
         suspend fun findMetadataBy(task_ids: List<UUID>): List<TaskLoggMetadata> {
             val sql = """
-                    SELECT task_id, count(*) antall_logger, MAX(opprettet_tid) siste_opprettet_tid,
-                        (
-                            SELECT melding FROM task_logg tl1
-                            WHERE tl1.task_id = tl.task_id AND type='KOMMENTAR' ORDER BY tl1.opprettet_tid DESC LIMIT 1) 
-                            siste_kommentar
-                        )
+                    SELECT task_id, count(*) antall_logger, MAX(opprettet_tid) siste_opprettet_tid
                     FROM task_logg tl
                     WHERE task_id IN (?)
                     GROUP BY task_id
@@ -132,7 +141,7 @@ class TaskLoggMetadata(
             task_id = UUID.fromString(rs.getString("task_id")),
             antall_logger = rs.getInt("antall_logger"),
             siste_opprettet_tid = rs.getTimestamp("siste_opprettet_tid").toLocalDateTime(),
-            siste_kommentar = rs.getString("siste_kommentar")
+            siste_kommentar = null // hent fra egen spørring
         )
     }
 }
