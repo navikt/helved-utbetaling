@@ -136,8 +136,43 @@ class TaskServiceTest : H2() {
                 Status.PLUKKET,
                 Status.UBEHANDLET
             )
-            val tasks = TaskService.hentTasks(allStatuses, navident, null).data!!
-            assertEquals(0, tasks.size)
+            val tasks = TaskService.hentTasks(allStatuses, navident, null)
+            assertEquals(Ressurs.Status.SUKSESS, tasks.status)
+            assertEquals(0, tasks.data!!.size)
+        }
+
+        @Test
+        fun `found 1 KLAR_TIL_PLUKK`() = runTest(h2) {
+            transaction {
+                enTask(Status.KLAR_TIL_PLUKK).insert()
+            }
+            val ressurs = TaskService.hentTasks(listOf(Status.KLAR_TIL_PLUKK), navident, null)
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(1, ressurs.data!!.size)
+        }
+
+        @Test
+        fun `found ALL`() = runTest(h2) {
+            val allStatuses = listOf(
+                Status.AVVIKSHÅNDTERT,
+                Status.BEHANDLER,
+                Status.FEILET,
+                Status.FERDIG,
+                Status.KLAR_TIL_PLUKK,
+                Status.MANUELL_OPPFØLGING,
+                Status.PLUKKET,
+                Status.UBEHANDLET
+            )
+
+            transaction {
+                allStatuses.map {
+                    enTask(it).insert()
+                }
+            }
+
+            val ressurs = TaskService.hentTasks(allStatuses, navident, null)
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(allStatuses.size, ressurs.data!!.size)
         }
     }
 }

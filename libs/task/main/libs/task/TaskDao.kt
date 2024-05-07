@@ -84,12 +84,19 @@ data class TaskDao(
         }
 
         suspend fun findBy(status: List<Status>): List<TaskDao> {
+
+            fun args(num: Int): String {
+                return (1..num).joinToString(",") { "?" }
+            }
+
             val sql = """
                 SELECT * FROM task
-                WHERE status in (?)
+                WHERE status IN (${args(status.size)})
             """
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, status.joinToString(", ") { it.name })
+                status.forEachIndexed { idx, status ->
+                    stmt.setString(idx + 1, status.name)
+                }
                 stmt.executeQuery().map(::from)
             }.also {
                 appLog.debug(sql)
