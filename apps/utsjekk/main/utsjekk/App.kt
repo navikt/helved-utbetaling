@@ -74,7 +74,6 @@ fun Application.utsjekk(config: Config = Config()) {
     val postgres = Postgres.initialize(config.postgres).apply {
         migrate()
     }
-    val service = TaskService(postgres)
     val scheduler = TaskScheduler()
 
     environment.monitor.subscribe(ApplicationStopping) {
@@ -83,7 +82,7 @@ fun Application.utsjekk(config: Config = Config()) {
 
     routing {
         authenticate(TokenProvider.AZURE) {
-            task(service)
+            task()
         }
 
         actuators(prometheus)

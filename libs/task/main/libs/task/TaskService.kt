@@ -3,9 +3,8 @@ package libs.task
 import libs.postgres.concurrency.transaction
 import libs.utils.appLog
 import libs.utils.secureLog
-import javax.sql.DataSource
 
-class TaskService(private val postgres: DataSource) {
+object TaskService {
 
     private fun <T> tryInto(data: T) = Ressurs.success(data)
 
@@ -39,12 +38,6 @@ class TaskService(private val postgres: DataSource) {
             Ressurs.failure(msg, err)
         }
     }
-
-    // TODO: bytt ut med open telemetry sin (x_trace_id)
-//    suspend fun hentTasksForCallId(
-//        callId: String,
-//        navident: String
-//    ): Ressurs<List<TaskDto>>?
 
     suspend fun hentTasksSomErFerdigNåMenFeiletFør(
         navident: String,
