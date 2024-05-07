@@ -1,3 +1,5 @@
+@file:Suppress("NAME_SHADOWING")
+
 package libs.task
 
 import libs.postgres.concurrency.connection
@@ -57,12 +59,12 @@ data class TaskDao(
 
     companion object {
         suspend fun findBy(status: List<Status>, trigger_tid: BeforeTriggerTid): List<TaskDao> {
+            val status = commaSeparated(status)
             val sql = """
                SELECT * FROM task
-               WHERE status in (?) and trigger_tid < ?
+               WHERE status IN ($status) AND trigger_tid < ?
             """
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, status.joinToString(", ") { it.name })
                 stmt.setObject(2, Timestamp.valueOf(trigger_tid))
                 stmt.executeQuery().map(::from)
             }.also {
@@ -84,16 +86,13 @@ data class TaskDao(
         }
 
         suspend fun findBy(status: List<Status>): List<TaskDao> {
+            val status = commaSeparated(status)
             val sql = """
                 SELECT * FROM task
-                WHERE status IN (${prepare(status)})
+                WHERE status IN ($status)
             """
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                val startIdx = 1 // prepared statements are 1 indexed.
-                status.forEachIndexed { idx, status ->
-                    stmt.setString(startIdx + idx, status.name)
-                }
                 stmt.executeQuery().map(::from)
             }.also {
                 appLog.debug(sql)
@@ -114,13 +113,13 @@ data class TaskDao(
         }
 
         suspend fun findBy(status: List<Status>, type: String): List<TaskDao> {
+            val status = commaSeparated(status)
             val sql = """
                 SELECT * FROM task
-                WHERE status in (?) and type = ?
+                WHERE type = ? AND status IN ($status)
             """
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, status.joinToString(", ") { it.name })
-                stmt.setString(2, type)
+                stmt.setString(1, type)
                 stmt.executeQuery().map(::from)
             }.also {
                 appLog.debug(sql)
@@ -142,13 +141,13 @@ data class TaskDao(
         }
 
         suspend fun countOpenTasks(): List<AntallÅpneTask> {
+            val status = commaSeparated(Status.open())
             val sql = """
                 SELECT t.type, t.status, count(*) AS count
                 FROM task t
-                WHERE t.status IN (?)
+                WHERE t.status IN ($status)
             """
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, Status.open().joinToString(", ") { it.name })
                 stmt.executeQuery().map(AntallÅpneTask::from)
             }.also {
                 appLog.debug(sql)
@@ -195,8 +194,8 @@ data class TaskDao(
     }
 }
 
-fun prepare(list: List<Any>): String {
-    return list.joinToString(",") { "?" }
+fun commaSeparated(list: List<Any>): String {
+    return list.joinToString(", ") { "'$it'" }
 }
 
 fun TaskDao.Companion.from(rs: ResultSet) = TaskDao(
