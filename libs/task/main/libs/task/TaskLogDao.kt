@@ -11,7 +11,7 @@ import kotlin.coroutines.coroutineContext
 
 private const val BRUKERNAVN_NÅR_SIKKERHETSKONTEKST_IKKE_FINNES = "VL"
 
-data class TaskLoggDao(
+data class TaskLogDao(
     val task_id: UUID,
     val type: Loggtype,
     val id: UUID = UUID.randomUUID(),
@@ -39,9 +39,9 @@ data class TaskLoggDao(
     }
 
     companion object {
-        suspend fun findBy(task_id: UUID): List<TaskLoggDao> = findBy(listOf(task_id))
+        suspend fun findBy(task_id: UUID): List<TaskLogDao> = findBy(listOf(task_id))
 
-        suspend fun findBy(task_ids: List<UUID>): List<TaskLoggDao> =
+        suspend fun findBy(task_ids: List<UUID>): List<TaskLogDao> =
             coroutineContext.connection.prepareStatement(
                 """
                     SELECT * FROM task_logg
@@ -97,7 +97,7 @@ data class TaskLoggDao(
     }
 }
 
-fun TaskLoggDao.Companion.from(rs: ResultSet) = TaskLoggDao(
+fun TaskLogDao.Companion.from(rs: ResultSet) = TaskLogDao(
     task_id = UUID.fromString(rs.getString("task_id")),
     type = Loggtype.valueOf(rs.getString("type")),
     id = UUID.fromString(rs.getString("id")),

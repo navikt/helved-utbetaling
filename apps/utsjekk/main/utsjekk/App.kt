@@ -26,6 +26,8 @@ import libs.task.TaskService
 import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.routing.actuators
+import utsjekk.routing.task
+import utsjekk.task.TaskScheduler
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -73,14 +75,17 @@ fun Application.utsjekk(config: Config = Config()) {
         migrate()
     }
     val service = TaskService(postgres)
-//    val scheduler = TaskScheduler(postgres)
+    val scheduler = TaskScheduler()
 
     environment.monitor.subscribe(ApplicationStopping) {
-//        scheduler.close()
+        scheduler.close()
     }
 
-
     routing {
+        authenticate(TokenProvider.AZURE) {
+            task(service)
+        }
+
         actuators(prometheus)
     }
 }

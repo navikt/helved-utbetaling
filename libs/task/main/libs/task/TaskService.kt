@@ -43,18 +43,18 @@ class TaskService(private val postgres: DataSource) {
     // TODO: bytt ut med open telemetry sin (x_trace_id)
 //    suspend fun hentTasksForCallId(
 //        callId: String,
-//        saksbehandlerId: String
+//        navident: String
 //    ): Ressurs<List<TaskDto>>?
 
     suspend fun hentTasksSomErFerdigNåMenFeiletFør(
-        brukernavn: String,
+        navident: String,
     ): Ressurs<List<TaskDto>> {
-        appLog.info("$brukernavn henter oppgraver som er ferdige nå, men feilet før")
+        appLog.info("$navident henter oppgraver som er ferdige nå, men feilet før")
 
         val result = runCatching {
             transaction {
                 val taskWithMetadata = TaskDao.finnTasksSomErFerdigNåMenFeiletFør().associateWith {
-                    TaskLoggDao.findMetadataBy(listOf(it.id))
+                    TaskLogDao.findMetadataBy(listOf(it.id))
                 }
 
                 taskWithMetadata.map { (task, meta) ->
@@ -72,30 +72,29 @@ class TaskService(private val postgres: DataSource) {
 
     suspend fun hentTasks(
         statuses: List<Status>,
-        saksbehandlerId: String,
-        page: Int,
+        navident: String,
         type: String?
     ): Ressurs<List<TaskDto>> {
         TODO()
     }
 
-    suspend fun hentTaskLogg(
+    suspend fun getTaskLogs(
         id: Long,
-        saksbehandlerId: String
+        navident: String
     ): Ressurs<List<TaskLoggDto>> {
         TODO()
     }
 
     suspend fun rekjørTask(
         Id: Long,
-        behandlerId: String
+        navident: String
     ): Ressurs<String> {
         TODO()
     }
 
     suspend fun rekjørTasks(
         status: Status,
-        saksbehandlerId: String
+        navident: String
     ): Ressurs<String> {
         TODO()
     }
@@ -104,7 +103,7 @@ class TaskService(private val postgres: DataSource) {
         taskId: Long,
         avvikstype: Avvikstype,
         årsak: String,
-        saksbehandlerId: String,
+        navident: String,
     ): Ressurs<String> {
         TODO()
     }
@@ -112,14 +111,14 @@ class TaskService(private val postgres: DataSource) {
     suspend fun kommenterTask(
         taskId: Long,
         kommentarDTO: KommentarDTO,
-        saksbehandlerId: String
+        navident: String
     ): Ressurs<String> {
         TODO()
     }
 
     suspend fun hentTaskMedId(
         id: Long,
-        saksbehandlerId: String
+        navident: String
     ): Ressurs<TaskDto>? {
         TODO()
     }
