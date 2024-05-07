@@ -2,6 +2,7 @@ package libs.task
 
 import libs.postgres.concurrency.connection
 import libs.postgres.map
+import libs.utils.appLog
 import libs.utils.env
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -21,12 +22,11 @@ data class TaskLogDao(
     val opprettet_tid: LocalDateTime = LocalDateTime.now(),
 ) {
     suspend fun insert() {
-        coroutineContext.connection.prepareStatement(
-            """
+        val sql = """
            INSERT INTO task_logg (id, task_id, type, node, opprettet_tid, endret_av, melding) 
            VALUES (?,?,?,?,?,?,?)
-            """
-        ).use { stmt ->
+        """
+        coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, id)
             stmt.setObject(2, task_id)
             stmt.setString(3, type.name)
@@ -35,26 +35,30 @@ data class TaskLogDao(
             stmt.setString(6, endret_av)
             stmt.setString(7, melding)
             stmt.executeUpdate()
+        }.also {
+            appLog.debug(sql)
         }
     }
 
     companion object {
         suspend fun findBy(task_id: UUID): List<TaskLogDao> = findBy(listOf(task_id))
 
-        suspend fun findBy(task_ids: List<UUID>): List<TaskLogDao> =
-            coroutineContext.connection.prepareStatement(
-                """
-                    SELECT * FROM task_logg
-                    WHERE task_id in (?)
-                """.trimIndent()
-            ).use { stmt ->
-                stmt.setString(1, task_ids.joinToString(", ") { it.toString() })
+        suspend fun findBy(task_ids: List<UUID>): List<TaskLogDao> {
+            val sql = """
+                SELECT * FROM task_logg
+                WHERE task_id in (?)
+            """
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                val ids = task_ids.joinToString(", ") { it.toString() }
+                stmt.setString(1, ids)
                 stmt.executeQuery().map(::from)
+            }.also {
+                appLog.debug(sql)
             }
+        }
 
-        suspend fun findMetadataBy(task_ids: List<UUID>): List<TaskLoggMetadata> =
-            coroutineContext.connection.prepareStatement(
-                """
+        suspend fun findMetadataBy(task_ids: List<UUID>): List<TaskLoggMetadata> {
+            val sql = """
                     SELECT task_id, count(*) antall_logger, MAX(opprettet_tid) siste_opprettet_tid,
                         (
                             SELECT melding FROM task_logg tl1
@@ -64,36 +68,46 @@ data class TaskLogDao(
                     FROM task_logg tl
                     WHERE task_id IN (?)
                     GROUP BY task_id
-                """.trimIndent()
-            ).use { stmt ->
-                stmt.setString(1, task_ids.joinToString(", ") { it.toString() })
-                stmt.executeQuery().map(TaskLoggMetadata::from)
-            }
-
-        suspend fun countBy(task_id: UUID, type: Loggtype): Long =
-            coroutineContext.connection.prepareStatement(
                 """
-                    SELECT count(*) FROM task_logg
-                    WHERE task_id = ? AND type = ?
-                """.trimIndent()
-            ).use { stmt ->
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                val ids = task_ids.joinToString(", ") { it.toString() }
+                stmt.setString(1, ids)
+                stmt.executeQuery().map(TaskLoggMetadata::from)
+            }.also {
+                appLog.debug(sql)
+            }
+        }
+
+        suspend fun countBy(task_id: UUID, type: Loggtype): Long {
+            val sql = """
+                SELECT count(*) FROM task_logg
+                WHERE task_id = ? AND type = ?
+            """
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, task_id)
                 stmt.setString(2, type.name)
                 stmt.executeQuery().map { it.getLong(1) }.single()
+            }.also {
+                appLog.debug(sql)
             }
+        }
 
         suspend fun deleteBy(task_id: UUID) = deleteBy(listOf(task_id))
 
-        suspend fun deleteBy(task_ids: List<UUID>): Int =
-            coroutineContext.connection.prepareStatement(
-                """
-                    DELETE FROM task_logg
-                    WHERE task_id in (?)
-                """.trimIndent()
-            ).use { stmt ->
-                stmt.setString(1, task_ids.joinToString(", ") { it.toString() })
+        suspend fun deleteBy(task_ids: List<UUID>): Int {
+            val sql = """
+                DELETE FROM task_logg
+                WHERE task_id in (?)
+            """
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                val ids = task_ids.joinToString(", ") { it.toString() }
+                stmt.setString(1, ids)
                 stmt.executeUpdate()
+            }.also {
+                appLog.debug(sql)
             }
+        }
     }
 }
 
