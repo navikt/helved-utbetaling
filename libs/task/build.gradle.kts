@@ -9,4 +9,5 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:job"))
     testImplementation("com.h2database:h2:2.2.224")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
 }

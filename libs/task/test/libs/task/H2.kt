@@ -1,7 +1,6 @@
 package libs.task
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import libs.postgres.Postgres
@@ -13,10 +12,12 @@ import libs.postgres.concurrency.transaction
 import libs.utils.appLog
 import org.junit.jupiter.api.AfterEach
 import javax.sql.DataSource
+import kotlin.coroutines.CoroutineContext
 
 abstract class H2 {
     private val datasource: DataSource = Postgres.initialize(config).apply { migrate() }
-    val scope = CoroutineScope(Dispatchers.IO + CoroutineDatasource(datasource))
+    val h2: CoroutineContext = CoroutineDatasource(datasource)
+    val scope = CoroutineScope(h2)
 
     private val config
         get() = PostgresConfig(
