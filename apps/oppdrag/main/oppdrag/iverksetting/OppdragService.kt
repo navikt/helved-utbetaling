@@ -13,6 +13,10 @@ import org.postgresql.util.PSQLException
 import java.sql.Connection
 import javax.sql.DataSource
 
+object SQL_STATE {
+    const val CONSTRAINT_VIOLATION = "23505"
+}
+
 class OppdragService(
     config: OppdragConfig,
     mq: MQ,
@@ -35,7 +39,7 @@ class OppdragService(
             }
         } catch (e: PSQLException) {
             when (e.sqlState) {
-                "23505" -> throw OppdragAlleredeSendtException(utbetalingsoppdrag.saksnummer)
+                SQL_STATE.CONSTRAINT_VIOLATION -> throw OppdragAlleredeSendtException(utbetalingsoppdrag.saksnummer)
                 else -> throw UkjentOppdragLagerException(utbetalingsoppdrag.saksnummer)
             }
         }
