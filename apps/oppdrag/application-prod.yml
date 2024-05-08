@@ -66,9 +66,9 @@ spec:
     - secret: utsjekk-oppdrag
   env:
     - name: OPPDRAG_ENABLED
-      value: "false"
+      value: "true"
     - name: AVSTEMMING_ENABLED
-      value: "false"
+      value: "true"
     - name: MQ_HOSTNAME
       value: mpls02.adeo.no
     - name: MQ_PORT
