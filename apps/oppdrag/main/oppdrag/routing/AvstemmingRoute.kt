@@ -6,6 +6,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
 
@@ -26,6 +27,8 @@ fun Route.avstemmingRoutes(
             }.onSuccess {
                 call.respond(HttpStatusCode.Created)
             }.onFailure {
+                appLog.error("Feil ved grensesnittavstemming")
+                secureLog.error("Feil ved grensesnittavstemming", it)
                 call.respond(HttpStatusCode.InternalServerError, "Grensesnittavstemming feilet")
             }
         }
