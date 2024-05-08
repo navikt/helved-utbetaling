@@ -4,6 +4,7 @@ import com.ibm.mq.jms.MQQueue
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.lang.Thread.sleep
 import javax.jms.TextMessage
 
 class MQTest {
