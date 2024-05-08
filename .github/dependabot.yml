@@ -1,0 +1,30 @@
+version: 2
+
+registries:
+  maven-github:
+    type: maven-repository
+    url: https://github-package-registry-mirror.gc.nav.no/cached/maven-release
+    username: POSTMAN
+    password: PAT
+
+updates:
+
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+     interval: daily
+  open-pull-requests-limit: 1 # avoid merge-conflicts on auto-merge
+
+- package-ecosystem: gradle
+  directory: /
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 1 # avoid merge-conflicts on auto-merge
+  registries:
+    - maven-github
+
+- package-ecosystem: docker
+  directory: /
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 1 # avoid merge-conflicts on auto-merge
