@@ -67,7 +67,7 @@ data class TaskDto(
     val triggerTid: LocalDateTime?,
 ) {
     companion object {
-        fun from(task: TaskDao, taskLogg: TaskLoggMetadata?) = TaskDto(
+        fun from(task: TaskDao, taskLog: TaskLogMetadata?) = TaskDto(
             id = task.id,
             status = task.status,
             avvikstype = task.avvikstype?.let(Avvikstype::valueOf),
@@ -76,23 +76,23 @@ data class TaskDto(
             taskStepType = task.type,
             metadata = task.metadata,
             payload = task.payload,
-            antallLogger = taskLogg?.antall_logger ?: 0,
-            sistKjørt = taskLogg?.siste_opprettet_tid,
-            kommentar = taskLogg?.siste_kommentar,
+            antallLogger = taskLog?.antall_logger ?: 0,
+            sistKjørt = taskLog?.siste_opprettet_tid,
+            kommentar = taskLog?.siste_kommentar,
         )
     }
 }
 
-data class TaskLoggDto(
+data class TaskLogDto(
     val id: Long,
     val endretAv: String?,
     val melding: String?,
     val node: String,
     val opprettetTidspunkt: LocalDateTime,
-    val type: Loggtype,
+    val type: LogType,
 )
 
-enum class Loggtype {
+enum class LogType {
     AVVIKSHÅNDTERT,
     BEHANDLER,
     FEILET,

@@ -158,7 +158,7 @@ data class TaskDao(
             val sql = """
                 SELECT DISTINCT t.*
                 FROM task t
-                JOIN task_logg l ON t.id = l.task_id
+                JOIN task_log l ON t.id = l.task_id
                 WHERE t.status = ? AND l.type IN ('FEILET', 'MANUELL_OPPFØLGING')
             """
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
@@ -174,7 +174,7 @@ data class TaskDao(
                 WITH q AS (
                     SELECT t.id, l.type, l.opprettet_tid, row_number() OVER (PARTITION BY t.id ORDER BY l.opprettet_tid DESC) rn
                     FROM task t
-                    JOIN task_logg l on t.id = l.task_id
+                    JOIN task_log l on t.id = l.task_id
                     WHERE t.status = ?
                 )
                 SELECT t.*

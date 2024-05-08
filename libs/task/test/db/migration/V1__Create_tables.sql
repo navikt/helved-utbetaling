@@ -11,7 +11,7 @@ CREATE TABLE task
     trigger_tid   TIMESTAMP   NOT NULL
 );
 
-CREATE TABLE task_logg
+CREATE TABLE task_log
 (
     id            UUID PRIMARY KEY,
     task_id       UUID REFERENCES task (id) ON DELETE CASCADE,
