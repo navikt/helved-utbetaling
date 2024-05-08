@@ -48,12 +48,6 @@ object TestRuntime : AutoCloseable {
     }
 }
 
-object Resource {
-    fun read(file: String): String {
-        return this::class.java.getResource(file)!!.openStream().bufferedReader().readText()
-    }
-}
-
 fun NettyApplicationEngine.port(): Int = runBlocking {
     resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
 }
