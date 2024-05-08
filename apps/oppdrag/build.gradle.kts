@@ -7,11 +7,12 @@ application {
 }
 
 val ktorVersion = "2.3.11"
+val libVersion = "0.0.11"
 
 dependencies {
-    implementation(project(":libs:auth"))
-    implementation(project(":libs:mq"))
-    implementation(project(":libs:postgres"))
+    implementation("no.nav.helved:auth:$libVersion")
+    implementation("no.nav.helved:mq:$libVersion")
+    implementation("no.nav.helved:postgres:$libVersion")
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240408113510_4a2db84")
 
@@ -37,5 +38,5 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    testImplementation(project(":libs:auth-test"))
+    testImplementation("no.nav.helved:auth-test:$libVersion")
 }

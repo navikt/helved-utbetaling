@@ -1,10 +1,12 @@
 
 val ktorVersion = "2.3.11"
+val libVersion = "0.0.11"
 
 dependencies {
-    implementation(project(":libs:utils"))
-    implementation(project(":libs:http"))
-    implementation(project(":libs:ws"))
+    implementation("no.nav.helved:http:$libVersion")
+    implementation("no.nav.helved:utils:$libVersion")
+    implementation("no.nav.helved:ws:$libVersion")
+
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
