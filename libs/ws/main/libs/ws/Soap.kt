@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import libs.http.HttpClientFactory
+import libs.utils.Resource
 import java.net.URL
 import java.util.*
 
@@ -48,9 +49,6 @@ class SoapClient(
     }
 }
 
-internal fun resources(filename: String): String =
-    {}::class.java.getResource(filename)!!.openStream().bufferedReader().readText()
-
 object SoapXml {
     fun envelope(
         action: String,
@@ -58,7 +56,7 @@ object SoapXml {
         serviceUrl: URL,
         assertion: String,
         body: String,
-    ): String = resources("/envelope.xml")
+    ): String = Resource.read("/envelope.xml")
         .replace("\$action", action)
         .replace("\$messageId", messageId.toString())
         .replace("\$serviceUrl", serviceUrl.toString())
@@ -79,8 +77,6 @@ data class SoapHeader(
     val action: String,
     @JacksonXmlProperty(localName = "MessageID", namespace = "http://www.w3.org/2005/08/addressing")
     val messageId: String,
-//    @JacksonXmlProperty(localName = "RelatesTo", namespace = "http://www.w3.org/2005/08/addressing")
-//    val relatesTo: String
 )
 
 data class SoapFault(
@@ -93,8 +89,6 @@ data class Fault(
     val code: String,
     @JacksonXmlProperty(localName = "faultstring")
     val messsage: String,
-//    @JacksonXmlProperty(localName = "detail")
-//    val detail: JsonNode?
 )
 
 class SoapException(

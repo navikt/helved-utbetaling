@@ -5,7 +5,7 @@ import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import oppdrag.Resource
+import libs.utils.Resource
 import oppdrag.TestRuntime
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.somOppdragLager
