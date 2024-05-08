@@ -6,7 +6,7 @@ application {
     mainClass.set("oppdrag.AppKt")
 }
 
-val ktorVersion = "2.3.9"
+val ktorVersion = "2.3.11"
 
 dependencies {
     implementation(project(":libs:auth"))
