@@ -44,7 +44,12 @@ class GrensesnittavstemmingService(
                 return@transaction
             }
 
-            appLog.info("Utfører grensesnittavstemming for id: ${avstemmingMapper.avstemmingId}, ${meldinger.size} antall meldinger.")
+            appLog.info(
+                """
+               Utfører grensesnittavstemming med id ${avstemmingMapper.avstemmingId} for fagsystem $fagsystem,
+                ${meldinger.size} antall meldinger, ${oppdragSomSkalAvstemmes.size} antall oppdrag. 
+            """.trimIndent()
+            )
 
             meldinger.forEach {
                 producer.sendGrensesnittAvstemming(it)
