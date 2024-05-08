@@ -175,7 +175,7 @@ class OppdragTest {
                 OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
             }
 
-            val xml = Resource.read("/kvittering-ok.xml")
+            val xml = Resource.read("/xml/kvittering-ok.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
@@ -199,7 +199,7 @@ class OppdragTest {
                 OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
             }
 
-            val xml = Resource.read("/kvittering-med-mangler.xml")
+            val xml = Resource.read("/xml/kvittering-med-mangler.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
@@ -223,7 +223,7 @@ class OppdragTest {
                 OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
             }
 
-            val xml = Resource.read("/kvittering-funksjonell-feil.xml")
+            val xml = Resource.read("/xml/kvittering-funksjonell-feil.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
@@ -247,7 +247,7 @@ class OppdragTest {
                 OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
             }
 
-            val xml = Resource.read("/kvittering-teknisk-feil.xml")
+            val xml = Resource.read("/xml/kvittering-teknisk-feil.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
@@ -271,7 +271,7 @@ class OppdragTest {
                 OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
             }
 
-            val xml = Resource.read("/kvittering-ukjent-feil.xml")
+            val xml = Resource.read("/xml/kvittering-ukjent-feil.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
