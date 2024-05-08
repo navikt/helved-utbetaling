@@ -1,14 +1,16 @@
-name: deploy oppdrag
+name: oppdrag
 
 on:
   workflow_dispatch:
   push:
+    branches: [ main ]
     paths:
       - 'apps/oppdrag/**'
       - 'libs/**'
 
 jobs:
   build:
+    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -48,6 +50,7 @@ jobs:
           dockerfile: ./apps/oppdrag/Dockerfile
 
   deploy-dev:
+    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: build
@@ -70,6 +73,7 @@ jobs:
           VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-oppdrag:${{ github.sha }}
 
   deploy-prod:
+    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: build
