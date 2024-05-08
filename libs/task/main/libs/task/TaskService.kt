@@ -93,7 +93,7 @@ object TaskService {
     suspend fun getTaskLogs(
         id: Long,
         navident: String
-    ): Ressurs<List<TaskLoggDto>> {
+    ): Ressurs<List<TaskLogDto>> {
         TODO()
     }
 

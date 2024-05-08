@@ -95,7 +95,7 @@ class TaskServiceTest : H2() {
         fun `match when task is FERDIG and previously FEILET`() = runTest(h2) {
             transaction {
                 val task = enTask(Status.FERDIG).apply { insert() }
-                enTaskLog(task, Loggtype.FEILET).insert()
+                enTaskLog(task, LogType.FEILET).insert()
             }
 
             val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident)
@@ -107,7 +107,7 @@ class TaskServiceTest : H2() {
         fun `match when task is FERDIG and previously MANUELL_OPPFØLGING`() = runTest(h2) {
             transaction {
                 val task = enTask(Status.FERDIG).apply { insert() }
-                enTaskLog(task, Loggtype.MANUELL_OPPFØLGING).insert()
+                enTaskLog(task, LogType.MANUELL_OPPFØLGING).insert()
             }
 
             val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident)
@@ -235,7 +235,7 @@ fun enTask(
     status = status,
 )
 
-fun enTaskLog(task: TaskDao, type: Loggtype = Loggtype.FEILET) = TaskLogDao(
+fun enTaskLog(task: TaskDao, type: LogType = LogType.FEILET) = TaskLogDao(
     task_id = task.id,
     type = type,
 )
