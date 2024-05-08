@@ -10,10 +10,10 @@ import javax.xml.transform.stream.StreamSource
 import kotlin.reflect.KClass
 
 class XMLMapper<T : Any>(private val type: KClass<T>) {
-    private val context = JAXBContext.newInstance(type.java)
-    private val marshaller = context.createMarshaller()
-    private val unmarshaller = context.createUnmarshaller()
-    private val inputFactory = XMLInputFactory.newInstance()
+    private val context get() = JAXBContext.newInstance(type.java)
+    private val marshaller get() = context.createMarshaller()
+    private val unmarshaller get() = context.createUnmarshaller()
+    private val inputFactory get() = XMLInputFactory.newInstance()
 
     companion object {
         inline operator fun <reified T : Any> invoke(): XMLMapper<T> {

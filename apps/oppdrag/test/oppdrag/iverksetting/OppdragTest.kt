@@ -3,7 +3,9 @@ package oppdrag.iverksetting
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
@@ -141,6 +143,21 @@ class OppdragTest {
                 setBody(utbetalingsoppdrag.oppdragId.toDto())
             }.also {
                 assertEquals(HttpStatusCode.NotFound, it.status)
+            }
+        }
+
+        @Test
+        fun `sender inn 10 oppdrag sammtidig`() = runTest {
+            repeat(10) {
+                launch {
+                    httpClient.post("/oppdrag") {
+                        contentType(ContentType.Application.Json)
+                        bearerAuth(TestRuntime.azure.generateToken())
+                        setBody(etUtbetalingsoppdrag())
+                    }.also {
+                        assertEquals(HttpStatusCode.Created, it.status)
+                    }
+                }
             }
         }
     }

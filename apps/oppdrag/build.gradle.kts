@@ -33,6 +33,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation("org.testcontainers:postgresql:1.19.7")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
