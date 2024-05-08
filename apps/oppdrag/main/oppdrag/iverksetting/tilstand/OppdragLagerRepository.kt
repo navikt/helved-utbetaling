@@ -1,12 +1,16 @@
 package oppdrag.iverksetting.tilstand
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.map
 import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Mmel
-import oppdrag.postgres.jackson
 import java.sql.Connection
 import java.sql.ResultSet
 import java.time.LocalDateTime
@@ -221,4 +225,10 @@ private fun oppdragLager(it: ResultSet): OppdragLager {
         kvitteringsmelding = kvittering?.let(jackson::readValue),
         versjon = it.getInt("versjon"),
     )
+}
+
+private val jackson: ObjectMapper = jacksonObjectMapper().apply {
+    registerModule(JavaTimeModule())
+    disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 }

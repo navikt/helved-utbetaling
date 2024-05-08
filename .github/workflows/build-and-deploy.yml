@@ -47,7 +47,7 @@ jobs:
           docker_context: ./apps/oppdrag
           dockerfile: ./apps/oppdrag/Dockerfile
 
-  deploy:
+  deploy-dev:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: build
@@ -67,4 +67,26 @@ jobs:
           PRINT_PAYLOAD: true
           CLUSTER: dev-gcp
           RESOURCE: apps/oppdrag/application-dev.yml
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-oppdrag:${{ github.sha }}
+
+  deploy-prod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    permissions:
+      contents: read    # read repository files
+      id-token: write   # publish nais manifest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nais/login@v0
+        id: login
+        with:
+          team: helved
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+      - uses: nais/deploy/actions/deploy@v2
+        env:
+          PRINT_PAYLOAD: true
+          CLUSTER: prod-gcp
+          RESOURCE: apps/oppdrag/application-prod.yml
           VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-oppdrag:${{ github.sha }}

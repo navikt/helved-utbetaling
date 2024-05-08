@@ -71,7 +71,7 @@ class OppdragMQConsumer(
         }
     }
 
-    fun leggTilNamespacePrefiks(xml: String): String {
+    private fun leggTilNamespacePrefiks(xml: String): String {
         return xml
             .replace("<oppdrag xmlns=", "<ns2:oppdrag xmlns:ns2=", ignoreCase = true)
             .replace("</oppdrag>", "</ns2:oppdrag>", ignoreCase = true)
