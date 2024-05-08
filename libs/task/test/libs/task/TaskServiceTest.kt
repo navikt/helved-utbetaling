@@ -15,7 +15,7 @@ class TaskServiceTest : H2() {
     @Nested
     inner class finnAntallTaskerSomKreverOppfølging {
         @Test
-        fun `found 0 MANUELL_OPPFØLGING`() = runTest(h2) {
+        fun `filter out wrong status`() = runTest(h2) {
             transaction {
                 enTask(Status.UBEHANDLET).insert()
             }
@@ -26,7 +26,7 @@ class TaskServiceTest : H2() {
         }
 
         @Test
-        fun `found 1 MANUELL_OPPFØLGING`() = runTest(h2) {
+        fun `match with status MANUELL_OPPFØLGING`() = runTest(h2) {
             transaction {
                 enTask(Status.MANUELL_OPPFØLGING).insert()
             }
@@ -40,7 +40,7 @@ class TaskServiceTest : H2() {
     @Nested
     inner class finnAntallTaskerMedStatusFeiletOgManuellOppfølging {
         @Test
-        fun `found 0 FEILET and 0 MANUELL_OPPFØLGIN`() = runTest(h2) {
+        fun `filter out when db is empty`() = runTest(h2) {
             val ressurs = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging()
             assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
             assertEquals(0, ressurs.data!!.antallFeilet)
@@ -48,7 +48,7 @@ class TaskServiceTest : H2() {
         }
 
         @Test
-        fun `found 1 FEILET and 0 MANUELL_OPPFØLGING`() = runTest(h2) {
+        fun `antallFeilet is not dependent on antallManuellOppfølging`() = runTest(h2) {
             transaction {
                 enTask(Status.FEILET).insert()
             }
@@ -59,7 +59,7 @@ class TaskServiceTest : H2() {
         }
 
         @Test
-        fun `found 0 FEILET and 1 MANUELL_OPPFØLGING`() = runTest(h2) {
+        fun `antallManuellOppfølging is not dependent on antallFeilet`() = runTest(h2) {
             transaction {
                 enTask(Status.MANUELL_OPPFØLGING).insert()
             }
@@ -70,28 +70,29 @@ class TaskServiceTest : H2() {
         }
 
         @Test
-        fun `found 1 FEILET and 1 MANUELL_OPPFØLGING`() = runTest(h2) {
+        fun `antallFeilet and antallManuellOppfølging works together`() = runTest(h2) {
             transaction {
+                enTask(Status.MANUELL_OPPFØLGING).insert()
                 enTask(Status.MANUELL_OPPFØLGING).insert()
                 enTask(Status.FEILET).insert()
             }
             val ressurs = TaskService.finnAntallTaskerMedStatusFeiletOgManuellOppfølging()
             assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
             assertEquals(1, ressurs.data!!.antallFeilet)
-            assertEquals(1, ressurs.data!!.antallManuellOppfølging)
+            assertEquals(2, ressurs.data!!.antallManuellOppfølging)
         }
     }
 
     @Nested
     inner class hentTasksSomErFerdigNåMenFeiletFør {
         @Test
-        fun `found 0 FERDIG with previous FEILET`() = runTest(h2) {
+        fun `no match when db is empty`() = runTest(h2) {
             val tasks = TaskService.hentTasksSomErFerdigNåMenFeiletFør(navident).data!!
             assertEquals(0, tasks.size)
         }
 
         @Test
-        fun `found 1 FERDIG with previous FEILET`() = runTest(h2) {
+        fun `match when task is FERDIG and previously FEILET`() = runTest(h2) {
             transaction {
                 val task = enTask(Status.FERDIG).apply { insert() }
                 enTaskLog(task, Loggtype.FEILET).insert()
@@ -103,7 +104,7 @@ class TaskServiceTest : H2() {
         }
 
         @Test
-        fun `found 1 FERDIG with previous MANUELL_OPPFØLGING`() = runTest(h2) {
+        fun `match when task is FERDIG and previously MANUELL_OPPFØLGING`() = runTest(h2) {
             transaction {
                 val task = enTask(Status.FERDIG).apply { insert() }
                 enTaskLog(task, Loggtype.MANUELL_OPPFØLGING).insert()
@@ -118,31 +119,56 @@ class TaskServiceTest : H2() {
     @Nested
     inner class hentTasks {
         @Test
-        fun `found 0 FERDIG`() = runTest(h2) {
+        fun `filter out when db is empty`() = runTest(h2) {
             val tasks = TaskService.hentTasks(listOf(Status.FERDIG), navident, null)
             assertEquals(Ressurs.Status.SUKSESS, tasks.status)
             assertEquals(0, tasks.data!!.size)
         }
 
         @Test
-        fun `found 0 ALL STATUSES`() = runTest(h2) {
-            val allStatuses = listOf(
+        fun `filter out wrong types`() = runTest(h2) {
+            transaction {
+                enTask(Status.KLAR_TIL_PLUKK, type = "splendid").insert()
+            }
+
+            val ressurs = TaskService.hentTasks(listOf(Status.KLAR_TIL_PLUKK), navident, "awesome")
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(0, ressurs.data!!.size)
+        }
+
+        @Test
+        fun `filter out wrong statuses but correct types`() = runTest(h2) {
+            transaction {
+                enTask(Status.FERDIG, type = "splendid").insert()
+            }
+
+            val ressurs = TaskService.hentTasks(listOf(Status.KLAR_TIL_PLUKK), navident, "splendid")
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(0, ressurs.data!!.size)
+        }
+
+        @Test
+        fun `filter out wrong statuses`() = runTest(h2) {
+            transaction {
+                enTask(Status.KLAR_TIL_PLUKK).insert()
+            }
+
+            val allButOneStatus = listOf(
                 Status.AVVIKSHÅNDTERT,
                 Status.BEHANDLER,
                 Status.FEILET,
                 Status.FERDIG,
-                Status.KLAR_TIL_PLUKK,
                 Status.MANUELL_OPPFØLGING,
                 Status.PLUKKET,
                 Status.UBEHANDLET
             )
-            val tasks = TaskService.hentTasks(allStatuses, navident, null)
+            val tasks = TaskService.hentTasks(allButOneStatus, navident, null)
             assertEquals(Ressurs.Status.SUKSESS, tasks.status)
             assertEquals(0, tasks.data!!.size)
         }
 
         @Test
-        fun `found 1 KLAR_TIL_PLUKK`() = runTest(h2) {
+        fun `match with status`() = runTest(h2) {
             transaction {
                 enTask(Status.KLAR_TIL_PLUKK).insert()
             }
@@ -152,7 +178,7 @@ class TaskServiceTest : H2() {
         }
 
         @Test
-        fun `found ALL`() = runTest(h2) {
+        fun `match with statuses`() = runTest(h2) {
             val allStatuses = listOf(
                 Status.AVVIKSHÅNDTERT,
                 Status.BEHANDLER,
@@ -174,6 +200,17 @@ class TaskServiceTest : H2() {
             assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
             assertEquals(allStatuses.size, ressurs.data!!.size)
         }
+
+        @Test
+        fun `match with status and type`() = runTest(h2) {
+            transaction {
+                enTask(Status.KLAR_TIL_PLUKK, type = "splendid").insert()
+            }
+
+            val ressurs = TaskService.hentTasks(listOf(Status.KLAR_TIL_PLUKK), navident, "splendid")
+            assertEquals(Ressurs.Status.SUKSESS, ressurs.status)
+            assertEquals(1, ressurs.data!!.size)
+        }
     }
 }
 
@@ -187,9 +224,12 @@ private suspend fun count(table: String): Int =
     }
 
 
-fun enTask(status: Status = Status.UBEHANDLET) = TaskDao(
+fun enTask(
+    status: Status = Status.UBEHANDLET,
+    type: String = ""
+) = TaskDao(
     payload = UUID.randomUUID().toString(),
-    type = "",
+    type = type,
     metadata = null,
     avvikstype = null,
     status = status,
