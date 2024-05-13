@@ -9,6 +9,7 @@ import simulering.OppdragErStengtException
 import simulering.PersonFinnesIkkeException
 import simulering.RequestErUgyldigException
 import simulering.SimuleringService
+import simulering.dto.SimuleringRequestBody
 
 fun Routing.simulering(
     simulering: SimuleringService,
@@ -16,7 +17,8 @@ fun Routing.simulering(
     route("/simulering") {
         post {
             runCatching {
-                simulering.simuler(call.receive())
+                val request: SimuleringRequestBody = call.receive()
+                simulering.simuler(request)
             }.onSuccess { sim ->
                 when (sim) {
                     null -> call.respond(HttpStatusCode.UnprocessableEntity, "Svar fra simulering er tom")

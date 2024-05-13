@@ -6,7 +6,7 @@
             <gjelderNavn>MYGG VAKKER</gjelderNavn>
             <datoBeregnet>2022-04-05</datoBeregnet>
             <kodeFaggruppe>EFOG</kodeFaggruppe>
-            <totalBelop>1225.00</totalBelop>
+            <belop>1225.00</belop>
             <ns5:beregningsPeriode>
                 <periodeFom>2021-05-01</periodeFom>
                 <periodeTom>2021-05-31</periodeTom>
@@ -60,7 +60,7 @@
                         <tilbakeforing>true</tilbakeforing>
                         <linjeId>2</linjeId>
                         <sats>0.00</sats>
-                        <typeSats></typeSats>
+                        <typeSats>MND</typeSats>
                         <antallSats>0.00</antallSats>
                         <saksbehId>K231B215</saksbehId>
                         <uforeGrad>63</uforeGrad>
@@ -129,7 +129,7 @@
                         <tilbakeforing>true</tilbakeforing>
                         <linjeId>2</linjeId>
                         <sats>0.00</sats>
-                        <typeSats></typeSats>
+                        <typeSats>MND</typeSats>
                         <antallSats>0.00</antallSats>
                         <saksbehId>K231B215</saksbehId>
                         <uforeGrad>63</uforeGrad>

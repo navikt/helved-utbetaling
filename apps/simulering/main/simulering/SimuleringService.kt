@@ -5,9 +5,12 @@ package simulering
 import com.ctc.wstx.exc.WstxEOFException
 import com.ctc.wstx.exc.WstxIOException
 import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import jakarta.xml.ws.WebServiceException
 import jakarta.xml.ws.soap.SOAPFaultException
 import libs.utils.appLog
@@ -19,7 +22,6 @@ import simulering.dto.SimuleringRequestBody
 import simulering.dto.SimuleringRequestBuilder
 import java.net.SocketException
 import java.net.SocketTimeoutException
-import java.time.LocalDate
 import javax.net.ssl.SSLException
 
 private object SimulerAction {
@@ -32,9 +34,11 @@ private object SimulerAction {
 
 class SimuleringService(
     private val client: Soap,
-    private val xmlMapper: XmlMapper = XmlMapper().apply {
-        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-    },
+    private val xmlMapper: ObjectMapper = XmlMapper(JacksonXmlModule().apply {
+        setDefaultUseWrapper(false)
+    }).registerKotlinModule()
+        .registerModule(JavaTimeModule())
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 ) {
 
     // todo: kan/når er svar fra simulering tom?
@@ -47,33 +51,34 @@ class SimuleringService(
             body = xml,
         )
 
-        val json = json(response)
-        val simulering = simulering(json)
-        return simulering
+        return json(response).intoDto()
     }
 
-    private fun json(xml: String): JsonNode {
+    private fun json(xml: String): SimuleringResponse.SimulerBeregningResponse.Response.Beregning {
         try {
             secureLog.info("Forsøker å deserialisere simulering")
-            return tryInto<JsonNode>(xml).also {
-                if (it.has("Fault")) {
-                    error("simulering sin body inneholder en fault")
-                }
-            }
+            val wrapper = simulerBeregningResponse(xml)
+            return wrapper.response.simulering
         } catch (e: Throwable) {
-            secureLog.warn("Forsøker å deserialisere fault", e)
-            failure(xml)
+            secureLog.info("feilet deserializering av simulering", e)
+            fault(xml)
         }
     }
 
-    private fun failure(xml: String): Nothing {
+    private fun simulerBeregningResponse(xml: String): SimuleringResponse.SimulerBeregningResponse = runCatching {
+        tryInto<SimuleringResponse>(xml).simulerBeregningResponse
+    }.getOrElse {
+        throw soapError("Failed to deserialize soap message: ${it.message}", it)
+    }
+
+    // denne kaster exception oppover i call-stacken
+    private fun fault(xml: String): Nothing {
         try {
-            secureLog.warn("Forsøker å deserialisere fault")
-            val soapFault = tryInto<SoapFault>(xml)
-            throw soapError(soapFault.fault)
+            secureLog.info("Forsøker å deserialisere fault")
+            throw soapError(tryInto<SoapFault>(xml).fault)
         } catch (e: Throwable) {
             throw when (e) {
-                is SoapException -> expload(e)
+                is SoapException -> expand(e)
                 else -> {
                     appLog.error("Klarte ikke å deserialisere fault")
                     secureLog.error("Klarte ikke å deserialisere fault", e)
@@ -84,62 +89,12 @@ class SimuleringService(
     }
 
     private inline fun <reified T> tryInto(xml: String): T {
-        return runCatching {
-            val soap = xmlMapper.readValue<SoapResponse<T>>(xml)
-            requireNotNull(soap.body)
-        }.getOrElse {
-            throw soapError("Failed to deserialize soap message: ${it.message}", it)
-        }
+        val res = xmlMapper.readValue<SoapResponse<T>>(xml)
+        return res.body
     }
 
-    // se SimulerBeregningResponse?.tilSimulering() i Simulering.kt
-    private fun simulering(json: JsonNode): Simulering {
-        // todo: returner null eller kast exception ved feil?
-        val simulering = json["simulerBeregningResponse"]["response"]["simulering"]
-
-        return Simulering(
-            gjelderId = simulering["gjelderId"].asText(),
-            gjelderNavn = simulering["gjelderNavn"].asText(),
-            datoBeregnet = simulering["datoBeregnet"].asText().let(LocalDate::parse),
-            totalBelop = simulering["totalBelop"].asInt(),
-            perioder = simulering["beregningsPeriode"].map { periode ->
-                SimulertPeriode(
-                    fom = periode["periodeFom"].asText().let(LocalDate::parse),
-                    tom = periode["periodeTom"].asText().let(LocalDate::parse),
-                    utbetalinger = listOf(
-                        periode["beregningStoppnivaa"].let { utbetaling ->
-                            Utbetaling(
-                                fagSystemId = utbetaling["fagsystemId"].asText(),
-                                utbetalesTilId = utbetaling["utbetalesTilId"].asText().removePrefix("00"),
-                                utbetalesTilNavn = utbetaling["utbetalesTilNavn"].asText(),
-                                forfall = utbetaling["forfall"].asText().let(LocalDate::parse),
-                                feilkonto = utbetaling["feilkonto"].asBoolean(),
-                                detaljer = utbetaling["beregningStoppnivaaDetaljer"].map { detalj ->
-                                    Detaljer(
-                                        faktiskFom = detalj["faktiskFom"].asText().let(LocalDate::parse),
-                                        faktiskTom = detalj["faktiskTom"].asText().let(LocalDate::parse),
-                                        konto = detalj["kontoStreng"].asText().trim(),
-                                        belop = detalj["belop"].asInt(),
-                                        tilbakeforing = detalj["tilbakeforing"].asBoolean(),
-                                        sats = detalj["sats"].asDouble(),
-                                        typeSats = detalj["typeSats"].asText().trim(), // kan være empty
-                                        antallSats = detalj["antallSats"].asInt(),
-                                        uforegrad = detalj["uforeGrad"].asInt(),
-                                        utbetalingsType = detalj["typeKlasse"].asText(),
-                                        klassekode = detalj["klassekode"].asText().trim(),
-                                        klassekodeBeskrivelse = detalj["klasseKodeBeskrivelse"].asText().trim(),
-                                        refunderesOrgNr = detalj["refunderesOrgNr"].asText().removePrefix("00"),
-                                    )
-                                }
-                            )
-                        }
-                    )
-                )
-            }
-        )
-    }
-
-    private fun expload(e: SoapException): RuntimeException {
+    private fun expand(e: SoapException): RuntimeException {
+        secureLog.info("expands soapfault", e)
         return with(e.msg) {
             when {
                 contains("Personen finnes ikke") -> PersonFinnesIkkeException(this)
