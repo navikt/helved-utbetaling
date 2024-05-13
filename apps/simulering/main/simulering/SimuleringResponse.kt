@@ -74,7 +74,7 @@ data class SimuleringResponse(
                         fun intoDto(): Utbetaling =
                             Utbetaling(
                                 fagSystemId = fagsystemId,
-                                utbetalesTilId = utbetalesTilId,
+                                utbetalesTilId = utbetalesTilId.removePrefix("00"),
                                 utbetalesTilNavn = utbetalesTilNavn,
                                 forfall = forfall,
                                 feilkonto = feilkonto,
@@ -123,7 +123,7 @@ data class SimuleringResponse(
                                     utbetalingsType = typeKlasse,
                                     klassekode = klassekode,
                                     klassekodeBeskrivelse = klasseKodeBeskrivelse,
-                                    refunderesOrgNr = refunderesOrgNr,
+                                    refunderesOrgNr = refunderesOrgNr.removePrefix("00"),
                                 )
 
                             enum class SatsType {
