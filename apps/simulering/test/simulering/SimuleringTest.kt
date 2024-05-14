@@ -9,6 +9,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
+import libs.auth.AzureConfig
 import libs.ws.SoapConfig
 import libs.ws.StsConfig
 import no.nav.utsjekk.kontrakter.felles.Personident
@@ -28,6 +29,17 @@ class SimuleringTest {
                 user = "awesome",
                 pass = "såpe"
             )
+        ),
+        proxy = ProxyConfig(
+            host = "http://localhost:8085".let(::URI).toURL(),
+            scope = "blasted"
+        ),
+        azure = AzureConfig(
+            tokenEndpoint = "http://localhost:8086/token".let(::URI).toURL(),
+            jwks = "http://localhost:8086/jwks".let(::URI).toURL(),
+            issuer = "iss",
+            clientId = "client",
+            clientSecret = "secret",
         )
     )
 

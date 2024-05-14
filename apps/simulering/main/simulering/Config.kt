@@ -1,16 +1,26 @@
 package simulering
 
+import libs.auth.AzureConfig
 import libs.utils.env
 import libs.ws.SoapConfig
 import libs.ws.StsConfig
+import java.net.URI
+import java.net.URL
 
 data class Config(
+    val proxy: ProxyConfig = ProxyConfig(),
+    val azure: AzureConfig = AzureConfig(),
     val simulering: SoapConfig = SoapConfig(
-        host = env("OPPDRAG_SERVICE_URL"),
+        host = URI("${proxy.host}/cics/oppdrag/simulerFpServiceWSBinding").toURL(),
         sts = StsConfig(
-            host = env("SECURITYTOKENSERVICE_URL"),
+            host = URI("${proxy.host}/gandalf").toURL(),
             user = "srvdp-simulering",
             pass = env("servicebruker_passord") // from secret utsjekk-oppdrag-simulering
         )
     ),
+)
+
+data class ProxyConfig(
+    val host: URL = env("PROXY_HOST"),
+    val scope: String = env("PROXY_SCOPE")
 )

@@ -13,6 +13,8 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
+import kotlinx.coroutines.runBlocking
+import libs.auth.AzureTokenProvider
 import libs.utils.appLog
 import libs.ws.Soap
 import libs.ws.SoapClient
@@ -28,7 +30,9 @@ fun main() {
 
 fun Application.app(
     config: Config = Config(),
-    sts: Sts = StsClient(config.simulering.sts),
+    azure: AzureTokenProvider = AzureTokenProvider(config.azure),
+    proxyAuth: () -> String = { runBlocking { "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}" } },
+    sts: Sts = StsClient(config.simulering.sts, proxyAuth = proxyAuth),
     soap: Soap = SoapClient(config.simulering, sts),
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
