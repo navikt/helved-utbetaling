@@ -15,9 +15,9 @@ spec:
         - application: utsjekk
     outbound:
       external:
-        - host: mqls02.preprod.local
+        - host: mpls02.adeo.no
           ports:
-            - port: 1413
+            - port: 1414
   resources:
     limits:
       memory: 512Mi
