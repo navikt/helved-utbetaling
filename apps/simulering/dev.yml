@@ -1,0 +1,53 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: utsjekk-oppdrag
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  image: {{image}}
+  ingresses:
+    - https://helved-oppdrag-simulering.intern.dev.nav.no
+  accessPolicy:
+    inbound:
+      rules:
+        - application: utsjekk
+    outbound:
+      external:
+        - host: helved-ws-proxy.dev-fss-pub.nais.io
+      rules:
+        application: ws-proxy
+        cluster: dev-fss
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      memory: 256Mi
+      cpu: 50m
+  replicas:
+    min: 1
+    max: 1
+  azure:
+    application:
+      enabled: true
+  secureLogs:
+    enabled: true
+  liveness:
+    path: /actuator/live
+  readiness:
+    path: /actuator/ready
+  prometheus:
+    enabled: true
+    path: /actuator/metrics
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+  envFrom:
+    - secret: utsjekk-oppdrag-simulering
+  env:
+    - name: PROXY_HOST
+      value: https://helved-ws-proxy.dev-fss-pub.nais.io
+    - name: PROXY_SCOPE
+      value: api://dev-fss.helved.ws-proxy/.default

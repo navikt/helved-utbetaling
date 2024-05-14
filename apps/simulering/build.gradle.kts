@@ -1,8 +1,16 @@
+plugins {
+    id("io.ktor.plugin")
+}
+
+application {
+    mainClass.set("simulering.AppKt")
+}
 
 val ktorVersion = "2.3.11"
 val libVersion = "0.0.27"
 
 dependencies {
+    implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:http:$libVersion")
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:ws:$libVersion")
