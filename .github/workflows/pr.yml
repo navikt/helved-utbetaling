@@ -19,7 +19,7 @@ jobs:
 
       # exclude libs:mq:test because two mq testcontainers is not always working
       - run: ./gradlew test --continue --no-daemon --parallel
-      - uses: dorny/test-reporter@v1.8.0
+      - uses: dorny/test-reporter@v1.9.1
         if: success() || failure()
         with:
           name: tests
