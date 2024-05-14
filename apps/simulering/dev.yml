@@ -1,5 +1,5 @@
-apiVersion: "nais.io/v1alpha1"
-kind: "Application"
+apiVersion: nais.io/v1alpha1
+kind: Application
 metadata:
   name: utsjekk-oppdrag
   namespace: helved
@@ -16,9 +16,9 @@ spec:
     outbound:
       external:
         - host: helved-ws-proxy.dev-fss-pub.nais.io
-      rules:
-        application: ws-proxy
-        cluster: dev-fss
+#      rules:
+#        application: ws-proxy
+#        cluster: dev-fss
   resources:
     limits:
       memory: 512Mi
