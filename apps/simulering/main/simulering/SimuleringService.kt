@@ -9,10 +9,14 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import io.ktor.client.plugins.logging.*
 import jakarta.xml.ws.WebServiceException
 import jakarta.xml.ws.soap.SOAPFaultException
+import libs.auth.AzureTokenProvider
+import libs.http.HttpClientFactory
 import libs.utils.appLog
 import libs.utils.secureLog
 import libs.ws.*
@@ -32,25 +36,16 @@ private object SimulerAction {
     const val SEND_OPPDRAG = "$HOST/$PATH/$SERVICE/sendInnOppdragRequest"
 }
 
-class SimuleringService(
-    private val client: Soap,
-    private val xmlMapper: ObjectMapper = XmlMapper(JacksonXmlModule().apply {
-        setDefaultUseWrapper(false)
-    }).registerKotlinModule()
-        .registerModule(JavaTimeModule())
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-) {
+class SimuleringService(private val config: Config) {
+    private val http = HttpClientFactory.new(LogLevel.ALL)
+    private val azure = AzureTokenProvider(config.azure)
+    private val sts = StsClient(config.simulering.sts, http, proxyAuth= ::getClientCredentialstoken)
+    private val soap = SoapClient(config.simulering, sts, http)
 
-    // todo: kan/når er svar fra simulering tom?
-    suspend fun simuler(request: SimuleringRequestBody): Simulering? {
+    suspend fun simuler(request: SimuleringRequestBody): Simulering {
         val request = SimuleringRequestBuilder(request).build()
         val xml = xml(request.request)
-
-        val response = client.call(
-            action = SimulerAction.BEREGNING,
-            body = xml,
-        )
-
+        val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()
     }
 
@@ -80,8 +75,8 @@ class SimuleringService(
             throw when (e) {
                 is SoapException -> expand(e)
                 else -> {
-                    appLog.error("Klarte ikke å deserialisere fault")
-                    secureLog.error("Klarte ikke å deserialisere fault", e)
+                    appLog.error("feilet deserializering av fault")
+                    secureLog.error("feilet deserializering av fault", e)
                     soapError("Ukjent feil ved simulering: ${e.message}", e)
                 }
             }
@@ -119,8 +114,17 @@ class SimuleringService(
             else -> throw ex
         }
     }
+
+    suspend fun getClientCredentialstoken(): String {
+        return "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
+    }
 }
 
+private val xmlMapper: ObjectMapper =
+    XmlMapper(JacksonXmlModule().apply { setDefaultUseWrapper(false) })
+        .registerKotlinModule()
+        .registerModule(JavaTimeModule())
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
 class PersonFinnesIkkeException(feilmelding: String) : RuntimeException(feilmelding)
 class RequestErUgyldigException(feilmelding: String) : RuntimeException(feilmelding)

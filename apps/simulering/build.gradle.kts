@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "2.3.11"
-val libVersion = "0.0.46"
+val libVersion = "0.0.47"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
@@ -27,4 +27,5 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("no.nav.helved:auth-test:$libVersion")
 }

@@ -20,10 +20,7 @@ fun Routing.simulering(
                 val request: SimuleringRequestBody = call.receive()
                 simulering.simuler(request)
             }.onSuccess { sim ->
-                when (sim) {
-                    null -> call.respond(HttpStatusCode.UnprocessableEntity, "Svar fra simulering er tom")
-                    else -> call.respond(sim)
-                }
+                call.respond(sim)
             }.onFailure { ex ->
                 when (ex) {
                     is PersonFinnesIkkeException -> call.respond(HttpStatusCode.NotFound, ex.message!!)
