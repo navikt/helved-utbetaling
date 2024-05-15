@@ -16,9 +16,9 @@ spec:
     outbound:
       external:
         - host: helved-ws-proxy.dev-fss-pub.nais.io
-    rules:
-      - application: helved-ws-proxy
-        cluster: dev-fss
+      rules:
+        - application: helved-ws-proxy
+          cluster: dev-fss
   resources:
     limits:
       memory: 512Mi
