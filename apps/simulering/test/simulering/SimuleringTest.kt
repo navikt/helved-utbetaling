@@ -9,103 +9,75 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
-import libs.auth.AzureConfig
-import libs.ws.SoapConfig
-import libs.ws.StsConfig
+import libs.utils.Resource
 import no.nav.utsjekk.kontrakter.felles.Personident
 import org.junit.jupiter.api.Test
 import simulering.dto.*
-import java.net.URI
 import java.time.LocalDate
 import kotlin.test.assertEquals
 
 class SimuleringTest {
 
-    private val config = Config(
-        simulering = SoapConfig(
-            host = "http://localhost:8083".let(::URI).toURL(),
-            sts = StsConfig(
-                host = "http://localhost:8084".let(::URI).toURL(),
-                user = "awesome",
-                pass = "såpe"
-            )
-        ),
-        proxy = ProxyConfig(
-            host = "http://localhost:8085".let(::URI).toURL(),
-            scope = "blasted"
-        ),
-        azure = AzureConfig(
-            tokenEndpoint = "http://localhost:8086/token".let(::URI).toURL(),
-            jwks = "http://localhost:8086/jwks".let(::URI).toURL(),
-            issuer = "iss",
-            clientId = "client",
-            clientSecret = "secret",
-        )
-    )
-
     @Test
     fun `svarer med 200 OK og simuleringsresultat`() {
-        testApplication {
-            application {
-                app(
-                    config = config,
-                    sts = FakeSts(),
-                    soap = FakeSoap.with(Resource.read("/simuler-body-response.xml")),
-                )
-            }
+        TestRuntime().use { runtime ->
+            testApplication {
+                application {
+                    app(config = runtime.config)
+                }
 
-            val http = createClient {
-                install(ContentNegotiation) {
-                    jackson {
-                        registerModule(JavaTimeModule())
-                        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                val http = createClient {
+                    install(ContentNegotiation) {
+                        jackson {
+                            registerModule(JavaTimeModule())
+                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                        }
                     }
                 }
+
+                val res = http.post("/simulering") {
+                    contentType(ContentType.Application.Json)
+                    setBody(enSimuleringRequestBody())
+                }
+
+                val expected = reponseXmlFagsak10001Efog()
+
+                assertEquals(HttpStatusCode.OK, res.status)
+                assertEquals(expected, res.body())
             }
-
-            val res = http.post("/simulering") {
-                contentType(ContentType.Application.Json)
-                setBody(enSimuleringRequestBody())
-            }
-
-            val expected = reponseXmlFagsak10001Efog()
-
-            assertEquals(HttpStatusCode.OK, res.status)
-            assertEquals(expected, res.body())
         }
     }
 
     @Test
     fun `svarer med 400 Bad Request ved feil på request body`() {
-        testApplication {
-            application {
-                app(
-                    config = config,
-                    sts = FakeSts(),
-                    soap = FakeSoap.with(Resource.read("/soap-fault.xml")) {
-                        it.replace("\$errorCode", "lol dummy 123")
-                            .replace("\$errorMessage", "Fødselsnummeret er ugyldig")
-                    },
-                )
-            }
+        TestRuntime().use { runtime ->
+            testApplication {
+                application {
+                    app(config = runtime.config)
+                }
 
-            val http = createClient {
-                install(ContentNegotiation) {
-                    jackson {
-                        registerModule(JavaTimeModule())
-                        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                val http = createClient {
+                    install(ContentNegotiation) {
+                        jackson {
+                            registerModule(JavaTimeModule())
+                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                        }
                     }
                 }
-            }
 
-            val res = http.post("/simulering") {
-                contentType(ContentType.Application.Json)
-                setBody(enSimuleringRequestBody())
-            }
+                runtime.soapResponse = Resource.read("/soap-fault.xml")
+                    .replace("\$errorCode", "lol dummy 123")
+                    .replace("\$errorMessage", "Fødselsnummeret er ugyldig")
 
-            assertEquals(HttpStatusCode.BadRequest, res.status)
+                val res = http.post("/simulering") {
+                    contentType(ContentType.Application.Json)
+                    setBody(enSimuleringRequestBody())
+                }
+
+                assertEquals(HttpStatusCode.BadRequest, res.status)
+            }
         }
     }
 
