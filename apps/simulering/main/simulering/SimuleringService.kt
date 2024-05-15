@@ -9,12 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.plugins.logging.*
 import jakarta.xml.ws.WebServiceException
 import jakarta.xml.ws.soap.SOAPFaultException
+import kotlinx.coroutines.runBlocking
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.utils.appLog
@@ -39,8 +39,8 @@ private object SimulerAction {
 class SimuleringService(private val config: Config) {
     private val http = HttpClientFactory.new(LogLevel.ALL)
     private val azure = AzureTokenProvider(config.azure)
-    private val sts = StsClient(config.simulering.sts, http, proxyAuth= ::getClientCredentialstoken)
-    private val soap = SoapClient(config.simulering, sts, http)
+    private val sts = StsClient(config.simulering.sts, http, proxyAuth = ::getAzureTokenAsync)
+    private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
 
     suspend fun simuler(request: SimuleringRequestBody): Simulering {
         val request = SimuleringRequestBuilder(request).build()
@@ -115,8 +115,14 @@ class SimuleringService(private val config: Config) {
         }
     }
 
-    suspend fun getClientCredentialstoken(): String {
+    private suspend fun getAzureTokenAsync(): String {
         return "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
+    }
+
+    private fun getAzureToken(): String {
+        return runBlocking {
+            "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
+        }
     }
 }
 
