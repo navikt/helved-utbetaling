@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "2.3.11"
-val libVersion = "0.0.46"
+val libVersion = "0.0.51"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
@@ -30,7 +30,6 @@ dependencies {
     // XSD to Java
     implementation("no.nav.tjenestespesifikasjoner:avstemming-v1-tjenestespesifikasjon:1.2021.02.22-10.45-4201aaea72fb")
     implementation("no.nav.tjenestespesifikasjoner:nav-virksomhet-oppdragsbehandling-v1-meldingsdefinisjon:1.2021.02.22-10.45-4201aaea72fb")
-    implementation("org.glassfish.jaxb:jaxb-runtime:2.3.2")
 
     testImplementation(kotlin("test"))
     testImplementation("org.testcontainers:postgresql:1.19.7")

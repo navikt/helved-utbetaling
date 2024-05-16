@@ -6,6 +6,7 @@ import com.ctc.wstx.exc.WstxEOFException
 import com.ctc.wstx.exc.WstxIOException
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -20,8 +21,6 @@ import libs.http.HttpClientFactory
 import libs.utils.appLog
 import libs.utils.secureLog
 import libs.ws.*
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.SimulerBeregningRequest
-import org.intellij.lang.annotations.Language
 import simulering.dto.SimuleringRequestBody
 import simulering.dto.SimuleringRequestBuilder
 import java.net.SocketException
@@ -44,7 +43,7 @@ class SimuleringService(private val config: Config) {
 
     suspend fun simuler(request: SimuleringRequestBody): Simulering {
         val request = SimuleringRequestBuilder(request).build()
-        val xml = xml(request.request)
+        val xml = xmlMapper.writeValueAsString(request.request)
         val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()
     }
@@ -130,7 +129,9 @@ private val xmlMapper: ObjectMapper =
     XmlMapper(JacksonXmlModule().apply { setDefaultUseWrapper(false) })
         .registerKotlinModule()
         .registerModule(JavaTimeModule())
+        .enable(SerializationFeature.INDENT_OUTPUT)
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 
 class PersonFinnesIkkeException(feilmelding: String) : RuntimeException(feilmelding)
 class RequestErUgyldigException(feilmelding: String) : RuntimeException(feilmelding)
@@ -151,84 +152,4 @@ private fun logSoapFaultException(e: SOAPFaultException) {
                 details=$details
         """.trimIndent()
     )
-}
-
-@Language("XML")
-private fun xml(request: SimulerBeregningRequest): String {
-    return """<ns2:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"
-                             >
-    <request>
-        <simuleringsPeriode>
-            <datoSimulerFom>${request.simuleringsPeriode.datoSimulerFom}</datoSimulerFom>
-            <datoSimulerTom>${request.simuleringsPeriode.datoSimulerTom}</datoSimulerTom>
-        </simuleringsPeriode>
-        <oppdrag>
-            <kodeEndring>${request.oppdrag.kodeEndring}</kodeEndring>
-            <kodeFagomraade>${request.oppdrag.kodeFagomraade}</kodeFagomraade>
-            <fagsystemId>${request.oppdrag.fagsystemId}</fagsystemId>
-            <utbetFrekvens>${request.oppdrag.utbetFrekvens}</utbetFrekvens>
-            <oppdragGjelderId>${request.oppdrag.oppdragGjelderId}</oppdragGjelderId>
-            <datoOppdragGjelderFom>${request.oppdrag.datoOppdragGjelderFom}</datoOppdragGjelderFom>
-            <saksbehId>${request.oppdrag.saksbehId}</saksbehId>
-            ${
-        request.oppdrag.enhet.joinToString(separator = "\n") { enhet ->
-            """<ns3:enhet>
-                    <typeEnhet>${enhet.typeEnhet}</typeEnhet>
-                    <enhet>${enhet.enhet}</enhet>
-                    <datoEnhetFom>${enhet.datoEnhetFom}</datoEnhetFom>
-                </ns3:enhet>"""
-        }
-    }
-            ${
-        request.oppdrag.oppdragslinje.joinToString(separator = "\n") { linje ->
-            """<oppdragslinje>
-                <kodeEndringLinje>${linje.kodeEndringLinje}</kodeEndringLinje>
-                <delytelseId>${linje.delytelseId}</delytelseId>
-                ${linje.refDelytelseId?.let { """<refDelytelseId>${linje.refDelytelseId}</refDelytelseId>""" } ?: ""}
-                ${linje.refFagsystemId?.let { """<refFagsystemId>${linje.refFagsystemId}</refFagsystemId>""" } ?: ""}
-                <kodeKlassifik>${linje.kodeKlassifik}</kodeKlassifik>
-                ${linje.kodeStatusLinje?.let { """<kodeStatusLinje>${linje.kodeStatusLinje}</kodeStatusLinje>""" } ?: ""}
-                ${linje.datoStatusFom?.let { """<datoStatusFom>${linje.datoStatusFom}</datoStatusFom>""" } ?: ""}
-                <datoVedtakFom>${linje.datoVedtakFom}</datoVedtakFom>
-                <datoVedtakTom>${linje.datoVedtakTom}</datoVedtakTom>
-                <sats>${linje.sats}</sats>
-                <fradragTillegg>${linje.fradragTillegg}</fradragTillegg>
-                <typeSats>${linje.typeSats}</typeSats>
-                <brukKjoreplan>${linje.brukKjoreplan}</brukKjoreplan>
-                <saksbehId>${linje.saksbehId}</saksbehId>
-                ${
-                linje.utbetalesTilId?.let {
-                    """<utbetalesTilId>$it</utbetalesTilId>"""
-                } ?: ""
-            }
-                ${
-                linje.grad.joinToString(separator = "\n") { grad ->
-                    """<ns3:grad>
-                    <typeGrad>${grad.typeGrad}</typeGrad>
-                    ${grad.grad?.let { """<grad>${grad.grad}</grad>""" } ?: ""}
-                </ns3:grad>"""
-                }
-            }
-                ${
-                linje.attestant.joinToString(separator = "\n") { attestant ->
-                    """<ns3:attestant>
-                    <attestantId>${attestant.attestantId}</attestantId>
-                </ns3:attestant>"""
-                }
-            }
-                ${
-                linje.refusjonsInfo?.let { refusjonsInfo ->
-                    """<ns3:refusjonsInfo>
-                    <refunderesId>${refusjonsInfo.refunderesId}</refunderesId>
-                    ${refusjonsInfo.maksDato?.let { """<maksDato>${refusjonsInfo.maksDato}</maksDato>""" } ?: ""}
-                    <datoFom>${refusjonsInfo.datoFom}</datoFom>
-                </ns3:refusjonsInfo>"""
-                } ?: ""
-            }
-            </oppdragslinje>"""
-        }
-    }
-        </oppdrag>
-    </request>
-</ns2:simulerBeregningRequest>"""
 }
