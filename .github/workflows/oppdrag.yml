@@ -6,7 +6,6 @@ on:
     branches: [ main ]
     paths:
       - 'apps/oppdrag/**'
-      - 'libs/**'
 
 jobs:
   build:
@@ -29,7 +28,7 @@ jobs:
         with:
           dependency-graph: generate-and-submit
 
-      - run: ./gradlew apps:oppdrag:test apps:oppdrag:buildFatJar --continue --no-daemon --parallel
+      - run: ./gradlew apps:${{ github.workflow }}:test apps:${{ github.workflow }}:buildFatJar --continue --no-daemon --parallel
 
       - uses: dorny/test-reporter@v1.9.1
         if: success() || failure()
@@ -44,10 +43,8 @@ jobs:
           team: helved
           identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
-          image_suffix: oppdrag
+          image_suffix: ${{ github.workflow }}
           tag: ${{ github.sha }}
-          docker_context: ./apps/oppdrag
-          dockerfile: ./apps/oppdrag/Dockerfile
 
   deploy-dev:
     if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -69,8 +66,8 @@ jobs:
         env:
           PRINT_PAYLOAD: true
           CLUSTER: dev-gcp
-          RESOURCE: apps/oppdrag/application-dev.yml
-          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-oppdrag:${{ github.sha }}
+          RESOURCE: apps/${{ github.workflow }}/dev.yml
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
 
   deploy-prod:
     if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -92,5 +89,5 @@ jobs:
         env:
           PRINT_PAYLOAD: true
           CLUSTER: prod-gcp
-          RESOURCE: apps/oppdrag/application-prod.yml
-          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-oppdrag:${{ github.sha }}
+          RESOURCE: apps/${{ github.workflow }}/prod.yml
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
