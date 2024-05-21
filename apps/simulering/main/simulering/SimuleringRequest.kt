@@ -1,12 +1,19 @@
 package simulering
 
-import jakarta.xml.bind.annotation.XmlRootElement
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import simulering.dto.SimuleringRequestBody
 import simulering.dto.Utbetalingslinje
 import java.time.LocalDate
 
-@XmlRootElement(name = "simulerBeregningRequest", namespace = "http://nav.no/system/os/entiteter/oppdragSkjema")
-data class SimulerBeregningRequest(val request: SimulerRequest) {
+//@XmlRootElement(name = "simulerBeregningRequest", namespace = "http://nav.no/system/os/entiteter/oppdragSkjema")
+@JacksonXmlRootElement(
+    localName = "ns3:simulerBeregningRequest",
+)
+data class SimulerBeregningRequest(
+    @JacksonXmlProperty(isAttribute = true)
+    val request: SimulerRequest
+) {
     companion object {
         fun from(dto: SimuleringRequestBody): SimulerBeregningRequest {
             return SimulerBeregningRequest(
@@ -41,6 +48,7 @@ data class Oppdrag(
     val oppdragGjelderId: String,
     val saksbehId: String,
     val datoOppdragGjelderFom: LocalDate?,
+    @JacksonXmlProperty(isAttribute = true, localName = "ns2:enhet")
     val enhet: List<Enhet>,
     val oppdragslinje: List<Oppdragslinje>
 )
@@ -63,7 +71,9 @@ data class Oppdragslinje(
     val typeSats: String,
     val saksbehId: String,
     val brukKjoreplan: String,
+    @JacksonXmlProperty(isAttribute = true, localName = "ns2:grad")
     val grad: List<Grad>,
+    @JacksonXmlProperty(isAttribute = true, localName = "ns2:attestant")
     val attestant: List<Attestant>
 ) {
 
