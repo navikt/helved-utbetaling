@@ -6,7 +6,7 @@ import java.time.LocalDate
  * Enhet kan være enten [tknr] eller [orgnr]+[avd]
  * 4 eller opptil 13 tegn
  */
-typealias Enhet = String
+typealias EnhetNr = String
 typealias FnrOrgnr = String // 9-11 tegn
 typealias String1 = String // 0-1
 typealias LinjeId = Int
@@ -60,7 +60,7 @@ data class SimuleringResponse(
                     data class Stoppnivå(
                         val kodeFagomraade: String,
                         val stoppNivaaId: LinjeId,
-                        val behandlendeEnhet: Enhet,
+                        val behandlendeEnhet: EnhetNr,
                         val oppdragsId: Long,
                         val fagsystemId: String,
                         val kid: String,
@@ -100,7 +100,7 @@ data class SimuleringResponse(
                             val uforeGrad: Int, // 0-100
                             val kravhaverId: FnrOrgnr,
                             val delytelseId: String,
-                            val bostedsenhet: Enhet,
+                            val bostedsenhet: EnhetNr,
                             val skykldnerId: FnrOrgnr,
                             val klassekode: Klasse,
                             val klasseKodeBeskrivelse: String,
