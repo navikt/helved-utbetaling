@@ -22,7 +22,6 @@ import libs.utils.appLog
 import libs.utils.secureLog
 import libs.ws.*
 import simulering.dto.SimuleringRequestBody
-import simulering.dto.SimuleringRequestBuilder
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import javax.net.ssl.SSLException
@@ -42,8 +41,16 @@ class SimuleringService(private val config: Config) {
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
 
     suspend fun simuler(request: SimuleringRequestBody): Simulering {
-        val request = SimuleringRequestBuilder(request).build()
-        val xml = xmlMapper.writeValueAsString(request).replace("SimulerBeregningRequest", "simulerBeregningRequest")
+        val request = SimulerBeregningRequest.from(request)
+        val xml = xmlMapper.writeValueAsString(request)
+            .replace(
+                "<SimulerBeregningRequest>",
+                """<ns2:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt" xmlns:ns3="http://nav.no/system/os/entiteter/oppdragSkjema">""",
+            )
+            .replace(
+                "</SimulerBeregningRequest>",
+                "</ns2:simulerBeregningRequest>",
+            )
         val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()
     }
