@@ -45,12 +45,18 @@ class SimuleringService(private val config: Config) {
         val xml = xmlMapper.writeValueAsString(request)
             .replace(
                 "<SimulerBeregningRequest>",
-                """<ns2:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt" xmlns:ns3="http://nav.no/system/os/entiteter/oppdragSkjema">""",
+                """<ns3:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt" xmlns:ns3="http://nav.no/system/os/entiteter/oppdragSkjema">""",
             )
             .replace(
                 "</SimulerBeregningRequest>",
-                "</ns2:simulerBeregningRequest>",
+                "</ns3:simulerBeregningRequest>",
             )
+            .replace("<enhet><", "<ns2:enhet><")
+            .replace("></enhet>", "></ns2:enhet>")
+            .replace("<grad>", "<ns2:grad>")
+            .replace("</grad>", "</ns2:grad>")
+            .replace("<attestant>", "<ns2:attestant>")
+            .replace("</attestant>", "</ns2:attestant>")
         val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()
     }
@@ -136,7 +142,7 @@ private val xmlMapper: ObjectMapper =
     XmlMapper(JacksonXmlModule().apply { setDefaultUseWrapper(false) })
         .registerKotlinModule()
         .registerModule(JavaTimeModule())
-        .enable(SerializationFeature.INDENT_OUTPUT)
+//        .enable(SerializationFeature.INDENT_OUTPUT)
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 
