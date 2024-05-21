@@ -43,7 +43,7 @@ class SimuleringService(private val config: Config) {
 
     suspend fun simuler(request: SimuleringRequestBody): Simulering {
         val request = SimuleringRequestBuilder(request).build()
-        val xml = xmlMapper.writeValueAsString(request.request)
+        val xml = xmlMapper.writeValueAsString(request).replace("SimulerBeregningRequest", "simulerBeregningRequest")
         val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()
     }
