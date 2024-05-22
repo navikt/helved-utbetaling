@@ -12,7 +12,6 @@ import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
-import com.fasterxml.jackson.datatype.jsr310.deser.YearMonthDeserializer
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.plugins.logging.*
@@ -28,7 +27,6 @@ import simulering.dto.SimuleringRequestBody
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.time.LocalDateTime
-import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import javax.net.ssl.SSLException
 
@@ -36,7 +34,7 @@ private object SimulerAction {
     private const val HOST = "http://nav.no"
     private const val PATH = "system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"
     private const val SERVICE = "simulerFpService"
-    const val BEREGNING = "$HOST/$PATH/$SERVICE/simulerBeregningRequest"
+    const val BEREGNING = "$HOST/$PATH/$SERVICE/simulerBeregning"
     const val SEND_OPPDRAG = "$HOST/$PATH/$SERVICE/sendInnOppdragRequest"
 }
 
@@ -137,8 +135,12 @@ private val xmlMapper: ObjectMapper =
         .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        .registerModule(JavaTimeModule()
-            .addDeserializer(LocalDateTime::class.java, LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("YYYY-MM-dd'T'HH:mm:ssZ")))
+        .registerModule(
+            JavaTimeModule()
+                .addDeserializer(
+                    LocalDateTime::class.java,
+                    LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("YYYY-MM-dd'T'HH:mm:ssZ"))
+                )
         )
 
 class PersonFinnesIkkeException(feilmelding: String) : RuntimeException(feilmelding)
