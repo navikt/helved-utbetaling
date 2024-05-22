@@ -1,22 +1,20 @@
 package simulering
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import simulering.dto.SimuleringRequestBody
 import simulering.dto.Utbetalingslinje
 import java.time.LocalDate
 
-//@XmlRootElement(name = "simulerBeregningRequest", namespace = "http://nav.no/system/os/entiteter/oppdragSkjema")
-@JacksonXmlRootElement(
-    localName = "ns3:simulerBeregningRequest",
-)
-data class SimulerBeregningRequest(
+@JacksonXmlRootElement(localName = "ns3:simulerBeregning")
+data class SimulerBeregning(
     @JacksonXmlProperty(isAttribute = true)
     val request: SimulerRequest
 ) {
     companion object {
-        fun from(dto: SimuleringRequestBody): SimulerBeregningRequest {
-            return SimulerBeregningRequest(
+        fun from(dto: SimuleringRequestBody): SimulerBeregning {
+            return SimulerBeregning(
                 request = SimulerRequest(
                     oppdrag = Oppdrag(
                         kodeFagomraade = dto.fagområde,
@@ -56,6 +54,7 @@ data class Oppdrag(
 data class Enhet(val enhet: String, val typeEnhet: String, val datoEnhetFom: LocalDate?)
 data class SimuleringsPeriode(val datoSimulerFom: LocalDate, val datoSimulerTom: LocalDate)
 data class RefusjonsInfo(val refunderesId: String, val datoFom: LocalDate, val maksDato: LocalDate?)
+
 data class Oppdragslinje(
     val delytelseId: String,
     val refDelytelseId: String?,
