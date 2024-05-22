@@ -4,12 +4,15 @@ package simulering
 
 import com.ctc.wstx.exc.WstxEOFException
 import com.ctc.wstx.exc.WstxIOException
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
+import com.fasterxml.jackson.datatype.jsr310.deser.YearMonthDeserializer
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.plugins.logging.*
@@ -24,6 +27,9 @@ import libs.ws.*
 import simulering.dto.SimuleringRequestBody
 import java.net.SocketException
 import java.net.SocketTimeoutException
+import java.time.LocalDateTime
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import javax.net.ssl.SSLException
 
 private object SimulerAction {
@@ -127,10 +133,13 @@ class SimuleringService(private val config: Config) {
 private val xmlMapper: ObjectMapper =
     XmlMapper(JacksonXmlModule().apply { setDefaultUseWrapper(false) })
         .registerKotlinModule()
-        .registerModule(JavaTimeModule())
         .enable(SerializationFeature.INDENT_OUTPUT)
+        .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+        .registerModule(JavaTimeModule()
+            .addDeserializer(LocalDateTime::class.java, LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("YYYY-MM-dd'T'HH:mm:ssZ")))
+        )
 
 class PersonFinnesIkkeException(feilmelding: String) : RuntimeException(feilmelding)
 class RequestErUgyldigException(feilmelding: String) : RuntimeException(feilmelding)

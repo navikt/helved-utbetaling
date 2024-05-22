@@ -1,14 +1,17 @@
 package simulering
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import simulering.dto.SimuleringRequestBody
 import simulering.dto.Utbetalingslinje
 import java.time.LocalDate
 
-@JacksonXmlRootElement(localName = "ns3:simulerBeregning")
+@JacksonXmlRootElement(localName = "ns3:simulerBeregningRequest")
 data class SimulerBeregning(
+    @JacksonXmlProperty(isAttribute = true, localName = "ns2")
+    val ns2: String = "http://nav.no/system/os/entiteter/oppdragSkjema",
+    @JacksonXmlProperty(isAttribute = true, localName = "ns3")
+    val ns3: String = "http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt",
     @JacksonXmlProperty(isAttribute = true)
     val request: SimulerRequest
 ) {
