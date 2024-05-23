@@ -21,7 +21,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.12.4")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.13.0")
 
     // json
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
