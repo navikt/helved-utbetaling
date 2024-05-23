@@ -16,13 +16,12 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
-import io.micrometer.prometheus.PrometheusConfig
-import io.micrometer.prometheus.PrometheusMeterRegistry
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.postgres.Postgres
 import libs.postgres.Postgres.migrate
-import libs.task.TaskService
 import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.routing.actuators
