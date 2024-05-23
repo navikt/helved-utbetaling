@@ -35,7 +35,7 @@ class AvstemmingMapper(
         get() =
             detaljdataliste.chunked(ANTALL_DETALJER_PR_MELDING).map {
                 lagMelding(AksjonType.DATA).apply {
-                    this.detalj.addAll(it)
+                    this.detaljs.addAll(it)
                 }
             }
 

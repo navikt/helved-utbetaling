@@ -33,9 +33,9 @@ internal object OppdragMapper {
                     kodeKomponent = utbetalingsoppdrag.fagsystem.kode
                     tidspktMelding = utbetalingsoppdrag.avstemmingstidspunkt.format(timeFormatter)
                 }
-            tilOppdragsEnhet120(utbetalingsoppdrag).map { oppdragsEnhet120.add(it) }
+            tilOppdragsEnhet120(utbetalingsoppdrag).map { oppdragsEnhet120s.add(it) }
             utbetalingsoppdrag.utbetalingsperiode.map { periode ->
-                oppdragsLinje150.add(
+                oppdragsLinje150s.add(
                     tilOppdragsLinje150(
                         utbetalingsperiode = periode,
                         utbetalingsoppdrag = utbetalingsoppdrag,
@@ -104,10 +104,10 @@ internal object OppdragMapper {
             saksbehId = utbetalingsoppdrag.saksbehandlerId
             utbetalesTilId = utbetalingsperiode.utbetalesTil
             henvisning = utbetalingsperiode.behandlingId
-            attestant180.add(attestant)
+            attestant180s.add(attestant)
 
             utbetalingsperiode.utbetalingsgrad?.let { utbetalingsgrad ->
-                grad170.add(
+                grad170s.add(
                     objectFactory.createGrad170().apply {
                         typeGrad = Gradtype.UTBETALINGSGRAD.kode
                         grad = utbetalingsgrad.toBigInteger()

@@ -53,7 +53,7 @@ internal class AvstemmingMapperTest {
         assertAksjon(fom, tom, AksjonType.DATA, meldinger[1].aksjon)
         assertAksjon(fom, tom, AksjonType.AVSL, meldinger.last().aksjon)
 
-        assertDetaljData(oppdragLager, DetaljType.MANG, meldinger[1].detalj.first())
+        assertDetaljData(oppdragLager, DetaljType.MANG, meldinger[1].detaljs.first())
         assertTotalData(
             forventetAntall = 1,
             forventetTotalbeløp = BigDecimal(100),
@@ -91,9 +91,9 @@ internal class AvstemmingMapperTest {
         assertAksjon(fom, tom, AksjonType.DATA, meldinger[1].aksjon)
         assertAksjon(fom, tom, AksjonType.AVSL, meldinger.last().aksjon)
 
-        assertEquals(2, meldinger[1].detalj.size)
-        assertDetaljData(oppdragLager, DetaljType.MANG, meldinger[1].detalj.first())
-        assertDetaljData(oppdragLager2, DetaljType.AVVI, meldinger[1].detalj.last())
+        assertEquals(2, meldinger[1].detaljs.size)
+        assertDetaljData(oppdragLager, DetaljType.MANG, meldinger[1].detaljs.first())
+        assertDetaljData(oppdragLager2, DetaljType.AVVI, meldinger[1].detaljs.last())
         assertTotalData(2, BigDecimal(200), meldinger[1].total)
         assertPeriodeData(utbetalingsoppdrag, meldinger[1].periode)
         assertGrunnlagsdata(
