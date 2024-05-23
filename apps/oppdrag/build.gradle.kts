@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "2.3.11"
-val libVersion = "0.0.51"
+val libVersion = "0.0.63"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
@@ -26,10 +26,6 @@ dependencies {
     // json
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
-
-    // XSD to Java
-    implementation("no.nav.tjenestespesifikasjoner:avstemming-v1-tjenestespesifikasjon:1.2021.02.22-10.45-4201aaea72fb")
-    implementation("no.nav.tjenestespesifikasjoner:nav-virksomhet-oppdragsbehandling-v1-meldingsdefinisjon:1.2021.02.22-10.45-4201aaea72fb")
 
     testImplementation(kotlin("test"))
     testImplementation("org.testcontainers:postgresql:1.19.7")

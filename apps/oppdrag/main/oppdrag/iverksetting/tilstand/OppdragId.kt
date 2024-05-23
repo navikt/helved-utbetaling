@@ -16,7 +16,7 @@ internal val Oppdrag.id: OppdragId
         OppdragId(
             fagsystem = oppdrag110.kodeFagomraade.tilFagsystem(),
             fagsakId = oppdrag110.fagsystemId,
-            behandlingId = oppdrag110.oppdragsLinje150?.get(0)?.henvisning!!,
+            behandlingId = oppdrag110.oppdragsLinje150s?.get(0)?.henvisning!!,
             iverksettingId = null,
         )
 

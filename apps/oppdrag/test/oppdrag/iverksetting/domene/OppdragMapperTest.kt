@@ -46,8 +46,8 @@ class OppdragMapperTest {
         val oppdrag110 = OppdragMapper.tilOppdrag110(utbetalingsoppdrag)
 
         assertOppdrag110(utbetalingsoppdrag, oppdrag110)
-        assertOppdragslinje150(periode1, utbetalingsoppdrag, oppdrag110.oppdragsLinje150[0])
-        assertOppdragslinje150(periode2, utbetalingsoppdrag, oppdrag110.oppdragsLinje150[1])
+        assertOppdragslinje150(periode1, utbetalingsoppdrag, oppdrag110.oppdragsLinje150s[0])
+        assertOppdragslinje150(periode2, utbetalingsoppdrag, oppdrag110.oppdragsLinje150s[1])
     }
 
     @Test
@@ -70,7 +70,7 @@ class OppdragMapperTest {
         val oppdrag110 = OppdragMapper.tilOppdrag110(utbetalingsoppdrag)
 
         assertOppdrag110(utbetalingsoppdrag, oppdrag110)
-        assertOppdragslinje150(periode, utbetalingsoppdrag, oppdrag110.oppdragsLinje150[0])
+        assertOppdragslinje150(periode, utbetalingsoppdrag, oppdrag110.oppdragsLinje150s[0])
     }
 
     @Test
@@ -93,7 +93,7 @@ class OppdragMapperTest {
         val oppdrag110 = OppdragMapper.tilOppdrag110(utbetalingsoppdrag)
 
         assertOppdrag110(utbetalingsoppdrag, oppdrag110)
-        assertOppdragslinje150(periode, utbetalingsoppdrag, oppdrag110.oppdragsLinje150[0])
+        assertOppdragslinje150(periode, utbetalingsoppdrag, oppdrag110.oppdragsLinje150s[0])
     }
 
     @Test
@@ -134,20 +134,20 @@ class OppdragMapperTest {
             utbetalingsoppdrag.avstemmingstidspunkt.format(OppdragMapper.timeFormatter),
             oppdrag110.avstemming115.tidspktMelding,
         )
-        assertEquals(OppdragSkjemaConstants.ENHET_TYPE_BOSTEDSENHET, oppdrag110.oppdragsEnhet120[0].typeEnhet)
+        assertEquals(OppdragSkjemaConstants.ENHET_TYPE_BOSTEDSENHET, oppdrag110.oppdragsEnhet120s[0].typeEnhet)
         utbetalingsoppdrag.brukersNavKontor?.let {
-            assertEquals(it, oppdrag110.oppdragsEnhet120[0].enhet)
+            assertEquals(it, oppdrag110.oppdragsEnhet120s[0].enhet)
             assertEquals(
                 OppdragSkjemaConstants.BRUKERS_NAVKONTOR_FOM.toXMLDate(),
-                oppdrag110.oppdragsEnhet120[0].datoEnhetFom,
+                oppdrag110.oppdragsEnhet120s[0].datoEnhetFom,
             )
-            assertEquals(OppdragSkjemaConstants.ENHET_TYPE_BEHANDLENDE_ENHET, oppdrag110.oppdragsEnhet120[1].typeEnhet)
-            assertEquals(OppdragSkjemaConstants.ENHET, oppdrag110.oppdragsEnhet120[1].enhet)
-            assertEquals(OppdragSkjemaConstants.ENHET_FOM.toXMLDate(), oppdrag110.oppdragsEnhet120[1].datoEnhetFom)
+            assertEquals(OppdragSkjemaConstants.ENHET_TYPE_BEHANDLENDE_ENHET, oppdrag110.oppdragsEnhet120s[1].typeEnhet)
+            assertEquals(OppdragSkjemaConstants.ENHET, oppdrag110.oppdragsEnhet120s[1].enhet)
+            assertEquals(OppdragSkjemaConstants.ENHET_FOM.toXMLDate(), oppdrag110.oppdragsEnhet120s[1].datoEnhetFom)
         }
             ?: run {
-                assertEquals(OppdragSkjemaConstants.ENHET, oppdrag110.oppdragsEnhet120[0].enhet)
-                assertEquals(OppdragSkjemaConstants.ENHET_FOM.toXMLDate(), oppdrag110.oppdragsEnhet120[0].datoEnhetFom)
+                assertEquals(OppdragSkjemaConstants.ENHET, oppdrag110.oppdragsEnhet120s[0].enhet)
+                assertEquals(OppdragSkjemaConstants.ENHET_FOM.toXMLDate(), oppdrag110.oppdragsEnhet120s[0].datoEnhetFom)
             }
     }
 
@@ -180,10 +180,10 @@ class OppdragMapperTest {
         assertEquals(utbetalingsoppdrag.aktør, oppdragsLinje150.utbetalesTilId)
         assertEquals(utbetalingsperiode.behandlingId, oppdragsLinje150.henvisning)
         utbetalingsoppdrag.beslutterId?.let {
-            assertEquals(it, oppdragsLinje150.attestant180[0].attestantId)
+            assertEquals(it, oppdragsLinje150.attestant180s[0].attestantId)
         }
-            ?: assertEquals(utbetalingsoppdrag.saksbehandlerId, oppdragsLinje150.attestant180[0].attestantId)
-        assertEquals(utbetalingsperiode.utbetalingsgrad, oppdragsLinje150.grad170.firstOrNull()?.grad?.toInt())
+            ?: assertEquals(utbetalingsoppdrag.saksbehandlerId, oppdragsLinje150.attestant180s[0].attestantId)
+        assertEquals(utbetalingsperiode.utbetalingsgrad, oppdragsLinje150.grad170s.firstOrNull()?.grad?.toInt())
 
         if (utbetalingsperiode.forrigePeriodeId !== null && !utbetalingsperiode.erEndringPåEksisterendePeriode) {
             assertEquals(

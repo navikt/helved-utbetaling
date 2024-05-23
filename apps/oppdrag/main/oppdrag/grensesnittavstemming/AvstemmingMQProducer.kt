@@ -8,7 +8,6 @@ import libs.utils.secureLog
 import libs.xml.XMLMapper
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import oppdrag.AvstemmingConfig
-import javax.xml.namespace.QName
 
 class AvstemmingMQProducer(
     mq: MQ,
@@ -19,7 +18,6 @@ class AvstemmingMQProducer(
     }
     private val producer = MQProducer(mq, queue)
     private val mapper: XMLMapper<Avstemmingsdata> = XMLMapper()
-    private val namespaceURI = "http://nav.no/virksomhet/tjenester/avstemming/meldinger/v1"
 
     fun sendGrensesnittAvstemming(avstemmingsdata: Avstemmingsdata) {
         if (!config.enabled) {
@@ -29,8 +27,7 @@ class AvstemmingMQProducer(
 
         runCatching {
             appLog.info("Sender avstemming til oppdrag")
-            val xmlRootTag = mapper.wrapInTag(avstemmingsdata, QName(namespaceURI, "avstemmingsdata"))
-            val xml = mapper.writeValueAsString(xmlRootTag)
+            val xml = mapper.writeValueAsString(avstemmingsdata)
             producer.produce(xml)
         }.onFailure {
             appLog.error("Klarte ikke sende avstemming til OS")

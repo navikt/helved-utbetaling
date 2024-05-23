@@ -21,7 +21,7 @@ class OppdragMQProducer(private val config: OppdragConfig, mq: MQ) {
             error("Kan ikke sende melding til oppdrag. Integrasjonen er skrudd av.")
         }
 
-        val oppdragId = oppdrag.oppdrag110?.oppdragsLinje150?.lastOrNull()?.henvisning
+        val oppdragId = oppdrag.oppdrag110?.oppdragsLinje150s?.lastOrNull()?.henvisning
         val oppdragXml = mapper.writeValueAsString(oppdrag)
 
         appLog.info(
