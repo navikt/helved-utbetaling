@@ -23,13 +23,17 @@ data class Utbetalingslinje(
     val fom: LocalDate,
     val tom: LocalDate,
     val sats: Int,
-    val grad: Int?,
+    val grad: Grad,
     val refDelytelseId: String?,
     val refFagsystemId: String?,
     val datoStatusFom: LocalDate?,
     val statuskode: String?,
     val satstype: Satstype,
+    val utbetalesTil: String,
 )
+
+data class Grad(val type: GradType, val prosent: Int?) // TODO: i tjenestekontrakt står det int maks 100. Er dette %?
+enum class GradType { UFOR } // TODO: finn alle alternativer, eller er det alltidf ufor?
 
 enum class Endringskode(@get:JsonValue val verdi: String) {
     NY("NY"),

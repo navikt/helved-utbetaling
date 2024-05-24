@@ -46,7 +46,7 @@ class SimuleringService(private val config: Config) {
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
 
     suspend fun simuler(request: SimuleringApiDto): Simulering {
-        val request = SimuleringRequestBuilder(request).build()
+        val request = SimulerBeregning.from(request)
         val xml = xmlMapper.writeValueAsString(request)
         val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()

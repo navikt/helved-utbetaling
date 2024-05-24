@@ -87,8 +87,8 @@ internal class SimuleringRequestBuilder(private val request: SimuleringApiDto) {
             brukKjoreplan = "N"
             grad.add(
                 Grad().apply {
-                    typeGrad = "UFOR"
-                    grad = utbetalingslinje.grad?.toBigInteger()
+                    typeGrad = utbetalingslinje.grad.type.name
+                    grad = utbetalingslinje.grad.prosent?.toBigInteger()
                 },
             )
             attestant.add(

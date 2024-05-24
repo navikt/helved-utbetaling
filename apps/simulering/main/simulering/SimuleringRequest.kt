@@ -1,5 +1,7 @@
 package simulering
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import simulering.dto.SimuleringApiDto
@@ -27,7 +29,7 @@ data class SimulerBeregning(
                         oppdragGjelderId = dto.personident.verdi,
                         saksbehId = dto.saksbehandler,
                         datoOppdragGjelderFom = LocalDate.EPOCH,
-                        enhet = listOf(Enhet("8020", "BOS", LocalDate.EPOCH)),
+                        enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
                         oppdragslinje = dto.utbetalingslinjer.map { Oppdragslinje.from(it, dto.saksbehandler) }
                     ),
                     simuleringsPeriode = SimuleringsPeriode(
@@ -41,41 +43,83 @@ data class SimulerBeregning(
 }
 
 data class SimulerRequest(val oppdrag: Oppdrag, val simuleringsPeriode: SimuleringsPeriode)
+
+@JsonPropertyOrder(
+    "kodeEndring",
+    "kodeFagomraade",
+    "fagsystemId",
+    "utbetFrekvens",
+    "oppdragGjelderId",
+    "datoOppdragGjelderFom",
+    "saksbehId",
+    "ns2:enhet",
+    "oppdragslinje",
+)
 data class Oppdrag(
-    val kodeFagomraade: String,
     val kodeEndring: String,
-    val utbetFrekvens: String,
+    val kodeFagomraade: String,
     val fagsystemId: String,
+    val utbetFrekvens: String,
     val oppdragGjelderId: String,
-    val saksbehId: String,
     val datoOppdragGjelderFom: LocalDate?,
-    @JacksonXmlProperty(isAttribute = true, localName = "ns2:enhet")
+    val saksbehId: String,
+    @JsonProperty("ns2:enhet")
     val enhet: List<Enhet>,
     val oppdragslinje: List<Oppdragslinje>
 )
 
-data class Enhet(val enhet: String, val typeEnhet: String, val datoEnhetFom: LocalDate?)
+@JsonPropertyOrder(
+    "typeEnhet",
+    "enhet",
+    "datoEnhetFom",
+)
+data class Enhet(
+    val typeEnhet: String,
+    val enhet: String,
+    val datoEnhetFom: LocalDate?,
+)
+
 data class SimuleringsPeriode(val datoSimulerFom: LocalDate, val datoSimulerTom: LocalDate)
 data class RefusjonsInfo(val refunderesId: String, val datoFom: LocalDate, val maksDato: LocalDate?)
 
+@JsonPropertyOrder(
+    "kodeEndringLinje",
+    "kodeStatusLinje",
+    "datoStatusFom",
+    "delytelseId",
+    "kodeKlassifik",
+    "datoVedtakFom",
+    "datoVedtakTom",
+    "sats",
+    "fradragTillegg",
+    "typeSats",
+    "brukKjoreplan",
+    "saksbehId",
+    "utbetalesTilId",
+    "refFagsystemId",
+    "refDelytelseId",
+    "ns2:grad",
+    "ns2:attestant",
+)
 data class Oppdragslinje(
-    val delytelseId: String,
-    val refDelytelseId: String?,
-    val refFagsystemId: String?,
     val kodeEndringLinje: String,
-    val kodeKlassifik: String,
     val kodeStatusLinje: KodeStatusLinje?,
     val datoStatusFom: LocalDate?,
+    val delytelseId: String,
+    val kodeKlassifik: String,
     val datoVedtakFom: LocalDate,
     val datoVedtakTom: LocalDate,
     val sats: Int,
     val fradragTillegg: FradragTillegg,
     val typeSats: String,
-    val saksbehId: String,
     val brukKjoreplan: String,
-    @JacksonXmlProperty(isAttribute = true, localName = "ns2:grad")
+    val saksbehId: String,
+    val utbetalesTilId: String?,
+    val refFagsystemId: String?,
+    val refDelytelseId: String?,
+    @JsonProperty("ns2:grad")
     val grad: List<Grad>,
-    @JacksonXmlProperty(isAttribute = true, localName = "ns2:attestant")
+    @JsonProperty("ns2:attestant")
     val attestant: List<Attestant>
 ) {
 
@@ -96,14 +140,14 @@ data class Oppdragslinje(
                 typeSats = request.satstype.verdi,
                 saksbehId = saksbehandler,
                 brukKjoreplan = "N",
-                grad = listOf(Grad(typeGrad = "UFOR", grad = request.grad)),
+                grad = listOf(Grad(typeGrad = request.grad.type.name, grad = request.grad.prosent)),
                 attestant = listOf(Attestant(saksbehandler)),
+                utbetalesTilId = request.utbetalesTil
             )
         }
     }
 
     var refusjonsInfo: RefusjonsInfo? = null
-    var utbetalesTilId: String? = null
 }
 
 enum class FradragTillegg {
