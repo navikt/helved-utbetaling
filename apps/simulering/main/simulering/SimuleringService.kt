@@ -95,7 +95,6 @@ class SimuleringService(private val config: Config) {
                 </simuleringsPeriode>
             </request>
         </ns3:simulerBeregningRequest>
-    </soap:Body>
        """.trimIndent()
     }
 
