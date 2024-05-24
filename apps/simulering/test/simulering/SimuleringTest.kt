@@ -49,7 +49,7 @@ class SimuleringTest {
             }
         }
     }
-//
+
 //    @Test
 //    fun `simulering request xml er parset riktig`() {
 //        TestRuntime().use { runtime ->

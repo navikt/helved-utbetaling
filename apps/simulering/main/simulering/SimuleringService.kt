@@ -24,7 +24,6 @@ import libs.utils.appLog
 import libs.utils.secureLog
 import libs.ws.*
 import simulering.dto.SimuleringApiDto
-import simulering.dto.SimuleringRequestBuilder
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.time.LocalDateTime
@@ -48,10 +47,10 @@ class SimuleringService(private val config: Config) {
     suspend fun simuler(request: SimuleringApiDto): Simulering {
         val request = SimulerBeregning.from(request)
         val xml = xmlMapper.writeValueAsString(request)
+            .replace(Regex("ns\\d="), "xmlns:$0")
         val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()
     }
-
 
 
     private fun json(xml: String): SimuleringResponse.SimulerBeregningResponse.Response.Beregning {
