@@ -10,6 +10,7 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.reflect.*
@@ -60,6 +61,11 @@ class TestRuntime : Sts, Soap, AutoCloseable {
         return SamlToken("token", LocalDateTime.now())
     }
 
+    val receivedSoapRequests: MutableList<String> = mutableListOf()
+
+    internal fun registerSoapRequest(req: String) {
+        receivedSoapRequests.add(req)
+    }
 
     var soapResponse: String = Resource.read("/simuler-body-response.xml")
 
@@ -108,6 +114,7 @@ private fun Application.fakes(fake: TestRuntime) {
             call.respond(GandalfOIDCSamlToken())
         }
         post("/cics") {
+            fake.registerSoapRequest(call.receive())
             call.respondText(fake.call("test", "test"))
         }
         get("/jwks") {

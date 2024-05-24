@@ -23,7 +23,8 @@ import libs.http.HttpClientFactory
 import libs.utils.appLog
 import libs.utils.secureLog
 import libs.ws.*
-import simulering.dto.SimuleringRequestBody
+import simulering.dto.SimuleringApiDto
+import simulering.dto.SimuleringRequestBuilder
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.time.LocalDateTime
@@ -44,59 +45,14 @@ class SimuleringService(private val config: Config) {
     private val sts = StsClient(config.simulering.sts, http, proxyAuth = ::getAzureTokenAsync)
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
 
-    suspend fun simuler(request: SimuleringRequestBody): Simulering {
-        val request = SimulerBeregning.from(request)
+    suspend fun simuler(request: SimuleringApiDto): Simulering {
+        val request = SimuleringRequestBuilder(request).build()
         val xml = xmlMapper.writeValueAsString(request)
-        val response = soap.call(SimulerAction.BEREGNING, hardkodet())
+        val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()
     }
 
-    private fun hardkodet(): String {
-        return """
-           <ns3:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/entiteter/oppdragSkjema"
-                                     xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt">
-            <request>
-                <oppdrag>
-                    <kodeEndring>NY</kodeEndring>
-                    <kodeFagomraade>TILLST</kodeFagomraade>
-                    <fagsystemId>200000237</fagsystemId>
-                    <utbetFrekvens>MND</utbetFrekvens>
-                    <oppdragGjelderId>22479409483</oppdragGjelderId>
-                    <datoOppdragGjelderFom>1970-01-01</datoOppdragGjelderFom>
-                    <saksbehId>Z994230</saksbehId>
-                    <ns2:enhet>
-                        <typeEnhet>BOS</typeEnhet>
-                        <enhet>8020</enhet>
-                        <datoEnhetFom>1970-01-01</datoEnhetFom>
-                    </ns2:enhet>
-                    <oppdragslinje>
-                        <kodeEndringLinje>NY</kodeEndringLinje>
-                        <delytelseId>200000233#0</delytelseId>
-                        <kodeKlassifik>TSTBASISP4-OP</kodeKlassifik>
-                        <datoVedtakFom>2024-05-01</datoVedtakFom>
-                        <datoVedtakTom>2024-05-01</datoVedtakTom>
-                        <sats>700</sats>
-                        <fradragTillegg>T</fradragTillegg>
-                        <typeSats>DAG</typeSats>
-                        <brukKjoreplan>N</brukKjoreplan>
-                        <saksbehId>Z994230</saksbehId>
-                        <utbetalesTilId>22479409483</utbetalesTilId>
-                        <ns2:grad>
-                            <typeGrad>UFOR</typeGrad>
-                        </ns2:grad>
-                        <ns2:attestant>
-                            <attestantId>Z994230</attestantId>
-                        </ns2:attestant>
-                    </oppdragslinje>
-                </oppdrag>
-                <simuleringsPeriode>
-                    <datoSimulerFom>2024-05-01</datoSimulerFom>
-                    <datoSimulerTom>2024-05-01</datoSimulerTom>
-                </simuleringsPeriode>
-            </request>
-        </ns3:simulerBeregningRequest>
-       """.trimIndent()
-    }
+
 
     private fun json(xml: String): SimuleringResponse.SimulerBeregningResponse.Response.Beregning {
         try {

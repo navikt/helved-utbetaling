@@ -11,6 +11,7 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
 import libs.utils.Resource
 import no.nav.utsjekk.kontrakter.felles.Personident
+import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
 import simulering.dto.*
 import java.time.LocalDate
@@ -48,6 +49,96 @@ class SimuleringTest {
             }
         }
     }
+//
+//    @Test
+//    fun `simulering request xml er parset riktig`() {
+//        TestRuntime().use { runtime ->
+//            testApplication {
+//                application {
+//                    app(config = runtime.config)
+//                }
+//
+//                val http = createClient {
+//                    install(ContentNegotiation) {
+//                        jackson {
+//                            registerModule(JavaTimeModule())
+//                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+//                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+//                        }
+//                    }
+//                }
+//
+//                http.post("/simulering") {
+//                    contentType(ContentType.Application.Json)
+//                    setBody(enSimuleringRequestBody())
+//                }
+//
+//                assertEquals(expected, runtime.receivedSoapRequests.single())
+//            }
+//        }
+//    }
+
+
+    @Language("xml")
+    private val expected: String = """
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Header>
+        <Action xmlns="http://www.w3.org/2005/08/addressing">http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt/simulerFpService/simulerBeregning</Action>
+        <MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:f059f280-3336-443b-b86a-0b36a81252b0</MessageID>
+        <To xmlns="http://www.w3.org/2005/08/addressing">https://cics-q1.adeo.no/oppdrag/simulerFpServiceWSBinding</To>
+        <ReplyTo xmlns="http://www.w3.org/2005/08/addressing">
+            <Address>http://www.w3.org/2005/08/addressing/anonymous</Address>
+        </ReplyTo>
+        <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" soap:mustUnderstand="1">
+            hemmelig.gandalf.token
+
+        </wsse:Security>
+    </soap:Header>
+    <soap:Body>
+<ns3:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/entiteter/oppdragSkjema"
+                             xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"
+                             xmlns:ns4="http://nav.no/system/os/entiteter/beregningSkjema">
+    <request>
+        <oppdrag>
+            <kodeEndring>NY</kodeEndring>
+            <kodeFagomraade>TILLST</kodeFagomraade>
+            <fagsystemId>200000237</fagsystemId>
+            <utbetFrekvens>MND</utbetFrekvens>
+            <oppdragGjelderId>22479409483</oppdragGjelderId>
+            <datoOppdragGjelderFom>1970-01-01</datoOppdragGjelderFom>
+            <saksbehId>Z994230</saksbehId>
+            <ns2:enhet>
+                <typeEnhet>BOS</typeEnhet>
+                <enhet>8020</enhet>
+                <datoEnhetFom>1970-01-01</datoEnhetFom>
+            </ns2:enhet>
+            <oppdragslinje>
+                <kodeEndringLinje>NY</kodeEndringLinje>
+                <delytelseId>200000233#0</delytelseId>
+                <kodeKlassifik>TSTBASISP4-OP</kodeKlassifik>
+                <datoVedtakFom>2024-05-01</datoVedtakFom>
+                <datoVedtakTom>2024-05-01</datoVedtakTom>
+                <sats>700</sats>
+                <fradragTillegg>T</fradragTillegg>
+                <typeSats>DAG</typeSats>
+                <brukKjoreplan>N</brukKjoreplan>
+                <saksbehId>Z994230</saksbehId>
+                <utbetalesTilId>22479409483</utbetalesTilId>
+                <ns2:grad>
+                    <typeGrad>UFOR</typeGrad>
+                </ns2:grad>
+                <ns2:attestant>
+                    <attestantId>Z994230</attestantId>
+                </ns2:attestant>
+            </oppdragslinje>
+        </oppdrag>
+        <simuleringsPeriode>
+            <datoSimulerFom>2024-05-01</datoSimulerFom>
+            <datoSimulerTom>2024-05-01</datoSimulerTom>
+        </simuleringsPeriode>
+    </request>
+</ns3:simulerBeregningRequest>
+""".trimIndent()
 
     @Test
     fun `svarer med 400 Bad Request ved feil på request body`() {
@@ -181,8 +272,20 @@ class SimuleringTest {
     )
 }
 
-private fun enSimuleringRequestBody(): SimuleringRequestBody {
-    return SimuleringRequestBody(
+/**
+ * Replaces the content between the XML tags with the given replacement.
+ * @example <tag>original</tag> -> <tag>replacement</tag>
+ */
+fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
+    return replace(
+        regex = Regex("(?<=<$tag>).*(?=</$tag>)"),
+        replacement = replacement
+    )
+}
+
+
+private fun enSimuleringRequestBody(): SimuleringApiDto {
+    return SimuleringApiDto(
         fagområde = "TEST",
         fagsystemId = "FAGSYSTEM",
         personident = Personident("15507600333"),

@@ -2,7 +2,7 @@ package simulering
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
-import simulering.dto.SimuleringRequestBody
+import simulering.dto.SimuleringApiDto
 import simulering.dto.Utbetalingslinje
 import java.time.LocalDate
 
@@ -16,7 +16,7 @@ data class SimulerBeregning(
     val request: SimulerRequest
 ) {
     companion object {
-        fun from(dto: SimuleringRequestBody): SimulerBeregning {
+        fun from(dto: SimuleringApiDto): SimulerBeregning {
             return SimulerBeregning(
                 request = SimulerRequest(
                     oppdrag = Oppdrag(
