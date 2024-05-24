@@ -5,7 +5,7 @@ import no.nav.utsjekk.kontrakter.felles.Ident
 import no.nav.utsjekk.kontrakter.felles.Personident
 import java.time.LocalDate
 
-data class SimuleringRequestBody(
+data class SimuleringApiDto(
     val fagområde: String,
     val fagsystemId: String,
     val personident: Personident,

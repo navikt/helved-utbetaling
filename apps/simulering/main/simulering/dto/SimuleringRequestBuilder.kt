@@ -11,7 +11,7 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-internal class SimuleringRequestBuilder(private val request: SimuleringRequestBody) {
+internal class SimuleringRequestBuilder(private val request: SimuleringApiDto) {
     private companion object {
         private val tidsstempel = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     }
