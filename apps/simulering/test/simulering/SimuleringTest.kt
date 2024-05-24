@@ -73,11 +73,12 @@ class SimuleringTest {
 //                    setBody(enSimuleringRequestBody())
 //                }
 //
-//                assertEquals(expected, runtime.receivedSoapRequests.single())
+//                val actual = runtime.receivedSoapRequests.single()
+//
+//                assertEquals(expected, actual)
 //            }
 //        }
 //    }
-
 
     @Language("xml")
     private val expected: String = """
@@ -102,7 +103,7 @@ class SimuleringTest {
         <oppdrag>
             <kodeEndring>NY</kodeEndring>
             <kodeFagomraade>TILLST</kodeFagomraade>
-            <fagsystemId>200000237</fagsystemId>
+            <fagsystemId>200000233</fagsystemId>
             <utbetFrekvens>MND</utbetFrekvens>
             <oppdragGjelderId>22479409483</oppdragGjelderId>
             <datoOppdragGjelderFom>1970-01-01</datoOppdragGjelderFom>
@@ -286,28 +287,29 @@ fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
 
 private fun enSimuleringRequestBody(): SimuleringApiDto {
     return SimuleringApiDto(
-        fagområde = "TEST",
-        fagsystemId = "FAGSYSTEM",
-        personident = Personident("15507600333"),
-        mottaker = Personident("15507600333"),
+        fagområde = "TILLST",
+        fagsystemId = "200000233",
+        personident = Personident("22479409483"),
+        mottaker = Personident("22479409483"),
         endringskode = Endringskode.NY,
-        saksbehandler = "TEST",
-        utbetalingsfrekvens = Utbetalingsfrekvens.UKENTLIG,
+        saksbehandler = "Z994230",
+        utbetalingsfrekvens = Utbetalingsfrekvens.MÅNEDLIG,
         utbetalingslinjer =
         listOf(
             Utbetalingslinje(
-                delytelseId = "",
+                delytelseId = "200000233#0",
                 endringskode = Endringskode.NY,
-                klassekode = "",
-                fom = LocalDate.of(2023, 1, 1),
-                tom = LocalDate.of(2023, 1, 30),
-                sats = 1000,
-                grad = 100,
+                klassekode = "TSTBASISP4-OP",
+                fom = LocalDate.of(2024, 5, 1),
+                tom = LocalDate.of(2024, 5, 1),
+                sats = 700,
+                grad = Grad(GradType.UFOR, null),
                 refDelytelseId = null,
                 refFagsystemId = null,
                 datoStatusFom = null,
                 statuskode = null,
-                satstype = Satstype.MÅNED,
+                satstype = Satstype.DAG,
+                utbetalesTil = "22479409483",
             ),
         ),
     )
