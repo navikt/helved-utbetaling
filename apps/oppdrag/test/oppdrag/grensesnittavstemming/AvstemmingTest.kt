@@ -56,11 +56,7 @@ class AvstemmingTest {
 
         val expected = avstemmingMapper
             .lagAvstemmingsmeldinger()
-            .map {
-                val ns = "http://nav.no/virksomhet/tjenester/avstemming/meldinger/v1"
-                val avstem = mapper.wrapInTag(it, QName(ns, "avstemmingsdata"))
-                mapper.writeValueAsString(avstem)
-            }
+            .map(mapper::writeValueAsString)
             .map(TestRuntime.oppdrag::createMessage)
             .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
             .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
