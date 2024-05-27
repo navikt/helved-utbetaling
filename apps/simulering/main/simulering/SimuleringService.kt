@@ -23,7 +23,9 @@ import libs.http.HttpClientFactory
 import libs.utils.appLog
 import libs.utils.secureLog
 import libs.ws.*
-import simulering.dto.SimuleringApiDto
+import simulering.models.rest.rest
+import simulering.models.soap.soap
+import simulering.models.soap.soap.SimulerBeregningRequest
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.time.LocalDateTime
@@ -41,18 +43,18 @@ private object SimulerAction {
 class SimuleringService(private val config: Config) {
     private val http = HttpClientFactory.new(LogLevel.ALL)
     private val azure = AzureTokenProvider(config.azure)
-    private val sts = StsClient(config.simulering.sts, http, proxyAuth = ::getAzureTokenAsync)
+    private val sts = StsClient(config.simulering.sts, http, cache = SamlTokenCache(), proxyAuth = ::getAzureTokenAsync)
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
 
-    suspend fun simuler(request: SimuleringApiDto): Simulering {
-        val request = SimulerBeregning.from(request)
+    suspend fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse {
+        val request = SimulerBeregningRequest.from(request)
         val xml = xmlMapper.writeValueAsString(request)
             .replace(Regex("ns\\d="), "xmlns:$0")
         val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()
     }
 
-    fun json(xml: String): SimuleringResponse.SimulerBeregningResponse.Response.Beregning {
+    fun json(xml: String): soap.Beregning {
         try {
             secureLog.info("Forsøker å deserialisere simulering")
             val wrapper = simulerBeregningResponse(xml)
@@ -63,8 +65,8 @@ class SimuleringService(private val config: Config) {
         }
     }
 
-    private fun simulerBeregningResponse(xml: String): SimuleringResponse.SimulerBeregningResponse = runCatching {
-        tryInto<SimuleringResponse>(xml).simulerBeregningResponse
+    private fun simulerBeregningResponse(xml: String): soap.SimulerBeregningResponse = runCatching {
+        tryInto<soap.SimuleringResponse>(xml).simulerBeregningResponse
     }.getOrElse {
         throw soapError("Failed to deserialize soap message: ${it.message}", it)
     }

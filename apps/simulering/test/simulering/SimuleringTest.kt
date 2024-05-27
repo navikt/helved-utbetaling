@@ -13,9 +13,8 @@ import libs.utils.Resource
 import no.nav.utsjekk.kontrakter.felles.Personident
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
-import simulering.SimuleringResponse.SimulerBeregningResponse.Response.Beregning.Periode.Stoppnivå.Detalj.SatsType
-import simulering.dto.*
-import simulering.dto.Grad
+import simulering.models.rest.*
+import simulering.models.soap.*
 import java.time.LocalDate
 import kotlin.test.assertEquals
 
@@ -64,22 +63,22 @@ class SimuleringTest {
         assertEquals(expected, actual)
     }
 
-    private fun simuleringResponse(): SimuleringResponse {
-        return SimuleringResponse(
-            simulerBeregningResponse = SimuleringResponse.SimulerBeregningResponse(
-                response = SimuleringResponse.SimulerBeregningResponse.Response(
-                    simulering = SimuleringResponse.SimulerBeregningResponse.Response.Beregning(
+    private fun simuleringResponse(): soap.SimuleringResponse {
+        return soap.SimuleringResponse(
+            simulerBeregningResponse = soap.SimulerBeregningResponse(
+                response = soap.Response(
+                    simulering = soap.Beregning(
                         gjelderId = "22479409483",
                         gjelderNavn = "JAPP USIKKER",
                         datoBeregnet = LocalDate.of(2024, 5, 24),
                         kodeFaggruppe = "ARBYT",
                         belop = 700.0,
                         beregningsPeriode = listOf(
-                            SimuleringResponse.SimulerBeregningResponse.Response.Beregning.Periode(
+                            soap.Periode(
                                 periodeFom = LocalDate.of(2024, 5, 1),
                                 periodeTom = LocalDate.of(2024, 5, 1),
                                 beregningStoppnivaa = listOf(
-                                    SimuleringResponse.SimulerBeregningResponse.Response.Beregning.Periode.Stoppnivå(
+                                    soap.Stoppnivå(
                                         kodeFagomraade = "TILLST",
                                         stoppNivaaId = 5,
                                         behandlendeEnhet = "8020",
@@ -92,7 +91,7 @@ class SimuleringTest {
                                         forfall = LocalDate.of(2024, 5, 24),
                                         feilkonto = false,
                                         beregningStoppnivaaDetaljer = listOf(
-                                            SimuleringResponse.SimulerBeregningResponse.Response.Beregning.Periode.Stoppnivå.Detalj(
+                                            soap.Detalj(
                                                 faktiskFom = LocalDate.of(2024, 5, 1),
                                                 faktiskTom = LocalDate.of(2024, 5, 1),
                                                 kontoStreng = "7774513",
@@ -104,7 +103,7 @@ class SimuleringTest {
                                                 tilbakeforing = false,
                                                 linjeId = 1,
                                                 sats = 700.0,
-                                                typeSats = SatsType.DAG,
+                                                typeSats = soap.SatsType.DAG,
                                                 antallSats = 1.0,
                                                 saksbehId = "Z994230",
                                                 uforeGrad = 0,
@@ -253,24 +252,24 @@ class SimuleringTest {
         }
     }
 
-    private fun reponseXmlFagsak10001Efog() = Simulering(
+    private fun reponseXmlFagsak10001Efog() = rest.SimuleringResponse(
         gjelderId = "12345678910",
         gjelderNavn = "MYGG VAKKER",
         datoBeregnet = LocalDate.parse("2022-04-05"),
         totalBelop = 1225,
         perioder = listOf(
-            SimulertPeriode(
+            rest.SimulertPeriode(
                 fom = LocalDate.parse("2021-05-01"),
                 tom = LocalDate.parse("2021-05-31"),
                 utbetalinger = listOf(
-                    Utbetaling(
+                    rest.Utbetaling(
                         fagSystemId = "10001",
                         utbetalesTilId = "12345678910",
                         utbetalesTilNavn = "MYGG VAKKER",
                         forfall = LocalDate.parse("2022-04-05"),
                         feilkonto = false,
                         detaljer = listOf(
-                            Detaljer(
+                            rest.Detaljer(
                                 faktiskFom = LocalDate.parse("2021-05-01"),
                                 faktiskTom = LocalDate.parse("2021-05-31"),
                                 konto = "3060000",
@@ -285,7 +284,7 @@ class SimuleringTest {
                                 klassekodeBeskrivelse = "Enslig forsørger Overgangsstønad",
                                 refunderesOrgNr = "",
                             ),
-                            Detaljer(
+                            rest.Detaljer(
                                 faktiskFom = LocalDate.parse("2021-05-01"),
                                 faktiskTom = LocalDate.parse("2021-05-31"),
                                 konto = "3060000",
@@ -304,18 +303,18 @@ class SimuleringTest {
                     )
                 )
             ),
-            SimulertPeriode(
+            rest.SimulertPeriode(
                 fom = LocalDate.parse("2021-06-01"),
                 tom = LocalDate.parse("2021-06-30"),
                 utbetalinger = listOf(
-                    Utbetaling(
+                    rest.Utbetaling(
                         fagSystemId = "200000476",
                         utbetalesTilId = "12345678910",
                         utbetalesTilNavn = "MYGG VAKKER",
                         forfall = LocalDate.parse("2022-04-05"),
                         feilkonto = false,
                         detaljer = listOf(
-                            Detaljer(
+                            rest.Detaljer(
                                 faktiskFom = LocalDate.parse("2021-06-01"),
                                 faktiskTom = LocalDate.parse("2021-06-30"),
                                 konto = "3060000",
@@ -330,7 +329,7 @@ class SimuleringTest {
                                 klassekodeBeskrivelse = "Enslig forsørger Overgangsstønad",
                                 refunderesOrgNr = "",
                             ),
-                            Detaljer(
+                            rest.Detaljer(
                                 faktiskFom = LocalDate.parse("2021-06-01"),
                                 faktiskTom = LocalDate.parse("2021-06-30"),
                                 konto = "3060000",
@@ -365,30 +364,30 @@ fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
 }
 
 
-private fun enSimuleringRequestBody(): SimuleringApiDto {
-    return SimuleringApiDto(
+private fun enSimuleringRequestBody(): rest.SimuleringRequest {
+    return rest.SimuleringRequest(
         fagområde = "TILLST",
         fagsystemId = "200000233",
         personident = Personident("22479409483"),
         mottaker = Personident("22479409483"),
-        endringskode = Endringskode.NY,
+        endringskode = rest.Endringskode.NY,
         saksbehandler = "Z994230",
-        utbetalingsfrekvens = Utbetalingsfrekvens.MÅNEDLIG,
+        utbetalingsfrekvens = rest.Utbetalingsfrekvens.MÅNEDLIG,
         utbetalingslinjer =
         listOf(
-            Utbetalingslinje(
+            rest.Utbetalingslinje(
                 delytelseId = "200000233#0",
-                endringskode = Endringskode.NY,
+                endringskode = rest.Endringskode.NY,
                 klassekode = "TSTBASISP4-OP",
                 fom = LocalDate.of(2024, 5, 1),
                 tom = LocalDate.of(2024, 5, 1),
                 sats = 700,
-                grad = Grad(GradType.UFOR, null),
+                grad = rest.Utbetalingslinje.Grad(rest.Utbetalingslinje.GradType.UFOR, null),
                 refDelytelseId = null,
                 refFagsystemId = null,
                 datoStatusFom = null,
                 statuskode = null,
-                satstype = Satstype.DAG,
+                satstype = rest.SatsType.DAG,
                 utbetalesTil = "22479409483",
             ),
         ),
