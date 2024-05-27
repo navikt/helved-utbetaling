@@ -52,8 +52,7 @@ class SimuleringService(private val config: Config) {
         return json(response).intoDto()
     }
 
-
-    private fun json(xml: String): SimuleringResponse.SimulerBeregningResponse.Response.Beregning {
+    fun json(xml: String): SimuleringResponse.SimulerBeregningResponse.Response.Beregning {
         try {
             secureLog.info("Forsøker å deserialisere simulering")
             val wrapper = simulerBeregningResponse(xml)

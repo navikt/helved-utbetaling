@@ -13,7 +13,9 @@ import libs.utils.Resource
 import no.nav.utsjekk.kontrakter.felles.Personident
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
+import simulering.SimuleringResponse.SimulerBeregningResponse.Response.Beregning.Periode.Stoppnivå.Detalj.SatsType
 import simulering.dto.*
+import simulering.dto.Grad
 import java.time.LocalDate
 import kotlin.test.assertEquals
 
@@ -48,6 +50,84 @@ class SimuleringTest {
                 assertEquals(expected, res.body())
             }
         }
+    }
+
+    @Test
+    fun `can resolve simulering response`() {
+        val actual = TestRuntime().use { runtime ->
+            val simulering = SimuleringService(runtime.config)
+            simulering.json(Resource.read("/sim-res.xml"))
+        }
+
+        val expected = simuleringResponse().simulerBeregningResponse.response.simulering
+
+        assertEquals(expected, actual)
+    }
+
+    private fun simuleringResponse(): SimuleringResponse {
+        return SimuleringResponse(
+            simulerBeregningResponse = SimuleringResponse.SimulerBeregningResponse(
+                response = SimuleringResponse.SimulerBeregningResponse.Response(
+                    simulering = SimuleringResponse.SimulerBeregningResponse.Response.Beregning(
+                        gjelderId = "22479409483",
+                        gjelderNavn = "JAPP USIKKER",
+                        datoBeregnet = LocalDate.of(2024, 5, 24),
+                        kodeFaggruppe = "ARBYT",
+                        belop = 700.0,
+                        beregningsPeriode = listOf(
+                            SimuleringResponse.SimulerBeregningResponse.Response.Beregning.Periode(
+                                periodeFom = LocalDate.of(2024, 5, 1),
+                                periodeTom = LocalDate.of(2024, 5, 1),
+                                beregningStoppnivaa = listOf(
+                                    SimuleringResponse.SimulerBeregningResponse.Response.Beregning.Periode.Stoppnivå(
+                                        kodeFagomraade = "TILLST",
+                                        stoppNivaaId = 5,
+                                        behandlendeEnhet = "8020",
+                                        oppdragsId = 70501980,
+                                        fagsystemId = "200000238",
+                                        kid = "",
+                                        utbetalesTilId = "22479409483",
+                                        utbetalesTilNavn = "JAPP USIKKER",
+                                        bilagsType = "U",
+                                        forfall = LocalDate.of(2024, 5, 24),
+                                        feilkonto = false,
+                                        beregningStoppnivaaDetaljer = listOf(
+                                            SimuleringResponse.SimulerBeregningResponse.Response.Beregning.Periode.Stoppnivå.Detalj(
+                                                faktiskFom = LocalDate.of(2024, 5, 1),
+                                                faktiskTom = LocalDate.of(2024, 5, 1),
+                                                kontoStreng = "7774513",
+                                                behandlingskode = "1",
+                                                belop = 700.0,
+                                                trekkVedtakId = 0,
+                                                stonadId = "",
+                                                korrigering = "",
+                                                tilbakeforing = false,
+                                                linjeId = 1,
+                                                sats = 700.0,
+                                                typeSats = SatsType.DAG,
+                                                antallSats = 1.0,
+                                                saksbehId = "Z994230",
+                                                uforeGrad = 0,
+                                                kravhaverId = "",
+                                                delytelseId = "200000233#0",
+                                                bostedsenhet = "8020",
+                                                skykldnerId = "",
+                                                klassekode = "TSTBASISP4-OP",
+                                                klasseKodeBeskrivelse = "Tilleggsst. tilsyn barn a.søker ing.spes akt.",
+                                                typeKlasse = "YTEL",
+                                                typeKlasseBeskrivelse = "Klassetype for ytelseskonti",
+                                                refunderesOrgNr = "",
+                                            )
+                                        ),
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                    infomelding = null,
+                )
+            )
+        )
     }
 
 //    @Test

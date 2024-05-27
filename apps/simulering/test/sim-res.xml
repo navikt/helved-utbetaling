@@ -1,0 +1,59 @@
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Body>
+        <simulerBeregningResponse
+                xmlns="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt">
+            <response xmlns="">
+                <simulering>
+                    <gjelderId>22479409483</gjelderId>
+                    <gjelderNavn>JAPP USIKKER</gjelderNavn>
+                    <datoBeregnet>2024-05-24</datoBeregnet>
+                    <kodeFaggruppe>ARBYT</kodeFaggruppe>
+                    <belop>700.00</belop>
+                    <beregningsPeriode xmlns="http://nav.no/system/os/entiteter/beregningSkjema">
+                        <periodeFom xmlns="">2024-05-01</periodeFom>
+                        <periodeTom xmlns="">2024-05-01</periodeTom>
+                        <beregningStoppnivaa>
+                            <kodeFagomraade xmlns="">TILLST</kodeFagomraade>
+                            <stoppNivaaId xmlns="">5</stoppNivaaId>
+                            <behandlendeEnhet xmlns="">8020</behandlendeEnhet>
+                            <oppdragsId xmlns="">70501980</oppdragsId>
+                            <fagsystemId xmlns="">200000238</fagsystemId>
+                            <kid xmlns=""></kid>
+                            <utbetalesTilId xmlns="">22479409483</utbetalesTilId>
+                            <utbetalesTilNavn xmlns="">JAPP USIKKER</utbetalesTilNavn>
+                            <bilagsType xmlns="">U</bilagsType>
+                            <forfall xmlns="">2024-05-24</forfall>
+                            <feilkonto xmlns="">false</feilkonto>
+                            <beregningStoppnivaaDetaljer>
+                                <faktiskFom xmlns="">2024-05-01</faktiskFom>
+                                <faktiskTom xmlns="">2024-05-01</faktiskTom>
+                                <kontoStreng xmlns="">7774513</kontoStreng>
+                                <behandlingskode xmlns="">1</behandlingskode>
+                                <belop xmlns="">700.00</belop>
+                                <trekkVedtakId xmlns="">0</trekkVedtakId>
+                                <stonadId xmlns=""></stonadId>
+                                <korrigering xmlns=""></korrigering>
+                                <tilbakeforing xmlns="">false</tilbakeforing>
+                                <linjeId xmlns="">1</linjeId>
+                                <sats xmlns="">700.00</sats>
+                                <typeSats xmlns="">DAG</typeSats>
+                                <antallSats xmlns="">1.00</antallSats>
+                                <saksbehId xmlns="">Z994230</saksbehId>
+                                <uforeGrad xmlns="">0</uforeGrad>
+                                <kravhaverId xmlns=""></kravhaverId>
+                                <delytelseId xmlns="">200000233#0</delytelseId>
+                                <bostedsenhet xmlns="">8020</bostedsenhet>
+                                <skykldnerId xmlns=""></skykldnerId>
+                                <klassekode xmlns="">TSTBASISP4-OP</klassekode>
+                                <klasseKodeBeskrivelse xmlns="">Tilleggsst. tilsyn barn a.søker ing.spes akt.</klasseKodeBeskrivelse>
+                                <typeKlasse xmlns="">YTEL</typeKlasse>
+                                <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
+                                <refunderesOrgNr xmlns=""></refunderesOrgNr>
+                            </beregningStoppnivaaDetaljer>
+                        </beregningStoppnivaa>
+                    </beregningsPeriode>
+                </simulering>
+            </response>
+        </simulerBeregningResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
