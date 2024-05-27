@@ -9,7 +9,7 @@ import simulering.OppdragErStengtException
 import simulering.PersonFinnesIkkeException
 import simulering.RequestErUgyldigException
 import simulering.SimuleringService
-import simulering.dto.SimuleringApiDto
+import simulering.models.rest.rest
 
 fun Routing.simulering(
     simulering: SimuleringService,
@@ -17,7 +17,7 @@ fun Routing.simulering(
     route("/simulering") {
         post {
             runCatching {
-                val request: SimuleringApiDto = call.receive()
+                val request: rest.SimuleringRequest = call.receive()
                 simulering.simuler(request)
             }.onSuccess { sim ->
                 call.respond(sim)
