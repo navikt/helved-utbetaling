@@ -21,7 +21,7 @@ data class SimuleringResponse(
     ) {
         data class Response(
             val simulering: Beregning,
-            val infomelding: Infomelding
+            val infomelding: Infomelding?
         ) {
             // entiteten sin referanse-id 311
             data class Beregning(
