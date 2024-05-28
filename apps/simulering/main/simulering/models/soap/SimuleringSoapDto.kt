@@ -287,11 +287,11 @@ object soap {
         var refusjonsInfo: RefusjonsInfo? = null
     }
 
-    data class Grad(val type: GradType, val prosent: Int?) {
+    data class Grad(val gradType: GradType, val prosent: Int?) {
         companion object {
             fun from(dto: rest.Utbetalingslinje.Grad): Grad {
                 return Grad(
-                    type = GradType.valueOf(dto.type.name),
+                    gradType = GradType.valueOf(dto.type.name),
                     prosent = dto.prosent,
                 )
             }
