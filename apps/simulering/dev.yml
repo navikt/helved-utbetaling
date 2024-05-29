@@ -3,6 +3,10 @@ kind: Application
 metadata:
   name: utsjekk-simulering
   namespace: helved
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: 600
+    nginx.ingress.kubernetes.io/proxy-send-timeout: 600
+    nginx.ingress.kubernetes.io/proxy-read-timeout: 600
   labels:
     team: helved
 spec:
@@ -23,7 +27,7 @@ spec:
     limits:
       memory: 512Mi
     requests:
-      memory: 256Mi
+      memory: 512Mi
       cpu: 50m
   replicas:
     min: 1
