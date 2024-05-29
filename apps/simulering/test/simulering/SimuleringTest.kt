@@ -13,8 +13,8 @@ import libs.utils.Resource
 import no.nav.utsjekk.kontrakter.felles.Personident
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
-import simulering.models.rest.*
-import simulering.models.soap.*
+import simulering.models.rest.rest
+import simulering.models.soap.soap
 import java.time.LocalDate
 import kotlin.test.assertEquals
 
@@ -220,38 +220,6 @@ class SimuleringTest {
 </ns3:simulerBeregningRequest>
 """.trimIndent()
 
-    @Test
-    fun `svarer med 400 Bad Request ved feil på request body`() {
-        TestRuntime().use { runtime ->
-            testApplication {
-                application {
-                    app(config = runtime.config)
-                }
-
-                val http = createClient {
-                    install(ContentNegotiation) {
-                        jackson {
-                            registerModule(JavaTimeModule())
-                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                        }
-                    }
-                }
-
-                runtime.soapResponse = Resource.read("/soap-fault.xml")
-                    .replace("\$errorCode", "lol dummy 123")
-                    .replace("\$errorMessage", "Fødselsnummeret er ugyldig")
-
-                val res = http.post("/simulering") {
-                    contentType(ContentType.Application.Json)
-                    setBody(enSimuleringRequestBody())
-                }
-
-                assertEquals(HttpStatusCode.BadRequest, res.status)
-            }
-        }
-    }
-
     private fun reponseXmlFagsak10001Efog() = rest.SimuleringResponse(
         gjelderId = "12345678910",
         gjelderNavn = "MYGG VAKKER",
@@ -364,7 +332,7 @@ fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
 }
 
 
-private fun enSimuleringRequestBody(): rest.SimuleringRequest {
+internal fun enSimuleringRequestBody(): rest.SimuleringRequest {
     return rest.SimuleringRequest(
         fagområde = "TILLST",
         fagsystemId = "200000233",

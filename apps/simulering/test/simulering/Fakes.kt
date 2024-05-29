@@ -67,9 +67,10 @@ class TestRuntime : Sts, Soap, AutoCloseable {
         receivedSoapRequests.add(req)
     }
 
-    var soapResponse: String = Resource.read("/simuler-body-response.xml")
+    private var soapResponse: String = Resource.read("/simuler-body-response.xml")
 
     fun soapRespondWith(resource: String) {
+        soapResponse = resource
     }
 
     override suspend fun call(action: String, body: String): String {
