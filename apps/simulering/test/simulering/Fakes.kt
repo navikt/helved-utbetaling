@@ -18,9 +18,9 @@ import io.ktor.utils.io.*
 import io.ktor.utils.io.charsets.*
 import kotlinx.coroutines.runBlocking
 import libs.auth.AzureConfig
+import libs.auth.AzureToken
 import libs.auth.JwkGenerator
 import libs.auth.TEST_JWKS
-import libs.auth.Token
 import libs.utils.Resource
 import libs.ws.*
 import java.net.URI
@@ -123,7 +123,7 @@ private fun Application.fakes(fake: TestRuntime) {
         }
 
         post("/token") {
-            call.respond(Token(3600, "token"))
+            call.respond(AzureToken(3600, "token"))
         }
     }
 }
