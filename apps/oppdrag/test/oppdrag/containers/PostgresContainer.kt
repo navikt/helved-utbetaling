@@ -16,7 +16,7 @@ class PostgresContainer : AutoCloseable {
             withReuse(true)
             withNetwork(null)
             withCreateContainerCmdModifier { cmd ->
-                cmd.withName("postgres")
+                cmd.withName("oppdrag-pg")
                 cmd.hostConfig?.apply {
                     withMemory(512 * 1024 * 1024)
                     withMemorySwap(1024 * 1024 * 1024)

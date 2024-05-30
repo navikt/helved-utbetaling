@@ -8,10 +8,11 @@ class MQContainer : AutoCloseable {
     private val container: GenericContainer<Nothing> =
         GenericContainer<Nothing>("ibmcom/mq").apply {
             if (!isGHA()) {
+                withLabel("service", "oppdrag")
                 withReuse(true)
                 withNetwork(null)
                 withCreateContainerCmdModifier { cmd ->
-                    cmd.withName("mq")
+                    cmd.withName("oppdrag-mq")
                     cmd.hostConfig?.apply {
                         withMemory(512 * 1024 * 1024)
                         withMemorySwap(2 * 512 * 1024 * 1024)
