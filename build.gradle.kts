@@ -8,19 +8,24 @@ subprojects {
 
     tasks {
         withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-            kotlinOptions.jvmTarget = "21"
+            compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
         }
 
         withType<Test> {
             useJUnitPlatform()
         }
 
-        kotlin.sourceSets["main"].kotlin.srcDirs("main")
-        kotlin.sourceSets["test"].kotlin.srcDirs("test")
-        sourceSets["main"].resources.srcDirs("main")
-        sourceSets["test"].resources.srcDirs("test")
+        sourceSets {
+            main {
+                kotlin.srcDir("main")
+                resources.srcDir("main")
+            }
+            test {
+                kotlin.srcDir("test")
+                resources.srcDir("test")
+            }
+        }
     }
-
 }
 
 allprojects {
