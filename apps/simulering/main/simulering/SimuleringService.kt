@@ -43,7 +43,7 @@ private object SimulerAction {
 class SimuleringService(private val config: Config) {
     private val http = HttpClientFactory.new(LogLevel.ALL)
     private val azure = AzureTokenProvider(config.azure)
-    private val sts = StsClient(config.simulering.sts, http, cache = SamlTokenCache(), proxyAuth = ::getAzureTokenAsync)
+    private val sts = StsClient(config.simulering.sts, http, proxyAuth = ::getAzureToken)
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
 
     suspend fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse {
@@ -120,15 +120,15 @@ class SimuleringService(private val config: Config) {
         }
     }
 
-    private suspend fun getAzureTokenAsync(): String {
+    private suspend fun getAzureToken(): String {
         return "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
     }
 
-    private fun getAzureToken(): String {
-        return runBlocking {
-            "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
-        }
-    }
+//    private fun getAzureToken(): String {
+//        return runBlocking {
+//            "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
+//        }
+//    }
 }
 
 private val xmlMapper: ObjectMapper =

@@ -1,13 +1,16 @@
-# Idea project files
+# IntelliJ
 *.iml
 .idea/
 !.idea/codeStyles/
 .run
 
-# Gradle files
+# Gradle
 out/
 build/
 .gradle/
+
+# Kotlin
+.kotlin/
 
 # Generated sources
 src/generated
@@ -16,11 +19,5 @@ src/generated
 .DS_Store
 .devcontainer
 
-# Ignore Gradle project-specific cache directory
-.gradle
-
-# Ignore Gradle build output directory
-build
-
-# ignore LSP
+# LSP (kotlin-language-server)
 *.db
