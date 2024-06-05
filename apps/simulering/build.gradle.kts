@@ -26,7 +26,7 @@ dependencies {
     implementation("com.sun.xml.ws:jaxws-rt:4.0.2")
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240408113510_4a2db84")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1")
 
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
