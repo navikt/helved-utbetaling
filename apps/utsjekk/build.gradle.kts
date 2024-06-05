@@ -27,7 +27,7 @@ dependencies {
 
     // json
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1")
 
     testImplementation(kotlin("test"))
     testImplementation("org.testcontainers:postgresql:1.19.8")
