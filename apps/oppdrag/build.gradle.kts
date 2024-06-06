@@ -14,7 +14,7 @@ dependencies {
     implementation("no.nav.helved:mq:$libVersion")
     implementation("no.nav.helved:postgres:$libVersion")
 
-    implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240408113510_4a2db84")
+    implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240506114335_e26227e")
 
     // server
     implementation("io.ktor:ktor-server-core:$ktorVersion")
