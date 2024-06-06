@@ -43,7 +43,7 @@ class SimuleringTest {
                     setBody(enSimuleringRequestBody())
                 }
 
-                val expected = reponseXmlFagsak10001Efog()
+                val expected = responseXmlFagsak10001Efog()
 
                 assertEquals(HttpStatusCode.OK, res.status)
                 assertEquals(expected, res.body())
@@ -69,9 +69,7 @@ class SimuleringTest {
                 response = soap.Response(
                     simulering = soap.Beregning(
                         gjelderId = "22479409483",
-                        gjelderNavn = "JAPP USIKKER",
                         datoBeregnet = LocalDate.of(2024, 5, 24),
-                        kodeFaggruppe = "ARBYT",
                         belop = 700.0,
                         beregningsPeriode = listOf(
                             soap.Periode(
@@ -80,41 +78,20 @@ class SimuleringTest {
                                 beregningStoppnivaa = listOf(
                                     soap.Stoppnivå(
                                         kodeFagomraade = "TILLST",
-                                        stoppNivaaId = 5,
-                                        behandlendeEnhet = "8020",
-                                        oppdragsId = 70501980,
                                         fagsystemId = "200000238",
-                                        kid = "",
                                         utbetalesTilId = "22479409483",
-                                        utbetalesTilNavn = "JAPP USIKKER",
-                                        bilagsType = "U",
                                         forfall = LocalDate.of(2024, 5, 24),
                                         feilkonto = false,
                                         beregningStoppnivaaDetaljer = listOf(
                                             soap.Detalj(
                                                 faktiskFom = LocalDate.of(2024, 5, 1),
                                                 faktiskTom = LocalDate.of(2024, 5, 1),
-                                                kontoStreng = "7774513",
-                                                behandlingskode = "1",
                                                 belop = 700.0,
                                                 trekkVedtakId = 0,
-                                                stonadId = "",
-                                                korrigering = "",
-                                                tilbakeforing = false,
-                                                linjeId = 1,
                                                 sats = 700.0,
                                                 typeSats = soap.SatsType.DAG,
-                                                antallSats = 1.0,
-                                                saksbehId = "Z994230",
-                                                uforeGrad = 0,
-                                                kravhaverId = "",
-                                                delytelseId = "200000233#0",
-                                                bostedsenhet = "8020",
-                                                skykldnerId = "",
                                                 klassekode = "TSTBASISP4-OP",
-                                                klasseKodeBeskrivelse = "Tilleggsst. tilsyn barn a.søker ing.spes akt.",
                                                 typeKlasse = "YTEL",
-                                                typeKlasseBeskrivelse = "Klassetype for ytelseskonti",
                                                 refunderesOrgNr = "",
                                             )
                                         ),
@@ -220,9 +197,8 @@ class SimuleringTest {
 </ns3:simulerBeregningRequest>
 """.trimIndent()
 
-    private fun reponseXmlFagsak10001Efog() = rest.SimuleringResponse(
+    private fun responseXmlFagsak10001Efog() = rest.SimuleringResponse(
         gjelderId = "12345678910",
-        gjelderNavn = "MYGG VAKKER",
         datoBeregnet = LocalDate.parse("2022-04-05"),
         totalBelop = 1225,
         perioder = listOf(
@@ -231,41 +207,33 @@ class SimuleringTest {
                 tom = LocalDate.parse("2021-05-31"),
                 utbetalinger = listOf(
                     rest.Utbetaling(
+                        fagområde = "TILLST",
                         fagSystemId = "10001",
                         utbetalesTilId = "12345678910",
-                        utbetalesTilNavn = "MYGG VAKKER",
                         forfall = LocalDate.parse("2022-04-05"),
                         feilkonto = false,
                         detaljer = listOf(
-                            rest.Detaljer(
+                            rest.Postering(
+                                type = "YTEL",
                                 faktiskFom = LocalDate.parse("2021-05-01"),
                                 faktiskTom = LocalDate.parse("2021-05-31"),
-                                konto = "3060000",
                                 belop = 12570,
-                                tilbakeforing = false,
                                 sats = 12570.0,
-                                typeSats = "MND",
-                                antallSats = 1,
-                                uforegrad = 63,
-                                utbetalingsType = "YTEL",
-                                klassekode = "EFOG",
-                                klassekodeBeskrivelse = "Enslig forsørger Overgangsstønad",
+                                satstype = "MND",
+                                klassekode = "TSTBASISP4-OP",
                                 refunderesOrgNr = "",
+                                trekkVedtakId = null,
                             ),
-                            rest.Detaljer(
+                            rest.Postering(
+                                type = "YTEL",
                                 faktiskFom = LocalDate.parse("2021-05-01"),
                                 faktiskTom = LocalDate.parse("2021-05-31"),
-                                konto = "3060000",
                                 belop = -12570,
-                                tilbakeforing = true,
                                 sats = 0.0,
-                                typeSats = "MND",
-                                antallSats = 0,
-                                uforegrad = 63,
-                                utbetalingsType = "YTEL",
-                                klassekode = "EFOG",
-                                klassekodeBeskrivelse = "Enslig forsørger Overgangsstønad",
+                                satstype = "MND",
+                                klassekode = "TSTBASISP4-OP",
                                 refunderesOrgNr = "",
+                                trekkVedtakId = null,
                             )
                         ),
                     )
@@ -276,41 +244,33 @@ class SimuleringTest {
                 tom = LocalDate.parse("2021-06-30"),
                 utbetalinger = listOf(
                     rest.Utbetaling(
+                        fagområde = "TILLST",
                         fagSystemId = "200000476",
                         utbetalesTilId = "12345678910",
-                        utbetalesTilNavn = "MYGG VAKKER",
                         forfall = LocalDate.parse("2022-04-05"),
                         feilkonto = false,
                         detaljer = listOf(
-                            rest.Detaljer(
+                            rest.Postering(
+                                type = "YTEL",
                                 faktiskFom = LocalDate.parse("2021-06-01"),
                                 faktiskTom = LocalDate.parse("2021-06-30"),
-                                konto = "3060000",
                                 belop = 12570,
-                                tilbakeforing = false,
                                 sats = 12570.0,
-                                typeSats = "MND",
-                                antallSats = 1,
-                                uforegrad = 63,
-                                utbetalingsType = "YTEL",
-                                klassekode = "EFOG",
-                                klassekodeBeskrivelse = "Enslig forsørger Overgangsstønad",
+                                satstype = "MND",
+                                klassekode = "TSTBASISP4-OP",
                                 refunderesOrgNr = "",
+                                trekkVedtakId = null,
                             ),
-                            rest.Detaljer(
+                            rest.Postering(
+                                type = "YTEL",
                                 faktiskFom = LocalDate.parse("2021-06-01"),
                                 faktiskTom = LocalDate.parse("2021-06-30"),
-                                konto = "3060000",
                                 belop = -12570,
-                                tilbakeforing = true,
                                 sats = 0.0,
-                                typeSats = "MND",
-                                antallSats = 0,
-                                uforegrad = 63,
-                                utbetalingsType = "YTEL",
-                                klassekode = "EFOG",
-                                klassekodeBeskrivelse = "Enslig forsørger Overgangsstønad",
+                                satstype = "MND",
+                                klassekode = "TSTBASISP4-OP",
                                 refunderesOrgNr = "",
+                                trekkVedtakId = null,
                             )
                         ),
                     )

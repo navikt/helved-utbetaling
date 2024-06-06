@@ -5,13 +5,13 @@
             <gjelderId>12345678910</gjelderId>
             <gjelderNavn>MYGG VAKKER</gjelderNavn>
             <datoBeregnet>2022-04-05</datoBeregnet>
-            <kodeFaggruppe>EFOG</kodeFaggruppe>
+            <kodeFaggruppe>TILLST</kodeFaggruppe>
             <belop>1225.00</belop>
             <ns5:beregningsPeriode>
                 <periodeFom>2021-05-01</periodeFom>
                 <periodeTom>2021-05-31</periodeTom>
                 <ns5:beregningStoppnivaa>
-                    <kodeFagomraade>EFOG</kodeFagomraade>
+                    <kodeFagomraade>TILLST</kodeFagomraade>
                     <stoppNivaaId>1</stoppNivaaId>
                     <behandlendeEnhet>8020</behandlendeEnhet>
                     <oppdragsId>58909222</oppdragsId>
@@ -42,8 +42,8 @@
                         <delytelseId>2000004763</delytelseId>
                         <bostedsenhet>8020</bostedsenhet>
                         <skykldnerId></skykldnerId>
-                        <klassekode>EFOG</klassekode>
-                        <klasseKodeBeskrivelse>Enslig forsørger Overgangsstønad</klasseKodeBeskrivelse>
+                        <klassekode>TSTBASISP4-OP</klassekode>
+                        <klasseKodeBeskrivelse>Tilleggsst. tilsyn barn a.søker ing.spes akt.</klasseKodeBeskrivelse>
                         <typeKlasse>YTEL</typeKlasse>
                         <typeKlasseBeskrivelse>Klassetype for ytelseskonti</typeKlasseBeskrivelse>
                         <refunderesOrgNr></refunderesOrgNr>
@@ -68,8 +68,8 @@
                         <delytelseId></delytelseId>
                         <bostedsenhet>8020</bostedsenhet>
                         <skykldnerId></skykldnerId>
-                        <klassekode>EFOG</klassekode>
-                        <klasseKodeBeskrivelse>Enslig forsørger Overgangsstønad</klasseKodeBeskrivelse>
+                        <klassekode>TSTBASISP4-OP</klassekode>
+                        <klasseKodeBeskrivelse>Tilleggsst. tilsyn barn a.søker ing.spes akt.</klasseKodeBeskrivelse>
                         <typeKlasse>YTEL</typeKlasse>
                         <typeKlasseBeskrivelse>Klassetype for ytelseskonti</typeKlasseBeskrivelse>
                         <refunderesOrgNr></refunderesOrgNr>
@@ -80,7 +80,7 @@
                 <periodeFom>2021-06-01</periodeFom>
                 <periodeTom>2021-06-30</periodeTom>
                 <ns5:beregningStoppnivaa>
-                    <kodeFagomraade>EFOG</kodeFagomraade>
+                    <kodeFagomraade>TILLST</kodeFagomraade>
                     <stoppNivaaId>2</stoppNivaaId>
                     <behandlendeEnhet>8020</behandlendeEnhet>
                     <oppdragsId>58909222</oppdragsId>
@@ -111,8 +111,8 @@
                         <delytelseId>2000004763</delytelseId>
                         <bostedsenhet>8020</bostedsenhet>
                         <skykldnerId></skykldnerId>
-                        <klassekode>EFOG</klassekode>
-                        <klasseKodeBeskrivelse>Enslig forsørger Overgangsstønad</klasseKodeBeskrivelse>
+                        <klassekode>TSTBASISP4-OP</klassekode>
+                        <klasseKodeBeskrivelse>Tilleggsst. tilsyn barn a.søker ing.spes akt.</klasseKodeBeskrivelse>
                         <typeKlasse>YTEL</typeKlasse>
                         <typeKlasseBeskrivelse>Klassetype for ytelseskonti</typeKlasseBeskrivelse>
                         <refunderesOrgNr></refunderesOrgNr>
@@ -137,8 +137,8 @@
                         <delytelseId></delytelseId>
                         <bostedsenhet>8020</bostedsenhet>
                         <skykldnerId></skykldnerId>
-                        <klassekode>EFOG</klassekode>
-                        <klasseKodeBeskrivelse>Enslig forsørger Overgangsstønad</klasseKodeBeskrivelse>
+                        <klassekode>TSTBASISP4-OP</klassekode>
+                        <klasseKodeBeskrivelse>Tilleggsst. tilsyn barn a.søker ing.spes akt.</klasseKodeBeskrivelse>
                         <typeKlasse>YTEL</typeKlasse>
                         <typeKlasseBeskrivelse>Klassetype for ytelseskonti</typeKlasseBeskrivelse>
                         <refunderesOrgNr></refunderesOrgNr>
