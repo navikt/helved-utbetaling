@@ -1,7 +1,6 @@
 package simulering.models.rest
 
 import com.fasterxml.jackson.annotation.JsonValue
-import no.nav.utsjekk.kontrakter.felles.Ident
 import no.nav.utsjekk.kontrakter.felles.Personident
 import java.time.LocalDate
 
@@ -10,46 +9,29 @@ object rest {
         val fagområde: String,
         val fagsystemId: String,
         val personident: Personident,
-        val mottaker: Ident,
-        val endringskode: Endringskode,
+        val erFørsteUtbetalingPåSak: Boolean,
         val saksbehandler: String,
-        val utbetalingsfrekvens: Utbetalingsfrekvens,
-        val utbetalingslinjer: List<Utbetalingslinje>,
+        val utbetalingsperioder: List<Utbetalingsperiode>,
     )
-    data class Utbetalingslinje(
-        val delytelseId: String,
-        val endringskode: Endringskode,
+    data class Utbetalingsperiode(
+        val periodeId: String,
+        val forrigePeriodeId: String?,
+        val erEndringPåEksisterendePeriode: Boolean,
         val klassekode: String,
         val fom: LocalDate,
         val tom: LocalDate,
         val sats: Int,
-        val grad: Grad,
-        val refDelytelseId: String?,
-        val refFagsystemId: String?,
-        val datoStatusFom: LocalDate?,
-        val statuskode: String?,
         val satstype: SatsType,
+        val opphør: Opphør?,
         val utbetalesTil: String,
-    ) {
-        data class Grad(val type: GradType, val prosent: Int?)
-        enum class GradType { UFOR } // TODO: finn alle alternativer, eller er det alltidf ufor?
-    }
+    )
 
-    enum class Endringskode(@get:JsonValue val verdi: String) {
-        NY("NY"),
-        ENDRING("ENDR");
-    }
-
-    enum class Utbetalingsfrekvens(@get:JsonValue val verdi: String) {
-        DAGLIG("DAG"),
-        UKENTLIG("UKE"),
-        HVER_FJORTENDE_DAG("14DG"),
-        MÅNEDLIG("MND")
-    }
+    data class Opphør(val fom: LocalDate)
 
     enum class SatsType(@get:JsonValue val verdi: String) {
         DAG("DAG"),
-        MÅNED("MND")
+        MÅNED("MND"),
+        ENGANGS("ENG"),
     }
 
     data class SimuleringResponse(

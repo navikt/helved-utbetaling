@@ -126,18 +126,18 @@ object soap {
                     request = SimulerRequest(
                         oppdrag = Oppdrag(
                             kodeFagomraade = dto.fagområde,
-                            kodeEndring = dto.endringskode.verdi,
-                            utbetFrekvens = dto.utbetalingsfrekvens.verdi,
+                            kodeEndring = if (dto.erFørsteUtbetalingPåSak) "NY" else "ENDR",
+                            utbetFrekvens = "MND",
                             fagsystemId = dto.fagsystemId,
                             oppdragGjelderId = dto.personident.verdi,
                             saksbehId = dto.saksbehandler,
                             datoOppdragGjelderFom = LocalDate.EPOCH,
                             enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
-                            oppdragslinje = dto.utbetalingslinjer.map { Oppdragslinje.from(it, dto.saksbehandler) }
+                            oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) }
                         ),
                         simuleringsPeriode = SimuleringsPeriode(
-                            datoSimulerFom = dto.utbetalingslinjer.minBy { it.fom }.fom,
-                            datoSimulerTom = dto.utbetalingslinjer.maxBy { it.tom }.tom,
+                            datoSimulerFom = dto.utbetalingsperioder.minBy { it.fom }.fom,
+                            datoSimulerTom = dto.utbetalingsperioder.maxBy { it.tom }.tom,
                         )
                     )
                 )
@@ -201,7 +201,6 @@ object soap {
         "utbetalesTilId",
         "refFagsystemId",
         "refDelytelseId",
-        "ns2:grad",
         "ns2:attestant",
     )
     data class Oppdragslinje(
@@ -220,32 +219,29 @@ object soap {
         val utbetalesTilId: String?,
         val refFagsystemId: String?,
         val refDelytelseId: String?,
-        @JsonProperty("ns2:grad")
-        val grad: List<Grad>,
         @JsonProperty("ns2:attestant")
         val attestant: List<Attestant>
     ) {
 
         companion object {
-            fun from(request: rest.Utbetalingslinje, saksbehandler: String): Oppdragslinje {
+            fun from(utbetalingsperiode: rest.Utbetalingsperiode, dto: rest.SimuleringRequest): Oppdragslinje {
                 return Oppdragslinje(
-                    delytelseId = request.delytelseId,
-                    refDelytelseId = request.refDelytelseId,
-                    refFagsystemId = request.refFagsystemId,
-                    kodeEndringLinje = request.endringskode.verdi,
-                    kodeKlassifik = request.klassekode,
-                    kodeStatusLinje = request.statuskode?.let { KodeStatusLinje.valueOf(it) },
-                    datoStatusFom = request.datoStatusFom,
-                    datoVedtakFom = request.fom,
-                    datoVedtakTom = request.tom,
-                    sats = request.sats,
+                    delytelseId = "${dto.fagsystemId}#${utbetalingsperiode.periodeId}",
+                    refDelytelseId = utbetalingsperiode.forrigePeriodeId?.let { "${dto.fagsystemId}#$it" },
+                    refFagsystemId = dto.fagsystemId,
+                    kodeEndringLinje = if (utbetalingsperiode.erEndringPåEksisterendePeriode) "ENDR" else "NY",
+                    kodeKlassifik = utbetalingsperiode.klassekode,
+                    kodeStatusLinje = utbetalingsperiode.opphør?.let { KodeStatusLinje.OPPH },
+                    datoStatusFom = utbetalingsperiode.opphør?.fom,
+                    datoVedtakFom = utbetalingsperiode.fom,
+                    datoVedtakTom = utbetalingsperiode.tom,
+                    sats = utbetalingsperiode.sats,
                     fradragTillegg = FradragTillegg.T,
-                    typeSats = request.satstype.verdi,
-                    saksbehId = saksbehandler,
+                    typeSats = utbetalingsperiode.satstype.verdi,
+                    saksbehId = dto.saksbehandler,
                     brukKjoreplan = "N",
-                    grad = listOf(Grad.from(request.grad)),
-                    attestant = listOf(Attestant(saksbehandler)),
-                    utbetalesTilId = request.utbetalesTil
+                    attestant = listOf(Attestant(dto.saksbehandler)),
+                    utbetalesTilId = utbetalingsperiode.utbetalesTil,
                 )
             }
         }
@@ -253,19 +249,6 @@ object soap {
 
         var refusjonsInfo: RefusjonsInfo? = null
     }
-
-    data class Grad(val typeGrad: GradType, val prosent: Int?) {
-        companion object {
-            fun from(dto: rest.Utbetalingslinje.Grad): Grad {
-                return Grad(
-                    typeGrad = GradType.valueOf(dto.type.name),
-                    prosent = dto.prosent,
-                )
-            }
-        }
-    }
-
-    enum class GradType { UFOR }
 
     enum class FradragTillegg {
         F, T

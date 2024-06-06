@@ -297,26 +297,21 @@ internal fun enSimuleringRequestBody(): rest.SimuleringRequest {
         fagområde = "TILLST",
         fagsystemId = "200000233",
         personident = Personident("22479409483"),
-        mottaker = Personident("22479409483"),
-        endringskode = rest.Endringskode.NY,
+        erFørsteUtbetalingPåSak = true,
         saksbehandler = "Z994230",
-        utbetalingsfrekvens = rest.Utbetalingsfrekvens.MÅNEDLIG,
-        utbetalingslinjer =
+        utbetalingsperioder =
         listOf(
-            rest.Utbetalingslinje(
-                delytelseId = "200000233#0",
-                endringskode = rest.Endringskode.NY,
+            rest.Utbetalingsperiode(
+                periodeId = "0",
+                forrigePeriodeId = null,
+                erEndringPåEksisterendePeriode = false,
                 klassekode = "TSTBASISP4-OP",
                 fom = LocalDate.of(2024, 5, 1),
                 tom = LocalDate.of(2024, 5, 1),
                 sats = 700,
-                grad = rest.Utbetalingslinje.Grad(rest.Utbetalingslinje.GradType.UFOR, null),
-                refDelytelseId = null,
-                refFagsystemId = null,
-                datoStatusFom = null,
-                statuskode = null,
                 satstype = rest.SatsType.DAG,
                 utbetalesTil = "22479409483",
+                opphør = null,
             ),
         ),
     )
