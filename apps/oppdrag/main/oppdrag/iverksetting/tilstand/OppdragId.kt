@@ -1,8 +1,8 @@
 package oppdrag.iverksetting.tilstand
 
-import no.nav.utsjekk.kontrakter.felles.*
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.tilFagsystem
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import java.util.*
 
 data class OppdragId(
     val fagsystem: Fagsystem,
@@ -28,9 +28,3 @@ val OppdragLager.id: OppdragId
             behandlingId = this.behandling_id,
             iverksettingId = this.iverksetting_id,
         )
-
-internal fun String.tilGeneriskId(): GeneriskId =
-    Result.runCatching { UUID.fromString(this@tilGeneriskId) }.fold(
-        onSuccess = { GeneriskIdSomUUID(it) },
-        onFailure = { GeneriskIdSomString(this) },
-    )
