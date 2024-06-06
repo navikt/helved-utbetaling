@@ -54,7 +54,6 @@ object rest {
 
     data class SimuleringResponse(
         val gjelderId: String,
-        val gjelderNavn: String,
         val datoBeregnet: LocalDate,
         val totalBelop: Int,
         val perioder: List<SimulertPeriode>,
@@ -67,27 +66,24 @@ object rest {
     )
 
     data class Utbetaling(
+        val fagområde: String,
         val fagSystemId: String,
         val utbetalesTilId: String,
-        val utbetalesTilNavn: String,
         val forfall: LocalDate,
         val feilkonto: Boolean,
-        val detaljer: List<Detaljer>,
+        val detaljer: List<Postering>,
     )
 
-    data class Detaljer(
+    // Tilsvarer én rad i regnskapet
+    data class Postering(
+        val type: String,
         val faktiskFom: LocalDate,
         val faktiskTom: LocalDate,
-        val konto: String,
         val belop: Int,
-        val tilbakeforing: Boolean,
         val sats: Double,
-        val typeSats: String,
-        val antallSats: Int,
-        val uforegrad: Int,
-        val utbetalingsType: String,
+        val satstype: String,
         val klassekode: String,
-        val klassekodeBeskrivelse: String?,
+        val trekkVedtakId: Long?,
         val refunderesOrgNr: String?,
     )
 }
