@@ -295,7 +295,7 @@ fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
 internal fun enSimuleringRequestBody(): rest.SimuleringRequest {
     return rest.SimuleringRequest(
         fagområde = "TILLST",
-        fagsystemId = "200000233",
+        sakId = "200000233",
         personident = Personident("22479409483"),
         erFørsteUtbetalingPåSak = true,
         saksbehandler = "Z994230",
