@@ -128,7 +128,7 @@ object soap {
                             kodeFagomraade = dto.fagområde,
                             kodeEndring = if (dto.erFørsteUtbetalingPåSak) "NY" else "ENDR",
                             utbetFrekvens = "MND",
-                            fagsystemId = dto.fagsystemId,
+                            fagsystemId = dto.sakId,
                             oppdragGjelderId = dto.personident.verdi,
                             saksbehId = dto.saksbehandler,
                             datoOppdragGjelderFom = LocalDate.EPOCH,
@@ -226,9 +226,9 @@ object soap {
         companion object {
             fun from(utbetalingsperiode: rest.Utbetalingsperiode, dto: rest.SimuleringRequest): Oppdragslinje {
                 return Oppdragslinje(
-                    delytelseId = "${dto.fagsystemId}#${utbetalingsperiode.periodeId}",
-                    refDelytelseId = utbetalingsperiode.forrigePeriodeId?.let { "${dto.fagsystemId}#$it" },
-                    refFagsystemId = dto.fagsystemId,
+                    delytelseId = "${dto.sakId}#${utbetalingsperiode.periodeId}",
+                    refDelytelseId = utbetalingsperiode.forrigePeriodeId?.let { "${dto.sakId}#$it" },
+                    refFagsystemId = dto.sakId,
                     kodeEndringLinje = if (utbetalingsperiode.erEndringPåEksisterendePeriode) "ENDR" else "NY",
                     kodeKlassifik = utbetalingsperiode.klassekode,
                     kodeStatusLinje = utbetalingsperiode.opphør?.let { KodeStatusLinje.OPPH },
