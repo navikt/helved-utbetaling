@@ -2,8 +2,6 @@
 
 package simulering
 
-import com.ctc.wstx.exc.WstxEOFException
-import com.ctc.wstx.exc.WstxIOException
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -15,9 +13,6 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.plugins.logging.*
-import jakarta.xml.ws.WebServiceException
-import jakarta.xml.ws.soap.SOAPFaultException
-import kotlinx.coroutines.runBlocking
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.utils.appLog
@@ -26,11 +21,8 @@ import libs.ws.*
 import simulering.models.rest.rest
 import simulering.models.soap.soap
 import simulering.models.soap.soap.SimulerBeregningRequest
-import java.net.SocketException
-import java.net.SocketTimeoutException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import javax.net.ssl.SSLException
 
 private object SimulerAction {
     private const val HOST = "http://nav.no"
@@ -73,18 +65,14 @@ class SimuleringService(private val config: Config) {
 
     // denne kaster exception oppover i call-stacken
     private fun fault(xml: String): Nothing {
-        try {
+        throw try {
             secureLog.info("Forsøker å deserialisere fault")
-            throw soapError(tryInto<SoapFault>(xml).fault)
+            val fault = tryInto<SoapFault>(xml).fault
+            resolveFault(fault)
         } catch (e: Throwable) {
-            throw when (e) {
-                is SoapException -> expand(e)
-                else -> {
-                    appLog.error("feilet deserializering av fault")
-                    secureLog.error("feilet deserializering av fault", e)
-                    soapError("Ukjent feil ved simulering: ${e.message}", e)
-                }
-            }
+            appLog.error("feilet deserializering av fault")
+            secureLog.error("feilet deserializering av fault", e)
+            soapError("Ukjent feil ved simulering: ${e.message}", e)
         }
     }
 
@@ -93,42 +81,34 @@ class SimuleringService(private val config: Config) {
         return res.body
     }
 
-    private fun expand(e: SoapException): RuntimeException {
-        secureLog.info("expands soapfault", e)
-        return with(e.msg) {
+    private fun resolveFault(fault: Fault): RuntimeException {
+        secureLog.info("Håndterer soap fault {}", fault)
+
+        return with(fault.faultstring) {
             when {
-                contains("Personen finnes ikke") -> PersonFinnesIkkeException(this)
+                contains("Personen finnes ikke") -> IkkeFunnet(this)
                 contains("ugyldig") -> RequestErUgyldigException(this)
-                else -> e
+                contains("simulerBeregningFeilUnderBehandling") -> {
+                    fault.detail?.let {
+                        val xml = xmlMapper.readTree(it)
+                        val msg = xml["errorMessage"]?.textValue()
+                        when {
+                            msg == null -> soapError(fault)
+                            msg.contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> IkkeFunnet("SakId ikke funnet")
+                            msg.contains("Referert vedtak/linje ikke funnet") -> IkkeFunnet("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
+                            else -> soapError(fault)
+                        }
+                    }
+                }
+
+                else -> soapError(fault)
             }
-        }
-    }
-
-    private fun soapFault(ex: SOAPFaultException) {
-        logSoapFaultException(ex)
-
-        when (ex.cause) {
-            is WstxEOFException, is WstxIOException -> throw OppdragErStengtException()
-            else -> throw ex
-        }
-    }
-
-    private fun webserviceFault(ex: WebServiceException) {
-        when (ex.cause) {
-            is SSLException, is SocketException, is SocketTimeoutException -> throw OppdragErStengtException()
-            else -> throw ex
-        }
+        } ?: soapError(fault)
     }
 
     private suspend fun getAzureToken(): String {
         return "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
     }
-
-//    private fun getAzureToken(): String {
-//        return runBlocking {
-//            "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
-//        }
-//    }
 }
 
 private val xmlMapper: ObjectMapper =
@@ -146,23 +126,6 @@ private val xmlMapper: ObjectMapper =
                 )
         )
 
-class PersonFinnesIkkeException(feilmelding: String) : RuntimeException(feilmelding)
+class IkkeFunnet(feilmelding: String) : RuntimeException(feilmelding)
 class RequestErUgyldigException(feilmelding: String) : RuntimeException(feilmelding)
 class OppdragErStengtException : RuntimeException("Oppdrag/UR er stengt")
-
-private fun logSoapFaultException(e: SOAPFaultException) {
-    val details = e.fault.detail
-        ?.detailEntries
-        ?.asSequence()
-        ?.mapNotNull { it.textContent }
-        ?.joinToString(",")
-
-    secureLog.error(
-        """
-            SOAPFaultException -
-                faultCode=${e.fault.faultCode}
-                faultString=${e.fault.faultString}
-                details=$details
-        """.trimIndent()
-    )
-}

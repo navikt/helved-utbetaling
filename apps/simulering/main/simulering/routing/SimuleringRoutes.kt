@@ -6,7 +6,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import simulering.OppdragErStengtException
-import simulering.PersonFinnesIkkeException
+import simulering.IkkeFunnet
 import simulering.RequestErUgyldigException
 import simulering.SimuleringService
 import simulering.models.rest.rest
@@ -23,7 +23,7 @@ fun Routing.simulering(
                 call.respond(sim)
             }.onFailure { ex ->
                 when (ex) {
-                    is PersonFinnesIkkeException -> call.respond(HttpStatusCode.NotFound, ex.message!!)
+                    is IkkeFunnet -> call.respond(HttpStatusCode.NotFound, ex.message!!)
                     is RequestErUgyldigException -> call.respond(HttpStatusCode.BadRequest, ex.message!!)
                     is OppdragErStengtException -> call.respond(HttpStatusCode.ServiceUnavailable, ex.message!!)
                     else -> call.respond(HttpStatusCode.InternalServerError, ex.message!!)
