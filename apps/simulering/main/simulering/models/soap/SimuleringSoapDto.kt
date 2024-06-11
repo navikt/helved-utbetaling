@@ -228,7 +228,7 @@ object soap {
                 return Oppdragslinje(
                     delytelseId = "${dto.sakId}#${utbetalingsperiode.periodeId}",
                     refDelytelseId = utbetalingsperiode.forrigePeriodeId?.let { "${dto.sakId}#$it" },
-                    refFagsystemId = dto.sakId,
+                    refFagsystemId = utbetalingsperiode.forrigePeriodeId?.let {dto.sakId },
                     kodeEndringLinje = if (utbetalingsperiode.erEndringPåEksisterendePeriode) "ENDR" else "NY",
                     kodeKlassifik = utbetalingsperiode.klassekode,
                     kodeStatusLinje = utbetalingsperiode.opphør?.let { KodeStatusLinje.OPPH },
