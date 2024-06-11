@@ -40,8 +40,7 @@ class SimuleringService(private val config: Config) {
 
     suspend fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse {
         val request = SimulerBeregningRequest.from(request)
-        val xml = xmlMapper.writeValueAsString(request)
-            .replace(Regex("ns\\d="), "xmlns:$0")
+        val xml = xmlMapper.writeValueAsString(request).replace(Regex("ns\\d="), "xmlns:$0")
         val response = soap.call(SimulerAction.BEREGNING, xml)
         return json(response).intoDto()
     }
@@ -57,22 +56,25 @@ class SimuleringService(private val config: Config) {
         }
     }
 
-    private fun simulerBeregningResponse(xml: String): soap.SimulerBeregningResponse = runCatching {
-        tryInto<soap.SimuleringResponse>(xml).simulerBeregningResponse
-    }.getOrElse {
-        throw soapError("Failed to deserialize soap message: ${it.message}", it)
-    }
+    private fun simulerBeregningResponse(xml: String): soap.SimulerBeregningResponse =
+        runCatching {
+            tryInto<soap.SimuleringResponse>(xml).simulerBeregningResponse
+        }.getOrElse {
+            appLog.error("Failed to deserialize soap message: ${it.message}")
+            secureLog.error("Failed to deserialize soap message: ${it.message}", it)
+            throw it
+        }
 
     // denne kaster exception oppover i call-stacken
     private fun fault(xml: String): Nothing {
-        throw try {
+        try {
             secureLog.info("Forsøker å deserialisere fault")
             val fault = tryInto<SoapFault>(xml).fault
-            resolveFault(fault)
+            logAndThrow(fault)
         } catch (e: Throwable) {
             appLog.error("feilet deserializering av fault")
             secureLog.error("feilet deserializering av fault", e)
-            soapError("Ukjent feil ved simulering: ${e.message}", e)
+            throw e
         }
     }
 
@@ -81,29 +83,30 @@ class SimuleringService(private val config: Config) {
         return res.body
     }
 
-    private fun resolveFault(fault: Fault): RuntimeException {
+    private fun logAndThrow(fault: Fault): Nothing {
         secureLog.info("Håndterer soap fault {}", fault)
 
-        return with(fault.faultstring) {
+        with(fault.faultstring) {
             when {
-                contains("Personen finnes ikke") -> IkkeFunnet(this)
-                contains("ugyldig") -> RequestErUgyldigException(this)
-                contains("simulerBeregningFeilUnderBehandling") -> {
-                    fault.detail?.let {
-                        val xml = xmlMapper.readTree(it)
-                        val msg = xml["errorMessage"]?.textValue()
-                        when {
-                            msg == null -> soapError(fault)
-                            msg.contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> IkkeFunnet("SakId ikke funnet")
-                            msg.contains("Referert vedtak/linje ikke funnet") -> IkkeFunnet("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
-                            else -> soapError(fault)
-                        }
-                    }
-                }
-
+                contains("Personen finnes ikke") -> throw IkkeFunnet(this)
+                contains("ugyldig") -> throw RequestErUgyldigException(this)
+                contains("simulerBeregningFeilUnderBehandling") -> resolveBehandlingFault(fault)
                 else -> soapError(fault)
             }
-        } ?: soapError(fault)
+        }
+    }
+
+    private fun resolveBehandlingFault(fault: Fault): Nothing {
+        val detail = fault.detail?.let(xmlMapper::readTree) ?: soapError(fault)
+
+        with(detail["errorMessage"].textValue()) {
+            when {
+                this == null -> soapError(fault)
+                contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> throw IkkeFunnet("SakId ikke funnet")
+                contains("Referert vedtak/linje ikke funnet") -> throw IkkeFunnet("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
+                else -> soapError(fault)
+            }
+        }
     }
 
     private suspend fun getAzureToken(): String {
