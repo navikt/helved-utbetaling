@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -17,7 +18,10 @@ import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.utils.appLog
 import libs.utils.secureLog
-import libs.ws.*
+import libs.ws.SoapClient
+import libs.ws.SoapException
+import libs.ws.SoapResponse
+import libs.ws.StsClient
 import simulering.models.rest.rest
 import simulering.models.soap.soap
 import simulering.models.soap.soap.SimulerBeregningRequest
@@ -69,7 +73,7 @@ class SimuleringService(private val config: Config) {
     private fun fault(xml: String): Nothing {
         try {
             secureLog.info("Forsøker å deserialisere fault")
-            val fault = tryInto<SoapFault>(xml).fault
+            val fault = tryInto<SoapFault2>(xml).fault
             logAndThrow(fault)
         } catch (e: Throwable) {
             appLog.error("feilet deserializering av fault")
@@ -97,12 +101,13 @@ class SimuleringService(private val config: Config) {
     }
 
     private fun resolveBehandlingFault(fault: Fault): Nothing {
-        val detail = fault.detail?.let(xmlMapper::readTree) ?: soapError(fault)
-
-        with(detail["errorMessage"].textValue()) {
+        val detail = fault.detail ?: soapError(fault)
+        val feilUnderBehandling = detail["simulerBeregningFeilUnderBehandling"] as? Map<*, *> ?: soapError(fault)
+        val errorMessage = feilUnderBehandling["errorMessage"] as? String ?: soapError(fault)
+        with(errorMessage) {
             when {
-                this == null -> soapError(fault)
                 contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> throw IkkeFunnet("SakId ikke funnet")
+                contains("Oppdraget finnes fra før") -> throw FinnesFraFør("Utbetaling med SakId/BehandlingId finnes fra før")
                 contains("Referert vedtak/linje ikke funnet") -> throw IkkeFunnet("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
                 else -> soapError(fault)
             }
@@ -113,6 +118,26 @@ class SimuleringService(private val config: Config) {
         return "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
     }
 }
+
+data class SoapFault2(
+    @JacksonXmlProperty(localName = "Fault", namespace = "http://www.w3.org/2003/05/soap-envelope")
+    val fault: Fault
+)
+
+data class Fault(
+    val faultcode: String,
+    val faultstring: String,
+    val detail: Map<String, Any>?,
+)
+
+fun soapError(fault: Fault): Nothing = throw SoapException(
+    """
+        SOAP fault.
+        Code: ${fault.faultcode}
+        Message: ${fault.faultstring}
+        Detail: ${fault.detail}
+    """.trimIndent(),
+)
 
 private val xmlMapper: ObjectMapper =
     XmlMapper(JacksonXmlModule().apply { setDefaultUseWrapper(false) })
@@ -130,5 +155,6 @@ private val xmlMapper: ObjectMapper =
         )
 
 class IkkeFunnet(feilmelding: String) : RuntimeException(feilmelding)
+class FinnesFraFør(feilmelding: String) : RuntimeException(feilmelding)
 class RequestErUgyldigException(feilmelding: String) : RuntimeException(feilmelding)
 class OppdragErStengtException : RuntimeException("Oppdrag/UR er stengt")

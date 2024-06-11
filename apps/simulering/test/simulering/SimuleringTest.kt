@@ -10,9 +10,11 @@ import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
 import libs.utils.Resource
+import libs.ws.SoapException
 import no.nav.utsjekk.kontrakter.felles.Personident
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import simulering.models.rest.rest
 import simulering.models.soap.soap
 import java.time.LocalDate
@@ -104,6 +106,38 @@ class SimuleringTest {
                 )
             )
         )
+    }
+
+    @Test
+    fun `can resolve soap fault`() {
+        val fault = """
+            <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+                <SOAP-ENV:Body>
+                    <SOAP-ENV:Fault xmlns="">
+                        <faultcode>SOAP-ENV:Client</faultcode>
+                        <faultstring>simulerBeregningFeilUnderBehandling</faultstring>
+                        <detail>
+                            <sf:simulerBeregningFeilUnderBehandling xmlns:sf="http://nav.no/system/os/tjenester/oppdragService">
+                                <errorMessage>Oppdraget finnes fra før</errorMessage>
+                                <errorSource>K231BB10 section: CA10-INP</errorSource>
+                                <rootCause>Kode B110008F - SQL - MQ</rootCause>
+                                <dateTimeStamp>2024-06-11T13:43:08</dateTimeStamp>
+                            </sf:simulerBeregningFeilUnderBehandling>
+                        </detail>
+                    </SOAP-ENV:Fault>
+                </SOAP-ENV:Body>
+            </SOAP-ENV:Envelope>
+        """.trimIndent()
+
+        val actual = assertThrows<FinnesFraFør> {
+            TestRuntime().use { runtime ->
+                val simulering = SimuleringService(runtime.config)
+                simulering.json(fault)
+            }
+        }
+
+        assertEquals("Utbetaling med SakId/BehandlingId finnes fra før", actual.message)
+
     }
 
 //    @Test
