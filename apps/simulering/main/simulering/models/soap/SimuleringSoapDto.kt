@@ -93,7 +93,7 @@ object soap {
                 satstype = typeSats.name,
                 klassekode = klassekode.trimEnd(),
                 trekkVedtakId = if (trekkVedtakId == 0L) null else trekkVedtakId,
-                refunderesOrgNr = refunderesOrgNr.removePrefix("00").trimEnd(),
+                refunderesOrgNr = refunderesOrgNr.removePrefix("00").trimEnd().takeIf { it.isNotBlank() },
             )
 
     }

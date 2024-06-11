@@ -255,7 +255,7 @@ class SimuleringTest {
                                 sats = 12570.0,
                                 satstype = "MND",
                                 klassekode = "TSTBASISP4-OP",
-                                refunderesOrgNr = "",
+                                refunderesOrgNr = null,
                                 trekkVedtakId = null,
                             ),
                             rest.Postering(
@@ -266,7 +266,7 @@ class SimuleringTest {
                                 sats = 0.0,
                                 satstype = "MND",
                                 klassekode = "TSTBASISP4-OP",
-                                refunderesOrgNr = "",
+                                refunderesOrgNr = null,
                                 trekkVedtakId = null,
                             )
                         ),
@@ -292,7 +292,7 @@ class SimuleringTest {
                                 sats = 12570.0,
                                 satstype = "MND",
                                 klassekode = "TSTBASISP4-OP",
-                                refunderesOrgNr = "",
+                                refunderesOrgNr = null,
                                 trekkVedtakId = null,
                             ),
                             rest.Postering(
@@ -303,7 +303,7 @@ class SimuleringTest {
                                 sats = 0.0,
                                 satstype = "MND",
                                 klassekode = "TSTBASISP4-OP",
-                                refunderesOrgNr = "",
+                                refunderesOrgNr = null,
                                 trekkVedtakId = null,
                             )
                         ),
