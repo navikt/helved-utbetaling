@@ -62,8 +62,8 @@ object soap {
     ) {
         fun intoDto(): rest.Utbetaling =
             rest.Utbetaling(
-                fagområde = kodeFagomraade,
-                fagSystemId = fagsystemId,
+                fagområde = kodeFagomraade.trimEnd(),
+                fagSystemId = fagsystemId.trimEnd(),
                 utbetalesTilId = utbetalesTilId.removePrefix("00"),
                 forfall = forfall,
                 feilkonto = feilkonto,
@@ -91,9 +91,9 @@ object soap {
                 belop = belop.toInt(),
                 sats = sats,
                 satstype = typeSats.name,
-                klassekode = klassekode,
+                klassekode = klassekode.trimEnd(),
                 trekkVedtakId = if (trekkVedtakId == 0L) null else trekkVedtakId,
-                refunderesOrgNr = refunderesOrgNr.removePrefix("00"),
+                refunderesOrgNr = refunderesOrgNr.removePrefix("00").trimEnd(),
             )
 
     }
