@@ -22,7 +22,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.13.0")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.13.1")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
 
     // json
