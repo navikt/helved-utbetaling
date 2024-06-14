@@ -14,6 +14,8 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.plugins.logging.*
+import jakarta.xml.ws.WebServiceException
+import jakarta.xml.ws.soap.SOAPFaultException
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.utils.appLog
