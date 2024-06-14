@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -20,10 +19,7 @@ import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.utils.appLog
 import libs.utils.secureLog
-import libs.ws.SoapClient
-import libs.ws.SoapException
-import libs.ws.SoapResponse
-import libs.ws.StsClient
+import libs.ws.*
 import simulering.models.rest.rest
 import simulering.models.soap.soap
 import simulering.models.soap.soap.SimulerBeregningRequest
@@ -75,7 +71,7 @@ class SimuleringService(private val config: Config) {
     private fun fault(xml: String): Nothing {
         try {
             secureLog.info("Forsøker å deserialisere fault")
-            val fault = tryInto<SoapFault2>(xml).fault
+            val fault = tryInto<SoapFault>(xml).fault
             logAndThrow(fault)
         } catch (e: Throwable) {
             appLog.error("feilet deserializering av fault")
@@ -120,26 +116,6 @@ class SimuleringService(private val config: Config) {
         return "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}"
     }
 }
-
-data class SoapFault2(
-    @JacksonXmlProperty(localName = "Fault", namespace = "http://www.w3.org/2003/05/soap-envelope")
-    val fault: Fault
-)
-
-data class Fault(
-    val faultcode: String,
-    val faultstring: String,
-    val detail: Map<String, Any>?,
-)
-
-fun soapError(fault: Fault): Nothing = throw SoapException(
-    """
-        SOAP fault.
-        Code: ${fault.faultcode}
-        Message: ${fault.faultstring}
-        Detail: ${fault.detail}
-    """.trimIndent(),
-)
 
 private val xmlMapper: ObjectMapper =
     XmlMapper(JacksonXmlModule().apply { setDefaultUseWrapper(false) })
