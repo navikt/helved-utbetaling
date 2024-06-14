@@ -63,7 +63,7 @@ object rest {
         val faktiskTom: LocalDate,
         val belop: Int,
         val sats: Double,
-        val satstype: String,
+        val satstype: String?,
         val klassekode: String,
         val trekkVedtakId: Long?,
         val refunderesOrgNr: String?,

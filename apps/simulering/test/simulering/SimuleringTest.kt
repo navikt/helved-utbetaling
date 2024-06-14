@@ -14,6 +14,7 @@ import libs.ws.SoapException
 import no.nav.utsjekk.kontrakter.felles.Personident
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import simulering.models.rest.rest
 import simulering.models.soap.soap
@@ -63,6 +64,16 @@ class SimuleringTest {
         val expected = simuleringResponse().simulerBeregningResponse.response.simulering
 
         assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `kan deserialisere motposteringer`() {
+        assertDoesNotThrow {
+            TestRuntime().use { runtime ->
+                val simulering = SimuleringService(runtime.config)
+                simulering.json(Resource.read("/simuler-endring-response.xml"))
+            }
+        }
     }
 
     private fun simuleringResponse(): soap.SimuleringResponse {
