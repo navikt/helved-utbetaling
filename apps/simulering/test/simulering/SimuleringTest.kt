@@ -150,6 +150,35 @@ class SimuleringTest {
         assertEquals("Utbetaling med SakId/BehandlingId finnes fra før", actual.message)
 
     }
+    @Test
+    fun `osap fault BB50024F is default soapException`() {
+
+        val fault = """
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Body>
+        <SOAP-ENV:Fault xmlns="">
+            <faultcode>SOAP-ENV:Client</faultcode>
+            <faultstring>simulerBeregningFeilUnderBehandling</faultstring>
+            <detail>
+                <sf:simulerBeregningFeilUnderBehandling xmlns:sf="http://nav.no/system/os/tjenester/oppdragService">
+                    <errorMessage>KODE-ENDRING-LINJE ulik NY, Ref-feltene utfylt</errorMessage>
+                    <errorSource>K231BB50 section: CA10-KON</errorSource>
+                    <rootCause>Kode BB50024F - SQL - MQ</rootCause>
+                    <dateTimeStamp>2024-06-14T13:57:08</dateTimeStamp>
+                </sf:simulerBeregningFeilUnderBehandling>
+            </detail>
+        </SOAP-ENV:Fault>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+        """.trimIndent()
+
+        assertThrows<SoapException> {
+            TestRuntime().use { runtime ->
+                val simulering = SimuleringService(runtime.config)
+                simulering.json(fault)
+            }
+        }
+    }
 
 //    @Test
 //    fun `simulering request xml er parset riktig`() {
