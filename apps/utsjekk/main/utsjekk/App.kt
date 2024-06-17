@@ -25,7 +25,7 @@ import libs.postgres.Postgres.migrate
 import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.routing.actuators
-import utsjekk.routing.task
+import utsjekk.routing.tasks
 import utsjekk.task.TaskScheduler
 
 fun main() {
@@ -81,7 +81,7 @@ fun Application.utsjekk(config: Config = Config()) {
 
     routing {
         authenticate(TokenProvider.AZURE) {
-            task()
+            tasks()
         }
 
         actuators(prometheus)
