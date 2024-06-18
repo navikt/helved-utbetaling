@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "2.3.11"
-val libVersion = "0.1.33"
+val libVersion = "0.1.37"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
@@ -16,6 +16,8 @@ dependencies {
     implementation("no.nav.helved:ws:$libVersion")
     implementation("no.nav.helved:xml:$libVersion")
 
+    implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
+    implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
