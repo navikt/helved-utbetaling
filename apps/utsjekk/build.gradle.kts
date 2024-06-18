@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "2.3.11"
-val libVersion = "0.1.33"
+val libVersion = "0.1.35"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
@@ -17,7 +17,6 @@ dependencies {
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240606152736_ac08381")
 
-    // server
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
@@ -25,7 +24,6 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.1")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
 
-    // json
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1")
 
