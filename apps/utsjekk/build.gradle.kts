@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "2.3.11"
-val libVersion = "0.1.35"
+val libVersion = "0.1.41"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
@@ -28,8 +28,10 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1")
 
     testImplementation(kotlin("test"))
-    testImplementation("org.testcontainers:postgresql:1.19.8")
+//    testImplementation("com.h2database:h2:2.2.224")
+    testImplementation("no.nav.helved:jdbc-test:$libVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     testImplementation("no.nav.helved:auth-test:$libVersion")

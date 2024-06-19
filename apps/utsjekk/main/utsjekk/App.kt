@@ -18,25 +18,39 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import kotlinx.coroutines.Dispatchers
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.postgres.Postgres
 import libs.postgres.Postgres.migrate
+import libs.postgres.concurrency.CoroutineDatasource
 import libs.utils.appLog
 import libs.utils.secureLog
+import utsjekk.oppdrag.OppdragClient
 import utsjekk.routing.actuators
 import utsjekk.routing.tasks
 import utsjekk.task.TaskScheduler
+import kotlin.coroutines.CoroutineContext
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
         appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
-    embeddedServer(Netty, port = 8080, module = Application::utsjekk).start(wait = true)
+
+    val config = Config()
+    val datasource = Postgres.initialize(config.postgres).apply { migrate() }
+    val context = Dispatchers.IO + CoroutineDatasource(datasource)
+
+    embeddedServer(Netty, port = 8080) {
+        utsjekk(config, context)
+    }.start(wait = true)
 }
 
-fun Application.utsjekk(config: Config = Config()) {
+fun Application.utsjekk(
+    config: Config,
+    context: CoroutineContext,
+) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(MicrometerMetrics) {
@@ -70,10 +84,8 @@ fun Application.utsjekk(config: Config = Config()) {
         }
     }
 
-    val postgres = Postgres.initialize(config.postgres).apply {
-        migrate()
-    }
-    val scheduler = TaskScheduler()
+    val oppdrag = OppdragClient(config)
+    val scheduler = TaskScheduler(oppdrag, context)
 
     environment.monitor.subscribe(ApplicationStopping) {
         scheduler.close()
