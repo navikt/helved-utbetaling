@@ -227,8 +227,8 @@ object soap {
             fun from(utbetalingsperiode: rest.Utbetalingsperiode, dto: rest.SimuleringRequest): Oppdragslinje {
                 return Oppdragslinje(
                     delytelseId = "${dto.sakId}#${utbetalingsperiode.periodeId}",
-                    refDelytelseId = utbetalingsperiode.forrigePeriodeId?.let { "${dto.sakId}#$it" },
-                    refFagsystemId = utbetalingsperiode.forrigePeriodeId?.let {dto.sakId },
+                    refDelytelseId = if (utbetalingsperiode.erEndringPåEksisterendePeriode) null else utbetalingsperiode.forrigePeriodeId?.let { "${dto.sakId}#$it" },
+                    refFagsystemId = if (utbetalingsperiode.erEndringPåEksisterendePeriode) null else utbetalingsperiode.forrigePeriodeId?.let {dto.sakId },
                     kodeEndringLinje = if (utbetalingsperiode.erEndringPåEksisterendePeriode) "ENDR" else "NY",
                     kodeKlassifik = utbetalingsperiode.klassekode,
                     kodeStatusLinje = utbetalingsperiode.opphør?.let { KodeStatusLinje.OPPH },
