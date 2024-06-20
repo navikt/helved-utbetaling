@@ -10,16 +10,16 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
+import libs.jdbc.PostgresContainer
+import libs.mq.MQContainer
 import libs.utils.appLog
-import oppdrag.containers.MQContainer
-import oppdrag.containers.PostgresContainer
 import oppdrag.fakes.AzureFake
 import oppdrag.fakes.OppdragFake
 
 object TestRuntime : AutoCloseable {
     val azure: AzureFake = AzureFake()
-    val postgres: PostgresContainer = PostgresContainer()
-    val mq: MQContainer = MQContainer()
+    val postgres: PostgresContainer = PostgresContainer("oppdrag")
+    val mq: MQContainer = MQContainer("oppdrag")
     val config: Config = TestConfig.create(postgres.config, mq.config, azure.config)
     val oppdrag = OppdragFake(config)
     val ktor = testApplication.apply { start() }
