@@ -7,31 +7,30 @@ application {
 }
 
 val ktorVersion = "2.3.11"
-val libVersion = "0.1.41"
+val libVersion = "0.1.45"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
+    implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:mq:$libVersion")
-    implementation("no.nav.helved:postgres:$libVersion")
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240606152736_ac08381")
 
-    // server
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.1")
 
-    // json
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1")
 
     testImplementation(kotlin("test"))
-    testImplementation("org.testcontainers:postgresql:1.19.8")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     testImplementation("no.nav.helved:auth-test:$libVersion")
+    testImplementation("no.nav.helved:jdbc-test:$libVersion")
+    testImplementation("no.nav.helved:mq-test:$libVersion")
 }
