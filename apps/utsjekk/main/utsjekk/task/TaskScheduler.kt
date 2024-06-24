@@ -3,7 +3,6 @@ package utsjekk.task
 import libs.job.Scheduler
 import libs.postgres.concurrency.transaction
 import libs.postgres.concurrency.withLock
-import libs.task.*
 import libs.utils.secureLog
 import utsjekk.oppdrag.HttpError
 import utsjekk.oppdrag.OppdragClient

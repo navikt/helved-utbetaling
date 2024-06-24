@@ -13,10 +13,10 @@ import io.ktor.server.routing.patch
 import io.ktor.server.routing.route
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
-import libs.task.Status
-import libs.task.TaskDao
-import libs.task.TaskDto
-import libs.task.Tasks
+import utsjekk.task.Status
+import utsjekk.task.TaskDao
+import utsjekk.task.TaskDto
+import utsjekk.task.Tasks
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.coroutines.CoroutineContext
