@@ -1,5 +1,3 @@
-package utsjekk
-
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -14,6 +12,8 @@ import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import libs.jdbc.PostgresContainer
 import libs.utils.appLog
+import utsjekk.Config
+import utsjekk.utsjekk
 import kotlin.coroutines.CoroutineContext
 
 object TestRuntime : AutoCloseable {
@@ -36,6 +36,17 @@ object TestRuntime : AutoCloseable {
             azure = azure.config,
             postgres = postgres.config,
         )
+    }
+
+    fun clear(vararg tables: String) {
+        postgres.transaction { con ->
+//            con.prepareStatement("SET REFERENTIAL_INTEGRITY FALSE").execute()
+            tables.forEach { con.prepareStatement("TRUNCATE TABLE $it CASCADE").execute() }
+//            con.prepareStatement("SET REFERENTIAL_INTEGRITY TRUE").execute()
+        }.also {
+            tables.forEach { appLog.info("table '$it' trunctated.") }
+        }
+
     }
 
     private val ktor = testApplication.apply { start() }

@@ -6,7 +6,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import utsjekk.OppdragConfig
-import utsjekk.port
+import port
 import java.net.URI
 
 class OppdragFake : AutoCloseable {
