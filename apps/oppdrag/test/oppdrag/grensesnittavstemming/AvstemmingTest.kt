@@ -12,7 +12,6 @@ import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
-import javax.xml.namespace.QName
 import kotlin.test.assertEquals
 
 class AvstemmingTest {

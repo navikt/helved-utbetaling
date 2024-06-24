@@ -36,6 +36,8 @@ class OppdragService(
 
             postgres.transaction { con ->
                 OppdragLagerRepository.opprettOppdrag(oppdragLager, con, versjon)
+                appLog.debug("Legger oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} på kø")
+                oppdragSender.sendOppdrag(oppdrag)
             }
         } catch (e: PSQLException) {
             when (e.sqlState) {
@@ -43,9 +45,6 @@ class OppdragService(
                 else -> throw UkjentOppdragLagerException(utbetalingsoppdrag.saksnummer)
             }
         }
-
-        appLog.debug("Legger oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} på kø")
-        oppdragSender.sendOppdrag(oppdrag)
     }
 
     fun hentStatusForOppdrag(
