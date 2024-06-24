@@ -94,7 +94,7 @@ fun Application.utsjekk(
 
     routing {
         authenticate(TokenProvider.AZURE) {
-            tasks()
+            tasks(context)
         }
 
         actuators(prometheus)
