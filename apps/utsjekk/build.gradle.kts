@@ -13,7 +13,6 @@ dependencies {
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:job:$libVersion")
-    implementation("no.nav.helved:task:$libVersion")
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240606152736_ac08381")
 
@@ -24,6 +23,7 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.1")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
 
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1")
 

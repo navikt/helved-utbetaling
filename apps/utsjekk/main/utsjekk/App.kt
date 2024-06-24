@@ -69,7 +69,8 @@ fun Application.utsjekk(
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             when (cause) {
-                is BadRequest -> call.respond(cause.code, cause.message)
+                is BadRequest -> call.respond(HttpStatusCode.BadRequest, cause.message)
+                is NotFound -> call.respond(HttpStatusCode.NotFound, cause.message)
                 else -> {
                     secureLog.error("Unknown error.", cause)
                     call.respond(HttpStatusCode.UnprocessableEntity, "Unknown error. See logs")

@@ -3,10 +3,11 @@ package utsjekk
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
-import libs.task.Status
-import libs.task.TaskDao
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import utsjekk.task.Kind
+import utsjekk.task.Status
+import utsjekk.task.TaskDao
 import java.time.LocalDateTime
 import java.util.*
 
@@ -36,6 +37,7 @@ class TaskSchedulerTest {
         scheduledFor: LocalDateTime = createdAt,
     ) = TaskDao(
         id = UUID.randomUUID(),
+        kind = Kind.Iverksetting,
         payload = "hello world",
         status = status,
         attempt = 0,

@@ -1,11 +1,7 @@
 package utsjekk
 
-import io.ktor.http.*
+class BadRequest(override val message: String) : RuntimeException(message)
+class NotFound(override val message: String) : RuntimeException(message)
 
-sealed class ApiError(
-    val code: HttpStatusCode,
-    override val message: String,
-    override val cause: Throwable? = null,
-) : RuntimeException()
-
-class BadRequest(msg: String) : ApiError(HttpStatusCode.BadRequest, msg)
+fun badRequest(msg: String): Nothing = throw BadRequest(msg)
+fun notFound(msg: String): Nothing = throw NotFound(msg)

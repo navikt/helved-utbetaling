@@ -1,6 +1,7 @@
 CREATE TABLE task
 (
     id            UUID PRIMARY KEY,
+    kind          VARCHAR     NOT NULL,
     payload       VARCHAR     NOT NULL,
     status        VARCHAR(20) NOT NULL,
     attempt       BIGINT      NOT NULL,
