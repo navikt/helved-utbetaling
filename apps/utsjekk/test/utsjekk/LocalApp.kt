@@ -2,9 +2,8 @@ package utsjekk
 
 import fakes.AzureFake
 import fakes.OppdragFake
-import io.ktor.server.application.Application
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,10 +12,11 @@ import libs.postgres.Postgres
 import libs.postgres.Postgres.migrate
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.transaction
-import libs.task.Status
-import libs.task.TaskDao
+import utsjekk.task.Kind
+import utsjekk.task.Status
+import utsjekk.task.TaskDao
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 fun main() {
@@ -46,6 +46,7 @@ fun populate(context: CoroutineContext) {
         transaction {
             TaskDao(
                 id = UUID.randomUUID(),
+                kind = Kind.Iverksetting,
                 payload = "",
                 status = Status.UNPROCESSED,
                 attempt = 0,
