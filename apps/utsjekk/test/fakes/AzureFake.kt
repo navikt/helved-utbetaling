@@ -11,7 +11,7 @@ import libs.auth.AzureConfig
 import libs.auth.AzureToken
 import libs.auth.JwkGenerator
 import libs.auth.TEST_JWKS
-import utsjekk.port
+import port
 import java.net.URI
 
 class AzureFake : AutoCloseable {

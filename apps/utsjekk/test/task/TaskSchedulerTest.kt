@@ -1,9 +1,9 @@
-package utsjekk
+package task
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import utsjekk.task.Kind
 import utsjekk.task.Status
@@ -19,7 +19,7 @@ class TaskSchedulerTest {
         val task = aTask()
 
         populate(task).await()
-        assertEquals(Status.UNPROCESSED, getTask(task.id).await().single().status)
+        Assertions.assertEquals(Status.UNPROCESSED, getTask(task.id).await().single().status)
 
         while (!isComplete(task)) {
             runBlocking {
@@ -27,7 +27,7 @@ class TaskSchedulerTest {
             }
         }
 
-        assertEquals(Status.COMPLETE, getTask(task.id).await().single().status)
+        Assertions.assertEquals(Status.COMPLETE, getTask(task.id).await().single().status)
     }
 
     private fun aTask(

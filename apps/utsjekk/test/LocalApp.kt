@@ -1,5 +1,3 @@
-package utsjekk
-
 import fakes.AzureFake
 import fakes.OppdragFake
 import io.ktor.server.engine.*
@@ -12,9 +10,11 @@ import libs.postgres.Postgres
 import libs.postgres.Postgres.migrate
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.transaction
+import utsjekk.Config
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
+import utsjekk.utsjekk
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.coroutines.CoroutineContext
