@@ -121,24 +121,7 @@ class SimuleringTest {
 
     @Test
     fun `can resolve soap fault`() {
-        val fault = """
-            <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
-                <SOAP-ENV:Body>
-                    <SOAP-ENV:Fault xmlns="">
-                        <faultcode>SOAP-ENV:Client</faultcode>
-                        <faultstring>simulerBeregningFeilUnderBehandling</faultstring>
-                        <detail>
-                            <sf:simulerBeregningFeilUnderBehandling xmlns:sf="http://nav.no/system/os/tjenester/oppdragService">
-                                <errorMessage>Oppdraget finnes fra før</errorMessage>
-                                <errorSource>K231BB10 section: CA10-INP</errorSource>
-                                <rootCause>Kode B110008F - SQL - MQ</rootCause>
-                                <dateTimeStamp>2024-06-11T13:43:08</dateTimeStamp>
-                            </sf:simulerBeregningFeilUnderBehandling>
-                        </detail>
-                    </SOAP-ENV:Fault>
-                </SOAP-ENV:Body>
-            </SOAP-ENV:Envelope>
-        """.trimIndent()
+        val fault = enFault(errorMessage = "Oppdraget finnes fra før")
 
         val actual = assertThrows<FinnesFraFør> {
             TestRuntime().use { runtime ->
@@ -146,31 +129,25 @@ class SimuleringTest {
                 simulering.json(fault)
             }
         }
-
         assertEquals("Utbetaling med SakId/BehandlingId finnes fra før", actual.message)
-
     }
+
+    @Test
+    fun `resolver soap-fault person ikke funnet i PDL`() {
+        val fault = enFault(errorMessage = "##Navn på person ikke funnet i PDL")
+
+        val actual = assertThrows<IkkeFunnet> {
+            TestRuntime().use { runtime ->
+                val simulering = SimuleringService(runtime.config)
+                simulering.json(fault)
+            }
+        }
+        assertEquals("Navn på person ikke funnet i PDL", actual.message)
+    }
+
     @Test
     fun `osap fault BB50024F is default soapException`() {
-
-        val fault = """
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
-    <SOAP-ENV:Body>
-        <SOAP-ENV:Fault xmlns="">
-            <faultcode>SOAP-ENV:Client</faultcode>
-            <faultstring>simulerBeregningFeilUnderBehandling</faultstring>
-            <detail>
-                <sf:simulerBeregningFeilUnderBehandling xmlns:sf="http://nav.no/system/os/tjenester/oppdragService">
-                    <errorMessage>KODE-ENDRING-LINJE ulik NY, Ref-feltene utfylt</errorMessage>
-                    <errorSource>K231BB50 section: CA10-KON</errorSource>
-                    <rootCause>Kode BB50024F - SQL - MQ</rootCause>
-                    <dateTimeStamp>2024-06-14T13:57:08</dateTimeStamp>
-                </sf:simulerBeregningFeilUnderBehandling>
-            </detail>
-        </SOAP-ENV:Fault>
-    </SOAP-ENV:Body>
-</SOAP-ENV:Envelope>
-        """.trimIndent()
+        val fault = enFault(errorMessage = "KODE-ENDRING-LINJE ulik NY, Ref-feltene utfylt")
 
         assertThrows<SoapException> {
             TestRuntime().use { runtime ->
@@ -180,95 +157,86 @@ class SimuleringTest {
         }
     }
 
-//    @Test
-//    fun `simulering request xml er parset riktig`() {
-//        TestRuntime().use { runtime ->
-//            testApplication {
-//                application {
-//                    app(config = runtime.config)
-//                }
-//
-//                val http = createClient {
-//                    install(ContentNegotiation) {
-//                        jackson {
-//                            registerModule(JavaTimeModule())
-//                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-//                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-//                        }
-//                    }
-//                }
-//
-//                http.post("/simulering") {
-//                    contentType(ContentType.Application.Json)
-//                    setBody(enSimuleringRequestBody())
-//                }
-//
-//                val actual = runtime.receivedSoapRequests.single()
-//
-//                assertEquals(expected, actual)
-//            }
-//        }
-//    }
+    private fun enFault(faultString: String = "simulerBeregningFeilUnderBehandling", errorMessage: String) = """
+        <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+            <SOAP-ENV:Body>
+                <SOAP-ENV:Fault xmlns="">
+                    <faultcode>SOAP-ENV:Client</faultcode>
+                    <faultstring>$faultString</faultstring>
+                    <detail>
+                        <sf:simulerBeregningFeilUnderBehandling xmlns:sf="http://nav.no/system/os/tjenester/oppdragService">
+                            <errorMessage>$errorMessage</errorMessage>
+                            <errorSource>K231BB50 section: CA10-KON</errorSource>
+                            <rootCause>Kode BB50024F - SQL - MQ</rootCause>
+                            <dateTimeStamp>2024-06-14T13:57:08</dateTimeStamp>
+                        </sf:simulerBeregningFeilUnderBehandling>
+                    </detail>
+                </SOAP-ENV:Fault>
+            </SOAP-ENV:Body>
+        </SOAP-ENV:Envelope>
+    """.trimIndent()
 
     @Language("xml")
     private val expected: String = """
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
     <soap:Header>
-        <Action xmlns="http://www.w3.org/2005/08/addressing">http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt/simulerFpService/simulerBeregning</Action>
-        <MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:f059f280-3336-443b-b86a-0b36a81252b0</MessageID>
+        <Action xmlns="http://www.w3.org/2005/08/addressing">
+            http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt/simulerFpService/simulerBeregning
+        </Action>
+        <MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:f059f280-3336-443b-b86a-0b36a81252b0
+        </MessageID>
         <To xmlns="http://www.w3.org/2005/08/addressing">https://cics-q1.adeo.no/oppdrag/simulerFpServiceWSBinding</To>
         <ReplyTo xmlns="http://www.w3.org/2005/08/addressing">
             <Address>http://www.w3.org/2005/08/addressing/anonymous</Address>
         </ReplyTo>
         <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" soap:mustUnderstand="1">
             hemmelig.gandalf.token
-
         </wsse:Security>
     </soap:Header>
     <soap:Body>
-<ns3:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/entiteter/oppdragSkjema"
-                             xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"
-                             xmlns:ns4="http://nav.no/system/os/entiteter/beregningSkjema">
-    <request>
-        <oppdrag>
-            <kodeEndring>NY</kodeEndring>
-            <kodeFagomraade>TILLST</kodeFagomraade>
-            <fagsystemId>200000233</fagsystemId>
-            <utbetFrekvens>MND</utbetFrekvens>
-            <oppdragGjelderId>22479409483</oppdragGjelderId>
-            <datoOppdragGjelderFom>1970-01-01</datoOppdragGjelderFom>
-            <saksbehId>Z994230</saksbehId>
-            <ns2:enhet>
-                <typeEnhet>BOS</typeEnhet>
-                <enhet>8020</enhet>
-                <datoEnhetFom>1970-01-01</datoEnhetFom>
-            </ns2:enhet>
-            <oppdragslinje>
-                <kodeEndringLinje>NY</kodeEndringLinje>
-                <delytelseId>200000233#0</delytelseId>
-                <kodeKlassifik>TSTBASISP4-OP</kodeKlassifik>
-                <datoVedtakFom>2024-05-01</datoVedtakFom>
-                <datoVedtakTom>2024-05-01</datoVedtakTom>
-                <sats>700</sats>
-                <fradragTillegg>T</fradragTillegg>
-                <typeSats>DAG</typeSats>
-                <brukKjoreplan>N</brukKjoreplan>
-                <saksbehId>Z994230</saksbehId>
-                <utbetalesTilId>22479409483</utbetalesTilId>
-                <ns2:grad>
-                    <typeGrad>UFOR</typeGrad>
-                </ns2:grad>
-                <ns2:attestant>
-                    <attestantId>Z994230</attestantId>
-                </ns2:attestant>
-            </oppdragslinje>
-        </oppdrag>
-        <simuleringsPeriode>
-            <datoSimulerFom>2024-05-01</datoSimulerFom>
-            <datoSimulerTom>2024-05-01</datoSimulerTom>
-        </simuleringsPeriode>
-    </request>
-</ns3:simulerBeregningRequest>
+        <ns3:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/entiteter/oppdragSkjema" xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt">
+            <request>
+                <oppdrag>
+                    <kodeEndring>NY</kodeEndring>
+                    <kodeFagomraade>TILLST</kodeFagomraade>
+                    <fagsystemId>200000233</fagsystemId>
+                    <utbetFrekvens>MND</utbetFrekvens>
+                    <oppdragGjelderId>22479409483</oppdragGjelderId>
+                    <datoOppdragGjelderFom>1970-01-01</datoOppdragGjelderFom>
+                    <saksbehId>Z994230</saksbehId>
+                    <ns2:enhet>
+                        <typeEnhet>BOS</typeEnhet>
+                        <enhet>8020</enhet>
+                        <datoEnhetFom>1970-01-01</datoEnhetFom>
+                    </ns2:enhet>
+                    <oppdragslinje>
+                        <kodeEndringLinje>NY</kodeEndringLinje>
+                        <delytelseId>200000233#0</delytelseId>
+                        <kodeKlassifik>TSTBASISP4-OP</kodeKlassifik>
+                        <datoVedtakFom>2024-05-01</datoVedtakFom>
+                        <datoVedtakTom>2024-05-01</datoVedtakTom>
+                        <sats>700</sats>
+                        <fradragTillegg>T</fradragTillegg>
+                        <typeSats>DAG</typeSats>
+                        <brukKjoreplan>N</brukKjoreplan>
+                        <saksbehId>Z994230</saksbehId>
+                        <utbetalesTilId>22479409483</utbetalesTilId>
+                        <ns2:grad>
+                            <typeGrad>UFOR</typeGrad>
+                        </ns2:grad>
+                        <ns2:attestant>
+                            <attestantId>Z994230</attestantId>
+                        </ns2:attestant>
+                    </oppdragslinje>
+                </oppdrag>
+                <simuleringsPeriode>
+                    <datoSimulerFom>2024-05-01</datoSimulerFom>
+                    <datoSimulerTom>2024-05-01</datoSimulerTom>
+                </simuleringsPeriode>
+            </request>
+        </ns3:simulerBeregningRequest>
+    </soap:Body>
+</soap:Envelope>
 """.trimIndent()
 
     private fun responseXmlFagsak10001Efog() = rest.SimuleringResponse(
