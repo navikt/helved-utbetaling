@@ -105,7 +105,7 @@ class SimuleringService(private val config: Config) {
                 contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> throw IkkeFunnet("SakId ikke funnet")
                 contains("Oppdraget finnes fra før") -> throw FinnesFraFør("Utbetaling med SakId/BehandlingId finnes fra før")
                 contains("Referert vedtak/linje ikke funnet") -> throw IkkeFunnet("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
-                contains("Navn på person ikke funnet i PDL") -> throw IkkeFunnet("Navn på person ikke funnet i PDL")
+//                contains("Navn på person ikke funnet i PDL") -> throw IkkeFunnet("Navn på person ikke funnet i PDL")
                 else -> soapError(fault)
             }
         }
