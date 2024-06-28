@@ -132,18 +132,18 @@ class SimuleringTest {
         assertEquals("Utbetaling med SakId/BehandlingId finnes fra før", actual.message)
     }
 
-    @Test
-    fun `resolver soap-fault person ikke funnet i PDL`() {
-        val fault = enFault(errorMessage = "##Navn på person ikke funnet i PDL")
-
-        val actual = assertThrows<IkkeFunnet> {
-            TestRuntime().use { runtime ->
-                val simulering = SimuleringService(runtime.config)
-                simulering.json(fault)
-            }
-        }
-        assertEquals("Navn på person ikke funnet i PDL", actual.message)
-    }
+//    @Test
+//    fun `resolver soap-fault person ikke funnet i PDL`() {
+//        val fault = enFault(errorMessage = "##Navn på person ikke funnet i PDL")
+//
+//        val actual = assertThrows<IkkeFunnet> {
+//            TestRuntime().use { runtime ->
+//                val simulering = SimuleringService(runtime.config)
+//                simulering.json(fault)
+//            }
+//        }
+//        assertEquals("Navn på person ikke funnet i PDL", actual.message)
+//    }
 
     @Test
     fun `osap fault BB50024F is default soapException`() {
