@@ -67,6 +67,6 @@ fun Application.app(config: Config = Config()) {
 
     routing {
         actuators(prometheus)
-        simulering(simulering)
+        simulering(simulering, prometheus)
     }
 }
