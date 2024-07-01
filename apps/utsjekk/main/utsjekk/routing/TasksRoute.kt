@@ -16,7 +16,7 @@ import libs.postgres.concurrency.transaction
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
-import utsjekk.task.TaskHistoryDao
+import utsjekk.task.TaskHistory
 import utsjekk.task.Tasks
 import java.time.LocalDateTime
 import java.util.UUID
@@ -61,7 +61,7 @@ fun Route.tasks(context: CoroutineContext) {
                 ?: return@get call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
 
             withContext(context) {
-                val historikk = transaction { TaskHistoryDao.select(taskId = id) }
+                val historikk = transaction { TaskHistory.history(id) }
 
                 call.respond(historikk)
             }
