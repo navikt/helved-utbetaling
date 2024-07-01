@@ -39,5 +39,13 @@ object Tasks {
                 attempt = task.attempt + 1,
                 message = msg
             ).update()
+
+            TaskHistoryDao(
+                taskId = task.id,
+                createdAt = task.createdAt,
+                triggeredAt = task.updatedAt,
+                triggeredBy = task.updatedAt,
+                status = task.status
+            ).insert()
         }
 }

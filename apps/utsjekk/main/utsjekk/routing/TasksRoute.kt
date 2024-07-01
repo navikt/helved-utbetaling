@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
-import utsjekk.task.TaskDto
+import utsjekk.task.TaskHistoryDao
 import utsjekk.task.Tasks
 import java.time.LocalDateTime
 import java.util.UUID
@@ -57,6 +57,17 @@ fun Route.tasks(context: CoroutineContext) {
 
             val payload = call.receive<TaskDtoPatch>()
             Tasks.update(id, payload.status, payload.message)
+        }
+
+        get("/{id}/history") {
+            val id = call.parameters["id"]?.let(UUID::fromString)
+                ?: return@get call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
+
+            withContext(context) {
+                val historikk = transaction { TaskHistoryDao.select(taskId = id) }
+
+                call.respond(historikk)
+            }
         }
     }
 }
