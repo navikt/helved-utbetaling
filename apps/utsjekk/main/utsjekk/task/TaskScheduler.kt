@@ -21,10 +21,11 @@ class TaskScheduler(
         withLock("task") {
             secureLog.debug("Feeding scheduler")
             return transaction {
-                TaskDao.select(
+                val conditions = TaskDao.Where(
                     status = listOf(Status.UNPROCESSED),
                     scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
                 )
+                TaskDao.select(conditions)
             }
         }
     }
