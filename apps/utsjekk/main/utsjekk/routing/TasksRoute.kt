@@ -13,6 +13,7 @@ import io.ktor.server.routing.patch
 import io.ktor.server.routing.route
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
+import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
 import utsjekk.task.TaskHistoryDao
@@ -29,19 +30,12 @@ private fun ApplicationCall.navident(): String? {
 fun Route.tasks(context: CoroutineContext) {
     route("/api/tasks") {
         get {
-            val status = call.parameters["status"]
-            val after = call.parameters["after"]
+            val status = call.parameters["status"]?.split(",")?.map { Status.valueOf(it) }
+            val after = call.parameters["after"]?.let { LocalDateTime.parse(it) }
+            val kind = call.parameters["kind"]?.let { Kind.valueOf(it) }
 
             withContext(context) {
-                val tasks = when {
-                    status != null -> Tasks.forStatus(Status.valueOf(status))
-                    after != null -> Tasks.createdAfter(LocalDateTime.parse(after))
-                    else ->
-                        transaction {
-                            TaskDao.select(status = Status.entries)
-                                .map(TaskDto::from)
-                        }
-                }
+                val tasks = Tasks.filterBy(status, after, kind)
 
                 call.respond(tasks)
             }
@@ -52,7 +46,10 @@ fun Route.tasks(context: CoroutineContext) {
             val id = call.parameters["id"]?.let(UUID::fromString)
                 ?: return@patch call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
 
-            transaction { TaskDao.select(id = id) }.singleOrNull()
+            transaction {
+                val conditions = TaskDao.Where(id = id)
+                TaskDao.select(conditions)
+            }.singleOrNull()
                 ?: return@patch call.respond(HttpStatusCode.NotFound, "Fant ikke task med id $id")
 
             val payload = call.receive<TaskDtoPatch>()
