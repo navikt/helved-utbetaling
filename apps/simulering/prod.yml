@@ -1,0 +1,57 @@
+apiVersion: nais.io/v1alpha1
+kind: Application
+metadata:
+  name: utsjekk-simulering
+  namespace: helved
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+  labels:
+    team: helved
+spec:
+  image: {{image}}
+  ingresses:
+    - https://helved-oppdrag-simulering.intern.nav.no
+  accessPolicy:
+    inbound:
+      rules:
+        - application: utsjekk
+    outbound:
+      external:
+        - host: helved-ws-proxy.prod-fss-pub.nais.io
+      rules:
+        - application: helved-ws-proxy
+          cluster: prod-fss
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      memory: 512Mi
+      cpu: 50m
+  replicas:
+    min: 1
+    max: 1
+  azure:
+    application:
+      enabled: true
+  secureLogs:
+    enabled: true
+  liveness:
+    path: /actuator/live
+  readiness:
+    path: /actuator/ready
+  prometheus:
+    enabled: true
+    path: /actuator/metrics
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+  envFrom:
+    - secret: utsjekk-oppdrag-simulering
+  env:
+    - name: PROXY_HOST
+      value: https://helved-ws-proxy.prod-fss-pub.nais.io
+    - name: PROXY_SCOPE
+      value: api://prod-fss.helved.ws-proxy/.default
