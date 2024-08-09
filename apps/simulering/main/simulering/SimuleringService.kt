@@ -51,7 +51,7 @@ class SimuleringService(private val config: Config) {
             val wrapper = simulerBeregningResponse(xml)
             return wrapper.response.simulering
         } catch (e: Throwable) {
-            secureLog.info("feilet deserializering av simulering", e)
+            secureLog.info("Feilet deserialisering av simulering", e)
             fault(xml)
         }
     }
@@ -60,8 +60,8 @@ class SimuleringService(private val config: Config) {
         runCatching {
             tryInto<soap.SimuleringResponse>(xml).simulerBeregningResponse
         }.getOrElse {
-            appLog.error("Failed to deserialize soap message: ${it.message}")
-            secureLog.error("Failed to deserialize soap message: ${it.message}", it)
+            appLog.error("Feilet deserialisering av SOAP-melding: ${it.message}")
+            secureLog.error("Feilet deserialisering av SOAP-melding: ${it.message}", it)
             throw it
         }
 
@@ -72,8 +72,8 @@ class SimuleringService(private val config: Config) {
             val fault = tryInto<SoapFault>(xml).fault
             logAndThrow(fault)
         } catch (e: Throwable) {
-            appLog.error("feilet deserializering av fault")
-            secureLog.error("feilet deserializering av fault", e)
+            appLog.error("Feilet deserialisering av fault")
+            secureLog.error("Feilet deserialisering av fault", e)
             throw e
         }
     }
