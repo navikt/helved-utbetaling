@@ -36,9 +36,10 @@ class OppdragService(
 
             postgres.transaction { con ->
                 OppdragLagerRepository.opprettOppdrag(oppdragLager, con, versjon)
-                appLog.debug("Legger oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} på kø")
-                oppdragSender.sendOppdrag(oppdrag)
             }
+
+            appLog.debug("Legger oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} på kø")
+            oppdragSender.sendOppdrag(oppdrag)
         } catch (e: PSQLException) {
             when (e.sqlState) {
                 SQL_STATE.CONSTRAINT_VIOLATION -> throw OppdragAlleredeSendtException(utbetalingsoppdrag.saksnummer)
