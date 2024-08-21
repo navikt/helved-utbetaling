@@ -3,6 +3,7 @@ package utsjekk
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import io.getunleash.Unleash
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -11,6 +12,7 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
@@ -26,9 +28,12 @@ import libs.postgres.Postgres.migrate
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.utils.appLog
 import libs.utils.secureLog
+import utsjekk.featuretoggle.FeatureToggles
+import utsjekk.iverksetting.IverksettingService
 import utsjekk.oppdrag.OppdragClient
-import utsjekk.routing.actuators
-import utsjekk.routing.tasks
+import utsjekk.routes.actuators
+import utsjekk.routes.iverksettingRoute
+import utsjekk.routes.tasks
 import utsjekk.task.TaskScheduler
 import kotlin.coroutines.CoroutineContext
 
@@ -69,8 +74,11 @@ fun Application.utsjekk(
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             when (cause) {
-                is BadRequest -> call.respond(HttpStatusCode.BadRequest, cause.message)
-                is NotFound -> call.respond(HttpStatusCode.NotFound, cause.message)
+                is ApiError.BadRequest -> call.respond(HttpStatusCode.BadRequest, cause.message)
+                is ApiError.NotFound -> call.respond(HttpStatusCode.NotFound, cause.message)
+                is ApiError.Conflict -> call.respond(HttpStatusCode.Conflict, cause.message)
+                is ApiError.Forbidden -> call.respond(HttpStatusCode.Forbidden, cause.message)
+                is ApiError.Unavailable -> call.respond(HttpStatusCode.ServiceUnavailable, cause.message)
                 else -> {
                     secureLog.error("Unknown error.", cause)
                     call.respond(HttpStatusCode.UnprocessableEntity, "Unknown error. See logs")
@@ -87,6 +95,8 @@ fun Application.utsjekk(
 
     val oppdrag = OppdragClient(config)
     val scheduler = TaskScheduler(oppdrag, context)
+    val toggles = FeatureToggles(config.unleash)
+    val iverksettingService = IverksettingService(toggles)
 
     environment.monitor.subscribe(ApplicationStopping) {
         scheduler.close()
@@ -94,6 +104,7 @@ fun Application.utsjekk(
 
     routing {
         authenticate(TokenProvider.AZURE) {
+            iverksettingRoute(iverksettingService)
             tasks(context)
         }
 
