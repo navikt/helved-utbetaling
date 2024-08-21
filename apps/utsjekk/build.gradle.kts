@@ -15,6 +15,11 @@ dependencies {
     implementation("no.nav.helved:job:$libVersion")
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240820142241_1f3f212")
+    implementation("no.nav.utsjekk.kontrakter:iverksett:1.0_20240820142241_1f3f212")
+    implementation("no.nav.utsjekk.kontrakter:felles:1.0_20240820142241_1f3f212")
+
+    implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.10")
+    implementation("io.getunleash:unleash-client-java:9.2.4")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
