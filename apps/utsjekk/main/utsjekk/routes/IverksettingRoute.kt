@@ -1,16 +1,25 @@
 package utsjekk.routes
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.util.*
-import no.nav.utsjekk.kontrakter.iverksett.IverksettDto
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.call
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.principal
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.util.getOrFail
+import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
 import utsjekk.ApiError.Companion.forbidden
-import utsjekk.iverksetting.*
+import utsjekk.iverksetting.BehandlingId
+import utsjekk.iverksetting.Client
+import utsjekk.iverksetting.Iverksetting
+import utsjekk.iverksetting.IverksettingService
+import utsjekk.iverksetting.SakId
+import utsjekk.iverksetting.from
 
 
 // todo: denne implementasjonen er ikke riktig, bare en placeholder
@@ -22,8 +31,8 @@ private fun ApplicationCall.client(): Client =
 
 fun Route.iverksettingRoute(service: IverksettingService) {
     route("/api/iverksetting") {
-        post {
-            val dto = call.receive<IverksettDto>()
+        post("/v2") {
+            val dto = call.receive<IverksettV2Dto>()
             val iverksetting = Iverksetting.from(dto)
 
             service.iverksett(iverksetting)

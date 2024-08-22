@@ -4,12 +4,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import fakes.AzureFake
 import fakes.OppdragFake
 import fakes.UnleashFake
-import io.ktor.client.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.jackson.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.testing.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.jackson.jackson
+import io.ktor.server.engine.ConnectorType
+import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.server.testing.TestApplication
 import kotlinx.coroutines.runBlocking
 import libs.jdbc.PostgresContainer
 import libs.utils.appLog
@@ -37,7 +37,7 @@ object TestRuntime : AutoCloseable {
             oppdrag = oppdrag.config,
             azure = azure.config,
             postgres = postgres.config,
-            unleash = unleash.config,
+            unleash = UnleashFake.config,
         )
     }
 
@@ -59,7 +59,6 @@ object TestRuntime : AutoCloseable {
         ktor.stop()
         oppdrag.close()
         azure.close()
-        unleash.close()
     }
 }
 
@@ -70,7 +69,11 @@ fun NettyApplicationEngine.port(): Int = runBlocking {
 private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
-            utsjekk(TestRuntime.config, TestRuntime.context)
+            utsjekk(
+                config = TestRuntime.config,
+                context = TestRuntime.context,
+                featureToggles = TestRuntime.unleash,
+            )
         }
     }
 }

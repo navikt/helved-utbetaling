@@ -3,20 +3,21 @@ package utsjekk
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.getunleash.Unleash
-import io.ktor.http.*
-import io.ktor.serialization.jackson.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
-import io.ktor.server.engine.*
-import io.ktor.server.metrics.micrometer.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.statuspages.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.jackson.jackson
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopping
+import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.response.respond
+import io.ktor.server.routing.routing
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -29,6 +30,7 @@ import libs.postgres.concurrency.CoroutineDatasource
 import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.featuretoggle.FeatureToggles
+import utsjekk.featuretoggle.UnleashFeatureToggles
 import utsjekk.iverksetting.IverksettingService
 import utsjekk.oppdrag.OppdragClient
 import utsjekk.routes.actuators
@@ -46,15 +48,17 @@ fun main() {
     val config = Config()
     val datasource = Postgres.initialize(config.postgres).apply { migrate() }
     val context = Dispatchers.IO + CoroutineDatasource(datasource)
+    val featureToggles = UnleashFeatureToggles(config.unleash)
 
     embeddedServer(Netty, port = 8080) {
-        utsjekk(config, context)
+        utsjekk(config, context, featureToggles)
     }.start(wait = true)
 }
 
 fun Application.utsjekk(
     config: Config,
     context: CoroutineContext,
+    featureToggles: FeatureToggles
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
@@ -95,8 +99,7 @@ fun Application.utsjekk(
 
     val oppdrag = OppdragClient(config)
     val scheduler = TaskScheduler(oppdrag, context)
-    val toggles = FeatureToggles(config.unleash)
-    val iverksettingService = IverksettingService(toggles)
+    val iverksettingService = IverksettingService(featureToggles)
 
     environment.monitor.subscribe(ApplicationStopping) {
         scheduler.close()

@@ -8,14 +8,17 @@ import io.getunleash.util.UnleashConfig
 import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 
-class FeatureToggles(config: utsjekk.UnleashConfig) {
+interface FeatureToggles {
+    fun isDisabled(fagsystem: Fagsystem): Boolean
+}
+
+class UnleashFeatureToggles(config: utsjekk.UnleashConfig) : FeatureToggles {
     private val unleash: Unleash = DefaultUnleash(
         UnleashConfig.builder()
             .appName(config.appName)
             .unleashAPI("${config.host}/api")
             .apiKey(config.apiKey)
-            .fetchTogglesInterval(300)
-            .scheduledExecutor(ScheduledFeatureExecutor())
+            .disablePolling()
             .unleashContextProvider {
                 UnleashContext.builder()
                     .environment(config.cluster)
@@ -32,11 +35,7 @@ class FeatureToggles(config: utsjekk.UnleashConfig) {
         Fagsystem.TILTAKSPENGER to "utsjekk.stopp-iverksetting-tiltakspenger",
     )
 
-    fun isEnabled(fagsystem: Fagsystem): Boolean {
-        return !isDisabled(fagsystem)
-    }
-
-    fun isDisabled(fagsystem: Fagsystem): Boolean {
+    override fun isDisabled(fagsystem: Fagsystem): Boolean {
         return when (val killswitch = killswitches[fagsystem]) {
             null -> true.also {
                 appLog.error("Feature toggling av fagsystem $fagsystem ikke implementert.")
