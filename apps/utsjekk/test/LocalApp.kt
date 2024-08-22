@@ -1,5 +1,6 @@
 import fakes.AzureFake
 import fakes.OppdragFake
+import fakes.UnleashFake
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +27,7 @@ fun main() {
 
     val datasource = Postgres.initialize(postgres.config).apply { migrate() }
     val context: CoroutineContext = Dispatchers.IO + CoroutineDatasource(datasource)
+    val unleash = UnleashFake()
 
     val config by lazy {
         Config(
@@ -36,7 +38,7 @@ fun main() {
     }
 
     embeddedServer(Netty, port = 8080) {
-        utsjekk(config, context)
+        utsjekk(config, context, unleash)
         populate(context)
     }.start(wait = true)
 }

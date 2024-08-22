@@ -5,7 +5,7 @@ import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Personident
 import no.nav.utsjekk.kontrakter.iverksett.*
 
-fun Iverksetting.Companion.from(dto: IverksettDto): Iverksetting {
+fun Iverksetting.Companion.from(dto: IverksettV2Dto): Iverksetting {
     return Iverksetting(
         fagsak = dto.toFagsak(),
         søker = dto.personident.toSøker(),
@@ -14,7 +14,7 @@ fun Iverksetting.Companion.from(dto: IverksettDto): Iverksetting {
     )
 }
 
-private fun IverksettDto.toFagsak(): Fagsakdetaljer =
+private fun IverksettV2Dto.toFagsak(): Fagsakdetaljer =
     Fagsakdetaljer(
         fagsakId = sakId,
         fagsystem = Fagsystem.DAGPENGER // TODO: utled
@@ -22,22 +22,21 @@ private fun IverksettDto.toFagsak(): Fagsakdetaljer =
 
 private fun Personident.toSøker(): Søker = Søker(personident = verdi)
 
-private fun IverksettDto.toBehandling(): Behandlingsdetaljer =
+private fun IverksettV2Dto.toBehandling(): Behandlingsdetaljer =
     Behandlingsdetaljer(
         behandlingId = behandlingId,
         forrigeBehandlingId = forrigeIverksetting?.behandlingId
     )
 
-private fun VedtaksdetaljerDto.toDomain() =
+private fun VedtaksdetaljerV2Dto.toDomain() =
     Vedtaksdetaljer(
         vedtakstidspunkt = vedtakstidspunkt,
         saksbehandlerId = saksbehandlerId,
         beslutterId = beslutterId,
-        brukersNavKontor = brukersNavKontor,
         tilkjentYtelse = utbetalinger.toTilkjentYtelse()
     )
 
-private fun List<UtbetalingDto>.toTilkjentYtelse(): TilkjentYtelse {
+private fun List<UtbetalingV2Dto>.toTilkjentYtelse(): TilkjentYtelse {
     val andeler = this.map(AndelTilkjentYtelse::from)
 
     return when(andeler.size) {
@@ -48,7 +47,8 @@ private fun List<UtbetalingDto>.toTilkjentYtelse(): TilkjentYtelse {
 
 fun AndelTilkjentYtelse.Companion.from(dto: UtbetalingV2Dto): AndelTilkjentYtelse {
     return AndelTilkjentYtelse(
-        beløp = dto.beløpPerDag,
+        beløp = dto.beløp.toInt(),
+        satstype = dto.satstype,
         periode = Periode(dto.fraOgMedDato, dto.tilOgMedDato),
         stønadsdata = Stønadsdata.from(dto.stønadsdata)
     )

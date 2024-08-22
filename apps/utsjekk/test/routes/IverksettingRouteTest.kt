@@ -2,7 +2,6 @@ package routes
 
 import TestData
 import TestRuntime
-import fakes.counter
 import httpClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -26,7 +25,7 @@ class IverksettingRouteTest {
 
         val iverksett = TestData.enIverksettDto()
 
-        val res = httpClient.post("/api/iverksetting") {
+        val res = httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(iverksett)
@@ -34,15 +33,13 @@ class IverksettingRouteTest {
 
         assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
         assertEquals("Iverksetting er skrudd av for fagsystem ${Fagsystem.DAGPENGER}", res.bodyAsText())
-
-        println(counter.get()) // debug
     }
 
     @Test
     fun `start iverksetting`() = runTest {
         val iverksett = TestData.enIverksettDto()
 
-        val res = httpClient.post("/api/iverksetting") {
+        val res = httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(iverksett)
