@@ -1,5 +1,6 @@
 package utsjekk.iverksetting
 
+import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Personident
 import no.nav.utsjekk.kontrakter.iverksett.*
@@ -45,7 +46,7 @@ private fun List<UtbetalingDto>.toTilkjentYtelse(): TilkjentYtelse {
     }
 }
 
-fun AndelTilkjentYtelse.Companion.from(dto: UtbetalingDto): AndelTilkjentYtelse {
+fun AndelTilkjentYtelse.Companion.from(dto: UtbetalingV2Dto): AndelTilkjentYtelse {
     return AndelTilkjentYtelse(
         beløp = dto.beløpPerDag,
         periode = Periode(dto.fraOgMedDato, dto.tilOgMedDato),
@@ -56,6 +57,7 @@ fun AndelTilkjentYtelse.Companion.from(dto: UtbetalingDto): AndelTilkjentYtelse 
 fun Stønadsdata.Companion.from(dto: StønadsdataDto): Stønadsdata {
     return when (dto) {
         is StønadsdataDagpengerDto -> StønadsdataDagpenger(dto.stønadstype, dto.ferietillegg)
-        is StønadsdataTiltakspengerDto -> StønadsdataTiltakspenger(dto.stønadstype, dto.barnetillegg)
+        is StønadsdataTiltakspengerV2Dto -> StønadsdataTiltakspenger(dto.stønadstype, dto.barnetillegg)
+        is StønadsdataTilleggsstønaderDto -> StønadsdataTilleggsstønader(dto.stønadstype, dto.brukersNavKontor?.let(::BrukersNavKontor))
     }
 }
