@@ -1,10 +1,12 @@
 import no.nav.utsjekk.kontrakter.felles.Personident
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
+import no.nav.utsjekk.kontrakter.felles.StønadTypeTilleggsstønader
 import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDagpengerDto
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDto
+import no.nav.utsjekk.kontrakter.iverksett.StønadsdataTilleggsstønaderDto
 import no.nav.utsjekk.kontrakter.iverksett.UtbetalingV2Dto
 import no.nav.utsjekk.kontrakter.iverksett.VedtaksdetaljerV2Dto
 import utsjekk.iverksetting.RandomOSURId
@@ -13,32 +15,36 @@ import java.time.LocalDateTime
 
 object TestData {
 
-    fun enIverksettDto(): IverksettV2Dto = IverksettV2Dto(
-        behandlingId = RandomOSURId.generate(),
-        sakId = RandomOSURId.generate(),
-        personident = Personident("15507600333"),
-        vedtak = VedtaksdetaljerV2Dto(
-            vedtakstidspunkt = LocalDateTime.of(2021, 5, 12, 0, 0),
-            saksbehandlerId = "A12345",
-            beslutterId = "B23456",
-            utbetalinger = listOf(
-                enUtbetalingDto(
-                    beløp = 500u,
-                    satstype = Satstype.DAGLIG,
-                    fom = LocalDate.of(2021, 1, 1),
-                    tom = LocalDate.of(2021, 12, 31),
-                    stønadsdata = enDagpengerStønadsdata(StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR, null),
-                ),
-            ),
-        ),
+    fun enIverksettDto(
+        behandlingId: String = RandomOSURId.generate(),
+        sakId: String = RandomOSURId.generate(),
+        personident: Personident = Personident("15507600333"),
+        vedtak: VedtaksdetaljerV2Dto = enVedtaksdetaljer()
+    ) = IverksettV2Dto(
+        behandlingId = behandlingId,
+        sakId = sakId,
+        personident = personident,
+        vedtak = vedtak,
+    )
+
+    fun enVedtaksdetaljer(
+        vedtakstidspunkt: LocalDateTime = LocalDateTime.of(2021, 5, 12, 0, 0),
+        saksbehandlerId: String = "A12345",
+        beslutterId: String = "B23456",
+        utbetalinger: List<UtbetalingV2Dto> = listOf(enUtbetalingDto()),
+    ) = VedtaksdetaljerV2Dto(
+        vedtakstidspunkt = vedtakstidspunkt,
+        saksbehandlerId = saksbehandlerId,
+        beslutterId = beslutterId,
+        utbetalinger = utbetalinger,
     )
 
     fun enUtbetalingDto(
-        beløp: UInt,
-        satstype: Satstype,
-        fom: LocalDate,
-        tom: LocalDate,
-        stønadsdata: StønadsdataDto
+        beløp: UInt = 500u,
+        satstype: Satstype = Satstype.DAGLIG,
+        fom: LocalDate = LocalDate.of(2021, 1, 1),
+        tom: LocalDate = LocalDate.of(2021, 12, 31),
+        stønadsdata: StønadsdataDto = enDagpengerStønadsdata()
     ) =
         UtbetalingV2Dto(
             beløp = beløp,
@@ -49,7 +55,12 @@ object TestData {
         )
 
     fun enDagpengerStønadsdata(
-        type: StønadTypeDagpenger,
-        ferietillegg: Ferietillegg?,
+        type: StønadTypeDagpenger = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
+        ferietillegg: Ferietillegg? = null,
     ) = StønadsdataDagpengerDto(type, ferietillegg)
+
+    fun enTilleggsstønaderStønadsdata(
+        type: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_AAP,
+        brukersNavKontor: String? = null,
+    ) = StønadsdataTilleggsstønaderDto(type, brukersNavKontor)
 }

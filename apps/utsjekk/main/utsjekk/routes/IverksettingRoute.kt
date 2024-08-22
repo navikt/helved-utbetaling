@@ -13,6 +13,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.util.getOrFail
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
+import utsjekk.ApiError.Companion.badRequest
 import utsjekk.ApiError.Companion.forbidden
 import utsjekk.iverksetting.BehandlingId
 import utsjekk.iverksetting.Client
@@ -32,7 +33,11 @@ private fun ApplicationCall.client(): Client =
 fun Route.iverksettingRoute(service: IverksettingService) {
     route("/api/iverksetting") {
         post("/v2") {
-            val dto = call.receive<IverksettV2Dto>()
+            val dto = try {
+                call.receive<IverksettV2Dto>()
+            } catch (ex: Exception) {
+                badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter")
+            }
             val iverksetting = Iverksetting.from(dto)
 
             service.iverksett(iverksetting)
