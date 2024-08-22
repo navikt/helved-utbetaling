@@ -26,17 +26,11 @@ class UnleashFake : AutoCloseable {
     }
 
     override fun close() = unleash.stop(0, 0)
-
-    fun reset(fagsystem: Fagsystem) {
-        disabled.clear()
-    }
-
-    fun disable(fagsystem: Fagsystem) {
-        disabled.add(fagsystem)
-    }
+    fun reset() = disabled.clear()
+    fun disable(fagsystem: Fagsystem) = disabled.add(fagsystem)
 }
 
-var counter = AtomicLong(0)
+var counter = AtomicLong(0) // sjekker hvor mange ganger ScheduledFeatureExecutor rekker å fetche features fra unleach
 
 private fun Application.unleash() {
     routing {

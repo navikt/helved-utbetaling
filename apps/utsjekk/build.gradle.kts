@@ -8,15 +8,16 @@ application {
 
 val ktorVersion = "2.3.12"
 val libVersion = "0.1.90"
+val kontraktVersion = "1.0_20240821103442_e26671e"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:job:$libVersion")
 
-    implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20240820142241_1f3f212")
-    implementation("no.nav.utsjekk.kontrakter:iverksett:1.0_20240820142241_1f3f212")
-    implementation("no.nav.utsjekk.kontrakter:felles:1.0_20240820142241_1f3f212")
+    implementation("no.nav.utsjekk.kontrakter:oppdrag:$kontraktVersion")
+    implementation("no.nav.utsjekk.kontrakter:iverksett:$kontraktVersion")
+    implementation("no.nav.utsjekk.kontrakter:felles:$kontraktVersion")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.10")
     implementation("io.getunleash:unleash-client-java:9.2.4")
