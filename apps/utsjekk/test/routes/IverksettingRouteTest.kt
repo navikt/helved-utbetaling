@@ -5,25 +5,29 @@ import TestRuntime
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.readValue
 import httpClient
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeoutOrNull
+import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.objectMapper
+import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import utsjekk.task.Status
+import utsjekk.task.TaskDao
 import java.time.LocalDate
 
 class IverksettingRouteTest {
-
     @AfterEach
     fun reset() {
         TestRuntime.unleash.reset()
@@ -79,19 +83,27 @@ class IverksettingRouteTest {
             setBody(dto)
         }
 
-//        kjørTasks() TODO: Test at vi plukker opp og kjører task
-
         assertEquals(HttpStatusCode.Accepted, res.status)
 
-//        restTemplate
-//            .exchange<IverksettStatus>(
-//                localhostUrl("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status"),
-//                HttpMethod.GET,
-//                HttpEntity(null, headers),
-//            ).also {
-//                assertEquals(HttpStatus.OK, it.statusCode)
-//                assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, it.body)
-//            }
+        val statusRes = withTimeoutOrNull(1000) {
+            suspend fun getStatus(): HttpResponse {
+                return httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
+                    bearerAuth(TestRuntime.azure.generateToken())
+                    accept(ContentType.Application.Json)
+                }
+            }
+
+            var res: HttpResponse
+
+            do {
+                res = getStatus()
+            } while (res.status != HttpStatusCode.OK)
+
+            res
+        }
+
+        assertNotNull(statusRes)
+        assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, statusRes!!.body())
     }
 
     @Test

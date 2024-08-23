@@ -7,10 +7,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import utsjekk.task.Kind
-import utsjekk.task.Status
-import utsjekk.task.TaskDao
-import utsjekk.task.Tasks
+import utsjekk.task.*
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.test.assertEquals
@@ -19,7 +16,7 @@ class TasksTest {
 
     @BeforeEach
     fun cleanup() {
-        TestRuntime.clear("task")
+        TestRuntime.clear(TASK_TABLE_NAME)
     }
 
     @Nested
