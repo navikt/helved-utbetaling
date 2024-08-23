@@ -1,4 +1,4 @@
-CREATE TABLE task
+CREATE TABLE task_v2
 (
     id            UUID PRIMARY KEY,
     kind          VARCHAR     NOT NULL,
@@ -11,14 +11,14 @@ CREATE TABLE task
     message       VARCHAR
 );
 
-CREATE TABLE task_history
+CREATE TABLE task_v2_history
 (
     id           UUID PRIMARY KEY,
-    task_id      UUID REFERENCES task (id) ON DELETE CASCADE,
+    task_id      UUID REFERENCES task_v2 (id) ON DELETE CASCADE,
     created_at   TIMESTAMP NOT NULL,
     triggered_at TIMESTAMP NOT NULL,
     triggered_by TIMESTAMP NOT NULL,
     status       VARCHAR(20)
 );
 
-CREATE INDEX IF NOT EXISTS task_status_idx ON task (status);
+CREATE INDEX IF NOT EXISTS task_v2_status_idx ON task_v2 (status);

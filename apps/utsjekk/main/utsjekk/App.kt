@@ -99,7 +99,7 @@ fun Application.utsjekk(
 
     val oppdrag = OppdragClient(config)
     val scheduler = TaskScheduler(oppdrag, context)
-    val iverksettingService = IverksettingService(featureToggles)
+    val iverksettingService = IverksettingService(context, featureToggles)
 
     environment.monitor.subscribe(ApplicationStopping) {
         scheduler.close()
