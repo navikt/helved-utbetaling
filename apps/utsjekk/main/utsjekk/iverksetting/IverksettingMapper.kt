@@ -1,8 +1,10 @@
 package utsjekk.iverksetting
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Personident
+import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.*
 
 fun Iverksetting.Companion.from(dto: IverksettV2Dto): Iverksetting {
@@ -16,7 +18,7 @@ fun Iverksetting.Companion.from(dto: IverksettV2Dto): Iverksetting {
 
 private fun IverksettV2Dto.toFagsak(): Fagsakdetaljer =
     Fagsakdetaljer(
-        fagsakId = sakId,
+        fagsakId = SakId(sakId),
         fagsystem = Fagsystem.DAGPENGER // TODO: utled
     )
 
@@ -24,8 +26,8 @@ private fun Personident.toSøker(): Søker = Søker(personident = verdi)
 
 private fun IverksettV2Dto.toBehandling(): Behandlingsdetaljer =
     Behandlingsdetaljer(
-        behandlingId = behandlingId,
-        forrigeBehandlingId = forrigeIverksetting?.behandlingId
+        behandlingId = BehandlingId(behandlingId),
+        forrigeBehandlingId = forrigeIverksetting?.behandlingId?.let(::BehandlingId)
     )
 
 private fun VedtaksdetaljerV2Dto.toDomain() =
@@ -39,7 +41,7 @@ private fun VedtaksdetaljerV2Dto.toDomain() =
 private fun List<UtbetalingV2Dto>.toTilkjentYtelse(): TilkjentYtelse {
     val andeler = this.map(AndelTilkjentYtelse::from)
 
-    return when(andeler.size) {
+    return when (andeler.size) {
         0 -> TilkjentYtelse(andelerTilkjentYtelse = emptyList())
         else -> TilkjentYtelse(andelerTilkjentYtelse = andeler)
     }
@@ -58,6 +60,12 @@ fun Stønadsdata.Companion.from(dto: StønadsdataDto): Stønadsdata {
     return when (dto) {
         is StønadsdataDagpengerDto -> StønadsdataDagpenger(dto.stønadstype, dto.ferietillegg)
         is StønadsdataTiltakspengerV2Dto -> StønadsdataTiltakspenger(dto.stønadstype, dto.barnetillegg)
-        is StønadsdataTilleggsstønaderDto -> StønadsdataTilleggsstønader(dto.stønadstype, dto.brukersNavKontor?.let(::BrukersNavKontor))
+        is StønadsdataTilleggsstønaderDto -> StønadsdataTilleggsstønader(
+            dto.stønadstype,
+            dto.brukersNavKontor?.let(::BrukersNavKontor)
+        )
     }
 }
+
+fun TilkjentYtelse.toJson(): String = objectMapper.writeValueAsString(this)
+fun TilkjentYtelse.Mapper.from(json: String): TilkjentYtelse = objectMapper.readValue(json)

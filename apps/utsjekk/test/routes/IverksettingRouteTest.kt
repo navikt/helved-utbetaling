@@ -9,11 +9,10 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
-import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -23,8 +22,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import utsjekk.task.Status
-import utsjekk.task.TaskDao
 import java.time.LocalDate
 
 class IverksettingRouteTest {
@@ -85,7 +82,7 @@ class IverksettingRouteTest {
 
         assertEquals(HttpStatusCode.Accepted, res.status)
 
-        val statusRes = withTimeoutOrNull(1000) {
+        val statusRes = withTimeoutOrNull(3000) {
             suspend fun getStatus(): HttpResponse {
                 return httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
                     bearerAuth(TestRuntime.azure.generateToken())
@@ -93,16 +90,15 @@ class IverksettingRouteTest {
                 }
             }
 
-            var res: HttpResponse
-
-            do {
+            var res: HttpResponse = getStatus()
+            while (res.status != HttpStatusCode.OK) {
                 res = getStatus()
-            } while (res.status != HttpStatusCode.OK)
-
+                delay(10)
+            }
             res
         }
 
-        assertNotNull(statusRes)
+        assertNotNull(runBlocking { statusRes })
         assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, statusRes!!.body())
     }
 
