@@ -1,26 +1,18 @@
 package utsjekk.routes
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
-import io.ktor.server.auth.jwt.JWTPrincipal
-import io.ktor.server.auth.principal
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
-import io.ktor.server.util.getOrFail
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.util.*
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
 import utsjekk.ApiError.Companion.badRequest
 import utsjekk.ApiError.Companion.forbidden
-import utsjekk.iverksetting.BehandlingId
-import utsjekk.iverksetting.Client
-import utsjekk.iverksetting.Iverksetting
-import utsjekk.iverksetting.IverksettingService
-import utsjekk.iverksetting.SakId
-import utsjekk.iverksetting.from
+import utsjekk.ApiError.Companion.notFound
+import utsjekk.iverksetting.*
 
 
 // todo: denne implementasjonen er ikke riktig, bare en placeholder
@@ -50,16 +42,24 @@ fun Route.iverksettingRoute(service: IverksettingService) {
         }
 
         get("/{sakId}/{behandlingId}/status") {
-            val sakId = call.parameters.getOrFail<SakId>("sakId")
-            val behandlingId = call.parameters.getOrFail<BehandlingId>("behandlingId")
+            val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
+            val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
             val client = call.client()
-            val status = service.utledStatus(client, sakId, behandlingId)
+            val status = service.utledStatus(client, sakId, behandlingId, null)
+                ?: notFound("status for sakId $sakId og behandlingId $behandlingId")
 
             call.respond(HttpStatusCode.OK, status)
         }
 
         get("/{sakId}/{behandlingId}/{iverksettingId}/status") {
+            val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
+            val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
+            val iverksettingId = call.parameters.getOrFail<String>("iverksettingId").let(::IverksettingId)
+            val client = call.client() // fixme: should be possible to set azp_name claim in newest helved:libs:auth-test
+            val status = service.utledStatus(client, sakId, behandlingId, iverksettingId)
+                ?: notFound("status for sakId $sakId, behandlingId $behandlingId og iverksettingId $iverksettingId")
 
+            call.respond(HttpStatusCode.OK, status)
         }
     }
 }

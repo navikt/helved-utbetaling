@@ -2,7 +2,7 @@ package utsjekk.task
 
 import libs.postgres.concurrency.transaction
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 object Tasks {
 
@@ -46,7 +46,7 @@ object Tasks {
         transaction {
             TaskDao.select(
                 TaskDao.Where(createdAt = SelectTime(Operator.GE, after))
-                )
+            )
                 .map(TaskDto::from)
         }
 

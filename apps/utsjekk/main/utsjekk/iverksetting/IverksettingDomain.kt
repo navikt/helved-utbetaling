@@ -26,7 +26,7 @@ data class Iverksetting(
 }
 
 data class Fagsakdetaljer(
-    val fagsakId: String,
+    val fagsakId: SakId,
     val fagsystem: Fagsystem,
 )
 
@@ -44,10 +44,10 @@ data class Vedtaksdetaljer(
 )
 
 data class Behandlingsdetaljer(
-    val forrigeBehandlingId: String? = null,
-    val forrigeIverksettingId: String? = null,
-    val behandlingId: String,
-    val iverksettingId: String? = null,
+    val forrigeBehandlingId: BehandlingId? = null,
+    val forrigeIverksettingId: IverksettingId? = null,
+    val behandlingId: BehandlingId,
+    val iverksettingId: IverksettingId? = null,
 )
 
 val Iverksetting.sakId get() = this.fagsak.fagsakId
@@ -65,7 +65,9 @@ data class TilkjentYtelse(
         sisteAndelIKjede?.let {
             mapOf(it.stønadsdata to it)
         } ?: emptyMap(),
-)
+) {
+    companion object Mapper
+}
 
 sealed class Stønadsdata(open val stønadstype: StønadType) {
     companion object;

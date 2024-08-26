@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 import kotlin.coroutines.coroutineContext
 
 data class IverksettingDao(
-    val behandlingId: String,
+    val behandlingId: BehandlingId,
     val data: Iverksetting,
     val mottattTidspunkt: LocalDateTime,
 ) {
@@ -17,10 +17,10 @@ data class IverksettingDao(
     suspend fun insert() {
         val sql = """
             INSERT INTO iverksetting (behandling_id, data, mottatt_tidspunkt) 
-            VALUES (:behandlingId, to_json(:data::json), :mottattTidspunkt)
+            VALUES (?, to_json(?::json), ?)
         """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
-            stmt.setObject(1, behandlingId)
+            stmt.setObject(1, behandlingId.id) // todo: try behandlingId without .id
             stmt.setString(2, objectMapper.writeValueAsString(data))
             stmt.setTimestamp(3, Timestamp.valueOf(mottattTidspunkt))
 
