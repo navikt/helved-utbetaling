@@ -18,7 +18,7 @@ import utsjekk.iverksetting.*
 // todo: denne implementasjonen er ikke riktig, bare en placeholder
 private fun ApplicationCall.client(): Client =
     requireNotNull(principal<JWTPrincipal>()) { "principal mangler i ktor auth" }
-        .getClaim("azp_name", String::class)
+        .getClaim("azp_name", String::class)?.split(":")?.last()
         ?.let(::Client)
         ?: forbidden("mangler azp_name i claims")
 
@@ -30,7 +30,9 @@ fun Route.iverksettingRoute(service: IverksettingService) {
             } catch (ex: Exception) {
                 badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter")
             }
-            val iverksetting = Iverksetting.from(dto)
+
+            val fagsystem = call.client().toFagsystem()
+            val iverksetting = Iverksetting.from(dto, fagsystem)
 
             service.iverksett(iverksetting)
 
@@ -55,7 +57,7 @@ fun Route.iverksettingRoute(service: IverksettingService) {
             val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
             val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
             val iverksettingId = call.parameters.getOrFail<String>("iverksettingId").let(::IverksettingId)
-            val client = call.client() // fixme: should be possible to set azp_name claim in newest helved:libs:auth-test
+            val client = call.client()
             val status = service.utledStatus(client, sakId, behandlingId, iverksettingId)
                 ?: notFound("status for sakId $sakId, behandlingId $behandlingId og iverksettingId $iverksettingId")
 

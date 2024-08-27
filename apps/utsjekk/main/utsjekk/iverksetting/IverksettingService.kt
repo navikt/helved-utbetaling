@@ -47,7 +47,7 @@ class IverksettingService(private val context: CoroutineContext, private val tog
                     attempt = 0,
                     createdAt = now,
                     updatedAt = now,
-                    scheduledFor = now.plusDays(1), // todo: set correct schedule
+                    scheduledFor = now, //.plusDays(1), // todo: set correct schedule
                     message = null,
                 ).insert()
             }
@@ -61,12 +61,14 @@ class IverksettingService(private val context: CoroutineContext, private val tog
         iverksettingId: IverksettingId?
     ): IverksettStatus? {
         val result = withContext(context) {
-            IverksettingResultatDao.select(1) {
-                this.fagsystem = client.toFagsystem()
-                this.sakId = sakId
-                this.behandlingId = behandlingId
-                this.iverksettingId = iverksettingId
-            }.singleOrNull()
+            transaction {
+                IverksettingResultatDao.select(1) {
+                    this.fagsystem = client.toFagsystem()
+                    this.sakId = sakId
+                    this.behandlingId = behandlingId
+                    this.iverksettingId = iverksettingId
+                }.singleOrNull()
+            }
         }
 
         if (result == null) {
@@ -95,7 +97,7 @@ value class Client(private val name: String) {
         when (name) {
             "utsjekk" -> Fagsystem.DAGPENGER
             "tiltakspenger-vedtak" -> Fagsystem.TILTAKSPENGER
-            "tilleggstønader" -> Fagsystem.TILLEGGSSTØNADER
+            "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
             else -> error("mangler mapping mellom app ($name) og fagsystem")
         }
 }

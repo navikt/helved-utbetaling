@@ -55,6 +55,7 @@ object Tasks {
             val task = TaskDao.select(
                 TaskDao.Where(id = id)
             ).single()
+            // todo: skal vi øke scheduled for neste runde, eller skal den være til manuell håndtering?
             task.copy(
                 status = status,
                 updatedAt = LocalDateTime.now(),
