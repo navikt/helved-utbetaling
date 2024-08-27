@@ -1,10 +1,16 @@
 package task
 
+import TestData.enIverksettDto
+import TestRuntime
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
-import org.junit.jupiter.api.Assertions
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.objectMapper
+import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import utsjekk.iverksetting.*
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
@@ -16,10 +22,13 @@ class TaskSchedulerTest {
 
     @Test
     fun `scheduled tasks are sent and set to completed`() = runTest(TestRuntime.context) {
-        val task = aTask()
+        val iverksett = enIverksetting(enIverksettDto())
+        val resultat = enIverksettingResultat(iverksett)
+        val json = objectMapper.writeValueAsString(iverksett.data)
+        val task = aTask(json = json)
 
-        populate(task).await()
-        Assertions.assertEquals(Status.UNPROCESSED, getTask(task.id).await().single().status)
+        populate(task, iverksett, resultat).await()
+        assertEquals(Status.UNPROCESSED, getTask(task.id).await().single().status)
 
         while (!isComplete(task)) {
             runBlocking {
@@ -27,7 +36,7 @@ class TaskSchedulerTest {
             }
         }
 
-        Assertions.assertEquals(Status.COMPLETE, getTask(task.id).await().single().status)
+        assertEquals(Status.COMPLETE, getTask(task.id).await().single().status)
     }
 
     private fun aTask(
@@ -35,10 +44,11 @@ class TaskSchedulerTest {
         createdAt: LocalDateTime = LocalDateTime.now(),
         updatedAt: LocalDateTime = createdAt,
         scheduledFor: LocalDateTime = createdAt,
+        json: String,
     ) = TaskDao(
         id = UUID.randomUUID(),
         kind = Kind.Iverksetting,
-        payload = "hello world",
+        payload = json,
         status = status,
         attempt = 0,
         createdAt = createdAt,
@@ -47,10 +57,31 @@ class TaskSchedulerTest {
         message = null
     )
 
-    private fun populate(task: TaskDao): Deferred<Unit> =
+    private fun enIverksetting(dto: IverksettV2Dto) = IverksettingDao(
+        behandlingId = dto.behandlingId.let(::BehandlingId),
+        mottattTidspunkt = LocalDateTime.now(),
+        data = Iverksetting.from(dto, Fagsystem.TILLEGGSSTØNADER)
+    )
+
+    private fun enIverksettingResultat(iverksetting: IverksettingDao) = IverksettingResultatDao(
+        fagsystem = iverksetting.data.fagsak.fagsystem,
+        sakId = iverksetting.data.sakId,
+        behandlingId = iverksetting.behandlingId,
+        iverksettingId = iverksetting.data.iverksettingId,
+        tilkjentytelseforutbetaling = null,
+        oppdragresultat = null
+    )
+
+    private fun populate(
+        task: TaskDao,
+        iverksetting: IverksettingDao,
+        result: IverksettingResultatDao
+    ): Deferred<Unit> =
         scope.async {
             transaction {
                 task.insert()
+                iverksetting.insert()
+                result.insert()
             }
         }
 

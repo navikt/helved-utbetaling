@@ -46,7 +46,7 @@ data class IverksettingResultatDao(
 
             val sql = """
                 UPDATE $TABLE_NAME 
-                SET tilkjentytelseforutbetaling = ?, oppdragresultat = ?
+                SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
                 WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id = ?
             """.trimIndent()
 
@@ -67,7 +67,7 @@ data class IverksettingResultatDao(
         suspend fun updateWithoutIverksettingId() {
             val sql = """
                 UPDATE $TABLE_NAME 
-                SET tilkjentytelseforutbetaling = ?, oppdragresultat = ?
+                SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
                 WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id IS NULL
             """.trimIndent()
 
