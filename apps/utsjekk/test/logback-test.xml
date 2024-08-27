@@ -15,4 +15,8 @@
         <appender-ref ref="pretty"/>
     </logger>
 
+    <logger name="app" level="DEBUG" additivity="false">
+        <appender-ref ref="pretty"/>
+    </logger>
+
 </configuration>

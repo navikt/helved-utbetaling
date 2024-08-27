@@ -1,17 +1,15 @@
 package utsjekk.task
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.ktor.util.logging.*
+import kotlinx.coroutines.CancellationException
 import libs.job.Scheduler
 import libs.postgres.concurrency.transaction
 import libs.postgres.concurrency.withLock
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import utsjekk.iverksetting.Iverksetting
-import utsjekk.iverksetting.IverksettingResultatDao
-import utsjekk.iverksetting.OppdragResultat
-import utsjekk.iverksetting.iverksettingId
-import utsjekk.oppdrag.HttpError
+import utsjekk.iverksetting.*
 import utsjekk.oppdrag.OppdragClient
 import java.time.LocalDateTime
 import kotlin.coroutines.CoroutineContext
@@ -45,8 +43,18 @@ class TaskScheduler(
                 transaction {
                     val iverksettingResultatDao = IverksettingResultatDao.select(1) {
                         iverksettingId = iverksetting.iverksettingId
+                        behandlingId = iverksetting.behandlingId
+                        sakId = iverksetting.sakId
                         fagsystem = iverksetting.fagsak.fagsystem
-                    }.single()
+                    }.singleOrNull() ?: error(
+                        """
+                        Fant ikke iverksettingresultat for iverksetting med 
+                            iverksettingId  ${iverksetting.iverksettingId}
+                            behandlingId    ${iverksetting.behandlingId}
+                            sakId           ${iverksetting.sakId}
+                            fagsystem       $iverksetting.fagsak.fagsystem
+                        """.trimIndent()
+                    )
 
                     iverksettingResultatDao.copy(
                         oppdragresultat = OppdragResultat(
@@ -63,11 +71,10 @@ class TaskScheduler(
 
             oppdrag.sendOppdrag(fed.payload)
             Tasks.update(fed.id, Status.COMPLETE, "")
-            // todo: gode feilmeldinger basert på checked exception, default til throwahle.message
-        } catch (e: HttpError) {
-            Tasks.update(fed.id, Status.FAIL, e.message)
         } catch (e: Throwable) {
+            if (e is CancellationException) throw e
             Tasks.update(fed.id, Status.FAIL, e.message)
+            secureLog.error(e)
         }
     }
 

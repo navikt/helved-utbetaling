@@ -12,7 +12,7 @@ import io.ktor.http.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withTimeout
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -20,7 +20,6 @@ import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
@@ -32,7 +31,7 @@ class IverksettingRouteTest {
 
     @Test
     fun `iverksetter ikke når kill switch for ytelsen er skrudd på`() = runTest {
-        TestRuntime.unleash.disable(Fagsystem.DAGPENGER)
+        TestRuntime.unleash.disable(Fagsystem.TILLEGGSSTØNADER)
 
         val iverksett = TestData.enIverksettDto()
 
@@ -43,7 +42,7 @@ class IverksettingRouteTest {
         }
 
         assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
-        assertEquals("Iverksetting er skrudd av for fagsystem ${Fagsystem.DAGPENGER}", res.bodyAsText())
+        assertEquals("Iverksetting er skrudd av for fagsystem ${Fagsystem.TILLEGGSSTØNADER}", res.bodyAsText())
     }
 
     @Test
@@ -60,7 +59,7 @@ class IverksettingRouteTest {
     }
 
     @Test
-    fun `start iverksetting av tilleggsstønader`() {
+    fun `start iverksetting av tilleggsstønader`() = runTest {
         val dto = TestData.enIverksettDto(
             iverksettingId = "en-iverksetting",
             vedtak = TestData.enVedtaksdetaljer(
@@ -75,39 +74,33 @@ class IverksettingRouteTest {
             )
         )
 
-        val res = runBlocking {
-            httpClient.post("/api/iverksetting/v2") {
-                bearerAuth(TestRuntime.azure.generateToken())
-                contentType(ContentType.Application.Json)
-                setBody(dto)
-            }
+        httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
+        }.let {
+            assertEquals(HttpStatusCode.Accepted, it.status)
         }
 
-        assertEquals(HttpStatusCode.Accepted, res.status)
-
-        val statusRes = runBlocking {
-            withTimeoutOrNull(10000) {
-                suspend fun getStatus(): HttpResponse {
+        val status = runBlocking {
+            withTimeout(4000) {
+                suspend fun getStatus(): IverksettStatus {
                     return httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
                         bearerAuth(TestRuntime.azure.generateToken())
                         accept(ContentType.Application.Json)
-                    }
+                    }.body<IverksettStatus>()
                 }
 
-                var res: HttpResponse = getStatus()
-                while (res.status != HttpStatusCode.OK) {
-                    res = getStatus()
+                var status = getStatus()
+                while (status == IverksettStatus.IKKE_PÅBEGYNT) {
                     delay(10)
+                    status = getStatus()
                 }
-                res
+                status
             }
         }
 
-        assertNotNull(statusRes)
-
-        runBlocking {
-            assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, statusRes!!.body<IverksettStatus>())
-        }
+        assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
     }
 
     @Test
