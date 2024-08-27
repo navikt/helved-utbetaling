@@ -91,8 +91,26 @@ class SimuleringService(private val config: Config) {
                 contains("Personen finnes ikke") -> throw IkkeFunnet(this)
                 contains("ugyldig") -> throw RequestErUgyldigException(this)
                 contains("simulerBeregningFeilUnderBehandling") -> resolveBehandlingFault(fault)
+                contains("Conversion to SOAP failed") -> resolveSoapConversionFailure(fault)
                 else -> soapError(fault)
             }
+        }
+    }
+
+    private fun resolveSoapConversionFailure(fault: Fault): Nothing {
+        val detail = fault.detail ?: soapError(fault)
+        val cicsFault = detail["CICSFault"]?.toString() ?: soapError(fault)
+
+        if (cicsFault.contains("DFHPI1008")) {
+            throw ServiceUserPermissionException(
+                """
+                ConsumerId (service-user) er ikke gyldig for simuleringstjenesten.
+                Det kan ha vært datalast i Oppdragsystemet. 
+                Kontakt oss eller PO Utbetaling.
+                """
+            )
+        } else {
+            soapError(fault)
         }
     }
 
@@ -135,3 +153,4 @@ class IkkeFunnet(feilmelding: String) : RuntimeException(feilmelding)
 class FinnesFraFør(feilmelding: String) : RuntimeException(feilmelding)
 class RequestErUgyldigException(feilmelding: String) : RuntimeException(feilmelding)
 class OppdragErStengtException : RuntimeException("Oppdrag/UR er stengt")
+class ServiceUserPermissionException(feilmelding: String) : RuntimeException(feilmelding)
