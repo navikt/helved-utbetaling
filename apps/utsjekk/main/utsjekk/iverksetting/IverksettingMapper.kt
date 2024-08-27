@@ -7,19 +7,19 @@ import no.nav.utsjekk.kontrakter.felles.Personident
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.*
 
-fun Iverksetting.Companion.from(dto: IverksettV2Dto): Iverksetting {
+fun Iverksetting.Companion.from(dto: IverksettV2Dto, fagsystem: Fagsystem): Iverksetting {
     return Iverksetting(
-        fagsak = dto.toFagsak(),
+        fagsak = dto.toFagsak(fagsystem),
         søker = dto.personident.toSøker(),
         behandling = dto.toBehandling(),
         vedtak = dto.vedtak.toDomain()
     )
 }
 
-private fun IverksettV2Dto.toFagsak(): Fagsakdetaljer =
+private fun IverksettV2Dto.toFagsak(fagsystem: Fagsystem): Fagsakdetaljer =
     Fagsakdetaljer(
         fagsakId = SakId(sakId),
-        fagsystem = Fagsystem.DAGPENGER // TODO: utled
+        fagsystem = fagsystem
     )
 
 private fun Personident.toSøker(): Søker = Søker(personident = verdi)
@@ -27,7 +27,9 @@ private fun Personident.toSøker(): Søker = Søker(personident = verdi)
 private fun IverksettV2Dto.toBehandling(): Behandlingsdetaljer =
     Behandlingsdetaljer(
         behandlingId = BehandlingId(behandlingId),
-        forrigeBehandlingId = forrigeIverksetting?.behandlingId?.let(::BehandlingId)
+        forrigeBehandlingId = forrigeIverksetting?.behandlingId?.let(::BehandlingId),
+        iverksettingId = iverksettingId?.let(::IverksettingId),
+        forrigeIverksettingId = forrigeIverksetting?.iverksettingId?.let(::IverksettingId)
     )
 
 private fun VedtaksdetaljerV2Dto.toDomain() =

@@ -40,6 +40,56 @@ data class IverksettingResultatDao(
         }
     }
 
+    suspend fun update() {
+
+        suspend fun updateWithIverksettingId() {
+
+            val sql = """
+                UPDATE $TABLE_NAME 
+                SET tilkjentytelseforutbetaling = ?, oppdragresultat = ?
+                WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id = ?
+            """.trimIndent()
+
+            coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, objectMapper.writeValueAsString(tilkjentytelseforutbetaling))
+                stmt.setString(2, objectMapper.writeValueAsString(oppdragresultat))
+                stmt.setString(3, behandlingId.id)
+                stmt.setString(4, sakId.id)
+                stmt.setString(5, fagsystem.name)
+                stmt.setString(6, requireNotNull(iverksettingId).id)
+
+                appLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeUpdate()
+            }
+        }
+
+        suspend fun updateWithoutIverksettingId() {
+            val sql = """
+                UPDATE $TABLE_NAME 
+                SET tilkjentytelseforutbetaling = ?, oppdragresultat = ?
+                WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id IS NULL
+            """.trimIndent()
+
+            coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, objectMapper.writeValueAsString(tilkjentytelseforutbetaling))
+                stmt.setString(2, objectMapper.writeValueAsString(oppdragresultat))
+                stmt.setString(3, behandlingId.id)
+                stmt.setString(4, sakId.id)
+                stmt.setString(5, fagsystem.name)
+
+                appLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeUpdate()
+            }
+        }
+
+        when (iverksettingId) {
+            null -> updateWithoutIverksettingId()
+            else -> updateWithIverksettingId()
+        }
+    }
+
     companion object {
         suspend fun select(
             limit: Int? = null,
@@ -54,8 +104,8 @@ data class IverksettingResultatDao(
                     append(" WHERE ")
                     where.fagsystem?.let { append("fagsystem = ? AND ") }
                     where.sakId?.let { append("sakId = ? AND ") }
-                    where.behandlingId?.let { append("behandlingId = ? AND ") }
-                    where.iverksettingId?.let { append("iverksettingId = ? AND ") }
+                    where.behandlingId?.let { append("behandling_id = ? AND ") }
+                    where.iverksettingId?.let { append("iverksetting_id = ? AND ") }
                     where.tilkjentytelseforutbetaling?.let { append("tilkjentytelseforutbetaling = to_json(?::json) AND ") }
                     where.oppdragresultat?.let { append("oppdragresultat = to_json(?::json) AND ") }
 
@@ -103,9 +153,9 @@ fun IverksettingResultatDao.Companion.from(rs: ResultSet) = IverksettingResultat
     fagsystem = Fagsystem.valueOf(rs.getString("fagsystem")),
     sakId = SakId(rs.getString("sakId")),
     behandlingId = BehandlingId(rs.getString("behandling_id")),
-    iverksettingId = IverksettingId(rs.getString("iverksetting_id")), // todo: kan være null?
-    tilkjentytelseforutbetaling = TilkjentYtelse.from(rs.getString("tilkjentytelseforutbetaling")),
-    oppdragresultat = OppdragResultat.from(rs.getString("oppdragresultat")),
+    iverksettingId = rs.getString("iverksetting_id")?.let(::IverksettingId),
+    tilkjentytelseforutbetaling = rs.getString("tilkjentytelseforutbetaling")?.let(TilkjentYtelse::from),
+    oppdragresultat = rs.getString("oppdragresultat")?.let(OppdragResultat::from),
 )
 
 data class OppdragResultat(

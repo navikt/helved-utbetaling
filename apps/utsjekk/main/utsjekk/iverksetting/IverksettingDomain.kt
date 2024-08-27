@@ -1,10 +1,9 @@
 package utsjekk.iverksetting
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.KeyDeserializer
-import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import no.nav.utsjekk.kontrakter.felles.*
 import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
@@ -61,6 +60,8 @@ data class TilkjentYtelse(
     val utbetalingsoppdrag: Utbetalingsoppdrag? = null,
     val andelerTilkjentYtelse: List<AndelTilkjentYtelse>,
     val sisteAndelIKjede: AndelTilkjentYtelse? = null,
+    @JsonSerialize(keyUsing = KjedenøkkelKeySerializer::class)
+    @JsonDeserialize(keyUsing = KjedenøkkelKeyDeserializer::class)
     val sisteAndelPerKjede: Map<Stønadsdata, AndelTilkjentYtelse> =
         sisteAndelIKjede?.let {
             mapOf(it.stønadsdata to it)
@@ -69,6 +70,12 @@ data class TilkjentYtelse(
     companion object Mapper
 }
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonSubTypes(
+    JsonSubTypes.Type(StønadsdataDagpenger::class, name = "dagpenger"),
+    JsonSubTypes.Type(StønadsdataTiltakspenger::class, name = "tiltakspenger"),
+    JsonSubTypes.Type(StønadsdataTilleggsstønader::class, name = "tilleggsstønader"),
+)
 sealed class Stønadsdata(open val stønadstype: StønadType) {
     companion object;
 
@@ -172,29 +179,6 @@ data class StønadsdataTilleggsstønader(
             StønadTypeTilleggsstønader.TILSYN_BARN_AAP -> "TSTBASISP4-OP"
             StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE -> "TSTBASISP5-OP"
         }
-}
-
-class StønadsdataKeySerializer : JsonSerializer<Stønadsdata>() {
-    override fun serialize(
-        value: Stønadsdata?,
-        gen: JsonGenerator?,
-        serializers: SerializerProvider?,
-    ) {
-        gen?.let { jGen ->
-            value?.let { stønadsdata ->
-                jGen.writeFieldName(objectMapper.writeValueAsString(stønadsdata))
-            } ?: jGen.writeNull()
-        }
-    }
-}
-
-class StønadsdataKeyDeserializer : KeyDeserializer() {
-    override fun deserializeKey(
-        key: String?,
-        ctx: DeserializationContext?,
-    ): Stønadsdata? {
-        return key?.let { objectMapper.readValue(key, Stønadsdata::class.java) }
-    }
 }
 
 data class AndelTilkjentYtelse(

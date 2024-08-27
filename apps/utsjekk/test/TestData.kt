@@ -12,17 +12,20 @@ import no.nav.utsjekk.kontrakter.iverksett.VedtaksdetaljerV2Dto
 import utsjekk.iverksetting.RandomOSURId
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.*
 
 object TestData {
 
     fun enIverksettDto(
         behandlingId: String = RandomOSURId.generate(),
         sakId: String = RandomOSURId.generate(),
+        iverksettingId: String? = null,
         personident: Personident = Personident("15507600333"),
         vedtak: VedtaksdetaljerV2Dto = enVedtaksdetaljer()
     ) = IverksettV2Dto(
         behandlingId = behandlingId,
         sakId = sakId,
+        iverksettingId = iverksettingId,
         personident = personident,
         vedtak = vedtak,
     )

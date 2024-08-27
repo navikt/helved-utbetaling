@@ -7,10 +7,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import libs.auth.AzureConfig
-import libs.auth.AzureToken
-import libs.auth.JwkGenerator
-import libs.auth.TEST_JWKS
+import libs.auth.*
 import port
 import java.net.URI
 
@@ -28,8 +25,9 @@ class AzureFake : AutoCloseable {
     }
 
     private val jwksGenerator = JwkGenerator(config.issuer, config.clientId)
+    private val claims = listOf(Claim("azp_name", "test:helved:tilleggsstonader-sak"))
 
-    fun generateToken() = jwksGenerator.generate()
+    fun generateToken() = jwksGenerator.generate(claims)
 
     override fun close() = azure.stop(0, 0)
 }

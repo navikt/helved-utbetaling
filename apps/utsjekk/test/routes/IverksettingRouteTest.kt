@@ -60,8 +60,9 @@ class IverksettingRouteTest {
     }
 
     @Test
-    fun `start iverksetting av tilleggsstønader`() = runTest {
+    fun `start iverksetting av tilleggsstønader`() {
         val dto = TestData.enIverksettDto(
+            iverksettingId = "en-iverksetting",
             vedtak = TestData.enVedtaksdetaljer(
                 utbetalinger = listOf(
                     TestData.enUtbetalingDto(
@@ -74,32 +75,39 @@ class IverksettingRouteTest {
             )
         )
 
-        val res = httpClient.post("/api/iverksetting/v2") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(dto)
+        val res = runBlocking {
+            httpClient.post("/api/iverksetting/v2") {
+                bearerAuth(TestRuntime.azure.generateToken())
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }
         }
 
         assertEquals(HttpStatusCode.Accepted, res.status)
 
-        val statusRes = withTimeoutOrNull(3000) {
-            suspend fun getStatus(): HttpResponse {
-                return httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
-                    bearerAuth(TestRuntime.azure.generateToken())
-                    accept(ContentType.Application.Json)
+        val statusRes = runBlocking {
+            withTimeoutOrNull(10000) {
+                suspend fun getStatus(): HttpResponse {
+                    return httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
+                        bearerAuth(TestRuntime.azure.generateToken())
+                        accept(ContentType.Application.Json)
+                    }
                 }
-            }
 
-            var res: HttpResponse = getStatus()
-            while (res.status != HttpStatusCode.OK) {
-                res = getStatus()
-                delay(10)
+                var res: HttpResponse = getStatus()
+                while (res.status != HttpStatusCode.OK) {
+                    res = getStatus()
+                    delay(10)
+                }
+                res
             }
-            res
         }
 
-        assertNotNull(runBlocking { statusRes })
-        assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, statusRes!!.body())
+        assertNotNull(statusRes)
+
+        runBlocking {
+            assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, statusRes!!.body<IverksettStatus>())
+        }
     }
 
     @Test
