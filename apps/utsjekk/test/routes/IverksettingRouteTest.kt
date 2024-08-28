@@ -9,10 +9,8 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -20,7 +18,9 @@ import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import repeatUntil
 import java.time.LocalDate
 
 class IverksettingRouteTest {
@@ -82,26 +82,21 @@ class IverksettingRouteTest {
             assertEquals(HttpStatusCode.Accepted, it.status)
         }
 
-        val status = runBlocking {
-            withTimeout(4000) {
-                suspend fun getStatus(): IverksettStatus {
-                    return httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
-                        bearerAuth(TestRuntime.azure.generateToken())
-                        accept(ContentType.Application.Json)
-                    }.body<IverksettStatus>()
-                }
+        suspend fun getStatus(): IverksettStatus =
+            httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
+                bearerAuth(TestRuntime.azure.generateToken())
+                accept(ContentType.Application.Json)
+            }.body()
 
-                var status = getStatus()
-                while (status == IverksettStatus.IKKE_PÅBEGYNT) {
-                    delay(10)
-                    status = getStatus()
-                }
-                status
+        val status = runBlocking {
+            repeatUntil(::getStatus) { status ->
+                status == IverksettStatus.SENDT_TIL_OPPDRAG
             }
         }
 
         assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
     }
+
 
     @Test
     fun `start iverksetting av vedtak uten utbetaling`() = runTest {
@@ -112,25 +107,28 @@ class IverksettingRouteTest {
                 ),
             )
 
-        val res = httpClient.post("/api/iverksetting/v2") {
+        httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(dto)
+        }.let {
+            assertEquals(HttpStatusCode.Accepted, it.status)
         }
 
-//        kjørTasks() TODO: Test at vi plukker opp og kjører task
+        suspend fun getStatus(): IverksettStatus =
+            httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+                bearerAuth(TestRuntime.azure.generateToken())
+                accept(ContentType.Application.Json)
+            }.body()
 
-        assertEquals(HttpStatusCode.Accepted, res.status)
+        val status = runBlocking {
+            repeatUntil(::getStatus) { status ->
+                status == IverksettStatus.OK_UTEN_UTBETALING
+            }
+        }
 
-//        restTemplate
-//            .exchange<IverksettStatus>(
-//                localhostUrl("/api/iverksetting/$sakId/$behandlingId/status"),
-//                HttpMethod.GET,
-//                HttpEntity(null, headers),
-//            ).also {
-//                assertEquals(HttpStatus.OK, it.statusCode)
-//                assertEquals(IverksettStatus.OK_UTEN_UTBETALING, it.body)
-//            }
+        assertEquals(IverksettStatus.OK_UTEN_UTBETALING, status)
+        assertTrue(TestRuntime.kafka.produced.containsKey(dto.personident.verdi))
     }
 
     @Test

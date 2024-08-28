@@ -5,9 +5,11 @@ import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
+import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.ApiError.Companion.serviceUnavailable
 import utsjekk.featuretoggle.FeatureToggles
+import utsjekk.status.Kafka
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
@@ -15,7 +17,11 @@ import java.time.LocalDateTime
 import java.util.*
 import kotlin.coroutines.CoroutineContext
 
-class IverksettingService(private val context: CoroutineContext, private val toggles: FeatureToggles) {
+class IverksettingService(
+    private val context: CoroutineContext,
+    private val toggles: FeatureToggles,
+    private val statusProducer: Kafka<StatusEndretMelding>,
+) {
     suspend fun iverksett(iverksetting: Iverksetting) {
         val fagsystem = iverksetting.fagsak.fagsystem
         if (toggles.isDisabled(fagsystem)) {
@@ -54,8 +60,32 @@ class IverksettingService(private val context: CoroutineContext, private val tog
         }
     }
 
+    suspend fun publiserStatusmelding(iverksetting: Iverksetting) {
+        val status = utledStatus(
+            fagsystem = iverksetting.fagsak.fagsystem,
+            sakId = iverksetting.sakId,
+            behandlingId = iverksetting.behandlingId,
+            iverksettingId = iverksetting.iverksettingId
+        )
+
+        if (status != null) {
+            val message = StatusEndretMelding(
+                sakId = iverksetting.sakId.id,
+                behandlingId = iverksetting.behandlingId.id,
+                iverksettingId = iverksetting.iverksettingId?.id,
+                fagsystem = iverksetting.fagsak.fagsystem,
+                status = status
+            )
+
+            statusProducer.produce(
+                key = iverksetting.søker.personident,
+                value = message,
+            )
+        }
+    }
+
     suspend fun utledStatus(
-        client: Client,
+        fagsystem: Fagsystem,
         sakId: SakId,
         behandlingId: BehandlingId,
         iverksettingId: IverksettingId?
@@ -63,7 +93,7 @@ class IverksettingService(private val context: CoroutineContext, private val tog
         val result = withContext(context) {
             transaction {
                 IverksettingResultatDao.select(1) {
-                    this.fagsystem = client.toFagsystem()
+                    this.fagsystem = fagsystem //client.toFagsystem()
                     this.sakId = sakId
                     this.behandlingId = behandlingId
                     this.iverksettingId = iverksettingId

@@ -2,15 +2,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import fakes.AzureFake
+import fakes.KafkaFake
 import fakes.OppdragFake
 import fakes.UnleashFake
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.serialization.jackson.jackson
-import io.ktor.server.engine.ConnectorType
-import io.ktor.server.netty.NettyApplicationEngine
-import io.ktor.server.testing.TestApplication
+import io.ktor.client.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.jackson.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.testing.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import libs.jdbc.PostgresContainer
 import libs.utils.appLog
 import utsjekk.Config
@@ -31,6 +34,7 @@ object TestRuntime : AutoCloseable {
     val unleash = UnleashFake()
 
     val context: CoroutineContext = postgres.context
+    val kafka: KafkaFake = KafkaFake()
 
     val config by lazy {
         Config(
@@ -38,6 +42,7 @@ object TestRuntime : AutoCloseable {
             azure = azure.config,
             postgres = postgres.config,
             unleash = UnleashFake.config,
+            kafka = kafka.config,
         )
     }
 
@@ -59,6 +64,7 @@ object TestRuntime : AutoCloseable {
         ktor.stop()
         oppdrag.close()
         azure.close()
+        kafka.close()
     }
 }
 
@@ -73,6 +79,7 @@ private val testApplication: TestApplication by lazy {
                 config = TestRuntime.config,
                 context = TestRuntime.context,
                 featureToggles = TestRuntime.unleash,
+                statusProducer = TestRuntime.kafka
             )
         }
     }
@@ -88,4 +95,16 @@ val httpClient: HttpClient by lazy {
             }
         }
     }
+}
+
+suspend fun <T> repeatUntil(
+    function: suspend () -> T,
+    predicate: (T) -> Boolean,
+): T = withTimeout(4000) {
+    var result = function()
+    while (!predicate(result)) {
+        delay(10)
+        result = function()
+    }
+    result
 }
