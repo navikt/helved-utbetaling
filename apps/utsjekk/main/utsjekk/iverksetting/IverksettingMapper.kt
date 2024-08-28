@@ -60,11 +60,20 @@ fun AndelTilkjentYtelse.Companion.from(dto: UtbetalingV2Dto): AndelTilkjentYtels
 
 fun Stønadsdata.Companion.from(dto: StønadsdataDto): Stønadsdata {
     return when (dto) {
-        is StønadsdataDagpengerDto -> StønadsdataDagpenger(dto.stønadstype, dto.ferietillegg)
-        is StønadsdataTiltakspengerV2Dto -> StønadsdataTiltakspenger(dto.stønadstype, dto.barnetillegg)
+        is StønadsdataDagpengerDto -> StønadsdataDagpenger(
+            stønadstype = dto.stønadstype,
+            ferietillegg = dto.ferietillegg,
+        )
+
+        is StønadsdataTiltakspengerV2Dto -> StønadsdataTiltakspenger(
+            stønadstype = dto.stønadstype,
+            barnetillegg = dto.barnetillegg,
+            brukersNavKontor = BrukersNavKontor(enhet = dto.brukersNavKontor)
+        )
+
         is StønadsdataTilleggsstønaderDto -> StønadsdataTilleggsstønader(
-            dto.stønadstype,
-            dto.brukersNavKontor?.let(::BrukersNavKontor)
+            stønadstype = dto.stønadstype,
+            brukersNavKontor = dto.brukersNavKontor?.let(::BrukersNavKontor)
         )
     }
 }

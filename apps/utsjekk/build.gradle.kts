@@ -7,13 +7,14 @@ application {
 }
 
 val ktorVersion = "2.3.12"
-val libVersion = "0.1.98"
+val libVersion = "0.1.100"
 val kontraktVersion = "1.0_20240821103442_e26671e"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:job:$libVersion")
+    implementation("no.nav.helved:kafka:$libVersion")
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:$kontraktVersion")
     implementation("no.nav.utsjekk.kontrakter:iverksett:$kontraktVersion")

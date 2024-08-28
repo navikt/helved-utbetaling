@@ -24,6 +24,46 @@ data class Iverksetting(
         "fagsystem ${fagsak.fagsystem}, sak $sakId, behandling $behandlingId, iverksettingId ${behandling.iverksettingId}"
 }
 
+/**
+ * @param andeler er alle andeler med nye periodeId/forrigePeriodeId for å kunne oppdatere lagrede andeler
+ */
+data class BeregnetUtbetalingsoppdrag(
+    val utbetalingsoppdrag: Utbetalingsoppdrag,
+    val andeler: List<AndelMedPeriodeId>,
+)
+
+data class AndelMedPeriodeId(
+    val id: String,
+    val periodeId: Long,
+    val forrigePeriodeId: Long?,
+) {
+    constructor(andel: AndelData) :
+            this(
+                id = andel.id,
+                periodeId = andel.periodeId ?: error("Mangler offset på andel=${andel.id}"),
+                forrigePeriodeId = andel.forrigePeriodeId,
+            )
+}
+
+data class Behandlingsinformasjon(
+    val saksbehandlerId: String,
+    val beslutterId: String,
+    val fagsakId: SakId,
+    val fagsystem: Fagsystem,
+    val behandlingId: BehandlingId,
+    val personident: String,
+    val vedtaksdato: LocalDate,
+    val brukersNavKontor: BrukersNavKontor? = null,
+    val iverksettingId: IverksettingId?,
+)
+
+data class ResultatForKjede(
+    val beståendeAndeler: List<AndelData>,
+    val nyeAndeler: List<AndelData>,
+    val opphørsandel: Pair<AndelData, LocalDate>?,
+    val sistePeriodeId: Long,
+)
+
 data class Fagsakdetaljer(
     val fagsakId: SakId,
     val fagsystem: Fagsystem,
@@ -55,6 +95,21 @@ val Iverksetting.personident get() = this.søker.personident
 val Iverksetting.behandlingId get() = this.behandling.behandlingId
 val Iverksetting.iverksettingId get() = this.behandling.iverksettingId
 
+//data class TilkjentYtelse(
+//    val id: String = RandomOSURId.generate(),
+//    val utbetalingsoppdrag: Utbetalingsoppdrag? = null,
+//    val andelerTilkjentYtelse: List<AndelTilkjentYtelse>,
+//    val sisteAndelIKjede: AndelTilkjentYtelse? = null,
+//    @JsonSerialize(keyUsing = KjedenøkkelKeySerializer::class)
+//    @JsonDeserialize(keyUsing = KjedenøkkelKeyDeserializer::class)
+//    val sisteAndelPerKjede: Map<Stønadsdata, AndelTilkjentYtelse> =
+//        sisteAndelIKjede?.let {
+//            mapOf(it.stønadsdata to it)
+//        } ?: emptyMap(),
+//) {
+//    companion object Mapper
+//}
+
 data class TilkjentYtelse(
     val id: String = RandomOSURId.generate(),
     val utbetalingsoppdrag: Utbetalingsoppdrag? = null,
@@ -62,9 +117,9 @@ data class TilkjentYtelse(
     val sisteAndelIKjede: AndelTilkjentYtelse? = null,
     @JsonSerialize(keyUsing = KjedenøkkelKeySerializer::class)
     @JsonDeserialize(keyUsing = KjedenøkkelKeyDeserializer::class)
-    val sisteAndelPerKjede: Map<Stønadsdata, AndelTilkjentYtelse> =
+    val sisteAndelPerKjede: Map<Kjedenøkkel, AndelTilkjentYtelse> =
         sisteAndelIKjede?.let {
-            mapOf(it.stønadsdata to it)
+            mapOf(it.stønadsdata.tilKjedenøkkel() to it)
         } ?: emptyMap(),
 ) {
     companion object Mapper
@@ -85,6 +140,8 @@ sealed class Stønadsdata(open val stønadstype: StønadType) {
             is StønadsdataTiltakspenger -> this.tilKlassifiseringTiltakspenger()
             is StønadsdataTilleggsstønader -> this.tilKlassifiseringTilleggsstønader()
         }
+
+    abstract fun tilKjedenøkkel(): Kjedenøkkel
 }
 
 data class StønadsdataDagpenger(override val stønadstype: StønadTypeDagpenger, val ferietillegg: Ferietillegg? = null) :
@@ -119,11 +176,16 @@ data class StønadsdataDagpenger(override val stønadstype: StønadTypeDagpenger
                     null -> "DPDPASISP1"
                 }
         }
+
+    // TODO faktisk meldekortId må inn her når grensesnittet er utvidet
+    override fun tilKjedenøkkel(): Kjedenøkkel =
+        KjedenøkkelMeldeplikt(klassifiseringskode = this.tilKlassifiseringDagpenger(), meldekortId = "TODO")
 }
 
 data class StønadsdataTiltakspenger(
     override val stønadstype: StønadTypeTiltakspenger,
     val barnetillegg: Boolean = false,
+    val brukersNavKontor: BrukersNavKontor,
 ) : Stønadsdata(stønadstype) {
     fun tilKlassifiseringTiltakspenger(): String =
         if (barnetillegg) {
@@ -167,6 +229,10 @@ data class StønadsdataTiltakspenger(
                 StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING -> "TPTPUOPPFOPPL"
             }
         }
+
+    // TODO faktisk meldekortId må inn her når grensesnittet er utvidet
+    override fun tilKjedenøkkel(): Kjedenøkkel =
+        KjedenøkkelMeldeplikt(klassifiseringskode = this.tilKlassifiseringTiltakspenger(), meldekortId = "TODO")
 }
 
 data class StønadsdataTilleggsstønader(
@@ -179,6 +245,9 @@ data class StønadsdataTilleggsstønader(
             StønadTypeTilleggsstønader.TILSYN_BARN_AAP -> "TSTBASISP4-OP"
             StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE -> "TSTBASISP5-OP"
         }
+
+    override fun tilKjedenøkkel(): Kjedenøkkel =
+        KjedenøkkelStandard(klassifiseringskode = this.tilKlassifiseringTilleggsstønader())
 }
 
 data class AndelTilkjentYtelse(

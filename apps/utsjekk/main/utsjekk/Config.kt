@@ -1,6 +1,7 @@
 package utsjekk
 
 import libs.auth.AzureConfig
+import libs.kafka.KafkaConfig
 import libs.postgres.PostgresConfig
 import libs.utils.env
 import java.net.URI
@@ -8,6 +9,7 @@ import java.net.URL
 
 data class Config(
     val postgres: PostgresConfig = PostgresConfig(),
+    val kafka: KafkaConfig = KafkaConfig(),
     val azure: AzureConfig = AzureConfig(),
     val oppdrag: OppdragConfig = OppdragConfig(),
     val unleash: UnleashConfig = UnleashConfig(),

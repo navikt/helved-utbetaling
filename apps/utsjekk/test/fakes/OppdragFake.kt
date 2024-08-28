@@ -1,12 +1,15 @@
 package fakes
 
+import io.ktor.http.*
+import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import utsjekk.OppdragConfig
 import port
+import utsjekk.OppdragConfig
 import java.net.URI
 
 class OppdragFake : AutoCloseable {
@@ -23,9 +26,13 @@ class OppdragFake : AutoCloseable {
 }
 
 private fun Application.azure() {
+    install(ContentNegotiation) {
+        jackson { }
+    }
+
     routing {
         post("/oppdrag") {
-            call.respond("nice")
+            call.respond(HttpStatusCode.OK)
         }
     }
 }
