@@ -1,37 +1,37 @@
 package utsjekk.iverksetting
 
 import TestData
-import io.ktor.http.HttpStatusCode
-import no.nav.utsjekk.kontrakter.felles.Satstype
-import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
-import no.nav.utsjekk.kontrakter.felles.StønadTypeTiltakspenger
+import no.nav.utsjekk.kontrakter.felles.*
 import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
 import no.nav.utsjekk.kontrakter.iverksett.ForrigeIverksettingV2Dto
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDagpengerDto
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataTiltakspengerV2Dto
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import utsjekk.ApiError
 import java.time.LocalDate
-import java.util.UUID
+import java.util.*
 
 class IverksettValidationRulesTest {
     @Test
     fun `skal få 400 hvis sakId er for lang`() {
         val iverksettDto = TestData.enIverksettDto(sakId = RandomOSURId.generate() + RandomOSURId.generate())
 
-        assertApiFeil(HttpStatusCode.BadRequest) {
+        val ex = assertThrows<ApiError.BadRequest> {
             sakIdTilfredsstillerLengdebegrensning(iverksettDto)
         }
+        assertEquals("SakId må være mellom 1 og ${GyldigSakId.MAKSLENGDE} tegn lang", ex.message)
     }
 
     @Test
     fun `skal få 400 hvis behandlingId er for lang`() {
         val iverksettDto = TestData.enIverksettDto(behandlingId = RandomOSURId.generate() + RandomOSURId.generate())
 
-        assertApiFeil(HttpStatusCode.BadRequest) {
+        val ex = assertThrows<ApiError.BadRequest> {
             behandlingIdTilfredsstillerLengdebegrensning(iverksettDto)
         }
+        assertEquals("BehandlingId må være mellom 1 og ${GyldigBehandlingId.MAKSLENGDE} tegn lang", ex.message)
     }
 
     @Test
@@ -52,9 +52,10 @@ class IverksettValidationRulesTest {
                 ),
             )
 
-        assertApiFeil(HttpStatusCode.BadRequest) {
+        val ex = assertThrows<ApiError.BadRequest> {
             fraOgMedKommerFørTilOgMedIUtbetalingsperioder(iverksettDto)
         }
+        assertEquals("Utbetalinger inneholder perioder der tilOgMedDato er før fraOgMedDato", ex.message)
     }
 
     @Test
@@ -80,9 +81,10 @@ class IverksettValidationRulesTest {
                 ),
             )
 
-        assertApiFeil(HttpStatusCode.BadRequest) {
+        val ex = assertThrows<ApiError.BadRequest> {
             utbetalingsperioderMedLikStønadsdataOverlapperIkkeITid(iverksettDto)
         }
+        assertEquals("Utbetalinger inneholder perioder som overlapper i tid", ex.message)
     }
 
     @Test
@@ -144,9 +146,10 @@ class IverksettValidationRulesTest {
                 tmpIverksettDto.vedtak.copy(utbetalinger = listOf(enUtbetalingsperiode, enUtbetalingsperiode)),
             )
 
-        assertApiFeil(HttpStatusCode.BadRequest) {
+        val ex = assertThrows<ApiError.BadRequest> {
             utbetalingsperioderMedLikStønadsdataOverlapperIkkeITid(iverksettDto)
         }
+        assertEquals("Utbetalinger inneholder perioder som overlapper i tid", ex.message)
     }
 
     @Test
@@ -164,9 +167,13 @@ class IverksettValidationRulesTest {
             ),
         )
 
-        assertApiFeil(HttpStatusCode.BadRequest) {
+        val ex = assertThrows<ApiError.BadRequest> {
             ingenUtbetalingsperioderHarStønadstypeEØSOgFerietilleggTilAvdød(iverksettDto)
         }
+        assertEquals(
+            "Ferietillegg til avdød er ikke tillatt for stønadstypen ${StønadTypeDagpenger.DAGPENGER_EØS}",
+            ex.message
+        )
     }
 
     @Test
@@ -183,9 +190,10 @@ class IverksettValidationRulesTest {
             )
         )
 
-        assertApiFeil(HttpStatusCode.BadRequest) {
+        val ex = assertThrows<ApiError.BadRequest> {
             utbetalingsperioderSamsvarerMedSatstype(dto)
         }
+        assertEquals("Det finnes utbetalinger med månedssats der periodene ikke samsvarer med hele måneder", ex.message)
     }
 
     @Test
@@ -197,9 +205,11 @@ class IverksettValidationRulesTest {
             )
         )
 
-        assertApiFeil(HttpStatusCode.BadRequest) {
+        val ex = assertThrows<ApiError.BadRequest> {
             iverksettingIdSkalEntenIkkeVæreSattEllerVæreSattForNåværendeOgForrige(dto)
         }
+
+        assertEquals("IverksettingId er satt for nåværende iverksetting, men ikke forrige iverksetting", ex.message)
     }
 
     @Test
@@ -211,21 +221,25 @@ class IverksettValidationRulesTest {
             )
         )
 
-        assertApiFeil(HttpStatusCode.BadRequest) {
+        val ex = assertThrows<ApiError.BadRequest> {
             iverksettingIdSkalEntenIkkeVæreSattEllerVæreSattForNåværendeOgForrige(dto)
         }
+
+        assertEquals("IverksettingId er satt for forrige iverksetting, men ikke nåværende iverksetting", ex.message)
     }
 }
 
 
-fun assertApiFeil(
-    httpStatus: HttpStatusCode,
-    block: () -> Any,
-) {
-    try {
-        block()
-        error("Forventet ApiFeil, men fikk det ikke")
-    } catch (e: ApiError) {
-        assertEquals(httpStatus, e.statusCode)
-    }
-}
+//fun assertApiFeil(
+//    httpStatus: HttpStatusCode,
+//    block: () -> Any,
+//) {
+//    try {
+//        block()
+//        error("Forventet ApiFeil, men fikk det ikke")
+//    } catch (e: ApiError) {
+//        val l = ApiError.BadRequest
+//        assertTrue(e is ApiError.BadRequest)
+//        assertEquals(httpStatus, e.statusCode)
+//    }
+//}
