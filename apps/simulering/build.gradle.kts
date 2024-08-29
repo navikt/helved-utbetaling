@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "2.3.12"
-val libVersion = "0.1.90"
+val libVersion = "0.1.103"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
