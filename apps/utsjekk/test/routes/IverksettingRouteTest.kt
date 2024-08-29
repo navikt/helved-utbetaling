@@ -137,9 +137,12 @@ class IverksettingRouteTest {
         val payload =
             """
             {
-              "sakId": "1234",
               "behandlingId": "1",
-              "personident": "15507600333",
+              "forrigeIverksetting": null,
+              "personident": {
+                "verdi": "15507600333"
+              },
+              "sakId": "1234",
               "vedtak": {
                 "vedtakstidspunkt": "2021-05-12T00:00:00",
                 "saksbehandlerId": "A12345",
@@ -150,7 +153,8 @@ class IverksettingRouteTest {
                     "fraOgMedDato": "2021-01-01",
                     "tilOgMedDato": "2021-12-31",
                     "stønadsdata": {
-                      "stønadstype": "DAGPENGER_ARBEIDSSØKER_ORDINÆR"
+                      "stønadstype": "DAGPENGER_ARBEIDSSØKER_ORDINÆR",
+                      "ferietillegg": null
                     }
                   }
                 ]
@@ -158,12 +162,10 @@ class IverksettingRouteTest {
             }
             """.trimIndent()
 
-        val body = objectMapper.readValue<JsonNode>(payload)
-
         val res = httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(body)
+            setBody(objectMapper.readValue<JsonNode>(payload))
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)

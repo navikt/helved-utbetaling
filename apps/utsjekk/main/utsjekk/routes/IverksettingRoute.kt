@@ -31,6 +31,8 @@ fun Route.iverksettingRoute(service: IverksettingService) {
                 badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter")
             }
 
+            dto.validate()
+
             val fagsystem = call.client().toFagsystem()
             val iverksetting = Iverksetting.from(dto, fagsystem)
 
