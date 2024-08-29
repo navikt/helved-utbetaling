@@ -29,7 +29,7 @@ import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import utsjekk.featuretoggle.FeatureToggles
 import utsjekk.featuretoggle.UnleashFeatureToggles
-import utsjekk.iverksetting.IverksettingService
+import utsjekk.iverksetting.Iverksettinger
 import utsjekk.oppdrag.OppdragClient
 import utsjekk.routes.actuators
 import utsjekk.routes.iverksettingRoute
@@ -94,8 +94,8 @@ fun Application.utsjekk(
     }
 
     val oppdrag = OppdragClient(config)
-    val iverksettingService = IverksettingService(context, featureToggles, statusProducer)
-    val scheduler = TaskScheduler(oppdrag, iverksettingService, context)
+    val iverksettinger = Iverksettinger(context, featureToggles, statusProducer)
+    val scheduler = TaskScheduler(oppdrag, iverksettinger, context)
 
     environment.monitor.subscribe(ApplicationStopping) {
         scheduler.close()
@@ -104,7 +104,7 @@ fun Application.utsjekk(
 
     routing {
         authenticate(TokenProvider.AZURE) {
-            iverksettingRoute(iverksettingService)
+            iverksettingRoute(iverksettinger)
             tasks(context)
         }
 

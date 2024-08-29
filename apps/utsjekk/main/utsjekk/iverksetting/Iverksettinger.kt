@@ -14,14 +14,25 @@ import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 
-class IverksettingService(
+class Iverksettinger(
     private val context: CoroutineContext,
     private val toggles: FeatureToggles,
     private val statusProducer: Kafka<StatusEndretMelding>,
 ) {
+    suspend fun valider(iverksetting: Iverksetting) {
+        withContext(context) {
+            transaction {
+                IverksettingValidator.validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
+                IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
+                IverksettingValidator.validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting)
+                IverksettingValidator.validerAtIverksettingIkkeAlleredeErMottatt(iverksetting)
+            }
+        }
+    }
+
     suspend fun iverksett(iverksetting: Iverksetting) {
         val fagsystem = iverksetting.fagsak.fagsystem
         if (toggles.isDisabled(fagsystem)) {
@@ -105,8 +116,8 @@ class IverksettingService(
             return null
         }
 
-        if (result.oppdragresultat != null) {
-            return when (result.oppdragresultat.oppdragStatus) {
+        if (result.oppdragResultat != null) {
+            return when (result.oppdragResultat.oppdragStatus) {
                 OppdragStatus.LAGT_PÅ_KØ -> IverksettStatus.SENDT_TIL_OPPDRAG
                 OppdragStatus.KVITTERT_OK -> IverksettStatus.OK
                 OppdragStatus.OK_UTEN_UTBETALING -> IverksettStatus.OK_UTEN_UTBETALING
@@ -114,7 +125,7 @@ class IverksettingService(
             }
         }
 
-        return when (result.tilkjentytelseforutbetaling) {
+        return when (result.tilkjentYtelseForUtbetaling) {
             null -> IverksettStatus.IKKE_PÅBEGYNT
             else -> IverksettStatus.SENDT_TIL_OPPDRAG
         }
