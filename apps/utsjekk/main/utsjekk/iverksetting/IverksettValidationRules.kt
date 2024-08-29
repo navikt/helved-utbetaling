@@ -7,7 +7,6 @@ import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
 import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDagpengerDto
-import org.apache.kafka.common.requests.ApiError
 import utsjekk.ApiError.Companion.badRequest
 import java.time.YearMonth
 

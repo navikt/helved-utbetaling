@@ -1,11 +1,13 @@
 package utsjekk
 
-sealed class ApiError(override val message: String) : RuntimeException(message) {
-    class BadRequest(override val message: String) : ApiError(message)
-    class NotFound(override val message: String) : ApiError(message)
-    class Conflict(override val message: String) : ApiError(message)
-    class Forbidden(override val message: String) : ApiError(message)
-    class Unavailable(override val message: String) : ApiError(message)
+import io.ktor.http.HttpStatusCode
+
+sealed class ApiError(override val message: String, val statusCode: HttpStatusCode) : RuntimeException(message) {
+    class BadRequest(override val message: String) : ApiError(message, HttpStatusCode.BadRequest)
+    class NotFound(override val message: String) : ApiError(message, HttpStatusCode.NotFound)
+    class Conflict(override val message: String) : ApiError(message, HttpStatusCode.Conflict)
+    class Forbidden(override val message: String) : ApiError(message, HttpStatusCode.Forbidden)
+    class Unavailable(override val message: String) : ApiError(message, HttpStatusCode.Forbidden)
 
     companion object {
         fun badRequest(msg: String): Nothing = throw BadRequest(msg)
