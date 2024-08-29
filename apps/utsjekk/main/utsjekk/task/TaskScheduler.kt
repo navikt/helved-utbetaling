@@ -20,7 +20,7 @@ import kotlin.coroutines.CoroutineContext
 
 class TaskScheduler(
     private val oppdrag: OppdragClient,
-    private val service: IverksettingService,
+    private val service: Iverksettinger,
     context: CoroutineContext,
 ) : Scheduler<TaskDao>(
     feedRPM = 120,
@@ -76,7 +76,7 @@ private suspend fun iverksettUtbetaling(oppdrag: OppdragClient, tilkjentYtelse: 
 
 private suspend fun updateIverksetting(
     oppdrag: OppdragClient,
-    service: IverksettingService,
+    service: Iverksettinger,
     iverksetting: Iverksetting,
 ) {
     transaction {
@@ -88,7 +88,7 @@ private suspend fun updateIverksetting(
                 sakId = iverksetting.sakId,
                 fagsystem = iverksetting.fagsak.fagsystem
             )
-            .copy(oppdragresultat = OppdragResultat(OppdragStatus.LAGT_PÅ_KØ))
+            .copy(oppdragResultat = OppdragResultat(OppdragStatus.LAGT_PÅ_KØ))
             .update()
 
         val forrigeResultat = iverksetting.behandling.forrigeBehandlingId?.let {
@@ -121,7 +121,7 @@ private suspend fun updateIverksetting(
                     sakId = iverksetting.sakId,
                     fagsystem = iverksetting.fagsak.fagsystem
                 )
-                .copy(oppdragresultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING))
+                .copy(oppdragResultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING))
                 .update()
             appLog.warn("Iverksetter ikke noe mot oppdrag. Ingen perioder i utbetalingsoppdraget for iverksetting $iverksetting")
         }
@@ -157,7 +157,7 @@ private suspend fun oppdaterTilkjentYtelse(
             utbetalingsoppdrag = beregnetUtbetalingsoppdrag.utbetalingsoppdrag,
         )
     val forrigeSisteAndelPerKjede =
-        forrigeResultat?.tilkjentytelseforutbetaling?.sisteAndelPerKjede
+        forrigeResultat?.tilkjentYtelseForUtbetaling?.sisteAndelPerKjede
             ?: emptyMap()
     val nyTilkjentYtelseMedSisteAndelIKjede =
         lagTilkjentYtelseMedSisteAndelPerKjede(nyTilkjentYtelse, forrigeSisteAndelPerKjede)
@@ -170,7 +170,7 @@ private suspend fun oppdaterTilkjentYtelse(
                 sakId = sakId,
                 fagsystem = fagsystem
             )
-            .copy(tilkjentytelseforutbetaling = nyTilkjentYtelseMedSisteAndelIKjede)
+            .copy(tilkjentYtelseForUtbetaling = nyTilkjentYtelseMedSisteAndelIKjede)
             .update()
     }
 
@@ -231,9 +231,9 @@ private fun utbetalingsoppdrag(
     )
 
     val nyeAndeler = iverksetting.vedtak.tilkjentYtelse.lagAndelData()
-    val forrigeAndeler = forrigeResultat?.tilkjentytelseforutbetaling.lagAndelData()
+    val forrigeAndeler = forrigeResultat?.tilkjentYtelseForUtbetaling.lagAndelData()
     val sisteAndelPerKjede = forrigeResultat
-        ?.tilkjentytelseforutbetaling
+        ?.tilkjentYtelseForUtbetaling
         ?.sisteAndelPerKjede
         ?.mapValues { it.value.tilAndelData() }
         ?: emptyMap()

@@ -22,7 +22,7 @@ private fun ApplicationCall.client(): Client =
         ?.let(::Client)
         ?: forbidden("mangler azp_name i claims")
 
-fun Route.iverksettingRoute(service: IverksettingService) {
+fun Route.iverksettingRoute(service: Iverksettinger) {
     route("/api/iverksetting") {
         post("/v2") {
             val dto = try {
@@ -36,6 +36,7 @@ fun Route.iverksettingRoute(service: IverksettingService) {
             val fagsystem = call.client().toFagsystem()
             val iverksetting = Iverksetting.from(dto, fagsystem)
 
+            service.valider(iverksetting)
             service.iverksett(iverksetting)
 
             call.respond(HttpStatusCode.Accepted)

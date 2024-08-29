@@ -19,8 +19,8 @@ data class IverksettingResultatDao(
     val sakId: SakId,
     val behandlingId: BehandlingId,
     val iverksettingId: IverksettingId? = null,
-    val tilkjentytelseforutbetaling: TilkjentYtelse? = null,
-    val oppdragresultat: OppdragResultat? = null,
+    val tilkjentYtelseForUtbetaling: TilkjentYtelse? = null,
+    val oppdragResultat: OppdragResultat? = null,
 ) {
     suspend fun insert() {
         val sql = """
@@ -32,7 +32,7 @@ data class IverksettingResultatDao(
             stmt.setString(2, sakId.id)
             stmt.setString(3, behandlingId.id)
             stmt.setString(4, iverksettingId?.id)
-            stmt.setString(5, objectMapper.writeValueAsString(tilkjentytelseforutbetaling))
+            stmt.setString(5, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
 
             appLog.debug(sql)
             secureLog.debug(stmt.toString())
@@ -51,8 +51,8 @@ data class IverksettingResultatDao(
             """.trimIndent()
 
             coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, objectMapper.writeValueAsString(tilkjentytelseforutbetaling))
-                stmt.setString(2, objectMapper.writeValueAsString(oppdragresultat))
+                stmt.setString(1, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
+                stmt.setString(2, objectMapper.writeValueAsString(oppdragResultat))
                 stmt.setString(3, behandlingId.id)
                 stmt.setString(4, sakId.id)
                 stmt.setString(5, fagsystem.name)
@@ -72,8 +72,8 @@ data class IverksettingResultatDao(
             """.trimIndent()
 
             coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, objectMapper.writeValueAsString(tilkjentytelseforutbetaling))
-                stmt.setString(2, objectMapper.writeValueAsString(oppdragresultat))
+                stmt.setString(1, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
+                stmt.setString(2, objectMapper.writeValueAsString(oppdragResultat))
                 stmt.setString(3, behandlingId.id)
                 stmt.setString(4, sakId.id)
                 stmt.setString(5, fagsystem.name)
@@ -154,8 +154,8 @@ fun IverksettingResultatDao.Companion.from(rs: ResultSet) = IverksettingResultat
     sakId = SakId(rs.getString("sakId")),
     behandlingId = BehandlingId(rs.getString("behandling_id")),
     iverksettingId = rs.getString("iverksetting_id")?.let(::IverksettingId),
-    tilkjentytelseforutbetaling = rs.getString("tilkjentytelseforutbetaling")?.let(TilkjentYtelse::from),
-    oppdragresultat = rs.getString("oppdragresultat")?.let(OppdragResultat::from),
+    tilkjentYtelseForUtbetaling = rs.getString("tilkjentytelseforutbetaling")?.let(TilkjentYtelse::from),
+    oppdragResultat = rs.getString("oppdragresultat")?.let(OppdragResultat::from),
 )
 
 data class OppdragResultat(

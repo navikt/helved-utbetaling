@@ -68,8 +68,8 @@ class TaskSchedulerTest {
         sakId = iverksetting.data.sakId,
         behandlingId = iverksetting.behandlingId,
         iverksettingId = iverksetting.data.iverksettingId,
-        tilkjentytelseforutbetaling = null,
-        oppdragresultat = null
+        tilkjentYtelseForUtbetaling = null,
+        oppdragResultat = null
     )
 
     private fun populate(
