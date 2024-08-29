@@ -3,6 +3,7 @@ import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
 import no.nav.utsjekk.kontrakter.felles.StønadTypeTilleggsstønader
 import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
+import no.nav.utsjekk.kontrakter.iverksett.ForrigeIverksettingV2Dto
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDagpengerDto
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDto
@@ -12,7 +13,6 @@ import no.nav.utsjekk.kontrakter.iverksett.VedtaksdetaljerV2Dto
 import utsjekk.iverksetting.RandomOSURId
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
 
 object TestData {
 
@@ -21,13 +21,15 @@ object TestData {
         sakId: String = RandomOSURId.generate(),
         iverksettingId: String? = null,
         personident: Personident = Personident("15507600333"),
-        vedtak: VedtaksdetaljerV2Dto = enVedtaksdetaljer()
+        vedtak: VedtaksdetaljerV2Dto = enVedtaksdetaljer(),
+        forrigeIverksetting: ForrigeIverksettingV2Dto? = null,
     ) = IverksettV2Dto(
         behandlingId = behandlingId,
         sakId = sakId,
         iverksettingId = iverksettingId,
         personident = personident,
         vedtak = vedtak,
+        forrigeIverksetting = forrigeIverksetting,
     )
 
     fun enVedtaksdetaljer(
