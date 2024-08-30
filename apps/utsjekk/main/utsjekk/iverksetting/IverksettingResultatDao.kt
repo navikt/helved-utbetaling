@@ -19,8 +19,8 @@ data class IverksettingResultatDao(
 ) {
     suspend fun insert() {
         val sql = """
-            INSERT INTO $TABLE_NAME (fagsystem, sakId, behandling_id, iverksetting_id, tilkjentytelseforutbetaling)
-            VALUES (?,?,?,?,to_json(?::json))
+            INSERT INTO $TABLE_NAME (fagsystem, sakId, behandling_id, iverksetting_id, tilkjentytelseforutbetaling, oppdragresultat )
+            VALUES (?,?,?,?,to_json(?::json),to_json(?::json))
         """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, fagsystem.name)
@@ -28,6 +28,7 @@ data class IverksettingResultatDao(
             stmt.setString(3, behandlingId.id)
             stmt.setString(4, iverksettingId?.id)
             stmt.setString(5, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
+            stmt.setString(6, objectMapper.writeValueAsString(oppdragResultat))
 
             appLog.debug(sql)
             secureLog.debug(stmt.toString())
