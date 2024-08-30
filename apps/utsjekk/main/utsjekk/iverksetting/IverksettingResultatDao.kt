@@ -1,18 +1,13 @@
 package utsjekk.iverksetting
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.concurrency.connection
 import libs.postgres.map
 import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import java.sql.ResultSet
-import java.time.LocalDateTime
 import kotlin.coroutines.coroutineContext
-
-private const val TABLE_NAME = "iverksettingsresultat"
 
 data class IverksettingResultatDao(
     val fagsystem: Fagsystem,
@@ -91,6 +86,8 @@ data class IverksettingResultatDao(
     }
 
     companion object {
+        const val TABLE_NAME = "iverksettingsresultat"
+
         suspend fun select(
             limit: Int? = null,
             where: Where.() -> Unit = { Where() },
@@ -132,6 +129,15 @@ data class IverksettingResultatDao(
                 stmt.executeQuery().map(::from)
             }
         }
+
+        private fun from(rs: ResultSet) = IverksettingResultatDao(
+            fagsystem = Fagsystem.valueOf(rs.getString("fagsystem")),
+            sakId = SakId(rs.getString("sakId")),
+            behandlingId = BehandlingId(rs.getString("behandling_id")),
+            iverksettingId = rs.getString("iverksetting_id")?.let(::IverksettingId),
+            tilkjentYtelseForUtbetaling = rs.getString("tilkjentytelseforutbetaling")?.let(TilkjentYtelse::from),
+            oppdragResultat = rs.getString("oppdragresultat")?.let(OppdragResultat::from),
+        )
     }
 
     data class Where(
@@ -148,22 +154,3 @@ data class IverksettingResultatDao(
     }
 }
 
-// fagsystem, sakId, behandling_id, iverksetting_id, tilkjentytelseforutbetaling
-fun IverksettingResultatDao.Companion.from(rs: ResultSet) = IverksettingResultatDao(
-    fagsystem = Fagsystem.valueOf(rs.getString("fagsystem")),
-    sakId = SakId(rs.getString("sakId")),
-    behandlingId = BehandlingId(rs.getString("behandling_id")),
-    iverksettingId = rs.getString("iverksetting_id")?.let(::IverksettingId),
-    tilkjentYtelseForUtbetaling = rs.getString("tilkjentytelseforutbetaling")?.let(TilkjentYtelse::from),
-    oppdragResultat = rs.getString("oppdragresultat")?.let(OppdragResultat::from),
-)
-
-data class OppdragResultat(
-    val oppdragStatus: OppdragStatus,
-    val oppdragStatusOppdatert: LocalDateTime = LocalDateTime.now(),
-) {
-    companion object Mapper
-}
-
-fun OppdragResultat.toJson(): String = objectMapper.writeValueAsString(this)
-fun OppdragResultat.Mapper.from(json: String): OppdragResultat = objectMapper.readValue(json)

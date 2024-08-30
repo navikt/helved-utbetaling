@@ -80,3 +80,6 @@ fun Stønadsdata.Companion.from(dto: StønadsdataDto): Stønadsdata {
 
 fun TilkjentYtelse.toJson(): String = objectMapper.writeValueAsString(this)
 fun TilkjentYtelse.Mapper.from(json: String): TilkjentYtelse = objectMapper.readValue(json)
+
+fun OppdragResultat.toJson(): String = objectMapper.writeValueAsString(this)
+fun OppdragResultat.Mapper.from(json: String): OppdragResultat = objectMapper.readValue(json)
