@@ -47,8 +47,7 @@ fun Route.tasks(context: CoroutineContext) {
                 ?: return@patch call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
 
             transaction {
-                val conditions = TaskDao.Where(id = id)
-                TaskDao.select(conditions)
+                TaskDao.select { it.id = id }
             }.singleOrNull()
                 ?: return@patch call.respond(HttpStatusCode.NotFound, "Fant ikke task med id $id")
 

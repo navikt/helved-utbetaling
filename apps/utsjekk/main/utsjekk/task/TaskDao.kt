@@ -70,13 +70,13 @@ data class TaskDao(
         const val TABLE_NAME = "task_v2"
 
         suspend fun select(
-            conditions: Where? = null,
             limit: Int? = null,
+            conditions: (where: Where) -> Unit = {},
         ): List<TaskDao> {
+            val conditions = Where().apply(conditions)
             val sql = buildString {
                 append("SELECT * FROM $TABLE_NAME")
-
-                conditions?.let { conditions ->
+                if (conditions.any()) {
                     append(" WHERE ")
                     conditions.id?.let { append("id = ? AND ") }
                     conditions.kind?.let { append("kind = ? AND ") }
@@ -102,14 +102,14 @@ data class TaskDao(
             var position = 1
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                conditions?.id?.let { stmt.setObject(position++, it) }
-                conditions?.kind?.let { stmt.setString(position++, it.name) }
-                conditions?.payload?.let { stmt.setString(position++, it) }
-                conditions?.attempt?.let { stmt.setObject(position++, it) }
-                conditions?.createdAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
-                conditions?.updatedAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
-                conditions?.scheduledFor?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
-                conditions?.message?.let { stmt.setString(position++, it) }
+                conditions.id?.let { stmt.setObject(position++, it) }
+                conditions.kind?.let { stmt.setString(position++, it.name) }
+                conditions.payload?.let { stmt.setString(position++, it) }
+                conditions.attempt?.let { stmt.setObject(position++, it) }
+                conditions.createdAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
+                conditions.updatedAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
+                conditions.scheduledFor?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
+                conditions.message?.let { stmt.setString(position++, it) }
                 limit?.let { stmt.setInt(position++, it) }
 
                 appLog.debug(sql)
@@ -120,16 +120,20 @@ data class TaskDao(
     }
 
     data class Where(
-        val id: UUID? = null,
-        val kind: Kind? = null,
-        val payload: String? = null,
-        val status: List<Status>? = null,
-        val attempt: Int? = null,
-        val createdAt: SelectTime? = null,
-        val updatedAt: SelectTime? = null,
-        val scheduledFor: SelectTime? = null,
-        val message: String? = null,
-    )
+        var id: UUID? = null,
+        var kind: Kind? = null,
+        var payload: String? = null,
+        var status: List<Status>? = null,
+        var attempt: Int? = null,
+        var createdAt: SelectTime? = null,
+        var updatedAt: SelectTime? = null,
+        var scheduledFor: SelectTime? = null,
+        var message: String? = null,
+    ) {
+        fun any() = listOf(
+            id, kind, payload, status, attempt, createdAt, updatedAt, scheduledFor, message
+        ).any { it != null }
+    }
 }
 
 fun TaskDao.Companion.from(rs: ResultSet) = TaskDao(

@@ -126,7 +126,7 @@ class TasksTest {
                 Tasks.update(task.id, Status.MANUAL, "Klarer ikke automatisk sende inn oppdrag")
             }
 
-            val actual = transaction { TaskDao.select(TaskDao.Where(task.id)) }.single()
+            val actual = transaction { TaskDao.select { it.id = task.id } }.single()
             assertEquals(1, actual.attempt)
         }
 
@@ -139,7 +139,7 @@ class TasksTest {
                 Tasks.update(task.id, Status.PROCESSING, "Oppdrag var stengt. Forsøker igjen...")
             }
 
-            val actual = transaction { TaskDao.select(TaskDao.Where(task.id)) }.single()
+            val actual = transaction { TaskDao.select { it.id = task.id } }.single()
             assertTrue(task.updatedAt.isBefore(actual.updatedAt))
             assertTrue(LocalDateTime.now().isAfter(actual.updatedAt))
         }
@@ -156,7 +156,7 @@ class TasksTest {
             }
 
             val updatedTask = transaction {
-                TaskDao.select(TaskDao.Where(id = task.id))
+                TaskDao.select { it.id = task.id }
             }.firstOrNull()
 
             assertEquals(expectedNextAttemptTime.truncatedTo(ChronoUnit.SECONDS), updatedTask?.scheduledFor?.truncatedTo(ChronoUnit.SECONDS))
@@ -171,7 +171,7 @@ class TasksTest {
                 Tasks.update(task.id, Status.FAIL, "Ugyldig id")
             }
 
-            val actual = transaction { TaskDao.select(TaskDao.Where(task.id)) }.single()
+            val actual = transaction { TaskDao.select { it.id = task.id } }.single()
             assertEquals("Ugyldig id", actual.message)
         }
     }

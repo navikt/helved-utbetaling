@@ -87,14 +87,17 @@ class TaskSchedulerTest {
     private suspend fun getTask(id: UUID): Deferred<List<TaskDao>> =
         scope.async {
             transaction {
-                TaskDao.select(TaskDao.Where(id))
+                TaskDao.select {it.id = id }
             }
         }
 
     private suspend fun isComplete(task: TaskDao): Boolean =
         scope.async {
             transaction {
-                TaskDao.select(TaskDao.Where(id = task.id, status = listOf(Status.COMPLETE))).isNotEmpty()
+                TaskDao.select {
+                    it.id = task.id
+                    it.status = listOf(Status.COMPLETE)
+                }.isNotEmpty()
             }
         }.await()
 
