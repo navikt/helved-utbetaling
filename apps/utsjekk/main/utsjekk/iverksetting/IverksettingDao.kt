@@ -63,8 +63,8 @@ data class IverksettingDao(
             var position = 1
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                where.sakId?.let { stmt.setString(position++, it.id) }
                 where.behandlingId?.let { stmt.setString(position++, it.id) }
+                where.sakId?.let { stmt.setString(position++, it.id) }
                 where.iverksettingId?.let { stmt.setString(position++, it.id) }
                 where.fagsystem?.let { stmt.setString(position++, it.name) }
                 limit?.let { stmt.setInt(position++, it) }
