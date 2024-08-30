@@ -2,10 +2,16 @@ package utsjekk.iverksetting
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonSerializer
+import com.fasterxml.jackson.databind.KeyDeserializer
+import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import no.nav.utsjekk.kontrakter.felles.*
 import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -95,21 +101,6 @@ val Iverksetting.personident get() = this.søker.personident
 val Iverksetting.behandlingId get() = this.behandling.behandlingId
 val Iverksetting.iverksettingId get() = this.behandling.iverksettingId
 
-//data class TilkjentYtelse(
-//    val id: String = RandomOSURId.generate(),
-//    val utbetalingsoppdrag: Utbetalingsoppdrag? = null,
-//    val andelerTilkjentYtelse: List<AndelTilkjentYtelse>,
-//    val sisteAndelIKjede: AndelTilkjentYtelse? = null,
-//    @JsonSerialize(keyUsing = KjedenøkkelKeySerializer::class)
-//    @JsonDeserialize(keyUsing = KjedenøkkelKeyDeserializer::class)
-//    val sisteAndelPerKjede: Map<Stønadsdata, AndelTilkjentYtelse> =
-//        sisteAndelIKjede?.let {
-//            mapOf(it.stønadsdata to it)
-//        } ?: emptyMap(),
-//) {
-//    companion object Mapper
-//}
-
 data class TilkjentYtelse(
     val id: String = RandomOSURId.generate(),
     val utbetalingsoppdrag: Utbetalingsoppdrag? = null,
@@ -121,6 +112,13 @@ data class TilkjentYtelse(
         sisteAndelIKjede?.let {
             mapOf(it.stønadsdata.tilKjedenøkkel() to it)
         } ?: emptyMap(),
+) {
+    companion object Mapper
+}
+
+data class OppdragResultat(
+    val oppdragStatus: OppdragStatus,
+    val oppdragStatusOppdatert: LocalDateTime = LocalDateTime.now(),
 ) {
     companion object Mapper
 }
@@ -310,3 +308,42 @@ data class AndelData(
 )
 
 internal fun List<AndelData>.uten0beløp(): List<AndelData> = this.filter { it.beløp != 0 }
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonSubTypes(
+    JsonSubTypes.Type(KjedenøkkelMeldeplikt::class, name = "meldeplikt"),
+    JsonSubTypes.Type(KjedenøkkelStandard::class, name = "standard"),
+)
+sealed class Kjedenøkkel(
+    open val klassifiseringskode: String,
+)
+
+data class KjedenøkkelMeldeplikt(
+    override val klassifiseringskode: String,
+    val meldekortId: String,
+) : Kjedenøkkel(klassifiseringskode)
+
+data class KjedenøkkelStandard(
+    override val klassifiseringskode: String,
+) : Kjedenøkkel(klassifiseringskode)
+
+class KjedenøkkelKeySerializer : JsonSerializer<Kjedenøkkel>() {
+    override fun serialize(
+        value: Kjedenøkkel?,
+        gen: JsonGenerator?,
+        serializers: SerializerProvider?,
+    ) {
+        gen?.let { jGen ->
+            value?.let { kjedenøkkel ->
+                jGen.writeFieldName(objectMapper.writeValueAsString(kjedenøkkel))
+            } ?: jGen.writeNull()
+        }
+    }
+}
+
+class KjedenøkkelKeyDeserializer : KeyDeserializer() {
+    override fun deserializeKey(
+        key: String?,
+        ctx: DeserializationContext?,
+    ): Kjedenøkkel? = key?.let { objectMapper.readValue(key, Kjedenøkkel::class.java) }
+}
