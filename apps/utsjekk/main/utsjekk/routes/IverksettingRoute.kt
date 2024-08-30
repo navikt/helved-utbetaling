@@ -50,7 +50,7 @@ fun Route.iverksettingRoute(service: Iverksettinger) {
             val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
             val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
             val fagsystem = call.client().toFagsystem()
-            val status = service.utledStatus(fagsystem , sakId, behandlingId, null)
+            val status = service.utledStatus(fagsystem, sakId, behandlingId, null)
                 ?: notFound("status for sakId $sakId og behandlingId $behandlingId")
 
             call.respond(HttpStatusCode.OK, status)
@@ -61,7 +61,7 @@ fun Route.iverksettingRoute(service: Iverksettinger) {
             val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
             val iverksettingId = call.parameters.getOrFail<String>("iverksettingId").let(::IverksettingId)
             val fagsystem = call.client().toFagsystem()
-            val status = service.utledStatus(fagsystem , sakId, behandlingId, iverksettingId)
+            val status = service.utledStatus(fagsystem, sakId, behandlingId, iverksettingId)
                 ?: notFound("status for sakId $sakId, behandlingId $behandlingId og iverksettingId $iverksettingId")
 
             call.respond(HttpStatusCode.OK, status)
