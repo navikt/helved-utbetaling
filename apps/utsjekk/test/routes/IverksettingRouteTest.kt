@@ -33,12 +33,12 @@ class IverksettingRouteTest {
     fun `iverksetter ikke når kill switch for ytelsen er skrudd på`() = runTest {
         TestRuntime.unleash.disable(Fagsystem.TILLEGGSSTØNADER)
 
-        val iverksett = TestData.enIverksettDto()
+        val dto = TestData.dto.iverksetting()
 
         val res = httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(iverksett)
+            setBody(dto)
         }
 
         assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
@@ -47,7 +47,7 @@ class IverksettingRouteTest {
 
     @Test
     fun `start iverksetting`() = runTest {
-        val dto = TestData.enIverksettDto()
+        val dto = TestData.dto.iverksetting()
 
         val res = httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -60,15 +60,15 @@ class IverksettingRouteTest {
 
     @Test
     fun `start iverksetting av tilleggsstønader`() = runTest {
-        val dto = TestData.enIverksettDto(
+        val dto = TestData.dto.iverksetting(
             iverksettingId = "en-iverksetting",
-            vedtak = TestData.enVedtaksdetaljer(
+            vedtak = TestData.dto.vedtaksdetaljer(
                 utbetalinger = listOf(
-                    TestData.enUtbetalingDto(
+                    TestData.dto.utbetaling(
                         satstype = Satstype.MÅNEDLIG,
                         fom = LocalDate.of(2021, 1, 1),
                         tom = LocalDate.of(2021, 1, 31),
-                        stønadsdata = TestData.enTilleggsstønaderStønadsdata()
+                        stønadsdata = TestData.dto.tilleggstønad()
                     )
                 )
             )
@@ -101,8 +101,8 @@ class IverksettingRouteTest {
     @Test
     fun `start iverksetting av vedtak uten utbetaling`() = runTest {
         val dto =
-            TestData.enIverksettDto(
-                vedtak = TestData.enVedtaksdetaljer(
+            TestData.dto.iverksetting(
+                vedtak = TestData.dto.vedtaksdetaljer(
                     utbetalinger = emptyList(),
                 ),
             )
