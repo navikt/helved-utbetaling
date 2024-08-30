@@ -16,7 +16,7 @@ class TasksTest {
 
     @BeforeEach
     fun cleanup() {
-        TestRuntime.clear(TASK_TABLE_NAME)
+        TestRuntime.clear(TaskDao.TABLE_NAME)
     }
 
     @Nested

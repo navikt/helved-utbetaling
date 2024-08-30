@@ -10,8 +10,6 @@ import java.time.LocalDateTime
 import java.util.*
 import kotlin.coroutines.coroutineContext
 
-const val TASK_TABLE_NAME = "task_v2"
-
 data class TaskDao(
     val id: UUID = UUID.randomUUID(),
     val kind: Kind,
@@ -25,7 +23,7 @@ data class TaskDao(
 ) {
     suspend fun insert() {
         val sql = """
-            INSERT INTO $TASK_TABLE_NAME (id, kind, payload, status, attempt, created_at, updated_at, scheduled_for, message) 
+            INSERT INTO $TABLE_NAME (id, kind, payload, status, attempt, created_at, updated_at, scheduled_for, message) 
             VALUES (?,?,?,?,?,?,?,?,?)
         """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
@@ -47,7 +45,7 @@ data class TaskDao(
 
     suspend fun update() {
         val sql = """
-            UPDATE $TASK_TABLE_NAME 
+            UPDATE $TABLE_NAME 
             SET kind = ?, payload = ?, status = ?, attempt = ?, created_at = ?, updated_at = ?, scheduled_for = ?, message = ?
             WHERE id = ?
         """.trimIndent()
@@ -69,12 +67,14 @@ data class TaskDao(
     }
 
     companion object {
+        const val TABLE_NAME = "task_v2"
+
         suspend fun select(
             conditions: Where? = null,
             limit: Int? = null,
         ): List<TaskDao> {
             val sql = buildString {
-                append("SELECT * FROM $TASK_TABLE_NAME")
+                append("SELECT * FROM $TABLE_NAME")
 
                 conditions?.let { conditions ->
                     append(" WHERE ")
