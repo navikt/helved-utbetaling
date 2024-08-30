@@ -25,7 +25,7 @@ class TaskDaoTest {
             task.copy(status = Status.COMPLETE).update()
         }
 
-        val actual = transaction { TaskDao.select(TaskDao.Where( id = task.id)) }
+        val actual = transaction { TaskDao.select { it.id = task.id } }
         assertEquals(Status.COMPLETE, actual.single().status)
     }
 
@@ -39,7 +39,7 @@ class TaskDaoTest {
             task.copy(attempt = task.attempt + 4).update()
         }
 
-        val actual = transaction { TaskDao.select(TaskDao.Where(id = task.id)) }
+        val actual = transaction { TaskDao.select { it.id = task.id } }
         assertEquals(4, actual.single().attempt)
     }
 
@@ -53,7 +53,7 @@ class TaskDaoTest {
             task.copy(updatedAt = LocalDateTime.of(2024, 5, 17, 23, 59)).update()
         }
 
-        val actual = transaction { TaskDao.select(TaskDao.Where(id = task.id)) }
+        val actual = transaction { TaskDao.select { it.id = task.id } }
         assertEquals(LocalDateTime.of(2024, 5, 17, 23, 59), actual.single().updatedAt)
     }
 
@@ -67,7 +67,7 @@ class TaskDaoTest {
             task.copy(message = "hello there").update()
         }
 
-        val actual = transaction { TaskDao.select(TaskDao.Where(id = task.id)) }
+        val actual = transaction { TaskDao.select { it.id = task.id } }
         assertEquals("hello there", actual.single().message)
     }
 
@@ -81,7 +81,7 @@ class TaskDaoTest {
             task.copy(scheduledFor = LocalDateTime.of(2024, 5, 17, 23, 59)).update()
         }
 
-        val actual = transaction { TaskDao.select(TaskDao.Where(id = task.id)) }
+        val actual = transaction { TaskDao.select { it.id = task.id } }
         assertEquals(LocalDateTime.of(2024, 5, 17, 23, 59), actual.single().scheduledFor)
     }
 
@@ -104,7 +104,7 @@ class TaskDaoTest {
             ).insert()
         }
 
-        val before = transaction { TaskDao.select(TaskDao.Where(id = id)) }.single()
+        val before = transaction { TaskDao.select { it.id = id } }.single()
         assertEquals(Status.UNPROCESSED, before.status)
         assertEquals(before.createdAt, before.updatedAt)
         assertEquals(0, before.attempt)
@@ -119,7 +119,7 @@ class TaskDaoTest {
             ).update()
         }
 
-        val actual = transaction { TaskDao.select(TaskDao.Where(id = id)) }.single()
+        val actual = transaction { TaskDao.select { it.id = id } }.single()
         assertEquals(Status.FAIL, actual.status)
         assertTrue(before.updatedAt.isBefore(actual.updatedAt))
         assertEquals(1, actual.attempt)
