@@ -71,13 +71,12 @@ object IverksettingValidator {
             this.iverksettingId = iverksetting.behandling.forrigeIverksettingId
         }.firstOrNull()
 
-        val forrigeErUtenUtbetalingsperioder =
-            forrigeResultat?.tilkjentYtelseForUtbetaling?.utbetalingsoppdrag?.utbetalingsperiode?.isEmpty() ?: true
-        val forrigeErKvittertOk =
-            forrigeResultat?.oppdragResultat?.oppdragStatus == OppdragStatus.KVITTERT_OK
+        val kvittertOk = forrigeResultat?.oppdragResultat?.oppdragStatus in listOf(
+            OppdragStatus.KVITTERT_OK,
+            OppdragStatus.OK_UTEN_UTBETALING,
+        )
 
-        val forrigeErOkMotOppdrag = forrigeErUtenUtbetalingsperioder || forrigeErKvittertOk
-        if (!forrigeErOkMotOppdrag) {
+        if (!kvittertOk) {
             conflict("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet")
         }
     }
