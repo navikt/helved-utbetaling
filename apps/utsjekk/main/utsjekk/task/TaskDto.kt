@@ -2,6 +2,10 @@ package utsjekk.task
 
 import java.time.LocalDateTime
 import java.util.*
+import kotlin.math.pow
+import kotlin.math.roundToLong
+
+typealias RetryStrategy = (attemptNumber: Int) -> LocalDateTime
 
 data class TaskDto(
     val id: UUID,
@@ -26,6 +30,10 @@ data class TaskDto(
             scheduledFor = task.scheduledFor,
             message = task.message,
         )
+
+        val exponential: RetryStrategy =
+            { attemptNumber -> LocalDateTime.now().plusSeconds(2.0.pow(attemptNumber).roundToLong() + 10) }
+        val constant: RetryStrategy = { LocalDateTime.now().plusSeconds(30) }
     }
 }
 
@@ -37,7 +45,7 @@ enum class Status {
     MANUAL;
 }
 
-enum class Kind {
-    Avstemming,
-    Iverksetting
+enum class Kind(val retryStrategy: RetryStrategy) {
+    Avstemming(retryStrategy = TaskDto.constant),
+    Iverksetting(retryStrategy = TaskDto.exponential);
 }

@@ -59,6 +59,7 @@ object Tasks {
             task.copy(
                 status = status,
                 updatedAt = LocalDateTime.now(),
+                scheduledFor = task.kind.retryStrategy(task.attempt),
                 attempt = task.attempt + 1,
                 message = msg
             ).update()
