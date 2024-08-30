@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import utsjekk.task.*
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.test.assertEquals
 
@@ -141,6 +142,24 @@ class TasksTest {
             val actual = transaction { TaskDao.select(TaskDao.Where(task.id)) }.single()
             assertTrue(task.updatedAt.isBefore(actual.updatedAt))
             assertTrue(LocalDateTime.now().isAfter(actual.updatedAt))
+        }
+
+        @Test
+        fun `scheduled for is set according to retry strategy`() = runTest(TestRuntime.context) {
+            val task = transaction {
+                enTask(Status.PROCESSING).apply { insert() }
+            }
+            val expectedNextAttemptTime = TaskDto.exponential(0)
+
+            transaction {
+                Tasks.update(task.id, Status.PROCESSING, "Oppdrag var stengt. Forsøker igjen...")
+            }
+
+            val updatedTask = transaction {
+                TaskDao.select(TaskDao.Where(id = task.id))
+            }.firstOrNull()
+
+            assertEquals(expectedNextAttemptTime.truncatedTo(ChronoUnit.SECONDS), updatedTask?.scheduledFor?.truncatedTo(ChronoUnit.SECONDS))
         }
 
         @Test
