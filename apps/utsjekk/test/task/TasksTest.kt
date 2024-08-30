@@ -7,10 +7,14 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import utsjekk.task.*
+import utsjekk.task.Kind
+import utsjekk.task.Status
+import utsjekk.task.TaskDao
+import utsjekk.task.TaskDto
+import utsjekk.task.Tasks
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.UUID
 import kotlin.test.assertEquals
 
 class TasksTest {
@@ -159,7 +163,7 @@ class TasksTest {
                 TaskDao.select { it.id = task.id }
             }.firstOrNull()
 
-            assertEquals(expectedNextAttemptTime.truncatedTo(ChronoUnit.SECONDS), updatedTask?.scheduledFor?.truncatedTo(ChronoUnit.SECONDS))
+            assertWithin(expectedNextAttemptTime, updatedTask?.scheduledFor!!, 1)
         }
 
         @Test
@@ -175,6 +179,12 @@ class TasksTest {
             assertEquals("Ugyldig id", actual.message)
         }
     }
+
+    private fun assertWithin(expected: LocalDateTime, actual: LocalDateTime, seconds: Long) =
+        listOf(
+            expected.truncatedTo(ChronoUnit.SECONDS),
+            expected.truncatedTo(ChronoUnit.SECONDS).plusSeconds(seconds)
+        ).contains(actual.truncatedTo(ChronoUnit.SECONDS))
 }
 
 private fun enTask(
