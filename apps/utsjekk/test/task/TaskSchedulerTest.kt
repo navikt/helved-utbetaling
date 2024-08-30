@@ -1,6 +1,5 @@
 package task
 
-import TestData.enIverksettDto
 import TestRuntime
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
@@ -22,7 +21,7 @@ class TaskSchedulerTest {
 
     @Test
     fun `scheduled tasks are sent and set to completed`() = runTest(TestRuntime.context) {
-        val iverksett = enIverksetting(enIverksettDto())
+        val iverksett = enIverksetting(TestData.dto.iverksetting())
         val resultat = enIverksettingResultat(iverksett)
         val json = objectMapper.writeValueAsString(iverksett.data)
         val task = aTask(json = json)
