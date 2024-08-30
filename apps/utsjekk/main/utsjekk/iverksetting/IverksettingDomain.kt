@@ -75,8 +75,7 @@ data class Fagsakdetaljer(
     val fagsystem: Fagsystem,
 )
 
-@JvmInline
-value class Søker(
+data class Søker(
     val personident: String,
 )
 

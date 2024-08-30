@@ -1,0 +1,44 @@
+{
+  "fagsak": {
+    "fagsakId": "200000336",
+    "fagsystem": "TILLEGGSSTØNADER"
+  },
+  "behandling": {
+    "forrigeBehandlingId": null,
+    "forrigeIverksettingId": null,
+    "behandlingId": "511",
+    "iverksettingId": "4869655c-e0f0-4c99-a46b-66fd4015f6db"
+  },
+  "søker": {
+    "personident": "02508822351"
+  },
+  "vedtak": {
+    "vedtakstidspunkt": "2024-08-29T12:37:50.832",
+    "saksbehandlerId": "Z994808",
+    "beslutterId": "Z994781",
+    "tilkjentYtelse": {
+      "id": "YuQ5FjFaYcXKCqzuBmKI",
+      "utbetalingsoppdrag": null,
+      "andelerTilkjentYtelse": [
+        {
+          "beløp": 650,
+          "satstype": "DAGLIG",
+          "periode": {
+            "fom": "2024-08-01",
+            "tom": "2024-08-01"
+          },
+          "stønadsdata": {
+            "@type": "tilleggsstønader",
+            "stønadstype": "TILSYN_BARN_AAP",
+            "brukersNavKontor": null
+          },
+          "periodeId": null,
+          "forrigePeriodeId": null,
+          "id": "6d39c90c-0f20-4949-9cec-308ab7815914"
+        }
+      ],
+      "sisteAndelIKjede": null,
+      "sisteAndelPerKjede": {}
+    }
+  }
+}
