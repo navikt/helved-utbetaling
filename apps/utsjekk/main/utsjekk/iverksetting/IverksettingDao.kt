@@ -11,8 +11,6 @@ import java.sql.Timestamp
 import java.time.LocalDateTime
 import kotlin.coroutines.coroutineContext
 
-private const val TABLE_NAME = "iverksetting"
-
 data class IverksettingDao(
     val behandlingId: BehandlingId,
     val data: Iverksetting,
@@ -21,11 +19,11 @@ data class IverksettingDao(
 
     suspend fun insert() {
         val sql = """
-            INSERT INTO iverksetting (behandling_id, data, mottatt_tidspunkt) 
+            INSERT INTO $TABLE_NAME (behandling_id, data, mottatt_tidspunkt) 
             VALUES (?, to_json(?::json), ?)
         """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
-            stmt.setObject(1, behandlingId.id) // todo: try behandlingId without .id
+            stmt.setObject(1, behandlingId.id)
             stmt.setString(2, objectMapper.writeValueAsString(data))
             stmt.setTimestamp(3, Timestamp.valueOf(mottattTidspunkt))
 
@@ -36,6 +34,8 @@ data class IverksettingDao(
     }
 
     companion object {
+        const val TABLE_NAME = "iverksetting"
+
         suspend fun select(
             limit: Int? = null,
             where: Where.() -> Unit = { Where() },
