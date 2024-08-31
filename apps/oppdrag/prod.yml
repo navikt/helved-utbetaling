@@ -25,8 +25,8 @@ spec:
       memory: 256Mi
       cpu: 50m
   replicas:
-    min: 1
-    max: 1
+    min: 2
+    max: 4
   gcp:
     sqlInstances:
       - type: POSTGRES_15 # WARNING: IF This is changed, all data will be lost. Read on nais.io how to upgrade
