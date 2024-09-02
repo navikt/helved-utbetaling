@@ -14,7 +14,7 @@ import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 class Iverksettinger(
@@ -49,12 +49,7 @@ class Iverksettinger(
                     now,
                 ).insert()
 
-                IverksettingResultatDao(
-                    fagsystem = iverksetting.fagsak.fagsystem,
-                    sakId = iverksetting.sakId,
-                    behandlingId = iverksetting.behandlingId,
-                    iverksettingId = iverksetting.iverksettingId
-                ).insert()
+                IverksettingResultater.opprett(iverksetting, resultat = null)
 
                 TaskDao(
                     id = UUID.randomUUID(),
