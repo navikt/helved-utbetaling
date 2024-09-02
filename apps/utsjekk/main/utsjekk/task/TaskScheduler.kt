@@ -9,7 +9,6 @@ import libs.postgres.concurrency.withLock
 import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.iverksetting.*
@@ -81,22 +80,12 @@ private suspend fun updateIverksetting(
     transaction {
 
         IverksettingResultater
-            .single(
-                iverksettingId = iverksetting.iverksettingId,
-                behandlingId = iverksetting.behandlingId,
-                sakId = iverksetting.sakId,
-                fagsystem = iverksetting.fagsak.fagsystem
-            )
+            .hent(iverksetting)
             .copy(oppdragResultat = OppdragResultat(OppdragStatus.LAGT_PÅ_KØ))
             .update()
 
         val forrigeResultat = iverksetting.behandling.forrigeBehandlingId?.let {
-            IverksettingResultater.single(
-                iverksettingId = iverksetting.behandling.forrigeIverksettingId,
-                behandlingId = iverksetting.behandling.forrigeBehandlingId,
-                sakId = iverksetting.sakId,
-                fagsystem = iverksetting.fagsak.fagsystem
-            )
+            IverksettingResultater.hentForrige(iverksetting)
         }
 
         val beregnetUtbetalingsoppdrag = utbetalingsoppdrag(iverksetting, forrigeResultat)
@@ -104,24 +93,14 @@ private suspend fun updateIverksetting(
             tilkjentYtelse = iverksetting.vedtak.tilkjentYtelse,
             beregnetUtbetalingsoppdrag = beregnetUtbetalingsoppdrag,
             forrigeResultat = forrigeResultat,
-            behandlingId = iverksetting.behandlingId, // todo: er dette riktig?
-            fagsystem = iverksetting.fagsak.fagsystem,
-            sakId = iverksetting.sakId,
-            iverksettingId = iverksetting.iverksettingId
+            iverksetting = iverksetting,
         )
 
         if (beregnetUtbetalingsoppdrag.utbetalingsoppdrag.utbetalingsperiode.isNotEmpty()) {
             iverksettUtbetaling(oppdrag, tilkjentYtelse)
         } else {
-            IverksettingResultater
-                .single(
-                    iverksettingId = iverksetting.iverksettingId,
-                    behandlingId = iverksetting.behandlingId,
-                    sakId = iverksetting.sakId,
-                    fagsystem = iverksetting.fagsak.fagsystem
-                )
-                .copy(oppdragResultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING))
-                .update()
+            val resultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING)
+            IverksettingResultater.oppdater(iverksetting, resultat)
             appLog.warn("Iverksetter ikke noe mot oppdrag. Ingen perioder i utbetalingsoppdraget for iverksetting $iverksetting")
         }
 
@@ -133,10 +112,7 @@ private suspend fun oppdaterTilkjentYtelse(
     tilkjentYtelse: TilkjentYtelse,
     beregnetUtbetalingsoppdrag: BeregnetUtbetalingsoppdrag,
     forrigeResultat: IverksettingResultatDao?,
-    behandlingId: BehandlingId,
-    fagsystem: Fagsystem,
-    sakId: SakId,
-    iverksettingId: IverksettingId?,
+    iverksetting: Iverksetting,
 ): TilkjentYtelse {
     val nyeAndelerMedPeriodeId =
         tilkjentYtelse.andelerTilkjentYtelse.map { andel ->
@@ -162,15 +138,7 @@ private suspend fun oppdaterTilkjentYtelse(
         lagTilkjentYtelseMedSisteAndelPerKjede(nyTilkjentYtelse, forrigeSisteAndelPerKjede)
 
     transaction {
-        IverksettingResultater
-            .single(
-                iverksettingId = iverksettingId,
-                behandlingId = behandlingId,
-                sakId = sakId,
-                fagsystem = fagsystem
-            )
-            .copy(tilkjentYtelseForUtbetaling = nyTilkjentYtelseMedSisteAndelIKjede)
-            .update()
+        IverksettingResultater.oppdater(iverksetting, nyTilkjentYtelseMedSisteAndelIKjede)
     }
 
     return nyTilkjentYtelseMedSisteAndelIKjede
