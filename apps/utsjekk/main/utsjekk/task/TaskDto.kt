@@ -1,7 +1,7 @@
 package utsjekk.task
 
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
@@ -47,5 +47,6 @@ enum class Status {
 
 enum class Kind(val retryStrategy: RetryStrategy) {
     Avstemming(retryStrategy = TaskDto.constant),
-    Iverksetting(retryStrategy = TaskDto.exponential);
+    Iverksetting(retryStrategy = TaskDto.exponential),
+    SjekkStatus(retryStrategy = TaskDto.constant);
 }

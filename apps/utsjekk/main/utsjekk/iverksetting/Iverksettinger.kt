@@ -3,7 +3,6 @@ package utsjekk.iverksetting
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
@@ -11,10 +10,8 @@ import utsjekk.ApiError.Companion.serviceUnavailable
 import utsjekk.featuretoggle.FeatureToggles
 import utsjekk.status.Kafka
 import utsjekk.task.Kind
-import utsjekk.task.Status
-import utsjekk.task.TaskDao
+import utsjekk.task.Tasks
 import java.time.LocalDateTime
-import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 class Iverksettinger(
@@ -51,17 +48,7 @@ class Iverksettinger(
 
                 IverksettingResultater.opprett(iverksetting, resultat = null)
 
-                TaskDao(
-                    id = UUID.randomUUID(),
-                    kind = Kind.Iverksetting,
-                    payload = objectMapper.writeValueAsString(iverksetting),
-                    status = Status.UNPROCESSED,
-                    attempt = 0,
-                    createdAt = now,
-                    updatedAt = now,
-                    scheduledFor = now, //.plusDays(1), // todo: set correct schedule
-                    message = null,
-                ).insert()
+                Tasks.create(Kind.Iverksetting, iverksetting)
             }
         }
     }
