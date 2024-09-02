@@ -1,6 +1,7 @@
 package utsjekk.task
 
 import libs.postgres.concurrency.transaction
+import no.nav.utsjekk.kontrakter.felles.objectMapper
 import java.time.LocalDateTime
 import java.util.*
 
@@ -66,4 +67,21 @@ object Tasks {
                 status = task.status
             ).insert()
         }
+
+    suspend fun <T>create(kind: Kind, payload: T) {
+        transaction {
+            val now = LocalDateTime.now()
+            TaskDao(
+                id = UUID.randomUUID(),
+                kind = kind,
+                payload = objectMapper.writeValueAsString(payload),
+                status = Status.UNPROCESSED,
+                attempt = 0,
+                message = null,
+                createdAt = now,
+                updatedAt = now,
+                scheduledFor = now,
+            ).insert()
+        }
+    }
 }

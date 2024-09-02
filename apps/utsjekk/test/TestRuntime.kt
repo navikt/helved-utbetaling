@@ -30,7 +30,7 @@ object TestRuntime : AutoCloseable {
 
     private val postgres = PostgresContainer("utsjekk")
     val azure = AzureFake()
-    private val oppdrag = OppdragFake()
+    val oppdrag = OppdragFake()
     val unleash = UnleashFake()
 
     val context: CoroutineContext = postgres.context

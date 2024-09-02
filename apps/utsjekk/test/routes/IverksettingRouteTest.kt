@@ -5,20 +5,30 @@ import TestRuntime
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.readValue
 import httpClient
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import io.ktor.client.call.body
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import repeatUntil
 import java.time.LocalDate
@@ -170,5 +180,44 @@ class IverksettingRouteTest {
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
         assertEquals("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", res.bodyAsText())
+    }
+
+    @Disabled
+    @Test
+    fun `iverksetting blir kvittert ok`() = runTest {
+        val dto = TestData.dto.iverksetting()
+
+        val res = httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
+        }
+
+        assertEquals(HttpStatusCode.Accepted, res.status)
+
+        suspend fun getStatus(): IverksettStatus =
+            httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+                bearerAuth(TestRuntime.azure.generateToken())
+                accept(ContentType.Application.Json)
+            }.body()
+
+        val oppdragId = OppdragIdDto(
+            fagsystem = Fagsystem.TILLEGGSSTØNADER,
+            sakId = dto.sakId,
+            behandlingId = dto.behandlingId,
+            iverksettingId = dto.iverksettingId,
+        )
+        TestRuntime.oppdrag.setExpected(
+            OppdragStatusDto(status = OppdragStatus.KVITTERT_OK, feilmelding = null),
+            oppdragId
+        )
+
+        val status = runBlocking {
+            repeatUntil(::getStatus) { status ->
+                status == IverksettStatus.OK
+            }
+        }
+
+        assertEquals(IverksettStatus.OK, status)
     }
 }
