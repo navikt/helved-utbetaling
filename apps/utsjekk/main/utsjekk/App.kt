@@ -37,6 +37,7 @@ import utsjekk.routes.tasks
 import utsjekk.status.Kafka
 import utsjekk.status.StatusKafkaProducer
 import utsjekk.task.TaskScheduler
+import utsjekk.task.strategies.AvstemmingStrategy
 import utsjekk.task.strategies.IverksettingStrategy
 import utsjekk.task.strategies.SjekkStatusStrategy
 import javax.sql.DataSource
@@ -97,8 +98,12 @@ fun Application.utsjekk(
 
     val oppdrag = OppdragClient(config)
     val iverksettinger = Iverksettinger(context, featureToggles, statusProducer)
-    val iverksettingStrategy = IverksettingStrategy(oppdrag, iverksettinger)
-    val scheduler = TaskScheduler(iverksettingStrategy, SjekkStatusStrategy(oppdrag), context)
+    val scheduler = TaskScheduler(
+        IverksettingStrategy(oppdrag, iverksettinger),
+        SjekkStatusStrategy(oppdrag),
+        AvstemmingStrategy(oppdrag),
+        context,
+    )
 
     environment.monitor.subscribe(ApplicationStopping) {
         scheduler.close()
