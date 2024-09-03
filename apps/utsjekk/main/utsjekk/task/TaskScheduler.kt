@@ -25,7 +25,7 @@ class TaskScheduler(
             secureLog.debug("Feeding scheduler")
             return transaction {
                 TaskDao.select {
-                    it.status = listOf(Status.UNPROCESSED, Status.FAIL)
+                    it.status = listOf(Status.IN_PROGRESS, Status.FAIL)
                     it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
                 }
             }

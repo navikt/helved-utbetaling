@@ -75,7 +75,7 @@ object Tasks {
                 id = UUID.randomUUID(),
                 kind = kind,
                 payload = objectMapper.writeValueAsString(payload),
-                status = Status.UNPROCESSED,
+                status = Status.IN_PROGRESS,
                 attempt = 0,
                 message = null,
                 createdAt = now,

@@ -35,17 +35,9 @@ class TasksTest {
         }
 
         @Test
-        fun `includes unprocessed`() = runTest(TestRuntime.context) {
+        fun `includes in progress`() = runTest(TestRuntime.context) {
             transaction {
-                enTask(Status.UNPROCESSED).insert()
-            }
-            assertEquals(1, Tasks.incomplete().size)
-        }
-
-        @Test
-        fun `includes processing`() = runTest(TestRuntime.context) {
-            transaction {
-                enTask(Status.PROCESSING).insert()
+                enTask(Status.IN_PROGRESS).insert()
             }
             assertEquals(1, Tasks.incomplete().size)
         }
@@ -124,7 +116,7 @@ class TasksTest {
         @Test
         fun `attempt is increased`() = runTest(TestRuntime.context) {
             val task = transaction {
-                enTask(Status.PROCESSING).apply { insert() }
+                enTask(Status.IN_PROGRESS).apply { insert() }
             }
             transaction {
                 Tasks.update(task.id, Status.MANUAL, "Klarer ikke automatisk sende inn oppdrag")
@@ -137,10 +129,10 @@ class TasksTest {
         @Test
         fun `update_at is set to now`() = runTest(TestRuntime.context) {
             val task = transaction {
-                enTask(Status.PROCESSING).apply { insert() }
+                enTask(Status.IN_PROGRESS).apply { insert() }
             }
             transaction {
-                Tasks.update(task.id, Status.PROCESSING, "Oppdrag var stengt. Forsøker igjen...")
+                Tasks.update(task.id, Status.IN_PROGRESS, "Oppdrag var stengt. Forsøker igjen...")
             }
 
             val actual = transaction { TaskDao.select { it.id = task.id } }.single()
@@ -151,12 +143,12 @@ class TasksTest {
         @Test
         fun `scheduled for is set according to retry strategy`() = runTest(TestRuntime.context) {
             val task = transaction {
-                enTask(Status.PROCESSING).apply { insert() }
+                enTask(Status.IN_PROGRESS).apply { insert() }
             }
             val expectedNextAttemptTime = TaskDto.exponentialSec(0)
 
             transaction {
-                Tasks.update(task.id, Status.PROCESSING, "Oppdrag var stengt. Forsøker igjen...")
+                Tasks.update(task.id, Status.IN_PROGRESS, "Oppdrag var stengt. Forsøker igjen...")
             }
 
             val updatedTask = transaction {
@@ -169,7 +161,7 @@ class TasksTest {
         @Test
         fun `message is applied`() = runTest(TestRuntime.context) {
             val task = transaction {
-                enTask(Status.PROCESSING).apply { insert() }
+                enTask(Status.IN_PROGRESS).apply { insert() }
             }
             transaction {
                 Tasks.update(task.id, Status.FAIL, "Ugyldig id")
@@ -188,7 +180,7 @@ class TasksTest {
 }
 
 private fun enTask(
-    status: Status = Status.UNPROCESSED,
+    status: Status = Status.IN_PROGRESS,
     createdAt: LocalDateTime = LocalDateTime.now(),
 ) = TaskDao(
     id = UUID.randomUUID(),

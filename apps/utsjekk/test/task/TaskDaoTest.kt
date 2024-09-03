@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 import java.util.*
 
 class TaskDaoTest {
-    private val task = enTask(Status.UNPROCESSED)
+    private val task = enTask(Status.IN_PROGRESS)
 
     @Test
     fun `can update status`() = runTest(TestRuntime.context) {
@@ -95,7 +95,7 @@ class TaskDaoTest {
                 id = id,
                 kind = Kind.Iverksetting,
                 payload = "some payload",
-                status = Status.UNPROCESSED,
+                status = Status.IN_PROGRESS,
                 attempt = 0,
                 createdAt = now,
                 updatedAt = now,
@@ -105,7 +105,7 @@ class TaskDaoTest {
         }
 
         val before = transaction { TaskDao.select { it.id = id } }.single()
-        assertEquals(Status.UNPROCESSED, before.status)
+        assertEquals(Status.IN_PROGRESS, before.status)
         assertEquals(before.createdAt, before.updatedAt)
         assertEquals(0, before.attempt)
         assertEquals(null, before.message)
@@ -128,7 +128,7 @@ class TaskDaoTest {
 }
 
 private fun enTask(
-    status: Status = Status.UNPROCESSED,
+    status: Status = Status.IN_PROGRESS,
     createdAt: LocalDateTime = LocalDateTime.now(),
 ) = TaskDao(
     id = UUID.randomUUID(),

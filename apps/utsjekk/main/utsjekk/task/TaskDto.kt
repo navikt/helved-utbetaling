@@ -11,7 +11,7 @@ data class TaskDto(
     val id: UUID,
     val kind: Kind,
     val payload: String,
-    val status: Status = Status.UNPROCESSED,
+    val status: Status = Status.IN_PROGRESS,
     val attempt: Int = 0,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = createdAt,
@@ -40,10 +40,9 @@ data class TaskDto(
 }
 
 enum class Status {
-    UNPROCESSED,
+    IN_PROGRESS,
     COMPLETE,
     FAIL,
-    PROCESSING,
     MANUAL;
 }
 
