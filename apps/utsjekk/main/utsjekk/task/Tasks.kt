@@ -68,7 +68,7 @@ object Tasks {
             ).insert()
         }
 
-    suspend fun <T>create(kind: Kind, payload: T) {
+    suspend fun <T> create(kind: Kind, payload: T, scheduledFor: LocalDateTime? = null) {
         transaction {
             val now = LocalDateTime.now()
             TaskDao(
@@ -80,7 +80,7 @@ object Tasks {
                 message = null,
                 createdAt = now,
                 updatedAt = now,
-                scheduledFor = now,
+                scheduledFor = scheduledFor ?: now,
             ).insert()
         }
     }

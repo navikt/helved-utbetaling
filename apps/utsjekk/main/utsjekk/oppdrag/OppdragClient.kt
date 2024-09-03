@@ -1,17 +1,13 @@
 package utsjekk.oppdrag
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
-import io.ktor.http.isSuccess
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
+import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
@@ -22,6 +18,21 @@ class OppdragClient(
     private val client: HttpClient = HttpClientFactory.new(),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
+
+    suspend fun avstem(grensesnittavstemming: GrensesnittavstemmingRequest) {
+        val token = azure.getClientCredentialsToken(config.oppdrag.scope)
+
+        val response = client.post("${config.oppdrag.host}/grensesnittavstemming") {
+            bearerAuth(token.access_token)
+            contentType(ContentType.Application.Json)
+            setBody(grensesnittavstemming)
+        }
+
+        require(response.status == HttpStatusCode.Created) {
+            "(${response.status}) Feil ved grensesnittavstemming mot utsjekk-oppdrag: ${response.bodyAsText()}"
+        }
+    }
+
     suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {
         val token = azure.getClientCredentialsToken(config.oppdrag.scope)
 

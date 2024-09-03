@@ -9,14 +9,11 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.request.receive
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.CompletableDeferred
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import no.nav.utsjekk.kontrakter.oppdrag.*
 import port
 import utsjekk.OppdragConfig
 import java.net.URI
@@ -37,9 +34,11 @@ class OppdragFake : AutoCloseable {
 
     fun reset() {
         oppdragMap.clear()
+        expectedAvstemming = CompletableDeferred()
     }
 
     val expectedStatus = CompletableDeferred<OppdragIdDto>()
+    var expectedAvstemming = CompletableDeferred<GrensesnittavstemmingRequest>()
 
     override fun close() = oppdrag.stop(0, 0)
 }
@@ -81,6 +80,12 @@ private fun Application.azure(oppdragFake: OppdragFake) {
             } else {
                 call.respond(HttpStatusCode.NotFound, "Fant'n ikke")
             }
+        }
+
+        post("/grensesnittavstemming") {
+            val dto = call.receive<GrensesnittavstemmingRequest>()
+            oppdragFake.expectedAvstemming.complete(dto)
+            call.respond(HttpStatusCode.Created)
         }
     }
 }

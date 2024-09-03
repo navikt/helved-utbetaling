@@ -1,11 +1,12 @@
 package utsjekk.task
 
-import io.ktor.util.logging.error
+import io.ktor.util.logging.*
 import kotlinx.coroutines.CancellationException
 import libs.job.Scheduler
 import libs.postgres.concurrency.transaction
 import libs.postgres.concurrency.withLock
 import libs.utils.secureLog
+import utsjekk.task.strategies.AvstemmingStrategy
 import utsjekk.task.strategies.IverksettingStrategy
 import utsjekk.task.strategies.SjekkStatusStrategy
 import java.time.LocalDateTime
@@ -14,6 +15,7 @@ import kotlin.coroutines.CoroutineContext
 class TaskScheduler(
     private val iverksettingStrategy: IverksettingStrategy,
     private val sjekkStatusStrategy: SjekkStatusStrategy,
+    private val avstemmingStrategy: AvstemmingStrategy,
     context: CoroutineContext,
 ) : Scheduler<TaskDao>(
     feedRPM = 120,
@@ -33,16 +35,18 @@ class TaskScheduler(
     }
 
     override suspend fun task(fed: TaskDao) {
-        try {
-            when (fed.kind) {
-                Kind.Iverksetting -> iverksettingStrategy.execute(fed)
-                Kind.Avstemming -> TODO("not implemented")
-                Kind.SjekkStatus -> sjekkStatusStrategy.execute(fed)
+        withLock(fed.id.toString()) {
+            try {
+                when (fed.kind) {
+                    Kind.Iverksetting -> iverksettingStrategy.execute(fed)
+                    Kind.Avstemming -> avstemmingStrategy.execute(fed)
+                    Kind.SjekkStatus -> sjekkStatusStrategy.execute(fed)
+                }
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                Tasks.update(fed.id, Status.FAIL, e.message)
+                secureLog.error(e)
             }
-        } catch (e: Throwable) {
-            if (e is CancellationException) throw e
-            Tasks.update(fed.id, Status.FAIL, e.message)
-            secureLog.error(e)
         }
     }
 

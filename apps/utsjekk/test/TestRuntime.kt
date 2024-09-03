@@ -17,6 +17,10 @@ import kotlinx.coroutines.withTimeout
 import libs.jdbc.PostgresContainer
 import libs.utils.appLog
 import utsjekk.Config
+import utsjekk.iverksetting.IverksettingDao
+import utsjekk.iverksetting.IverksettingResultatDao
+import utsjekk.task.TaskDao
+import utsjekk.task.TaskHistoryDao
 import utsjekk.utsjekk
 import kotlin.coroutines.CoroutineContext
 
@@ -52,7 +56,7 @@ object TestRuntime : AutoCloseable {
             tables.forEach { con.prepareStatement("TRUNCATE TABLE $it CASCADE").execute() }
 //            con.prepareStatement("SET REFERENTIAL_INTEGRITY TRUE").execute()
         }.also {
-            tables.forEach { appLog.info("table '$it' trunctated.") }
+            tables.forEach { appLog.info("table '$it' truncated.") }
         }
 
     }
@@ -60,6 +64,12 @@ object TestRuntime : AutoCloseable {
     private val ktor = testApplication.apply { start() }
 
     override fun close() {
+        clear(
+            TaskDao.TABLE_NAME,
+            TaskHistoryDao.TABLE_NAME,
+            IverksettingDao.TABLE_NAME,
+            IverksettingResultatDao.TABLE_NAME,
+        )
         postgres.close()
         ktor.stop()
         oppdrag.close()
