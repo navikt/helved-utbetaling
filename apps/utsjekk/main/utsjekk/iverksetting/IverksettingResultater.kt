@@ -37,6 +37,14 @@ object IverksettingResultater {
         }
     }
 
+    suspend fun oppdater(utbetalingId: UtbetalingId, resultat: OppdragResultat) {
+        transaction {
+            hent(utbetalingId)
+                .copy(oppdragResultat = resultat)
+                .update()
+        }
+    }
+
     suspend fun hent(iverksetting: Iverksetting): IverksettingResultatDao {
         return transaction {
             IverksettingResultatDao.select(1) {
@@ -51,6 +59,25 @@ object IverksettingResultater {
                     behandlingId    ${iverksetting.behandlingId}
                     sakId           ${iverksetting.sakId}
                     fagsystem       ${iverksetting.fagsak.fagsystem}
+                """.trimIndent()
+            )
+        }
+    }
+
+    suspend fun hent(utbetalingId: UtbetalingId): IverksettingResultatDao {
+        return transaction {
+            IverksettingResultatDao.select(1) {
+                this.iverksettingId = utbetalingId.iverksettingId
+                this.behandlingId = utbetalingId.behandlingId
+                this.sakId = utbetalingId.sakId
+                this.fagsystem = utbetalingId.fagsystem
+            }.singleOrNull() ?: error(
+                """
+                Fant ikke iverksettingresultat for iverksetting med 
+                    iverksettingId  ${utbetalingId.iverksettingId}
+                    behandlingId    ${utbetalingId.behandlingId}
+                    sakId           ${utbetalingId.sakId}
+                    fagsystem       ${utbetalingId.fagsystem}
                 """.trimIndent()
             )
         }

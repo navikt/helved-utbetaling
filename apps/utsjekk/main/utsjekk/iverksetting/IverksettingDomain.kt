@@ -30,6 +30,8 @@ data class Iverksetting(
         "fagsystem ${fagsak.fagsystem}, sak $sakId, behandling $behandlingId, iverksettingId ${behandling.iverksettingId}"
 }
 
+data class UtbetalingId(val fagsystem: Fagsystem, val sakId: SakId, val behandlingId: BehandlingId, val iverksettingId: IverksettingId?)
+
 /**
  * @param andeler er alle andeler med nye periodeId/forrigePeriodeId for å kunne oppdatere lagrede andeler
  */

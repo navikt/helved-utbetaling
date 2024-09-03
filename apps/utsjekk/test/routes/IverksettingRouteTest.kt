@@ -28,7 +28,6 @@ import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import repeatUntil
 import java.time.LocalDate
@@ -36,6 +35,7 @@ import java.time.LocalDate
 class IverksettingRouteTest {
     @AfterEach
     fun reset() {
+        TestRuntime.oppdrag.reset()
         TestRuntime.unleash.reset()
     }
 
@@ -182,10 +182,19 @@ class IverksettingRouteTest {
         assertEquals("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", res.bodyAsText())
     }
 
-    @Disabled
     @Test
     fun `iverksetting blir kvittert ok`() = runTest {
         val dto = TestData.dto.iverksetting()
+        val oppdragId = OppdragIdDto(
+            fagsystem = Fagsystem.TILLEGGSSTØNADER,
+            sakId = dto.sakId,
+            behandlingId = dto.behandlingId,
+            iverksettingId = dto.iverksettingId,
+        )
+        TestRuntime.oppdrag.setExpected(
+            OppdragStatusDto(status = OppdragStatus.KVITTERT_OK, feilmelding = null),
+            oppdragId
+        )
 
         val res = httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -201,16 +210,6 @@ class IverksettingRouteTest {
                 accept(ContentType.Application.Json)
             }.body()
 
-        val oppdragId = OppdragIdDto(
-            fagsystem = Fagsystem.TILLEGGSSTØNADER,
-            sakId = dto.sakId,
-            behandlingId = dto.behandlingId,
-            iverksettingId = dto.iverksettingId,
-        )
-        TestRuntime.oppdrag.setExpected(
-            OppdragStatusDto(status = OppdragStatus.KVITTERT_OK, feilmelding = null),
-            oppdragId
-        )
 
         val status = runBlocking {
             repeatUntil(::getStatus) { status ->

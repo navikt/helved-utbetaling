@@ -31,8 +31,10 @@ data class TaskDto(
             message = task.message,
         )
 
-        val exponential: RetryStrategy =
+        val exponentialSec: RetryStrategy =
             { attemptNumber -> LocalDateTime.now().plusSeconds(2.0.pow(attemptNumber).roundToLong() + 10) }
+        val exponentialMin: RetryStrategy =
+            { attemptNumber -> if (attemptNumber < 5) LocalDateTime.now().plusSeconds(2) else LocalDateTime.now().plusMinutes(2.0.pow(attemptNumber).roundToLong() + 10) }
         val constant: RetryStrategy = { LocalDateTime.now().plusSeconds(30) }
     }
 }
@@ -47,6 +49,6 @@ enum class Status {
 
 enum class Kind(val retryStrategy: RetryStrategy) {
     Avstemming(retryStrategy = TaskDto.constant),
-    Iverksetting(retryStrategy = TaskDto.exponential),
-    SjekkStatus(retryStrategy = TaskDto.constant);
+    Iverksetting(retryStrategy = TaskDto.exponentialSec),
+    SjekkStatus(retryStrategy = TaskDto.exponentialMin);
 }

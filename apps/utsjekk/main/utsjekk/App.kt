@@ -98,7 +98,7 @@ fun Application.utsjekk(
     val oppdrag = OppdragClient(config)
     val iverksettinger = Iverksettinger(context, featureToggles, statusProducer)
     val iverksettingStrategy = IverksettingStrategy(oppdrag, iverksettinger)
-    val scheduler = TaskScheduler(iverksettingStrategy, SjekkStatusStrategy(), context)
+    val scheduler = TaskScheduler(iverksettingStrategy, SjekkStatusStrategy(oppdrag), context)
 
     environment.monitor.subscribe(ApplicationStopping) {
         scheduler.close()
