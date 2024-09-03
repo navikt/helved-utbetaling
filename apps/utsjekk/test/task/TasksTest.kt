@@ -153,7 +153,7 @@ class TasksTest {
             val task = transaction {
                 enTask(Status.PROCESSING).apply { insert() }
             }
-            val expectedNextAttemptTime = TaskDto.exponential(0)
+            val expectedNextAttemptTime = TaskDto.exponentialSec(0)
 
             transaction {
                 Tasks.update(task.id, Status.PROCESSING, "Oppdrag var stengt. Forsøker igjen...")

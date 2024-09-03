@@ -28,6 +28,7 @@ import utsjekk.iverksetting.tilAndelData
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import utsjekk.oppdrag.OppdragClient
 import utsjekk.task.Kind
+import utsjekk.task.Status
 import utsjekk.task.TaskDao
 import utsjekk.task.Tasks
 
@@ -38,6 +39,7 @@ class IverksettingStrategy(
     override suspend fun execute(task: TaskDao) {
         val iverksetting = objectMapper.readValue<Iverksetting>(task.payload)
         updateIverksetting(iverksetting)
+        Tasks.update(task.id, Status.COMPLETE, "")
     }
 
     private suspend fun updateIverksetting(iverksetting: Iverksetting) {

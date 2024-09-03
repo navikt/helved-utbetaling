@@ -1,6 +1,7 @@
 package utsjekk.oppdrag
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -11,6 +12,8 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import utsjekk.Config
 
@@ -37,6 +40,22 @@ class OppdragClient(
         when {
             response.status.isSuccess() -> {}
             else -> throw HttpError(body, response.status)
+        }
+    }
+
+    suspend fun hentStatus(oppdragIdDto: OppdragIdDto): OppdragStatusDto {
+        val token = azure.getClientCredentialsToken(config.oppdrag.scope)
+
+        val response = client.post("${config.oppdrag.host}/status") {
+            bearerAuth(token.access_token)
+            contentType(ContentType.Application.Json)
+            setBody(oppdragIdDto)
+        }
+
+        return when (response.status) {
+            HttpStatusCode.OK -> response.body<OppdragStatusDto>()
+            HttpStatusCode.NotFound -> throw HttpError("Fant ikke status for oppdrag $oppdragIdDto", response.status)
+            else -> throw HttpError("Feil fra utsjekk-oppdrag: ${response.bodyAsText()}", response.status)
         }
     }
 }

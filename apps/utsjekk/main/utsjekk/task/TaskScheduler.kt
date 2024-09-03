@@ -25,7 +25,7 @@ class TaskScheduler(
             secureLog.debug("Feeding scheduler")
             return transaction {
                 TaskDao.select {
-                    it.status = listOf(Status.UNPROCESSED)
+                    it.status = listOf(Status.UNPROCESSED, Status.FAIL)
                     it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
                 }
             }
@@ -39,9 +39,6 @@ class TaskScheduler(
                 Kind.Avstemming -> TODO("not implemented")
                 Kind.SjekkStatus -> sjekkStatusStrategy.execute(fed)
             }
-
-            Tasks.update(fed.id, Status.COMPLETE, "")
-
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
             Tasks.update(fed.id, Status.FAIL, e.message)

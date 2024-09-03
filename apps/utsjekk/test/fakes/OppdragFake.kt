@@ -35,6 +35,10 @@ class OppdragFake : AutoCloseable {
         oppdragMap[id] = status
     }
 
+    fun reset() {
+        oppdragMap.clear()
+    }
+
     val expectedStatus = CompletableDeferred<OppdragIdDto>()
 
     override fun close() = oppdrag.stop(0, 0)
@@ -54,12 +58,15 @@ private fun Application.azure(oppdragFake: OppdragFake) {
     routing {
         post("/oppdrag") {
             val dto = call.receive<Utbetalingsoppdrag>()
-            oppdragMap[OppdragIdDto(
+            val oppdragIdDto = OppdragIdDto(
                 dto.fagsystem,
                 dto.saksnummer,
                 dto.utbetalingsperiode.first().behandlingId,
                 dto.iverksettingId,
-            )] = OppdragStatusDto(OppdragStatus.LAGT_PÅ_KØ, feilmelding = null)
+            )
+            if (!oppdragMap.containsKey(oppdragIdDto)) {
+                oppdragMap[oppdragIdDto] = OppdragStatusDto(OppdragStatus.LAGT_PÅ_KØ, feilmelding = null)
+            }
             call.respond(HttpStatusCode.OK)
         }
 
