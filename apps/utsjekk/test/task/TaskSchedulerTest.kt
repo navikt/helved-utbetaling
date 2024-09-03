@@ -27,7 +27,7 @@ class TaskSchedulerTest {
         val task = aTask(json = json)
 
         populate(task, iverksett, resultat).await()
-        assertEquals(Status.UNPROCESSED, getTask(task.id).await().single().status)
+        assertEquals(Status.IN_PROGRESS, getTask(task.id).await().single().status)
 
         while (!isComplete(task)) {
             runBlocking {
@@ -39,7 +39,7 @@ class TaskSchedulerTest {
     }
 
     private fun aTask(
-        status: Status = Status.UNPROCESSED,
+        status: Status = Status.IN_PROGRESS,
         createdAt: LocalDateTime = LocalDateTime.now(),
         updatedAt: LocalDateTime = createdAt,
         scheduledFor: LocalDateTime = createdAt,
