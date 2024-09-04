@@ -28,16 +28,17 @@ class OppdragFake : AutoCloseable {
         )
     }
 
-    fun setExpected(status: OppdragStatusDto, id: OppdragIdDto) {
+    fun respondWith(status: OppdragStatusDto, id: OppdragIdDto) {
         oppdragMap[id] = status
     }
 
     fun reset() {
         oppdragMap.clear()
+        expectedStatusRequestBody = CompletableDeferred()
         expectedAvstemming = CompletableDeferred()
     }
 
-    val expectedStatus = CompletableDeferred<OppdragIdDto>()
+    var expectedStatusRequestBody = CompletableDeferred<OppdragIdDto>()
     var expectedAvstemming = CompletableDeferred<GrensesnittavstemmingRequest>()
 
     override fun close() = oppdrag.stop(0, 0)
@@ -71,14 +72,14 @@ private fun Application.azure(oppdragFake: OppdragFake) {
 
         post("/status") {
             val dto = call.receive<OppdragIdDto>()
-            oppdragFake.expectedStatus.complete(dto)
 
-            val oppdragStatus = oppdragMap[dto]
+            if (oppdragMap.containsKey(dto)) {
+                oppdragFake.expectedStatusRequestBody.complete(dto)
+            }
 
-            if (oppdragStatus != null) {
-                call.respond(HttpStatusCode.OK, oppdragStatus)
-            } else {
-                call.respond(HttpStatusCode.NotFound, "Fant'n ikke")
+            when (val status = oppdragMap[dto]) {
+                null -> call.respond(HttpStatusCode.NotFound, "Fant'n ikke")
+                else -> call.respond(HttpStatusCode.OK, status)
             }
         }
 

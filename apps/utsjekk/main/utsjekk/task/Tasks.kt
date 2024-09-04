@@ -31,6 +31,13 @@ object Tasks {
             }.map(TaskDto::from)
         }
 
+    suspend fun forId(id: UUID): TaskDto? =
+        transaction {
+            TaskDao.select {
+                it.id = id
+            }.map(TaskDto::from)
+        }.firstOrNull()
+
     suspend fun forStatus(status: Status): List<TaskDto> =
         transaction {
             TaskDao.select {
@@ -68,11 +75,12 @@ object Tasks {
             ).insert()
         }
 
-    suspend fun <T> create(kind: Kind, payload: T, scheduledFor: LocalDateTime? = null) {
-        transaction {
+    suspend fun <T> create(kind: Kind, payload: T, scheduledFor: LocalDateTime? = null): UUID {
+        return transaction {
             val now = LocalDateTime.now()
+            val taskId = UUID.randomUUID()
             TaskDao(
-                id = UUID.randomUUID(),
+                id = taskId,
                 kind = kind,
                 payload = objectMapper.writeValueAsString(payload),
                 status = Status.IN_PROGRESS,
@@ -82,6 +90,8 @@ object Tasks {
                 updatedAt = now,
                 scheduledFor = scheduledFor ?: now,
             ).insert()
+
+            taskId
         }
     }
 }
