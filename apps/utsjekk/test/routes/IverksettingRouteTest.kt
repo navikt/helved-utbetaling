@@ -191,7 +191,7 @@ class IverksettingRouteTest {
             behandlingId = dto.behandlingId,
             iverksettingId = dto.iverksettingId,
         )
-        TestRuntime.oppdrag.setExpected(
+        TestRuntime.oppdrag.respondWith(
             OppdragStatusDto(status = OppdragStatus.KVITTERT_OK, feilmelding = null),
             oppdragId
         )

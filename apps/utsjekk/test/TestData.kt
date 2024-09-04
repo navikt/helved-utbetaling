@@ -1,10 +1,15 @@
 import no.nav.utsjekk.kontrakter.felles.*
 import no.nav.utsjekk.kontrakter.iverksett.*
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import utsjekk.iverksetting.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 object TestData {
+    private val DEFAULT_FAGSYSTEM: Fagsystem = Fagsystem.DAGPENGER
+
     object dao {
         fun iverksetting(
             behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
@@ -17,7 +22,7 @@ object TestData {
         )
 
         fun iverksettingResultat(
-            fagsystem: Fagsystem = Fagsystem.DAGPENGER,
+            fagsystem: Fagsystem = DEFAULT_FAGSYSTEM,
             sakId: SakId = SakId(RandomOSURId.generate()),
             behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
             iverksettingId: IverksettingId? = null,
@@ -86,12 +91,27 @@ object TestData {
             type: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_AAP,
             brukersNavKontor: String? = null,
         ) = StønadsdataTilleggsstønaderDto(type, brukersNavKontor)
+
+        fun oppdragStatus(
+            status: OppdragStatus = OppdragStatus.LAGT_PÅ_KØ,
+            feilmelding: String? = null,
+        ): OppdragStatusDto = OppdragStatusDto(
+            status = status,
+            feilmelding = feilmelding,
+        )
+
+        fun oppdragId(iverksetting: Iverksetting) = OppdragIdDto(
+            fagsystem = iverksetting.fagsak.fagsystem,
+            sakId = iverksetting.sakId.id,
+            behandlingId = iverksetting.behandlingId.id,
+            iverksettingId = iverksetting.iverksettingId?.id,
+        )
     }
 
     object domain {
 
         fun iverksetting(
-            fagsystem: Fagsystem = Fagsystem.DAGPENGER,
+            fagsystem: Fagsystem = DEFAULT_FAGSYSTEM,
             sakId: SakId = SakId(RandomOSURId.generate()),
             behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
             forrigeBehandlingId: BehandlingId? = null,
