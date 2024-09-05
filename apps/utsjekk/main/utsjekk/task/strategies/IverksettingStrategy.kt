@@ -7,24 +7,7 @@ import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import utsjekk.iverksetting.AndelTilkjentYtelse
-import utsjekk.iverksetting.Behandlingsinformasjon
-import utsjekk.iverksetting.BeregnetUtbetalingsoppdrag
-import utsjekk.iverksetting.Iverksetting
-import utsjekk.iverksetting.IverksettingResultatDao
-import utsjekk.iverksetting.IverksettingResultater
-import utsjekk.iverksetting.Iverksettinger
-import utsjekk.iverksetting.Kjedenøkkel
-import utsjekk.iverksetting.OppdragResultat
-import utsjekk.iverksetting.StønadsdataTilleggsstønader
-import utsjekk.iverksetting.StønadsdataTiltakspenger
-import utsjekk.iverksetting.TilkjentYtelse
-import utsjekk.iverksetting.behandlingId
-import utsjekk.iverksetting.iverksettingId
-import utsjekk.iverksetting.lagAndelData
-import utsjekk.iverksetting.personident
-import utsjekk.iverksetting.sakId
-import utsjekk.iverksetting.tilAndelData
+import utsjekk.iverksetting.*
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import utsjekk.oppdrag.OppdragClient
 import utsjekk.task.Kind
@@ -35,7 +18,7 @@ import utsjekk.task.Tasks
 class IverksettingStrategy(
     private val oppdrag: OppdragClient,
     private val service: Iverksettinger,
-): TaskStrategy {
+) : TaskStrategy {
     override suspend fun execute(task: TaskDao) {
         val iverksetting = objectMapper.readValue<Iverksetting>(task.payload)
         updateIverksetting(iverksetting)
@@ -43,45 +26,47 @@ class IverksettingStrategy(
     }
 
     private suspend fun updateIverksetting(iverksetting: Iverksetting) {
-        transaction {
-            IverksettingResultater
-                .hent(iverksetting)
-                .copy(oppdragResultat = OppdragResultat(OppdragStatus.LAGT_PÅ_KØ))
-                .update()
+        val forrigeResultat = iverksetting.behandling.forrigeBehandlingId?.let {
+            IverksettingResultater.hentForrige(iverksetting)
+        }
 
-            val forrigeResultat = iverksetting.behandling.forrigeBehandlingId?.let {
-                IverksettingResultater.hentForrige(iverksetting)
-            }
+        val beregnetUtbetalingsoppdrag = utbetalingsoppdrag(iverksetting, forrigeResultat)
+        val tilkjentYtelse = oppdaterTilkjentYtelse(
+            tilkjentYtelse = iverksetting.vedtak.tilkjentYtelse,
+            beregnetUtbetalingsoppdrag = beregnetUtbetalingsoppdrag,
+            forrigeResultat = forrigeResultat,
+            iverksetting = iverksetting,
+        )
 
-            val beregnetUtbetalingsoppdrag = utbetalingsoppdrag(iverksetting, forrigeResultat)
-            val tilkjentYtelse = oppdaterTilkjentYtelse(
-                tilkjentYtelse = iverksetting.vedtak.tilkjentYtelse,
-                beregnetUtbetalingsoppdrag = beregnetUtbetalingsoppdrag,
-                forrigeResultat = forrigeResultat,
-                iverksetting = iverksetting,
-            )
-
-            if (beregnetUtbetalingsoppdrag.utbetalingsoppdrag.utbetalingsperiode.isNotEmpty()) {
-                iverksettUtbetaling(oppdrag, tilkjentYtelse)
+        if (beregnetUtbetalingsoppdrag.utbetalingsoppdrag.utbetalingsperiode.isNotEmpty()) {
+            transaction {
+                iverksettUtbetaling(tilkjentYtelse)
+                IverksettingResultater.oppdater(
+                    iverksetting = iverksetting,
+                    resultat = OppdragResultat(OppdragStatus.LAGT_PÅ_KØ),
+                )
                 Tasks.create(
-                    Kind.SjekkStatus, OppdragIdDto(
+                    kind = Kind.SjekkStatus,
+                    payload = OppdragIdDto(
                         fagsystem = iverksetting.fagsak.fagsystem,
                         sakId = iverksetting.sakId.id,
                         behandlingId = iverksetting.behandlingId.id,
                         iverksettingId = iverksetting.iverksettingId?.id,
                     )
                 )
-            } else {
-                val resultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING)
-                IverksettingResultater.oppdater(iverksetting, resultat)
-                appLog.warn("Iverksetter ikke noe mot oppdrag. Ingen perioder i utbetalingsoppdraget for iverksetting $iverksetting")
             }
-
-            service.publiserStatusmelding(iverksetting)
+        } else {
+            IverksettingResultater.oppdater(
+                iverksetting = iverksetting,
+                resultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING)
+            )
+            appLog.warn("Iverksetter ikke noe mot oppdrag. Ingen perioder i utbetalingsoppdraget for iverksetting $iverksetting")
         }
+
+        service.publiserStatusmelding(iverksetting)
     }
 
-    private suspend fun iverksettUtbetaling(oppdrag: OppdragClient, tilkjentYtelse: TilkjentYtelse) {
+    private suspend fun iverksettUtbetaling(tilkjentYtelse: TilkjentYtelse) {
         tilkjentYtelse.utbetalingsoppdrag?.let { utbetalingsoppdrag ->
             if (utbetalingsoppdrag.utbetalingsperiode.isNotEmpty()) {
                 oppdrag.iverksettOppdrag(utbetalingsoppdrag)
