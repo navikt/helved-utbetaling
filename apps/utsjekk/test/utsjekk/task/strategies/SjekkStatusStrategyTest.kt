@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import repeatUntil
 import utsjekk.iverksetting.IverksettingResultater
@@ -40,6 +41,8 @@ class SjekkStatusStrategyTest {
         assertEquals("", task?.message)
         assertEquals(1, task?.attempt)
         assertEquals(Status.COMPLETE, task?.status)
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertEquals(OppdragStatus.KVITTERT_OK, resultat.oppdragResultat?.oppdragStatus)
     }
 
     @Test
@@ -62,6 +65,8 @@ class SjekkStatusStrategyTest {
         assertEquals("mangelvare", task?.message)
         assertEquals(1, task?.attempt)
         assertEquals(Status.MANUAL, task?.status)
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertEquals(OppdragStatus.KVITTERT_MED_MANGLER, resultat.oppdragResultat?.oppdragStatus)
     }
 
     @Test
@@ -84,6 +89,8 @@ class SjekkStatusStrategyTest {
         assertEquals("teknisk", task?.message)
         assertEquals(1, task?.attempt)
         assertEquals(Status.MANUAL, task?.status)
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertEquals(OppdragStatus.KVITTERT_TEKNISK_FEIL, resultat.oppdragResultat?.oppdragStatus)
     }
 
     @Test
@@ -106,6 +113,8 @@ class SjekkStatusStrategyTest {
         assertEquals("funkis", task?.message)
         assertEquals(1, task?.attempt)
         assertEquals(Status.MANUAL, task?.status)
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertEquals(OppdragStatus.KVITTERT_FUNKSJONELL_FEIL, resultat.oppdragResultat?.oppdragStatus)
     }
 
     @Test
@@ -128,6 +137,8 @@ class SjekkStatusStrategyTest {
         assertEquals("Ukjent kvittering fra OS", task?.message)
         assertEquals(1, task?.attempt)
         assertEquals(Status.MANUAL, task?.status)
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertEquals(OppdragStatus.KVITTERT_UKJENT, resultat.oppdragResultat?.oppdragStatus)
     }
 
     @Test
@@ -150,6 +161,8 @@ class SjekkStatusStrategyTest {
         assertEquals(null, task?.message)
         assertEquals(1, task?.attempt)
         assertEquals(Status.IN_PROGRESS, task?.status)
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertNull(resultat.oppdragResultat?.oppdragStatus)
     }
 
     @Test
@@ -172,5 +185,7 @@ class SjekkStatusStrategyTest {
         assertEquals("Status ${OppdragStatus.OK_UTEN_UTBETALING} skal aldri mottas fra utsjekk-oppdrag.", task?.message)
         assertEquals(1, task?.attempt)
         assertEquals(Status.FAIL, task?.status)
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertNull(resultat.oppdragResultat?.oppdragStatus)
     }
 }
