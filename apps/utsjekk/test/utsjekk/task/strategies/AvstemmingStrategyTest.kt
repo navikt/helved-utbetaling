@@ -1,6 +1,7 @@
 package utsjekk.task.strategies
 
 import TestRuntime
+import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
@@ -33,7 +34,8 @@ class AvstemmingStrategyTest {
 
         Tasks.create(Kind.Avstemming, avstemming)
 
-        val actual = TestRuntime.oppdrag.expectedAvstemming.await()
+        TestRuntime.oppdrag.avstemmingRespondWith(avstemming.fagsystem, HttpStatusCode.Created)
+        val actual = TestRuntime.oppdrag.awaitAvstemming(Fagsystem.DAGPENGER)
 
         val expected = avstemming.copy(
             til = avstemming.til.toLocalDate().atStartOfDay()
@@ -68,6 +70,8 @@ class AvstemmingStrategyTest {
                     it.id = task.id
                 }
             }.singleOrNull()
+
+        TestRuntime.oppdrag.avstemmingRespondWith(Fagsystem.DAGPENGER, HttpStatusCode.Created)
 
         transaction {
             task.insert()

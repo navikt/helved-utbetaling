@@ -27,7 +27,7 @@ class SjekkStatusStrategyTest {
         val oppdragId = TestData.dto.oppdragId(iverksetting)
         val oppdragStatus = TestData.dto.oppdragStatus(OppdragStatus.KVITTERT_OK)
         IverksettingResultater.opprett(iverksetting, null)
-        TestRuntime.oppdrag.respondWith(oppdragStatus, oppdragId)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
@@ -35,8 +35,7 @@ class SjekkStatusStrategyTest {
             predicate = { task -> task?.attempt == 1 }
         )
 
-        val actual = TestRuntime.oppdrag.expectedStatusRequestBody.await()
-        assertEquals(oppdragId, actual)
+        TestRuntime.oppdrag.awaitStatus(oppdragId)
 
         assertEquals("", task?.message)
         assertEquals(1, task?.attempt)
@@ -51,7 +50,7 @@ class SjekkStatusStrategyTest {
         val oppdragId = TestData.dto.oppdragId(iverksetting)
         val oppdragStatus = TestData.dto.oppdragStatus(OppdragStatus.KVITTERT_MED_MANGLER, "mangelvare")
         IverksettingResultater.opprett(iverksetting, null)
-        TestRuntime.oppdrag.respondWith(oppdragStatus, oppdragId)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
@@ -59,8 +58,7 @@ class SjekkStatusStrategyTest {
             predicate = { task -> task?.attempt == 1 }
         )
 
-        val actual = TestRuntime.oppdrag.expectedStatusRequestBody.await()
-        assertEquals(oppdragId, actual)
+        TestRuntime.oppdrag.awaitStatus(oppdragId)
 
         assertEquals("mangelvare", task?.message)
         assertEquals(1, task?.attempt)
@@ -75,7 +73,7 @@ class SjekkStatusStrategyTest {
         val oppdragId = TestData.dto.oppdragId(iverksetting)
         val oppdragStatus = TestData.dto.oppdragStatus(OppdragStatus.KVITTERT_TEKNISK_FEIL, "teknisk")
         IverksettingResultater.opprett(iverksetting, null)
-        TestRuntime.oppdrag.respondWith(oppdragStatus, oppdragId)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
@@ -83,8 +81,7 @@ class SjekkStatusStrategyTest {
             predicate = { task -> task?.attempt == 1 }
         )
 
-        val actual = TestRuntime.oppdrag.expectedStatusRequestBody.await()
-        assertEquals(oppdragId, actual)
+        TestRuntime.oppdrag.awaitStatus(oppdragId)
 
         assertEquals("teknisk", task?.message)
         assertEquals(1, task?.attempt)
@@ -99,7 +96,7 @@ class SjekkStatusStrategyTest {
         val oppdragId = TestData.dto.oppdragId(iverksetting)
         val oppdragStatus = TestData.dto.oppdragStatus(OppdragStatus.KVITTERT_FUNKSJONELL_FEIL, "funkis")
         IverksettingResultater.opprett(iverksetting, null)
-        TestRuntime.oppdrag.respondWith(oppdragStatus, oppdragId)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
@@ -107,8 +104,7 @@ class SjekkStatusStrategyTest {
             predicate = { task -> task?.attempt == 1 }
         )
 
-        val actual = TestRuntime.oppdrag.expectedStatusRequestBody.await()
-        assertEquals(oppdragId, actual)
+        TestRuntime.oppdrag.awaitStatus(oppdragId)
 
         assertEquals("funkis", task?.message)
         assertEquals(1, task?.attempt)
@@ -123,7 +119,7 @@ class SjekkStatusStrategyTest {
         val oppdragId = TestData.dto.oppdragId(iverksetting)
         val oppdragStatus = TestData.dto.oppdragStatus(OppdragStatus.KVITTERT_UKJENT)
         IverksettingResultater.opprett(iverksetting, null)
-        TestRuntime.oppdrag.respondWith(oppdragStatus, oppdragId)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
@@ -131,8 +127,7 @@ class SjekkStatusStrategyTest {
             predicate = { task -> task?.attempt == 1 }
         )
 
-        val actual = TestRuntime.oppdrag.expectedStatusRequestBody.await()
-        assertEquals(oppdragId, actual)
+        TestRuntime.oppdrag.awaitStatus(oppdragId)
 
         assertEquals("Ukjent kvittering fra OS", task?.message)
         assertEquals(1, task?.attempt)
@@ -147,7 +142,7 @@ class SjekkStatusStrategyTest {
         val oppdragId = TestData.dto.oppdragId(iverksetting)
         val oppdragStatus = TestData.dto.oppdragStatus(OppdragStatus.LAGT_PÅ_KØ)
         IverksettingResultater.opprett(iverksetting, null)
-        TestRuntime.oppdrag.respondWith(oppdragStatus, oppdragId)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
@@ -155,8 +150,7 @@ class SjekkStatusStrategyTest {
             predicate = { task -> task?.attempt == 1 }
         )
 
-        val actual = TestRuntime.oppdrag.expectedStatusRequestBody.await()
-        assertEquals(oppdragId, actual)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
 
         assertEquals(null, task?.message)
         assertEquals(1, task?.attempt)
@@ -171,7 +165,7 @@ class SjekkStatusStrategyTest {
         val oppdragId = TestData.dto.oppdragId(iverksetting)
         val oppdragStatus = TestData.dto.oppdragStatus(OppdragStatus.OK_UTEN_UTBETALING)
         IverksettingResultater.opprett(iverksetting, null)
-        TestRuntime.oppdrag.respondWith(oppdragStatus, oppdragId)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
@@ -179,8 +173,7 @@ class SjekkStatusStrategyTest {
             predicate = { task -> task?.attempt == 1 }
         )
 
-        val actual = TestRuntime.oppdrag.expectedStatusRequestBody.await()
-        assertEquals(oppdragId, actual)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
 
         assertEquals("Status ${OppdragStatus.OK_UTEN_UTBETALING} skal aldri mottas fra utsjekk-oppdrag.", task?.message)
         assertEquals(1, task?.attempt)
