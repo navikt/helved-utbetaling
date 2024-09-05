@@ -13,13 +13,17 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.CompletableDeferred
-import no.nav.utsjekk.kontrakter.oppdrag.*
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import port
 import utsjekk.OppdragConfig
 import java.net.URI
 
 class OppdragFake : AutoCloseable {
-    private val oppdrag = embeddedServer(Netty, port = 0) { azure(this@OppdragFake) }.apply { start() }
+    private val oppdrag = embeddedServer(Netty, port = 0, module = Application::oppdrag).apply { start() }
 
     val config by lazy {
         OppdragConfig(
@@ -28,25 +32,40 @@ class OppdragFake : AutoCloseable {
         )
     }
 
-    fun respondWith(status: OppdragStatusDto, id: OppdragIdDto) {
-        oppdragMap[id] = status
+    fun statusRespondWith(id: OppdragIdDto, response: OppdragStatusDto) {
+        statuser[id] = FakeResponse(response)
     }
+
+    fun iverksettRespondWith(id: OppdragIdDto, response: HttpStatusCode) {
+        iverksettinger[id] = FakeResponse(response)
+    }
+
+    fun avstemmingRespondWith(fagsystem: Fagsystem, response: HttpStatusCode) {
+        avstemminger[fagsystem] = FakeResponse(response)
+    }
+
+    suspend fun awaitIverksett(id: OppdragIdDto) = iverksettinger[id]!!.request.await()
+    suspend fun awaitStatus(id: OppdragIdDto) = statuser[id]!!.request.await()
+    suspend fun awaitAvstemming(fagsystem: Fagsystem) = avstemminger[fagsystem]!!.request.await()
 
     fun reset() {
-        oppdragMap.clear()
-        expectedStatusRequestBody = CompletableDeferred()
-        expectedAvstemming = CompletableDeferred()
+        iverksettinger.clear()
+        statuser.clear()
+        avstemminger.clear()
     }
-
-    var expectedStatusRequestBody = CompletableDeferred<OppdragIdDto>()
-    var expectedAvstemming = CompletableDeferred<GrensesnittavstemmingRequest>()
 
     override fun close() = oppdrag.stop(0, 0)
 }
 
-private val oppdragMap = mutableMapOf<OppdragIdDto, OppdragStatusDto>()
+data class FakeResponse<T, U>(val response: T) {
+    val request: CompletableDeferred<U> = CompletableDeferred()
+}
 
-private fun Application.azure(oppdragFake: OppdragFake) {
+private val iverksettinger = mutableMapOf<OppdragIdDto, FakeResponse<HttpStatusCode, Utbetalingsoppdrag>>()
+private val statuser = mutableMapOf<OppdragIdDto, FakeResponse<OppdragStatusDto, OppdragIdDto>>()
+private val avstemminger = mutableMapOf<Fagsystem, FakeResponse<HttpStatusCode, GrensesnittavstemmingRequest>>()
+
+private fun Application.oppdrag() {
     install(ContentNegotiation) {
         jackson {
             registerModule(JavaTimeModule())
@@ -58,35 +77,48 @@ private fun Application.azure(oppdragFake: OppdragFake) {
     routing {
         post("/oppdrag") {
             val dto = call.receive<Utbetalingsoppdrag>()
+
             val oppdragIdDto = OppdragIdDto(
                 dto.fagsystem,
                 dto.saksnummer,
                 dto.utbetalingsperiode.first().behandlingId,
                 dto.iverksettingId,
             )
-            if (!oppdragMap.containsKey(oppdragIdDto)) {
-                oppdragMap[oppdragIdDto] = OppdragStatusDto(OppdragStatus.LAGT_PÅ_KØ, feilmelding = null)
+
+            val fakeResponse = iverksettinger[oppdragIdDto]?.also {
+                it.request.complete(dto)
             }
-            call.respond(HttpStatusCode.OK)
+
+            when (fakeResponse) {
+                null -> error("Du har glemt å sette expected response for oppdrag i testen.")
+                else -> call.respond(fakeResponse.response)
+            }
         }
 
         post("/status") {
             val dto = call.receive<OppdragIdDto>()
 
-            if (oppdragMap.containsKey(dto)) {
-                oppdragFake.expectedStatusRequestBody.complete(dto)
+            val fakeResponse = statuser[dto]?.also {
+                it.request.complete(dto)
             }
 
-            when (val status = oppdragMap[dto]) {
+            when (fakeResponse) {
                 null -> call.respond(HttpStatusCode.NotFound, "Fant'n ikke")
-                else -> call.respond(HttpStatusCode.OK, status)
+                else -> call.respond(HttpStatusCode.OK, fakeResponse.response)
             }
         }
 
         post("/grensesnittavstemming") {
             val dto = call.receive<GrensesnittavstemmingRequest>()
-            oppdragFake.expectedAvstemming.complete(dto)
-            call.respond(HttpStatusCode.Created)
+
+            val fakeResponse = avstemminger[dto.fagsystem]?.also {
+                it.request.complete(dto)
+            }
+
+            when (fakeResponse) {
+                null -> error("Du har glemt å sette expected response for avstemming i testen.")
+                else -> call.respond(fakeResponse.response)
+            }
         }
     }
 }
