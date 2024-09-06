@@ -16,12 +16,17 @@ import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import repeatUntil
+import utsjekk.iverksetting.IverksettingDao
+import utsjekk.iverksetting.IverksettingResultatDao
+import utsjekk.task.TaskDao
+import utsjekk.task.TaskHistoryDao
 import java.time.LocalDate
 
 class IverksettingRouteTest {
@@ -29,6 +34,12 @@ class IverksettingRouteTest {
     fun reset() {
         TestRuntime.oppdrag.reset()
         TestRuntime.unleash.reset()
+        TestRuntime.clear(
+            TaskDao.TABLE_NAME,
+            TaskHistoryDao.TABLE_NAME,
+            IverksettingDao.TABLE_NAME,
+            IverksettingResultatDao.TABLE_NAME,
+        )
     }
 
     @Test
@@ -118,15 +129,6 @@ class IverksettingRouteTest {
                 ),
             )
 
-        val oppdragId = OppdragIdDto(
-            fagsystem = Fagsystem.TILLEGGSSTØNADER,
-            sakId = dto.sakId,
-            behandlingId = dto.behandlingId,
-            iverksettingId = dto.iverksettingId
-        )
-
-        TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.OK)
-
         httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
@@ -148,7 +150,7 @@ class IverksettingRouteTest {
         }
 
         assertEquals(IverksettStatus.OK_UTEN_UTBETALING, status)
-        assertTrue(TestRuntime.kafka.produced.containsKey(dto.personident.verdi))
+        assertTrue(TestRuntime.kafka.hasProduced(dto.personident.verdi))
     }
 
     @Test
@@ -203,6 +205,7 @@ class IverksettingRouteTest {
         )
 
         TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.OK)
+        TestRuntime.oppdrag.statusRespondWith(oppdragId, TestData.dto.oppdragStatus(OppdragStatus.KVITTERT_OK))
 
         val res = httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())

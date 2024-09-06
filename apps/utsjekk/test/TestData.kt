@@ -7,6 +7,8 @@ import utsjekk.iverksetting.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+typealias AndelPeriode = Pair<LocalDate, LocalDate>
+
 object TestData {
     private val DEFAULT_FAGSYSTEM: Fagsystem = Fagsystem.DAGPENGER
 
@@ -110,6 +112,29 @@ object TestData {
 
     object domain {
 
+        fun tidligereIverksetting(
+            andelsdatoer: List<AndelPeriode> = emptyList()
+        ): Iverksetting {
+            val iverksetting = iverksetting(andelsdatoer = andelsdatoer)
+            val andelerTilkjentYtelse =
+                iverksetting.vedtak.tilkjentYtelse.andelerTilkjentYtelse.mapIndexed { idx, andel ->
+                    andel.copy(
+                        periodeId = idx.toLong(),
+                        forrigePeriodeId = if (idx > 0) idx - 1L else null
+                    )
+                }
+
+            val sisteAndel = andelerTilkjentYtelse.maxBy {  andel -> andel.periodeId!! }
+            val sisteAndelPerKjede = mapOf(sisteAndel.stønadsdata.tilKjedenøkkel() to sisteAndel)
+
+            val tilkjentYtelse = iverksetting.vedtak.tilkjentYtelse.copy(
+                andelerTilkjentYtelse = andelerTilkjentYtelse,
+                sisteAndelPerKjede = sisteAndelPerKjede,
+            )
+            val vedtak = iverksetting.vedtak.copy(tilkjentYtelse = tilkjentYtelse)
+            return iverksetting.copy(vedtak = vedtak)
+        }
+
         fun iverksetting(
             fagsystem: Fagsystem = DEFAULT_FAGSYSTEM,
             sakId: SakId = SakId(RandomOSURId.generate()),
@@ -117,7 +142,7 @@ object TestData {
             forrigeBehandlingId: BehandlingId? = null,
             iverksettingId: IverksettingId? = null,
             forrigeIverksettingId: IverksettingId? = null,
-            andelsdatoer: List<LocalDate> = emptyList(),
+            andelsdatoer: List<AndelPeriode> = emptyList(),
             beløp: Int = 100,
             vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
         ): Iverksetting {
@@ -134,8 +159,12 @@ object TestData {
                     personident = "15507600333"
                 ),
                 vedtak = vedtaksdetaljer(
-                    andeler = andelsdatoer.map {
-                        enAndelTilkjentYtelse(beløp = beløp, fom = it, tom = it)
+                    andeler = andelsdatoer.map { (fom, tom) ->
+                        enAndelTilkjentYtelse(
+                            beløp = beløp,
+                            fom = fom,
+                            tom = tom,
+                        )
                     },
                     vedtakstidspunkt = vedtakstidspunkt
                 )

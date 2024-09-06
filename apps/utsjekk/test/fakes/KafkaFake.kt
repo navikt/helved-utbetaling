@@ -5,7 +5,7 @@ import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import utsjekk.status.Kafka
 
 class KafkaFake: Kafka<StatusEndretMelding> {
-    val produced= mutableMapOf<String, StatusEndretMelding>()
+    private val produced = mutableMapOf<String, StatusEndretMelding>()
 
     val config = KafkaConfig(
         brokers = "mock",
@@ -13,6 +13,8 @@ class KafkaFake: Kafka<StatusEndretMelding> {
         keystore = "",
         credstorePassword = ""
     )
+
+    fun hasProduced(key: String): Boolean = produced.containsKey(key)
 
     override fun produce(key: String, value: StatusEndretMelding) {
         produced[key] = value
