@@ -5,6 +5,7 @@ import kotlinx.coroutines.CancellationException
 import libs.job.Scheduler
 import libs.postgres.concurrency.transaction
 import libs.postgres.concurrency.withLock
+import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.task.strategies.AvstemmingStrategy
 import utsjekk.task.strategies.IverksettingStrategy
@@ -24,17 +25,19 @@ class TaskScheduler(
 ) {
     override suspend fun feed(): List<TaskDao> {
         withLock("task") {
-            secureLog.debug("Feeding scheduler")
             return transaction {
                 TaskDao.select {
                     it.status = listOf(Status.IN_PROGRESS, Status.FAIL)
                     it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
+                }.also {
+                    appLog.info("Feeding scheduler with ${it.size} tasks")
                 }
             }
         }
     }
 
     override suspend fun task(fed: TaskDao) {
+        appLog.info("Task with id ${fed.id} and kind ${fed.kind} locked for processing")
         withLock(fed.id.toString()) {
             try {
                 when (fed.kind) {
@@ -48,6 +51,7 @@ class TaskScheduler(
                 secureLog.error(e)
             }
         }
+        appLog.info("Task with id ${fed.id} unlocked")
     }
 
     override suspend fun onError(err: Throwable) {
