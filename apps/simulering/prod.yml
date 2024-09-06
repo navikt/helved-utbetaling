@@ -35,6 +35,9 @@ spec:
   azure:
     application:
       enabled: true
+      claims:
+        groups:
+          - id: "c1e9edec-0c10-4df2-8c74-324ab9922220" # Saksbehandler Tilleggsstønader
   secureLogs:
     enabled: true
   liveness:
