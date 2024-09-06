@@ -11,7 +11,7 @@ data class Config(
     val proxy: ProxyConfig = ProxyConfig(),
     val azure: AzureConfig = AzureConfig(),
     val simulering: SoapConfig = SoapConfig(
-        host = URI("${proxy.host}/cics/oppdrag/simulerFpServiceWSBinding").toURL(),
+        host = URI("${proxy.host}/${proxy.simuleringPath}").toURL(),
         sts = StsConfig(
             host = URI("${proxy.host}/gandalf").toURL(),
             user = "srvdp-simulering",
@@ -22,5 +22,6 @@ data class Config(
 
 data class ProxyConfig(
     val host: URL = env("PROXY_HOST"),
-    val scope: String = env("PROXY_SCOPE")
+    val scope: String = env("PROXY_SCOPE"),
+    val simuleringPath: String = env("SIMULERING_PATH")
 )

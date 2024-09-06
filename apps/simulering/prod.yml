@@ -58,3 +58,5 @@ spec:
       value: https://helved-ws-proxy.prod-fss-pub.nais.io
     - name: PROXY_SCOPE
       value: api://prod-fss.helved.ws-proxy/.default
+    - name: SIMULERING_PATH
+      value: cics/cics/services/simulerFpServiceWSBinding

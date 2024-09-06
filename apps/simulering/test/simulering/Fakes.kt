@@ -36,7 +36,8 @@ class TestRuntime : Sts, Soap, AutoCloseable {
         get() = Config(
             proxy = ProxyConfig(
                 host = "http://localhost:${ktor.port}".let(::URI).toURL(),
-                scope = "test"
+                scope = "test",
+                simuleringPath = "cics/oppdrag/simulerFpServiceWSBinding"
             ),
             azure = AzureConfig(
                 tokenEndpoint = "http://localhost:${ktor.port}/token".let(::URI).toURL(),
