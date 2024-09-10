@@ -10,7 +10,10 @@ import java.time.LocalDateTime
 typealias AndelPeriode = Pair<LocalDate, LocalDate>
 
 object TestData {
-    private val DEFAULT_FAGSYSTEM: Fagsystem = Fagsystem.DAGPENGER
+    val DEFAULT_FAGSYSTEM: Fagsystem = Fagsystem.DAGPENGER
+    const val DEFAULT_PERSONIDENT: String = "15507600333"
+    const val DEFAULT_SAKSBEHANDLER: String = "A123456"
+    const val DEFAULT_BESLUTTER: String = "B23456"
 
     object dao {
         fun iverksetting(
@@ -45,7 +48,7 @@ object TestData {
             behandlingId: String = RandomOSURId.generate(),
             sakId: String = RandomOSURId.generate(),
             iverksettingId: String? = null,
-            personident: Personident = Personident("15507600333"),
+            personident: Personident = Personident(DEFAULT_PERSONIDENT),
             vedtak: VedtaksdetaljerV2Dto = vedtaksdetaljer(),
             forrigeIverksetting: ForrigeIverksettingV2Dto? = null,
         ) = IverksettV2Dto(
@@ -59,8 +62,8 @@ object TestData {
 
         fun vedtaksdetaljer(
             vedtakstidspunkt: LocalDateTime = LocalDateTime.of(2021, 5, 12, 0, 0),
-            saksbehandlerId: String = "A12345",
-            beslutterId: String = "B23456",
+            saksbehandlerId: String = DEFAULT_SAKSBEHANDLER,
+            beslutterId: String = DEFAULT_BESLUTTER,
             utbetalinger: List<UtbetalingV2Dto> = listOf(utbetaling()),
         ) = VedtaksdetaljerV2Dto(
             vedtakstidspunkt = vedtakstidspunkt,
@@ -156,7 +159,7 @@ object TestData {
                     forrigeIverksettingId = forrigeIverksettingId,
                 ),
                 søker = Søker(
-                    personident = "15507600333"
+                    personident = DEFAULT_PERSONIDENT,
                 ),
                 vedtak = vedtaksdetaljer(
                     andeler = andelsdatoer.map { (fom, tom) ->
@@ -176,7 +179,7 @@ object TestData {
             vedtakstidspunkt: LocalDateTime = LocalDateTime.of(2021, 5, 12, 0, 0),
         ): Vedtaksdetaljer = Vedtaksdetaljer(
             vedtakstidspunkt = vedtakstidspunkt,
-            saksbehandlerId = "A12345",
+            saksbehandlerId = DEFAULT_SAKSBEHANDLER,
             beslutterId = "B23456",
             tilkjentYtelse = enTilkjentYtelse(andeler),
         )
@@ -205,7 +208,53 @@ object TestData {
             utbetalingsoppdrag = null,
             andelerTilkjentYtelse = andeler,
         )
+
+        fun behandlingsinformasjon(
+            saksbehandlerId: String = DEFAULT_SAKSBEHANDLER,
+            beslutterId: String = DEFAULT_BESLUTTER,
+            fagsakId: SakId = SakId(RandomOSURId.generate()),
+            fagsystem: Fagsystem = DEFAULT_FAGSYSTEM,
+            behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
+            personident: String = DEFAULT_PERSONIDENT,
+            vedtaksdato: LocalDate = LocalDate.now(),
+            brukersNavKontor: BrukersNavKontor? = null,
+            iverksettingId: IverksettingId? = null,
+        ): Behandlingsinformasjon = Behandlingsinformasjon(
+            saksbehandlerId = saksbehandlerId,
+            beslutterId = beslutterId,
+            fagsystem = fagsystem,
+            fagsakId = fagsakId,
+            behandlingId = behandlingId,
+            personident = personident,
+            brukersNavKontor = brukersNavKontor,
+            vedtaksdato = vedtaksdato,
+            iverksettingId = iverksettingId,
+        )
+
+        fun andelData(
+            fom: LocalDate = LocalDate.of(2021, 2, 1),
+            tom: LocalDate = LocalDate.of(2021, 3, 31),
+            beløp: Int = 700,
+            satstype: Satstype = Satstype.DAGLIG,
+            stønadsdata: Stønadsdata = StønadsdataDagpenger(
+                stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
+                ferietillegg = null,
+            ),
+            periodeId: Long? = null,
+            forrigePeriodeId: Long? = null,
+        ): AndelData = AndelData(
+            id = AndelId.next().toString(),
+            fom = fom,
+            tom = tom,
+            beløp = beløp,
+            satstype = satstype,
+            stønadsdata = stønadsdata,
+            periodeId = periodeId,
+            forrigePeriodeId = forrigePeriodeId,
+        )
     }
-
-
+}
+object AndelId {
+    private var sequence = -1L
+    fun next(): Long = ++sequence
 }
