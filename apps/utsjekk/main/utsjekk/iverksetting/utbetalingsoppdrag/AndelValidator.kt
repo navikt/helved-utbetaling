@@ -20,11 +20,13 @@ internal object AndelValidator {
             error("Inneholder duplikat av id'er")
         }
 
-        forrige.find { it.periodeId == null }
-            ?.let { error("Tidligere andel=${it.id} mangler periodeId") }
+        forrige
+            .filter { it.periodeId == null }
+            .forEach { error("Tidligere andel=${it.id} mangler periodeId") }
 
-        nye.find { it.periodeId != null || it.forrigePeriodeId != null }
-            ?.let { error("Ny andel=${it.id} inneholder periodeId/forrigePeriodeId") }
+        nye
+            .filter { it.periodeId != null || it.forrigePeriodeId != null }
+            .forEach { error("Ny andel=${it.id} inneholder periodeId/forrigePeriodeId") }
 
         (forrige + nye).map { validerSatstype(it) }
     }
