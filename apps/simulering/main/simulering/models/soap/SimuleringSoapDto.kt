@@ -136,12 +136,22 @@ object soap {
                             oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) }
                         ),
                         simuleringsPeriode = SimuleringsPeriode(
-                            datoSimulerFom = dto.utbetalingsperioder.minBy { it.fom }.fom,
+                            datoSimulerFom = dto.finnSimuleringFom(),
                             datoSimulerTom = dto.utbetalingsperioder.maxBy { it.tom }.tom,
                         )
                     )
                 )
             }
+        }
+    }
+
+    private fun rest.SimuleringRequest.finnSimuleringFom(): LocalDate {
+        val tidligstePeriode = this.utbetalingsperioder.minBy { it.fom }
+        val opphør = this.utbetalingsperioder.find { it.opphør != null }?.opphør
+        return if (opphør != null) {
+            minOf(tidligstePeriode.fom, opphør.fom)
+        } else {
+            tidligstePeriode.fom
         }
     }
 
