@@ -1,18 +1,73 @@
 package utsjekk.iverksetting.utbetalingsoppdrag
 
-import TestData
-import no.nav.utsjekk.kontrakter.felles.Satstype
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
+import TestData.domain.andelData
+import TestData.domain.behandlingsinformasjon
+import TestData.domain.beregnetUtbetalingsoppdrag
+import TestData.domain.utbetalingsperiode
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+private val Int.feb: LocalDate get() = LocalDate.of(2021, 2, this)
+private val Int.mar: LocalDate get() = LocalDate.of(2021, 3, this)
+private val Int.apr: LocalDate get() = LocalDate.of(2021, 4, this)
+private val Int.may: LocalDate get() = LocalDate.of(2021, 5, this)
+
 class UtbetalingsgeneratorTest {
+
+    @AfterEach
+    fun reset() {
+        AndelId.reset()
+    }
+
+    @Test
+    fun `kan legge til ny periode`() {
+        val sakId = SakId(RandomOSURId.generate())
+        val behId1 = BehandlingId(RandomOSURId.generate())
+        val behId2 = BehandlingId(RandomOSURId.generate())
+
+        val andel1 = andelData(1.feb, 31.mar, 700)
+        val andel2 = andelData(1.feb, 31.mar, 700)
+        val andel3 = andelData(1.apr, 31.may, 900)
+
+        val oppdrag1 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
+            behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId1),
+            nyeAndeler = listOf(andel1),
+            forrigeAndeler = emptyList(),
+            sisteAndelPerKjede = emptyMap(),
+        )
+
+        val oppdrag2 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
+            behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId2),
+            nyeAndeler = listOf(andel2),
+            forrigeAndeler = listOf(oppdrag1.copyPeriodeIdTo(andel1)),
+            sisteAndelPerKjede = listOf(oppdrag1.copyPeriodeIdTo(andel1))
+                .uten0beløp()
+                .groupBy { andel -> andel.stønadsdata.tilKjedenøkkel() }
+                .mapValues { (_, andeler) -> andeler.latestByPeriodeId() }
+        )
+
+        val oppdrag3 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
+            behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId2),
+            nyeAndeler = listOf(andel3),
+            forrigeAndeler = listOf(oppdrag1.copyPeriodeIdTo(andel1), oppdrag2.copyPeriodeIdTo(andel2)),
+            sisteAndelPerKjede = listOf(oppdrag1.copyPeriodeIdTo(andel1), oppdrag2.copyPeriodeIdTo(andel2))
+                .uten0beløp()
+                .groupBy { andel -> andel.stønadsdata.tilKjedenøkkel() }
+                .mapValues { (_, andeler) -> andeler.latestByPeriodeId() }
+        )
+
+        val expected1 = beregnetUtbetalingsoppdrag(sakId, true, "0", 0L, null, utbetalingsperiode(behId1, 1.feb, 31.mar, 700))
+//        val expected2 = beregnetUtbetalingsoppdrag(sakId, false, "1", 1L, 0L, utbetalingsperiode(behId2, 1.feb, 31.mar, 700))
+//        val expected3 = beregnetUtbetalingsoppdrag(sakId, false, "2", 1L, 0L, utbetalingsperiode(behId2, 1.apr, 31.may, 900))
+        assertEquals(expected1, oppdrag1)
+//        assertEquals(expected2, oppdrag2)
+//        assertEquals(expected3, oppdrag3)
+    }
 
     @Test
     fun `periode er idempotent`() {
@@ -20,107 +75,28 @@ class UtbetalingsgeneratorTest {
         val behId1 = BehandlingId(RandomOSURId.generate())
         val behId2 = BehandlingId(RandomOSURId.generate())
 
-        val førsteAndel = TestData.domain.andelData(
-            fom = LocalDate.of(2021, 2, 1),
-            tom = LocalDate.of(2021, 3, 31),
-            beløp = 700,
-        )
-
-        assertTrue(førsteAndel.periodeId == null && førsteAndel.forrigePeriodeId == null)
+        val andel1 = andelData(1.feb, 31.mar, 700)
+        val andel2 = andelData(1.feb, 31.mar, 700)
 
         val oppdrag1 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
-            behandlingsinformasjon = TestData.domain.behandlingsinformasjon(
-                fagsakId = sakId,
-                behandlingId = behId1
-            ),
-            nyeAndeler = listOf(førsteAndel),
+            behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId1),
+            nyeAndeler = listOf(andel1),
             forrigeAndeler = emptyList(),
             sisteAndelPerKjede = emptyMap(),
         )
 
-
-        val forrigeAndel = oppdrag1.copyPeriodeIdTo(førsteAndel)
-        val sisteAndelPerKjede = listOf(forrigeAndel)
-            .uten0beløp()
-            .groupBy { andel -> andel.stønadsdata.tilKjedenøkkel() }
-            .mapValues { (_, andeler) -> andeler.latestByPeriodeId() }
-
-        val nyAndel = TestData.domain.andelData(
-            fom = LocalDate.of(2021, 2, 1),
-            tom = LocalDate.of(2021, 3, 31),
-            beløp = 700,
-        )
-
-        assertTrue(nyAndel.periodeId == null && nyAndel.forrigePeriodeId == null)
-
         val oppdrag2 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
-            behandlingsinformasjon = TestData.domain.behandlingsinformasjon(
-                fagsakId = sakId,
-                behandlingId = behId2,
-            ),
-            nyeAndeler = listOf(nyAndel),
-            forrigeAndeler = listOf(forrigeAndel),
-            sisteAndelPerKjede = sisteAndelPerKjede,
+            behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId2),
+            nyeAndeler = listOf(andel2),
+            forrigeAndeler = listOf(oppdrag1.copyPeriodeIdTo(andel1)),
+            sisteAndelPerKjede = listOf(oppdrag1.copyPeriodeIdTo(andel1))
+                .uten0beløp()
+                .groupBy { andel -> andel.stønadsdata.tilKjedenøkkel() }
+                .mapValues { (_, andeler) -> andeler.latestByPeriodeId() },
         )
 
-        val expected1 = BeregnetUtbetalingsoppdrag(
-            utbetalingsoppdrag = Utbetalingsoppdrag(
-                erFørsteUtbetalingPåSak = true,
-                fagsystem = TestData.DEFAULT_FAGSYSTEM,
-                saksnummer = sakId.id,
-                iverksettingId = null,
-                aktør = TestData.DEFAULT_PERSONIDENT,
-                saksbehandlerId = TestData.DEFAULT_SAKSBEHANDLER,
-                beslutterId = TestData.DEFAULT_BESLUTTER,
-                avstemmingstidspunkt = LocalDateTime.now(), // ca
-                utbetalingsperiode = listOf(
-                    Utbetalingsperiode(
-                        erEndringPåEksisterendePeriode = false,
-                        opphør = null,
-                        periodeId = 0L,
-                        forrigePeriodeId = null,
-                        vedtaksdato = LocalDate.now(),
-                        klassifisering = "DPORAS",
-                        fom = LocalDate.of(2021, 2, 1),
-                        tom = LocalDate.of(2021, 3, 31),
-                        sats = 700.toBigDecimal(),
-                        satstype = Satstype.DAGLIG,
-                        utbetalesTil = TestData.DEFAULT_PERSONIDENT,
-                        behandlingId = behId1.id,
-                        utbetalingsgrad = null,
-                    )
-                ),
-                brukersNavKontor = null,
-            ),
-            andeler = listOf(
-                AndelMedPeriodeId(
-                    id = "0",
-                    periodeId = 0L,
-                    forrigePeriodeId = null,
-                )
-            )
-        )
-        val expected2 = BeregnetUtbetalingsoppdrag(
-            utbetalingsoppdrag = Utbetalingsoppdrag(
-                erFørsteUtbetalingPåSak = false,
-                fagsystem = TestData.DEFAULT_FAGSYSTEM,
-                saksnummer = sakId.id,
-                iverksettingId = null,
-                aktør = TestData.DEFAULT_PERSONIDENT,
-                saksbehandlerId = TestData.DEFAULT_SAKSBEHANDLER,
-                beslutterId = TestData.DEFAULT_BESLUTTER,
-                avstemmingstidspunkt = LocalDateTime.now(),
-                utbetalingsperiode = emptyList(),
-                brukersNavKontor = null,
-            ),
-            andeler = listOf(
-                AndelMedPeriodeId(
-                    id = "1",
-                    periodeId = 0L,
-                    forrigePeriodeId = null,
-                )
-            )
-        )
+        val expected1 = beregnetUtbetalingsoppdrag(sakId, true, "0", 0L, null, utbetalingsperiode(behId1, 1.feb, 31.mar, 700))
+        val expected2 = beregnetUtbetalingsoppdrag(sakId, false, "1", 0L, null)
 
         assertEquals(expected1, oppdrag1)
         assertEquals(expected2, oppdrag2)

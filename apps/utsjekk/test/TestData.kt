@@ -1,8 +1,6 @@
 import no.nav.utsjekk.kontrakter.felles.*
 import no.nav.utsjekk.kontrakter.iverksett.*
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
+import no.nav.utsjekk.kontrakter.oppdrag.*
 import utsjekk.iverksetting.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -127,7 +125,7 @@ object TestData {
                     )
                 }
 
-            val sisteAndel = andelerTilkjentYtelse.maxBy {  andel -> andel.periodeId!! }
+            val sisteAndel = andelerTilkjentYtelse.maxBy { andel -> andel.periodeId!! }
             val sisteAndelPerKjede = mapOf(sisteAndel.stønadsdata.tilKjedenøkkel() to sisteAndel)
 
             val tilkjentYtelse = iverksetting.vedtak.tilkjentYtelse.copy(
@@ -232,9 +230,9 @@ object TestData {
         )
 
         fun andelData(
-            fom: LocalDate = LocalDate.of(2021, 2, 1),
-            tom: LocalDate = LocalDate.of(2021, 3, 31),
-            beløp: Int = 700,
+            fom: LocalDate,
+            tom: LocalDate,
+            beløp: Int,
             satstype: Satstype = Satstype.DAGLIG,
             stønadsdata: Stønadsdata = StønadsdataDagpenger(
                 stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
@@ -252,9 +250,73 @@ object TestData {
             periodeId = periodeId,
             forrigePeriodeId = forrigePeriodeId,
         )
+
+        fun beregnetUtbetalingsoppdrag(
+            sakId: SakId,
+            erFørsteUtbetalingPåSak: Boolean,
+            andelId: String,
+            periodeId: Long,
+            forrigePeriodeId: Long?,
+            vararg utbetalingsperioder: Utbetalingsperiode,
+        ) = BeregnetUtbetalingsoppdrag(
+            utbetalingsoppdrag = utbetalingsoppdrag(
+                sakId = sakId,
+                erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
+                utbetalingsperioder = utbetalingsperioder.toList()
+            ),
+            andeler = listOf(
+                AndelMedPeriodeId(
+                    id = andelId,
+                    periodeId = periodeId,
+                    forrigePeriodeId = forrigePeriodeId,
+                )
+            )
+        )
+
+        fun utbetalingsoppdrag(
+            sakId: SakId,
+            erFørsteUtbetalingPåSak: Boolean,
+            utbetalingsperioder: List<Utbetalingsperiode> = emptyList(),
+        ) = Utbetalingsoppdrag(
+            erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
+            fagsystem = DEFAULT_FAGSYSTEM,
+            saksnummer = sakId.id,
+            iverksettingId = null,
+            aktør = DEFAULT_PERSONIDENT,
+            saksbehandlerId = DEFAULT_SAKSBEHANDLER,
+            beslutterId = DEFAULT_BESLUTTER,
+            avstemmingstidspunkt = LocalDateTime.now(), // ca
+            utbetalingsperiode = utbetalingsperioder,
+            brukersNavKontor = null,
+        )
+
+        fun utbetalingsperiode(
+            behandlingId: BehandlingId,
+            fom: LocalDate,
+            tom: LocalDate,
+            sats: Int,
+        ) = Utbetalingsperiode(
+            erEndringPåEksisterendePeriode = false,
+            opphør = null,
+            periodeId = 0L,
+            forrigePeriodeId = null,
+            vedtaksdato = LocalDate.now(),
+            klassifisering = "DPORAS",
+            fom = fom,
+            tom = tom,
+            sats = sats.toBigDecimal(),
+            satstype = Satstype.DAGLIG,
+            utbetalesTil = DEFAULT_PERSONIDENT,
+            behandlingId = behandlingId.id,
+            utbetalingsgrad = null,
+        )
     }
 }
+
 object AndelId {
     private var sequence = -1L
     fun next(): Long = ++sequence
+    fun reset() {
+        sequence = -1L
+    }
 }
