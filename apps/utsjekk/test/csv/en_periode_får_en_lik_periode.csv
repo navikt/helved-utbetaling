@@ -1,8 +1,0 @@
-# INPUT
-| BehandlingId | Fra dato   | Til dato   | Beløp |
-| 1            | 2021-02-01 | 2021-03-31 | 700   |
-| 2            | 2021-02-01 | 2021-03-31 | 700   |
-
-# EXPECTED
-| BehandlingId | Fra dato   | Til dato   | Opphørsdato | Beløp | Første utbetaling sak | Er endring | Periode id | Forrige periode id |
-| 1            | 2021-02-01 | 2021-03-31 |             | 700   | Ja                    | Nei        | 0          |                    |
