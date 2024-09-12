@@ -1,0 +1,10 @@
+# INPUT
+| BehandlingId | Fra dato   | Til dato   | Beløp | Satstype |
+| 1            | 02.06.2023 | 15.08.2023 | 800   | DAGLIG   |
+| 2            | 02.06.2023 | 15.07.2023 | 800   | DAGLIG   |
+| 2            | 16.07.2023 | 15.08.2023 | 400   | DAGLIG   |
+
+# EXPECTED
+| BehandlingId | Fra dato   | Til dato   | Opphørsdato | Beløp | Første utbetaling sak | Er endring | Periode id | Forrige periode id | Satstype |
+| 1            | 02.06.2023 | 15.08.2023 |             | 800   | true                  | false      | 0          |                    | DAGLIG   |
+| 2            | 16.07.2023 | 15.08.2023 |             | 400   | false                 | false      | 1          | 0                  | DAGLIG   |

@@ -1,5 +1,6 @@
 package utsjekk.iverksetting.utbetalingsoppdrag.bdd
 
+import AndelId
 import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
@@ -19,6 +20,12 @@ object Bdd {
     private var andelerPerBehandlingId = mapOf<BehandlingId, List<AndelData>>()
     private var beregnetUtbetalingsoppdrag = mutableMapOf<BehandlingId, BeregnetUtbetalingsoppdrag>()
 
+    fun reset() {
+        behandlingsinformasjon.clear()
+        beregnetUtbetalingsoppdrag.clear()
+        AndelId.reset()
+    }
+
     //    @Gitt("følgende behandlingsinformasjon")
     fun <T : WithBehandlingId> følgendeBehandlinger(dataTable: DataTable, parser: (Iterator<String>) -> T) {
         opprettBehandlingsinformasjon(dataTable, parser)
@@ -27,16 +34,15 @@ object Bdd {
     //    @Gitt("følgende tilkjente ytelser")
     fun <T : WithBehandlingId> følgendeTilkjenteYtelser(
         dataTable: DataTable,
-        parser: (Iterator<String>) -> T,
-        toAndelData: (T) -> AndelData
+        input: (Iterator<String>) -> T,
+        toAndelData: (T) -> AndelData?
     ) {
-        genererBehandlingsinformasjonForDeSomMangler(dataTable, parser)
+        genererBehandlingsinformasjonForDeSomMangler(dataTable, input)
         andelerPerBehandlingId = dataTable.input
-            .into(parser)
+            .into(input)
             .groupBy { it.behandlingId }
-            .mapValues { (_, v) -> v.map(toAndelData) }
+            .mapValues { (_, v) -> v.mapNotNull(toAndelData) }
 
-//        andelerPerBehandlingId = mapAndeler(dataTable)
         if (
             andelerPerBehandlingId
                 .flatMap { it.value }
@@ -47,7 +53,7 @@ object Bdd {
     }
 
     //    @Når("beregner utbetalingsoppdrag")
-    fun `beregner utbetalingsoppdrag`() {
+    fun beregnUtbetalignsoppdrag() {
         andelerPerBehandlingId.entries.fold(emptyList<Pair<BehandlingId, List<AndelData>>>()) { acc, andelPåBehandlingId ->
             val behandlingId = andelPåBehandlingId.key
             try {
@@ -77,35 +83,27 @@ object Bdd {
     }
 
     //    @Så("forvent følgende utbetalingsoppdrag")
-    fun <T : WithBehandlingId> `forvent følgende utbetalingsoppdrag`(
+    fun <T : WithBehandlingId> forventFølgendeUtbetalingsoppdrag(
         dataTable: DataTable,
-        parser: (Iterator<String>) -> T,
+        expected: (Iterator<String>) -> T,
+        forventetUtbetalingsoppdrag: (List<T>) -> ForventetUtbetalingsoppdrag,
     ) {
-//        validerForventetUtbetalingsoppdrag(dataTable, beregnetUtbetalingsoppdrag)
-        assertSjekkBehandlingIder(dataTable, beregnetUtbetalingsoppdrag, parser)
+        validerForventetUtbetalingsoppdrag(dataTable, beregnetUtbetalingsoppdrag, expected, forventetUtbetalingsoppdrag)
+        assertSjekkBehandlingIder(dataTable, beregnetUtbetalingsoppdrag, expected)
     }
 
     //    @Så("forvent følgende andeler med periodeId")
-    fun <T : WithBehandlingId> `forvent følgende andeler med periodeId`(
+    fun <T : WithBehandlingId> forventFølgendeAndelerMedPeriodeId(
         dataTable: DataTable,
-        parser: (Iterator<String>) -> T,
+        expected: (Iterator<String>) -> T,
         toAndelMedPeriodeId: (T) -> AndelMedPeriodeId,
     ) {
-        val parsed = dataTable.expected.into(parser)
+        val parsed = dataTable.expected2.into(expected)
         val groupByBehandlingId = parsed.groupBy { it.behandlingId }
 
         groupByBehandlingId.forEach { (behandlingId, rader) ->
-            val beregnedeAndeler =
-                beregnetUtbetalingsoppdrag.getValue(behandlingId).andeler
-            val forventedeAndeler =
-                rader.map { rad ->
-                    toAndelMedPeriodeId(rad)
-//                    AndelMedPeriodeId(
-//                        id = parseString(Domenebegrep.ID, rad),
-//                        periodeId = parseLong(DomenebegrepUtbetalingsoppdrag.PERIODE_ID, rad),
-//                        forrigePeriodeId = parseValgfriLong(DomenebegrepUtbetalingsoppdrag.FORRIGE_PERIODE_ID, rad),
-//                    )
-                }
+            val beregnedeAndeler = beregnetUtbetalingsoppdrag.getValue(behandlingId).andeler
+            val forventedeAndeler = rader.map { rad -> toAndelMedPeriodeId(rad) }
             assertEquals(forventedeAndeler, beregnedeAndeler)
         }
 
@@ -198,24 +196,23 @@ object Bdd {
         }
     }
 
-//    private fun validerForventetUtbetalingsoppdrag(
-//        dataTable: DataTable,
-//        beregnetUtbetalingsoppdrag: MutableMap<UUID, BeregnetUtbetalingsoppdrag>,
-//    ) {
-//        val forventedeUtbetalingsoppdrag = OppdragParser.mapForventetUtbetalingsoppdrag(dataTable)
-//
-//        forventedeUtbetalingsoppdrag.forEach { forventetUtbetalingsoppdrag ->
-//            val behandlingId = behandlingIdTilUUID[forventetUtbetalingsoppdrag.behandlingId.toInt()]
-//            val utbetalingsoppdrag =
-//                beregnetUtbetalingsoppdrag[behandlingId]
-//                    ?: error("Mangler utbetalingsoppdrag for $behandlingId")
-//            try {
-//                assertUtbetalingsoppdrag(forventetUtbetalingsoppdrag, utbetalingsoppdrag.utbetalingsoppdrag)
-//            } catch (e: Throwable) {
-//                error("Feilet validering av behandling $behandlingId")
-//            }
-//        }
-//    }
+    private fun <T : WithBehandlingId> validerForventetUtbetalingsoppdrag(
+        dataTable: DataTable,
+        beregnetUtbetalingsoppdrag: MutableMap<BehandlingId, BeregnetUtbetalingsoppdrag>,
+        expected: (Iterator<String>) -> T,
+        forventetUtbetalingsoppdrag: (List<T>) -> ForventetUtbetalingsoppdrag,
+    ) {
+        val forventedeUtbetalingsoppdrag = dataTable.expected.into(expected)
+            .groupBy { it.behandlingId }
+            .map { (_, rows) -> forventetUtbetalingsoppdrag(rows) }
+
+        forventedeUtbetalingsoppdrag.forEach { forventet ->
+            val utbetalingsoppdrag = beregnetUtbetalingsoppdrag[forventet.behandlingId]
+                ?: error("Mangler utbetalingsoppdrag for ${forventet.behandlingId}")
+
+            assertUtbetalingsoppdrag(forventet, utbetalingsoppdrag.utbetalingsoppdrag)
+        }
+    }
 
     private fun assertUtbetalingsoppdrag(
         forventetUtbetalingsoppdrag: ForventetUtbetalingsoppdrag,
@@ -224,11 +221,7 @@ object Bdd {
         assertEquals(forventetUtbetalingsoppdrag.erFørsteUtbetalingPåSak, utbetalingsoppdrag.erFørsteUtbetalingPåSak)
         forventetUtbetalingsoppdrag.utbetalingsperiode.forEachIndexed { index, forventetUtbetalingsperiode ->
             val utbetalingsperiode = utbetalingsoppdrag.utbetalingsperiode[index]
-            try {
-                assertUtbetalingsperiode(utbetalingsperiode, forventetUtbetalingsperiode)
-            } catch (e: Throwable) {
-                error("Feilet validering av rad $index for oppdrag=${forventetUtbetalingsoppdrag.behandlingId}")
-            }
+            assertUtbetalingsperiode(utbetalingsperiode, forventetUtbetalingsperiode)
         }
 
         assertEquals(forventetUtbetalingsoppdrag.utbetalingsperiode.size, utbetalingsoppdrag.utbetalingsperiode.size)
