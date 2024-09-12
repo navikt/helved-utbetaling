@@ -1,8 +1,8 @@
 # INPUT
-| BehandlingId                          | Fra dato   | Til dato   | Beløp |
-| a27a4463-5d31-4f91-bfa2-4e002e5be3cb1 | 01.02.2021 | 31.03.2021 | 700   |
-| fdec3fa7-4269-41ac-8bcd-535eae5eed312 | 01.02.2021 | 31.03.2021 | 700   |
+| BehandlingId                          | Fra dato   | Til dato   | Beløp | Satstype |
+| a27a4463-5d31-4f91-bfa2-4e002e5be3cb1 | 01.02.2021 | 31.03.2021 | 700   | DAGLIG   |
+| fdec3fa7-4269-41ac-8bcd-535eae5eed312 | 01.02.2021 | 31.03.2021 | 700   | DAGLIG   |
 
 # EXPECTED
-| BehandlingId                           | Fra dato   | Til dato   | Opphørsdato | Beløp | Første utbetaling sak | Er endring | Periode id | Forrige periode id |
-| a27a4463-5d31-4f91-bfa2-4e002e5be3cb1  | 01.02.2021 | 31.03.2021 |             | 700   | Ja                    | Nei        | 0          |                    |
+| BehandlingId                           | Fra dato   | Til dato   | Opphørsdato | Beløp | Første utbetaling sak | Er endring | Periode id | Forrige periode id | Satstype |
+| a27a4463-5d31-4f91-bfa2-4e002e5be3cb1  | 01.02.2021 | 31.03.2021 |             | 700   | true                  | false      | 0          |                    | DAGLIG   |
