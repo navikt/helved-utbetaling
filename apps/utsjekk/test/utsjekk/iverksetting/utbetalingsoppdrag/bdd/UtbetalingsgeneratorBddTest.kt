@@ -54,7 +54,6 @@ class UtbetalingsgeneratorBddTest {
     }
 
 
-
     @Nested
     inner class Forlenge {
 
@@ -139,31 +138,11 @@ class UtbetalingsgeneratorBddTest {
 
         @Test
         fun `endrer beløp fra start`() {
-            data class Expected2(
-                override val behandlingId: BehandlingId,
-                val id: String,
-                val periodeId: Long,
-                val forrigePeriodeId: Long?,
-            ) : WithBehandlingId(behandlingId)
-
-            fun from(iter: Iterator<String>) = Expected2(
-                behandlingId = BehandlingId(iter.next()),
-                id = iter.next(),
-                periodeId = iter.next().toLong(),
-                forrigePeriodeId = iter.next().let { if (it.isBlank()) null else it.toLong() },
-            )
-
             val csv = Csv.read("/csv/oppdrag/oppdrag/endrer_beløp_fra_start.csv")
             Bdd.følgendeTilkjenteYtelser(csv, Input::from, Input::toAndel)
             Bdd.beregnUtbetalignsoppdrag()
             Bdd.forventFølgendeUtbetalingsoppdrag(csv, Expected::from, ForventetUtbetalingsoppdrag::from)
-            Bdd.forventFølgendeAndelerMedPeriodeId(csv, ::from) {
-                AndelMedPeriodeId(
-                    id = it.id,
-                    periodeId = it.periodeId,
-                    forrigePeriodeId = it.forrigePeriodeId
-                )
-            }
+            Bdd.forventFølgendeAndelerMedPeriodeId(csv, ExpectedUtbetOppdrag::from, ExpectedUtbetOppdrag::toAndelMedPeriodeId)
         }
 
         @Test
@@ -263,6 +242,34 @@ class UtbetalingsgeneratorBddTest {
             beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/første_mnd_av_en_lang_periode.csv")
         }
 
+        @Test
+        fun `2 opphør etter hverandre på ulike perioder`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/2_opphør_etter_hverandre_på_ulike_perioder.csv")
+        }
+
+        @Test
+        fun `avkorte en periode som opphøres`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/avkorte_en_periode_som_opphøres.csv")
+        }
+
+        @Test
+        fun `forkorter en enkelt periode fler ganger`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/forkorter_en_enkelt_periode_fler_ganger.csv")
+        }
+
+        @Test
+        fun `iverksett på nytt etter opphør`() {
+            val csv = Csv.read("/csv/oppdrag/opphør/iverksett_på_nytt_etter_opphør.csv")
+            Bdd.følgendeTilkjenteYtelser(csv, InputUtenAndeler::from, InputUtenAndeler::toAndel)
+            Bdd.beregnUtbetalignsoppdrag()
+            Bdd.forventFølgendeUtbetalingsoppdrag(csv, Expected::from, ForventetUtbetalingsoppdrag::from)
+        }
+
+        @Test
+        fun `mellom 2 andeler`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/mellom_2_andeler.csv")
+        }
+
     }
 
     data class Input(
@@ -316,6 +323,28 @@ class UtbetalingsgeneratorBddTest {
                 satstype = Satstype.valueOf(iter.next()),
             )
         }
+    }
+
+    data class ExpectedUtbetOppdrag(
+        override val behandlingId: BehandlingId,
+        val id: String,
+        val periodeId: Long,
+        val forrigePeriodeId: Long?,
+    ) : WithBehandlingId(behandlingId) {
+        companion object {
+            fun from(iter: Iterator<String>) = ExpectedUtbetOppdrag(
+                behandlingId = BehandlingId(iter.next()),
+                id = iter.next(),
+                periodeId = iter.next().toLong(),
+                forrigePeriodeId = iter.next().let { if (it.isBlank()) null else it.toLong() },
+            )
+        }
+
+        fun toAndelMedPeriodeId() = AndelMedPeriodeId(
+            id = this.id,
+            periodeId = this.periodeId,
+            forrigePeriodeId = this.forrigePeriodeId
+        )
     }
 
     data class InputUtenAndeler(
