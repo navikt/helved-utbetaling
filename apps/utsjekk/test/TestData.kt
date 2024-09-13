@@ -254,9 +254,7 @@ object TestData {
         fun beregnetUtbetalingsoppdrag(
             sakId: SakId,
             erFørsteUtbetalingPåSak: Boolean,
-            andelId: String,
-            periodeId: Long,
-            forrigePeriodeId: Long?,
+            andeler: List<AndelMedPeriodeId>,
             vararg utbetalingsperioder: Utbetalingsperiode,
         ) = BeregnetUtbetalingsoppdrag(
             utbetalingsoppdrag = utbetalingsoppdrag(
@@ -264,13 +262,17 @@ object TestData {
                 erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
                 utbetalingsperioder = utbetalingsperioder.toList()
             ),
-            andeler = listOf(
-                AndelMedPeriodeId(
-                    id = andelId,
-                    periodeId = periodeId,
-                    forrigePeriodeId = forrigePeriodeId,
-                )
-            )
+            andeler = andeler,
+        )
+
+        fun andelMedPeriodeId(
+            andelId: String,
+            periodeId: Long,
+            forrigePeriodeId: Long?,
+        ) = AndelMedPeriodeId(
+            id = andelId,
+            periodeId = periodeId,
+            forrigePeriodeId = forrigePeriodeId,
         )
 
         fun utbetalingsoppdrag(
@@ -295,11 +297,13 @@ object TestData {
             fom: LocalDate,
             tom: LocalDate,
             sats: Int,
+            periodeId: Long,
+            forrigePeriodeId: Long?,
         ) = Utbetalingsperiode(
             erEndringPåEksisterendePeriode = false,
             opphør = null,
-            periodeId = 0L,
-            forrigePeriodeId = null,
+            periodeId = periodeId,
+            forrigePeriodeId = forrigePeriodeId,
             vedtaksdato = LocalDate.now(),
             klassifisering = "DPORAS",
             fom = fom,

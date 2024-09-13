@@ -1,6 +1,8 @@
 package utsjekk.iverksetting.utbetalingsoppdrag
 
+import AndelId
 import TestData.domain.andelData
+import TestData.domain.andelMedPeriodeId
 import TestData.domain.behandlingsinformasjon
 import TestData.domain.beregnetUtbetalingsoppdrag
 import TestData.domain.utbetalingsperiode
@@ -27,46 +29,42 @@ class UtbetalingsgeneratorTest {
     @Test
     fun `kan legge til ny periode`() {
         val sakId = SakId(RandomOSURId.generate())
+
         val behId1 = BehandlingId(RandomOSURId.generate())
-        val behId2 = BehandlingId(RandomOSURId.generate())
-
         val andel1 = andelData(1.feb, 31.mar, 700)
-        val andel2 = andelData(1.feb, 31.mar, 700)
-        val andel3 = andelData(1.apr, 31.may, 900)
-
         val oppdrag1 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId1),
             nyeAndeler = listOf(andel1),
             forrigeAndeler = emptyList(),
             sisteAndelPerKjede = emptyMap(),
         )
+        val expected1 = beregnetUtbetalingsoppdrag(
+            sakId = sakId,
+            erFørsteUtbetalingPåSak = true,
+            andeler = listOf(andelMedPeriodeId("0", 0, null)),
+            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null)
+        )
+        assertEquals(expected1, oppdrag1)
 
+        val behId2 = BehandlingId(RandomOSURId.generate())
+        val andel1_v2 = andelData(1.feb, 31.mar, 700) // trenger ny andelId
+        val andel2 = andelData(1.apr, 31.may, 900)    // skal ha andelId +1 i forhold til den nye kopien av andel1 (andel1_v2)
         val oppdrag2 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId2),
-            nyeAndeler = listOf(andel2),
+            nyeAndeler = listOf(andel1_v2, andel2),
             forrigeAndeler = listOf(oppdrag1.copyPeriodeIdTo(andel1)),
             sisteAndelPerKjede = listOf(oppdrag1.copyPeriodeIdTo(andel1))
                 .uten0beløp()
                 .groupBy { andel -> andel.stønadsdata.tilKjedenøkkel() }
                 .mapValues { (_, andeler) -> andeler.latestByPeriodeId() }
         )
-
-        val oppdrag3 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
-            behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId2),
-            nyeAndeler = listOf(andel3),
-            forrigeAndeler = listOf(oppdrag1.copyPeriodeIdTo(andel1), oppdrag2.copyPeriodeIdTo(andel2)),
-            sisteAndelPerKjede = listOf(oppdrag1.copyPeriodeIdTo(andel1), oppdrag2.copyPeriodeIdTo(andel2))
-                .uten0beløp()
-                .groupBy { andel -> andel.stønadsdata.tilKjedenøkkel() }
-                .mapValues { (_, andeler) -> andeler.latestByPeriodeId() }
+        val expected2 = beregnetUtbetalingsoppdrag(
+            sakId = sakId,
+            erFørsteUtbetalingPåSak = false,
+            andeler = listOf(andelMedPeriodeId("1", 0, null), andelMedPeriodeId("2", 1, 0)),
+            utbetalingsperiode(behId2, 1.apr, 31.may, 900, 1, 0)
         )
-
-        val expected1 = beregnetUtbetalingsoppdrag(sakId, true, "0", 0L, null, utbetalingsperiode(behId1, 1.feb, 31.mar, 700))
-//        val expected2 = beregnetUtbetalingsoppdrag(sakId, false, "1", 1L, 0L, utbetalingsperiode(behId2, 1.feb, 31.mar, 700))
-//        val expected3 = beregnetUtbetalingsoppdrag(sakId, false, "2", 1L, 0L, utbetalingsperiode(behId2, 1.apr, 31.may, 900))
-        assertEquals(expected1, oppdrag1)
-//        assertEquals(expected2, oppdrag2)
-//        assertEquals(expected3, oppdrag3)
+        assertEquals(expected2, oppdrag2)
     }
 
     @Test
@@ -95,8 +93,18 @@ class UtbetalingsgeneratorTest {
                 .mapValues { (_, andeler) -> andeler.latestByPeriodeId() },
         )
 
-        val expected1 = beregnetUtbetalingsoppdrag(sakId, true, "0", 0L, null, utbetalingsperiode(behId1, 1.feb, 31.mar, 700))
-        val expected2 = beregnetUtbetalingsoppdrag(sakId, false, "1", 0L, null)
+        val expected1 = beregnetUtbetalingsoppdrag(
+            sakId = sakId,
+            erFørsteUtbetalingPåSak = true,
+            andeler = listOf(andelMedPeriodeId("0", 0, null)),
+            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null),
+        )
+
+        val expected2 = beregnetUtbetalingsoppdrag(
+            sakId = sakId,
+            erFørsteUtbetalingPåSak = false,
+            andeler = listOf(andelMedPeriodeId("1", 0, null)),
+        )
 
         assertEquals(expected1, oppdrag1)
         assertEquals(expected2, oppdrag2)
@@ -135,6 +143,7 @@ private fun BeregnetUtbetalingsoppdrag.copyAvstemmingstidspunktFrom(other: Bereg
     )
 
 private fun assertEquals(expected: BeregnetUtbetalingsoppdrag, actual: BeregnetUtbetalingsoppdrag) {
+    // TODO: fungerer ikke hvis testen utføres i et sekundbytte
     val expectedAvstemming = expected.utbetalingsoppdrag.avstemmingstidspunkt.truncatedTo(ChronoUnit.SECONDS)
     val actualAvstemming = actual.utbetalingsoppdrag.avstemmingstidspunkt.truncatedTo(ChronoUnit.SECONDS)
     assertEquals(expectedAvstemming, actualAvstemming)
