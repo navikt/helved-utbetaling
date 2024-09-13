@@ -1,0 +1,9 @@
+# INPUT
+| BehandlingId | Uten andeler | Fra dato   | Til dato   | Beløp | Satstype |
+| 1            |              | 01.03.2021 | 31.03.2021 | 700   | MÅNEDLIG |
+| 2            | true         |            |            |       | MÅNEDLIG |
+
+# EXPECTED
+| BehandlingId | Fra dato   | Til dato   | Opphørsdato | Beløp | Første utbetaling sak | Er endring | Periode id | Forrige periode id | Satstype |
+| 1            | 01.03.2021 | 31.03.2021 |             | 700   | true                  | false      | 0          |                    | MÅNEDLIG |
+| 2            | 01.03.2021 | 31.03.2021 | 01.03.2021  | 700   | false                 | true       | 0          |                    | MÅNEDLIG |
