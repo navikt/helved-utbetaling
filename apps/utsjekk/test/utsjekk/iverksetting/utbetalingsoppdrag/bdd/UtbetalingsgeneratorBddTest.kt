@@ -25,30 +25,35 @@ class UtbetalingsgeneratorBddTest {
         Bdd.forventFølgendeUtbetalingsoppdrag(csv, Expected::from, ForventetUtbetalingsoppdrag::from)
     }
 
-    @Test
-    fun `en periode får en lik periode`() {
-        beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/en_periode_får_en_lik_periode.csv")
+    @Nested
+    inner class Periode {
+        @Test
+        fun `får lik periode`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/periode/lik_periode.csv")
+        }
+
+        @Test
+        fun `får ny periode`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/periode/ny_periode.csv")
+        }
+
+        @Test
+        fun `får ny periode engangssats`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/periode/ny_periode_engangssats.csv")
+        }
+
+        @Test
+        fun `får ny periode månedssats`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/periode/ny_periode_månedssats.csv")
+        }
+
+        @Test
+        fun `får endring i periode`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/periode/endring_i_periode.csv")
+        }
     }
 
-    @Test
-    fun `en periode får en ny periode`() {
-        beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/en_periode_får_en_ny_periode.csv")
-    }
 
-    @Test
-    fun `en periode får en ny periode engangssats`() {
-        beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/en_periode_får_en_ny_periode_engangssats.csv")
-    }
-
-    @Test
-    fun `en periode får en ny periode månedssats`() {
-        beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/en_periode_får_en_ny_periode_månedssats.csv")
-    }
-
-    @Test
-    fun `endring i periode`() {
-        beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/endring_i_periode.csv")
-    }
 
     @Nested
     inner class Forlenge {
