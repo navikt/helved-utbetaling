@@ -142,7 +142,7 @@ class UtbetalingsgeneratorBddTest {
             Bdd.følgendeTilkjenteYtelser(csv, Input::from, Input::toAndel)
             Bdd.beregnUtbetalignsoppdrag()
             Bdd.forventFølgendeUtbetalingsoppdrag(csv, Expected::from, ForventetUtbetalingsoppdrag::from)
-            Bdd.forventFølgendeAndelerMedPeriodeId(csv, ExpectedUtbetOppdrag::from, ExpectedUtbetOppdrag::toAndelMedPeriodeId)
+            Bdd.forventFølgendeAndelerMedPeriodeId(csv, ExpectedAndeler::from, ExpectedAndeler::toAndelMedPeriodeId)
         }
 
         @Test
@@ -272,6 +272,11 @@ class UtbetalingsgeneratorBddTest {
 
     }
 
+    @Test
+    fun `revurdering frem i tid`() {
+        beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/revurdering_frem_i_tid.csv")
+    }
+
     data class Input(
         override val behandlingId: BehandlingId,
         val fom: LocalDate,
@@ -325,14 +330,14 @@ class UtbetalingsgeneratorBddTest {
         }
     }
 
-    data class ExpectedUtbetOppdrag(
+    data class ExpectedAndeler(
         override val behandlingId: BehandlingId,
         val id: String,
         val periodeId: Long,
         val forrigePeriodeId: Long?,
     ) : WithBehandlingId(behandlingId) {
         companion object {
-            fun from(iter: Iterator<String>) = ExpectedUtbetOppdrag(
+            fun from(iter: Iterator<String>) = ExpectedAndeler(
                 behandlingId = BehandlingId(iter.next()),
                 id = iter.next(),
                 periodeId = iter.next().toLong(),
