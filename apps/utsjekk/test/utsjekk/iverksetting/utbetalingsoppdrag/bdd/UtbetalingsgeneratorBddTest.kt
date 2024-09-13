@@ -168,36 +168,8 @@ class UtbetalingsgeneratorBddTest {
 
         @Test
         fun `opphør alle perioder for å senere iverksette på ny`() {
-            data class InputUtenAndeler(
-                override val behandlingId: BehandlingId,
-                val utenAndeler: Boolean,
-                val fom: LocalDate?,
-                val tom: LocalDate?,
-                val beløp: Int?,
-                val satstype: Satstype,
-            ) : WithBehandlingId(behandlingId) {
-                fun toAndel(): AndelData? = when (utenAndeler) {
-                    true -> null
-                    false -> andelData(
-                        fom = this.fom!!,
-                        tom = this.tom!!,
-                        beløp = this.beløp!!,
-                        satstype = this.satstype,
-                    )
-                }
-            }
-
-            fun from(iter: Iterator<String>) = InputUtenAndeler(
-                behandlingId = BehandlingId(iter.next()),
-                utenAndeler = iter.next().toBoolean(),
-                fom = iter.next().let { if (it.isBlank()) null else LocalDate.parse(it, NOR_DATE) },
-                tom = iter.next().let { if (it.isBlank()) null else LocalDate.parse(it, NOR_DATE) },
-                beløp = iter.next().let { if (it.isBlank()) null else it.toInt() },
-                satstype = Satstype.valueOf(iter.next()),
-            )
-
             val csv = Csv.read("/csv/oppdrag/oppdrag/opphør_alle_perioder_for_å_senere_iverksette_på_ny.csv")
-            Bdd.følgendeTilkjenteYtelser(csv, ::from, InputUtenAndeler::toAndel)
+            Bdd.følgendeTilkjenteYtelser(csv, InputUtenAndeler::from, InputUtenAndeler::toAndel)
             Bdd.beregnUtbetalignsoppdrag()
             Bdd.forventFølgendeUtbetalingsoppdrag(csv, Expected::from, ForventetUtbetalingsoppdrag::from)
         }
@@ -221,6 +193,71 @@ class UtbetalingsgeneratorBddTest {
         fun `vedtak med to perioder`() {
             beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/oppdrag/vedtak_med_to_perioder.csv")
         }
+    }
+
+    @Nested
+    inner class Opphør {
+        @Test
+        fun `den første av 2 perioder`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/den_første_av_2_perioder.csv")
+        }
+
+        @Test
+        fun `den første av 2 perioder der det er tid mellom periodene`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/den_første_av_2_perioder_der_det_er_tid_mellom_periodene.csv")
+        }
+
+        @Test
+        fun `den siste av 2 perioder der det er tid mellom periodene`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/den_siste_av_2_perioder_der_det_er_tid_mellom_periodene.csv")
+        }
+
+        @Test
+        fun `den siste av to perioder`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/den_siste_av_to_perioder.csv")
+        }
+
+        @Test
+        fun `en av 2 perioder`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/en_av_2_perioder.csv")
+        }
+
+        @Test
+        fun `en lang periode`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/en_lang_periode.csv")
+        }
+
+        @Test
+        fun `en lang periode med mndsats`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/en_lang_periode_med_mndsats.csv")
+        }
+
+        @Test
+        fun `en periode`() {
+            val csv = Csv.read("/csv/oppdrag/opphør/en_periode.csv")
+            Bdd.følgendeTilkjenteYtelser(csv, InputUtenAndeler::from, InputUtenAndeler::toAndel)
+            Bdd.beregnUtbetalignsoppdrag()
+            Bdd.forventFølgendeUtbetalingsoppdrag(csv, Expected::from, ForventetUtbetalingsoppdrag::from)
+        }
+
+        @Test
+        fun `en periode med mndsats`() {
+            val csv = Csv.read("/csv/oppdrag/opphør/en_periode_med_mndsats.csv")
+            Bdd.følgendeTilkjenteYtelser(csv, InputUtenAndeler::from, InputUtenAndeler::toAndel)
+            Bdd.beregnUtbetalignsoppdrag()
+            Bdd.forventFølgendeUtbetalingsoppdrag(csv, Expected::from, ForventetUtbetalingsoppdrag::from)
+        }
+
+        @Test
+        fun `en tidligere periode da vi kun har med den andre av 2 perioder`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/en_tidligere_periode_da_vi_kun_har_med_den_andre_av_2_perioder.csv")
+        }
+
+        @Test
+        fun `første_mnd_av_en_lang_periode`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/opphør/første_mnd_av_en_lang_periode.csv")
+        }
+
     }
 
     data class Input(
@@ -272,6 +309,36 @@ class UtbetalingsgeneratorBddTest {
                 periodeId = iter.next().toLong(),
                 forrigePeriodeId = iter.next().let { if (it.isBlank()) null else it.toLong() },
                 satstype = Satstype.valueOf(iter.next()),
+            )
+        }
+    }
+
+    data class InputUtenAndeler(
+        override val behandlingId: BehandlingId,
+        val utenAndeler: Boolean,
+        val fom: LocalDate?,
+        val tom: LocalDate?,
+        val beløp: Int?,
+        val satstype: Satstype,
+    ) : WithBehandlingId(behandlingId) {
+        companion object {
+            fun from(iter: Iterator<String>) = InputUtenAndeler(
+                behandlingId = BehandlingId(iter.next()),
+                utenAndeler = iter.next().toBoolean(),
+                fom = iter.next().let { if (it.isBlank()) null else LocalDate.parse(it, NOR_DATE) },
+                tom = iter.next().let { if (it.isBlank()) null else LocalDate.parse(it, NOR_DATE) },
+                beløp = iter.next().let { if (it.isBlank()) null else it.toInt() },
+                satstype = Satstype.valueOf(iter.next()),
+            )
+        }
+
+        fun toAndel(): AndelData? = when (utenAndeler) {
+            true -> null
+            false -> andelData(
+                fom = this.fom!!,
+                tom = this.tom!!,
+                beløp = this.beløp!!,
+                satstype = this.satstype,
             )
         }
     }
