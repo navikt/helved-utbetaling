@@ -1,10 +1,10 @@
 # INPUT
-| BehandlingId | Fra dato   | Til dato   | Beløp |
-| 1            | 01.02.2021 | 01.02.2021 | 700   |
-| 2            | 01.03.2021 | 01.03.2021 | 600   |
+| BehandlingId | Fra dato   | Til dato   | Beløp | Satstype |
+| 1            | 01.02.2021 | 01.02.2021 | 700   | DAGLIG   |
+| 2            | 01.03.2021 | 01.03.2021 | 600   | DAGLIG   |
 
 # EXPECTED
-| BehandlingId | Fra dato   | Til dato   | Opphørsdato | Beløp | Første utbetaling sak | Er endring | Periode id | Forrige periode id |
-| 1            | 01.02.2021 | 01.02.2021 |             | 700   | Ja                    | Nei        | 0          |                    |
-| 2            | 01.02.2021 | 01.02.2021 | 01.02.2021  | 700   | Nei                   | Ja         | 0          |                    |
-| 2            | 01.03.2021 | 01.03.2021 |             | 600   | Nei                   | Nei        | 1          | 0                  |
+| BehandlingId | Fra dato   | Til dato   | Opphørsdato | Beløp | Første utbetaling sak | Er endring | Periode id | Forrige periode id | Satstype |
+| 1            | 01.02.2021 | 01.02.2021 |             | 700   | true                  | false      | 0          |                    | DAGLIG   |
+| 2            | 01.02.2021 | 01.02.2021 | 01.02.2021  | 700   | false                 | true       | 0          |                    | DAGLIG   |
+| 2            | 01.03.2021 | 01.03.2021 |             | 600   | false                 | false      | 1          | 0                  | DAGLIG   |
