@@ -272,9 +272,33 @@ class UtbetalingsgeneratorBddTest {
 
     }
 
-    @Test
-    fun `revurdering frem i tid`() {
-        beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/revurdering_frem_i_tid.csv")
+    @Nested
+    inner class Revurdering {
+        @Test
+        fun `frem i tid`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/revurdering/frem_i_tid.csv")
+        }
+
+        @Test
+        fun `opphør før ny periode`() {
+            val csv = Csv.read("/csv/oppdrag/revurdering/opphør_før_ny_periode.csv")
+            Bdd.følgendeTilkjenteYtelser(csv, InputUtenAndeler::from, InputUtenAndeler::toAndel)
+            Bdd.beregnUtbetalignsoppdrag()
+            Bdd.forventFølgendeUtbetalingsoppdrag(csv, Expected::from, ForventetUtbetalingsoppdrag::from)
+        }
+
+        @Test
+        fun `uten andeler`() {
+            val csv = Csv.read("/csv/oppdrag/revurdering/uten_andeler.csv")
+            Bdd.følgendeTilkjenteYtelser(csv, InputUtenAndeler::from, InputUtenAndeler::toAndel)
+            Bdd.beregnUtbetalignsoppdrag()
+            Bdd.forventFølgendeUtbetalingsoppdrag(csv, Expected::from, ForventetUtbetalingsoppdrag::from)
+        }
+
+        @Test
+        fun `sletter andre periode revurderer på nytt`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/revurdering/sletter_andre_periode_revurderer_på_nytt.csv")
+        }
     }
 
     data class Input(
