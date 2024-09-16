@@ -1,4 +1,4 @@
-package utsjekk.task.strategies
+package utsjekk.iverksetting
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.concurrency.transaction
@@ -7,18 +7,23 @@ import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import utsjekk.iverksetting.*
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import utsjekk.oppdrag.OppdragClient
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
 import utsjekk.task.Tasks
+import utsjekk.task.TaskStrategy
 
-class IverksettingStrategy(
+class IverksettingTaskStrategy(
     private val oppdrag: OppdragClient,
     private val service: Iverksettinger,
 ) : TaskStrategy {
+
+    override suspend fun isApplicable(task: TaskDao): Boolean {
+        return task.kind == Kind.Iverksetting
+    }
+
     override suspend fun execute(task: TaskDao) {
         val iverksetting = objectMapper.readValue<Iverksetting>(task.payload)
         updateIverksetting(iverksetting)
@@ -190,4 +195,3 @@ class IverksettingStrategy(
     }
 
 }
-

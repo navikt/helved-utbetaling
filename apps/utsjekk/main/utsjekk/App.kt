@@ -27,8 +27,10 @@ import libs.postgres.concurrency.CoroutineDatasource
 import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
+import utsjekk.avstemming.AvstemmingTaskStrategy
 import utsjekk.featuretoggle.FeatureToggles
 import utsjekk.featuretoggle.UnleashFeatureToggles
+import utsjekk.iverksetting.IverksettingTaskStrategy
 import utsjekk.iverksetting.Iverksettinger
 import utsjekk.oppdrag.OppdragClient
 import utsjekk.routes.actuators
@@ -36,10 +38,8 @@ import utsjekk.routes.iverksettingRoute
 import utsjekk.routes.tasks
 import utsjekk.status.Kafka
 import utsjekk.status.StatusKafkaProducer
+import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
-import utsjekk.task.strategies.AvstemmingStrategy
-import utsjekk.task.strategies.IverksettingStrategy
-import utsjekk.task.strategies.SjekkStatusStrategy
 import javax.sql.DataSource
 import kotlin.coroutines.CoroutineContext
 
@@ -99,9 +99,11 @@ fun Application.utsjekk(
     val oppdrag = OppdragClient(config)
     val iverksettinger = Iverksettinger(context, featureToggles, statusProducer)
     val scheduler = TaskScheduler(
-        IverksettingStrategy(oppdrag, iverksettinger),
-        SjekkStatusStrategy(oppdrag),
-        AvstemmingStrategy(oppdrag),
+        listOf(
+            IverksettingTaskStrategy(oppdrag, iverksettinger),
+            StatusTaskStrategy(oppdrag),
+            AvstemmingTaskStrategy(oppdrag)
+        ),
         context,
     )
 
