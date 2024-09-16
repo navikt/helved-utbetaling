@@ -1,19 +1,24 @@
-package utsjekk.task.strategies
+package utsjekk.avstemming
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
-import utsjekk.avstemming.nesteVirkedag
 import utsjekk.oppdrag.OppdragClient
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
 import utsjekk.task.Tasks
+import utsjekk.task.TaskStrategy
 import java.time.LocalDate
 
-class AvstemmingStrategy(
-    private val oppdrag: OppdragClient
+class AvstemmingTaskStrategy(
+    private val oppdrag: OppdragClient,
 ) : TaskStrategy {
+
+    override suspend fun isApplicable(task: TaskDao): Boolean {
+        return task.kind == Kind.Avstemming
+    }
+
     override suspend fun execute(task: TaskDao) {
         val grensesnittavstemming = objectMapper.readValue<GrensesnittavstemmingRequest>(task.payload)
             .copy(
