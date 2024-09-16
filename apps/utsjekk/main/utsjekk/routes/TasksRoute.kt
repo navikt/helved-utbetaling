@@ -1,25 +1,17 @@
 package utsjekk.routes
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
-import io.ktor.server.auth.jwt.JWTPrincipal
-import io.ktor.server.auth.principal
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.patch
-import io.ktor.server.routing.route
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
-import utsjekk.task.Kind
-import utsjekk.task.Status
-import utsjekk.task.TaskDao
-import utsjekk.task.TaskHistory
-import utsjekk.task.Tasks
+import utsjekk.task.*
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 private fun ApplicationCall.navident(): String? {
@@ -46,10 +38,11 @@ fun Route.tasks(context: CoroutineContext) {
             val id = call.parameters["id"]?.let(UUID::fromString)
                 ?: return@patch call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
 
-            transaction {
-                TaskDao.select { it.id = id }
-            }.singleOrNull()
-                ?: return@patch call.respond(HttpStatusCode.NotFound, "Fant ikke task med id $id")
+            withContext(context) {
+                transaction {
+                    TaskDao.select { it.id = id }
+                }
+            }.singleOrNull() ?: return@patch call.respond(HttpStatusCode.NotFound, "Fant ikke task med id $id")
 
             val payload = call.receive<TaskDtoPatch>()
             Tasks.update(id, payload.status, payload.message)

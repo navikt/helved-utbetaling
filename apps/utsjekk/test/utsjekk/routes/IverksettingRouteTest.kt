@@ -1,4 +1,4 @@
-package routes
+package utsjekk.routes
 
 import TestData
 import TestRuntime
@@ -19,8 +19,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import repeatUntil
 import utsjekk.iverksetting.IverksettingDao
@@ -54,8 +53,11 @@ class IverksettingRouteTest {
             setBody(dto)
         }
 
-        assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
-        assertEquals("Iverksetting er skrudd av for fagsystem ${Fagsystem.TILLEGGSSTØNADER}", res.bodyAsText())
+        Assertions.assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
+        Assertions.assertEquals(
+            "Iverksetting er skrudd av for fagsystem ${Fagsystem.TILLEGGSSTØNADER}",
+            res.bodyAsText()
+        )
     }
 
     @Test
@@ -68,7 +70,7 @@ class IverksettingRouteTest {
             setBody(dto)
         }
 
-        assertEquals(HttpStatusCode.Accepted, res.status)
+        Assertions.assertEquals(HttpStatusCode.Accepted, res.status)
     }
 
     @Test
@@ -101,7 +103,7 @@ class IverksettingRouteTest {
             contentType(ContentType.Application.Json)
             setBody(dto)
         }.let {
-            assertEquals(HttpStatusCode.Accepted, it.status)
+            Assertions.assertEquals(HttpStatusCode.Accepted, it.status)
         }
 
         suspend fun getStatus(): IverksettStatus =
@@ -116,7 +118,7 @@ class IverksettingRouteTest {
             }
         }
 
-        assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
+        Assertions.assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
     }
 
 
@@ -134,7 +136,7 @@ class IverksettingRouteTest {
             contentType(ContentType.Application.Json)
             setBody(dto)
         }.let {
-            assertEquals(HttpStatusCode.Accepted, it.status)
+            Assertions.assertEquals(HttpStatusCode.Accepted, it.status)
         }
 
         suspend fun getStatus(): IverksettStatus =
@@ -149,8 +151,8 @@ class IverksettingRouteTest {
             }
         }
 
-        assertEquals(IverksettStatus.OK_UTEN_UTBETALING, status)
-        assertTrue(TestRuntime.kafka.hasProduced(dto.personident.verdi))
+        Assertions.assertEquals(IverksettStatus.OK_UTEN_UTBETALING, status)
+        Assertions.assertTrue(TestRuntime.kafka.hasProduced(dto.personident.verdi))
     }
 
     @Test
@@ -190,8 +192,8 @@ class IverksettingRouteTest {
             setBody(objectMapper.readValue<JsonNode>(payload))
         }
 
-        assertEquals(HttpStatusCode.BadRequest, res.status)
-        assertEquals("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", res.bodyAsText())
+        Assertions.assertEquals(HttpStatusCode.BadRequest, res.status)
+        Assertions.assertEquals("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", res.bodyAsText())
     }
 
     @Test
@@ -213,7 +215,7 @@ class IverksettingRouteTest {
             setBody(dto)
         }
 
-        assertEquals(HttpStatusCode.Accepted, res.status)
+        Assertions.assertEquals(HttpStatusCode.Accepted, res.status)
 
         suspend fun getStatus(): IverksettStatus =
             httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
@@ -228,6 +230,6 @@ class IverksettingRouteTest {
             }
         }
 
-        assertEquals(IverksettStatus.OK, status)
+        Assertions.assertEquals(IverksettStatus.OK, status)
     }
 }
