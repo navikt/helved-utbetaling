@@ -33,7 +33,7 @@ import utsjekk.featuretoggle.UnleashFeatureToggles
 import utsjekk.iverksetting.IverksettingTaskStrategy
 import utsjekk.iverksetting.Iverksettinger
 import utsjekk.oppdrag.OppdragClient
-import utsjekk.routes.actuators
+import utsjekk.routes.probes
 import utsjekk.routes.iverksettingRoute
 import utsjekk.routes.tasks
 import utsjekk.status.Kafka
@@ -59,10 +59,10 @@ fun Application.utsjekk(
     featureToggles: FeatureToggles = UnleashFeatureToggles(config.unleash),
     statusProducer: Kafka<StatusEndretMelding> = StatusKafkaProducer(config.kafka)
 ) {
-    val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    val meters = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(MicrometerMetrics) {
-        registry = prometheus
+        registry = meters
         meterBinders += LogbackMetrics()
     }
 
@@ -118,6 +118,6 @@ fun Application.utsjekk(
             tasks(context)
         }
 
-        actuators(prometheus)
+        probes(meters)
     }
 }
