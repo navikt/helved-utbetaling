@@ -2,6 +2,8 @@ import no.nav.utsjekk.kontrakter.felles.*
 import no.nav.utsjekk.kontrakter.iverksett.*
 import no.nav.utsjekk.kontrakter.oppdrag.*
 import utsjekk.iverksetting.*
+import utsjekk.iverksetting.Periode
+import utsjekk.simulering.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -108,6 +110,30 @@ object TestData {
             sakId = iverksetting.sakId.id,
             behandlingId = iverksetting.behandlingId.id,
             iverksettingId = iverksetting.iverksettingId?.id,
+        )
+
+        fun simuleringResponse(
+            oppsummeringer: List<OppsummeringForPeriode>,
+            detaljer: SimuleringDetaljer,
+        ) = SimuleringResponsDto(
+            oppsummeringer,
+            detaljer,
+        )
+
+        fun oppsummeringForPeriode(
+            fom: LocalDate,
+            tom: LocalDate,
+            tidligereUtbetalt: Int,
+            nyUtbetaling: Int,
+            totalEtterbetaling: Int,
+            totalFeilutbetaling: Int,
+        ) = OppsummeringForPeriode(
+            fom,
+            tom,
+            tidligereUtbetalt,
+            nyUtbetaling,
+            totalEtterbetaling,
+            totalFeilutbetaling
         )
     }
 
@@ -313,6 +339,36 @@ object TestData {
             utbetalesTil = DEFAULT_PERSONIDENT,
             behandlingId = behandlingId.id,
             utbetalingsgrad = null,
+        )
+
+        fun simuleringDetaljer(
+            personident: String = DEFAULT_PERSONIDENT,
+            datoBeregnet: LocalDate = LocalDate.now(),
+            totalBeløp: Int = 800,
+            perioder: List<utsjekk.simulering.Periode>,
+        ) = SimuleringDetaljer(
+            gjelderId = personident,
+            datoBeregnet = datoBeregnet,
+            totalBeløp = totalBeløp,
+            perioder = perioder,
+        )
+
+        fun postering(
+            fom: LocalDate,
+            tom: LocalDate,
+            beløp: Int,
+            sakId: SakId,
+            type: PosteringType = PosteringType.YTELSE,
+            fagområde: Fagområde = Fagområde.TILLEGGSSTØNADER,
+            klassekode: String = "TSTBASISP4-OP",
+        ) = Postering(
+            type = type,
+            fom = fom,
+            tom = tom,
+            beløp = beløp,
+            fagområde = fagområde,
+            sakId = sakId,
+            klassekode = klassekode,
         )
     }
 }
