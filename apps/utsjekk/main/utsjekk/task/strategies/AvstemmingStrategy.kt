@@ -3,7 +3,7 @@ package utsjekk.task.strategies
 import com.fasterxml.jackson.module.kotlin.readValue
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
-import utsjekk.avstemming.Virkedager
+import utsjekk.avstemming.nesteVirkedag
 import utsjekk.oppdrag.OppdragClient
 import utsjekk.task.Kind
 import utsjekk.task.Status
@@ -27,13 +27,13 @@ class AvstemmingStrategy(
         val nesteGrensesnittavstemming = GrensesnittavstemmingRequest(
             fagsystem = grensesnittavstemming.fagsystem,
             fra = LocalDate.now().atStartOfDay(),
-            til = Virkedager.neste().atStartOfDay(),
+            til = LocalDate.now().nesteVirkedag().atStartOfDay(),
         )
 
         Tasks.create(
             Kind.Avstemming,
             nesteGrensesnittavstemming,
-            scheduledFor = Virkedager.neste().atTime(8, 0)
+            scheduledFor = LocalDate.now().nesteVirkedag().atTime(8, 0)
         )
     }
 }
