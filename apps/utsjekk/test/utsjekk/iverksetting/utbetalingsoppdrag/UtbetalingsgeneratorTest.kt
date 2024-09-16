@@ -19,6 +19,10 @@ private val Int.mar: LocalDate get() = LocalDate.of(2021, 3, this)
 private val Int.apr: LocalDate get() = LocalDate.of(2021, 4, this)
 private val Int.may: LocalDate get() = LocalDate.of(2021, 5, this)
 
+/**
+ * Tester det samme som to av scenarioene i bdd (behaviour driven development),
+ * men med eksplisitt oppbygging av utbetalingsoppdrag og forventet resultat.
+ */
 class UtbetalingsgeneratorTest {
 
     @AfterEach
