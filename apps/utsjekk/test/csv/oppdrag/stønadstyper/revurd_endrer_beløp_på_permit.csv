@@ -1,0 +1,14 @@
+# INPUT
+| BehandlingId | Fra dato   | Til dato   | Beløp | Ytelse                         | Satstype |
+| 1            | 01.03.2021 | 01.05.2021 | 700   | DAGPENGER_ARBEIDSSØKER_ORDINÆR | DAGLIG   |
+| 1            | 01.03.2021 | 01.05.2021 | 800   | DAGPENGER_PERMITTERING_ORDINÆR | DAGLIG   |
+| 2            | 01.03.2021 | 01.05.2021 | 700   | DAGPENGER_ARBEIDSSØKER_ORDINÆR | DAGLIG   |
+| 2            | 01.03.2021 | 31.03.2021 | 800   | DAGPENGER_PERMITTERING_ORDINÆR | DAGLIG   |
+| 2            | 01.04.2021 | 01.05.2021 | 900   | DAGPENGER_PERMITTERING_ORDINÆR | DAGLIG   |
+
+# EXPECTED
+| BehandlingId | Fra dato   | Til dato   | Opphørsdato | Beløp | Ytelse                         | Første utbetaling sak | Er endring | Periode id | Forrige periode id | Satstype |
+| 1            | 01.03.2021 | 01.05.2021 |             | 700   | DAGPENGER_ARBEIDSSØKER_ORDINÆR | true                  | false      | 0          |                    | DAGLIG   |
+| 1            | 01.03.2021 | 01.05.2021 |             | 800   | DAGPENGER_PERMITTERING_ORDINÆR | true                  | false      | 1          |                    | DAGLIG   |
+| 2            | 01.04.2021 | 01.05.2021 |             | 900   | DAGPENGER_PERMITTERING_ORDINÆR | false                 | false      | 2          | 1                  | DAGLIG   |
+

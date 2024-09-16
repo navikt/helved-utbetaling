@@ -1,0 +1,18 @@
+# INPUT
+| BehandlingId | Fra dato   | Til dato   | Beløp | Ytelse                         | Satstype |
+| 1            | 01.03.2021 | 01.03.2021 | 100   | DAGPENGER_ARBEIDSSØKER_ORDINÆR | DAGLIG   |
+| 1            | 01.03.2021 | 01.03.2021 | 200   | DAGPENGER_PERMITTERING_ORDINÆR | DAGLIG   |
+| 1            | 01.03.2021 | 01.03.2021 | 300   | DAGPENGER_EØS                  | DAGLIG   |
+| 2            | 01.03.2021 | 01.03.2021 | 200   | DAGPENGER_ARBEIDSSØKER_ORDINÆR | DAGLIG   |
+| 2            | 01.03.2021 | 01.03.2021 | 300   | DAGPENGER_PERMITTERING_ORDINÆR | DAGLIG   |
+| 2            | 01.03.2021 | 01.03.2021 | 400   | DAGPENGER_EØS                  | DAGLIG   |
+
+# EXPECTED
+| BehandlingId | Fra dato   | Til dato   | Opphørsdato | Beløp | Ytelse                         | Første utbetaling sak | Er endring | Periode id | Forrige periode id | Satstype |
+| 1            | 01.03.2021 | 01.03.2021 |             | 100   | DAGPENGER_ARBEIDSSØKER_ORDINÆR | true                  | false      | 0          |                    | DAGLIG   |
+| 1            | 01.03.2021 | 01.03.2021 |             | 200   | DAGPENGER_PERMITTERING_ORDINÆR | true                  | false      | 1          |                    | DAGLIG   |
+| 1            | 01.03.2021 | 01.03.2021 |             | 300   | DAGPENGER_EØS                  | true                  | false      | 2          |                    | DAGLIG   |
+| 2            | 01.03.2021 | 01.03.2021 |             | 200   | DAGPENGER_ARBEIDSSØKER_ORDINÆR | false                 | false      | 3          | 0                  | DAGLIG   |
+| 2            | 01.03.2021 | 01.03.2021 |             | 300   | DAGPENGER_PERMITTERING_ORDINÆR | false                 | false      | 4          | 1                  | DAGLIG   |
+| 2            | 01.03.2021 | 01.03.2021 |             | 400   | DAGPENGER_EØS                  | false                 | false      | 5          | 2                  | DAGLIG   |
+
