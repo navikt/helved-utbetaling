@@ -23,6 +23,17 @@ data class ForventetUtbetalingsoppdrag(
                 utbetalingsperiode = rows.map(ForventetUtbetalingsperiode::from)
             )
         }
+
+        fun fromExpectedMedYtelse(rows: List<UtbetalingsgeneratorBddTest.ExpectedMedYtelse>): ForventetUtbetalingsoppdrag {
+            assertTrue(rows.all { row -> row.behandlingId == rows.first().behandlingId })
+            assertTrue(rows.all { row -> row.førsteUtbetSak == rows.first().førsteUtbetSak })
+
+            return ForventetUtbetalingsoppdrag(
+                behandlingId = rows.first().behandlingId,
+                erFørsteUtbetalingPåSak = rows.first().førsteUtbetSak,
+                utbetalingsperiode = rows.map(ForventetUtbetalingsperiode::fromExpectedMedYtelse)
+            )
+        }
     }
 }
 
@@ -44,6 +55,17 @@ data class ForventetUtbetalingsperiode(
             forrigePeriodeId = expected.forrigePeriodeId,
             sats = expected.beløp,
             ytelse = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR, // fixme: legg til i expected?
+            fom = expected.fom,
+            tom = expected.tom,
+            opphør = expected.opphørsdato,
+            satstype = expected.satstype,
+        )
+        fun fromExpectedMedYtelse(expected: UtbetalingsgeneratorBddTest.ExpectedMedYtelse) = ForventetUtbetalingsperiode(
+            erEndringPåEksisterendePeriode = expected.erEndring,
+            periodeId = expected.periodeId,
+            forrigePeriodeId = expected.forrigePeriodeId,
+            sats = expected.beløp,
+            ytelse = expected.ytelse,
             fom = expected.fom,
             tom = expected.tom,
             opphør = expected.opphørsdato,

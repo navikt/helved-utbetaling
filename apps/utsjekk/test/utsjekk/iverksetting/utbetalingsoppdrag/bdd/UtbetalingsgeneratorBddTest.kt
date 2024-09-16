@@ -1,13 +1,11 @@
 package utsjekk.iverksetting.utbetalingsoppdrag.bdd
 
 import TestData.domain.andelData
-import no.nav.utsjekk.kontrakter.felles.Satstype
+import no.nav.utsjekk.kontrakter.felles.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import utsjekk.iverksetting.AndelData
-import utsjekk.iverksetting.AndelMedPeriodeId
-import utsjekk.iverksetting.BehandlingId
+import utsjekk.iverksetting.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -217,7 +215,7 @@ class UtbetalingsgeneratorBddTest {
         }
 
         @Test
-        fun `en periode`() {
+        fun periode() {
             val csv = Csv.read("/csv/oppdrag/opphør/en_periode.csv")
             Bdd.følgendeTilkjenteYtelser(csv, InputUtenAndeler::from, InputUtenAndeler::toAndel)
             Bdd.beregnUtbetalignsoppdrag()
@@ -298,6 +296,71 @@ class UtbetalingsgeneratorBddTest {
         @Test
         fun `sletter andre periode revurderer på nytt`() {
             beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/revurdering/sletter_andre_periode_revurderer_på_nytt.csv")
+        }
+    }
+
+    @Nested
+    inner class Stønadstyper {
+        @Test
+        fun `søker med ordinær arbeidssøker og permittering`() {
+            val csv = Csv.read("/csv/oppdrag/stønadstyper/ordinær_arbd_søker.csv")
+            Bdd.følgendeTilkjenteYtelser(csv, InputMedYtelse::from, InputMedYtelse::toAndel)
+            Bdd.beregnUtbetalignsoppdrag()
+            Bdd.forventFølgendeUtbetalingsoppdrag(csv, ExpectedMedYtelse::from, ForventetUtbetalingsoppdrag::fromExpectedMedYtelse)
+        }
+        @Test
+        fun `revurdering endrer beløp på permittering`() {
+            val csv = Csv.read("/csv/oppdrag/stønadstyper/revurd_endrer_beløp_på_permit.csv")
+            Bdd.følgendeTilkjenteYtelser(csv, InputMedYtelse::from, InputMedYtelse::toAndel)
+            Bdd.beregnUtbetalignsoppdrag()
+            Bdd.forventFølgendeUtbetalingsoppdrag(csv, ExpectedMedYtelse::from, ForventetUtbetalingsoppdrag::fromExpectedMedYtelse)
+        }
+        @Test
+        fun `søker har fler stønadstyper som alle blir egne kjeder`() {
+            val csv = Csv.read("/csv/oppdrag/stønadstyper/fler_stønadstyper.csv")
+            Bdd.følgendeTilkjenteYtelser(csv, InputMedYtelse::from, InputMedYtelse::toAndel)
+            Bdd.beregnUtbetalignsoppdrag()
+            Bdd.forventFølgendeUtbetalingsoppdrag(csv, ExpectedMedYtelse::from, ForventetUtbetalingsoppdrag::fromExpectedMedYtelse)
+        }
+    }
+
+    @Nested
+    inner class `to perioder` {
+
+        @Test
+        fun `endring på den andre`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/to_perioder/endring_i_andre_perioden.csv")
+        }
+        @Test
+        fun `endring på den andre2`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/to_perioder/endring_i_andre_perioden2.csv")
+        }
+
+        @Test
+        fun `endring på den første`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/to_perioder/endring_i_første_perioden.csv")
+        }
+        
+        @Test
+        fun `får ny periode før første`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/to_perioder/ny_periode_før_første_periode.csv")
+        }
+        
+        @Test
+        fun `får ny periode og endring i andre`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/to_perioder/ny_periode_og_endring_i_andre_perioden.csv")
+        }
+    }
+
+    @Nested
+    inner class `tre perioder`{
+        @Test
+        fun `endring i første periode`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/tre_perioder/endring_i_første_periode.csv")
+        }
+        @Test
+        fun `endring i andre periode`() {
+            beregnUtbetalingsoppdragForTilkjenteYtelser("/csv/oppdrag/tre_perioder/endring_i_andre_periode.csv")
         }
     }
 
@@ -403,6 +466,89 @@ class UtbetalingsgeneratorBddTest {
                 beløp = this.beløp!!,
                 satstype = this.satstype,
             )
+        }
+    }
+
+    data class InputMedYtelse(
+        override val behandlingId: BehandlingId,
+        val fom: LocalDate,
+        val tom: LocalDate,
+        val beløp: Int,
+        val ytelse: StønadType,
+        val satstype: Satstype,
+    ) : WithBehandlingId(behandlingId) {
+        companion object {
+            fun from(iter: Iterator<String>) = InputMedYtelse(
+                behandlingId = BehandlingId(iter.next()),
+                fom = LocalDate.parse(iter.next(), NOR_DATE),
+                tom = LocalDate.parse(iter.next(), NOR_DATE),
+                beløp = iter.next().toInt(),
+                ytelse = iter.next().toStønadType(),
+                satstype = Satstype.valueOf(iter.next()),
+            )
+
+            private fun String.toStønadType(): StønadType =
+                runCatching {
+                    StønadTypeDagpenger.valueOf(this)
+                }.getOrNull() ?: runCatching {
+                    StønadTypeTilleggsstønader.valueOf(this)
+                }.getOrNull() ?: run {
+                    StønadTypeTiltakspenger.valueOf(this)
+                }
+        }
+
+        fun toAndel(): AndelData = andelData(
+            fom = this.fom,
+            tom = this.tom,
+            beløp = this.beløp,
+            stønadsdata = createStønadsdata(),
+            satstype = this.satstype,
+        )
+
+        private fun createStønadsdata(): Stønadsdata =
+            when (ytelse) {
+                is StønadTypeDagpenger -> StønadsdataDagpenger(ytelse)
+                is StønadTypeTilleggsstønader -> StønadsdataTilleggsstønader(ytelse)
+                is StønadTypeTiltakspenger -> StønadsdataTiltakspenger(ytelse, brukersNavKontor = BrukersNavKontor("1234"))
+            }
+    }
+
+    data class ExpectedMedYtelse(
+        override val behandlingId: BehandlingId,
+        val fom: LocalDate,
+        val tom: LocalDate,
+        val opphørsdato: LocalDate?,
+        val beløp: Int,
+        val ytelse: StønadType,
+        val førsteUtbetSak: Boolean,
+        val erEndring: Boolean,
+        val periodeId: Long,
+        val forrigePeriodeId: Long?,
+        val satstype: Satstype,
+    ) : WithBehandlingId(behandlingId) {
+        companion object {
+            fun from(iter: Iterator<String>) = ExpectedMedYtelse(
+                behandlingId = BehandlingId(iter.next()),
+                fom = LocalDate.parse(iter.next(), NOR_DATE),
+                tom = LocalDate.parse(iter.next(), NOR_DATE),
+                opphørsdato = iter.next().let { if (it.isBlank()) null else LocalDate.parse(it, NOR_DATE) },
+                beløp = iter.next().toInt(),
+                ytelse = iter.next().toStønadType(),
+                førsteUtbetSak = iter.next().toBooleanStrict(),
+                erEndring = iter.next().toBooleanStrict(),
+                periodeId = iter.next().toLong(),
+                forrigePeriodeId = iter.next().let { if (it.isBlank()) null else it.toLong() },
+                satstype = Satstype.valueOf(iter.next()),
+            )
+
+            private fun String.toStønadType(): StønadType =
+                runCatching {
+                    StønadTypeDagpenger.valueOf(this)
+                }.getOrNull() ?: runCatching {
+                    StønadTypeTilleggsstønader.valueOf(this)
+                }.getOrNull() ?: run {
+                    StønadTypeTiltakspenger.valueOf(this)
+                }
         }
     }
 }
