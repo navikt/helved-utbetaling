@@ -40,7 +40,7 @@ private fun VedtaksdetaljerV2Dto.toDomain() =
         tilkjentYtelse = utbetalinger.toTilkjentYtelse()
     )
 
-private fun List<UtbetalingV2Dto>.toTilkjentYtelse(): TilkjentYtelse {
+fun List<UtbetalingV2Dto>.toTilkjentYtelse(): TilkjentYtelse {
     val andeler = this.map(AndelTilkjentYtelse::from)
 
     return when (andeler.size) {
