@@ -1,7 +1,5 @@
 package utsjekk.simulering
 
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import utsjekk.ApiError.Companion.badRequest
 import utsjekk.iverksetting.*
 import java.time.LocalDate
 
@@ -23,7 +21,9 @@ data class SimuleringDetaljer(
     val datoBeregnet: LocalDate,
     val totalBeløp: Int,
     val perioder: List<Periode>,
-)
+) {
+    companion object Mapper
+}
 
 data class Periode(
     val fom: LocalDate,
@@ -41,72 +41,32 @@ data class Postering(
     val klassekode: String,
 )
 
-enum class PosteringType(val kode: String) {
-    YTELSE("YTEL"),
-    FEILUTBETALING("FEIL"),
-    FORSKUDSSKATT("SKAT"),
-    JUSTERING("JUST"),
-    TREKK("TREK"),
-    MOTPOSTERING("MOTP"),
+enum class PosteringType {
+    YTELSE,
+    FEILUTBETALING,
+    FORSKUDSSKATT,
+    JUSTERING,
+    TREKK,
+    MOTPOSTERING,
     ;
 
-    companion object {
-        fun fraKode(kode: String): PosteringType {
-            for (type in PosteringType.entries) {
-                if (type.kode == kode) {
-                    return type
-                }
-            }
-            badRequest("PosteringType finnes ikke for kode $kode")
-        }
-    }
+    companion object Mapper
 }
 
-enum class Fagområde(val kode: String) {
-    TILLEGGSSTØNADER("TILLST"),
-    TILLEGGSSTØNADER_ARENA("TSTARENA"),
-    TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING("MTSTAREN"),
+enum class Fagområde {
+    TILLEGGSSTØNADER,
+    TILLEGGSSTØNADER_ARENA,
+    TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING,
 
-    DAGPENGER("DP"),
-    DAGPENGER_MANUELL_POSTERING("MDP"),
-    DAGPENGER_ARENA("DPARENA"),
-    DAGPENGER_ARENA_MANUELL_POSTERING("MDPARENA"),
+    DAGPENGER,
+    DAGPENGER_MANUELL_POSTERING,
+    DAGPENGER_ARENA,
+    DAGPENGER_ARENA_MANUELL_POSTERING,
 
-    TILTAKSPENGER("TILTPENG"),
-    TILTAKSPENGER_ARENA("TPARENA"),
-    TILTAKSPENGER_ARENA_MANUELL_POSTERING("MTPARENA"),
+    TILTAKSPENGER,
+    TILTAKSPENGER_ARENA,
+    TILTAKSPENGER_ARENA_MANUELL_POSTERING,
     ;
 
-    companion object {
-        fun fraKode(kode: String): Fagområde {
-            for (fagområde in Fagområde.entries) {
-                if (fagområde.kode == kode) {
-                    return fagområde
-                }
-            }
-            badRequest("Fagområde finnes ikke for kode $kode")
-        }
-    }
+    companion object Mapper
 }
-
-fun hentFagområdeKoderFor(fagsystem: Fagsystem): Set<Fagområde> =
-    when (fagsystem) {
-        Fagsystem.DAGPENGER -> setOf(
-            Fagområde.DAGPENGER,
-            Fagområde.DAGPENGER_ARENA,
-            Fagområde.DAGPENGER_ARENA_MANUELL_POSTERING,
-            Fagområde.DAGPENGER_MANUELL_POSTERING,
-        )
-
-        Fagsystem.TILTAKSPENGER -> setOf(
-            Fagområde.TILTAKSPENGER,
-            Fagområde.TILTAKSPENGER_ARENA,
-            Fagområde.TILTAKSPENGER_ARENA_MANUELL_POSTERING,
-        )
-
-        Fagsystem.TILLEGGSSTØNADER -> setOf(
-            Fagområde.TILLEGGSSTØNADER,
-            Fagområde.TILLEGGSSTØNADER_ARENA,
-            Fagområde.TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING,
-        )
-    }
