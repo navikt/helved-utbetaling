@@ -4,10 +4,10 @@ import java.time.LocalDate
 import kotlin.math.abs
 
 object OppsummeringGenerator {
-    fun lagOppsummering(detaljer: SimuleringDetaljer): SimuleringResponsDto {
+    fun lagOppsummering(detaljer: SimuleringDetaljer): api.SimuleringRespons {
         val oppsummeringer =
             detaljer.perioder.map {
-                OppsummeringForPeriode(
+                api.OppsummeringForPeriode(
                     fom = it.fom,
                     tom = it.tom,
                     tidligereUtbetalt = beregnTidligereUtbetalt(it.posteringer),
@@ -16,7 +16,7 @@ object OppsummeringGenerator {
                     totalFeilutbetaling = beregnFeilutbetaling(it.posteringer),
                 )
             }
-        return SimuleringResponsDto(oppsummeringer = oppsummeringer, detaljer = detaljer)
+        return api.SimuleringRespons(oppsummeringer = oppsummeringer, detaljer = detaljer)
     }
 
     private fun beregnTidligereUtbetalt(posteringer: List<Postering>): Int =

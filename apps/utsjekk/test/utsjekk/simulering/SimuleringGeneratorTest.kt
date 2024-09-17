@@ -2,8 +2,8 @@ package utsjekk.simulering
 
 import TestData.domain.postering
 import TestData.domain.simuleringDetaljer
-import TestData.dto.oppsummeringForPeriode
-import TestData.dto.simuleringResponse
+import TestData.dto.api.oppsummeringForPeriode
+import TestData.dto.api.simuleringResponse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.RandomOSURId

@@ -2,8 +2,10 @@ import no.nav.utsjekk.kontrakter.felles.*
 import no.nav.utsjekk.kontrakter.iverksett.*
 import no.nav.utsjekk.kontrakter.oppdrag.*
 import utsjekk.iverksetting.*
-import utsjekk.iverksetting.Periode
-import utsjekk.simulering.*
+import utsjekk.simulering.Fagområde
+import utsjekk.simulering.Postering
+import utsjekk.simulering.PosteringType
+import utsjekk.simulering.SimuleringDetaljer
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -112,29 +114,93 @@ object TestData {
             iverksettingId = iverksetting.iverksettingId?.id,
         )
 
-        fun simuleringResponse(
-            oppsummeringer: List<OppsummeringForPeriode>,
-            detaljer: SimuleringDetaljer,
-        ) = SimuleringResponsDto(
-            oppsummeringer,
-            detaljer,
-        )
+        object api {
+            fun simuleringResponse(
+                oppsummeringer: List<utsjekk.simulering.api.OppsummeringForPeriode>,
+                detaljer: SimuleringDetaljer,
+            ) = utsjekk.simulering.api.SimuleringRespons(
+                oppsummeringer,
+                detaljer,
+            )
 
-        fun oppsummeringForPeriode(
-            fom: LocalDate,
-            tom: LocalDate,
-            tidligereUtbetalt: Int,
-            nyUtbetaling: Int,
-            totalEtterbetaling: Int,
-            totalFeilutbetaling: Int,
-        ) = OppsummeringForPeriode(
-            fom,
-            tom,
-            tidligereUtbetalt,
-            nyUtbetaling,
-            totalEtterbetaling,
-            totalFeilutbetaling
-        )
+            fun oppsummeringForPeriode(
+                fom: LocalDate,
+                tom: LocalDate,
+                tidligereUtbetalt: Int,
+                nyUtbetaling: Int,
+                totalEtterbetaling: Int,
+                totalFeilutbetaling: Int,
+            ) = utsjekk.simulering.api.OppsummeringForPeriode(
+                fom,
+                tom,
+                tidligereUtbetalt,
+                nyUtbetaling,
+                totalEtterbetaling,
+                totalFeilutbetaling
+            )
+        }
+
+        object client {
+            fun simuleringResponse(
+                personident: String = DEFAULT_PERSONIDENT,
+                totalBeløp: Int = 700,
+                datoBeregnet: LocalDate = LocalDate.now(),
+                perioder: List<utsjekk.simulering.client.SimulertPeriode> = emptyList(),
+            ) = utsjekk.simulering.client.SimuleringResponse(
+                gjelderId = personident,
+                totalBelop = totalBeløp,
+                datoBeregnet = datoBeregnet,
+                perioder = perioder,
+            )
+
+            fun simulertPeriode(
+                fom: LocalDate = LocalDate.now(),
+                tom: LocalDate = LocalDate.now(),
+                utbetalinger: List<utsjekk.simulering.client.Utbetaling> = emptyList(),
+            ) = utsjekk.simulering.client.SimulertPeriode(
+                fom,
+                tom,
+                utbetalinger,
+            )
+
+            fun utbetaling(
+                fagområde: utsjekk.simulering.client.Fagområde = utsjekk.simulering.client.Fagområde.TILLST,
+                sakId: SakId,
+                forfall: LocalDate = LocalDate.now(),
+                feilkonto: Boolean = false,
+                personident: String = DEFAULT_PERSONIDENT,
+                detaljer: List<utsjekk.simulering.client.PosteringDto> = emptyList(),
+            ) = utsjekk.simulering.client.Utbetaling(
+                fagområde = fagområde,
+                fagSystemId = sakId.id,
+                utbetalesTilId = personident,
+                forfall = forfall,
+                feilkonto = feilkonto,
+                detaljer = detaljer,
+            )
+
+            fun postering(
+                type: utsjekk.simulering.client.PosteringType = utsjekk.simulering.client.PosteringType.YTEL,
+                fom: LocalDate = LocalDate.now(),
+                tom: LocalDate = LocalDate.now(),
+                beløp: Int = 700,
+                sats: Double = 700.0,
+                satstype: utsjekk.simulering.client.Satstype? = utsjekk.simulering.client.Satstype.DAG,
+                klassekode: String = "TSTBASISP4-OP",
+                trekkVedtakId: Long? = null,
+                refunderesOrgNr: String? = null,
+            ) = utsjekk.simulering.client.PosteringDto(
+                type,
+                fom,
+                tom,
+                beløp,
+                sats,
+                satstype,
+                klassekode,
+                trekkVedtakId,
+                refunderesOrgNr,
+            )
+        }
     }
 
     object domain {
