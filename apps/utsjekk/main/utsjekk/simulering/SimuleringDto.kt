@@ -53,7 +53,9 @@ object client {
         val erFørsteUtbetalingPåSak: Boolean,
         val saksbehandler: String,
         val utbetalingsperioder: List<Utbetalingsperiode>,
-    )
+    ) {
+        companion object Mapper
+    }
 
     data class Utbetalingsperiode(
         val periodeId: String,
@@ -63,10 +65,12 @@ object client {
         val fom: LocalDate,
         val tom: LocalDate,
         val sats: Int,
-        val satstype: String,
+        val satstype: Satstype,
         val opphør: Opphør?,
         val utbetalesTil: String,
-    )
+    ) {
+        companion object Mapper
+    }
 
     data class Opphør(val fom: LocalDate)
 }

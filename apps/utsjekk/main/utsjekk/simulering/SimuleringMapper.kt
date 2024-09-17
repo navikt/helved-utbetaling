@@ -1,6 +1,10 @@
 package utsjekk.simulering
 
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.Personident
+import no.nav.utsjekk.kontrakter.felles.Satstype
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
 import utsjekk.iverksetting.*
 import java.time.LocalDate
 
@@ -38,6 +42,28 @@ fun SimuleringDetaljer.Mapper.from(dto: client.SimuleringResponse, fagsystem: Fa
     },
 )
 
+fun client.SimuleringRequest.Mapper.from(domain: Utbetalingsoppdrag) = client.SimuleringRequest(
+    sakId = domain.saksnummer,
+    fagområde = domain.fagsystem.into(),
+    personident = Personident(domain.aktør),
+    erFørsteUtbetalingPåSak = domain.erFørsteUtbetalingPåSak,
+    saksbehandler = domain.saksbehandlerId,
+    utbetalingsperioder = domain.utbetalingsperiode.map(client.Utbetalingsperiode::from),
+)
+
+fun client.Utbetalingsperiode.Mapper.from(domain: Utbetalingsperiode) = client.Utbetalingsperiode(
+    periodeId = domain.periodeId.toString(),
+    forrigePeriodeId = domain.forrigePeriodeId?.toString(),
+    erEndringPåEksisterendePeriode = domain.erEndringPåEksisterendePeriode,
+    klassekode = domain.klassifisering,
+    fom = domain.fom,
+    tom = domain.tom,
+    sats = domain.sats.toInt(),
+    satstype = domain.satstype.into(),
+    opphør = domain.opphør?.let { client.Opphør(it.fom) },
+    utbetalesTil = domain.utbetalesTil,
+)
+
 fun client.Utbetaling.into(): List<Postering> {
     return detaljer.map { postering ->
         Postering(
@@ -72,6 +98,18 @@ fun Fagområde.Mapper.from(dto: client.Fagområde) = when (dto) {
     client.Fagområde.TILTPENG -> Fagområde.TILTAKSPENGER
     client.Fagområde.TPARENA -> Fagområde.TILTAKSPENGER_ARENA
     client.Fagområde.MTPARENA -> Fagområde.TILTAKSPENGER_ARENA_MANUELL_POSTERING
+}
+
+fun Fagsystem.into() = when (this) {
+    Fagsystem.DAGPENGER -> client.Fagområde.DP
+    Fagsystem.TILTAKSPENGER -> client.Fagområde.TILTPENG
+    Fagsystem.TILLEGGSSTØNADER -> client.Fagområde.TILLST
+}
+
+fun Satstype.into() = when (this) {
+    Satstype.DAGLIG -> client.Satstype.DAG
+    Satstype.MÅNEDLIG -> client.Satstype.MND
+    Satstype.ENGANGS -> client.Satstype.ENG
 }
 
 fun Fagsystem.inFagområde(fagområde: client.Fagområde): Boolean {
