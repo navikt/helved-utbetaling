@@ -1,10 +1,7 @@
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import fakes.AzureFake
-import fakes.KafkaFake
-import fakes.OppdragFake
-import fakes.UnleashFake
+import fakes.*
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
@@ -35,6 +32,7 @@ object TestRuntime : AutoCloseable {
     private val postgres = PostgresContainer("utsjekk")
     val azure = AzureFake()
     val oppdrag = OppdragFake()
+    val simulering = SimuleringFake()
     val unleash = UnleashFake()
 
     val context: CoroutineContext = postgres.context
@@ -43,6 +41,7 @@ object TestRuntime : AutoCloseable {
     val config by lazy {
         Config(
             oppdrag = oppdrag.config,
+            simulering = simulering.config,
             azure = azure.config,
             postgres = postgres.config,
             unleash = UnleashFake.config,
@@ -73,6 +72,7 @@ object TestRuntime : AutoCloseable {
         postgres.close()
         ktor.stop()
         oppdrag.close()
+        simulering.close()
         azure.close()
         kafka.close()
     }

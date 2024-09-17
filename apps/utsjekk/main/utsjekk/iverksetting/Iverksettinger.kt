@@ -112,6 +112,14 @@ class Iverksettinger(
             else -> IverksettStatus.SENDT_TIL_OPPDRAG
         }
     }
+
+    suspend fun hentSisteMottatte(sakId: SakId, fagsystem: Fagsystem): Iverksetting? =
+        transaction {
+            IverksettingDao.select {
+                this.sakId = sakId
+                this.fagsystem = fagsystem
+            }.maxByOrNull { it.mottattTidspunkt }?.data
+        }
 }
 
 @JvmInline

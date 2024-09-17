@@ -115,6 +115,44 @@ object TestData {
         )
 
         object api {
+            fun simuleringRequest(
+                sakId: SakId,
+                behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
+                personident: String = DEFAULT_PERSONIDENT,
+                saksbehandlerId: String = DEFAULT_SAKSBEHANDLER,
+                utbetalinger: List<UtbetalingV2Dto>,
+                forrigeIverksetting: ForrigeIverksettingV2Dto? = null,
+            ) = utsjekk.simulering.api.SimuleringRequest(
+                sakId.id,
+                behandlingId.id,
+                Personident(personident),
+                saksbehandlerId,
+                utbetalinger,
+                forrigeIverksetting
+            )
+
+            fun utbetaling(
+                beløp: Int = 800,
+                fom: LocalDate = LocalDate.now(),
+                tom: LocalDate = LocalDate.now(),
+                stønadsdata: StønadsdataDto = StønadsdataTilleggsstønaderDto(StønadTypeTilleggsstønader.TILSYN_BARN_AAP),
+                satstype: Satstype = Satstype.DAGLIG,
+            ) = UtbetalingV2Dto(
+                beløp = beløp.toUInt(),
+                satstype = satstype,
+                fraOgMedDato = fom,
+                tilOgMedDato = tom,
+                stønadsdata = stønadsdata,
+            )
+
+            fun forrigeIverksetting(
+                behandlingId: BehandlingId,
+                iverksettingId: IverksettingId? = null,
+            ) = ForrigeIverksettingV2Dto(
+                behandlingId = behandlingId.id,
+                iverksettingId = iverksettingId?.id
+            )
+
             fun simuleringResponse(
                 oppsummeringer: List<utsjekk.simulering.api.OppsummeringForPeriode>,
                 detaljer: SimuleringDetaljer,

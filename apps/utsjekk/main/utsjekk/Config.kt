@@ -12,12 +12,18 @@ data class Config(
     val kafka: KafkaConfig = KafkaConfig(),
     val azure: AzureConfig = AzureConfig(),
     val oppdrag: OppdragConfig = OppdragConfig(),
+    val simulering: SimuleringConfig = SimuleringConfig(),
     val unleash: UnleashConfig = UnleashConfig(),
 )
 
 data class OppdragConfig(
-    val scope: String = env("http://helved-utsjekk"),
-    val host: URL = env("api://dev-gcp.helved.utsjekk-simulering/.default")
+    val scope: String = env("api://dev-gcp.helved.utsjekk-oppdrag/.default"),
+    val host: URL = env("http://utsjekk-oppdrag")
+)
+
+data class SimuleringConfig(
+    val scope: String = env("api://dev-gcp.helved.utsjekk-simulering/.default"),
+    val host: URL = env("http://utsjekk-simulering")
 )
 
 data class UnleashConfig(

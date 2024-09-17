@@ -36,6 +36,9 @@ import utsjekk.oppdrag.OppdragClient
 import utsjekk.routes.probes
 import utsjekk.routes.iverksettingRoute
 import utsjekk.routes.tasks
+import utsjekk.simulering.SimuleringClient
+import utsjekk.simulering.SimuleringValidator
+import utsjekk.simulering.simulering
 import utsjekk.status.Kafka
 import utsjekk.status.StatusKafkaProducer
 import utsjekk.status.StatusTaskStrategy
@@ -80,6 +83,7 @@ fun Application.utsjekk(
                 is ApiError.BadRequest -> call.respond(HttpStatusCode.BadRequest, cause.message)
                 is ApiError.NotFound -> call.respond(HttpStatusCode.NotFound, cause.message)
                 is ApiError.Conflict -> call.respond(HttpStatusCode.Conflict, cause.message)
+                is ApiError.Unauthorized -> call.respond(HttpStatusCode.Unauthorized, cause.message)
                 is ApiError.Forbidden -> call.respond(HttpStatusCode.Forbidden, cause.message)
                 is ApiError.Unavailable -> call.respond(HttpStatusCode.ServiceUnavailable, cause.message)
                 else -> {
@@ -97,7 +101,9 @@ fun Application.utsjekk(
     }
 
     val oppdrag = OppdragClient(config)
+    val simulering = SimuleringClient(config, context)
     val iverksettinger = Iverksettinger(context, featureToggles, statusProducer)
+    val simuleringValidator = SimuleringValidator(context, iverksettinger)
     val scheduler = TaskScheduler(
         listOf(
             IverksettingTaskStrategy(oppdrag, iverksettinger),
@@ -115,6 +121,7 @@ fun Application.utsjekk(
     routing {
         authenticate(TokenProvider.AZURE) {
             iverksettingRoute(iverksettinger)
+            simulering(simuleringValidator, simulering)
             tasks(context)
         }
 
