@@ -12,7 +12,6 @@ import java.time.LocalDateTime
 import kotlin.coroutines.coroutineContext
 
 data class IverksettingDao(
-    val behandlingId: BehandlingId, // todo: denne kan erstattes med data.behandlingId?
     val data: Iverksetting,
     val mottattTidspunkt: LocalDateTime,
 ) {
@@ -23,7 +22,7 @@ data class IverksettingDao(
             VALUES (?, to_json(?::json), ?)
         """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
-            stmt.setObject(1, behandlingId.id)
+            stmt.setObject(1, data.behandlingId.id)
             stmt.setString(2, objectMapper.writeValueAsString(data))
             stmt.setTimestamp(3, Timestamp.valueOf(mottattTidspunkt))
 
@@ -76,7 +75,6 @@ data class IverksettingDao(
         }
 
         fun from(rs: ResultSet) = IverksettingDao(
-            behandlingId = BehandlingId(rs.getString("behandling_id")),
             data = objectMapper.readValue(rs.getString("data"), Iverksetting::class.java),
             mottattTidspunkt = rs.getTimestamp("mottatt_tidspunkt").toLocalDateTime(),
         )

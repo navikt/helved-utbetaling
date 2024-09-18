@@ -108,7 +108,7 @@ class SimuleringRouteTest {
         )
 
         transaction {
-           IverksettingDao(forrigeBehandlingId, iverksetting, LocalDateTime.now()).insert()
+           IverksettingDao(iverksetting, LocalDateTime.now()).insert()
         }
 
         IverksettingResultater.opprett(iverksetting, OppdragResultat(OppdragStatus.KVITTERT_OK))

@@ -23,7 +23,6 @@ object TestData {
             iverksetting: Iverksetting = domain.iverksetting(behandlingId = behandlingId),
             mottattTidspunkt: LocalDateTime = LocalDateTime.now(),
         ): IverksettingDao = IverksettingDao(
-            behandlingId = behandlingId,
             data = iverksetting,
             mottattTidspunkt = mottattTidspunkt,
         )
