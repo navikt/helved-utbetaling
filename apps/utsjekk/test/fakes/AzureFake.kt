@@ -11,6 +11,12 @@ import libs.auth.*
 import port
 import java.net.URI
 
+object Azp {
+    const val DAGPENGER = "test:helved:utsjekk"
+    const val TILTAKSPENGER = "test:helved:tiltakspenger-vedtak"
+    const val TILLEGGSSTØNADER = "test:helved:tilleggsstonader-sak"
+}
+
 class AzureFake : AutoCloseable {
     private val azure = embeddedServer(Netty, port = 0, module = Application::azure).apply { start() }
 
@@ -26,7 +32,7 @@ class AzureFake : AutoCloseable {
 
     private val jwksGenerator = JwkGenerator(config.issuer, config.clientId)
 
-    fun generateToken(azp_name: String = "test:helved:tilleggsstonader-sak") =
+    fun generateToken(azp_name: String = Azp.TILLEGGSSTØNADER) =
         jwksGenerator.generate(listOf(Claim("azp_name", azp_name)))
 
     override fun close() = azure.stop(0, 0)

@@ -20,6 +20,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import repeatUntil
 import utsjekk.iverksetting.IverksettingDao
@@ -29,7 +30,7 @@ import utsjekk.task.TaskHistoryDao
 import java.time.LocalDate
 
 class IverksettingRouteTest {
-    @AfterEach
+    @BeforeEach
     fun reset() {
         TestRuntime.oppdrag.reset()
         TestRuntime.unleash.reset()
