@@ -40,11 +40,7 @@ class Iverksettinger(
             transaction {
                 val now = LocalDateTime.now()
 
-                IverksettingDao(
-                    iverksetting.behandlingId,
-                    iverksetting,
-                    now,
-                ).insert()
+                IverksettingDao(iverksetting, now).insert()
 
                 IverksettingResultater.opprett(iverksetting, resultat = null)
 

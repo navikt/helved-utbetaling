@@ -19,11 +19,7 @@ class IverksettingValidatorTest {
         val now = LocalDateTime.now()
 
         transaction {
-            IverksettingDao(
-                forrigeIverksetting.behandlingId,
-                forrigeIverksetting,
-                now,
-            ).insert()
+            IverksettingDao(forrigeIverksetting, now).insert()
         }
 
 

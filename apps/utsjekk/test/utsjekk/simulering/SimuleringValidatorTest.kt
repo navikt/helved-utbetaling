@@ -33,8 +33,8 @@ class SimuleringValidatorTest {
                 forrigeIverksettingId = iverksetting1.iverksettingId,
             )
             transaction {
-                IverksettingDao(iverksetting1.behandlingId, iverksetting1, LocalDateTime.now().minusDays(2)).insert()
-                IverksettingDao(iverksetting2.behandlingId, iverksetting2, LocalDateTime.now()).insert()
+                IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert()
+                IverksettingDao(iverksetting2, LocalDateTime.now()).insert()
             }
             IverksettingResultater.opprett(iverksetting1, OppdragResultat(OppdragStatus.KVITTERT_OK))
             IverksettingResultater.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
@@ -80,8 +80,8 @@ class SimuleringValidatorTest {
                 forrigeIverksettingId = IverksettingId("abc"),
             )
             transaction {
-                IverksettingDao(iverksetting1.behandlingId, iverksetting1, LocalDateTime.now().minusDays(2)).insert()
-                IverksettingDao(iverksetting2.behandlingId, iverksetting2, LocalDateTime.now()).insert()
+                IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert()
+                IverksettingDao(iverksetting2, LocalDateTime.now()).insert()
             }
             IverksettingResultater.opprett(iverksetting1, OppdragResultat(OppdragStatus.KVITTERT_OK))
             IverksettingResultater.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
@@ -127,8 +127,8 @@ class SimuleringValidatorTest {
                 forrigeIverksettingId = iverksetting1.iverksettingId,
             )
             transaction {
-                IverksettingDao(iverksetting1.behandlingId, iverksetting1, LocalDateTime.now().minusDays(2)).insert()
-                IverksettingDao(iverksetting2.behandlingId, iverksetting2, LocalDateTime.now()).insert()
+                IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert()
+                IverksettingDao(iverksetting2, LocalDateTime.now()).insert()
             }
             IverksettingResultater.opprett(iverksetting1, OppdragResultat(OppdragStatus.KVITTERT_OK))
             IverksettingResultater.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
@@ -173,8 +173,8 @@ class SimuleringValidatorTest {
             forrigeIverksettingId = iverksetting1.iverksettingId,
         )
         transaction {
-            IverksettingDao(iverksetting1.behandlingId, iverksetting1, LocalDateTime.now().minusDays(2)).insert()
-            IverksettingDao(iverksetting2.behandlingId, iverksetting2, LocalDateTime.now()).insert()
+            IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert()
+            IverksettingDao(iverksetting2, LocalDateTime.now()).insert()
         }
 
         val res = httpClient.post("/api/simulering/v2") {
