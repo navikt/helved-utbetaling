@@ -117,10 +117,10 @@ object TestData {
         object api {
             fun simuleringRequest(
                 sakId: SakId,
+                utbetalinger: List<UtbetalingV2Dto>,
                 behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
                 personident: String = DEFAULT_PERSONIDENT,
                 saksbehandlerId: String = DEFAULT_SAKSBEHANDLER,
-                utbetalinger: List<UtbetalingV2Dto>,
                 forrigeIverksetting: ForrigeIverksettingV2Dto? = null,
             ) = utsjekk.simulering.api.SimuleringRequest(
                 sakId.id,

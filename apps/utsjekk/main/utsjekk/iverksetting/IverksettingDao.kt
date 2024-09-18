@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 import kotlin.coroutines.coroutineContext
 
 data class IverksettingDao(
-    val behandlingId: BehandlingId,
+    val behandlingId: BehandlingId, // todo: denne kan erstattes med data.behandlingId?
     val data: Iverksetting,
     val mottattTidspunkt: LocalDateTime,
 ) {
