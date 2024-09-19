@@ -18,7 +18,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       # exclude libs:mq:test because two mq testcontainers is not always working
-      - run: ./gradlew test --continue --no-daemon --parallel
+#      - run: ./gradlew test --continue --no-daemon --parallel
+      - run: ./gradlew test --continue --no-daemon
       - uses: dorny/test-reporter@v1.9.1
         if: success() || failure()
         with:
