@@ -8,9 +8,7 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.testing.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import libs.jdbc.PostgresContainer
 import libs.utils.appLog
 import utsjekk.Config
@@ -51,13 +49,10 @@ object TestRuntime : AutoCloseable {
 
     fun clear(vararg tables: String) {
         postgres.transaction { con ->
-//            con.prepareStatement("SET REFERENTIAL_INTEGRITY FALSE").execute()
             tables.forEach { con.prepareStatement("TRUNCATE TABLE $it CASCADE").execute() }
-//            con.prepareStatement("SET REFERENTIAL_INTEGRITY TRUE").execute()
         }.also {
             tables.forEach { appLog.info("table '$it' truncated.") }
         }
-
     }
 
     private val ktor = testApplication.apply { start() }
@@ -105,32 +100,4 @@ val httpClient: HttpClient by lazy {
             }
         }
     }
-}
-
-/**
- * runTest will use a dispatcher with a `fake time` that automatically skips delays,
- * but keeps track of the fake time internally.
- * Because of this, withTimeout + dely will time out immediately.
- * A workaround is to use the fake time, then use the context inside this testdispatcher.
- *
- * ```
- *  fun test() = runTest {
- *    withContext(TestRuntime.context) {
- *      ..
- *      repeatUntil(..)
- *      ..
- *    }
- *  }
- * ```
- */
-suspend fun <T> repeatUntil(
-    function: suspend () -> T,
-    predicate: (T) -> Boolean,
-): T = withTimeout(4000) {
-    var result = function()
-    while (!predicate(result)) {
-        delay(10)
-        result = function()
-    }
-    result
 }

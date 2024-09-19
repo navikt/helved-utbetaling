@@ -2,29 +2,37 @@ package utsjekk.task.strategies
 
 import TestData
 import TestRuntime
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import repeatUntil
+import utsjekk.iverksetting.IverksettingDao
+import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
-import utsjekk.task.Kind
-import utsjekk.task.Status
-import utsjekk.task.Tasks
+import utsjekk.task.*
+import utsjekk.task.history.TaskHistoryDao
 
 class SjekkStatusStrategyTest {
 
-    @AfterEach
+    @BeforeEach
     fun reset() {
         TestRuntime.oppdrag.reset()
         TestRuntime.kafka.reset()
+        TestRuntime.clear(
+            TaskDao.TABLE_NAME,
+            TaskHistoryDao.TABLE_NAME,
+            IverksettingDao.TABLE_NAME,
+            IverksettingResultatDao.TABLE_NAME,
+        )
     }
 
     @Test
-    fun `setter task til COMPLETE når status er KVITTERT_OK`() = runTest {
+    fun `setter task til COMPLETE når status er KVITTERT_OK`() = runTest(TestRuntime.context) {
         withContext(TestRuntime.context) {
             val iverksetting = TestData.domain.iverksetting()
             val oppdragId = TestData.dto.oppdragId(iverksetting)
@@ -32,11 +40,17 @@ class SjekkStatusStrategyTest {
             IverksettingResultater.opprett(iverksetting, null)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
-
-            val task = repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { task -> task?.attempt == 1 }
-            )
+//
+            val task = runBlocking {
+                suspend fun getTask(attempt: Int): TaskDto? {
+                    return withContext(TestRuntime.context) {
+                        val actual = transaction { Tasks.forId(taskId) }
+                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        else actual
+                    }
+                }
+                getTask(0)
+            }
 
             TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -59,10 +73,16 @@ class SjekkStatusStrategyTest {
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
-            val task = repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { task -> task?.attempt == 1 }
-            )
+            val task = runBlocking {
+                suspend fun getTask(attempt: Int): TaskDto? {
+                    return withContext(TestRuntime.context) {
+                        val actual = transaction { Tasks.forId(taskId) }
+                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        else actual
+                    }
+                }
+                getTask(0)
+            }
 
             TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -84,10 +104,16 @@ class SjekkStatusStrategyTest {
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
-            val task = repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { task -> task?.attempt == 1 }
-            )
+            val task = runBlocking {
+                suspend fun getTask(attempt: Int): TaskDto? {
+                    return withContext(TestRuntime.context) {
+                        val actual = transaction { Tasks.forId(taskId) }
+                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        else actual
+                    }
+                }
+                getTask(0)
+            }
 
             TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -109,10 +135,16 @@ class SjekkStatusStrategyTest {
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
-            val task = repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { task -> task?.attempt == 1 }
-            )
+            val task = runBlocking {
+                suspend fun getTask(attempt: Int): TaskDto? {
+                    return withContext(TestRuntime.context) {
+                        val actual = transaction { Tasks.forId(taskId) }
+                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        else actual
+                    }
+                }
+                getTask(0)
+            }
 
             TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -134,10 +166,16 @@ class SjekkStatusStrategyTest {
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
-            val task = repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { task -> task?.attempt == 1 }
-            )
+            val task = runBlocking {
+                suspend fun getTask(attempt: Int): TaskDto? {
+                    return withContext(TestRuntime.context) {
+                        val actual = transaction { Tasks.forId(taskId) }
+                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        else actual
+                    }
+                }
+                getTask(0)
+            }
 
             TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -158,11 +196,16 @@ class SjekkStatusStrategyTest {
             IverksettingResultater.opprett(iverksetting, null)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
-
-            val task = repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { task -> task?.attempt == 1 }
-            )
+            val task = runBlocking {
+                suspend fun getTask(attempt: Int): TaskDto? {
+                    return withContext(TestRuntime.context) {
+                        val actual = transaction { Tasks.forId(taskId) }
+                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        else actual
+                    }
+                }
+                getTask(0)
+            }
 
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
 
@@ -183,11 +226,16 @@ class SjekkStatusStrategyTest {
             IverksettingResultater.opprett(iverksetting, null)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
-
-            val task = repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { task -> task?.attempt == 1 }
-            )
+            val task = runBlocking {
+                suspend fun getTask(attempt: Int): TaskDto? {
+                    return withContext(TestRuntime.context) {
+                        val actual = transaction { Tasks.forId(taskId) }
+                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        else actual
+                    }
+                }
+                getTask(0)
+            }
 
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
 
