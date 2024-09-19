@@ -23,7 +23,6 @@ import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import repeatUntil
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.task.TaskDao
@@ -109,16 +108,17 @@ class IverksettingRouteTest {
                 assertEquals(HttpStatusCode.Accepted, it.status)
             }
 
-            suspend fun getStatus(): IverksettStatus =
-                httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
-                    bearerAuth(TestRuntime.azure.generateToken())
-                    accept(ContentType.Application.Json)
-                }.body()
-
             val status = runBlocking {
-                repeatUntil(::getStatus) { status ->
-                    status == IverksettStatus.SENDT_TIL_OPPDRAG
+                suspend fun getStatus(attempt: Int): IverksettStatus {
+                    val res =
+                        httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
+                            bearerAuth(TestRuntime.azure.generateToken())
+                            accept(ContentType.Application.Json)
+                        }.body<IverksettStatus>()
+                    return if (res != IverksettStatus.SENDT_TIL_OPPDRAG) getStatus(attempt + 1)
+                    else res
                 }
+                getStatus(0)
             }
 
             assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
@@ -144,17 +144,17 @@ class IverksettingRouteTest {
             }.let {
                 assertEquals(HttpStatusCode.Accepted, it.status)
             }
-
-            suspend fun getStatus(): IverksettStatus =
-                httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
-                    bearerAuth(TestRuntime.azure.generateToken())
-                    accept(ContentType.Application.Json)
-                }.body()
-
             val status = runBlocking {
-                repeatUntil(::getStatus) { status ->
-                    status == IverksettStatus.OK_UTEN_UTBETALING
+                suspend fun getStatus(attempt: Int): IverksettStatus {
+                    val res =
+                        httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+                            bearerAuth(TestRuntime.azure.generateToken())
+                            accept(ContentType.Application.Json)
+                        }.body<IverksettStatus>()
+                    return if (res != IverksettStatus.OK_UTEN_UTBETALING) getStatus(attempt + 1)
+                    else res
                 }
+                getStatus(0)
             }
 
             assertEquals(IverksettStatus.OK_UTEN_UTBETALING, status)
@@ -234,18 +234,17 @@ class IverksettingRouteTest {
             }
 
             assertEquals(HttpStatusCode.Accepted, res.status)
-
-            suspend fun getStatus(): IverksettStatus =
-                httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
-                    bearerAuth(TestRuntime.azure.generateToken())
-                    accept(ContentType.Application.Json)
-                }.body()
-
-
             val status = runBlocking {
-                repeatUntil(::getStatus) { status ->
-                    status == IverksettStatus.OK
+                suspend fun getStatus(attempt: Int): IverksettStatus {
+                    val res =
+                        httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+                            bearerAuth(TestRuntime.azure.generateToken())
+                            accept(ContentType.Application.Json)
+                        }.body<IverksettStatus>()
+                    return if (res != IverksettStatus.OK) getStatus(attempt + 1)
+                    else res
                 }
+                getStatus(0)
             }
 
             assertEquals(IverksettStatus.OK, status)

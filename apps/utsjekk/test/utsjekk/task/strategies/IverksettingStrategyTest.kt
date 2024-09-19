@@ -3,176 +3,163 @@ package utsjekk.task.strategies
 import TestData
 import TestRuntime
 import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import repeatUntil
-import utsjekk.iverksetting.OppdragResultat
-import utsjekk.iverksetting.behandlingId
-import utsjekk.iverksetting.iverksettingId
+import utsjekk.iverksetting.*
+import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
-import utsjekk.iverksetting.sakId
-import utsjekk.task.Kind
-import utsjekk.task.Status
-import utsjekk.task.Tasks
+import utsjekk.task.*
+import utsjekk.task.history.TaskHistoryDao
 import java.time.LocalDate
 
 class IverksettingStrategyTest {
 
-    @AfterEach
+    @BeforeEach
     fun reset() {
         TestRuntime.oppdrag.reset()
         TestRuntime.kafka.reset()
+        TestRuntime.clear(
+            TaskDao.TABLE_NAME,
+            TaskHistoryDao.TABLE_NAME,
+            IverksettingDao.TABLE_NAME,
+            IverksettingResultatDao.TABLE_NAME,
+        )
     }
 
     @Test
-    fun `uten forrige resultat`() = runTest {
-        withContext(TestRuntime.context) {
-            val iverksetting = TestData.domain.iverksetting(
-                andelsdatoer = listOf(
-                    LocalDate.of(2024, 1, 1) to LocalDate.of(2024, 1, 31),
-                )
+    fun `uten forrige resultat`() = runTest(TestRuntime.context) {
+        val iverksetting = TestData.domain.iverksetting(
+            andelsdatoer = listOf(
+                LocalDate.of(2024, 1, 1) to LocalDate.of(2024, 1, 31),
             )
-            IverksettingResultater.opprett(iverksetting, resultat = null)
+        )
+        IverksettingResultater.opprett(iverksetting, resultat = null)
 
-            val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
-            TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
-            val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
+        val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
+        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
+        Tasks.create(Kind.Iverksetting, iverksetting)
 
-            repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { it?.status == Status.COMPLETE }
-            )
+        val expectedRecord = StatusEndretMelding(
+            sakId = iverksetting.sakId.id,
+            behandlingId = iverksetting.behandlingId.id,
+            iverksettingId = iverksetting.iverksettingId?.id,
+            fagsystem = Fagsystem.DAGPENGER,
+            status = IverksettStatus.SENDT_TIL_OPPDRAG,
+        )
 
-            val expectedRecord = StatusEndretMelding(
-                sakId = iverksetting.sakId.id,
-                behandlingId = iverksetting.behandlingId.id,
-                iverksettingId = iverksetting.iverksettingId?.id,
-                fagsystem = Fagsystem.DAGPENGER,
-                status = IverksettStatus.SENDT_TIL_OPPDRAG,
-            )
+        assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
 
-            assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
-
-            val resultat = IverksettingResultater.hent(iverksetting)
-            assertEquals(OppdragStatus.LAGT_PÅ_KØ, resultat.oppdragResultat?.oppdragStatus)
-        }
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertEquals(OppdragStatus.LAGT_PÅ_KØ, resultat.oppdragResultat?.oppdragStatus)
     }
 
     @Test
-    fun `med forrige resultat`() = runTest {
-        withContext(TestRuntime.context) {
-            val tidligereIverksetting = TestData.domain.tidligereIverksetting(
-                andelsdatoer = listOf(
-                    LocalDate.of(2024, 1, 1) to LocalDate.of(2024, 1, 31),
-                )
+    fun `med forrige resultat`() = runTest(TestRuntime.context) {
+        val tidligereIverksetting = TestData.domain.tidligereIverksetting(
+            andelsdatoer = listOf(
+                LocalDate.of(2024, 1, 1) to LocalDate.of(2024, 1, 31),
             )
-            IverksettingResultater.opprett(tidligereIverksetting, resultat = OppdragResultat(OppdragStatus.KVITTERT_OK))
-            IverksettingResultater.oppdater(tidligereIverksetting, tidligereIverksetting.vedtak.tilkjentYtelse)
+        )
+        IverksettingResultater.opprett(tidligereIverksetting, resultat = OppdragResultat(OppdragStatus.KVITTERT_OK))
+        IverksettingResultater.oppdater(tidligereIverksetting, tidligereIverksetting.vedtak.tilkjentYtelse)
 
-            val iverksetting = TestData.domain.iverksetting(
-                andelsdatoer = listOf(
-                    LocalDate.of(2024, 2, 1) to LocalDate.of(2024, 2, 28),
-                ),
-                sakId = tidligereIverksetting.sakId,
-                forrigeBehandlingId = tidligereIverksetting.behandlingId,
-                forrigeIverksettingId = tidligereIverksetting.iverksettingId,
-            )
-            IverksettingResultater.opprett(iverksetting, resultat = null)
+        val iverksetting = TestData.domain.iverksetting(
+            andelsdatoer = listOf(
+                LocalDate.of(2024, 2, 1) to LocalDate.of(2024, 2, 28),
+            ),
+            sakId = tidligereIverksetting.sakId,
+            forrigeBehandlingId = tidligereIverksetting.behandlingId,
+            forrigeIverksettingId = tidligereIverksetting.iverksettingId,
+        )
+        IverksettingResultater.opprett(iverksetting, resultat = null)
 
-            val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
-            TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
-            val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
+        val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
+        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
+        Tasks.create(Kind.Iverksetting, iverksetting)
 
-            repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { it?.status == Status.COMPLETE },
-            )
+        val expectedRecord = StatusEndretMelding(
+            sakId = iverksetting.sakId.id,
+            behandlingId = iverksetting.behandlingId.id,
+            iverksettingId = iverksetting.iverksettingId?.id,
+            fagsystem = Fagsystem.DAGPENGER,
+            status = IverksettStatus.SENDT_TIL_OPPDRAG,
+        )
 
-            val expectedRecord = StatusEndretMelding(
-                sakId = iverksetting.sakId.id,
-                behandlingId = iverksetting.behandlingId.id,
-                iverksettingId = iverksetting.iverksettingId?.id,
-                fagsystem = Fagsystem.DAGPENGER,
-                status = IverksettStatus.SENDT_TIL_OPPDRAG,
-            )
+        assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
 
-            assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertEquals(OppdragStatus.LAGT_PÅ_KØ, resultat.oppdragResultat?.oppdragStatus)
 
-            val resultat = IverksettingResultater.hent(iverksetting)
-            assertEquals(OppdragStatus.LAGT_PÅ_KØ, resultat.oppdragResultat?.oppdragStatus)
-
-            val utbetaling = TestRuntime.oppdrag.awaitIverksett(oppdragIdDto)
-            assertTrue(utbetaling.utbetalingsperiode.any {
-                it.opphør != null
-            })
-        }
+        val utbetaling = TestRuntime.oppdrag.awaitIverksett(oppdragIdDto)
+        assertTrue(utbetaling.utbetalingsperiode.any {
+            it.opphør != null
+        })
     }
 
     @Test
-    fun `kan ikke iverksette hvis vi ikke finner resultat for tidligere iverksetting`() = runTest {
-        withContext(TestRuntime.context) {
-            val tidligereIverksetting = TestData.domain.tidligereIverksetting(
-                andelsdatoer = listOf(
-                    LocalDate.of(2024, 1, 1) to LocalDate.of(2024, 1, 31),
-                )
+    fun `kan ikke iverksette hvis vi ikke finner resultat for tidligere iverksetting`() = runTest(TestRuntime.context) {
+        val tidligereIverksetting = TestData.domain.tidligereIverksetting(
+            andelsdatoer = listOf(
+                LocalDate.of(2024, 1, 1) to LocalDate.of(2024, 1, 31),
             )
+        )
 
-            val iverksetting = TestData.domain.iverksetting(
-                andelsdatoer = listOf(
-                    LocalDate.of(2024, 2, 1) to LocalDate.of(2024, 2, 28),
-                ),
-                sakId = tidligereIverksetting.sakId,
-                forrigeBehandlingId = tidligereIverksetting.behandlingId,
-                forrigeIverksettingId = tidligereIverksetting.iverksettingId,
-            )
-            IverksettingResultater.opprett(iverksetting, resultat = null)
+        val iverksetting = TestData.domain.iverksetting(
+            andelsdatoer = listOf(
+                LocalDate.of(2024, 2, 1) to LocalDate.of(2024, 2, 28),
+            ),
+            sakId = tidligereIverksetting.sakId,
+            forrigeBehandlingId = tidligereIverksetting.behandlingId,
+            forrigeIverksettingId = tidligereIverksetting.iverksettingId,
+        )
+        IverksettingResultater.opprett(iverksetting, resultat = null)
 
-            val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
-            TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
-            val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
+        val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
+        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
+        val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
-            val task = repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { it?.status == Status.FAIL },
-            )
-
-            assertTrue(task!!.message!!.contains("Fant ikke forrige iverksettingresultat"))
+        val actual = runBlocking {
+            suspend fun getTask(attempt: Int): TaskDto? {
+                return withContext(TestRuntime.context) {
+                    val actual = transaction { Tasks.forId(taskId) }
+                    if (actual?.status != Status.FAIL && attempt < 1000) getTask(attempt + 1)
+                    else actual
+                }
+            }
+            getTask(0)
         }
+
+        assertTrue(actual!!.message!!.contains("Fant ikke forrige iverksettingresultat"))
     }
 
     @Test
-    fun `uten utbetalingsperioder`() = runTest {
-        withContext(TestRuntime.context) {
-            val iverksetting = TestData.domain.iverksetting()
-            IverksettingResultater.opprett(iverksetting, resultat = null)
+    fun `uten utbetalingsperioder`() = runTest(TestRuntime.context) {
+        val iverksetting = TestData.domain.iverksetting()
+        IverksettingResultater.opprett(iverksetting, resultat = null)
 
-            val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
+        Tasks.create(Kind.Iverksetting, iverksetting)
 
-            repeatUntil(
-                function = { Tasks.forId(taskId) },
-                predicate = { it?.status == Status.COMPLETE },
-            )
+        val expectedRecord = StatusEndretMelding(
+            sakId = iverksetting.sakId.id,
+            behandlingId = iverksetting.behandlingId.id,
+            iverksettingId = iverksetting.iverksettingId?.id,
+            fagsystem = Fagsystem.DAGPENGER,
+            status = IverksettStatus.OK_UTEN_UTBETALING,
+        )
 
-            val expectedRecord = StatusEndretMelding(
-                sakId = iverksetting.sakId.id,
-                behandlingId = iverksetting.behandlingId.id,
-                iverksettingId = iverksetting.iverksettingId?.id,
-                fagsystem = Fagsystem.DAGPENGER,
-                status = IverksettStatus.OK_UTEN_UTBETALING,
-            )
+        assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
 
-            assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
-
-            val resultat = IverksettingResultater.hent(iverksetting)
-            assertEquals(OppdragStatus.OK_UTEN_UTBETALING, resultat.oppdragResultat?.oppdragStatus)
-        }
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertEquals(OppdragStatus.OK_UTEN_UTBETALING, resultat.oppdragResultat?.oppdragStatus)
     }
 }

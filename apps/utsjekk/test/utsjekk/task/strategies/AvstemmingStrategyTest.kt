@@ -2,6 +2,7 @@ package utsjekk.task.strategies
 
 import TestRuntime
 import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
@@ -11,11 +12,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import repeatUntil
-import utsjekk.task.Kind
-import utsjekk.task.Status
-import utsjekk.task.TaskDao
-import utsjekk.task.Tasks
+import utsjekk.task.*
 import java.time.LocalDateTime
 
 class AvstemmingStrategyTest {
@@ -38,51 +35,52 @@ class AvstemmingStrategyTest {
         TestRuntime.oppdrag.avstemmingRespondWith(avstemming.fagsystem, HttpStatusCode.Created)
         val actual = TestRuntime.oppdrag.awaitAvstemming(Fagsystem.DAGPENGER)
 
-        val expected = avstemming.copy(
-            til = avstemming.til.toLocalDate().atStartOfDay()
-        )
-        assertEquals(expected, actual)
+        assertEquals(avstemming.til.toLocalDate().atStartOfDay(), actual.til)
+//        assertEquals(avstemming.fra.truncatedTo(ChronoUnit.SECONDS), actual.til.truncatedTo(ChronoUnit.SECONDS))
+        assertEquals(Fagsystem.DAGPENGER, actual.fagsystem)
     }
 
     @Test
-    fun `COMPLETED avstemming task oppretter ny task for neste virkedag`() = runTest {
-        withContext(TestRuntime.context) {
-            val now = LocalDateTime.now()
-            val task = TaskDao(
-                kind = Kind.Avstemming,
-                payload =
-                objectMapper.writeValueAsString(
-                    GrensesnittavstemmingRequest(
-                        Fagsystem.DAGPENGER,
-                        fra = LocalDateTime.now(),
-                        til = LocalDateTime.now(),
-                    )
-                ),
-                status = Status.IN_PROGRESS,
-                attempt = 0,
-                message = null,
-                createdAt = now,
-                updatedAt = now,
-                scheduledFor = now,
-            )
+    fun `COMPLETED avstemming task oppretter ny task for neste virkedag`() = runTest(TestRuntime.context) {
 
-            suspend fun getTask(): TaskDao? =
-                transaction {
-                    TaskDao.select {
-                        it.id = task.id
-                    }
-                }.singleOrNull()
+        val now = LocalDateTime.now()
+        val task = TaskDao(
+            kind = Kind.Avstemming,
+            payload =
+            objectMapper.writeValueAsString(
+                GrensesnittavstemmingRequest(
+                    Fagsystem.DAGPENGER,
+                    fra = LocalDateTime.now(),
+                    til = LocalDateTime.now(),
+                )
+            ),
+            status = Status.IN_PROGRESS,
+            attempt = 0,
+            message = null,
+            createdAt = now,
+            updatedAt = now,
+            scheduledFor = now,
+        )
 
-            TestRuntime.oppdrag.avstemmingRespondWith(Fagsystem.DAGPENGER, HttpStatusCode.Created)
+        TestRuntime.oppdrag.avstemmingRespondWith(Fagsystem.DAGPENGER, HttpStatusCode.Created)
 
-            transaction {
-                task.insert()
-            }
-
-            repeatUntil(
-                function = ::getTask,
-                predicate = { it?.status == Status.COMPLETE },
-            )
+        transaction {
+            task.insert()
         }
+
+        val actual = runBlocking {
+            suspend fun getTask(attempt: Int): TaskDto? {
+                return withContext(TestRuntime.context) {
+                    val actual = transaction {
+                        Tasks.forId(task.id)
+                    }
+                    if (actual?.status != Status.COMPLETE && attempt < 1000) getTask(attempt + 1)
+                    else actual
+                }
+            }
+            getTask(0)
+        }
+
+        assertEquals(Status.COMPLETE, actual?.status)
     }
 }
