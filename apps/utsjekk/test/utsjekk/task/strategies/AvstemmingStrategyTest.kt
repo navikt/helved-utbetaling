@@ -3,6 +3,7 @@ package utsjekk.task.strategies
 import TestRuntime
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -44,43 +45,45 @@ class AvstemmingStrategyTest {
     }
 
     @Test
-    fun `COMPLETED avstemming task oppretter ny task for neste virkedag`() = runTest(TestRuntime.context) {
-        val now = LocalDateTime.now()
-        val task = TaskDao(
-            kind = Kind.Avstemming,
-            payload =
-            objectMapper.writeValueAsString(
-                GrensesnittavstemmingRequest(
-                    Fagsystem.DAGPENGER,
-                    fra = LocalDateTime.now(),
-                    til = LocalDateTime.now(),
-                )
-            ),
-            status = Status.IN_PROGRESS,
-            attempt = 0,
-            message = null,
-            createdAt = now,
-            updatedAt = now,
-            scheduledFor = now,
-        )
+    fun `COMPLETED avstemming task oppretter ny task for neste virkedag`() = runTest {
+        withContext(TestRuntime.context) {
+            val now = LocalDateTime.now()
+            val task = TaskDao(
+                kind = Kind.Avstemming,
+                payload =
+                objectMapper.writeValueAsString(
+                    GrensesnittavstemmingRequest(
+                        Fagsystem.DAGPENGER,
+                        fra = LocalDateTime.now(),
+                        til = LocalDateTime.now(),
+                    )
+                ),
+                status = Status.IN_PROGRESS,
+                attempt = 0,
+                message = null,
+                createdAt = now,
+                updatedAt = now,
+                scheduledFor = now,
+            )
 
-        suspend fun getTask(): TaskDao? =
+            suspend fun getTask(): TaskDao? =
+                transaction {
+                    TaskDao.select {
+                        it.id = task.id
+                    }
+                }.singleOrNull()
+
+            TestRuntime.oppdrag.avstemmingRespondWith(Fagsystem.DAGPENGER, HttpStatusCode.Created)
+
             transaction {
-                TaskDao.select {
-                    it.id = task.id
-                }
-            }.singleOrNull()
+                task.insert()
+            }
 
-        TestRuntime.oppdrag.avstemmingRespondWith(Fagsystem.DAGPENGER, HttpStatusCode.Created)
-
-        transaction {
-            task.insert()
+            repeatUntil(
+                context = TestRuntime.context,
+                function = ::getTask,
+                predicate = { it?.status == Status.COMPLETE },
+            )
         }
-
-        repeatUntil(
-            context = TestRuntime.context,
-            function = ::getTask,
-            predicate = { it?.status == Status.COMPLETE },
-        )
     }
 }

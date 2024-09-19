@@ -108,6 +108,20 @@ val httpClient: HttpClient by lazy {
     }
 }
 
+/**
+    runTest will use a dispatcher with a `fake time` that automatically skips delays,
+    but keeps track of the fake time internally.
+    Because of this, withTimeout + dely will time out immediately.
+    A workaround is to use the fake time, then use the context inside this testdispatcher.
+
+    fun test() = runTest {
+        withContext(TestRuntime.context) {
+            testcode..
+            repeatUntil(..)
+            assertion..
+        }
+    }
+ */
 suspend fun <T> repeatUntil(
     context: CoroutineContext,
     function: suspend () -> T,
