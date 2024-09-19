@@ -32,6 +32,7 @@ class SjekkStatusStrategyTest {
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
+            context = TestRuntime.context,
             function = { Tasks.forId(taskId) },
             predicate = { task -> task?.attempt == 1 }
         )
@@ -55,6 +56,7 @@ class SjekkStatusStrategyTest {
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
+            context = TestRuntime.context,
             function = { Tasks.forId(taskId) },
             predicate = { task -> task?.attempt == 1 }
         )
@@ -78,6 +80,7 @@ class SjekkStatusStrategyTest {
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
+            context = TestRuntime.context,
             function = { Tasks.forId(taskId) },
             predicate = { task -> task?.attempt == 1 }
         )
@@ -101,6 +104,7 @@ class SjekkStatusStrategyTest {
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
+            context = TestRuntime.context,
             function = { Tasks.forId(taskId) },
             predicate = { task -> task?.attempt == 1 }
         )
@@ -124,6 +128,7 @@ class SjekkStatusStrategyTest {
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
+            context = TestRuntime.context,
             function = { Tasks.forId(taskId) },
             predicate = { task -> task?.attempt == 1 }
         )
@@ -147,6 +152,7 @@ class SjekkStatusStrategyTest {
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
+            context = TestRuntime.context,
             function = { Tasks.forId(taskId) },
             predicate = { task -> task?.attempt == 1 }
         )
@@ -170,6 +176,7 @@ class SjekkStatusStrategyTest {
         val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
 
         val task = repeatUntil(
+            context = TestRuntime.context,
             function = { Tasks.forId(taskId) },
             predicate = { task -> task?.attempt == 1 }
         )

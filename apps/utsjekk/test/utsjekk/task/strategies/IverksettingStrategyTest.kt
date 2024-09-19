@@ -13,8 +13,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import repeatUntil
-import utsjekk.iverksetting.*
+import utsjekk.iverksetting.OppdragResultat
+import utsjekk.iverksetting.behandlingId
+import utsjekk.iverksetting.iverksettingId
 import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.iverksetting.sakId
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.Tasks
@@ -41,9 +44,11 @@ class IverksettingStrategyTest {
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
         val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
-        repeatUntil({ Tasks.forId(taskId) }) {
-            it?.status == Status.COMPLETE
-        }
+        repeatUntil(
+            context = TestRuntime.context,
+            function = { Tasks.forId(taskId) },
+            predicate = { it?.status == Status.COMPLETE }
+        )
 
         val expectedRecord = StatusEndretMelding(
             sakId = iverksetting.sakId.id,
@@ -83,9 +88,11 @@ class IverksettingStrategyTest {
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
         val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
-        repeatUntil({ Tasks.forId(taskId) }) {
-            it?.status == Status.COMPLETE
-        }
+        repeatUntil(
+            context = TestRuntime.context,
+            function = { Tasks.forId(taskId) },
+            predicate = { it?.status == Status.COMPLETE },
+        )
 
         val expectedRecord = StatusEndretMelding(
             sakId = iverksetting.sakId.id,
@@ -128,9 +135,11 @@ class IverksettingStrategyTest {
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
         val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
-        val task = repeatUntil({ Tasks.forId(taskId) }) {
-            it?.status == Status.FAIL
-        }
+        val task = repeatUntil(
+            context = TestRuntime.context,
+            function = { Tasks.forId(taskId) },
+            predicate = { it?.status == Status.FAIL },
+        )
 
         assertTrue(task!!.message!!.contains("Fant ikke forrige iverksettingresultat"))
     }
@@ -142,9 +151,11 @@ class IverksettingStrategyTest {
 
         val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
-        repeatUntil({ Tasks.forId(taskId) }) {
-            it?.status == Status.COMPLETE
-        }
+        repeatUntil(
+            context = TestRuntime.context,
+            function = { Tasks.forId(taskId) },
+            predicate = { it?.status == Status.COMPLETE },
+        )
 
         val expectedRecord = StatusEndretMelding(
             sakId = iverksetting.sakId.id,

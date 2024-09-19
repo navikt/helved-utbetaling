@@ -114,7 +114,7 @@ class IverksettingRouteTest {
             }.body()
 
         val status = runBlocking {
-            repeatUntil(::getStatus) { status ->
+            repeatUntil(TestRuntime.context, ::getStatus) { status ->
                 status == IverksettStatus.SENDT_TIL_OPPDRAG
             }
         }
@@ -147,7 +147,7 @@ class IverksettingRouteTest {
             }.body()
 
         val status = runBlocking {
-            repeatUntil(::getStatus) { status ->
+            repeatUntil(TestRuntime.context, ::getStatus) { status ->
                 status == IverksettStatus.OK_UTEN_UTBETALING
             }
         }
@@ -235,7 +235,7 @@ class IverksettingRouteTest {
 
 
         val status = runBlocking {
-            repeatUntil(::getStatus) { status ->
+            repeatUntil(TestRuntime.context, ::getStatus) { status ->
                 status == IverksettStatus.OK
             }
         }
