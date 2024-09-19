@@ -3,6 +3,7 @@ package utsjekk.iverksetting
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.ApiError.Companion.badRequest
 import utsjekk.ApiError.Companion.conflict
+import utsjekk.iverksetting.resultat.IverksettingResultatDao
 
 object IverksettingValidator {
 

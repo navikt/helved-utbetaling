@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.*
+import utsjekk.iverksetting.resultat.IverksettingResultater
 import java.time.LocalDateTime
 
 class SimuleringValidatorTest {

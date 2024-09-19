@@ -2,20 +2,12 @@ package utsjekk.simulering
 
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import utsjekk.ApiError
 import utsjekk.ApiError.Companion.unauthorized
-import utsjekk.iverksetting.Client
-
-private fun ApplicationCall.client(): Client =
-    requireNotNull(principal<JWTPrincipal>()) { "principal mangler i ktor auth" }
-        .getClaim("azp_name", String::class)?.split(":")?.last()
-        ?.let(::Client)
-        ?: ApiError.forbidden("mangler azp_name i claims")
+import utsjekk.client
+import utsjekk.clients.SimuleringClient
 
 fun Route.simulering(validator: SimuleringValidator, client: SimuleringClient) {
 

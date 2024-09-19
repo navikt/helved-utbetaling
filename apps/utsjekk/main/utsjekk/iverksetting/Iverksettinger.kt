@@ -1,14 +1,16 @@
 package utsjekk.iverksetting
 
 import kotlinx.coroutines.withContext
+import libs.kafka.Kafka
 import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.ApiError.Companion.serviceUnavailable
-import utsjekk.featuretoggle.FeatureToggles
-import utsjekk.status.Kafka
+import utsjekk.FeatureToggles
+import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.task.Kind
 import utsjekk.task.Tasks
 import java.time.LocalDateTime
@@ -117,23 +119,3 @@ class Iverksettinger(
             }.maxByOrNull { it.mottattTidspunkt }?.data
         }
 }
-
-@JvmInline
-value class Client(private val name: String) {
-    fun toFagsystem(): Fagsystem =
-        when (name) {
-            "utsjekk" -> Fagsystem.DAGPENGER
-            "tiltakspenger-vedtak" -> Fagsystem.TILTAKSPENGER
-            "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
-            else -> error("mangler mapping mellom app ($name) og fagsystem")
-        }
-}
-
-@JvmInline
-value class SakId(val id: String)
-
-@JvmInline
-value class BehandlingId(val id: String)
-
-@JvmInline
-value class IverksettingId(val id: String)

@@ -1,28 +1,17 @@
-package utsjekk.routes
+package utsjekk.iverksetting
 
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
 import utsjekk.ApiError.Companion.badRequest
-import utsjekk.ApiError.Companion.forbidden
 import utsjekk.ApiError.Companion.notFound
-import utsjekk.iverksetting.*
+import utsjekk.client
 
-
-// todo: denne implementasjonen er ikke riktig, bare en placeholder
-private fun ApplicationCall.client(): Client =
-    requireNotNull(principal<JWTPrincipal>()) { "principal mangler i ktor auth" }
-        .getClaim("azp_name", String::class)?.split(":")?.last()
-        ?.let(::Client)
-        ?: forbidden("mangler azp_name i claims")
-
-fun Route.iverksettingRoute(service: Iverksettinger) {
+fun Route.iverksetting(service: Iverksettinger) {
     route("/api/iverksetting") {
         post("/v2") {
             val dto = try {

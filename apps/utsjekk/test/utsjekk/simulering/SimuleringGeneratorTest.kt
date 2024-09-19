@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.RandomOSURId
 import utsjekk.iverksetting.SakId
+import utsjekk.simulering.oppsummering.OppsummeringGenerator
 import java.time.LocalDate
 
 class SimuleringGeneratorTest {

@@ -18,6 +18,15 @@ import java.time.LocalDateTime
 import java.util.*
 import kotlin.random.Random
 
+@JvmInline
+value class SakId(val id: String)
+
+@JvmInline
+value class BehandlingId(val id: String)
+
+@JvmInline
+value class IverksettingId(val id: String)
+
 data class Iverksetting(
     val fagsak: Fagsakdetaljer,
     val behandling: Behandlingsdetaljer,

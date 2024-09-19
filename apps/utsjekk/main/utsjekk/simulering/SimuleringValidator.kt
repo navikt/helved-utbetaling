@@ -4,8 +4,7 @@ import kotlinx.coroutines.withContext
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.ApiError.Companion.badRequest
 import utsjekk.ApiError.Companion.conflict
-import utsjekk.ApiError.Companion.notFound
-import utsjekk.iverksetting.IverksettingResultater
+import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.Iverksettinger
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.behandlingId

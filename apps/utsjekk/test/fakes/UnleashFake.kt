@@ -1,8 +1,8 @@
 package fakes
 
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import utsjekk.FeatureToggles
 import utsjekk.UnleashConfig
-import utsjekk.featuretoggle.FeatureToggles
 import java.net.URI
 
 

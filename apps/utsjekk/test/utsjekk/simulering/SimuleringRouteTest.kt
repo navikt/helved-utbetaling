@@ -9,23 +9,25 @@ import httpClient
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
-import libs.auth.Claim
 import libs.postgres.concurrency.transaction
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
-import no.nav.utsjekk.kontrakter.felles.StønadTypeTilleggsstønader
 import no.nav.utsjekk.kontrakter.felles.StønadTypeTiltakspenger
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDagpengerDto
-import no.nav.utsjekk.kontrakter.iverksett.StønadsdataTilleggsstønaderDto
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataTiltakspengerV2Dto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.*
+import utsjekk.iverksetting.resultat.IverksettingResultater
 import java.time.LocalDateTime
 import java.util.*
 
 class SimuleringRouteTest {
+
+    @Test
+    fun test() {
+        println(TestRuntime.config.postgres)
+    }
 
     @Test
     fun `409 hvis forrige iverksettingresultat mangler`() = runTest {
