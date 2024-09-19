@@ -47,7 +47,6 @@ class IverksettingStrategyTest {
             val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
             repeatUntil(
-                context = TestRuntime.context,
                 function = { Tasks.forId(taskId) },
                 predicate = { it?.status == Status.COMPLETE }
             )
@@ -93,7 +92,6 @@ class IverksettingStrategyTest {
             val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
             repeatUntil(
-                context = TestRuntime.context,
                 function = { Tasks.forId(taskId) },
                 predicate = { it?.status == Status.COMPLETE },
             )
@@ -142,7 +140,6 @@ class IverksettingStrategyTest {
             val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
             val task = repeatUntil(
-                context = TestRuntime.context,
                 function = { Tasks.forId(taskId) },
                 predicate = { it?.status == Status.FAIL },
             )
@@ -160,7 +157,6 @@ class IverksettingStrategyTest {
             val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
             repeatUntil(
-                context = TestRuntime.context,
                 function = { Tasks.forId(taskId) },
                 predicate = { it?.status == Status.COMPLETE },
             )

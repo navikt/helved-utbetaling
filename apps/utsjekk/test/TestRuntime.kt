@@ -10,7 +10,6 @@ import io.ktor.server.netty.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import libs.jdbc.PostgresContainer
 import libs.utils.appLog
@@ -109,30 +108,29 @@ val httpClient: HttpClient by lazy {
 }
 
 /**
-    runTest will use a dispatcher with a `fake time` that automatically skips delays,
-    but keeps track of the fake time internally.
-    Because of this, withTimeout + dely will time out immediately.
-    A workaround is to use the fake time, then use the context inside this testdispatcher.
-
-    fun test() = runTest {
-        withContext(TestRuntime.context) {
-            testcode..
-            repeatUntil(..)
-            assertion..
-        }
-    }
+ * runTest will use a dispatcher with a `fake time` that automatically skips delays,
+ * but keeps track of the fake time internally.
+ * Because of this, withTimeout + dely will time out immediately.
+ * A workaround is to use the fake time, then use the context inside this testdispatcher.
+ *
+ * ```
+ *  fun test() = runTest {
+ *    withContext(TestRuntime.context) {
+ *      ..
+ *      repeatUntil(..)
+ *      ..
+ *    }
+ *  }
+ * ```
  */
 suspend fun <T> repeatUntil(
-    context: CoroutineContext,
     function: suspend () -> T,
     predicate: (T) -> Boolean,
-): T = withContext(context) {
-    withTimeout(4000) {
-        var result = function()
-        while (!predicate(result)) {
-            delay(10)
-            result = function()
-        }
-        result
+): T = withTimeout(4000) {
+    var result = function()
+    while (!predicate(result)) {
+        delay(10)
+        result = function()
     }
+    result
 }
