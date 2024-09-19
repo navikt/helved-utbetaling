@@ -1,9 +1,10 @@
-package utsjekk.task
+package utsjekk.task.history
 
 import libs.postgres.concurrency.connection
 import libs.postgres.map
 import libs.utils.appLog
 import libs.utils.secureLog
+import utsjekk.task.Status
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime

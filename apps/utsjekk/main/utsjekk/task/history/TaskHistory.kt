@@ -1,4 +1,4 @@
-package utsjekk.task
+package utsjekk.task.history
 
 import libs.postgres.concurrency.transaction
 import java.util.UUID

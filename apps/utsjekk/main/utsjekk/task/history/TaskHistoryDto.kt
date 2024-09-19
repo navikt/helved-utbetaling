@@ -1,5 +1,6 @@
-package utsjekk.task
+package utsjekk.task.history
 
+import utsjekk.task.Status
 import java.time.LocalDateTime
 import java.util.UUID
 

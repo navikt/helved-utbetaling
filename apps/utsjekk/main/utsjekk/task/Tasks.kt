@@ -2,6 +2,7 @@ package utsjekk.task
 
 import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.objectMapper
+import utsjekk.task.history.TaskHistoryDao
 import java.time.LocalDateTime
 import java.util.*
 
