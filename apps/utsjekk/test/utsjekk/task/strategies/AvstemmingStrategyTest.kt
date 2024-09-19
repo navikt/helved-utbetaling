@@ -77,8 +77,10 @@ class AvstemmingStrategyTest {
             task.insert()
         }
 
-        repeatUntil(::getTask) {
-            it?.status == Status.COMPLETE
-        }
+        repeatUntil(
+            context = TestRuntime.context,
+            function = ::getTask,
+            predicate = { it?.status == Status.COMPLETE },
+        )
     }
 }

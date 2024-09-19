@@ -10,6 +10,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import libs.jdbc.PostgresContainer
 import libs.utils.appLog
@@ -108,13 +109,16 @@ val httpClient: HttpClient by lazy {
 }
 
 suspend fun <T> repeatUntil(
+    context: CoroutineContext,
     function: suspend () -> T,
     predicate: (T) -> Boolean,
-): T = withTimeout(4000) {
-    var result = function()
-    while (!predicate(result)) {
-        delay(10)
-        result = function()
+): T = withContext(context) {
+    withTimeout(4000) {
+        var result = function()
+        while (!predicate(result)) {
+            delay(10)
+            result = function()
+        }
+        result
     }
-    result
 }
