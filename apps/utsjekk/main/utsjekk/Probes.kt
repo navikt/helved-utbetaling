@@ -1,4 +1,4 @@
-package utsjekk.routes
+package utsjekk
 
 import io.ktor.http.*
 import io.ktor.server.application.*

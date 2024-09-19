@@ -1,4 +1,4 @@
-package utsjekk.featuretoggle
+package utsjekk
 
 import io.getunleash.DefaultUnleash
 import io.getunleash.Unleash
@@ -50,8 +50,6 @@ private object ByEnvironmentStrategy : Strategy {
     override fun getName(): String = "byEnvironment"
     override fun isEnabled(map: Map<String, String>): Boolean {
         val ctx = UnleashContext.builder().build()
-        return ctx.environment
-            .map { map["miljø"]?.split(',')?.contains(it) ?: false }
-            .orElse(false)
+        return ctx.environment.map { map["miljø"]?.split(',')?.contains(it) ?: false }.orElse(false)
     }
 }

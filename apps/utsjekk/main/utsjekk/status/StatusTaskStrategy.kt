@@ -7,7 +7,8 @@ import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.iverksetting.*
-import utsjekk.oppdrag.OppdragClient
+import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.clients.OppdragClient
 import utsjekk.task.*
 
 class StatusTaskStrategy(private val oppdragClient: OppdragClient) : TaskStrategy {

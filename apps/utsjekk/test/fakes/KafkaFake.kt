@@ -1,11 +1,12 @@
 package fakes
 
+import kotlinx.coroutines.CompletableDeferred
+import libs.kafka.Kafka
 import libs.kafka.KafkaConfig
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
-import utsjekk.status.Kafka
 
-class KafkaFake: Kafka<StatusEndretMelding> {
-    private val produced = mutableMapOf<String, StatusEndretMelding>()
+class KafkaFake : Kafka<StatusEndretMelding> {
+    var produced: CompletableDeferred<StatusEndretMelding> = CompletableDeferred()
 
     val config = KafkaConfig(
         brokers = "mock",
@@ -14,13 +15,13 @@ class KafkaFake: Kafka<StatusEndretMelding> {
         credstorePassword = ""
     )
 
-    fun hasProduced(key: String): Boolean = produced.containsKey(key)
-
     override fun produce(key: String, value: StatusEndretMelding) {
-        produced[key] = value
+        produced.complete(value)
     }
 
-    override fun close() {
-        produced.clear()
+    override fun close() {}
+
+    fun reset() {
+        produced = CompletableDeferred()
     }
 }

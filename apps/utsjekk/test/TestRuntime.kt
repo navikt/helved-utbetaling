@@ -15,7 +15,7 @@ import libs.jdbc.PostgresContainer
 import libs.utils.appLog
 import utsjekk.Config
 import utsjekk.iverksetting.IverksettingDao
-import utsjekk.iverksetting.IverksettingResultatDao
+import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.task.TaskDao
 import utsjekk.task.TaskHistoryDao
 import utsjekk.utsjekk

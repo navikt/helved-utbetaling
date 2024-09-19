@@ -7,8 +7,10 @@ import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
-import utsjekk.oppdrag.OppdragClient
+import utsjekk.clients.OppdragClient
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao

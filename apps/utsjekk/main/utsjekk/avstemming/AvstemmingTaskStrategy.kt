@@ -3,7 +3,7 @@ package utsjekk.avstemming
 import com.fasterxml.jackson.module.kotlin.readValue
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
-import utsjekk.oppdrag.OppdragClient
+import utsjekk.clients.OppdragClient
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao

@@ -1,5 +1,9 @@
-package utsjekk.simulering
+package utsjekk.simulering.oppsummering
 
+import utsjekk.simulering.Postering
+import utsjekk.simulering.PosteringType
+import utsjekk.simulering.SimuleringDetaljer
+import utsjekk.simulering.api
 import java.time.LocalDate
 import kotlin.math.abs
 

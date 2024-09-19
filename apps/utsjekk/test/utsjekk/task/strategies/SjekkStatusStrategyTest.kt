@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import repeatUntil
-import utsjekk.iverksetting.IverksettingResultater
+import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.Tasks
@@ -19,6 +19,7 @@ class SjekkStatusStrategyTest {
     @AfterEach
     fun reset() {
         TestRuntime.oppdrag.reset()
+        TestRuntime.kafka.reset()
     }
 
     @Test

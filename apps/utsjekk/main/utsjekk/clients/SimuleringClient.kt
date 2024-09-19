@@ -1,4 +1,4 @@
-package utsjekk.simulering
+package utsjekk.clients
 
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -9,16 +9,15 @@ import kotlinx.coroutines.withContext
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import utsjekk.ApiError.Companion.badRequest
-import utsjekk.ApiError.Companion.conflict
-import utsjekk.ApiError.Companion.notFound
-import utsjekk.ApiError.Companion.serviceUnavailable
+import utsjekk.ApiError
 import utsjekk.Config
-import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.lagAndelData
+import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.tilAndelData
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
+import utsjekk.simulering.*
+import utsjekk.simulering.oppsummering.OppsummeringGenerator
 import kotlin.coroutines.CoroutineContext
 
 class SimuleringClient(
@@ -45,10 +44,10 @@ class SimuleringClient(
 
         val hentetSimulering = when (response.status) {
             HttpStatusCode.OK -> response.body<client.SimuleringResponse>()
-            HttpStatusCode.NotFound -> notFound(response.bodyAsText())
-            HttpStatusCode.Conflict -> conflict(response.bodyAsText())
-            HttpStatusCode.BadRequest -> badRequest(response.bodyAsText())
-            HttpStatusCode.ServiceUnavailable -> serviceUnavailable(response.bodyAsText())
+            HttpStatusCode.NotFound -> ApiError.notFound(response.bodyAsText())
+            HttpStatusCode.Conflict -> ApiError.conflict(response.bodyAsText())
+            HttpStatusCode.BadRequest -> ApiError.badRequest(response.bodyAsText())
+            HttpStatusCode.ServiceUnavailable -> ApiError.serviceUnavailable(response.bodyAsText())
             else -> error("HTTP ${response.status} feil fra utsjekk-oppdrag: ${response.bodyAsText()}")
         }
 

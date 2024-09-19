@@ -21,28 +21,26 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.Dispatchers
 import libs.auth.TokenProvider
 import libs.auth.configure
+import libs.kafka.Kafka
 import libs.postgres.Postgres
 import libs.postgres.Postgres.migrate
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.utils.appLog
 import libs.utils.secureLog
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import utsjekk.avstemming.AvstemmingTaskStrategy
-import utsjekk.featuretoggle.FeatureToggles
-import utsjekk.featuretoggle.UnleashFeatureToggles
+import utsjekk.clients.OppdragClient
+import utsjekk.clients.SimuleringClient
 import utsjekk.iverksetting.IverksettingTaskStrategy
 import utsjekk.iverksetting.Iverksettinger
-import utsjekk.oppdrag.OppdragClient
-import utsjekk.routes.probes
-import utsjekk.routes.iverksettingRoute
-import utsjekk.routes.tasks
-import utsjekk.simulering.SimuleringClient
+import utsjekk.iverksetting.iverksetting
 import utsjekk.simulering.SimuleringValidator
 import utsjekk.simulering.simulering
-import utsjekk.status.Kafka
 import utsjekk.status.StatusKafkaProducer
 import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
+import utsjekk.task.tasks
 import javax.sql.DataSource
 import kotlin.coroutines.CoroutineContext
 
@@ -120,11 +118,35 @@ fun Application.utsjekk(
 
     routing {
         authenticate(TokenProvider.AZURE) {
-            iverksettingRoute(iverksettinger)
+            iverksetting(iverksettinger)
             simulering(simuleringValidator, simulering)
             tasks(context)
         }
 
         probes(meters)
     }
+}
+
+fun ApplicationCall.navident(): String =
+    principal<JWTPrincipal>()
+        ?.getClaim("NAVident", String::class)
+        ?: ApiError.forbidden("missing claims: NAVident")
+
+fun ApplicationCall.client(): Client =
+    principal<JWTPrincipal>()
+        ?.getClaim("azp_name", String::class)
+        ?.split(":")
+        ?.last()
+        ?.let(::Client)
+        ?: ApiError.forbidden("missing claims: azp_name")
+
+@JvmInline
+value class Client(private val name: String) {
+    fun toFagsystem(): Fagsystem =
+        when (name) {
+            "utsjekk" -> Fagsystem.DAGPENGER
+            "tiltakspenger-vedtak" -> Fagsystem.TILTAKSPENGER
+            "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
+            else -> error("mangler mapping mellom app ($name) og fagsystem")
+        }
 }

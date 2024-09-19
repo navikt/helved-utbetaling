@@ -1,4 +1,4 @@
-package utsjekk.oppdrag
+package utsjekk.clients
 
 import io.ktor.client.*
 import io.ktor.client.call.*

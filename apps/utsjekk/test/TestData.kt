@@ -2,6 +2,7 @@ import no.nav.utsjekk.kontrakter.felles.*
 import no.nav.utsjekk.kontrakter.iverksett.*
 import no.nav.utsjekk.kontrakter.oppdrag.*
 import utsjekk.iverksetting.*
+import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.simulering.Fagområde
 import utsjekk.simulering.Postering
 import utsjekk.simulering.PosteringType
