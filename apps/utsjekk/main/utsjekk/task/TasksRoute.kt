@@ -7,6 +7,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
+import utsjekk.task.history.TaskHistory
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.coroutines.CoroutineContext

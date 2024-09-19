@@ -17,7 +17,7 @@ import utsjekk.Config
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.task.TaskDao
-import utsjekk.task.TaskHistoryDao
+import utsjekk.task.history.TaskHistoryDao
 import utsjekk.utsjekk
 import kotlin.coroutines.CoroutineContext
 
