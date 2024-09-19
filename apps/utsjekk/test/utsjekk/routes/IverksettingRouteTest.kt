@@ -11,6 +11,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -76,93 +77,98 @@ class IverksettingRouteTest {
 
     @Test
     fun `start iverksetting av tilleggsstønader`() = runTest {
-        val dto = TestData.dto.iverksetting(
-            iverksettingId = "en-iverksetting",
-            vedtak = TestData.dto.vedtaksdetaljer(
-                utbetalinger = listOf(
-                    TestData.dto.utbetaling(
-                        satstype = Satstype.MÅNEDLIG,
-                        fom = LocalDate.of(2021, 1, 1),
-                        tom = LocalDate.of(2021, 1, 31),
-                        stønadsdata = TestData.dto.tilleggstønad()
+        withContext(TestRuntime.context) {
+            val dto = TestData.dto.iverksetting(
+                iverksettingId = "en-iverksetting",
+                vedtak = TestData.dto.vedtaksdetaljer(
+                    utbetalinger = listOf(
+                        TestData.dto.utbetaling(
+                            satstype = Satstype.MÅNEDLIG,
+                            fom = LocalDate.of(2021, 1, 1),
+                            tom = LocalDate.of(2021, 1, 31),
+                            stønadsdata = TestData.dto.tilleggstønad()
+                        )
                     )
                 )
             )
-        )
 
-        val oppdragId = OppdragIdDto(
-            fagsystem = Fagsystem.TILLEGGSSTØNADER,
-            sakId = dto.sakId,
-            behandlingId = dto.behandlingId,
-            iverksettingId = dto.iverksettingId
-        )
+            val oppdragId = OppdragIdDto(
+                fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                sakId = dto.sakId,
+                behandlingId = dto.behandlingId,
+                iverksettingId = dto.iverksettingId
+            )
 
-        TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.OK)
+            TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.OK)
 
-        httpClient.post("/api/iverksetting/v2") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(dto)
-        }.let {
-            assertEquals(HttpStatusCode.Accepted, it.status)
-        }
-
-        suspend fun getStatus(): IverksettStatus =
-            httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
+            httpClient.post("/api/iverksetting/v2") {
                 bearerAuth(TestRuntime.azure.generateToken())
-                accept(ContentType.Application.Json)
-            }.body()
-
-        val status = runBlocking {
-            repeatUntil(TestRuntime.context, ::getStatus) { status ->
-                status == IverksettStatus.SENDT_TIL_OPPDRAG
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.let {
+                assertEquals(HttpStatusCode.Accepted, it.status)
             }
-        }
 
-        assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
+            suspend fun getStatus(): IverksettStatus =
+                httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
+                    bearerAuth(TestRuntime.azure.generateToken())
+                    accept(ContentType.Application.Json)
+                }.body()
+
+            val status = runBlocking {
+                repeatUntil(::getStatus) { status ->
+                    status == IverksettStatus.SENDT_TIL_OPPDRAG
+                }
+            }
+
+            assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
+        }
     }
 
 
     @Test
     fun `start iverksetting av vedtak uten utbetaling`() = runTest {
-        val dto =
-            TestData.dto.iverksetting(
-                vedtak = TestData.dto.vedtaksdetaljer(
-                    utbetalinger = emptyList(),
-                ),
+        withContext(TestRuntime.context) {
+
+            val dto =
+                TestData.dto.iverksetting(
+                    vedtak = TestData.dto.vedtaksdetaljer(
+                        utbetalinger = emptyList(),
+                    ),
+                )
+
+            httpClient.post("/api/iverksetting/v2") {
+                bearerAuth(TestRuntime.azure.generateToken())
+                contentType(ContentType.Application.Json)
+                setBody(dto)
+            }.let {
+                assertEquals(HttpStatusCode.Accepted, it.status)
+            }
+
+            suspend fun getStatus(): IverksettStatus =
+                httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+                    bearerAuth(TestRuntime.azure.generateToken())
+                    accept(ContentType.Application.Json)
+                }.body()
+
+            val status = runBlocking {
+                repeatUntil(::getStatus) { status ->
+                    status == IverksettStatus.OK_UTEN_UTBETALING
+                }
+            }
+
+            assertEquals(IverksettStatus.OK_UTEN_UTBETALING, status)
+
+            val expectedRecord = StatusEndretMelding(
+                sakId = dto.sakId,
+                behandlingId = dto.behandlingId,
+                iverksettingId = dto.iverksettingId,
+                fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                status = IverksettStatus.OK_UTEN_UTBETALING,
             )
 
-        httpClient.post("/api/iverksetting/v2") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(dto)
-        }.let {
-            assertEquals(HttpStatusCode.Accepted, it.status)
+            assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
         }
-
-        suspend fun getStatus(): IverksettStatus =
-            httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
-                bearerAuth(TestRuntime.azure.generateToken())
-                accept(ContentType.Application.Json)
-            }.body()
-
-        val status = runBlocking {
-            repeatUntil(TestRuntime.context, ::getStatus) { status ->
-                status == IverksettStatus.OK_UTEN_UTBETALING
-            }
-        }
-
-        assertEquals(IverksettStatus.OK_UTEN_UTBETALING, status)
-
-        val expectedRecord = StatusEndretMelding(
-            sakId = dto.sakId,
-            behandlingId = dto.behandlingId,
-            iverksettingId = dto.iverksettingId,
-            fagsystem = Fagsystem.TILLEGGSSTØNADER,
-            status = IverksettStatus.OK_UTEN_UTBETALING,
-        )
-
-        assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
     }
 
     @Test
@@ -208,38 +214,41 @@ class IverksettingRouteTest {
 
     @Test
     fun `iverksetting blir kvittert ok`() = runTest {
-        val dto = TestData.dto.iverksetting()
-        val oppdragId = OppdragIdDto(
-            fagsystem = Fagsystem.TILLEGGSSTØNADER,
-            sakId = dto.sakId,
-            behandlingId = dto.behandlingId,
-            iverksettingId = dto.iverksettingId,
-        )
+        withContext(TestRuntime.context) {
 
-        TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.OK)
-        TestRuntime.oppdrag.statusRespondWith(oppdragId, TestData.dto.oppdragStatus(OppdragStatus.KVITTERT_OK))
+            val dto = TestData.dto.iverksetting()
+            val oppdragId = OppdragIdDto(
+                fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                sakId = dto.sakId,
+                behandlingId = dto.behandlingId,
+                iverksettingId = dto.iverksettingId,
+            )
 
-        val res = httpClient.post("/api/iverksetting/v2") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(dto)
-        }
+            TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.OK)
+            TestRuntime.oppdrag.statusRespondWith(oppdragId, TestData.dto.oppdragStatus(OppdragStatus.KVITTERT_OK))
 
-        assertEquals(HttpStatusCode.Accepted, res.status)
-
-        suspend fun getStatus(): IverksettStatus =
-            httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+            val res = httpClient.post("/api/iverksetting/v2") {
                 bearerAuth(TestRuntime.azure.generateToken())
-                accept(ContentType.Application.Json)
-            }.body()
-
-
-        val status = runBlocking {
-            repeatUntil(TestRuntime.context, ::getStatus) { status ->
-                status == IverksettStatus.OK
+                contentType(ContentType.Application.Json)
+                setBody(dto)
             }
-        }
 
-        assertEquals(IverksettStatus.OK, status)
+            assertEquals(HttpStatusCode.Accepted, res.status)
+
+            suspend fun getStatus(): IverksettStatus =
+                httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+                    bearerAuth(TestRuntime.azure.generateToken())
+                    accept(ContentType.Application.Json)
+                }.body()
+
+
+            val status = runBlocking {
+                repeatUntil(::getStatus) { status ->
+                    status == IverksettStatus.OK
+                }
+            }
+
+            assertEquals(IverksettStatus.OK, status)
+        }
     }
 }
