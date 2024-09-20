@@ -24,12 +24,12 @@ fun Route.tasks(context: CoroutineContext) {
 
                 call.respond(tasks)
             }
-
         }
 
         patch("/{id}") {
-            val id = call.parameters["id"]?.let(UUID::fromString)
-                ?: return@patch call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
+            val id =
+                call.parameters["id"]?.let(UUID::fromString)
+                    ?: return@patch call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
 
             withContext(context) {
                 transaction {
@@ -38,12 +38,16 @@ fun Route.tasks(context: CoroutineContext) {
             }.singleOrNull() ?: return@patch call.respond(HttpStatusCode.NotFound, "Fant ikke task med id $id")
 
             val payload = call.receive<TaskDtoPatch>()
-            Tasks.update(id, payload.status, payload.message)
+
+            withContext(context) {
+                Tasks.update(id, payload.status, payload.message)
+            }
         }
 
         get("/{id}/history") {
-            val id = call.parameters["id"]?.let(UUID::fromString)
-                ?: return@get call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
+            val id =
+                call.parameters["id"]?.let(UUID::fromString)
+                    ?: return@get call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
 
             withContext(context) {
                 val historikk = transaction { TaskHistory.history(id) }
