@@ -7,24 +7,21 @@ import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import utsjekk.clients.OppdragClient
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
-import utsjekk.clients.OppdragClient
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
-import utsjekk.task.Tasks
 import utsjekk.task.TaskStrategy
+import utsjekk.task.Tasks
 
 class IverksettingTaskStrategy(
     private val oppdrag: OppdragClient,
     private val service: Iverksettinger,
 ) : TaskStrategy {
-
-    override suspend fun isApplicable(task: TaskDao): Boolean {
-        return task.kind == Kind.Iverksetting
-    }
+    override suspend fun isApplicable(task: TaskDao): Boolean = task.kind == Kind.Iverksetting
 
     override suspend fun execute(task: TaskDao) {
         val iverksetting = objectMapper.readValue<Iverksetting>(task.payload)
@@ -33,17 +30,19 @@ class IverksettingTaskStrategy(
     }
 
     private suspend fun updateIverksetting(iverksetting: Iverksetting) {
-        val forrigeResultat = iverksetting.behandling.forrigeBehandlingId?.let {
-            IverksettingResultater.hentForrige(iverksetting)
-        }
+        val forrigeResultat =
+            iverksetting.behandling.forrigeBehandlingId?.let {
+                IverksettingResultater.hentForrige(iverksetting)
+            }
 
         val beregnetUtbetalingsoppdrag = utbetalingsoppdrag(iverksetting, forrigeResultat)
-        val tilkjentYtelse = oppdaterTilkjentYtelse(
-            tilkjentYtelse = iverksetting.vedtak.tilkjentYtelse,
-            beregnetUtbetalingsoppdrag = beregnetUtbetalingsoppdrag,
-            forrigeResultat = forrigeResultat,
-            iverksetting = iverksetting,
-        )
+        val tilkjentYtelse =
+            oppdaterTilkjentYtelse(
+                tilkjentYtelse = iverksetting.vedtak.tilkjentYtelse,
+                beregnetUtbetalingsoppdrag = beregnetUtbetalingsoppdrag,
+                forrigeResultat = forrigeResultat,
+                iverksetting = iverksetting,
+            )
 
         if (beregnetUtbetalingsoppdrag.utbetalingsoppdrag.utbetalingsperiode.isNotEmpty()) {
             transaction {
@@ -54,18 +53,19 @@ class IverksettingTaskStrategy(
                 )
                 Tasks.create(
                     kind = Kind.SjekkStatus,
-                    payload = OppdragIdDto(
-                        fagsystem = iverksetting.fagsak.fagsystem,
-                        sakId = iverksetting.sakId.id,
-                        behandlingId = iverksetting.behandlingId.id,
-                        iverksettingId = iverksetting.iverksettingId?.id,
-                    )
+                    payload =
+                        OppdragIdDto(
+                            fagsystem = iverksetting.fagsak.fagsystem,
+                            sakId = iverksetting.sakId.id,
+                            behandlingId = iverksetting.behandlingId.id,
+                            iverksettingId = iverksetting.iverksettingId?.id,
+                        ),
                 )
             }
         } else {
             IverksettingResultater.oppdater(
                 iverksetting = iverksetting,
-                resultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING)
+                resultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING),
             )
             appLog.warn("Iverksetter ikke noe mot oppdrag. Ingen perioder i utbetalingsoppdraget for iverksetting $iverksetting")
         }
@@ -160,25 +160,29 @@ class IverksettingTaskStrategy(
         iverksetting: Iverksetting,
         forrigeResultat: IverksettingResultatDao?,
     ): BeregnetUtbetalingsoppdrag {
-        val info = Behandlingsinformasjon(
-            saksbehandlerId = iverksetting.vedtak.saksbehandlerId,
-            beslutterId = iverksetting.vedtak.beslutterId,
-            fagsystem = iverksetting.fagsak.fagsystem,
-            fagsakId = iverksetting.sakId,
-            behandlingId = iverksetting.behandlingId,
-            personident = iverksetting.personident,
-            brukersNavKontor = iverksetting.vedtak.tilkjentYtelse.andelerTilkjentYtelse.finnBrukersNavKontor(),
-            vedtaksdato = iverksetting.vedtak.vedtakstidspunkt.toLocalDate(),
-            iverksettingId = iverksetting.behandling.iverksettingId,
-        )
+        val info =
+            Behandlingsinformasjon(
+                saksbehandlerId = iverksetting.vedtak.saksbehandlerId,
+                beslutterId = iverksetting.vedtak.beslutterId,
+                fagsystem = iverksetting.fagsak.fagsystem,
+                fagsakId = iverksetting.sakId,
+                behandlingId = iverksetting.behandlingId,
+                personident = iverksetting.personident,
+                brukersNavKontor =
+                    iverksetting.vedtak.tilkjentYtelse.andelerTilkjentYtelse
+                        .finnBrukersNavKontor(),
+                vedtaksdato = iverksetting.vedtak.vedtakstidspunkt.toLocalDate(),
+                iverksettingId = iverksetting.behandling.iverksettingId,
+            )
 
         val nyeAndeler = iverksetting.vedtak.tilkjentYtelse.lagAndelData()
         val forrigeAndeler = forrigeResultat?.tilkjentYtelseForUtbetaling.lagAndelData()
-        val sisteAndelPerKjede = forrigeResultat
-            ?.tilkjentYtelseForUtbetaling
-            ?.sisteAndelPerKjede
-            ?.mapValues { it.value.tilAndelData() }
-            ?: emptyMap()
+        val sisteAndelPerKjede =
+            forrigeResultat
+                ?.tilkjentYtelseForUtbetaling
+                ?.sisteAndelPerKjede
+                ?.mapValues { it.value.tilAndelData() }
+                ?: emptyMap()
 
         return Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = info,
@@ -188,12 +192,24 @@ class IverksettingTaskStrategy(
         )
     }
 
-    private fun List<AndelTilkjentYtelse>.finnBrukersNavKontor(): BrukersNavKontor? = firstNotNullOfOrNull {
-        when (it.stønadsdata) {
-            is StønadsdataTilleggsstønader -> it.stønadsdata.brukersNavKontor
-            is StønadsdataTiltakspenger -> it.stønadsdata.brukersNavKontor
-            else -> null
+    private fun List<AndelTilkjentYtelse>.finnBrukersNavKontor(): BrukersNavKontor? =
+        firstNotNullOfOrNull {
+            when (it.stønadsdata) {
+                is StønadsdataTilleggsstønader -> it.stønadsdata.brukersNavKontor
+                is StønadsdataTiltakspenger -> it.stønadsdata.brukersNavKontor
+                else -> null
+            }
+        }
+
+    companion object {
+        fun metadataStrategy(payload: String): Map<String, String> {
+            val iverksetting = objectMapper.readValue<Iverksetting>(payload)
+            return mapOf(
+                "sakId" to iverksetting.sakId.id,
+                "behandlingId" to iverksetting.behandlingId.id,
+                "iverksettingId" to iverksetting.iverksettingId?.id.toString(),
+                "fagsystem" to iverksetting.fagsak.fagsystem.name,
+            )
         }
     }
-
 }

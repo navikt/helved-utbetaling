@@ -6,16 +6,15 @@ import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import utsjekk.clients.OppdragClient
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultater
-import utsjekk.clients.OppdragClient
 import utsjekk.task.*
 
-class StatusTaskStrategy(private val oppdragClient: OppdragClient) : TaskStrategy {
-
-    override suspend fun isApplicable(task: TaskDao): Boolean {
-        return task.kind == Kind.SjekkStatus
-    }
+class StatusTaskStrategy(
+    private val oppdragClient: OppdragClient,
+) : TaskStrategy {
+    override suspend fun isApplicable(task: TaskDao): Boolean = task.kind == Kind.SjekkStatus
 
     override suspend fun execute(task: TaskDao) {
         val oppdragIdDto = objectMapper.readValue<OppdragIdDto>(task.payload)
@@ -30,7 +29,9 @@ class StatusTaskStrategy(private val oppdragClient: OppdragClient) : TaskStrateg
             OppdragStatus.KVITTERT_MED_MANGLER, OppdragStatus.KVITTERT_TEKNISK_FEIL, OppdragStatus.KVITTERT_FUNKSJONELL_FEIL -> {
                 IverksettingResultater.oppdater(oppdragIdDto.tilUtbetalingId(), OppdragResultat(status.status))
                 appLog.error("Mottok feilkvittering ${status.status} fra OS for oppdrag $oppdragIdDto")
-                secureLog.error("Mottok feilkvittering ${status.status} fra OS for oppdrag $oppdragIdDto. Feilmelding: ${status.feilmelding}")
+                secureLog.error(
+                    "Mottok feilkvittering ${status.status} fra OS for oppdrag $oppdragIdDto. Feilmelding: ${status.feilmelding}",
+                )
                 Tasks.update(task.id, Status.MANUAL, status.feilmelding)
             }
 
@@ -49,11 +50,24 @@ class StatusTaskStrategy(private val oppdragClient: OppdragClient) : TaskStrateg
             }
         }
     }
+
+    companion object {
+        fun metadataStrategy(payload: String): Map<String, String> {
+            val oppdragIdDto = objectMapper.readValue<OppdragIdDto>(payload)
+            return mapOf(
+                "sakId" to oppdragIdDto.sakId,
+                "behandlingId" to oppdragIdDto.behandlingId,
+                "iverksettingId" to oppdragIdDto.iverksettingId.toString(),
+                "fagsystem" to oppdragIdDto.fagsystem.name,
+            )
+        }
+    }
 }
 
-fun OppdragIdDto.tilUtbetalingId() = UtbetalingId(
-    fagsystem = this.fagsystem,
-    sakId = SakId(this.sakId),
-    behandlingId = BehandlingId(this.behandlingId),
-    iverksettingId = this.iverksettingId?.let { IverksettingId(it) }
-)
+fun OppdragIdDto.tilUtbetalingId() =
+    UtbetalingId(
+        fagsystem = this.fagsystem,
+        sakId = SakId(this.sakId),
+        behandlingId = BehandlingId(this.behandlingId),
+        iverksettingId = this.iverksettingId?.let { IverksettingId(it) },
+    )
