@@ -14,19 +14,20 @@ class TaskScheduler(
     private val strategies: List<TaskStrategy>,
     context: CoroutineContext,
 ) : Scheduler<TaskDao>(
-    feedRPM = 120,
-    errorCooldownMs = 100,
-    context = context,
-) {
+        feedRPM = 120,
+        errorCooldownMs = 100,
+        context = context,
+    ) {
     override suspend fun feed(): List<TaskDao> {
         withLock("task") {
             return transaction {
-                TaskDao.select {
-                    it.status = listOf(Status.IN_PROGRESS, Status.FAIL)
-                    it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
-                }.also {
-                    appLog.info("Feeding scheduler with ${it.size} tasks")
-                }
+                TaskDao
+                    .select {
+                        it.status = listOf(Status.IN_PROGRESS, Status.FAIL)
+                        it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
+                    }.also {
+                        appLog.debug("Feeding scheduler with ${it.size} tasks")
+                    }
             }
         }
     }
