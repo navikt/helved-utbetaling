@@ -22,10 +22,11 @@ data class TaskDao(
     val message: String?,
 ) {
     suspend fun insert() {
-        val sql = """
+        val sql =
+            """
             INSERT INTO $TABLE_NAME (id, kind, payload, status, attempt, created_at, updated_at, scheduled_for, message) 
             VALUES (?,?,?,?,?,?,?,?,?)
-        """.trimIndent()
+            """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, id)
             stmt.setString(2, kind.name)
@@ -44,11 +45,12 @@ data class TaskDao(
     }
 
     suspend fun update() {
-        val sql = """
+        val sql =
+            """
             UPDATE $TABLE_NAME 
             SET kind = ?, payload = ?, status = ?, attempt = ?, created_at = ?, updated_at = ?, scheduled_for = ?, message = ?
             WHERE id = ?
-        """.trimIndent()
+            """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, kind.name)
             stmt.setString(2, payload)
@@ -71,32 +73,35 @@ data class TaskDao(
 
         suspend fun select(
             limit: Int? = null,
+            offset: Int? = null,
             conditions: (where: Where) -> Unit = {},
         ): List<TaskDao> {
             val conditions = Where().apply(conditions)
-            val sql = buildString {
-                append("SELECT * FROM $TABLE_NAME")
-                if (conditions.any()) {
-                    append(" WHERE ")
-                    conditions.id?.let { append("id = ? AND ") }
-                    conditions.kind?.let { append("kind = ? AND ") }
-                    conditions.payload?.let { append("payload = ? AND ") }
-                    conditions.status?.let {
-                        val statuses = it.joinToString(", ") { status -> "'$status'" }
-                        append("status IN ($statuses) AND ")
+            val sql =
+                buildString {
+                    append("SELECT * FROM $TABLE_NAME")
+                    if (conditions.any()) {
+                        append(" WHERE ")
+                        conditions.id?.let { append("id = ? AND ") }
+                        conditions.kind?.let { append("kind = ? AND ") }
+                        conditions.payload?.let { append("payload = ? AND ") }
+                        conditions.status?.let {
+                            val statuses = it.joinToString(", ") { status -> "'$status'" }
+                            append("status IN ($statuses) AND ")
+                        }
+                        conditions.attempt?.let { append("attempt = ? AND ") }
+                        conditions.createdAt?.let { append("created_at ${it.operator.opcode} ? AND ") }
+                        conditions.updatedAt?.let { append("updated_at ${it.operator.opcode} ? AND ") }
+                        conditions.scheduledFor?.let { append("scheduled_for ${it.operator.opcode} ? AND ") }
+                        conditions.message?.let { append("message = ? AND ") }
+
+                        // Remove dangling "AND "
+                        setLength(length - 4)
                     }
-                    conditions.attempt?.let { append("attempt = ? AND ") }
-                    conditions.createdAt?.let { append("created_at ${it.operator.opcode} ? AND ") }
-                    conditions.updatedAt?.let { append("updated_at ${it.operator.opcode} ? AND ") }
-                    conditions.scheduledFor?.let { append("scheduled_for ${it.operator.opcode} ? AND ") }
-                    conditions.message?.let { append("message = ? AND ") }
 
-                    // Remove dangling "AND "
-                    setLength(length - 4)
+                    limit?.let { append(" LIMIT ?") }
+                    offset?.let { append(" OFFSET ?") }
                 }
-
-                limit?.let { append(" LIMIT ?") }
-            }
 
             // The posistion of the question marks in the sql must be relative to the position in the statement
             var position = 1
@@ -111,11 +116,60 @@ data class TaskDao(
                 conditions.scheduledFor?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
                 conditions.message?.let { stmt.setString(position++, it) }
                 limit?.let { stmt.setInt(position++, it) }
+                offset?.let { stmt.setInt(position++, it) }
 
                 appLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
             }
+        }
+
+        suspend fun count(conditions: (where: Where) -> Unit = {}): Int {
+            val conditions = Where().apply(conditions)
+            val sql =
+                buildString {
+                    append("SELECT count(*) FROM $TABLE_NAME")
+                    if (conditions.any()) {
+                        append(" WHERE ")
+                        conditions.id?.let { append("id = ? AND ") }
+                        conditions.kind?.let { append("kind = ? AND ") }
+                        conditions.payload?.let { append("payload = ? AND ") }
+                        conditions.status?.let {
+                            val statuses = it.joinToString(", ") { status -> "'$status'" }
+                            append("status IN ($statuses) AND ")
+                        }
+                        conditions.attempt?.let { append("attempt = ? AND ") }
+                        conditions.createdAt?.let { append("created_at ${it.operator.opcode} ? AND ") }
+                        conditions.updatedAt?.let { append("updated_at ${it.operator.opcode} ? AND ") }
+                        conditions.scheduledFor?.let { append("scheduled_for ${it.operator.opcode} ? AND ") }
+                        conditions.message?.let { append("message = ? AND ") }
+
+                        // Remove dangling "AND "
+                        setLength(length - 4)
+                    }
+                }
+
+            // The posistion of the question marks in the sql must be relative to the position in the statement
+            var position = 1
+
+            return coroutineContext.connection
+                .prepareStatement(sql)
+                .use { stmt ->
+                    conditions.id?.let { stmt.setObject(position++, it) }
+                    conditions.kind?.let { stmt.setString(position++, it.name) }
+                    conditions.payload?.let { stmt.setString(position++, it) }
+                    conditions.attempt?.let { stmt.setObject(position++, it) }
+                    conditions.createdAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
+                    conditions.updatedAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
+                    conditions.scheduledFor?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
+                    conditions.message?.let { stmt.setString(position++, it) }
+
+                    appLog.debug(sql)
+                    secureLog.debug(stmt.toString())
+                    stmt.executeQuery().map {
+                        it.getInt(1)
+                    }
+                }.firstOrNull() ?: 0
         }
     }
 
@@ -130,23 +184,33 @@ data class TaskDao(
         var scheduledFor: SelectTime? = null,
         var message: String? = null,
     ) {
-        fun any() = listOf(
-            id, kind, payload, status, attempt, createdAt, updatedAt, scheduledFor, message
-        ).any { it != null }
+        fun any() =
+            listOf(
+                id,
+                kind,
+                payload,
+                status,
+                attempt,
+                createdAt,
+                updatedAt,
+                scheduledFor,
+                message,
+            ).any { it != null }
     }
 }
 
-fun TaskDao.Companion.from(rs: ResultSet) = TaskDao(
-    id = UUID.fromString(rs.getString("id")),
-    kind = Kind.valueOf(rs.getString("kind")),
-    payload = rs.getString("payload"),
-    status = Status.valueOf(rs.getString("status")),
-    attempt = rs.getInt("attempt"),
-    createdAt = rs.getTimestamp("created_at").toLocalDateTime(),
-    updatedAt = rs.getTimestamp("updated_at").toLocalDateTime(),
-    scheduledFor = rs.getTimestamp("scheduled_for").toLocalDateTime(),
-    message = rs.getString("message")
-)
+fun TaskDao.Companion.from(rs: ResultSet) =
+    TaskDao(
+        id = UUID.fromString(rs.getString("id")),
+        kind = Kind.valueOf(rs.getString("kind")),
+        payload = rs.getString("payload"),
+        status = Status.valueOf(rs.getString("status")),
+        attempt = rs.getInt("attempt"),
+        createdAt = rs.getTimestamp("created_at").toLocalDateTime(),
+        updatedAt = rs.getTimestamp("updated_at").toLocalDateTime(),
+        scheduledFor = rs.getTimestamp("scheduled_for").toLocalDateTime(),
+        message = rs.getString("message"),
+    )
 
 /**
  * [column] [operator] [time]
@@ -157,6 +221,12 @@ data class SelectTime(
     val time: LocalDateTime = LocalDateTime.now(),
 )
 
-enum class Operator(internal val opcode: String) {
-    EQ("="), NEQ("!="), IN("IN"), GE(">="), LE("<="),
+enum class Operator(
+    internal val opcode: String,
+) {
+    EQ("="),
+    NEQ("!="),
+    IN("IN"),
+    GE(">="),
+    LE("<="),
 }

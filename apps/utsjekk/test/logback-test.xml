@@ -11,7 +11,7 @@
         <appender-ref ref="pretty"/>
     </root>
 
-    <logger name="secureLog" level="DEBUG" additivity="false">
+    <logger name="secureLog" level="INFO" additivity="false">
         <appender-ref ref="pretty"/>
     </logger>
 

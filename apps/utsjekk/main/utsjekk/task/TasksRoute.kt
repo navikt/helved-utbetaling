@@ -1,15 +1,18 @@
 package utsjekk.task
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.call
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.patch
+import io.ktor.server.routing.route
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
 import utsjekk.task.history.TaskHistory
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 
 fun Route.tasks(context: CoroutineContext) {
@@ -19,10 +22,18 @@ fun Route.tasks(context: CoroutineContext) {
             val after = call.parameters["after"]?.let { LocalDateTime.parse(it) }
             val kind = call.parameters["kind"]?.let { Kind.valueOf(it) }
 
-            withContext(context) {
-                val tasks = Tasks.filterBy(status, after, kind)
+            val page = call.parameters["page"]?.toInt()
+            val pageSize = call.parameters["pageSize"]?.toInt() ?: 20
 
-                call.respond(tasks)
+            withContext(context) {
+                if (page != null) {
+                    val tasks = Tasks.filterBy(status, after, kind, pageSize, (page - 1) * pageSize)
+                    val count = Tasks.count(status, after, kind)
+                    call.respond(PaginatedTasksDto(tasks, page, pageSize, count))
+                } else {
+                    val tasks = Tasks.filterBy(status, after, kind)
+                    call.respond(tasks)
+                }
             }
         }
 
@@ -57,6 +68,13 @@ fun Route.tasks(context: CoroutineContext) {
         }
     }
 }
+
+data class PaginatedTasksDto(
+    val tasks: List<TaskDto>,
+    val page: Int,
+    val pageSize: Int,
+    val totalTasks: Int,
+)
 
 data class TaskDtoPatch(
     val status: Status,
