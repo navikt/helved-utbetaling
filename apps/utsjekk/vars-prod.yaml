@@ -1,0 +1,18 @@
+ingress: https://utsjekk.intern.nav.no
+unleash:
+  apiToken: utsjekk-unleash-api-token
+  environment: production
+db:
+  tier: "db-custom-1-3840"
+  highAvailability: "true"
+  version: "POSTGRES_15"
+  name: "utsjekk"
+groups:
+  prosesseringAdmin: "97140b9a-07c5-414c-beeb-69824d04c044"
+  saksbehandlerDagpenger: "2e9c63d8-322e-4c1f-b500-a0abb812761c"
+  beslutterDagpenger: "70d54cad-53a3-4788-bbe3-565096f01da7"
+  saksbehandlerTiltakspenger: "6c6ce2e8-b2e2-4c4b-8194-215c8e27a5c7"
+  beslutterTiltakspenger: "de518927-f657-4f37-9a64-14fdfd968dd2"
+  beslutterTilleggsstønader: "c1e9edec-0c10-4df2-8c74-324ab9922220"
+kafka:
+  pool: nav-prod

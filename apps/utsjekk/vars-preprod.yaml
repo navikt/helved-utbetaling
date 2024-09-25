@@ -1,0 +1,18 @@
+ingress: https://utsjekk.intern.dev.nav.no
+unleash:
+  apiToken: utsjekk-unleash-api-token
+  environment: development
+db:
+  tier: "db-f1-micro"
+  highAvailability: "false"
+  version: "POSTGRES_15"
+  name: "utsjekk"
+groups:
+  prosesseringAdmin: "928636f4-fd0d-4149-978e-a6fb68bb19de" #Dette er 0000-GA-STDAPPS i preprod
+  saksbehandlerDagpenger: "3e28466f-c53d-46da-8b44-a4abc2ad4593"
+  beslutterDagpenger: "11b8475a-fb12-41aa-b1f6-8497c1b5385b"
+  saksbehandlerTiltakspenger: "1b3a2c4d-d620-4fcf-a29b-a6cdadf29680"
+  beslutterTiltakspenger: "79985315-b2de-40b8-a740-9510796993c6"
+  beslutterTilleggsstønader: "31a99292-9461-40bf-b2d0-a815697dfbb4"
+kafka:
+  pool: nav-dev

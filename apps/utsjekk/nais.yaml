@@ -1,0 +1,93 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: utsjekk
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  image: {{ image }}
+  ingresses:
+      - {{ ingress }}
+  liveness:
+    path: /probes/live
+    initialDelay: 30
+    failureThreshold: 10
+  readiness:
+    path: /probes/ready
+    initialDelay: 30
+    failureThreshold: 10
+  prometheus:
+    enabled: true
+    path: /internal/prometheus
+  replicas:
+    min: 2
+    max: 4
+    cpuThresholdPercentage: 50
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      memory: 256Mi
+      cpu: 100m
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+  secureLogs:
+    enabled: true
+  leaderElection: true
+  kafka:
+    pool: {{ kafka.pool }}
+  envFrom:
+    - secret: {{ unleash.apiToken }}
+  azure:
+    application:
+      enabled: true
+      claims:
+        groups:
+          - id: {{ groups.prosesseringAdmin }} # 0000-GA-Dagpenger-Prosessering-Admin gir tilgang til prosessering
+          - id: {{ groups.saksbehandlerDagpenger }} # 0000-GA-Dagpenger-Saksbehandler
+          - id: {{ groups.beslutterDagpenger }} # 0000-GA-Dagpenger-Beslutter
+          - id: {{ groups.saksbehandlerTiltakspenger }}
+          - id: {{ groups.beslutterTiltakspenger }}
+          - id: {{ groups.beslutterTilleggsstønader }}
+        extra:
+          - NAVident
+          - azp_name
+  accessPolicy:
+    inbound:
+      rules:
+        - application: utsjekk # For å sette i gang grensesnittavstemming første gang
+        - application: utsjekk-prosessering #frontend for task-rammeverket
+        - application: utsjekk-prosessering-test # Tester ny frontend for task-rammeverket
+          permissions:
+            roles:
+              - "prosessering-admin"
+        - application: tiltakspenger-vedtak
+          namespace: tpts
+        - application: tilleggsstonader-sak
+          namespace: tilleggsstonader
+        - application: azure-token-generator
+          namespace: aura
+          cluster: dev-gcp
+    outbound:
+      rules:
+        - application: utsjekk-oppdrag
+        - application: utsjekk-simulering
+      external:
+        - host: helved-unleash-api.nav.cloud.nais.io
+  gcp:
+    sqlInstances:
+      - type: {{ db.version }} # IF This is changed, all data will be lost. Read on nais.io how to upgrade
+        diskAutoresize: true
+        tier: {{ db.tier }}
+        cascadingDelete: false
+        highAvailability: {{ db.highAvailability }}
+        pointInTimeRecovery: true
+        maintenance:
+          day: 7
+          hour: 23
+        databases:
+          - name: {{ db.name }}
+            envVarPrefix: DB
