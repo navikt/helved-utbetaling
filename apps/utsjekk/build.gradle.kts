@@ -10,6 +10,12 @@ val ktorVersion = "2.3.12"
 val libVersion = "0.1.105"
 val kontraktVersion = "1.0_20240829083905_36ac417"
 
+sourceSets {
+    main {
+        resources.srcDir("db")
+    }
+}
+
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
