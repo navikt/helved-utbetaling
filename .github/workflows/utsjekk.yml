@@ -28,7 +28,7 @@ jobs:
         with:
           dependency-graph: generate-and-submit
 
-      - run: ./gradlew apps:${{ github.workflow }}:test apps:${{ github.workflow }}:buildFatJar --continue --no-daemon --parallel
+      - run: ./gradlew apps:${{ github.workflow }}:test apps:${{ github.workflow }}:buildFatJar --continue --no-daemon
 
       - uses: dorny/test-reporter@v1.9.1
         if: success() || failure()
