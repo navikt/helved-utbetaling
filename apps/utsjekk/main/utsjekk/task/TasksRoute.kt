@@ -1,18 +1,15 @@
 package utsjekk.task
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.patch
-import io.ktor.server.routing.route
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
 import utsjekk.task.history.TaskHistory
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 fun Route.tasks(context: CoroutineContext) {
@@ -35,6 +32,17 @@ fun Route.tasks(context: CoroutineContext) {
                     call.respond(tasks)
                 }
             }
+        }
+
+        put("/{id}/rekjør") {
+            val id = call.parameters["id"]?.let(UUID::fromString)
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
+
+            withContext(context) {
+                Tasks.rekjør(id)
+            }
+
+            call.respond(HttpStatusCode.OK)
         }
 
         patch("/{id}") {

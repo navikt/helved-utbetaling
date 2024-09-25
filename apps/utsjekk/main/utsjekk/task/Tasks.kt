@@ -76,6 +76,23 @@ object Tasks {
                 }.map(TaskDto::from)
         }
 
+    suspend fun rekjør(id: UUID) = transaction {
+        val now = LocalDateTime.now()
+        val task = TaskDao.select { it.id = id }.single()
+        task.copy(
+            updatedAt = now,
+            scheduledFor = now,
+            attempt = task.attempt + 1,
+        ).update()
+        TaskHistoryDao(
+            taskId = task.id,
+            createdAt = task.createdAt,
+            triggeredAt = task.updatedAt,
+            triggeredBy = task.updatedAt,
+            status = task.status,
+        ).insert()
+    }
+
     suspend fun update(
         id: UUID,
         status: Status,

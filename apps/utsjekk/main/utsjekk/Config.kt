@@ -17,13 +17,13 @@ data class Config(
 )
 
 data class OppdragConfig(
-    val scope: String = env("api://dev-gcp.helved.utsjekk-oppdrag/.default"),
-    val host: URL = env("http://utsjekk-oppdrag")
+    val scope: String = env("OPPDRAG_SCOPE", "api://dev-gcp.helved.utsjekk-oppdrag/.default"),
+    val host: URL = env("OPPDRAG_HOST", URI("http://utsjekk-oppdrag").toURL())
 )
 
 data class SimuleringConfig(
-    val scope: String = env("api://dev-gcp.helved.utsjekk-simulering/.default"),
-    val host: URL = env("http://utsjekk-simulering")
+    val scope: String = env("SIMULERING_SCOPE", "api://dev-gcp.helved.utsjekk-simulering/.default"),
+    val host: URL = env("SIMULERING_HOST", URI("http://utsjekk-simulering").toURL())
 )
 
 data class UnleashConfig(
