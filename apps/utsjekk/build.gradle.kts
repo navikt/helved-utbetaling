@@ -3,7 +3,7 @@ plugins {
 }
 
 application {
-    mainClass.set("oppdrag.AppKt")
+    mainClass.set("utsjekk.AppKt")
 }
 
 val ktorVersion = "2.3.12"
