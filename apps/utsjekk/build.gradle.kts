@@ -12,7 +12,7 @@ val kontraktVersion = "1.0_20240829083905_36ac417"
 
 sourceSets {
     main {
-        resources.srcDir("db")
+        resources.srcDir("flyway")
     }
 }
 
