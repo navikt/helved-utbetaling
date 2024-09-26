@@ -67,6 +67,16 @@ class SimuleringTest {
     }
 
     @Test
+    fun `kan deserialisere trekkpostering`() {
+        assertDoesNotThrow {
+            TestRuntime().use { runtime ->
+                val simulering = SimuleringService(runtime.config)
+                simulering.json(Resource.read("/sim-trekk.xml"))
+            }
+        }
+    }
+
+    @Test
     fun `kan deserialisere motposteringer`() {
         assertDoesNotThrow {
             TestRuntime().use { runtime ->
