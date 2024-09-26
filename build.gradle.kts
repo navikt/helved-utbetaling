@@ -4,6 +4,8 @@ plugins {
 }
 
 subprojects {
+    apply(plugin = "org.jetbrains.kotlin.jvm")
+
     tasks {
         withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
             compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
@@ -16,7 +18,7 @@ subprojects {
         sourceSets {
             main {
                 kotlin.srcDir("main")
-                resources.srcDir("main")
+                resources.srcDirs("main", "flyway")
             }
             test {
                 kotlin.srcDir("test")
@@ -27,8 +29,6 @@ subprojects {
 }
 
 allprojects {
-    apply(plugin = "org.jetbrains.kotlin.jvm")
-
     repositories {
         mavenCentral()
         maven("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
