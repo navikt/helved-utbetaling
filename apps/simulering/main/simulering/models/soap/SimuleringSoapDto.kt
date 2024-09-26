@@ -105,7 +105,8 @@ object soap {
         MND,
         AAR,
         ENG,
-        AKTO
+        AKTO,
+        LOPP
     }
 
     data class Infomelding(val beskrMelding: String)
