@@ -40,12 +40,11 @@ class SjekkStatusStrategyTest {
             IverksettingResultater.opprett(iverksetting, null)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
-//
             val task = runBlocking {
                 suspend fun getTask(attempt: Int): TaskDto? {
                     return withContext(TestRuntime.context) {
                         val actual = transaction { Tasks.forId(taskId) }
-                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        if (actual?.attempt != 1 && attempt < 500) getTask(attempt + 1)
                         else actual
                     }
                 }
@@ -72,12 +71,11 @@ class SjekkStatusStrategyTest {
             IverksettingResultater.opprett(iverksetting, null)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
-
             val task = runBlocking {
                 suspend fun getTask(attempt: Int): TaskDto? {
                     return withContext(TestRuntime.context) {
                         val actual = transaction { Tasks.forId(taskId) }
-                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        if (actual?.attempt != 1 && attempt < 500) getTask(attempt + 1)
                         else actual
                     }
                 }
@@ -103,12 +101,11 @@ class SjekkStatusStrategyTest {
             IverksettingResultater.opprett(iverksetting, null)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
-
             val task = runBlocking {
                 suspend fun getTask(attempt: Int): TaskDto? {
                     return withContext(TestRuntime.context) {
                         val actual = transaction { Tasks.forId(taskId) }
-                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        if (actual?.attempt != 1 && attempt < 500) getTask(attempt + 1)
                         else actual
                     }
                 }
@@ -134,12 +131,11 @@ class SjekkStatusStrategyTest {
             IverksettingResultater.opprett(iverksetting, null)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
-
             val task = runBlocking {
                 suspend fun getTask(attempt: Int): TaskDto? {
                     return withContext(TestRuntime.context) {
                         val actual = transaction { Tasks.forId(taskId) }
-                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        if (actual?.attempt != 1 && attempt < 500) getTask(attempt + 1)
                         else actual
                     }
                 }
@@ -165,12 +161,11 @@ class SjekkStatusStrategyTest {
             IverksettingResultater.opprett(iverksetting, null)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(Kind.SjekkStatus, oppdragId)
-
             val task = runBlocking {
                 suspend fun getTask(attempt: Int): TaskDto? {
                     return withContext(TestRuntime.context) {
                         val actual = transaction { Tasks.forId(taskId) }
-                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        if (actual?.attempt != 1 && attempt < 500) getTask(attempt + 1)
                         else actual
                     }
                 }
@@ -200,7 +195,7 @@ class SjekkStatusStrategyTest {
                 suspend fun getTask(attempt: Int): TaskDto? {
                     return withContext(TestRuntime.context) {
                         val actual = transaction { Tasks.forId(taskId) }
-                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        if (actual?.attempt != 1 && attempt < 500) getTask(attempt + 1)
                         else actual
                     }
                 }
@@ -230,7 +225,7 @@ class SjekkStatusStrategyTest {
                 suspend fun getTask(attempt: Int): TaskDto? {
                     return withContext(TestRuntime.context) {
                         val actual = transaction { Tasks.forId(taskId) }
-                        if (actual?.attempt != 1 && attempt < 1000) getTask(attempt + 1)
+                        if (actual?.attempt != 1 && attempt < 500) getTask(attempt + 1)
                         else actual
                     }
                 }
