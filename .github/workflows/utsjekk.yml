@@ -8,6 +8,7 @@ on:
       - 'apps/utsjekk/**'
       - '.github/workflows/utsjekk.yml'
       - 'build.gradle.kts'
+      - 'Dockerfile'
 
 jobs:
   build:
