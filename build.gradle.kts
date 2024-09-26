@@ -4,8 +4,6 @@ plugins {
 }
 
 subprojects {
-    apply(plugin = "org.jetbrains.kotlin.jvm")
-
     tasks {
         withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
             compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
@@ -29,6 +27,8 @@ subprojects {
 }
 
 allprojects {
+    apply(plugin = "org.jetbrains.kotlin.jvm")
+
     repositories {
         mavenCentral()
         maven("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
