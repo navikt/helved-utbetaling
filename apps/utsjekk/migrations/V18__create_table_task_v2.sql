@@ -1,4 +1,4 @@
-CREATE TABLE task_v2
+CREATE TABLE IF NOT EXISTS task_v2
 (
     id            UUID PRIMARY KEY,
     kind          VARCHAR     NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE task_v2
     message       VARCHAR
 );
 
-CREATE TABLE task_v2_history
+CREATE TABLE IF NOT EXISTS task_v2_history
 (
     id           UUID PRIMARY KEY,
     task_id      UUID REFERENCES task_v2 (id) ON DELETE CASCADE,
