@@ -9,7 +9,12 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import libs.jdbc.PostgresContainer
+import libs.postgres.Postgres
+import libs.postgres.concurrency.CoroutineDatasource
+import libs.postgres.concurrency.connection
+import libs.postgres.concurrency.transaction
 import libs.utils.appLog
 import utsjekk.Config
 import utsjekk.iverksetting.IverksettingDao
@@ -32,26 +37,32 @@ object TestRuntime : AutoCloseable {
     val oppdrag = OppdragFake()
     val simulering = SimuleringFake()
     val unleash = UnleashFake()
-
-    val context: CoroutineContext = postgres.context
     val kafka: KafkaFake = KafkaFake()
+    val jdbc = Postgres.initialize(postgres.config)
+    val context = CoroutineDatasource(jdbc)
 
     val config by lazy {
         Config(
             oppdrag = oppdrag.config,
             simulering = simulering.config,
             azure = azure.config,
-            postgres = postgres.config,
+            jdbc = postgres.config,
             unleash = UnleashFake.config,
             kafka = kafka.config,
         )
     }
 
     fun clear(vararg tables: String) {
-        postgres.transaction { con ->
-            tables.forEach { con.prepareStatement("TRUNCATE TABLE $it CASCADE").execute() }
-        }.also {
-            tables.forEach { appLog.info("table '$it' truncated.") }
+        runBlocking {
+            withContext(Postgres.context) {
+                transaction {
+                    tables.forEach {
+                        coroutineContext.connection.prepareStatement("TRUNCATE TABLE $it CASCADE").execute()
+                    }
+                }.also {
+                    tables.forEach { appLog.info("table '$it' truncated.") }
+                }
+            }
         }
     }
 
@@ -82,6 +93,7 @@ private val testApplication: TestApplication by lazy {
         application {
             utsjekk(
                 config = TestRuntime.config,
+                datasource = TestRuntime.jdbc,
                 context = TestRuntime.context,
                 featureToggles = TestRuntime.unleash,
                 statusProducer = TestRuntime.kafka

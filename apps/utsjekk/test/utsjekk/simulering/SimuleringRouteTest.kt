@@ -26,7 +26,7 @@ class SimuleringRouteTest {
 
     @Test
     fun test() {
-        println(TestRuntime.config.postgres)
+        println(TestRuntime.config.jdbc)
     }
 
     @Test
