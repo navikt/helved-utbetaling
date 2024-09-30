@@ -60,6 +60,7 @@ fun Route.tasks(context: CoroutineContext) {
 
             withContext(context) {
                 Tasks.update(id, payload.status, payload.message)
+                call.respond(HttpStatusCode.OK)
             }
         }
 
