@@ -19,12 +19,13 @@ import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.kafka.Kafka
+import libs.postgres.Migrator
 import libs.postgres.Postgres
-import libs.postgres.Postgres.migrate
-import libs.postgres.concurrency.CoroutineDatasource
 import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
@@ -41,6 +42,7 @@ import utsjekk.status.StatusKafkaProducer
 import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
+import java.io.File
 import javax.sql.DataSource
 import kotlin.coroutines.CoroutineContext
 
@@ -55,11 +57,17 @@ fun main() {
 
 fun Application.utsjekk(
     config: Config = Config(),
-    datasource: DataSource = Postgres.initialize(config.postgres).apply { migrate() },
-    context: CoroutineContext = Dispatchers.IO + CoroutineDatasource(datasource),
+    datasource: DataSource = Postgres.initialize(config.jdbc),
+    context: CoroutineContext = Dispatchers.IO + Postgres.context,
     featureToggles: FeatureToggles = UnleashFeatureToggles(config.unleash),
     statusProducer: Kafka<StatusEndretMelding> = StatusKafkaProducer(config.kafka)
 ) {
+    runBlocking {
+        withContext(context) {
+            Migrator(File("migrations"), context).migrate()
+        }
+    }
+
     val meters = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(MicrometerMetrics) {
