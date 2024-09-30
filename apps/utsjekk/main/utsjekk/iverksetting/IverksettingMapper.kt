@@ -63,12 +63,14 @@ fun Stønadsdata.Companion.from(dto: StønadsdataDto): Stønadsdata {
         is StønadsdataDagpengerDto -> StønadsdataDagpenger(
             stønadstype = dto.stønadstype,
             ferietillegg = dto.ferietillegg,
+            meldekortId = dto.meldekortId,
         )
 
         is StønadsdataTiltakspengerV2Dto -> StønadsdataTiltakspenger(
             stønadstype = dto.stønadstype,
             barnetillegg = dto.barnetillegg,
-            brukersNavKontor = BrukersNavKontor(enhet = dto.brukersNavKontor)
+            brukersNavKontor = BrukersNavKontor(enhet = dto.brukersNavKontor),
+            meldekortId = dto.meldekortId,
         )
 
         is StønadsdataTilleggsstønaderDto -> StønadsdataTilleggsstønader(

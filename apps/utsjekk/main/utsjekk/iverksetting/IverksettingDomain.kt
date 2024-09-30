@@ -152,7 +152,11 @@ sealed class Stønadsdata(open val stønadstype: StønadType) {
     abstract fun tilKjedenøkkel(): Kjedenøkkel
 }
 
-data class StønadsdataDagpenger(override val stønadstype: StønadTypeDagpenger, val ferietillegg: Ferietillegg? = null) :
+data class StønadsdataDagpenger(
+    override val stønadstype: StønadTypeDagpenger,
+    val ferietillegg: Ferietillegg? = null,
+    val meldekortId: String
+) :
     Stønadsdata(stønadstype) {
     fun tilKlassifiseringDagpenger(): String =
         when (this.stønadstype) {
@@ -185,15 +189,15 @@ data class StønadsdataDagpenger(override val stønadstype: StønadTypeDagpenger
                 }
         }
 
-    // TODO faktisk meldekortId må inn her når grensesnittet er utvidet
     override fun tilKjedenøkkel(): Kjedenøkkel =
-        KjedenøkkelMeldeplikt(klassifiseringskode = this.tilKlassifiseringDagpenger(), meldekortId = "TODO")
+        KjedenøkkelMeldeplikt(klassifiseringskode = this.tilKlassifiseringDagpenger(), meldekortId = this.meldekortId)
 }
 
 data class StønadsdataTiltakspenger(
     override val stønadstype: StønadTypeTiltakspenger,
     val barnetillegg: Boolean = false,
     val brukersNavKontor: BrukersNavKontor,
+    val meldekortId: String,
 ) : Stønadsdata(stønadstype) {
     fun tilKlassifiseringTiltakspenger(): String =
         if (barnetillegg) {
@@ -238,9 +242,8 @@ data class StønadsdataTiltakspenger(
             }
         }
 
-    // TODO faktisk meldekortId må inn her når grensesnittet er utvidet
     override fun tilKjedenøkkel(): Kjedenøkkel =
-        KjedenøkkelMeldeplikt(klassifiseringskode = this.tilKlassifiseringTiltakspenger(), meldekortId = "TODO")
+        KjedenøkkelMeldeplikt(klassifiseringskode = this.tilKlassifiseringTiltakspenger(), meldekortId = this.meldekortId)
 }
 
 data class StønadsdataTilleggsstønader(

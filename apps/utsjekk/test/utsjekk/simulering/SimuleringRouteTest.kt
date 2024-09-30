@@ -87,7 +87,8 @@ class SimuleringRouteTest {
                             stønadsdata = StønadsdataTiltakspengerV2Dto(
                                 stønadstype = StønadTypeTiltakspenger.ARBEIDSTRENING,
                                 barnetillegg = false,
-                                brukersNavKontor = "4400"
+                                brukersNavKontor = "4400",
+                                meldekortId = "M1",
                             )
                         )
                     ),
@@ -129,7 +130,8 @@ class SimuleringRouteTest {
                     utbetalinger = listOf(
                         utbetaling(
                             stønadsdata = StønadsdataDagpengerDto(
-                               stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR
+                               stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
+                                meldekortId = "M1",
                             )
                         )
                     ),

@@ -92,7 +92,8 @@ object TestData {
         fun dagpengestønad(
             type: StønadTypeDagpenger = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
             ferietillegg: Ferietillegg? = null,
-        ) = StønadsdataDagpengerDto(type, ferietillegg)
+            meldekortId: String = "M1"
+        ) = StønadsdataDagpengerDto(stønadstype = type, ferietillegg = ferietillegg, meldekortId = meldekortId)
 
         fun tilleggstønad(
             type: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_AAP,
@@ -319,7 +320,8 @@ object TestData {
             periodeId: Long? = null,
             forrigePeriodeId: Long? = null,
             stønadsdata: Stønadsdata = StønadsdataDagpenger(
-                stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR
+                stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
+                meldekortId = "M1",
             )
         ): AndelTilkjentYtelse = AndelTilkjentYtelse(
             beløp = beløp,
@@ -367,6 +369,7 @@ object TestData {
             stønadsdata: Stønadsdata = StønadsdataDagpenger(
                 stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
                 ferietillegg = null,
+                meldekortId = "M1",
             ),
             periodeId: Long? = null,
             forrigePeriodeId: Long? = null,
