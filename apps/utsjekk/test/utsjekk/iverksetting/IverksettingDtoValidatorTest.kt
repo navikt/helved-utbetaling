@@ -13,7 +13,7 @@ import utsjekk.ApiError
 import java.time.LocalDate
 import java.util.*
 
-class IverksettingDtoValidator {
+class IverksettingDtoValidatorTest {
     @Test
     fun `skal få 400 hvis sakId er for lang`() {
         val iverksettDto = TestData.dto.iverksetting(sakId = RandomOSURId.generate() + RandomOSURId.generate())
@@ -104,6 +104,7 @@ class IverksettingDtoValidator {
                             StønadsdataTiltakspengerV2Dto(
                                 stønadstype = StønadTypeTiltakspenger.JOBBKLUBB,
                                 brukersNavKontor = "4401",
+                                meldekortId = "M1",
                             ),
                         ),
                         TestData.dto.utbetaling(
@@ -115,6 +116,7 @@ class IverksettingDtoValidator {
                                 stønadstype = StønadTypeTiltakspenger.JOBBKLUBB,
                                 barnetillegg = true,
                                 brukersNavKontor = "4401",
+                                meldekortId = "M1",
                             ),
                         ),
                     ),
@@ -138,6 +140,7 @@ class IverksettingDtoValidator {
                 StønadsdataTiltakspengerV2Dto(
                     stønadstype = StønadTypeTiltakspenger.JOBBKLUBB,
                     brukersNavKontor = "4401",
+                    meldekortId = "M1",
                 ),
             )
         val iverksettDto =
@@ -160,7 +163,8 @@ class IverksettingDtoValidator {
                     TestData.dto.utbetaling(
                         stønadsdata = StønadsdataDagpengerDto(
                             stønadstype = StønadTypeDagpenger.DAGPENGER_EØS,
-                            ferietillegg = Ferietillegg.AVDØD
+                            ferietillegg = Ferietillegg.AVDØD,
+                            meldekortId = "M1",
                         ),
                     )
                 )

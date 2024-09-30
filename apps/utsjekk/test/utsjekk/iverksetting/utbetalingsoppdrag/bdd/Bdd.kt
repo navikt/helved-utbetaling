@@ -234,12 +234,13 @@ private fun assertUtbetalingsperiode(
 ) {
     val forventetStønadsdata =
         if (forventetUtbetalingsperiode.ytelse is StønadTypeDagpenger) {
-            StønadsdataDagpenger(forventetUtbetalingsperiode.ytelse)
+            StønadsdataDagpenger(stønadstype = forventetUtbetalingsperiode.ytelse, meldekortId = "M1")
         } else {
             StønadsdataTiltakspenger(
                 stønadstype = forventetUtbetalingsperiode.ytelse as StønadTypeTiltakspenger,
                 barnetillegg = false,
-                brukersNavKontor = BrukersNavKontor("4400")
+                brukersNavKontor = BrukersNavKontor("4400"),
+                meldekortId = "M1",
             )
         }
 

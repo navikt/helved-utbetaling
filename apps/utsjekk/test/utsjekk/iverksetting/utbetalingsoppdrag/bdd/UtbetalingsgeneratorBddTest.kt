@@ -507,9 +507,9 @@ class UtbetalingsgeneratorBddTest {
 
         private fun createStønadsdata(): Stønadsdata =
             when (ytelse) {
-                is StønadTypeDagpenger -> StønadsdataDagpenger(ytelse)
+                is StønadTypeDagpenger -> StønadsdataDagpenger(stønadstype = ytelse, meldekortId = "M1")
                 is StønadTypeTilleggsstønader -> StønadsdataTilleggsstønader(ytelse)
-                is StønadTypeTiltakspenger -> StønadsdataTiltakspenger(ytelse, brukersNavKontor = BrukersNavKontor("1234"))
+                is StønadTypeTiltakspenger -> StønadsdataTiltakspenger(stønadstype = ytelse, brukersNavKontor = BrukersNavKontor("1234"), meldekortId = "M1")
             }
     }
 
