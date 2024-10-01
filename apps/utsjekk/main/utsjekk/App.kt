@@ -26,7 +26,6 @@ import libs.auth.configure
 import libs.kafka.Kafka
 import libs.postgres.Migrator
 import libs.postgres.Postgres
-import libs.utils.Resource
 import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
@@ -43,9 +42,10 @@ import utsjekk.status.StatusKafkaProducer
 import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
-import java.io.File
+import java.nio.file.Paths
 import javax.sql.DataSource
 import kotlin.coroutines.CoroutineContext
+import kotlin.io.path.Path
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -65,7 +65,7 @@ fun Application.utsjekk(
 ) {
     runBlocking {
         withContext(context) {
-            val location = File(Resource.get("/migrations/V1__create_task_tabell.sql").toExternalForm()).parentFile
+            val location = Path(Paths.get("").toAbsolutePath().toString() + "/migrations").toFile()
             Migrator(location, context).migrate()
         }
     }
