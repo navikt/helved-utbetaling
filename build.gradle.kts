@@ -18,7 +18,7 @@ subprojects {
         sourceSets {
             main {
                 kotlin.srcDir("main")
-                resources.srcDirs("main", "migrations")
+                resources.srcDirs("main")
             }
             test {
                 kotlin.srcDir("test")
