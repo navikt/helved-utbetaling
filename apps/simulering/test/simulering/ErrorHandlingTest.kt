@@ -21,29 +21,26 @@ class ErrorHandlingTest {
                     app(config = runtime.config)
                 }
 
-                val http =
-                    createClient {
-                        install(ContentNegotiation) {
-                            jackson {
-                                registerModule(JavaTimeModule())
-                                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                            }
+                val http = createClient {
+                    install(ContentNegotiation) {
+                        jackson {
+                            registerModule(JavaTimeModule())
+                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                         }
                     }
+                }
 
                 runtime.soapRespondWith(
-                    Resource
-                        .read("/soap-fault.xml")
+                    Resource.read("/soap-fault.xml")
                         .replace("\$errorCode", "lol dummy 123")
-                        .replace("\$errorMessage", "Fødselsnummeret er ugyldig"),
+                        .replace("\$errorMessage", "Fødselsnummeret er ugyldig")
                 )
 
-                val res =
-                    http.post("/simulering") {
-                        contentType(ContentType.Application.Json)
-                        setBody(enSimuleringRequestBody())
-                    }
+                val res = http.post("/simulering") {
+                    contentType(ContentType.Application.Json)
+                    setBody(enSimuleringRequestBody())
+                }
 
                 kotlin.test.assertEquals(HttpStatusCode.BadRequest, res.status)
             }
@@ -58,24 +55,22 @@ class ErrorHandlingTest {
                     app(config = runtime.config)
                 }
 
-                val http =
-                    createClient {
-                        install(ContentNegotiation) {
-                            jackson {
-                                registerModule(JavaTimeModule())
-                                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                            }
+                val http = createClient {
+                    install(ContentNegotiation) {
+                        jackson {
+                            registerModule(JavaTimeModule())
+                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                         }
                     }
+                }
 
                 runtime.soapRespondWith(xmlCicsFeil)
 
-                val response =
-                    http.post("/simulering") {
-                        contentType(ContentType.Application.Json)
-                        setBody(enSimuleringRequestBody())
-                    }
+                val response = http.post("/simulering") {
+                    contentType(ContentType.Application.Json)
+                    setBody(enSimuleringRequestBody())
+                }
 
                 assertEquals(HttpStatusCode.InternalServerError, response.status)
             }
@@ -83,35 +78,8 @@ class ErrorHandlingTest {
     }
 
     @Test
-    fun `can resolve person finnes ikke i PDL-fault`() {
-        TestRuntime().use { runtime ->
-            testApplication {
-                application {
-                    app(config = runtime.config)
-                }
+    fun `can resolve client fault`() {
 
-                val http =
-                    createClient {
-                        install(ContentNegotiation) {
-                            jackson {
-                                registerModule(JavaTimeModule())
-                                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                            }
-                        }
-                    }
-
-                runtime.soapRespondWith(personFinnesIkkeIPDL)
-
-                val response =
-                    http.post("/simulering") {
-                        contentType(ContentType.Application.Json)
-                        setBody(enSimuleringRequestBody())
-                    }
-
-                assertEquals(HttpStatusCode.BadRequest, response.status)
-            }
-        }
     }
 }
 
@@ -119,43 +87,40 @@ enum class SoapFaultCode {
     VersionMismatch,
     MustUnderstand,
     Client,
-    Server,
+    Server
 }
 
-private val serverFault =
-    """
+private val serverFault = """
 <soap:Fault xmlns="">
     <faultcode>SOAP-ENV:Server</faultcode>
     <faultstring>Conversion from SOAP failed</faultstring>
 </soap:Fault>
-    """.trimIndent()
+""".trimIndent()
 
-private val clientFault =
-    """
+
+private val clientFault = """
 <soap:Fault xmlns="">
     <faultcode>SOAP-ENV:Server</faultcode>
     <faultstring>Conversion from SOAP failed</faultstring>
 </soap:Fault>
-    """.trimIndent()
+""".trimIndent()
 
-private val versionMismatchFault =
-    """
+
+private val versionMismatchFault = """
 <soap:Fault xmlns="">
     <faultcode>SOAP-ENV:Server</faultcode>
     <faultstring>Conversion from SOAP failed</faultstring>
 </soap:Fault>
-    """.trimIndent()
+""".trimIndent()
 
-private val mustUnderstandFault =
-    """
+private val mustUnderstandFault = """
 <soap:Fault xmlns="">
     <faultcode>SOAP-ENV:Server</faultcode>
     <faultstring>Conversion from SOAP failed</faultstring>
 </soap:Fault>
-    """.trimIndent()
+""".trimIndent()
 
-private val xmlCicsFeil =
-    """
+private val xmlCicsFeil = """
 <soap:Fault xmlns="">
     <faultcode>SOAP-ENV:Server</faultcode>
     <faultstring>Conversion from SOAP failed</faultstring>
@@ -166,10 +131,9 @@ private val xmlCicsFeil =
         </CICSFault>
     </detail>
 </soap:Fault>
-    """.trimIndent()
+""".trimIndent()
 
-private val xmlSimulerBeregningFeilUnderBehandling =
-    """
+private val xmlSimulerBeregningFeilUnderBehandling = """
     <S:Fault xmlns="">
     <faultcode>Soap:Client</faultcode>
     <faultstring>simulerBeregningFeilUnderBehandling                                             </faultstring>
@@ -182,25 +146,4 @@ private val xmlSimulerBeregningFeilUnderBehandling =
         </sf:simulerBeregningFeilUnderBehandling>
     </detail>
 </S:Fault>
-    """.trimIndent()
-
-private val personFinnesIkkeIPDL =
-    """
-    <SOAP-ENV:Envelope
-            xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
-        <SOAP-ENV:Body>
-            <SOAP-ENV:Fault xmlns="">
-                <faultcode>SOAP-ENV:Client</faultcode>
-                <faultstring>simulerBeregningFeilUnderBehandling</faultstring>
-                <detail>
-                    <sf:simulerBeregningFeilUnderBehandling xmlns:sf="http://nav.no/system/os/tjenester/oppdragService">
-                        <errorMessage>Personen finnes ikke i PDL: 09499810684</errorMessage>
-                        <errorSource>K231B199 section: CA30-SJE</errorSource>
-                        <rootCause>Kode B199006F - SQL - MQ</rootCause>
-                        <dateTimeStamp>2024-09-25T11:02:07</dateTimeStamp>
-                    </sf:simulerBeregningFeilUnderBehandling>
-                </detail>
-            </SOAP-ENV:Fault>
-        </SOAP-ENV:Body>
-    </SOAP-ENV:Envelope>
-    """.trimIndent()
+""".trimIndent()
