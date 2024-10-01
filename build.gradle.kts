@@ -10,9 +10,7 @@ subprojects {
         withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
             compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
         }
-        withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
-            mergeServiceFiles()
-        }
+
         withType<Test> {
             useJUnitPlatform()
         }
