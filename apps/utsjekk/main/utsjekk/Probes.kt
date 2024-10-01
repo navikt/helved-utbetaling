@@ -10,7 +10,5 @@ fun Routing.probes(meters: PrometheusMeterRegistry) {
     route("/probes") {
         get("/metric") { call.respond(meters.scrape()) }
         get("/health") { call.respond(HttpStatusCode.OK) }
-        get("/live") { call.respond(HttpStatusCode.OK, "live") }
-        get("/ready") { call.respond(HttpStatusCode.OK, "ready") }
     }
 }
