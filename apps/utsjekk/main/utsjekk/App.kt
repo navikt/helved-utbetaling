@@ -61,11 +61,11 @@ fun Application.utsjekk(
     datasource: DataSource = Postgres.initialize(config.jdbc),
     context: CoroutineContext = Dispatchers.IO + Postgres.context,
     featureToggles: FeatureToggles = UnleashFeatureToggles(config.unleash),
-    statusProducer: Kafka<StatusEndretMelding> = StatusKafkaProducer(config.kafka)
+    statusProducer: Kafka<StatusEndretMelding> = StatusKafkaProducer(config.kafka),
 ) {
     runBlocking {
         withContext(context) {
-            val location = File(Resource.get("/V1__create_task_tabell.sql").toURI()).parentFile
+            val location = File(Resource.get("/migrations/V1__create_task_tabell.sql").toURI()).parentFile
             Migrator(location, context).migrate()
         }
     }
@@ -111,14 +111,15 @@ fun Application.utsjekk(
     val simulering = SimuleringClient(config, context)
     val iverksettinger = Iverksettinger(context, featureToggles, statusProducer)
     val simuleringValidator = SimuleringValidator(context, iverksettinger)
-    val scheduler = TaskScheduler(
-        listOf(
-            IverksettingTaskStrategy(oppdrag, iverksettinger),
-            StatusTaskStrategy(oppdrag),
-            AvstemmingTaskStrategy(oppdrag)
-        ),
-        context,
-    )
+    val scheduler =
+        TaskScheduler(
+            listOf(
+                IverksettingTaskStrategy(oppdrag, iverksettinger),
+                StatusTaskStrategy(oppdrag),
+                AvstemmingTaskStrategy(oppdrag),
+            ),
+            context,
+        )
 
     environment.monitor.subscribe(ApplicationStopping) {
         scheduler.close()
@@ -150,7 +151,9 @@ fun ApplicationCall.client(): Client =
         ?: ApiError.forbidden("missing claims: azp_name")
 
 @JvmInline
-value class Client(private val name: String) {
+value class Client(
+    private val name: String,
+) {
     fun toFagsystem(): Fagsystem =
         when (name) {
             "utsjekk" -> Fagsystem.DAGPENGER
