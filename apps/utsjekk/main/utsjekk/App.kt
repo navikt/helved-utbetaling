@@ -65,7 +65,7 @@ fun Application.utsjekk(
 ) {
     runBlocking {
         withContext(context) {
-            val location = File(Resource.get("/migrations/V1__create_task_tabell.sql").toURI()).parentFile
+            val location = File(Resource.get("/migrations/V1__create_task_tabell.sql").toExternalForm()).parentFile
             Migrator(location, context).migrate()
         }
     }
