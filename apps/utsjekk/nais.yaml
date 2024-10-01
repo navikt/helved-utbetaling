@@ -10,16 +10,16 @@ spec:
   ingresses:
       - {{ ingress }}
   liveness:
-    path: /probes/live
+    path: /probes/health
     initialDelay: 30
     failureThreshold: 10
   readiness:
-    path: /probes/ready
+    path: /probes/health
     initialDelay: 30
     failureThreshold: 10
   prometheus:
     enabled: true
-    path: /internal/prometheus
+    path: /probes/metric
   replicas:
     min: 2
     max: 4
