@@ -65,14 +65,12 @@ fun Application.utsjekk(
 ) {
     runBlocking {
         withContext(context) {
-            val path = Resource.get("/db/V1__create_task_tabell.sql").toURI()
-            val parent = File(path).parentFile
-            Migrator(parent, context).migrate()
+            val location = File(Resource.get("/V1__create_task_tabell.sql").toURI()).parentFile
+            Migrator(location, context).migrate()
         }
     }
 
     val meters = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-
     install(MicrometerMetrics) {
         registry = meters
         meterBinders += LogbackMetrics()
