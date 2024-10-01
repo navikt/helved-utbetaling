@@ -26,6 +26,7 @@ import libs.auth.configure
 import libs.kafka.Kafka
 import libs.postgres.Migrator
 import libs.postgres.Postgres
+import libs.utils.Resource
 import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
@@ -64,7 +65,9 @@ fun Application.utsjekk(
 ) {
     runBlocking {
         withContext(context) {
-            Migrator(File("migrations"), context).migrate()
+            val path = Resource.get("/V1__create_task_tabell.sql").toURI()
+            val parent = File(path).parentFile
+            Migrator(parent, context).migrate()
         }
     }
 
