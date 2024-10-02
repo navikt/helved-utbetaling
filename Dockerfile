@@ -5,7 +5,6 @@ ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 
 COPY apps/*/build/libs/*-all.jar /app.jar
 ADD apps/*/build/resources/main /app/migrations
-RUN find /app/migrations ! -name "*.sql" -delete; echo 0
 
 ENTRYPOINT [                           \
     "java",                            \
