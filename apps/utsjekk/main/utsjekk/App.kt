@@ -43,10 +43,8 @@ import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
 import java.io.File
-import java.nio.file.Paths
 import javax.sql.DataSource
 import kotlin.coroutines.CoroutineContext
-import kotlin.io.path.Path
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -116,7 +114,13 @@ fun Application.utsjekk(
             listOf(
                 IverksettingTaskStrategy(oppdrag, iverksettinger),
                 StatusTaskStrategy(oppdrag),
-                AvstemmingTaskStrategy(oppdrag),
+                AvstemmingTaskStrategy(oppdrag).apply {
+                    runBlocking {
+                        withContext(context) {
+                            initiserAvstemmingForNyeFagsystemer()
+                        }
+                    }
+                },
             ),
             context,
         )
