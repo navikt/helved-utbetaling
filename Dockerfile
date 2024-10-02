@@ -4,7 +4,8 @@ ENV LANG='nb_NO.UTF-8' LANGUAGE='nb_NO:nb' LC_ALL='nb:NO.UTF-8' TZ="Europe/Oslo"
 ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 
 COPY apps/*/build/libs/*-all.jar /app.jar
-ADD apps/*/build/resources/main /migrations
+ADD apps/*/build/resources/main /app/migrations
+RUN find /app/migrations ! -name "*.sql" -delete; echo 0
 
 ENTRYPOINT [                           \
     "java",                            \
