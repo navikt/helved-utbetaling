@@ -42,6 +42,7 @@ import utsjekk.status.StatusKafkaProducer
 import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
+import java.io.File
 import java.nio.file.Paths
 import javax.sql.DataSource
 import kotlin.coroutines.CoroutineContext
@@ -65,8 +66,7 @@ fun Application.utsjekk(
 ) {
     runBlocking {
         withContext(context) {
-            val location = Path(Paths.get("").toAbsolutePath().toString() + "/migrations").toFile()
-            Migrator(location, context).migrate()
+            Migrator(File("migrations"), context).migrate()
         }
     }
 
