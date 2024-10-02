@@ -30,11 +30,12 @@ fun Route.iverksettingRoutes(
         }.onSuccess {
             call.respond(HttpStatusCode.Created)
         }.onFailure {
-            appLog.error("Feil ved iverksetting av oppdrag, se securelog for mer info")
-            secureLog.error("Feil ved iverksetting av oppdrag", it)
             when (it) {
                 is OppdragAlleredeSendtException -> oppdragAlleredeSendt(utbetalingsoppdrag)
-                else -> klarteIkkeSendeOppdrag(utbetalingsoppdrag)
+                else -> {
+                    secureLog.error("Klarte ikke sende oppdrag for saksnr ${utbetalingsoppdrag.saksnummer}", it)
+                    klarteIkkeSendeOppdrag(utbetalingsoppdrag)
+                }
             }
         }
     }
@@ -76,15 +77,13 @@ fun Route.iverksettingRoutes(
                 ),
             )
         }.onFailure {
-            call.respond(
-                HttpStatusCode.NotFound,
-                "Fant ikke oppdrag med id $dto",
-            )
+            call.respond(HttpStatusCode.NotFound, "Fant ikke oppdrag med id $dto")
         }
     }
 }
 
 private suspend fun PipelineContext<Unit, ApplicationCall>.klarteIkkeSendeOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {
+    appLog.error("Klarte ikke sende oppdrag for saksnr ${utbetalingsoppdrag.saksnummer}")
     call.respond(
         HttpStatusCode.InternalServerError,
         "Klarte ikke sende oppdrag for saksnr ${utbetalingsoppdrag.saksnummer}",
@@ -92,6 +91,7 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.klarteIkkeSendeOppdra
 }
 
 private suspend fun PipelineContext<Unit, ApplicationCall>.oppdragAlleredeSendt(utbetalingsoppdrag: Utbetalingsoppdrag) {
+    appLog.info("Oppdrag er allerede sendt for saksnr ${utbetalingsoppdrag.saksnummer}")
     call.respond(
         HttpStatusCode.Conflict,
         "Oppdrag er allerede sendt for saksnr ${utbetalingsoppdrag.saksnummer}",
