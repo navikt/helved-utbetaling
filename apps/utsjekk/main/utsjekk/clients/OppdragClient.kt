@@ -7,6 +7,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
+import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
@@ -48,8 +49,9 @@ class OppdragClient(
             "Unknown ${response.status} error"
         }
 
-        when {
-            response.status.isSuccess() -> {}
+        when (response.status.value) {
+            201 -> {}
+            409 -> appLog.info("Oppdrag er allerede sendt for saksnr ${utbetalingsoppdrag.saksnummer}")
             else -> throw HttpError(body, response.status)
         }
     }

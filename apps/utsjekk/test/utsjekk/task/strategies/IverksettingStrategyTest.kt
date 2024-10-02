@@ -46,7 +46,7 @@ class IverksettingStrategyTest {
         IverksettingResultater.opprett(iverksetting, resultat = null)
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
-        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
+        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
         Tasks.create(Kind.Iverksetting, iverksetting)
 
         val expectedRecord = StatusEndretMelding(
@@ -84,7 +84,7 @@ class IverksettingStrategyTest {
         IverksettingResultater.opprett(iverksetting, resultat = null)
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
-        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
+        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
         Tasks.create(Kind.Iverksetting, iverksetting)
 
         val expectedRecord = StatusEndretMelding(
@@ -125,7 +125,7 @@ class IverksettingStrategyTest {
         IverksettingResultater.opprett(iverksetting, resultat = null)
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
-        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.OK)
+        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
         val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
 
         val actual = runBlocking {

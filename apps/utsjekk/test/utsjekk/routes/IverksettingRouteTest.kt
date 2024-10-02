@@ -224,7 +224,7 @@ class IverksettingRouteTest {
                 iverksettingId = dto.iverksettingId,
             )
 
-            TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.OK)
+            TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.Created)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, TestData.dto.oppdragStatus(OppdragStatus.KVITTERT_OK))
 
             val res = httpClient.post("/api/iverksetting/v2") {
