@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "2.3.12"
-val libVersion = "0.1.132"
+val libVersion = "1.0.5"
 
 dependencies {
     api("org.flywaydb:flyway-core:10.18.2")
