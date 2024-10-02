@@ -2,12 +2,12 @@ package oppdrag
 
 import libs.auth.AzureConfig
 import libs.mq.MQConfig
-import libs.postgres.PostgresConfig
+import libs.postgres.JdbcConfig
 import libs.utils.env
 
 object TestConfig {
     fun create(
-        postgres: PostgresConfig,
+        postgres: JdbcConfig,
         mq: MQConfig,
         azureConfig: AzureConfig,
     ): Config = Config(

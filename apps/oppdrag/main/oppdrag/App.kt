@@ -15,11 +15,14 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.mq.MQ
+import libs.postgres.Migrator
 import libs.postgres.Postgres
-import libs.postgres.Postgres.migrate
 import libs.utils.appLog
 import libs.utils.secureLog
 import oppdrag.grensesnittavstemming.AvstemmingMQProducer
@@ -29,6 +32,9 @@ import oppdrag.iverksetting.OppdragService
 import oppdrag.routing.actuators
 import oppdrag.routing.avstemmingRoutes
 import oppdrag.routing.iverksettingRoutes
+import java.io.File
+import javax.sql.DataSource
+import kotlin.coroutines.CoroutineContext
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -38,7 +44,11 @@ fun main() {
     embeddedServer(Netty, port = 8080, module = Application::server).start(wait = true)
 }
 
-fun Application.server(config: Config = Config()) {
+fun Application.server(
+    config: Config = Config(),
+    postgres: DataSource = Postgres.initialize(config.postgres),
+    context: CoroutineContext = Dispatchers.IO + Postgres.context,
+) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(MicrometerMetrics) {
@@ -60,16 +70,17 @@ fun Application.server(config: Config = Config()) {
         }
     }
 
-    val postgres = Postgres.initialize(config.postgres).apply {
-        migrate()
+    runBlocking {
+        withContext(context) {
+            Migrator(File("migrations"), context).migrate()
+        }
     }
+
     val mq = MQ(config.mq)
-
-    val oppdragConsumer = OppdragMQConsumer(config.oppdrag, mq, postgres)
-    val oppdragService = OppdragService(config.oppdrag, mq, postgres)
-
+    val oppdragConsumer = OppdragMQConsumer(config.oppdrag, mq, context)
+    val oppdragService = OppdragService(config.oppdrag, mq)
     val avstemmingProducer = AvstemmingMQProducer(mq, config.avstemming)
-    val avstemmingService = GrensesnittavstemmingService(avstemmingProducer, postgres)
+    val avstemmingService = GrensesnittavstemmingService(avstemmingProducer)
 
     environment.monitor.subscribe(ApplicationStopping) {
         oppdragConsumer.close()
@@ -81,10 +92,9 @@ fun Application.server(config: Config = Config()) {
 
     routing {
         authenticate(TokenProvider.AZURE) {
-            iverksettingRoutes(oppdragService, postgres)
-            avstemmingRoutes(avstemmingService)
+            iverksettingRoutes(oppdragService, context)
+            avstemmingRoutes(avstemmingService, context)
         }
-//        openAPI(path = "api", swaggerFile = "openapi.yml")
         actuators(prometheus)
     }
 }
