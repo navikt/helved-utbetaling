@@ -6,7 +6,9 @@ import io.ktor.http.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import libs.postgres.concurrency.transaction
 import libs.utils.Resource
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
@@ -26,7 +28,9 @@ class OppdragTest {
 
     @BeforeEach
     @AfterEach
-    fun cleanup() = TestRuntime.cleanup()
+    fun cleanup() = runBlocking {
+        TestRuntime.cleanup()
+    }
 
     @Nested
     inner class Routes {
@@ -66,7 +70,7 @@ class OppdragTest {
         }
 
         @Test
-        fun `POST oppdragPaaNytt svarer 201`(): Unit = runBlocking {
+        fun `POST oppdragPaaNytt svarer 201`(): Unit = runTest(TestRuntime.context) {
             val utbetalingsoppdrag = etUtbetalingsoppdrag()
 
 
@@ -78,8 +82,8 @@ class OppdragTest {
                 assertEquals(HttpStatusCode.Created, it.status)
             }
 
-            TestRuntime.postgres.transaction {
-                OppdragLagerRepository.hentAlleVersjonerAvOppdrag(utbetalingsoppdrag.oppdragId, it)
+            transaction {
+                OppdragLagerRepository.hentAlleVersjonerAvOppdrag(utbetalingsoppdrag.oppdragId)
             }.also {
                 assertEquals(0, it.single().versjon)
             }
@@ -92,72 +96,72 @@ class OppdragTest {
                 assertEquals(HttpStatusCode.Created, it.status)
             }
 
-            TestRuntime.postgres.transaction {
-                OppdragLagerRepository.hentAlleVersjonerAvOppdrag(utbetalingsoppdrag.oppdragId, it)
+            transaction {
+                OppdragLagerRepository.hentAlleVersjonerAvOppdrag(utbetalingsoppdrag.oppdragId)
             }.also {
                 assertEquals(2, it.size)
                 assertEquals(1, it.last().versjon)
             }
         }
+    }
 
-        @Test
-        fun `POST status svarer 200 når oppdrag finnes`(): Unit = runBlocking {
-            val utbetalingsoppdrag = etUtbetalingsoppdrag()
+    @Test
+    fun `POST status svarer 200 når oppdrag finnes`(): Unit = runTest(TestRuntime.context) {
+        val utbetalingsoppdrag = etUtbetalingsoppdrag()
 
-            TestRuntime.postgres.transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetalingsoppdrag.somOppdragLager, it)
-            }
-
-            fun OppdragId.toDto(): OppdragIdDto = OppdragIdDto(
-                fagsystem = fagsystem,
-                sakId = fagsakId,
-                behandlingId = behandlingId,
-                iverksettingId = iverksettingId
-            )
-
-            httpClient.post("/status") {
-                contentType(ContentType.Application.Json)
-                bearerAuth(TestRuntime.azure.generateToken())
-                setBody(utbetalingsoppdrag.oppdragId.toDto())
-            }.also {
-                val actual = it.body<OppdragStatusDto>()
-                val expected = OppdragStatusDto(OppdragStatus.LAGT_PÅ_KØ, null)
-                assertEquals(HttpStatusCode.OK, it.status)
-                assertEquals(expected, actual)
-            }
+        transaction {
+            OppdragLagerRepository.opprettOppdrag(utbetalingsoppdrag.somOppdragLager)
         }
 
-        @Test
-        fun `POST status svarer 404 når oppdrag ikke finnes`(): Unit = runBlocking {
-            val utbetalingsoppdrag = etUtbetalingsoppdrag()
+        fun OppdragId.toDto(): OppdragIdDto = OppdragIdDto(
+            fagsystem = fagsystem,
+            sakId = fagsakId,
+            behandlingId = behandlingId,
+            iverksettingId = iverksettingId
+        )
 
-            fun OppdragId.toDto(): OppdragIdDto = OppdragIdDto(
-                fagsystem = fagsystem,
-                sakId = fagsakId,
-                behandlingId = behandlingId,
-                iverksettingId = iverksettingId
-            )
-
-            httpClient.post("/status") {
-                contentType(ContentType.Application.Json)
-                bearerAuth(TestRuntime.azure.generateToken())
-                setBody(utbetalingsoppdrag.oppdragId.toDto())
-            }.also {
-                assertEquals(HttpStatusCode.NotFound, it.status)
-            }
+        httpClient.post("/status") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(utbetalingsoppdrag.oppdragId.toDto())
+        }.also {
+            val actual = it.body<OppdragStatusDto>()
+            val expected = OppdragStatusDto(OppdragStatus.LAGT_PÅ_KØ, null)
+            assertEquals(HttpStatusCode.OK, it.status)
+            assertEquals(expected, actual)
         }
+    }
 
-        @Test
-        fun `sender inn 10 oppdrag sammtidig`() = runTest {
-            repeat(10) {
-                launch {
-                    httpClient.post("/oppdrag") {
-                        contentType(ContentType.Application.Json)
-                        bearerAuth(TestRuntime.azure.generateToken())
-                        setBody(etUtbetalingsoppdrag())
-                    }.also {
-                        assertEquals(HttpStatusCode.Created, it.status)
-                    }
+    @Test
+    fun `POST status svarer 404 når oppdrag ikke finnes`(): Unit = runBlocking {
+        val utbetalingsoppdrag = etUtbetalingsoppdrag()
+
+        fun OppdragId.toDto(): OppdragIdDto = OppdragIdDto(
+            fagsystem = fagsystem,
+            sakId = fagsakId,
+            behandlingId = behandlingId,
+            iverksettingId = iverksettingId
+        )
+
+        httpClient.post("/status") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(utbetalingsoppdrag.oppdragId.toDto())
+        }.also {
+            assertEquals(HttpStatusCode.NotFound, it.status)
+        }
+    }
+
+    @Test
+    fun `sender inn 10 oppdrag sammtidig`() = runTest {
+        repeat(10) {
+            launch {
+                httpClient.post("/oppdrag") {
+                    contentType(ContentType.Application.Json)
+                    bearerAuth(TestRuntime.azure.generateToken())
+                    setBody(etUtbetalingsoppdrag())
+                }.also {
+                    assertEquals(HttpStatusCode.Created, it.status)
                 }
             }
         }
@@ -167,21 +171,25 @@ class OppdragTest {
     inner class Kvittering {
 
         @Test
-        fun `utbetaling kvitterer ok`(): Unit = runBlocking {
+        fun `utbetaling kvitterer ok`(): Unit = runTest(TestRuntime.context) {
             val periode = enUtbetalingsperiode(behandlingId = "p6AF4PE5kd4HxDeIfcs8")
             val utbetaling =
                 etUtbetalingsoppdrag(fagsak = "fhU2NI7YWJDsnZpRjJfz", utbetalingsperiode = arrayOf(periode))
 
-            TestRuntime.postgres.transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
+            transaction {
+                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
             }
 
             val xml = Resource.read("/xml/kvittering-ok.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
-                TestRuntime.postgres.transaction {
-                    OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId, it)
+                runBlocking {
+                    withContext(TestRuntime.context) {
+                        transaction {
+                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+                        }
+                    }
                 }
             }
 
@@ -190,22 +198,26 @@ class OppdragTest {
         }
 
         @Test
-        fun `utbetaling kvitterer med mangler`(): Unit = runBlocking {
+        fun `utbetaling kvitterer med mangler`() = runTest(TestRuntime.context) {
             val utbetaling = etUtbetalingsoppdrag(
                 fagsak = "vr0nXC3zUNnPl3hDsFyv",
                 utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "5rNZ1ldCxZ0TdTmsv66"))
             )
 
-            TestRuntime.postgres.transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
+            transaction {
+                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
             }
 
             val xml = Resource.read("/xml/kvittering-med-mangler.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
-                TestRuntime.postgres.transaction {
-                    OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId, it)
+                runBlocking {
+                    withContext(TestRuntime.context) {
+                        transaction {
+                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+                        }
+                    }
                 }
             }
 
@@ -214,22 +226,26 @@ class OppdragTest {
         }
 
         @Test
-        fun `utbetaling kvitterer funksjonell feil`(): Unit = runBlocking {
+        fun `utbetaling kvitterer funksjonell feil`(): Unit = runTest(TestRuntime.context) {
             val utbetaling = etUtbetalingsoppdrag(
                 fagsak = "fU2Vo7NQHKHRD75Hu5LW",
                 utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "rKrMKcTDUVjiZeGfXc7B"))
             )
 
-            TestRuntime.postgres.transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
+            transaction {
+                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
             }
 
             val xml = Resource.read("/xml/kvittering-funksjonell-feil.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
-                TestRuntime.postgres.transaction {
-                    OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId, it)
+                runBlocking {
+                    withContext(TestRuntime.context) {
+                        transaction {
+                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+                        }
+                    }
                 }
             }
 
@@ -238,22 +254,26 @@ class OppdragTest {
         }
 
         @Test
-        fun `utbetaling kvitterer teknisk feil`(): Unit = runBlocking {
+        fun `utbetaling kvitterer teknisk feil`() = runTest(TestRuntime.context) {
             val utbetaling = etUtbetalingsoppdrag(
                 fagsak = "sT9DJxq1zN8ra6EEjeaf",
                 utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "gIP574Gdi7RHvQdmqKrX"))
             )
 
-            TestRuntime.postgres.transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
+            transaction {
+                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
             }
 
             val xml = Resource.read("/xml/kvittering-teknisk-feil.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
-                TestRuntime.postgres.transaction {
-                    OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId, it)
+                runBlocking {
+                    withContext(TestRuntime.context) {
+                        transaction {
+                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+                        }
+                    }
                 }
             }
 
@@ -262,22 +282,26 @@ class OppdragTest {
         }
 
         @Test
-        fun `utbetaling kvitterer ukjent`(): Unit = runBlocking {
+        fun `utbetaling kvitterer ukjent`(): Unit = runTest(TestRuntime.context) {
             val utbetaling = etUtbetalingsoppdrag(
                 fagsak = "m8dXZI4Iav9BIEIGdtQY",
                 utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "2i8wmacupHZdfh9Pc0iQ"))
             )
 
-            TestRuntime.postgres.transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager, it)
+            transaction {
+                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
             }
 
             val xml = Resource.read("/xml/kvittering-ukjent-feil.xml")
             TestRuntime.oppdrag.kvitteringsKø.produce(xml)
 
             val oppdrag = repeatUntil(::statusChanged) {
-                TestRuntime.postgres.transaction {
-                    OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId, it)
+                runBlocking {
+                    withContext(TestRuntime.context) {
+                        transaction {
+                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+                        }
+                    }
                 }
             }
 

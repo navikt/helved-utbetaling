@@ -1,19 +1,17 @@
 package oppdrag.grensesnittavstemming
 
-import libs.utils.appLog
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Metrics
-import libs.postgres.transaction
+import libs.postgres.concurrency.transaction
+import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Grunnlagsdata
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import java.time.LocalDateTime
 import java.util.*
-import javax.sql.DataSource
 
 class GrensesnittavstemmingService(
     private val producer: AvstemmingMQProducer,
-    private val postgres: DataSource,
 ) {
     private val tellere: MutableMap<Fagsystem, Map<String, Counter>> = EnumMap(Fagsystem::class.java)
 
@@ -23,17 +21,16 @@ class GrensesnittavstemmingService(
         }
     }
 
-    fun utførGrensesnittavstemming(
+    suspend fun utførGrensesnittavstemming(
         fagsystem: Fagsystem,
         fra: LocalDateTime,
         til: LocalDateTime,
     ) {
-        postgres.transaction { con ->
+        transaction {
             val oppdragSomSkalAvstemmes = OppdragLagerRepository.hentIverksettingerForGrensesnittavstemming(
                 fomTidspunkt = fra,
                 tomTidspunkt = til,
                 fagsystem = fagsystem,
-                con,
             )
 
             val avstemmingMapper = AvstemmingMapper(oppdragSomSkalAvstemmes, fagsystem, fra, til)

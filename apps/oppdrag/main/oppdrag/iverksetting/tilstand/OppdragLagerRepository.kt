@@ -6,26 +6,26 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import libs.postgres.concurrency.connection
 import libs.postgres.map
 import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Mmel
-import java.sql.Connection
 import java.sql.ResultSet
 import java.time.LocalDateTime
 import java.util.*
+import kotlin.coroutines.coroutineContext
 
 object OppdragLagerRepository {
 
-    fun hentOppdrag(
+    suspend fun hentOppdrag(
         oppdragId: OppdragId,
-        con: Connection,
         versjon: Int = 0,
     ): OppdragLager {
         val resultSet =
             if (oppdragId.iverksettingId != null) {
-                con.prepareStatement(
+                coroutineContext.connection.prepareStatement(
                     """
                         SELECT * FROM oppdrag_lager 
                         WHERE behandling_id = ? 
@@ -42,7 +42,7 @@ object OppdragLagerRepository {
                     setObject(5, versjon)
                 }.executeQuery()
             } else {
-                con.prepareStatement(
+                coroutineContext.connection.prepareStatement(
                     """
                         SELECT * FROM oppdrag_lager 
                         WHERE behandling_id = ? 
@@ -78,12 +78,11 @@ object OppdragLagerRepository {
     }
 
 
-    fun opprettOppdrag(
+    suspend fun opprettOppdrag(
         oppdragLager: OppdragLager,
-        con: Connection,
         versjon: Int = 0,
     ) {
-        con.prepareStatement(
+        coroutineContext.connection.prepareStatement(
             """
                 INSERT INTO oppdrag_lager (
                     id, 
@@ -115,13 +114,12 @@ object OppdragLagerRepository {
         }.executeUpdate()
     }
 
-    fun oppdaterStatus(
+    suspend fun oppdaterStatus(
         oppdragId: OppdragId,
         oppdragStatus: OppdragStatus,
-        con: Connection,
         versjon: Int = 0,
     ) {
-        con.prepareStatement(
+        coroutineContext.connection.prepareStatement(
             """
             UPDATE oppdrag_lager 
             SET status = ?
@@ -139,13 +137,12 @@ object OppdragLagerRepository {
         }.executeUpdate()
     }
 
-    fun oppdaterKvitteringsmelding(
+    suspend fun oppdaterKvitteringsmelding(
         oppdragId: OppdragId,
         kvittering: Mmel,
-        con: Connection,
         versjon: Int = 0,
     ) {
-        con.prepareStatement(
+        coroutineContext.connection.prepareStatement(
             """
             UPDATE oppdrag_lager 
             SET kvitteringsmelding = ?::JSON 
@@ -164,13 +161,12 @@ object OppdragLagerRepository {
         appLog.debug("Updated oppdrag-Lager with kvitteringsmelding for oppdragId: {}", oppdragId)
     }
 
-    fun hentIverksettingerForGrensesnittavstemming(
+    suspend fun hentIverksettingerForGrensesnittavstemming(
         fomTidspunkt: LocalDateTime,
         tomTidspunkt: LocalDateTime,
         fagsystem: Fagsystem,
-        con: Connection,
     ): List<OppdragLager> {
-        return con.prepareStatement(
+        return coroutineContext.connection.prepareStatement(
             """
                 SELECT * FROM oppdrag_lager 
                 WHERE avstemming_tidspunkt >= ? 
@@ -186,11 +182,10 @@ object OppdragLagerRepository {
         }
     }
 
-    fun hentAlleVersjonerAvOppdrag(
+    suspend fun hentAlleVersjonerAvOppdrag(
         oppdragId: OppdragId,
-        con: Connection,
     ): List<OppdragLager> {
-        return con.prepareStatement(
+        return coroutineContext.connection.prepareStatement(
             """
                SELECT * FROM oppdrag_lager 
                WHERE behandling_id = ? 

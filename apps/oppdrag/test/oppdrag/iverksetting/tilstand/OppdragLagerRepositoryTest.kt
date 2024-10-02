@@ -1,11 +1,14 @@
 package oppdrag.iverksetting.tilstand
 
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
+import libs.postgres.concurrency.transaction
+import libs.utils.Resource
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import libs.utils.Resource
 import oppdrag.TestRuntime
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.somOppdragLager
@@ -22,88 +25,87 @@ import java.time.format.DateTimeFormatter
 class OppdragLagerRepositoryTest {
 
     @AfterEach
-    fun cleanup() {
+    fun cleanup() = runBlocking {
         TestRuntime.cleanup()
     }
 
     @Test
-    fun `skal ikke lagre duplikat`() {
+    fun `skal ikke lagre duplikat`() = runTest(TestRuntime.context) {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
 
-        TestRuntime.postgres.transaction { con ->
-            OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
+        transaction {
+            OppdragLagerRepository.opprettOppdrag(oppdragLager)
         }
 
         val psqlException = assertThrows<PSQLException> {
-            TestRuntime.postgres.transaction { con ->
-                OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
+            transaction {
+                OppdragLagerRepository.opprettOppdrag(oppdragLager)
             }
         }
         assertEquals("23505", psqlException.sqlState)
     }
 
     @Test
-    fun `skal lagre to ulike iverksettinger samme behandling`() {
+    fun `skal lagre to ulike iverksettinger samme behandling`() = runTest(TestRuntime.context) {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager.copy(iverksetting_id = "1")
 
-        TestRuntime.postgres.transaction { con ->
-            OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
+        transaction {
+            OppdragLagerRepository.opprettOppdrag(oppdragLager)
         }
 
         assertDoesNotThrow {
-            TestRuntime.postgres.transaction { con ->
-                OppdragLagerRepository.opprettOppdrag(oppdragLager.copy(iverksetting_id = "2"), con)
+            transaction {
+                OppdragLagerRepository.opprettOppdrag(oppdragLager.copy(iverksetting_id = "2"))
             }
         }
     }
 
     @Test
-    fun `skal lagre status`() {
+    fun `skal lagre status`() = runTest(TestRuntime.context) {
         val oppdragLager =
             etUtbetalingsoppdrag().somOppdragLager.copy(
                 status = OppdragStatus.LAGT_PÅ_KØ
             )
-
-        TestRuntime.postgres.transaction { con ->
-            OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
+        transaction {
+            OppdragLagerRepository.opprettOppdrag(oppdragLager)
         }
-
-        TestRuntime.postgres.transaction { con ->
-            val hentetOppdrag = OppdragLagerRepository.hentOppdrag(oppdragLager.id, con)
+        transaction {
+            val hentetOppdrag = OppdragLagerRepository.hentOppdrag(oppdragLager.id)
 
             assertEquals(OppdragStatus.LAGT_PÅ_KØ, hentetOppdrag.status)
-            OppdragLagerRepository.oppdaterStatus(hentetOppdrag.id, OppdragStatus.KVITTERT_OK, con)
+            OppdragLagerRepository.oppdaterStatus(hentetOppdrag.id, OppdragStatus.KVITTERT_OK)
 
-            val hentetOppdatertOppdrag = OppdragLagerRepository.hentOppdrag(hentetOppdrag.id, con)
+            val hentetOppdatertOppdrag = OppdragLagerRepository.hentOppdrag(hentetOppdrag.id)
             assertEquals(OppdragStatus.KVITTERT_OK, hentetOppdatertOppdrag.status)
         }
     }
 
     @Test
-    fun `skal lagre kvitteringsmelding`() {
+    fun `skal lagre kvitteringsmelding`() = runTest(TestRuntime.context) {
         val oppdragLager =
             etUtbetalingsoppdrag().somOppdragLager.copy(
                 status = OppdragStatus.LAGT_PÅ_KØ
             )
 
-        TestRuntime.postgres.transaction { con ->
-            OppdragLagerRepository.opprettOppdrag(oppdragLager, con)
+        transaction {
+            OppdragLagerRepository.opprettOppdrag(oppdragLager)
         }
 
-        TestRuntime.postgres.transaction { con ->
-            val hentetOppdrag = OppdragLagerRepository.hentOppdrag(oppdragLager.id, con)
+        transaction {
+            OppdragLagerRepository.opprettOppdrag(oppdragLager.copy(iverksetting_id = "2"))
+            val hentetOppdrag = OppdragLagerRepository.hentOppdrag(oppdragLager.id)
             val kvitteringsmelding = avvistKvitteringsmelding()
 
-            OppdragLagerRepository.oppdaterKvitteringsmelding(hentetOppdrag.id, kvitteringsmelding, con)
+            OppdragLagerRepository.oppdaterKvitteringsmelding(hentetOppdrag.id, kvitteringsmelding)
 
-            val hentetOppdatertOppdrag = OppdragLagerRepository.hentOppdrag(oppdragLager.id, con)
+            val hentetOppdatertOppdrag = OppdragLagerRepository.hentOppdrag(oppdragLager.id)
 
             assertTrue(kvitteringsmelding.erLik(hentetOppdatertOppdrag.kvitteringsmelding!!))
         }
     }
 
     @Test
-    fun `skal kun hente ut ett dp oppdrag for grensesnittavstemming`() {
+    fun `skal kun hente ut ett dp oppdrag for grensesnittavstemming`() = runTest(TestRuntime.context) {
         val dag = LocalDateTime.now()
         val startenPåDagen = dag.withHour(0).withMinute(0)
         val sluttenAvDagen = dag.withHour(23).withMinute(59)
@@ -111,18 +113,17 @@ class OppdragLagerRepositoryTest {
         val baOppdragLager = etUtbetalingsoppdrag(dag).somOppdragLager
         val baOppdragLager2 = etUtbetalingsoppdrag(dag.minusDays(1)).somOppdragLager
 
-        TestRuntime.postgres.transaction { con ->
-            OppdragLagerRepository.opprettOppdrag(baOppdragLager, con)
-            OppdragLagerRepository.opprettOppdrag(baOppdragLager2, con)
+        transaction {
+            OppdragLagerRepository.opprettOppdrag(baOppdragLager)
+            OppdragLagerRepository.opprettOppdrag(baOppdragLager2)
         }
 
-        TestRuntime.postgres.transaction { con ->
+        transaction {
             val oppdrageneTilGrensesnittavstemming =
                 OppdragLagerRepository.hentIverksettingerForGrensesnittavstemming(
                     startenPåDagen,
                     sluttenAvDagen,
                     Fagsystem.DAGPENGER,
-                    con,
                 )
 
             assertEquals(1, oppdrageneTilGrensesnittavstemming.size)

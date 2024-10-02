@@ -7,11 +7,9 @@ application {
 }
 
 val ktorVersion = "2.3.12"
-val libVersion = "0.1.132"
+val libVersion = "1.0.6"
 
 dependencies {
-    api("org.flywaydb:flyway-core:10.18.2")
-
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:mq:$libVersion")

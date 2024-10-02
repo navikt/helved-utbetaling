@@ -1,7 +1,7 @@
 package oppdrag.iverksetting
 
 import libs.mq.MQ
-import libs.postgres.transaction
+import libs.postgres.concurrency.transaction
 import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -10,21 +10,15 @@ import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import org.postgresql.util.PSQLException
-import java.sql.Connection
-import javax.sql.DataSource
 
 object SQL_STATE {
     const val CONSTRAINT_VIOLATION = "23505"
 }
 
-class OppdragService(
-    config: OppdragConfig,
-    mq: MQ,
-    private val postgres: DataSource,
-) {
+class OppdragService(config: OppdragConfig, mq: MQ) {
     private val oppdragSender = OppdragMQProducer(config, mq)
 
-    fun opprettOppdrag(
+    suspend fun opprettOppdrag(
         utbetalingsoppdrag: Utbetalingsoppdrag,
         oppdrag: Oppdrag,
         versjon: Int,
@@ -34,8 +28,8 @@ class OppdragService(
 
             val oppdragLager = OppdragLager.lagFraOppdrag(utbetalingsoppdrag, oppdrag)
 
-            postgres.transaction { con ->
-                OppdragLagerRepository.opprettOppdrag(oppdragLager, con, versjon)
+            transaction {
+                OppdragLagerRepository.opprettOppdrag(oppdragLager, versjon)
             }
 
             appLog.debug("Legger oppdrag med saksnummer ${utbetalingsoppdrag.saksnummer} på kø")
@@ -48,11 +42,10 @@ class OppdragService(
         }
     }
 
-    fun hentStatusForOppdrag(
+    suspend fun hentStatusForOppdrag(
         oppdragId: OppdragId,
-        con: Connection,
     ): OppdragLager {
-        return OppdragLagerRepository.hentOppdrag(oppdragId, con)
+        return OppdragLagerRepository.hentOppdrag(oppdragId)
     }
 }
 

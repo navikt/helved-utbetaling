@@ -2,13 +2,13 @@ package oppdrag
 
 import libs.auth.AzureConfig
 import libs.mq.MQConfig
-import libs.postgres.PostgresConfig
+import libs.postgres.JdbcConfig
 import libs.utils.env
 
 data class Config(
     val avstemming: AvstemmingConfig = AvstemmingConfig(),
     val oppdrag: OppdragConfig = OppdragConfig(),
-    val postgres: PostgresConfig = PostgresConfig(),
+    val postgres: JdbcConfig = JdbcConfig(),
     val azure: AzureConfig = AzureConfig(),
     val mq: MQConfig = MQConfig(
         host = env("MQ_HOSTNAME"),
