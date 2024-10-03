@@ -17,7 +17,7 @@ fun Route.simulering(validator: SimuleringValidator, client: SimuleringClient) {
             val dto = call.receive<api.SimuleringRequest>()
             val simulering = Simulering.from(dto, fagsystem)
             validator.valider(simulering)
-            val token = call.request.authorization() ?: unauthorized("auth header missing")
+            val token = call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing")
             when (val res = client.hentSimuleringsresultatMedOppsummering(simulering, token)) {
                 null -> call.respond(HttpStatusCode.NoContent)
                 else -> call.respond(res)
