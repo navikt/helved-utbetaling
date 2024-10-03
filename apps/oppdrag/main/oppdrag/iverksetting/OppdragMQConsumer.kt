@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.mq.MQ
 import libs.mq.MQConsumer
+import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import libs.utils.appLog
 import libs.xml.XMLMapper
@@ -16,12 +17,10 @@ import oppdrag.iverksetting.domene.status
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import oppdrag.iverksetting.tilstand.id
 import javax.jms.TextMessage
-import kotlin.coroutines.CoroutineContext
 
 class OppdragMQConsumer(
     config: OppdragConfig,
     mq: MQ,
-    private val context: CoroutineContext,
     private val mapper: XMLMapper<Oppdrag> = XMLMapper(),
 ) : MQConsumer(mq, MQQueue(config.kvitteringsKø)) {
 
@@ -41,7 +40,7 @@ class OppdragMQConsumer(
         )
 
         val førsteOppdragUtenKvittering = runBlocking {
-            withContext(context) {
+            withContext(Postgres.context) {
                 transaction {
                     OppdragLagerRepository
                         .hentAlleVersjonerAvOppdrag(oppdragIdKvittering)
@@ -58,7 +57,7 @@ class OppdragMQConsumer(
 
         if (kvittering.mmel != null) {
             runBlocking {
-                withContext(context) {
+                withContext(Postgres.context) {
                     transaction {
                         OppdragLagerRepository.oppdaterKvitteringsmelding(
                             oppdragId,
@@ -71,7 +70,7 @@ class OppdragMQConsumer(
         }
 
         runBlocking {
-            withContext(context) {
+            withContext(Postgres.context) {
                 transaction {
                     OppdragLagerRepository.oppdaterStatus(
                         oppdragId,

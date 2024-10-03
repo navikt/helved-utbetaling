@@ -3,14 +3,11 @@ package oppdrag.iverksetting
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import libs.mq.MQ
+import libs.postgres.Postgres
 import oppdrag.TestRuntime
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.iverksetting.domene.OppdragMapper
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.*
 import org.postgresql.util.PSQLException
 import org.postgresql.util.ServerErrorMessage
 import java.io.PrintWriter
@@ -28,7 +25,7 @@ class OppdragServiceTest {
 
     @Test
     @Disabled
-    fun `sender ikke oppdrag om lagring av oppdrag i db feiler`() = runTest(TestRuntime.context) {
+    fun `sender ikke oppdrag om lagring av oppdrag i db feiler`() = runTest(Postgres.context) {
         val mq = MQ(TestRuntime.config.mq)
         val service = OppdragService(
             config = TestRuntime.config.oppdrag,

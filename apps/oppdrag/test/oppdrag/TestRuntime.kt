@@ -13,18 +13,18 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.PostgresContainer
 import libs.mq.MQContainer
+import libs.postgres.Migrator
 import libs.postgres.Postgres
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.utils.appLog
 import oppdrag.fakes.AzureFake
 import oppdrag.fakes.OppdragFake
-import kotlin.coroutines.CoroutineContext
+import java.io.File
 
 object TestRuntime : AutoCloseable {
     val azure: AzureFake = AzureFake()
     val postgres: PostgresContainer = PostgresContainer("oppdrag")
-    val context: CoroutineContext get() = Postgres.context
     val mq: MQContainer = MQContainer("oppdrag")
     val config: Config = TestConfig.create(postgres.config, mq.config, azure.config)
     val oppdrag = OppdragFake(config)
@@ -66,8 +66,14 @@ fun NettyApplicationEngine.port(): Int = runBlocking {
 private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
-            val pg = Postgres.initialize(TestRuntime.config.postgres)
-            server(TestRuntime.config, pg, TestRuntime.context)
+//            database(TestRuntime.config.postgres)
+            Postgres.initialize(TestRuntime.config.postgres)
+            runBlocking {
+                withContext(Postgres.context) {
+                    Migrator(File("test/migrations")).migrate()
+                }
+            }
+            server(TestRuntime.config)
         }
     }
 }
