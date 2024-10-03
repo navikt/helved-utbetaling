@@ -2,6 +2,7 @@ package oppdrag.iverksetting.tilstand
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import libs.utils.Resource
 import libs.xml.XMLMapper
@@ -30,7 +31,7 @@ class OppdragLagerRepositoryTest {
     }
 
     @Test
-    fun `skal ikke lagre duplikat`() = runTest(TestRuntime.context) {
+    fun `skal ikke lagre duplikat`() = runTest(Postgres.context) {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
 
         transaction {
@@ -46,7 +47,7 @@ class OppdragLagerRepositoryTest {
     }
 
     @Test
-    fun `skal lagre to ulike iverksettinger samme behandling`() = runTest(TestRuntime.context) {
+    fun `skal lagre to ulike iverksettinger samme behandling`() = runTest(Postgres.context) {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager.copy(iverksetting_id = "1")
 
         transaction {
@@ -61,7 +62,7 @@ class OppdragLagerRepositoryTest {
     }
 
     @Test
-    fun `skal lagre status`() = runTest(TestRuntime.context) {
+    fun `skal lagre status`() = runTest(Postgres.context) {
         val oppdragLager =
             etUtbetalingsoppdrag().somOppdragLager.copy(
                 status = OppdragStatus.LAGT_PÅ_KØ
@@ -81,7 +82,7 @@ class OppdragLagerRepositoryTest {
     }
 
     @Test
-    fun `skal lagre kvitteringsmelding`() = runTest(TestRuntime.context) {
+    fun `skal lagre kvitteringsmelding`() = runTest(Postgres.context) {
         val oppdragLager =
             etUtbetalingsoppdrag().somOppdragLager.copy(
                 status = OppdragStatus.LAGT_PÅ_KØ
@@ -105,7 +106,7 @@ class OppdragLagerRepositoryTest {
     }
 
     @Test
-    fun `skal kun hente ut ett dp oppdrag for grensesnittavstemming`() = runTest(TestRuntime.context) {
+    fun `skal kun hente ut ett dp oppdrag for grensesnittavstemming`() = runTest(Postgres.context) {
         val dag = LocalDateTime.now()
         val startenPåDagen = dag.withHour(0).withMinute(0)
         val sluttenAvDagen = dag.withHour(23).withMinute(59)

@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import libs.utils.Resource
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
@@ -70,7 +71,7 @@ class OppdragTest {
         }
 
         @Test
-        fun `POST oppdragPaaNytt svarer 201`(): Unit = runTest(TestRuntime.context) {
+        fun `POST oppdragPaaNytt svarer 201`(): Unit = runTest(Postgres.context) {
             val utbetalingsoppdrag = etUtbetalingsoppdrag()
 
 
@@ -106,7 +107,7 @@ class OppdragTest {
     }
 
     @Test
-    fun `POST status svarer 200 når oppdrag finnes`(): Unit = runTest(TestRuntime.context) {
+    fun `POST status svarer 200 når oppdrag finnes`(): Unit = runTest(Postgres.context) {
         val utbetalingsoppdrag = etUtbetalingsoppdrag()
 
         transaction {
@@ -171,7 +172,7 @@ class OppdragTest {
     inner class Kvittering {
 
         @Test
-        fun `utbetaling kvitterer ok`(): Unit = runTest(TestRuntime.context) {
+        fun `utbetaling kvitterer ok`(): Unit = runTest(Postgres.context) {
             val periode = enUtbetalingsperiode(behandlingId = "p6AF4PE5kd4HxDeIfcs8")
             val utbetaling =
                 etUtbetalingsoppdrag(fagsak = "fhU2NI7YWJDsnZpRjJfz", utbetalingsperiode = arrayOf(periode))
@@ -185,7 +186,7 @@ class OppdragTest {
 
             val oppdrag = repeatUntil(::statusChanged) {
                 runBlocking {
-                    withContext(TestRuntime.context) {
+                    withContext(Postgres.context) {
                         transaction {
                             OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
                         }
@@ -198,7 +199,7 @@ class OppdragTest {
         }
 
         @Test
-        fun `utbetaling kvitterer med mangler`() = runTest(TestRuntime.context) {
+        fun `utbetaling kvitterer med mangler`() = runTest(Postgres.context) {
             val utbetaling = etUtbetalingsoppdrag(
                 fagsak = "vr0nXC3zUNnPl3hDsFyv",
                 utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "5rNZ1ldCxZ0TdTmsv66"))
@@ -213,7 +214,7 @@ class OppdragTest {
 
             val oppdrag = repeatUntil(::statusChanged) {
                 runBlocking {
-                    withContext(TestRuntime.context) {
+                    withContext(Postgres.context) {
                         transaction {
                             OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
                         }
@@ -226,7 +227,7 @@ class OppdragTest {
         }
 
         @Test
-        fun `utbetaling kvitterer funksjonell feil`(): Unit = runTest(TestRuntime.context) {
+        fun `utbetaling kvitterer funksjonell feil`(): Unit = runTest(Postgres.context) {
             val utbetaling = etUtbetalingsoppdrag(
                 fagsak = "fU2Vo7NQHKHRD75Hu5LW",
                 utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "rKrMKcTDUVjiZeGfXc7B"))
@@ -241,7 +242,7 @@ class OppdragTest {
 
             val oppdrag = repeatUntil(::statusChanged) {
                 runBlocking {
-                    withContext(TestRuntime.context) {
+                    withContext(Postgres.context) {
                         transaction {
                             OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
                         }
@@ -254,7 +255,7 @@ class OppdragTest {
         }
 
         @Test
-        fun `utbetaling kvitterer teknisk feil`() = runTest(TestRuntime.context) {
+        fun `utbetaling kvitterer teknisk feil`() = runTest(Postgres.context) {
             val utbetaling = etUtbetalingsoppdrag(
                 fagsak = "sT9DJxq1zN8ra6EEjeaf",
                 utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "gIP574Gdi7RHvQdmqKrX"))
@@ -269,7 +270,7 @@ class OppdragTest {
 
             val oppdrag = repeatUntil(::statusChanged) {
                 runBlocking {
-                    withContext(TestRuntime.context) {
+                    withContext(Postgres.context) {
                         transaction {
                             OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
                         }
@@ -282,7 +283,7 @@ class OppdragTest {
         }
 
         @Test
-        fun `utbetaling kvitterer ukjent`(): Unit = runTest(TestRuntime.context) {
+        fun `utbetaling kvitterer ukjent`(): Unit = runTest(Postgres.context) {
             val utbetaling = etUtbetalingsoppdrag(
                 fagsak = "m8dXZI4Iav9BIEIGdtQY",
                 utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "2i8wmacupHZdfh9Pc0iQ"))
@@ -297,7 +298,7 @@ class OppdragTest {
 
             val oppdrag = repeatUntil(::statusChanged) {
                 runBlocking {
-                    withContext(TestRuntime.context) {
+                    withContext(Postgres.context) {
                         transaction {
                             OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
                         }

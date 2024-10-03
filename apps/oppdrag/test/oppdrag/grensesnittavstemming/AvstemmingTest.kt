@@ -4,6 +4,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
@@ -25,7 +26,7 @@ class AvstemmingTest {
     }
 
     @Test
-    fun `skal avstemme eksisterende oppdrag`(): Unit = runTest(TestRuntime.context) {
+    fun `skal avstemme eksisterende oppdrag`(): Unit = runTest(Postgres.context) {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
         val avstemming = GrensesnittavstemmingRequest(
             fagsystem = Fagsystem.DAGPENGER,

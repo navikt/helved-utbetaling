@@ -15,12 +15,12 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.mq.MQ
+import libs.postgres.JdbcConfig
 import libs.postgres.Migrator
 import libs.postgres.Postgres
 import libs.utils.appLog
@@ -33,22 +33,31 @@ import oppdrag.routing.actuators
 import oppdrag.routing.avstemmingRoutes
 import oppdrag.routing.iverksettingRoutes
 import java.io.File
-import javax.sql.DataSource
-import kotlin.coroutines.CoroutineContext
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
         appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
-    embeddedServer(Netty, port = 8080, module = Application::server).start(wait = true)
+
+    embeddedServer(Netty, port = 8080) {
+        val config = Config()
+        database(config.postgres)
+        server(config)
+    }.start(wait = true)
 }
 
-fun Application.server(
-    config: Config = Config(),
-    postgres: DataSource = Postgres.initialize(config.postgres),
-    context: CoroutineContext = Dispatchers.IO + Postgres.context,
-) {
+fun Application.database(config: JdbcConfig) {
+    Postgres.initialize(config)
+
+    runBlocking {
+        withContext(Postgres.context) {
+            Migrator(File("migrations")).migrate()
+        }
+    }
+}
+
+fun Application.server(config: Config = Config()) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(MicrometerMetrics) {
@@ -70,14 +79,8 @@ fun Application.server(
         }
     }
 
-    runBlocking {
-        withContext(context) {
-            Migrator(File("migrations"), context).migrate()
-        }
-    }
-
     val mq = MQ(config.mq)
-    val oppdragConsumer = OppdragMQConsumer(config.oppdrag, mq, context)
+    val oppdragConsumer = OppdragMQConsumer(config.oppdrag, mq)
     val oppdragService = OppdragService(config.oppdrag, mq)
     val avstemmingProducer = AvstemmingMQProducer(mq, config.avstemming)
     val avstemmingService = GrensesnittavstemmingService(avstemmingProducer)
@@ -92,8 +95,8 @@ fun Application.server(
 
     routing {
         authenticate(TokenProvider.AZURE) {
-            iverksettingRoutes(oppdragService, context)
-            avstemmingRoutes(avstemmingService, context)
+            iverksettingRoutes(oppdragService)
+            avstemmingRoutes(avstemmingService)
         }
         actuators(prometheus)
     }
