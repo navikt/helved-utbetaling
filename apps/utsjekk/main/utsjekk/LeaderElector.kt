@@ -1,5 +1,6 @@
 package utsjekk
 
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.Dispatchers
@@ -9,7 +10,7 @@ import libs.utils.appLog
 import java.net.InetAddress
 
 class LeaderElector(private val config: Config) {
-    private val client = HttpClientFactory.new()
+    private val client = HttpClientFactory.new(logLevel = LogLevel.NONE)
 
     suspend fun isLeader(): Boolean {
         return try {
