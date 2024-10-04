@@ -18,6 +18,7 @@ import java.util.*
 import kotlin.coroutines.coroutineContext
 
 object OppdragLagerRepository {
+    const val TABLE_NAME = "oppdrag_lager"
 
     suspend fun hentOppdrag(
         oppdragId: OppdragId,
@@ -27,7 +28,7 @@ object OppdragLagerRepository {
             if (oppdragId.iverksettingId != null) {
                 coroutineContext.connection.prepareStatement(
                     """
-                        SELECT * FROM oppdrag_lager 
+                        SELECT * FROM $TABLE_NAME  
                         WHERE behandling_id = ? 
                         AND fagsak_id = ? 
                         AND fagsystem = ? 
@@ -44,7 +45,7 @@ object OppdragLagerRepository {
             } else {
                 coroutineContext.connection.prepareStatement(
                     """
-                        SELECT * FROM oppdrag_lager 
+                        SELECT * FROM $TABLE_NAME 
                         WHERE behandling_id = ? 
                         AND fagsak_id = ? 
                         AND fagsystem = ? 
@@ -84,7 +85,7 @@ object OppdragLagerRepository {
     ) {
         coroutineContext.connection.prepareStatement(
             """
-                INSERT INTO oppdrag_lager (
+                INSERT INTO $TABLE_NAME (
                     id, 
                     utgaaende_oppdrag, 
                     status, 
@@ -121,7 +122,7 @@ object OppdragLagerRepository {
     ) {
         coroutineContext.connection.prepareStatement(
             """
-            UPDATE oppdrag_lager 
+            UPDATE $TABLE_NAME 
             SET status = ?
             WHERE fagsak_id = ? 
                 AND fagsystem = ? 
@@ -144,7 +145,7 @@ object OppdragLagerRepository {
     ) {
         coroutineContext.connection.prepareStatement(
             """
-            UPDATE oppdrag_lager 
+            UPDATE $TABLE_NAME 
             SET kvitteringsmelding = ?::JSON 
             WHERE fagsak_id = ? 
             AND fagsystem = ? 
@@ -168,7 +169,7 @@ object OppdragLagerRepository {
     ): List<OppdragLager> {
         return coroutineContext.connection.prepareStatement(
             """
-                SELECT * FROM oppdrag_lager 
+                SELECT * FROM $TABLE_NAME 
                 WHERE avstemming_tidspunkt >= ? 
                 AND avstemming_tidspunkt < ? 
                 AND fagsystem = ?
@@ -187,7 +188,7 @@ object OppdragLagerRepository {
     ): List<OppdragLager> {
         return coroutineContext.connection.prepareStatement(
             """
-               SELECT * FROM oppdrag_lager 
+               SELECT * FROM $TABLE_NAME 
                WHERE behandling_id = ? 
                AND fagsak_id = ? 
                AND fagsystem = ?

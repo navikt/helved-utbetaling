@@ -15,11 +15,13 @@ import libs.jdbc.PostgresContainer
 import libs.mq.MQContainer
 import libs.postgres.Migrator
 import libs.postgres.Postgres
+import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.utils.appLog
 import oppdrag.fakes.AzureFake
 import oppdrag.fakes.OppdragFake
+import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import java.io.File
 
 object TestRuntime : AutoCloseable {
@@ -28,15 +30,20 @@ object TestRuntime : AutoCloseable {
     val mq: MQContainer = MQContainer("oppdrag")
     val config: Config = TestConfig.create(postgres.config, mq.config, azure.config)
     val oppdrag = OppdragFake(config)
+    val datasource = Postgres.initialize(config.postgres)
+    val context = CoroutineDatasource(datasource)
     val ktor = testApplication.apply { start() }
 
-    suspend fun cleanup() {
-        withContext(Postgres.context) {
-            transaction {
-                val con = coroutineContext.connection
-                con.prepareStatement("TRUNCATE TABLE oppdrag_lager").execute()
-                con.prepareStatement("TRUNCATE TABLE simulering_lager").execute()
-                con.prepareStatement("TRUNCATE TABLE mellomlagring_konsistensavstemming").execute()
+    fun clear() {
+        val tables = listOf(OppdragLagerRepository.TABLE_NAME)
+
+        runBlocking {
+            withContext(Postgres.context) {
+                transaction {
+                    tables.forEach { table ->
+                        coroutineContext.connection.prepareStatement("TRUNCATE TABLE $table").execute()
+                    }
+                }
             }
         }
         oppdrag.sendKø.clearReceived()
@@ -67,9 +74,9 @@ private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
 //            database(TestRuntime.config.postgres)
-            Postgres.initialize(TestRuntime.config.postgres)
+
             runBlocking {
-                withContext(Postgres.context) {
+                withContext(TestRuntime.context) {
                     Migrator(File("test/migrations")).migrate()
                 }
             }
