@@ -10,7 +10,7 @@ import java.net.InetAddress
 import java.net.URI
 
 class LeaderElectorFake : AutoCloseable {
-    private val elector = embeddedServer(Netty, port = 0, module = Application::elector).apply { start() }
+    private val elector = embeddedServer(Netty, port = 4040, module = Application::elector).apply { start() }
     val url by lazy { "http://localhost:${elector.port()}".let(::URI).toURL() }
     override fun close() = elector.stop(0, 0)
 }
