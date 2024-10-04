@@ -11,6 +11,7 @@ import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.PostgresContainer
+import libs.postgres.Migrator
 import libs.postgres.Postgres
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
@@ -19,9 +20,10 @@ import libs.utils.appLog
 import utsjekk.Config
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.server
 import utsjekk.task.TaskDao
 import utsjekk.task.history.TaskHistoryDao
-import utsjekk.utsjekk
+import java.io.File
 
 object TestRuntime : AutoCloseable {
     init {
@@ -92,10 +94,13 @@ fun NettyApplicationEngine.port(): Int = runBlocking {
 private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
-            utsjekk(
+            runBlocking {
+                withContext(TestRuntime.context) {
+                    Migrator(File("migrations")).migrate()
+                }
+            }
+            server(
                 config = TestRuntime.config,
-                datasource = TestRuntime.jdbc,
-                context = TestRuntime.context,
                 featureToggles = TestRuntime.unleash,
                 statusProducer = TestRuntime.kafka
             )

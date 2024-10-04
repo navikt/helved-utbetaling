@@ -14,16 +14,17 @@ import libs.postgres.concurrency.transaction
 import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
+import utsjekk.database
 import utsjekk.iverksetting.Iverksetting
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.behandlingId
 import utsjekk.iverksetting.iverksettingId
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.sakId
+import utsjekk.server
 import utsjekk.task.Kind
 import utsjekk.task.Status
 import utsjekk.task.TaskDao
-import utsjekk.utsjekk
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -37,9 +38,9 @@ fun main() {
 }
 
 fun Application.testApp() {
-    utsjekk(
+    database(TestRuntime.config.jdbc)
+    server(
         config = TestRuntime.config,
-        context = TestRuntime.context,
         featureToggles = TestRuntime.unleash,
         statusProducer = TestRuntime.kafka,
     ).apply {
@@ -51,7 +52,7 @@ fun Application.testApp() {
             post("/task") {
                 val numberOfTasks = call.request.queryParameters["numberOfTasks"]?.toIntOrNull() ?: 10
 
-                withContext(TestRuntime.context) {
+                withContext(Postgres.context) {
                     transaction {
                         for (i in 1..numberOfTasks) {
                             val iverksetting = TestData.domain.iverksetting()

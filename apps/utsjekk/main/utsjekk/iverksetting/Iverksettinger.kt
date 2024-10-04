@@ -2,6 +2,7 @@ package utsjekk.iverksetting
 
 import kotlinx.coroutines.withContext
 import libs.kafka.Kafka
+import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
@@ -14,15 +15,13 @@ import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.task.Kind
 import utsjekk.task.Tasks
 import java.time.LocalDateTime
-import kotlin.coroutines.CoroutineContext
 
 class Iverksettinger(
-    private val context: CoroutineContext,
     private val toggles: FeatureToggles,
     private val statusProducer: Kafka<StatusEndretMelding>,
 ) {
     suspend fun valider(iverksetting: Iverksetting) {
-        withContext(context) {
+        withContext(Postgres.context) {
             transaction {
                 IverksettingValidator.validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
                 IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
@@ -38,7 +37,7 @@ class Iverksettinger(
             serviceUnavailable("Iverksetting er skrudd av for fagsystem $fagsystem")
         }
 
-        withContext(context) {
+        withContext(Postgres.context) {
             transaction {
                 val now = LocalDateTime.now()
 
@@ -81,7 +80,7 @@ class Iverksettinger(
         behandlingId: BehandlingId,
         iverksettingId: IverksettingId?
     ): IverksettStatus? {
-        val result = withContext(context) {
+        val result = withContext(Postgres.context) {
             transaction {
                 IverksettingResultatDao.select(1) {
                     this.fagsystem = fagsystem //client.toFagsystem()

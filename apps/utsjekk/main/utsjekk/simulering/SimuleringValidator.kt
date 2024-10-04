@@ -1,22 +1,19 @@
 package utsjekk.simulering
 
 import kotlinx.coroutines.withContext
+import libs.postgres.Postgres
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.ApiError.Companion.badRequest
 import utsjekk.ApiError.Companion.conflict
-import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.Iverksettinger
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.behandlingId
-import kotlin.coroutines.CoroutineContext
+import utsjekk.iverksetting.resultat.IverksettingResultater
 
-class SimuleringValidator(
-    private val context: CoroutineContext,
-    private val iverksettinger: Iverksettinger
-) {
+class SimuleringValidator(private val iverksettinger: Iverksettinger) {
 
     suspend fun valider(simulering: Simulering) {
-        withContext(context) {
+        withContext(Postgres.context) {
             forrigeIverksettingSkalVæreFerdigstilt(simulering)
             forrigeIverksettingErLikSisteMottatteIverksetting(simulering)
         }

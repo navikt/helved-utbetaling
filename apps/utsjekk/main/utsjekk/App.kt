@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.kafka.Kafka
+import libs.postgres.JdbcConfig
 import libs.postgres.Migrator
 import libs.postgres.Postgres
 import libs.utils.appLog
@@ -54,21 +55,28 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(Netty, port = 8080, module = Application::utsjekk).start(wait = true)
+    embeddedServer(Netty, port = 8080){
+        val config = Config()
+        database(config.jdbc)
+        server(config)
+    }.start(wait = true)
 }
 
-fun Application.utsjekk(
+fun Application.database(config: JdbcConfig) {
+    Postgres.initialize(config)
+
+    runBlocking {
+        withContext(Postgres.context) {
+            Migrator(File("migrations")).migrate()
+        }
+    }
+}
+
+fun Application.server(
     config: Config = Config(),
-    datasource: DataSource = Postgres.initialize(config.jdbc),
-    context: CoroutineContext = Dispatchers.IO + Postgres.context,
     featureToggles: FeatureToggles = UnleashFeatureToggles(config.unleash),
     statusProducer: Kafka<StatusEndretMelding> = StatusKafkaProducer(config.kafka),
 ) {
-    runBlocking {
-        withContext(context) {
-            Migrator(File("migrations"), context).migrate()
-        }
-    }
 
     val meters = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
@@ -116,9 +124,9 @@ fun Application.utsjekk(
     }
 
     val oppdrag = OppdragClient(config)
-    val simulering = SimuleringClient(config, context)
-    val iverksettinger = Iverksettinger(context, featureToggles, statusProducer)
-    val simuleringValidator = SimuleringValidator(context, iverksettinger)
+    val simulering = SimuleringClient(config)
+    val iverksettinger = Iverksettinger(featureToggles, statusProducer)
+    val simuleringValidator = SimuleringValidator(iverksettinger)
     val scheduler =
         TaskScheduler(
             listOf(
@@ -126,14 +134,13 @@ fun Application.utsjekk(
                 StatusTaskStrategy(oppdrag),
                 AvstemmingTaskStrategy(oppdrag).apply {
                     runBlocking {
-                        withContext(context) {
+                        withContext(Postgres.context) {
                             initiserAvstemmingForNyeFagsystemer()
                         }
                     }
                 },
             ),
             LeaderElector(config),
-            context,
         )
 
     environment.monitor.subscribe(ApplicationStopping) {
@@ -145,7 +152,7 @@ fun Application.utsjekk(
         authenticate(TokenProvider.AZURE) {
             iverksetting(iverksettinger)
             simulering(simuleringValidator, simulering)
-            tasks(context)
+            tasks()
         }
 
         probes(meters)

@@ -2,24 +2,24 @@ package utsjekk.task
 
 import io.ktor.util.logging.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import libs.job.Scheduler
+import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import libs.postgres.concurrency.withLock
 import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.LeaderElector
 import java.time.LocalDateTime
-import kotlin.coroutines.CoroutineContext
 
 class TaskScheduler(
     private val strategies: List<TaskStrategy>,
     private val elector: LeaderElector,
-    context: CoroutineContext,
 ) : Scheduler<TaskDao>(
     feedRPM = 120,
     errorCooldownMs = 100,
-    context = context,
+    context = Postgres.context + Dispatchers.IO,
 ) {
     override fun isLeader(): Boolean = runBlocking { elector.isLeader() }
 
