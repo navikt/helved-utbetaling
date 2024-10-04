@@ -14,6 +14,7 @@ data class Config(
     val oppdrag: OppdragConfig = OppdragConfig(),
     val simulering: SimuleringConfig = SimuleringConfig(),
     val unleash: UnleashConfig = UnleashConfig(),
+    val electorUrl: URL = env<URL>("ELECTOR_GET_URL")
 )
 
 data class OppdragConfig(
