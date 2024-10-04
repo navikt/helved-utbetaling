@@ -132,6 +132,7 @@ fun Application.utsjekk(
                     }
                 },
             ),
+            LeaderElector(config),
             context,
         )
 

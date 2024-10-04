@@ -22,7 +22,6 @@ import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.task.TaskDao
 import utsjekk.task.history.TaskHistoryDao
 import utsjekk.utsjekk
-import kotlin.coroutines.CoroutineContext
 
 object TestRuntime : AutoCloseable {
     init {
@@ -37,6 +36,7 @@ object TestRuntime : AutoCloseable {
     val oppdrag = OppdragFake()
     val simulering = SimuleringFake()
     val unleash = UnleashFake()
+    val elector = LeaderElectorFake()
     val kafka: KafkaFake = KafkaFake()
     val jdbc = Postgres.initialize(postgres.config)
     val context = CoroutineDatasource(jdbc)
@@ -49,6 +49,7 @@ object TestRuntime : AutoCloseable {
             jdbc = postgres.config,
             unleash = UnleashFake.config,
             kafka = kafka.config,
+            electorUrl = elector.url
         )
     }
 
