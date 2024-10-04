@@ -4,6 +4,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import libs.xml.XMLMapper
@@ -34,8 +35,10 @@ class AvstemmingTest {
             til = LocalDateTime.now().plusMonths(1)
         )
 
-        transaction {
-            OppdragLagerRepository.opprettOppdrag(oppdragLager)
+        withContext(Postgres.context) {
+            transaction {
+                OppdragLagerRepository.opprettOppdrag(oppdragLager)
+            }
         }
 
         httpClient.post("/grensesnittavstemming") {
