@@ -1,9 +1,7 @@
 package oppdrag.iverksetting
 
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import libs.mq.MQ
-import libs.postgres.Postgres
 import oppdrag.TestRuntime
 import oppdrag.etUtbetalingsoppdrag
 import oppdrag.iverksetting.domene.OppdragMapper
@@ -19,13 +17,11 @@ class OppdragServiceTest {
 
     @BeforeEach
     @AfterEach
-    fun cleanup() = runBlocking {
-        TestRuntime.cleanup()
-    }
+    fun cleanup() = TestRuntime.clear()
 
     @Test
     @Disabled
-    fun `sender ikke oppdrag om lagring av oppdrag i db feiler`() = runTest(Postgres.context) {
+    fun `sender ikke oppdrag om lagring av oppdrag i db feiler`() = runTest(TestRuntime.context) {
         val mq = MQ(TestRuntime.config.mq)
         val service = OppdragService(
             config = TestRuntime.config.oppdrag,

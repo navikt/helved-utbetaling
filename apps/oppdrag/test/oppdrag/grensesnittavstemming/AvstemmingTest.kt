@@ -2,10 +2,8 @@ package oppdrag.grensesnittavstemming
 
 import io.ktor.client.request.*
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
@@ -22,12 +20,10 @@ class AvstemmingTest {
     private val mapper = XMLMapper<Avstemmingsdata>()
 
     @AfterEach
-    fun cleanup() = runBlocking {
-        TestRuntime.cleanup()
-    }
+    fun cleanup() = TestRuntime.clear()
 
     @Test
-    fun `skal avstemme eksisterende oppdrag`(): Unit = runTest(Postgres.context) {
+    fun `skal avstemme eksisterende oppdrag`(): Unit = runTest(TestRuntime.context) {
         val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
         val avstemming = GrensesnittavstemmingRequest(
             fagsystem = Fagsystem.DAGPENGER,
@@ -35,7 +31,7 @@ class AvstemmingTest {
             til = LocalDateTime.now().plusMonths(1)
         )
 
-        withContext(Postgres.context) {
+        withContext(TestRuntime.context) {
             transaction {
                 OppdragLagerRepository.opprettOppdrag(oppdragLager)
             }
