@@ -3,20 +3,17 @@ package task
 import TestData
 import TestRuntime
 import kotlinx.coroutines.test.runTest
+import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import utsjekk.task.Kind
-import utsjekk.task.Status
-import utsjekk.task.TaskDao
-import utsjekk.task.TaskDto
-import utsjekk.task.Tasks
+import utsjekk.task.*
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.UUID
+import java.util.*
 import kotlin.test.assertEquals
 
 class TasksTest {
@@ -29,7 +26,7 @@ class TasksTest {
     inner class incomplete {
         @Test
         fun `excludes completed`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 transaction {
                     enTask(Status.COMPLETE).insert()
                 }
@@ -38,7 +35,7 @@ class TasksTest {
 
         @Test
         fun `includes in progress`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 transaction {
                     enTask(Status.IN_PROGRESS).insert()
                 }
@@ -47,7 +44,7 @@ class TasksTest {
 
         @Test
         fun `includes manual`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 transaction {
                     enTask(Status.MANUAL).insert()
                 }
@@ -56,7 +53,7 @@ class TasksTest {
 
         @Test
         fun `includes fail`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 transaction {
                     enTask(Status.FAIL).insert()
                 }
@@ -68,7 +65,7 @@ class TasksTest {
     inner class forStatus {
         @Test
         fun `filter selected`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 transaction {
                     Status.entries.forEach { status ->
                         enTask(status).insert()
@@ -87,7 +84,7 @@ class TasksTest {
     inner class createdAfter {
         @Test
         fun `includes after`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 transaction {
                     enTask(createdAt = LocalDateTime.of(2024, 6, 14, 10, 45)).insert()
                     enTask(createdAt = LocalDateTime.of(2024, 6, 15, 10, 45)).insert()
@@ -99,7 +96,7 @@ class TasksTest {
 
         @Test
         fun `excludes before`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 transaction {
                     enTask(createdAt = LocalDateTime.of(2024, 6, 14, 10, 45)).insert()
                     enTask(createdAt = LocalDateTime.of(2024, 6, 15, 10, 45)).insert()
@@ -110,7 +107,7 @@ class TasksTest {
 
         @Test
         fun `includes limit`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 transaction {
                     enTask(createdAt = LocalDateTime.of(2024, 6, 14, 10, 45)).insert()
                     enTask(createdAt = LocalDateTime.of(2024, 6, 15, 10, 45)).insert()
@@ -124,7 +121,7 @@ class TasksTest {
     inner class update {
         @Test
         fun `attempt is increased`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 val task =
                     transaction {
                         enTask(Status.IN_PROGRESS).apply { insert() }
@@ -139,7 +136,7 @@ class TasksTest {
 
         @Test
         fun `update_at is set to now`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 val task =
                     transaction {
                         enTask(Status.IN_PROGRESS).apply { insert() }
@@ -155,7 +152,7 @@ class TasksTest {
 
         @Test
         fun `scheduled for is set according to retry strategy`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 val task =
                     transaction {
                         enTask(Status.IN_PROGRESS).apply { insert() }
@@ -176,7 +173,7 @@ class TasksTest {
 
         @Test
         fun `message is applied`() =
-            runTest(TestRuntime.context) {
+            runTest(Postgres.context) {
                 val task =
                     transaction {
                         enTask(Status.IN_PROGRESS).apply { insert() }

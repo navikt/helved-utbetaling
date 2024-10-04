@@ -6,13 +6,13 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
+import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import utsjekk.task.history.TaskHistory
 import java.time.LocalDateTime
 import java.util.*
-import kotlin.coroutines.CoroutineContext
 
-fun Route.tasks(context: CoroutineContext) {
+fun Route.tasks() {
     route("/api/tasks") {
         get {
             val status = call.parameters["status"]?.split(",")?.map { Status.valueOf(it) }
@@ -22,7 +22,7 @@ fun Route.tasks(context: CoroutineContext) {
             val page = call.parameters["page"]?.toInt()
             val pageSize = call.parameters["pageSize"]?.toInt() ?: 20
 
-            withContext(context) {
+            withContext(Postgres.context) {
                 if (page != null) {
                     val tasks = Tasks.filterBy(status, after, kind, pageSize, (page - 1) * pageSize)
                     val count = Tasks.count(status, after, kind)
@@ -38,7 +38,7 @@ fun Route.tasks(context: CoroutineContext) {
             val id = call.parameters["id"]?.let(UUID::fromString)
                 ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
 
-            withContext(context) {
+            withContext(Postgres.context) {
                 Tasks.rekjør(id)
             }
 
@@ -50,7 +50,7 @@ fun Route.tasks(context: CoroutineContext) {
                 call.parameters["id"]?.let(UUID::fromString)
                     ?: return@patch call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
 
-            withContext(context) {
+            withContext(Postgres.context) {
                 transaction {
                     TaskDao.select { it.id = id }
                 }
@@ -58,7 +58,7 @@ fun Route.tasks(context: CoroutineContext) {
 
             val payload = call.receive<TaskDtoPatch>()
 
-            withContext(context) {
+            withContext(Postgres.context) {
                 Tasks.update(id, payload.status, payload.message)
                 call.respond(HttpStatusCode.OK)
             }
@@ -69,7 +69,7 @@ fun Route.tasks(context: CoroutineContext) {
                 call.parameters["id"]?.let(UUID::fromString)
                     ?: return@get call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
 
-            withContext(context) {
+            withContext(Postgres.context) {
                 val historikk = transaction { TaskHistory.history(id) }
 
                 call.respond(historikk)
