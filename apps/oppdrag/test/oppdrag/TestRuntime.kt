@@ -77,7 +77,7 @@ private val testApplication: TestApplication by lazy {
 
             runBlocking {
                 withContext(TestRuntime.context) {
-                    Migrator(File("test/migrations")).migrate()
+                    Migrator(File("migrations")).migrate()
                 }
             }
             server(TestRuntime.config)
