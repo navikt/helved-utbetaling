@@ -74,6 +74,7 @@ data class TaskDao(
         suspend fun select(
             limit: Int? = null,
             offset: Int? = null,
+            order: Order? = null,
             conditions: (where: Where) -> Unit = {},
         ): List<TaskDao> {
             val conditions = Where().apply(conditions)
@@ -97,6 +98,10 @@ data class TaskDao(
 
                         // Remove dangling "AND "
                         setLength(length - 4)
+                    }
+
+                    order?.let {
+                        append(" ORDER BY ${it.column} ${it.direction.value}")
                     }
 
                     limit?.let { append(" LIMIT ?") }
@@ -211,6 +216,18 @@ fun TaskDao.Companion.from(rs: ResultSet) =
         scheduledFor = rs.getTimestamp("scheduled_for").toLocalDateTime(),
         message = rs.getString("message"),
     )
+
+data class Order(
+    val column: String,
+    val direction: Direction,
+) {
+    enum class Direction(
+        val value: String,
+    ) {
+        DESCENDING("DESC"),
+        ASCENDING("ASC"),
+    }
+}
 
 /**
  * [column] [operator] [time]
