@@ -1,16 +1,20 @@
 package utsjekk.task
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.call
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.patch
+import io.ktor.server.routing.put
+import io.ktor.server.routing.route
 import kotlinx.coroutines.withContext
 import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import utsjekk.task.history.TaskHistory
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 fun Route.tasks() {
     route("/api/tasks") {
@@ -22,21 +26,32 @@ fun Route.tasks() {
             val page = call.parameters["page"]?.toInt()
             val pageSize = call.parameters["pageSize"]?.toInt() ?: 20
 
+            val order = Order("scheduled_for", Order.Direction.DESCENDING)
+
             withContext(Postgres.context) {
                 if (page != null) {
-                    val tasks = Tasks.filterBy(status, after, kind, pageSize, (page - 1) * pageSize)
+                    val tasks =
+                        Tasks.filterBy(
+                            status = status,
+                            after = after,
+                            kind = kind,
+                            limit = pageSize,
+                            offset = (page - 1) * pageSize,
+                            order = order,
+                        )
                     val count = Tasks.count(status, after, kind)
                     call.respond(PaginatedTasksDto(tasks, page, pageSize, count))
                 } else {
-                    val tasks = Tasks.filterBy(status, after, kind)
+                    val tasks = Tasks.filterBy(status = status, after = after, kind = kind, order = order)
                     call.respond(tasks)
                 }
             }
         }
 
         put("/{id}/rekjør") {
-            val id = call.parameters["id"]?.let(UUID::fromString)
-                ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
+            val id =
+                call.parameters["id"]?.let(UUID::fromString)
+                    ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
 
             withContext(Postgres.context) {
                 Tasks.rekjør(id)

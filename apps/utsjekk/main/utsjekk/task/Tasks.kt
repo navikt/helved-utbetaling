@@ -13,10 +13,11 @@ object Tasks {
         kind: Kind?,
         limit: Int? = null,
         offset: Int? = null,
+        order: Order? = null,
     ): List<TaskDto> =
         transaction {
             TaskDao
-                .select(limit, offset) {
+                .select(limit, offset, order) {
                     it.status = status
                     it.createdAt = after?.let { SelectTime(Operator.GE, after) }
                     it.kind = kind
@@ -76,22 +77,24 @@ object Tasks {
                 }.map(TaskDto::from)
         }
 
-    suspend fun rekjør(id: UUID) = transaction {
-        val now = LocalDateTime.now()
-        val task = TaskDao.select { it.id = id }.single()
-        task.copy(
-            updatedAt = now,
-            scheduledFor = now,
-            attempt = task.attempt + 1,
-        ).update()
-        TaskHistoryDao(
-            taskId = task.id,
-            createdAt = task.createdAt,
-            triggeredAt = task.updatedAt,
-            triggeredBy = task.updatedAt,
-            status = task.status,
-        ).insert()
-    }
+    suspend fun rekjør(id: UUID) =
+        transaction {
+            val now = LocalDateTime.now()
+            val task = TaskDao.select { it.id = id }.single()
+            task
+                .copy(
+                    updatedAt = now,
+                    scheduledFor = now,
+                    attempt = task.attempt + 1,
+                ).update()
+            TaskHistoryDao(
+                taskId = task.id,
+                createdAt = task.createdAt,
+                triggeredAt = task.updatedAt,
+                triggeredBy = task.updatedAt,
+                status = task.status,
+            ).insert()
+        }
 
     suspend fun update(
         id: UUID,
