@@ -1,0 +1,1 @@
+ALTER TABLE task_v2_history ADD COLUMN IF NOT EXISTS message VARCHAR;

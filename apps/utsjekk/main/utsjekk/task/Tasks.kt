@@ -93,6 +93,7 @@ object Tasks {
                 triggeredAt = task.updatedAt,
                 triggeredBy = task.updatedAt,
                 status = task.status,
+                message = task.message,
             ).insert()
         }
 
@@ -122,6 +123,7 @@ object Tasks {
             triggeredAt = task.updatedAt,
             triggeredBy = task.updatedAt,
             status = task.status,
+            message = task.message,
         ).insert()
     }
 

@@ -11,15 +11,18 @@ data class TaskHistoryDto(
     val triggeredAt: LocalDateTime,
     val triggeredBy: LocalDateTime,
     val status: Status,
+    val message: String?,
 ) {
     companion object {
-        fun from(task: TaskHistoryDao) = TaskHistoryDto(
-            id = task.id,
-            taskId = task.taskId,
-            createdAt = task.createdAt,
-            triggeredAt = task.triggeredAt,
-            triggeredBy = task.triggeredBy,
-            status = task.status
-        )
+        fun from(task: TaskHistoryDao) =
+            TaskHistoryDto(
+                id = task.id,
+                taskId = task.taskId,
+                createdAt = task.createdAt,
+                triggeredAt = task.triggeredAt,
+                triggeredBy = task.triggeredBy,
+                status = task.status,
+                message = task.message,
+            )
     }
 }
