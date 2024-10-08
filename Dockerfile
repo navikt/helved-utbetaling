@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21 AS jre
+FROM eclipse-temurin:21-jdk-alpine AS jre
 RUN jlink \
     --verbose \
     --module-path $JAVA_HOME/bin/jmods/ \
@@ -17,13 +17,12 @@ RUN jlink \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
-    --strip-native-commands \
     --compress=2 \
     --output /customjre
 
 FROM alpine:latest AS app
-ENV JAVA_HOME=/jre
 ENV LANG="nb_NO.UTF-8" LANGUAGE="nb_NO:nb" LC_ALL="nb:NO.UTF-8" TZ="Europe/Oslo"
+ENV JAVA_HOME=/jre
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre /customjre $JAVA_HOME
 COPY apps/*/build/libs/*-all.jar /app.jar
