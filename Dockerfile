@@ -3,7 +3,7 @@ RUN jlink \
     --verbose \
     --module-path $JAVA_HOME/bin/jmods/ \
     --add-modules java.base \
-    # --add-modules java.desktop \
+    --add-modules java.desktop \
     --add-modules java.management \
     --add-modules java.instrument \
     --add-modules java.naming \
