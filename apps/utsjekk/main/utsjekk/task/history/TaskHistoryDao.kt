@@ -18,12 +18,14 @@ data class TaskHistoryDao(
     val triggeredAt: LocalDateTime,
     val triggeredBy: LocalDateTime,
     val status: Status,
+    val message: String?,
 ) {
     suspend fun insert() {
-        val sql = """
-            INSERT INTO $TABLE_NAME  (id, task_id, created_at, triggered_at, triggered_by, status) 
-            VALUES (?,?,?,?,?,?)
-        """.trimIndent()
+        val sql =
+            """
+            INSERT INTO $TABLE_NAME  (id, task_id, created_at, triggered_at, triggered_by, status, message) 
+            VALUES (?,?,?,?,?,?,?)
+            """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, id)
             stmt.setObject(2, taskId)
@@ -31,6 +33,7 @@ data class TaskHistoryDao(
             stmt.setTimestamp(4, Timestamp.valueOf(triggeredAt))
             stmt.setTimestamp(5, Timestamp.valueOf(triggeredBy))
             stmt.setString(6, status.name)
+            stmt.setString(7, message)
 
             appLog.debug(sql)
             secureLog.debug(stmt.toString())
@@ -55,11 +58,13 @@ data class TaskHistoryDao(
     }
 }
 
-fun TaskHistoryDao.Companion.from(rs: ResultSet) = TaskHistoryDao(
-    id = UUID.fromString(rs.getString("id")),
-    taskId = UUID.fromString(rs.getString("task_id")),
-    createdAt = rs.getTimestamp("created_at").toLocalDateTime(),
-    triggeredAt = rs.getTimestamp("triggered_at").toLocalDateTime(),
-    triggeredBy = rs.getTimestamp("triggered_by").toLocalDateTime(),
-    status = Status.valueOf(rs.getString("status")),
-)
+fun TaskHistoryDao.Companion.from(rs: ResultSet) =
+    TaskHistoryDao(
+        id = UUID.fromString(rs.getString("id")),
+        taskId = UUID.fromString(rs.getString("task_id")),
+        createdAt = rs.getTimestamp("created_at").toLocalDateTime(),
+        triggeredAt = rs.getTimestamp("triggered_at").toLocalDateTime(),
+        triggeredBy = rs.getTimestamp("triggered_by").toLocalDateTime(),
+        status = Status.valueOf(rs.getString("status")),
+        message = rs.getString("message"),
+    )
