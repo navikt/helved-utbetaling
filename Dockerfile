@@ -25,8 +25,8 @@ ENV LANG="nb_NO.UTF-8" LANGUAGE="nb_NO:nb" LC_ALL="nb:NO.UTF-8" TZ="Europe/Oslo"
 ENV JAVA_HOME=/jre
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre /customjre $JAVA_HOME
-COPY apps/*/build/libs/*-all.jar /app.jar
 ADD apps/*/build/resources/main /migrations
+COPY apps/*/build/libs/*-all.jar /app.jar
 ENTRYPOINT [                           \
     "java",                            \
     "-XX:MaxRAMPercentage=60.0",       \
