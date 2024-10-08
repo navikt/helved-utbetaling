@@ -26,7 +26,7 @@ ENV JAVA_HOME=/jre
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre /customjre $JAVA_HOME
 COPY apps/*/build/libs/*-all.jar /app.jar
-ADD apps/*/build/resources/main /app/migrations
+ADD apps/*/build/resources/main /migrations
 ENTRYPOINT [                           \
     "java",                            \
     "-XX:MaxRAMPercentage=60.0",       \
