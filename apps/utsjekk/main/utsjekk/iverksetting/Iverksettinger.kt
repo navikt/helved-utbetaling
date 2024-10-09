@@ -23,10 +23,10 @@ class Iverksettinger(
     suspend fun valider(iverksetting: Iverksetting) {
         withContext(Postgres.context) {
             transaction {
+                IverksettingValidator.validerAtIverksettingIkkeAlleredeErMottatt(iverksetting)
                 IverksettingValidator.validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
                 IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 IverksettingValidator.validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting)
-                IverksettingValidator.validerAtIverksettingIkkeAlleredeErMottatt(iverksetting)
             }
         }
     }
@@ -51,21 +51,23 @@ class Iverksettinger(
     }
 
     suspend fun publiserStatusmelding(iverksetting: Iverksetting) {
-        val status = utledStatus(
-            fagsystem = iverksetting.fagsak.fagsystem,
-            sakId = iverksetting.sakId,
-            behandlingId = iverksetting.behandlingId,
-            iverksettingId = iverksetting.iverksettingId
-        )
+        val status =
+            utledStatus(
+                fagsystem = iverksetting.fagsak.fagsystem,
+                sakId = iverksetting.sakId,
+                behandlingId = iverksetting.behandlingId,
+                iverksettingId = iverksetting.iverksettingId,
+            )
 
         if (status != null) {
-            val message = StatusEndretMelding(
-                sakId = iverksetting.sakId.id,
-                behandlingId = iverksetting.behandlingId.id,
-                iverksettingId = iverksetting.iverksettingId?.id,
-                fagsystem = iverksetting.fagsak.fagsystem,
-                status = status
-            )
+            val message =
+                StatusEndretMelding(
+                    sakId = iverksetting.sakId.id,
+                    behandlingId = iverksetting.behandlingId.id,
+                    iverksettingId = iverksetting.iverksettingId?.id,
+                    fagsystem = iverksetting.fagsak.fagsystem,
+                    status = status,
+                )
 
             statusProducer.produce(
                 key = iverksetting.søker.personident,
@@ -78,18 +80,20 @@ class Iverksettinger(
         fagsystem: Fagsystem,
         sakId: SakId,
         behandlingId: BehandlingId,
-        iverksettingId: IverksettingId?
+        iverksettingId: IverksettingId?,
     ): IverksettStatus? {
-        val result = withContext(Postgres.context) {
-            transaction {
-                IverksettingResultatDao.select(1) {
-                    this.fagsystem = fagsystem //client.toFagsystem()
-                    this.sakId = sakId
-                    this.behandlingId = behandlingId
-                    this.iverksettingId = iverksettingId
-                }.singleOrNull()
+        val result =
+            withContext(Postgres.context) {
+                transaction {
+                    IverksettingResultatDao
+                        .select(1) {
+                            this.fagsystem = fagsystem // client.toFagsystem()
+                            this.sakId = sakId
+                            this.behandlingId = behandlingId
+                            this.iverksettingId = iverksettingId
+                        }.singleOrNull()
+                }
             }
-        }
 
         if (result == null) {
             return null
@@ -110,11 +114,16 @@ class Iverksettinger(
         }
     }
 
-    suspend fun hentSisteMottatte(sakId: SakId, fagsystem: Fagsystem): Iverksetting? =
+    suspend fun hentSisteMottatte(
+        sakId: SakId,
+        fagsystem: Fagsystem,
+    ): Iverksetting? =
         transaction {
-            IverksettingDao.select {
-                this.sakId = sakId
-                this.fagsystem = fagsystem
-            }.maxByOrNull { it.mottattTidspunkt }?.data
+            IverksettingDao
+                .select {
+                    this.sakId = sakId
+                    this.fagsystem = fagsystem
+                }.maxByOrNull { it.mottattTidspunkt }
+                ?.data
         }
 }
