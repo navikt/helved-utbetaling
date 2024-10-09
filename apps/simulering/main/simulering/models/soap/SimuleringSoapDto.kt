@@ -15,9 +15,18 @@ typealias FnrOrgnr = String // 9-11 tegn
 typealias Klasse = String // 0-20
 
 object soap {
-    data class SimuleringResponse(val simulerBeregningResponse: SimulerBeregningResponse)
-    data class SimulerBeregningResponse(val response: Response)
-    data class Response(val simulering: Beregning, val infomelding: Infomelding?)
+    data class SimuleringResponse(
+        val simulerBeregningResponse: SimulerBeregningResponse,
+    )
+
+    data class SimulerBeregningResponse(
+        val response: Response,
+    )
+
+    data class Response(
+        val simulering: Beregning,
+        val infomelding: Infomelding?,
+    )
 
     // entiteten sin referanse-id 311
     data class Beregning(
@@ -25,9 +34,8 @@ object soap {
         /** Ved simuleringsbereging gjelder dette datoen beregningen vil kjæres på. */
         val datoBeregnet: LocalDate,
         val belop: Double,
-        val beregningsPeriode: List<Periode>
+        val beregningsPeriode: List<Periode>,
     ) {
-
         fun intoDto(): rest.SimuleringResponse =
             rest.SimuleringResponse(
                 gjelderId = gjelderId,
@@ -41,13 +49,13 @@ object soap {
     data class Periode(
         val periodeFom: LocalDate,
         val periodeTom: LocalDate,
-        val beregningStoppnivaa: List<Stoppnivå>
+        val beregningStoppnivaa: List<Stoppnivå>,
     ) {
         fun intoDto(): rest.SimulertPeriode =
             rest.SimulertPeriode(
                 fom = periodeFom,
                 tom = periodeTom,
-                utbetalinger = beregningStoppnivaa.map(Stoppnivå::intoDto)
+                utbetalinger = beregningStoppnivaa.map(Stoppnivå::intoDto),
             )
     }
 
@@ -95,7 +103,6 @@ object soap {
                 trekkVedtakId = if (trekkVedtakId == 0L) null else trekkVedtakId,
                 refunderesOrgNr = refunderesOrgNr.removePrefix("00").trimEnd().takeIf { it.isNotBlank() },
             )
-
     }
 
     enum class SatsType {
@@ -106,11 +113,18 @@ object soap {
         AAR,
         ENG,
         AKTO,
-        LOPP
+        LOPP,
+        SALD,
     }
 
-    data class Infomelding(val beskrMelding: String)
-    data class Fault(val faultcode: String, val faultstring: String)
+    data class Infomelding(
+        val beskrMelding: String,
+    )
+
+    data class Fault(
+        val faultcode: String,
+        val faultstring: String,
+    )
 
     @JacksonXmlRootElement(localName = "ns3:simulerBeregningRequest")
     data class SimulerBeregningRequest(
@@ -119,30 +133,32 @@ object soap {
         @JacksonXmlProperty(isAttribute = true, localName = "ns3")
         val ns3: String = "http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt",
         @JacksonXmlProperty(isAttribute = true)
-        val request: SimulerRequest
+        val request: SimulerRequest,
     ) {
         companion object {
-            fun from(dto: rest.SimuleringRequest): SimulerBeregningRequest {
-                return SimulerBeregningRequest(
-                    request = SimulerRequest(
-                        oppdrag = Oppdrag(
-                            kodeFagomraade = dto.fagområde,
-                            kodeEndring = if (dto.erFørsteUtbetalingPåSak) "NY" else "ENDR",
-                            utbetFrekvens = "MND",
-                            fagsystemId = dto.sakId,
-                            oppdragGjelderId = dto.personident.verdi,
-                            saksbehId = dto.saksbehandler,
-                            datoOppdragGjelderFom = LocalDate.EPOCH,
-                            enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
-                            oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) }
+            fun from(dto: rest.SimuleringRequest): SimulerBeregningRequest =
+                SimulerBeregningRequest(
+                    request =
+                        SimulerRequest(
+                            oppdrag =
+                                Oppdrag(
+                                    kodeFagomraade = dto.fagområde,
+                                    kodeEndring = if (dto.erFørsteUtbetalingPåSak) "NY" else "ENDR",
+                                    utbetFrekvens = "MND",
+                                    fagsystemId = dto.sakId,
+                                    oppdragGjelderId = dto.personident.verdi,
+                                    saksbehId = dto.saksbehandler,
+                                    datoOppdragGjelderFom = LocalDate.EPOCH,
+                                    enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
+                                    oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) },
+                                ),
+                            simuleringsPeriode =
+                                SimuleringsPeriode(
+                                    datoSimulerFom = dto.finnSimuleringFom(),
+                                    datoSimulerTom = dto.utbetalingsperioder.maxBy { it.tom }.tom,
+                                ),
                         ),
-                        simuleringsPeriode = SimuleringsPeriode(
-                            datoSimulerFom = dto.finnSimuleringFom(),
-                            datoSimulerTom = dto.utbetalingsperioder.maxBy { it.tom }.tom,
-                        )
-                    )
                 )
-            }
         }
     }
 
@@ -156,7 +172,10 @@ object soap {
         }
     }
 
-    data class SimulerRequest(val oppdrag: Oppdrag, val simuleringsPeriode: SimuleringsPeriode)
+    data class SimulerRequest(
+        val oppdrag: Oppdrag,
+        val simuleringsPeriode: SimuleringsPeriode,
+    )
 
     @JsonPropertyOrder(
         "kodeEndring",
@@ -179,7 +198,7 @@ object soap {
         val saksbehId: String,
         @JsonProperty("ns2:enhet")
         val enhet: List<Enhet>,
-        val oppdragslinje: List<Oppdragslinje>
+        val oppdragslinje: List<Oppdragslinje>,
     )
 
     @JsonPropertyOrder(
@@ -193,8 +212,16 @@ object soap {
         val datoEnhetFom: LocalDate?,
     )
 
-    data class SimuleringsPeriode(val datoSimulerFom: LocalDate, val datoSimulerTom: LocalDate)
-    data class RefusjonsInfo(val refunderesId: String, val datoFom: LocalDate, val maksDato: LocalDate?)
+    data class SimuleringsPeriode(
+        val datoSimulerFom: LocalDate,
+        val datoSimulerTom: LocalDate,
+    )
+
+    data class RefusjonsInfo(
+        val refunderesId: String,
+        val datoFom: LocalDate,
+        val maksDato: LocalDate?,
+    )
 
     @JsonPropertyOrder(
         "kodeEndringLinje",
@@ -231,15 +258,31 @@ object soap {
         val refFagsystemId: String?,
         val refDelytelseId: String?,
         @JsonProperty("ns2:attestant")
-        val attestant: List<Attestant>
+        val attestant: List<Attestant>,
     ) {
-
         companion object {
-            fun from(utbetalingsperiode: rest.Utbetalingsperiode, dto: rest.SimuleringRequest): Oppdragslinje {
-                return Oppdragslinje(
+            fun from(
+                utbetalingsperiode: rest.Utbetalingsperiode,
+                dto: rest.SimuleringRequest,
+            ): Oppdragslinje =
+                Oppdragslinje(
                     delytelseId = "${dto.sakId}#${utbetalingsperiode.periodeId}",
-                    refDelytelseId = if (utbetalingsperiode.erEndringPåEksisterendePeriode) null else utbetalingsperiode.forrigePeriodeId?.let { "${dto.sakId}#$it" },
-                    refFagsystemId = if (utbetalingsperiode.erEndringPåEksisterendePeriode) null else utbetalingsperiode.forrigePeriodeId?.let {dto.sakId },
+                    refDelytelseId =
+                        if (utbetalingsperiode.erEndringPåEksisterendePeriode) {
+                            null
+                        } else {
+                            utbetalingsperiode.forrigePeriodeId
+                                ?.let {
+                                    "${dto.sakId}#$it"
+                                }
+                        },
+                    refFagsystemId =
+                        if (utbetalingsperiode.erEndringPåEksisterendePeriode) {
+                            null
+                        } else {
+                            utbetalingsperiode.forrigePeriodeId
+                                ?.let { dto.sakId }
+                        },
                     kodeEndringLinje = if (utbetalingsperiode.erEndringPåEksisterendePeriode) "ENDR" else "NY",
                     kodeKlassifik = utbetalingsperiode.klassekode,
                     kodeStatusLinje = utbetalingsperiode.opphør?.let { KodeStatusLinje.OPPH },
@@ -254,24 +297,24 @@ object soap {
                     attestant = listOf(Attestant(dto.saksbehandler)),
                     utbetalesTilId = utbetalingsperiode.utbetalesTil,
                 )
-            }
         }
-
 
         var refusjonsInfo: RefusjonsInfo? = null
     }
 
     enum class FradragTillegg {
-        F, T
+        F,
+        T,
     }
 
     enum class KodeStatusLinje {
         OPPH,
         HVIL,
         SPER,
-        REAK;
+        REAK,
     }
 
-    data class Attestant(val attestantId: String)
-
+    data class Attestant(
+        val attestantId: String,
+    )
 }
