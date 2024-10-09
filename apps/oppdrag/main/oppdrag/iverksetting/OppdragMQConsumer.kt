@@ -8,6 +8,7 @@ import libs.mq.MQConsumer
 import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
 import libs.utils.appLog
+import libs.utils.secureLog
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -25,6 +26,7 @@ class OppdragMQConsumer(
 ) : MQConsumer(mq, MQQueue(config.kvitteringsKø)) {
 
     override fun onMessage(message: TextMessage) {
+        secureLog.info("Mottok melding på kvitteringskø: ${message.text}")
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
         val oppdragIdKvittering = kvittering.id
 
