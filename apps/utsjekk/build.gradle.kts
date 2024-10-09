@@ -8,7 +8,7 @@ application {
 
 val ktorVersion = "2.3.12"
 val libVersion = "1.0.8"
-val kontraktVersion = "1.0_20240926140513_d75b2a0"
+val kontraktVersion = "1.0_20241009152720_6229329"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")

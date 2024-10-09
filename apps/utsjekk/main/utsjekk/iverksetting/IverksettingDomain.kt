@@ -255,6 +255,9 @@ data class StønadsdataTilleggsstønader(
             StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER -> "TSTBASISP2-OP"
             StønadTypeTilleggsstønader.TILSYN_BARN_AAP -> "TSTBASISP4-OP"
             StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE -> "TSTBASISP5-OP"
+            StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER -> "TSLMASISP2-OP"
+            StønadTypeTilleggsstønader.LÆREMIDLER_AAP -> "TSLMASISP3-OP"
+            StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE -> "TSLMASISP4-OP"
         }
 
     override fun tilKjedenøkkel(): Kjedenøkkel =
