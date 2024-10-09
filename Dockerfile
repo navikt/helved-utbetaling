@@ -11,9 +11,13 @@ RUN jlink \
     --add-modules java.security.jgss \
     --add-modules java.security.sasl \
     --add-modules java.sql \
+    --add-modules java.xml \
+    --add-modules java.xml.crypto \
     --add-modules jdk.httpserver \
     --add-modules jdk.unsupported \
     --add-modules jdk.crypto.ec \
+    --add-modules jdk.charsets \
+    --add-modules jdk.xml.dom \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
