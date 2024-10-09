@@ -21,3 +21,6 @@ src/generated
 
 # LSP (kotlin-language-server)
 *.db
+
+# MQ
+mqjms.log*
