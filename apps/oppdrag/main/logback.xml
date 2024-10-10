@@ -22,7 +22,7 @@
         <appender-ref ref="secureLog"/>
     </logger>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="stdout"/>
     </root>
 
