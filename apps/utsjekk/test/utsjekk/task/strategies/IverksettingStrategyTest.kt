@@ -2,10 +2,12 @@ package utsjekk.task.strategies
 
 import TestData
 import TestRuntime
+import awaitDatabase
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks
@@ -123,18 +125,18 @@ class IverksettingStrategyTest {
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
         val taskId = Tasks.create(libs.task.Kind.Iverksetting, iverksetting, null, objectMapper::writeValueAsString)
 
-        val actual = runBlocking {
-            suspend fun getTask(attempt: Int): TaskDao? {
-                return withContext(TestRuntime.context) {
-                    val actual = transaction { Tasks.forId(taskId) }
-                    if (actual?.status != libs.task.Status.FAIL && attempt < 1000) getTask(attempt + 1)
-                    else actual
-                }
-            }
-            getTask(0)
+        val actual = awaitDatabase {
+            TaskDao.select {
+                it.id = taskId
+                it.status = listOf(libs.task.Status.FAIL)
+            }.firstOrNull()
         }
 
         assertTrue(actual!!.message!!.contains("Fant ikke forrige iverksettingresultat"))
+
+        transaction {
+            actual.copy(status = libs.task.Status.COMPLETE).update()
+        }
     }
 
     @Test

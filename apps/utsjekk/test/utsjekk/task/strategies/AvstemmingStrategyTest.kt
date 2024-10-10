@@ -1,6 +1,7 @@
 package utsjekk.task.strategies
 
 import TestRuntime
+import awaitDatabase
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -79,17 +80,11 @@ class AvstemmingStrategyTest {
             task.insert()
         }
 
-        val actual = runBlocking {
-            suspend fun getTask(attempt: Int): TaskDao? {
-                return withContext(TestRuntime.context) {
-                    val actual = transaction {
-                        Tasks.forId(task.id)
-                    }
-                    if (actual?.status != libs.task.Status.COMPLETE && attempt < 1000) getTask(attempt + 1)
-                    else actual
-                }
-            }
-            getTask(0)
+        val actual = awaitDatabase {
+            TaskDao.select {
+                it.id = task.id
+                it.status = listOf(libs.task.Status.COMPLETE)
+            }.firstOrNull()
         }
 
         assertEquals(libs.task.Status.COMPLETE, actual?.status)
