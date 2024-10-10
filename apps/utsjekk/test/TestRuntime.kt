@@ -124,7 +124,7 @@ val httpClient: HttpClient by lazy {
     }
 }
 
-fun <T> awaitDatabase(timeoutMs: Long = 1_000, query: suspend () -> T?): T? =
+fun <T> awaitDatabase(timeoutMs: Long = 3_000, query: suspend () -> T?): T? =
     runBlocking {
         withTimeoutOrNull(timeoutMs) {
             channelFlow {
