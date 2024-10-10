@@ -15,7 +15,6 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.plugins.logging.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
-import libs.utils.appLog
 import libs.utils.secureLog
 import libs.ws.*
 import simulering.models.rest.rest

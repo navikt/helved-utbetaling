@@ -17,11 +17,13 @@ import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
-import libs.utils.appLog
+import libs.utils.logger
 import libs.utils.secureLog
 import org.slf4j.event.Level
 import simulering.routing.actuators
 import simulering.routing.simulering
+
+val appLog = logger("app")
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e -> appLog.error("Uhåndtert feil", e) }
