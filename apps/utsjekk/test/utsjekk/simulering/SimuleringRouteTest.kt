@@ -25,11 +25,6 @@ import java.util.*
 class SimuleringRouteTest {
 
     @Test
-    fun test() {
-        println(TestRuntime.config.jdbc)
-    }
-
-    @Test
     fun `409 hvis forrige iverksettingresultat mangler`() = runTest {
         val sakId = SakId(RandomOSURId.generate())
         val behId = BehandlingId("noe-tull")

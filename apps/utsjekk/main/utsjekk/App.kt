@@ -133,11 +133,11 @@ fun Application.server(
                 IverksettingTaskStrategy(oppdrag, iverksettinger),
                 StatusTaskStrategy(oppdrag),
                 AvstemmingTaskStrategy(oppdrag).apply {
-                    runBlocking {
-                        withContext(Postgres.context) {
-                            initiserAvstemmingForNyeFagsystemer()
-                        }
-                    }
+//                    runBlocking {
+//                        withContext(Postgres.context) {
+//                            initiserAvstemmingForNyeFagsystemer()
+//                        }
+//                    }
                 },
             ),
             LeaderElector(config),

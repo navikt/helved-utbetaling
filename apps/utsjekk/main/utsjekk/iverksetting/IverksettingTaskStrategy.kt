@@ -2,6 +2,8 @@ package utsjekk.iverksetting
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
+import libs.task.Tasks
 import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -12,21 +14,20 @@ import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import utsjekk.task.Kind
-import utsjekk.task.Status
-import utsjekk.task.TaskDao
 import utsjekk.task.TaskStrategy
-import utsjekk.task.Tasks
 
 class IverksettingTaskStrategy(
     private val oppdrag: OppdragClient,
     private val service: Iverksettinger,
 ) : TaskStrategy {
-    override suspend fun isApplicable(task: TaskDao): Boolean = task.kind == Kind.Iverksetting
+    override suspend fun isApplicable(task: TaskDao): Boolean = task.kind == libs.task.Kind.Iverksetting
 
     override suspend fun execute(task: TaskDao) {
         val iverksetting = objectMapper.readValue<Iverksetting>(task.payload)
         updateIverksetting(iverksetting)
-        Tasks.update(task.id, Status.COMPLETE, "")
+        Tasks.update(task.id, libs.task.Status.COMPLETE, "") {
+            Kind.valueOf(kind.name).retryStrategy(it)
+        }
     }
 
     private suspend fun updateIverksetting(iverksetting: Iverksetting) {
@@ -52,7 +53,7 @@ class IverksettingTaskStrategy(
                     resultat = OppdragResultat(OppdragStatus.LAGT_PÅ_KØ),
                 )
                 Tasks.create(
-                    kind = Kind.SjekkStatus,
+                    kind = libs.task.Kind.SjekkStatus,
                     payload =
                         OppdragIdDto(
                             fagsystem = iverksetting.fagsak.fagsystem,
@@ -60,7 +61,9 @@ class IverksettingTaskStrategy(
                             behandlingId = iverksetting.behandlingId.id,
                             iverksettingId = iverksetting.iverksettingId?.id,
                         ),
-                )
+                ) {
+                    objectMapper.writeValueAsString(it)
+                }
             }
         } else {
             IverksettingResultater.oppdater(

@@ -8,21 +8,25 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.testing.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import libs.jdbc.PostgresContainer
 import libs.postgres.Migrator
 import libs.postgres.Postgres
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
+import libs.task.TaskHistoryDao
 import libs.utils.appLog
 import utsjekk.Config
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.server
-import utsjekk.task.TaskDao
-import utsjekk.task.history.TaskHistoryDao
 import java.io.File
 
 object TestRuntime : AutoCloseable {
@@ -119,3 +123,16 @@ val httpClient: HttpClient by lazy {
         }
     }
 }
+
+fun <T> awaitDatabase(timeoutMs: Long = 3_000, query: suspend () -> T?): T? =
+    runBlocking {
+        withTimeoutOrNull(timeoutMs) {
+            channelFlow {
+                withContext(TestRuntime.context + Dispatchers.IO) {
+                    while (true) transaction {
+                        query()?.let { send(it) }
+                    }
+                }
+            }.firstOrNull()
+        }
+    }

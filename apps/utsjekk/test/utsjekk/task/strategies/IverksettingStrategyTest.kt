@@ -2,39 +2,31 @@ package utsjekk.task.strategies
 
 import TestData
 import TestRuntime
+import awaitDatabase
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
+import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import utsjekk.iverksetting.*
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.iverksetting.OppdragResultat
+import utsjekk.iverksetting.behandlingId
+import utsjekk.iverksetting.iverksettingId
 import utsjekk.iverksetting.resultat.IverksettingResultater
-import utsjekk.task.*
-import utsjekk.task.history.TaskHistoryDao
+import utsjekk.iverksetting.sakId
 import java.time.LocalDate
 
 class IverksettingStrategyTest {
-
-    @BeforeEach
-    fun reset() {
-        TestRuntime.oppdrag.reset()
-        TestRuntime.kafka.reset()
-        TestRuntime.clear(
-            TaskDao.TABLE_NAME,
-            TaskHistoryDao.TABLE_NAME,
-            IverksettingDao.TABLE_NAME,
-            IverksettingResultatDao.TABLE_NAME,
-        )
-    }
 
     @Test
     fun `uten forrige resultat`() = runTest(TestRuntime.context) {
@@ -46,8 +38,11 @@ class IverksettingStrategyTest {
         IverksettingResultater.opprett(iverksetting, resultat = null)
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
+
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
-        Tasks.create(Kind.Iverksetting, iverksetting)
+        TestRuntime.kafka.expect(iverksetting.søker.personident)
+
+        Tasks.create(libs.task.Kind.Iverksetting, iverksetting, null, objectMapper::writeValueAsString)
 
         val expectedRecord = StatusEndretMelding(
             sakId = iverksetting.sakId.id,
@@ -57,7 +52,7 @@ class IverksettingStrategyTest {
             status = IverksettStatus.SENDT_TIL_OPPDRAG,
         )
 
-        assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
+        assertEquals(expectedRecord, TestRuntime.kafka.waitFor(iverksetting.søker.personident))
 
         val resultat = IverksettingResultater.hent(iverksetting)
         assertEquals(OppdragStatus.LAGT_PÅ_KØ, resultat.oppdragResultat?.oppdragStatus)
@@ -84,8 +79,11 @@ class IverksettingStrategyTest {
         IverksettingResultater.opprett(iverksetting, resultat = null)
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
+
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
-        Tasks.create(Kind.Iverksetting, iverksetting)
+        TestRuntime.kafka.expect(iverksetting.søker.personident)
+
+        Tasks.create(libs.task.Kind.Iverksetting, iverksetting, null, objectMapper::writeValueAsString)
 
         val expectedRecord = StatusEndretMelding(
             sakId = iverksetting.sakId.id,
@@ -94,8 +92,7 @@ class IverksettingStrategyTest {
             fagsystem = Fagsystem.DAGPENGER,
             status = IverksettStatus.SENDT_TIL_OPPDRAG,
         )
-
-        assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
+        assertEquals(expectedRecord, TestRuntime.kafka.waitFor(iverksetting.søker.personident))
 
         val resultat = IverksettingResultater.hent(iverksetting)
         assertEquals(OppdragStatus.LAGT_PÅ_KØ, resultat.oppdragResultat?.oppdragStatus)
@@ -126,28 +123,28 @@ class IverksettingStrategyTest {
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
-        val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
+        val taskId = Tasks.create(libs.task.Kind.Iverksetting, iverksetting, null, objectMapper::writeValueAsString)
 
-        val actual = runBlocking {
-            suspend fun getTask(attempt: Int): TaskDto? {
-                return withContext(TestRuntime.context) {
-                    val actual = transaction { Tasks.forId(taskId) }
-                    if (actual?.status != Status.FAIL && attempt < 1000) getTask(attempt + 1)
-                    else actual
-                }
-            }
-            getTask(0)
+        val actual = awaitDatabase {
+            TaskDao.select {
+                it.id = taskId
+                it.status = listOf(libs.task.Status.FAIL)
+            }.firstOrNull()
         }
 
         assertTrue(actual!!.message!!.contains("Fant ikke forrige iverksettingresultat"))
+
+        transaction {
+            actual.copy(status = libs.task.Status.COMPLETE).update()
+        }
     }
 
     @Test
     fun `uten utbetalingsperioder`() = runTest(TestRuntime.context) {
         val iverksetting = TestData.domain.iverksetting()
         IverksettingResultater.opprett(iverksetting, resultat = null)
-
-        Tasks.create(Kind.Iverksetting, iverksetting)
+        TestRuntime.kafka.expect(iverksetting.søker.personident)
+        Tasks.create(libs.task.Kind.Iverksetting, iverksetting, null, objectMapper::writeValueAsString)
 
         val expectedRecord = StatusEndretMelding(
             sakId = iverksetting.sakId.id,
@@ -156,8 +153,7 @@ class IverksettingStrategyTest {
             fagsystem = Fagsystem.DAGPENGER,
             status = IverksettStatus.OK_UTEN_UTBETALING,
         )
-
-        assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
+        assertEquals(expectedRecord, TestRuntime.kafka.waitFor(iverksetting.søker.personident))
 
         val resultat = IverksettingResultater.hent(iverksetting)
         assertEquals(OppdragStatus.OK_UTEN_UTBETALING, resultat.oppdragResultat?.oppdragStatus)

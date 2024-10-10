@@ -2,6 +2,7 @@ package utsjekk.clients
 
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -16,7 +17,7 @@ import utsjekk.Config
 
 class OppdragClient(
     private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(),
+    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
 
