@@ -8,8 +8,12 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.testing.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import libs.jdbc.PostgresContainer
 import libs.postgres.Migrator
 import libs.postgres.Postgres
@@ -119,3 +123,16 @@ val httpClient: HttpClient by lazy {
         }
     }
 }
+
+fun <T> awaitDatabase(timeoutMs: Long = 1_000, query: suspend () -> T?): T? =
+    runBlocking {
+        withTimeoutOrNull(timeoutMs) {
+            channelFlow {
+                withContext(TestRuntime.context + Dispatchers.IO) {
+                    while (true) transaction {
+                        query()?.let { send(it) }
+                    }
+                }
+            }.firstOrNull()
+        }
+    }
