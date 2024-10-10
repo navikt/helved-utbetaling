@@ -16,7 +16,6 @@ import libs.postgres.Postgres
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
-import libs.postgres.concurrency.unlock
 import libs.task.TaskDao
 import libs.task.TaskHistoryDao
 import libs.utils.appLog
@@ -60,7 +59,6 @@ object TestRuntime : AutoCloseable {
         runBlocking {
             withContext(Postgres.context) {
                 transaction {
-//                    unlock("task")
                     tables.forEach {
                         coroutineContext.connection.prepareStatement("TRUNCATE TABLE $it CASCADE").execute()
                     }

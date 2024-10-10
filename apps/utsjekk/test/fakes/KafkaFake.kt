@@ -6,8 +6,7 @@ import libs.kafka.KafkaConfig
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 
 class KafkaFake : Kafka<StatusEndretMelding> {
-    var produced: CompletableDeferred<StatusEndretMelding> = CompletableDeferred()
-
+    private val produced = mutableMapOf<String, CompletableDeferred<StatusEndretMelding>>()
     val config = KafkaConfig(
         brokers = "mock",
         truststore = "",
@@ -15,13 +14,18 @@ class KafkaFake : Kafka<StatusEndretMelding> {
         credstorePassword = ""
     )
 
+    fun expect(key: String) {
+        produced[key] = CompletableDeferred()
+    }
+
+    fun reset() = produced.clear()
+
+    suspend fun waitFor(key: String): StatusEndretMelding =
+        produced[key]?.await() ?: error("kafka fake is not setup to expect $key")
+
     override fun produce(key: String, value: StatusEndretMelding) {
-        produced.complete(value)
+        produced[key]?.complete(value)
     }
 
     override fun close() {}
-
-    fun reset() {
-        produced = CompletableDeferred()
-    }
 }

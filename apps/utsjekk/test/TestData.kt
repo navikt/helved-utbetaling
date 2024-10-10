@@ -288,7 +288,7 @@ object TestData {
                     forrigeIverksettingId = forrigeIverksettingId,
                 ),
                 søker = Søker(
-                    personident = DEFAULT_PERSONIDENT,
+                    personident = DEFAULT_PERSONIDENT, // TODO: randomize
                 ),
                 vedtak = vedtaksdetaljer(
                     andeler = andelsdatoer.map { (fom, tom) ->
