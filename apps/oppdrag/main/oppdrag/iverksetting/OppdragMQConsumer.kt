@@ -5,14 +5,14 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.mq.MQ
 import libs.mq.MQConsumer
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
-import libs.utils.appLog
 import libs.utils.secureLog
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
+import oppdrag.appLog
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.domene.status
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
@@ -42,7 +42,7 @@ class OppdragMQConsumer(
         )
 
         val førsteOppdragUtenKvittering = runBlocking {
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 transaction {
                     OppdragLagerRepository
                         .hentAlleVersjonerAvOppdrag(oppdragIdKvittering)
@@ -59,7 +59,7 @@ class OppdragMQConsumer(
 
         if (kvittering.mmel != null) {
             runBlocking {
-                withContext(Postgres.context) {
+                withContext(Jdbc.context) {
                     transaction {
                         OppdragLagerRepository.oppdaterKvitteringsmelding(
                             oppdragId,
@@ -72,7 +72,7 @@ class OppdragMQConsumer(
         }
 
         runBlocking {
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 transaction {
                     OppdragLagerRepository.oppdaterStatus(
                         oppdragId,

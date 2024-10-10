@@ -2,10 +2,10 @@ package oppdrag.iverksetting
 
 import libs.mq.MQ
 import libs.postgres.concurrency.transaction
-import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
+import oppdrag.appLog
 import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLager
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository

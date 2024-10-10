@@ -3,11 +3,11 @@ package oppdrag.iverksetting
 import com.ibm.mq.jms.MQQueue
 import libs.mq.MQ
 import libs.mq.MQProducer
-import libs.utils.appLog
 import libs.utils.secureLog
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
+import oppdrag.appLog
 
 class OppdragMQProducer(private val config: OppdragConfig, mq: MQ) {
     private val oppdragQueue = MQQueue(config.sendKø)

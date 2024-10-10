@@ -6,10 +6,10 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
-import libs.postgres.Postgres
-import libs.utils.appLog
+import libs.postgres.Jdbc
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import oppdrag.appLog
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
 
 fun Route.avstemmingRoutes(
@@ -17,7 +17,7 @@ fun Route.avstemmingRoutes(
 ) {
     route("/grensesnittavstemming") {
         post {
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 val request = call.receive<GrensesnittavstemmingRequest>()
                 appLog.info("Grensesnittavstemming: Kjører for ${request.fagsystem}-oppdrag fra ${request.fra} til ${request.til}")
 
