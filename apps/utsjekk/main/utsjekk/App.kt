@@ -26,10 +26,10 @@ import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.kafka.Kafka
+import libs.postgres.Jdbc
 import libs.postgres.JdbcConfig
 import libs.postgres.Migrator
-import libs.postgres.Postgres
-import libs.utils.appLog
+import libs.utils.logger
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
@@ -49,6 +49,8 @@ import java.io.File
 import javax.sql.DataSource
 import kotlin.coroutines.CoroutineContext
 
+val appLog = logger("app")
+
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
         appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")
@@ -63,10 +65,10 @@ fun main() {
 }
 
 fun Application.database(config: JdbcConfig) {
-    Postgres.initialize(config)
+    Jdbc.initialize(config)
 
     runBlocking {
-        withContext(Postgres.context) {
+        withContext(Jdbc.context) {
             Migrator(File("migrations")).migrate()
         }
     }

@@ -3,11 +3,11 @@ package utsjekk.status
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.task.TaskDao
 import libs.task.Tasks
-import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import utsjekk.appLog
 import utsjekk.clients.OppdragClient
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultater

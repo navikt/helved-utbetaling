@@ -2,7 +2,7 @@ package utsjekk.iverksetting
 
 import kotlinx.coroutines.withContext
 import libs.kafka.Kafka
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
@@ -21,7 +21,7 @@ class Iverksettinger(
     private val statusProducer: Kafka<StatusEndretMelding>,
 ) {
     suspend fun valider(iverksetting: Iverksetting) {
-        withContext(Postgres.context) {
+        withContext(Jdbc.context) {
             transaction {
                 IverksettingValidator.validerAtIverksettingIkkeAlleredeErMottatt(iverksetting)
                 IverksettingValidator.validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
@@ -37,7 +37,7 @@ class Iverksettinger(
             serviceUnavailable("Iverksetting er skrudd av for fagsystem $fagsystem")
         }
 
-        withContext(Postgres.context) {
+        withContext(Jdbc.context) {
             transaction {
                 val now = LocalDateTime.now()
 
@@ -82,14 +82,14 @@ class Iverksettinger(
         behandlingId: BehandlingId,
         iverksettingId: IverksettingId?,
     ): IverksettStatus? {
-        val result = withContext(Postgres.context) {
+        val result = withContext(Jdbc.context) {
             transaction {
                 IverksettingResultatDao.select(1) {
-                        this.fagsystem = fagsystem // client.toFagsystem()
-                        this.sakId = sakId
-                        this.behandlingId = behandlingId
-                        this.iverksettingId = iverksettingId
-                    }.singleOrNull()
+                    this.fagsystem = fagsystem // client.toFagsystem()
+                    this.sakId = sakId
+                    this.behandlingId = behandlingId
+                    this.iverksettingId = iverksettingId
+                }.singleOrNull()
             }
         }
 
@@ -117,8 +117,8 @@ class Iverksettinger(
         fagsystem: Fagsystem,
     ): Iverksetting? = transaction {
         IverksettingDao.select {
-                this.sakId = sakId
-                this.fagsystem = fagsystem
-            }.maxByOrNull { it.mottattTidspunkt }?.data
+            this.sakId = sakId
+            this.fagsystem = fagsystem
+        }.maxByOrNull { it.mottattTidspunkt }?.data
     }
 }

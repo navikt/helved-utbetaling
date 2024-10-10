@@ -8,12 +8,12 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
-import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import utsjekk.Config
+import utsjekk.appLog
 
 class OppdragClient(
     private val config: Config,

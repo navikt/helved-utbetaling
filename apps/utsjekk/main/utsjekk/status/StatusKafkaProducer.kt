@@ -3,11 +3,11 @@ package utsjekk.status
 import libs.kafka.Kafka
 import libs.kafka.KafkaConfig
 import libs.kafka.KafkaFactory
-import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import org.apache.kafka.clients.producer.ProducerRecord
+import utsjekk.appLog
 
 class StatusKafkaProducer(config: KafkaConfig) : Kafka<StatusEndretMelding> {
     private val producer = KafkaFactory.createProducer("i-status", config)

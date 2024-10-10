@@ -3,7 +3,7 @@ package utsjekk.task
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import libs.job.Scheduler
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.postgres.concurrency.withLock
 import libs.task.Operator
@@ -12,9 +12,9 @@ import libs.task.Status.FAIL
 import libs.task.Status.IN_PROGRESS
 import libs.task.TaskDao
 import libs.task.Tasks
-import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.LeaderElector
+import utsjekk.appLog
 import java.time.LocalDateTime
 
 class TaskScheduler(
@@ -23,7 +23,7 @@ class TaskScheduler(
 ) : Scheduler<TaskDao>(
     feedRPM = 120,
     errorCooldownMs = 100,
-    context = Postgres.context + Dispatchers.IO,
+    context = Jdbc.context + Dispatchers.IO,
 ) {
     override fun isLeader(): Boolean = runBlocking { elector.isLeader() }
 

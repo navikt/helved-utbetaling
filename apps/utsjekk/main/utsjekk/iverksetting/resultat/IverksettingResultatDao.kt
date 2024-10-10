@@ -2,10 +2,10 @@ package utsjekk.iverksetting.resultat
 
 import libs.postgres.concurrency.connection
 import libs.postgres.map
-import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
+import utsjekk.appLog
 import utsjekk.iverksetting.*
 import java.sql.ResultSet
 import kotlin.coroutines.coroutineContext
