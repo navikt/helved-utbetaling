@@ -5,7 +5,6 @@ import io.getunleash.Unleash
 import io.getunleash.UnleashContext
 import io.getunleash.strategy.Strategy
 import io.getunleash.util.UnleashConfig
-import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 
 interface FeatureToggles {

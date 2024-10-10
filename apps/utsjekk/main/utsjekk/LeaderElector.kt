@@ -6,7 +6,6 @@ import io.ktor.client.request.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import libs.http.HttpClientFactory
-import libs.utils.appLog
 import java.net.InetAddress
 import java.time.LocalDateTime
 

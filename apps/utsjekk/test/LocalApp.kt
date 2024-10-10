@@ -6,12 +6,12 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.auth.AzureToken
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
-import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
+import utsjekk.appLog
 import utsjekk.database
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
@@ -44,7 +44,7 @@ fun Application.testApp() {
             post("/libs/task") {
                 val numberOfTasks = call.request.queryParameters["numberOfTasks"]?.toIntOrNull() ?: 10
 
-                withContext(Postgres.context) {
+                withContext(Jdbc.context) {
                     transaction {
                         for (i in 1..numberOfTasks) {
                             val iverksetting = TestData.domain.iverksetting()

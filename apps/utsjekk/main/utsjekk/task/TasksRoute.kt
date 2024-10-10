@@ -6,7 +6,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.task.Order
 import libs.task.TaskDao
@@ -27,7 +27,7 @@ fun Route.tasks() {
 
             val order = Order("scheduled_for", Order.Direction.DESCENDING)
 
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 if (page != null) {
                     val tasks =
                         Tasks.filterBy(
@@ -52,7 +52,7 @@ fun Route.tasks() {
                 call.parameters["id"]?.let(UUID::fromString)
                     ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
 
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 Tasks.rekjør(id)
             }
 
@@ -64,7 +64,7 @@ fun Route.tasks() {
                 call.parameters["id"]?.let(UUID::fromString)
                     ?: return@patch call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
 
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 transaction {
                     TaskDao.select { it.id = id }
                 }
@@ -72,7 +72,7 @@ fun Route.tasks() {
 
             val payload = call.receive<TaskDtoPatch>()
 
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 Tasks.update(id, libs.task.Status.valueOf(payload.status.name), payload.message) {
                     Kind.valueOf(kind.name).retryStrategy(it)
                 }
@@ -85,7 +85,7 @@ fun Route.tasks() {
                 call.parameters["id"]?.let(UUID::fromString)
                     ?: return@get call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
 
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 val historikk = transaction { TaskHistory.history(id) }
 
                 call.respond(historikk)

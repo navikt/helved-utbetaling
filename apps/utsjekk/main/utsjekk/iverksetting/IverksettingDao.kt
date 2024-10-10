@@ -2,10 +2,10 @@ package utsjekk.iverksetting
 
 import libs.postgres.concurrency.connection
 import libs.postgres.map
-import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
+import utsjekk.appLog
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime

@@ -8,7 +8,7 @@ import io.ktor.http.*
 import kotlinx.coroutines.withContext
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import utsjekk.ApiError
 import utsjekk.Config
@@ -19,7 +19,6 @@ import utsjekk.iverksetting.tilAndelData
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import utsjekk.simulering.*
 import utsjekk.simulering.oppsummering.OppsummeringGenerator
-import kotlin.coroutines.CoroutineContext
 
 class SimuleringClient(
     private val config: Config,
@@ -56,7 +55,7 @@ class SimuleringClient(
     }
 
     private suspend fun hentUtbetalingsoppdrag(sim: Simulering): Utbetalingsoppdrag {
-        val forrigeTilkjenteYtelse = withContext(Postgres.context) {
+        val forrigeTilkjenteYtelse = withContext(Jdbc.context) {
             sim.forrigeIverksetting?.let {
                 val forrigeIverksetting = IverksettingResultater.hent(
                     UtbetalingId(

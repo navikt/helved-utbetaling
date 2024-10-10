@@ -1,7 +1,7 @@
 package utsjekk.simulering
 
 import kotlinx.coroutines.withContext
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.ApiError.Companion.badRequest
 import utsjekk.ApiError.Companion.conflict
@@ -13,7 +13,7 @@ import utsjekk.iverksetting.resultat.IverksettingResultater
 class SimuleringValidator(private val iverksettinger: Iverksettinger) {
 
     suspend fun valider(simulering: Simulering) {
-        withContext(Postgres.context) {
+        withContext(Jdbc.context) {
             forrigeIverksettingSkalVæreFerdigstilt(simulering)
             forrigeIverksettingErLikSisteMottatteIverksetting(simulering)
         }

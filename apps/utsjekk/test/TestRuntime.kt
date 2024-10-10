@@ -15,15 +15,15 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import libs.jdbc.PostgresContainer
+import libs.postgres.Jdbc
 import libs.postgres.Migrator
-import libs.postgres.Postgres
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.TaskHistoryDao
-import libs.utils.appLog
 import utsjekk.Config
+import utsjekk.appLog
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.server
@@ -44,7 +44,7 @@ object TestRuntime : AutoCloseable {
     val unleash = UnleashFake()
     val elector = LeaderElectorFake()
     val kafka: KafkaFake = KafkaFake()
-    val jdbc = Postgres.initialize(postgres.config)
+    val jdbc = Jdbc.initialize(postgres.config)
     val context = CoroutineDatasource(jdbc)
 
     val config by lazy {
@@ -61,7 +61,7 @@ object TestRuntime : AutoCloseable {
 
     fun clear(vararg tables: String) {
         runBlocking {
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 transaction {
                     tables.forEach {
                         coroutineContext.connection.prepareStatement("TRUNCATE TABLE $it CASCADE").execute()
