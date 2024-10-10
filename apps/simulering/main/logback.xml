@@ -18,16 +18,13 @@
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
 
-    <logger name="app" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="auth" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="http" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-
-    <logger name="secureLog" level="INFO" additivity="false">
-        <appender-ref ref="secureLog"/>
-    </logger>
-
     <root level="INFO">
         <appender-ref ref="stdout"/>
     </root>
+
+    <logger name="app" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="auth" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="http" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="secureLog" level="INFO" additivity="false"><appender-ref ref="secureLog"/></logger>
 
 </configuration>
