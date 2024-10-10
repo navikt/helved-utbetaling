@@ -54,18 +54,6 @@ class SjekkStatusStrategyTest {
                     it.attempt = 1
                 }.firstOrNull()
             }
-//            val task = runBlocking {
-//                suspend fun getTask(attempt: Int): TaskDao? =
-//                    withContext(TestRuntime.context) {
-//                        val actual = transaction { Tasks.forId(taskId) }
-//                        if (actual?.attempt != 1 && attempt < 1000) {
-//                            getTask(attempt + 1)
-//                        } else {
-//                            actual
-//                        }
-//                    }
-//                getTask(0)
-//            }
 
             TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -95,18 +83,6 @@ class SjekkStatusStrategyTest {
                         it.attempt = 1
                     }.firstOrNull()
                 }
-//                val task = runBlocking {
-//                    suspend fun getTask(attempt: Int): TaskDao? =
-//                        withContext(TestRuntime.context) {
-//                            val actual = transaction { Tasks.forId(taskId) }
-//                            if (actual?.attempt != 1 && attempt < 800) {
-//                                getTask(attempt + 1)
-//                            } else {
-//                                actual
-//                            }
-//                        }
-//                    getTask(0)
-//                }
 
                 TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -136,19 +112,6 @@ class SjekkStatusStrategyTest {
                     it.attempt = 1
                 }.firstOrNull()
             }
-//            val task =
-//                runBlocking {
-//                    suspend fun getTask(attempt: Int): TaskDao? =
-//                        withContext(TestRuntime.context) {
-//                            val actual = transaction { Tasks.forId(taskId) }
-//                            if (actual?.attempt != 1 && attempt < 800) {
-//                                getTask(attempt + 1)
-//                            } else {
-//                                actual
-//                            }
-//                        }
-//                    getTask(0)
-//                }
 
             TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -169,7 +132,6 @@ class SjekkStatusStrategyTest {
             IverksettingResultater.opprett(iverksetting, null)
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
             val taskId = Tasks.create(libs.task.Kind.SjekkStatus, oppdragId, null, objectMapper::writeValueAsString)
-
             createdTaskIds.add(taskId)
 
             val task = awaitDatabase {
@@ -178,18 +140,6 @@ class SjekkStatusStrategyTest {
                     it.attempt = 1
                 }.firstOrNull()
             }
-//            val task = runBlocking {
-//                suspend fun getTask(attempt: Int): TaskDao? =
-//                    withContext(TestRuntime.context) {
-//                        val actual = transaction { Tasks.forId(taskId) }
-//                        if (actual?.attempt != 1 && attempt < 800) {
-//                            getTask(attempt + 1)
-//                        } else {
-//                            actual
-//                        }
-//                    }
-//                getTask(0)
-//            }
 
             TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -218,19 +168,6 @@ class SjekkStatusStrategyTest {
                     it.attempt = 1
                 }.firstOrNull()
             }
-//            val task =
-//                runBlocking {
-//                    suspend fun getTask(attempt: Int): TaskDao? =
-//                        withContext(TestRuntime.context) {
-//                            val actual = transaction { Tasks.forId(taskId) }
-//                            if (actual?.attempt != 1 && attempt < 800) {
-//                                getTask(attempt + 1)
-//                            } else {
-//                                actual
-//                            }
-//                        }
-//                    getTask(0)
-//                }
 
             TestRuntime.oppdrag.awaitStatus(oppdragId)
 
@@ -259,18 +196,6 @@ class SjekkStatusStrategyTest {
                     it.attempt = 1
                 }.firstOrNull()
             }
-//            val task = runBlocking {
-//                suspend fun getTask(attempt: Int): TaskDao? =
-//                    withContext(TestRuntime.context) {
-//                        val actual = transaction { Tasks.forId(taskId) }
-//                        if (actual?.attempt != 1 && attempt < 800) {
-//                            getTask(attempt + 1)
-//                        } else {
-//                            actual
-//                        }
-//                    }
-//                getTask(0)
-//            }
 
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
 
@@ -299,18 +224,6 @@ class SjekkStatusStrategyTest {
                     it.attempt = 1
                 }.firstOrNull()
             }
-//            val task = runBlocking {
-//                suspend fun getTask(attempt: Int): TaskDao? =
-//                    withContext(TestRuntime.context) {
-//                        val actual = transaction { Tasks.forId(taskId) }
-//                        if (actual?.attempt != 1 && attempt < 800) {
-//                            getTask(attempt + 1)
-//                        } else {
-//                            actual
-//                        }
-//                    }
-//                getTask(0)
-//            }
 
             TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
 
