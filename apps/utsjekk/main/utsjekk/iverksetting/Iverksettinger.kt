@@ -4,7 +4,9 @@ import kotlinx.coroutines.withContext
 import libs.kafka.Kafka
 import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
+import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
@@ -12,8 +14,6 @@ import utsjekk.ApiError.Companion.serviceUnavailable
 import utsjekk.FeatureToggles
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
-import utsjekk.task.Kind
-import utsjekk.task.Tasks
 import java.time.LocalDateTime
 
 class Iverksettinger(
@@ -45,29 +45,29 @@ class Iverksettinger(
 
                 IverksettingResultater.opprett(iverksetting, resultat = null)
 
-                Tasks.create(Kind.Iverksetting, iverksetting)
+                Tasks.create(libs.task.Kind.Iverksetting, iverksetting) {
+                    objectMapper.writeValueAsString(it)
+                }
             }
         }
     }
 
     suspend fun publiserStatusmelding(iverksetting: Iverksetting) {
-        val status =
-            utledStatus(
-                fagsystem = iverksetting.fagsak.fagsystem,
-                sakId = iverksetting.sakId,
-                behandlingId = iverksetting.behandlingId,
-                iverksettingId = iverksetting.iverksettingId,
-            )
+        val status = utledStatus(
+            fagsystem = iverksetting.fagsak.fagsystem,
+            sakId = iverksetting.sakId,
+            behandlingId = iverksetting.behandlingId,
+            iverksettingId = iverksetting.iverksettingId,
+        )
 
         if (status != null) {
-            val message =
-                StatusEndretMelding(
-                    sakId = iverksetting.sakId.id,
-                    behandlingId = iverksetting.behandlingId.id,
-                    iverksettingId = iverksetting.iverksettingId?.id,
-                    fagsystem = iverksetting.fagsak.fagsystem,
-                    status = status,
-                )
+            val message = StatusEndretMelding(
+                sakId = iverksetting.sakId.id,
+                behandlingId = iverksetting.behandlingId.id,
+                iverksettingId = iverksetting.iverksettingId?.id,
+                fagsystem = iverksetting.fagsak.fagsystem,
+                status = status,
+            )
 
             statusProducer.produce(
                 key = iverksetting.søker.personident,
@@ -82,18 +82,16 @@ class Iverksettinger(
         behandlingId: BehandlingId,
         iverksettingId: IverksettingId?,
     ): IverksettStatus? {
-        val result =
-            withContext(Postgres.context) {
-                transaction {
-                    IverksettingResultatDao
-                        .select(1) {
-                            this.fagsystem = fagsystem // client.toFagsystem()
-                            this.sakId = sakId
-                            this.behandlingId = behandlingId
-                            this.iverksettingId = iverksettingId
-                        }.singleOrNull()
-                }
+        val result = withContext(Postgres.context) {
+            transaction {
+                IverksettingResultatDao.select(1) {
+                        this.fagsystem = fagsystem // client.toFagsystem()
+                        this.sakId = sakId
+                        this.behandlingId = behandlingId
+                        this.iverksettingId = iverksettingId
+                    }.singleOrNull()
             }
+        }
 
         if (result == null) {
             return null
@@ -117,13 +115,10 @@ class Iverksettinger(
     suspend fun hentSisteMottatte(
         sakId: SakId,
         fagsystem: Fagsystem,
-    ): Iverksetting? =
-        transaction {
-            IverksettingDao
-                .select {
-                    this.sakId = sakId
-                    this.fagsystem = fagsystem
-                }.maxByOrNull { it.mottattTidspunkt }
-                ?.data
-        }
+    ): Iverksetting? = transaction {
+        IverksettingDao.select {
+                this.sakId = sakId
+                this.fagsystem = fagsystem
+            }.maxByOrNull { it.mottattTidspunkt }?.data
+    }
 }

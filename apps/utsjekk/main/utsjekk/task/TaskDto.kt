@@ -1,10 +1,11 @@
 package utsjekk.task
 
+import libs.task.TaskDao
 import utsjekk.avstemming.AvstemmingTaskStrategy
 import utsjekk.iverksetting.IverksettingTaskStrategy
 import utsjekk.status.StatusTaskStrategy
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
@@ -28,15 +29,15 @@ data class TaskDto(
         fun from(task: TaskDao) =
             TaskDto(
                 id = task.id,
-                kind = task.kind,
+                kind = Kind.valueOf(task.kind.name),
                 payload = task.payload,
-                status = task.status,
+                status = Status.valueOf(task.status.name),
                 attempt = task.attempt,
                 createdAt = task.createdAt,
                 updatedAt = task.updatedAt,
                 scheduledFor = task.scheduledFor,
                 message = task.message,
-                metadata = task.kind.metadataStrategy(task.payload),
+                metadata = Kind.valueOf(task.kind.name).metadataStrategy(task.payload),
             )
 
         val exponentialSec: RetryStrategy =

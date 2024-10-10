@@ -1,25 +1,35 @@
 package utsjekk.task.strategies
 
 import TestRuntime
+import awaitDatabase
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
+import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import utsjekk.task.*
 import java.time.LocalDateTime
 
 class AvstemmingStrategyTest {
 
     @AfterEach
     fun reset() {
-        TestRuntime.oppdrag.reset()
+        runBlocking {
+            withContext(TestRuntime.context) {
+                transaction {
+                    Tasks.forKind(libs.task.Kind.Avstemming).forEach {
+                        it.copy(status = libs.task.Status.COMPLETE).update()
+                    }
+                }
+            }
+        }
     }
 
     @Test
@@ -30,7 +40,9 @@ class AvstemmingStrategyTest {
             til = LocalDateTime.now(),
         )
 
-        Tasks.create(Kind.Avstemming, avstemming)
+        Tasks.create(libs.task.Kind.Avstemming, avstemming) {
+            objectMapper.writeValueAsString(it)
+        }
 
         TestRuntime.oppdrag.avstemmingRespondWith(avstemming.fagsystem, HttpStatusCode.Created)
         val actual = TestRuntime.oppdrag.awaitAvstemming(Fagsystem.DAGPENGER)
@@ -45,7 +57,7 @@ class AvstemmingStrategyTest {
 
         val now = LocalDateTime.now()
         val task = TaskDao(
-            kind = Kind.Avstemming,
+            kind = libs.task.Kind.Avstemming,
             payload =
             objectMapper.writeValueAsString(
                 GrensesnittavstemmingRequest(
@@ -54,7 +66,7 @@ class AvstemmingStrategyTest {
                     til = LocalDateTime.now(),
                 )
             ),
-            status = Status.IN_PROGRESS,
+            status = libs.task.Status.IN_PROGRESS,
             attempt = 0,
             message = null,
             createdAt = now,
@@ -68,19 +80,13 @@ class AvstemmingStrategyTest {
             task.insert()
         }
 
-        val actual = runBlocking {
-            suspend fun getTask(attempt: Int): TaskDto? {
-                return withContext(TestRuntime.context) {
-                    val actual = transaction {
-                        Tasks.forId(task.id)
-                    }
-                    if (actual?.status != Status.COMPLETE && attempt < 1000) getTask(attempt + 1)
-                    else actual
-                }
-            }
-            getTask(0)
+        val actual = awaitDatabase {
+            TaskDao.select {
+                it.id = task.id
+                it.status = listOf(libs.task.Status.COMPLETE)
+            }.firstOrNull()
         }
 
-        assertEquals(Status.COMPLETE, actual?.status)
+        assertEquals(libs.task.Status.COMPLETE, actual?.status)
     }
 }

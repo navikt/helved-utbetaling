@@ -1,27 +1,26 @@
 package utsjekk.task
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.patch
-import io.ktor.server.routing.put
-import io.ktor.server.routing.route
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
-import utsjekk.task.history.TaskHistory
+import libs.task.Order
+import libs.task.TaskDao
+import libs.task.TaskHistory
+import libs.task.Tasks
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 fun Route.tasks() {
     route("/api/tasks") {
         get {
-            val status = call.parameters["status"]?.split(",")?.map { Status.valueOf(it) }
+            val status = call.parameters["status"]?.split(",")?.map { libs.task.Status.valueOf(it) }
             val after = call.parameters["after"]?.let { LocalDateTime.parse(it) }
-            val kind = call.parameters["kind"]?.let { Kind.valueOf(it) }
+            val kind = call.parameters["kind"]?.let { libs.task.Kind.valueOf(it) }
 
             val page = call.parameters["page"]?.toInt()
             val pageSize = call.parameters["pageSize"]?.toInt() ?: 20
@@ -38,7 +37,7 @@ fun Route.tasks() {
                             limit = pageSize,
                             offset = (page - 1) * pageSize,
                             order = order,
-                        )
+                        ).map(TaskDto::from)
                     val count = Tasks.count(status, after, kind)
                     call.respond(PaginatedTasksDto(tasks, page, pageSize, count))
                 } else {
@@ -74,7 +73,9 @@ fun Route.tasks() {
             val payload = call.receive<TaskDtoPatch>()
 
             withContext(Postgres.context) {
-                Tasks.update(id, payload.status, payload.message)
+                Tasks.update(id, libs.task.Status.valueOf(payload.status.name), payload.message) {
+                    Kind.valueOf(kind.name).retryStrategy(it)
+                }
                 call.respond(HttpStatusCode.OK)
             }
         }
