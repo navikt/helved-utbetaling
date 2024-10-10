@@ -9,7 +9,6 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -47,7 +46,7 @@ class IverksettingRouteTest {
                         utbetalinger = emptyList(),
                     ),
                 )
-
+            TestRuntime.kafka.expect(dto.personident.verdi)
             httpClient
                 .post("/api/iverksetting/v2") {
                     bearerAuth(TestRuntime.azure.generateToken())
@@ -86,112 +85,99 @@ class IverksettingRouteTest {
                     status = IverksettStatus.OK_UTEN_UTBETALING,
                 )
 
-            assertEquals(expectedRecord, TestRuntime.kafka.produced.await())
+            assertEquals(expectedRecord, TestRuntime.kafka.waitFor(dto.personident.verdi))
         }
     }
 
     @Test
     fun `iverksetter ikke når kill switch for ytelsen er skrudd på`() = runTest(TestRuntime.context) {
-            TestRuntime.unleash.disable(Fagsystem.TILLEGGSSTØNADER)
+        TestRuntime.unleash.disable(Fagsystem.TILLEGGSSTØNADER)
 
-            val dto = TestData.dto.iverksetting()
+        val dto = TestData.dto.iverksetting()
 
-            val res =
-                httpClient.post("/api/iverksetting/v2") {
-                    bearerAuth(TestRuntime.azure.generateToken())
-                    contentType(ContentType.Application.Json)
-                    setBody(dto)
-                }
-
-            assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
-            assertEquals(
-                "Iverksetting er skrudd av for fagsystem ${Fagsystem.TILLEGGSSTØNADER}",
-                res.bodyAsText(),
-            )
+        val res = httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
         }
+
+        assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
+        assertEquals("Iverksetting er skrudd av for fagsystem ${Fagsystem.TILLEGGSSTØNADER}", res.bodyAsText())
+    }
 
     @Test
-    fun `start iverksetting`() =
-        runTest {
-            val dto = TestData.dto.iverksetting()
+    fun `start iverksetting`() = runTest {
+        val dto = TestData.dto.iverksetting()
 
-            val res =
-                httpClient.post("/api/iverksetting/v2") {
-                    bearerAuth(TestRuntime.azure.generateToken())
-                    contentType(ContentType.Application.Json)
-                    setBody(dto)
-                }
-
-            assertEquals(HttpStatusCode.Accepted, res.status)
+        val res = httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
         }
+
+        assertEquals(HttpStatusCode.Accepted, res.status)
+    }
 
     @Test
     fun `start iverksetting av tilleggsstønader`() = runTest(TestRuntime.context) {
-//            withContext(TestRuntime.context) {
-        val dto =
-            TestData.dto.iverksetting(
-                iverksettingId = "en-iverksetting",
-                vedtak =
-                TestData.dto.vedtaksdetaljer(
-                    utbetalinger =
-                    listOf(
-                        TestData.dto.utbetaling(
-                            satstype = Satstype.MÅNEDLIG,
-                            fom = LocalDate.of(2021, 1, 1),
-                            tom = LocalDate.of(2021, 1, 31),
-                            stønadsdata = TestData.dto.tilleggstønad(),
-                        ),
+        val dto = TestData.dto.iverksetting(
+            iverksettingId = "en-iverksetting",
+            vedtak =
+            TestData.dto.vedtaksdetaljer(
+                utbetalinger =
+                listOf(
+                    TestData.dto.utbetaling(
+                        satstype = Satstype.MÅNEDLIG,
+                        fom = LocalDate.of(2021, 1, 1),
+                        tom = LocalDate.of(2021, 1, 31),
+                        stønadsdata = TestData.dto.tilleggstønad(),
                     ),
                 ),
-            )
+            ),
+        )
 
-        val oppdragId =
-            OppdragIdDto(
-                fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                sakId = dto.sakId,
-                behandlingId = dto.behandlingId,
-                iverksettingId = dto.iverksettingId,
-            )
+        val oppdragId = OppdragIdDto(
+            fagsystem = Fagsystem.TILLEGGSSTØNADER,
+            sakId = dto.sakId,
+            behandlingId = dto.behandlingId,
+            iverksettingId = dto.iverksettingId,
+        )
 
         TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.Created)
 
-        httpClient
-            .post("/api/iverksetting/v2") {
-                bearerAuth(TestRuntime.azure.generateToken())
-                contentType(ContentType.Application.Json)
-                setBody(dto)
-            }.let {
-                assertEquals(HttpStatusCode.Accepted, it.status)
-            }
+        httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
+        }.let {
+            assertEquals(HttpStatusCode.Accepted, it.status)
+        }
 
-        val status =
-            runBlocking {
-                suspend fun getStatus(attempt: Int): IverksettStatus {
-                    val res =
-                        httpClient
-                            .get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
-                                bearerAuth(TestRuntime.azure.generateToken())
-                                accept(ContentType.Application.Json)
-                            }.body<IverksettStatus>()
-                    return if (res != IverksettStatus.SENDT_TIL_OPPDRAG) {
-                        getStatus(attempt + 1)
-                    } else {
-                        res
-                    }
+        val status = runBlocking {
+            suspend fun getStatus(attempt: Int): IverksettStatus {
+                val res = httpClient
+                    .get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/${dto.iverksettingId}/status") {
+                        bearerAuth(TestRuntime.azure.generateToken())
+                        accept(ContentType.Application.Json)
+                    }.body<IverksettStatus>()
+                return if (res != IverksettStatus.SENDT_TIL_OPPDRAG) {
+                    getStatus(attempt + 1)
+                } else {
+                    res
                 }
-                getStatus(0)
             }
+            getStatus(0)
+        }
 
         assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
-//            }
     }
 
 
     @Test
     fun `returnerer beskrivende feilmelding når jackson ikke greier å deserialisere request`() = runTest {
-            @Language("JSON")
-            val payload =
-                """
+        @Language("JSON")
+        val payload =
+            """
                 {
                   "behandlingId": "1",
                   "forrigeIverksetting": null,
@@ -218,16 +204,16 @@ class IverksettingRouteTest {
                 }
                 """.trimIndent()
 
-            val res =
-                httpClient.post("/api/iverksetting/v2") {
-                    bearerAuth(TestRuntime.azure.generateToken())
-                    contentType(ContentType.Application.Json)
-                    setBody(objectMapper.readValue<JsonNode>(payload))
-                }
+        val res =
+            httpClient.post("/api/iverksetting/v2") {
+                bearerAuth(TestRuntime.azure.generateToken())
+                contentType(ContentType.Application.Json)
+                setBody(objectMapper.readValue<JsonNode>(payload))
+            }
 
-            assertEquals(HttpStatusCode.BadRequest, res.status)
-            assertEquals("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", res.bodyAsText())
-        }
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        assertEquals("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", res.bodyAsText())
+    }
 
     @Test
     fun `iverksetting blir kvittert ok`() =
