@@ -8,10 +8,10 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.concurrency.connection
 import libs.postgres.map
-import libs.utils.appLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Mmel
+import oppdrag.appLog
 import java.sql.ResultSet
 import java.time.LocalDateTime
 import java.util.*

@@ -20,10 +20,10 @@ import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.mq.MQ
+import libs.postgres.Jdbc
 import libs.postgres.JdbcConfig
 import libs.postgres.Migrator
-import libs.postgres.Postgres
-import libs.utils.appLog
+import libs.utils.logger
 import libs.utils.secureLog
 import oppdrag.grensesnittavstemming.AvstemmingMQProducer
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
@@ -33,6 +33,8 @@ import oppdrag.routing.actuators
 import oppdrag.routing.avstemmingRoutes
 import oppdrag.routing.iverksettingRoutes
 import java.io.File
+
+val appLog = logger("app")
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -48,10 +50,10 @@ fun main() {
 }
 
 fun Application.database(config: JdbcConfig) {
-    Postgres.initialize(config)
+    Jdbc.initialize(config)
 
     runBlocking {
-        withContext(Postgres.context) {
+        withContext(Jdbc.context) {
             Migrator(File("migrations")).migrate()
         }
     }

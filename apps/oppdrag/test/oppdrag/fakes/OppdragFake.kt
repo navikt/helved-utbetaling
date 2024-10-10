@@ -4,12 +4,12 @@ import com.ibm.mq.jms.MQQueue
 import libs.mq.MQ
 import libs.mq.MQConsumer
 import libs.mq.MQProducer
-import libs.utils.appLog
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.Config
 import oppdrag.iverksetting.domene.Kvitteringstatus
+import oppdrag.testLog
 import javax.jms.TextMessage
 
 class OppdragFake(
@@ -53,7 +53,7 @@ class OppdragFake(
         fun clearReceived() = received.clear()
 
         override fun onMessage(message: TextMessage) {
-            appLog.info("Avstemming mottatt i oppdrag-fake ${message.jmsMessageID}")
+            testLog.info("Avstemming mottatt i oppdrag-fake ${message.jmsMessageID}")
             received.add(message)
         }
     }

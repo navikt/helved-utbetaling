@@ -13,16 +13,18 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.PostgresContainer
 import libs.mq.MQContainer
+import libs.postgres.Jdbc
 import libs.postgres.Migrator
-import libs.postgres.Postgres
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
-import libs.utils.appLog
+import libs.utils.logger
 import oppdrag.fakes.AzureFake
 import oppdrag.fakes.OppdragFake
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import java.io.File
+
+val testLog = logger("test")
 
 object TestRuntime : AutoCloseable {
     val azure: AzureFake = AzureFake()
@@ -30,7 +32,7 @@ object TestRuntime : AutoCloseable {
     val mq: MQContainer = MQContainer("oppdrag")
     val config: Config = TestConfig.create(postgres.config, mq.config, azure.config)
     val oppdrag = OppdragFake(config)
-    val datasource = Postgres.initialize(config.postgres)
+    val datasource = Jdbc.initialize(config.postgres)
     val context = CoroutineDatasource(datasource)
     val ktor = testApplication.apply { start() }
 
@@ -38,7 +40,7 @@ object TestRuntime : AutoCloseable {
         val tables = listOf(OppdragLagerRepository.TABLE_NAME)
 
         runBlocking {
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 transaction {
                     tables.forEach { table ->
                         coroutineContext.connection.prepareStatement("TRUNCATE TABLE $table").execute()

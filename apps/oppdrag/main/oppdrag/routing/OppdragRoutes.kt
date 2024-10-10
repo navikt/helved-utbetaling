@@ -7,13 +7,13 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.withContext
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
-import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import oppdrag.appLog
 import oppdrag.iverksetting.OppdragAlleredeSendtException
 import oppdrag.iverksetting.OppdragService
 import oppdrag.iverksetting.domene.OppdragMapper
@@ -23,7 +23,7 @@ fun Route.iverksettingRoutes(
     oppdragService: OppdragService,
 ) {
     post("/oppdrag") {
-        withContext(Postgres.context) {
+        withContext(Jdbc.context) {
             val utbetalingsoppdrag = call.receive<Utbetalingsoppdrag>()
 
             runCatching {
@@ -43,7 +43,7 @@ fun Route.iverksettingRoutes(
     }
 
     post("/oppdragPaaNytt/{versjon}") {
-        withContext(Postgres.context) {
+        withContext(Jdbc.context) {
             val utbetalingsoppdrag = call.receive<Utbetalingsoppdrag>()
             val versjon = call.parameters["versjon"]?.toInt() ?: 0
 
@@ -58,7 +58,7 @@ fun Route.iverksettingRoutes(
     }
 
     post("/status") {
-        withContext(Postgres.context) {
+        withContext(Jdbc.context) {
             val dto = call.receive<OppdragIdDto>()
 
             runCatching {
@@ -69,7 +69,7 @@ fun Route.iverksettingRoutes(
                     iverksettingId = dto.iverksettingId,
                 )
 
-                withContext(Postgres.context) {
+                withContext(Jdbc.context) {
                     transaction {
                         oppdragService.hentStatusForOppdrag(oppdragId)
                     }
