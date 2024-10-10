@@ -5,7 +5,6 @@ import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks
@@ -15,7 +14,6 @@ import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import utsjekk.task.*
 import java.time.LocalDateTime
 
 class AvstemmingStrategyTest {
@@ -28,9 +26,6 @@ class AvstemmingStrategyTest {
                     Tasks.forKind(libs.task.Kind.Avstemming).forEach {
                         it.copy(status = libs.task.Status.COMPLETE).update()
                     }
-//                    coroutineContext.connection.prepareStatement(
-//                        "DELETE FROM task_v2 WHERE kind = 'Avstemming'"
-//                    ).execute()
                 }
             }
         }

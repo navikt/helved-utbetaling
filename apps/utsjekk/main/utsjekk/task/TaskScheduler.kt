@@ -16,7 +16,6 @@ import libs.utils.appLog
 import libs.utils.secureLog
 import utsjekk.LeaderElector
 import java.time.LocalDateTime
-import kotlin.coroutines.cancellation.CancellationException
 
 class TaskScheduler(
     private val strategies: List<TaskStrategy>,
@@ -29,37 +28,27 @@ class TaskScheduler(
     override fun isLeader(): Boolean = runBlocking { elector.isLeader() }
 
     override suspend fun feed(): List<TaskDao> {
-        appLog.info("Locking 'task' in feed")
-//        val list = withLock("task") {
-            appLog.warn("begin feed transaction")
+//        appLog.info("Locking 'task' in feed")
+//        val tasks = withLock("task") {
             return transaction {
-                appLog.warn("begin dao select")
-                TaskDao
-                    .select {
-                        it.status = listOf(IN_PROGRESS, FAIL)
-                        it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
-                    }.also {
-                        appLog.info("Feeding scheduler with ${it.size} tasks")
-                    }
-            }.also {
-                appLog.warn("end feed transaction")
+                TaskDao.select {
+                    it.status = listOf(IN_PROGRESS, FAIL)
+                    it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
+                }.also {
+                    appLog.info("Feeding scheduler with ${it.size} tasks")
+                }
             }
 //        }
 //        appLog.info("Unlocking 'task' in feed")
-//        return list
+//        return tasks
     }
 
     override suspend fun task(fed: TaskDao) {
-        try {
-            appLog.info("Task with id ${fed.id} and kind ${fed.kind} locked for processing")
-//            withLock(fed.id.toString()) {
-                strategies.single { it.isApplicable(fed) }.execute(fed)
-//            }
-            appLog.info("Task with id ${fed.id} unlocked")
-        } catch (cancel: CancellationException) {
-            appLog.warn("task job is shutting down..")
-            throw cancel
-        }
+//        appLog.info("Task with id ${fed.id} and kind ${fed.kind} locked for processing")
+//        withLock(fed.id.toString()) {
+            strategies.single { it.isApplicable(fed) }.execute(fed)
+//        }
+//        appLog.info("Task with id ${fed.id} unlocked")
     }
 
     override suspend fun onError(fed: TaskDao, err: Throwable) {
