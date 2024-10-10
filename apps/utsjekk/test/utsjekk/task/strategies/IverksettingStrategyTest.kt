@@ -14,25 +14,22 @@ import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.OppdragResultat
 import utsjekk.iverksetting.behandlingId
 import utsjekk.iverksetting.iverksettingId
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.sakId
-import utsjekk.task.Kind
-import utsjekk.task.Status
-import utsjekk.task.TaskDto
 import java.time.LocalDate
 
 class IverksettingStrategyTest {
 
-    @BeforeEach
+    @AfterEach
     fun reset() {
-
+        TestRuntime.kafka.reset()
     }
 
     @Test
@@ -125,7 +122,8 @@ class IverksettingStrategyTest {
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
-        val taskId = Tasks.create(libs.task.Kind.Iverksetting, iverksetting, payloadMapper = objectMapper::writeValueAsString)
+        val taskId =
+            Tasks.create(libs.task.Kind.Iverksetting, iverksetting, payloadMapper = objectMapper::writeValueAsString)
 
         val actual = runBlocking {
             suspend fun getTask(attempt: Int): TaskDao? {
