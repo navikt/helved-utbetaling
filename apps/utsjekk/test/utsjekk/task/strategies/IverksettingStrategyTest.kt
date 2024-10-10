@@ -7,7 +7,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
+import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
@@ -15,25 +18,21 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import utsjekk.iverksetting.*
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.iverksetting.OppdragResultat
+import utsjekk.iverksetting.behandlingId
+import utsjekk.iverksetting.iverksettingId
 import utsjekk.iverksetting.resultat.IverksettingResultater
-import utsjekk.task.*
-import utsjekk.task.history.TaskHistoryDao
+import utsjekk.iverksetting.sakId
+import utsjekk.task.Kind
+import utsjekk.task.Status
+import utsjekk.task.TaskDto
 import java.time.LocalDate
 
 class IverksettingStrategyTest {
 
     @BeforeEach
     fun reset() {
-        TestRuntime.oppdrag.reset()
-        TestRuntime.kafka.reset()
-        TestRuntime.clear(
-            TaskDao.TABLE_NAME,
-            TaskHistoryDao.TABLE_NAME,
-            IverksettingDao.TABLE_NAME,
-            IverksettingResultatDao.TABLE_NAME,
-        )
+
     }
 
     @Test
@@ -47,7 +46,7 @@ class IverksettingStrategyTest {
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
-        Tasks.create(Kind.Iverksetting, iverksetting)
+        Tasks.create(libs.task.Kind.Iverksetting, iverksetting, payloadMapper = objectMapper::writeValueAsString)
 
         val expectedRecord = StatusEndretMelding(
             sakId = iverksetting.sakId.id,
@@ -85,7 +84,7 @@ class IverksettingStrategyTest {
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
-        Tasks.create(Kind.Iverksetting, iverksetting)
+        Tasks.create(libs.task.Kind.Iverksetting, iverksetting, payloadMapper = objectMapper::writeValueAsString)
 
         val expectedRecord = StatusEndretMelding(
             sakId = iverksetting.sakId.id,
@@ -126,13 +125,13 @@ class IverksettingStrategyTest {
 
         val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
         TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
-        val taskId = Tasks.create(Kind.Iverksetting, iverksetting)
+        val taskId = Tasks.create(libs.task.Kind.Iverksetting, iverksetting, payloadMapper = objectMapper::writeValueAsString)
 
         val actual = runBlocking {
-            suspend fun getTask(attempt: Int): TaskDto? {
+            suspend fun getTask(attempt: Int): TaskDao? {
                 return withContext(TestRuntime.context) {
                     val actual = transaction { Tasks.forId(taskId) }
-                    if (actual?.status != Status.FAIL && attempt < 1000) getTask(attempt + 1)
+                    if (actual?.status != libs.task.Status.FAIL && attempt < 1000) getTask(attempt + 1)
                     else actual
                 }
             }
@@ -147,7 +146,7 @@ class IverksettingStrategyTest {
         val iverksetting = TestData.domain.iverksetting()
         IverksettingResultater.opprett(iverksetting, resultat = null)
 
-        Tasks.create(Kind.Iverksetting, iverksetting)
+        Tasks.create(libs.task.Kind.Iverksetting, iverksetting, payloadMapper = objectMapper::writeValueAsString)
 
         val expectedRecord = StatusEndretMelding(
             sakId = iverksetting.sakId.id,

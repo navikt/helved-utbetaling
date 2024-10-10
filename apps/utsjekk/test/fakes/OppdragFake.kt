@@ -8,11 +8,13 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.CompletableDeferred
+import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
@@ -90,7 +92,7 @@ private fun Application.oppdrag() {
             }
 
             when (fakeResponse) {
-                null -> error("Du har glemt å sette expected response for oppdrag i testen.")
+                null -> call.respond(HttpStatusCode.fromValue(600), "Du har glemt å sette expected response for oppdrag i testen.")
                 else -> call.respond(fakeResponse.response)
             }
         }
@@ -116,7 +118,7 @@ private fun Application.oppdrag() {
             }
 
             when (fakeResponse) {
-                null -> error("Du har glemt å sette expected response for avstemming i testen.")
+                null -> call.respond(HttpStatusCode.fromValue(600), "Du har glemt å sette expected response for avstemming i testen.")
                 else -> call.respond(fakeResponse.response)
             }
         }

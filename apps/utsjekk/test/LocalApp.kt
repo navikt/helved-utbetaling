@@ -1,32 +1,24 @@
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
-import io.ktor.server.application.call
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.response.respond
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.routing
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.auth.AzureToken
 import libs.postgres.Postgres
 import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
 import libs.utils.appLog
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import utsjekk.database
-import utsjekk.iverksetting.Iverksetting
-import utsjekk.iverksetting.IverksettingDao
-import utsjekk.iverksetting.behandlingId
-import utsjekk.iverksetting.iverksettingId
+import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.iverksetting.sakId
 import utsjekk.server
-import utsjekk.task.Kind
 import utsjekk.task.Status
-import utsjekk.task.TaskDao
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -49,7 +41,7 @@ fun Application.testApp() {
                 call.respond(AzureToken(3600, TestRuntime.azure.generateToken()))
             }
 
-            post("/task") {
+            post("/libs/task") {
                 val numberOfTasks = call.request.queryParameters["numberOfTasks"]?.toIntOrNull() ?: 10
 
                 withContext(Postgres.context) {
@@ -87,9 +79,9 @@ private fun enTask(
     payload: Iverksetting,
 ) = TaskDao(
     id = UUID.randomUUID(),
-    kind = Kind.Iverksetting,
+    kind = libs.task.Kind.Iverksetting,
     payload = objectMapper.writeValueAsString(payload),
-    status = status,
+    status = libs.task.Status.valueOf(status.name),
     attempt = 0,
     createdAt = createdAt,
     updatedAt = createdAt,

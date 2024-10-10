@@ -2,18 +2,20 @@ package utsjekk.avstemming
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.concurrency.transaction
-import libs.postgres.concurrency.withLock
+import libs.task.TaskDao
+import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import utsjekk.clients.OppdragClient
-import utsjekk.task.*
+import utsjekk.task.Kind
+import utsjekk.task.TaskStrategy
 import java.time.LocalDate
 
 class AvstemmingTaskStrategy(
     private val oppdrag: OppdragClient,
 ) : TaskStrategy {
-    override suspend fun isApplicable(task: TaskDao): Boolean = task.kind == Kind.Avstemming
+    override suspend fun isApplicable(task: TaskDao): Boolean = task.kind == libs.task.Kind.Avstemming
 
     override suspend fun execute(task: TaskDao) {
         val grensesnittavstemming =
@@ -33,21 +35,25 @@ class AvstemmingTaskStrategy(
             )
 
         transaction {
-            Tasks.update(task.id, Status.COMPLETE, "")
+            Tasks.update(task.id, libs.task.Status.COMPLETE, "") {
+                Kind.valueOf(kind.name).retryStrategy(it)
+            }
             Tasks.create(
-                Kind.Avstemming,
+                libs.task.Kind.Avstemming,
                 nesteGrensesnittavstemming,
                 scheduledFor = LocalDate.now().nesteVirkedag().atTime(8, 0),
-            )
+            ) {
+                objectMapper.writeValueAsString(it)
+            }
         }
     }
 
     suspend fun initiserAvstemmingForNyeFagsystemer() {
-        withLock("initiser manglende avstemming tasks") {
+//        withLock("initiser manglende avstemming tasks") {
             val aktiveFagsystemer = transaction {
                 TaskDao.select {
-                    it.kind = Kind.Avstemming
-                    it.status = listOf(Status.IN_PROGRESS)
+                    it.kind = libs.task.Kind.Avstemming
+                    it.status = listOf(libs.task.Status.IN_PROGRESS)
                 }
             }.map {
                 objectMapper
@@ -65,12 +71,14 @@ class AvstemmingTaskStrategy(
                     )
 
                     Tasks.create(
-                        Kind.Avstemming,
+                        libs.task.Kind.Avstemming,
                         avstemming,
                         scheduledFor = LocalDate.now().nesteVirkedag().atTime(8, 0),
-                    )
+                    ) {
+                        objectMapper.writeValueAsString(it)
+                    }
                 }
-        }
+//        }
     }
 
     companion object {
