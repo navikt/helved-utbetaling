@@ -1,8 +1,8 @@
-package utsjekk.task.history
+package utsjekk.task
 
-import utsjekk.task.Status
+import libs.task.TaskHistoryDao
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 data class TaskHistoryDto(
     val id: UUID,
@@ -21,7 +21,7 @@ data class TaskHistoryDto(
                 createdAt = task.createdAt,
                 triggeredAt = task.triggeredAt,
                 triggeredBy = task.triggeredBy,
-                status = task.status,
+                status = Status.valueOf(task.status.name),
                 message = task.message,
             )
     }

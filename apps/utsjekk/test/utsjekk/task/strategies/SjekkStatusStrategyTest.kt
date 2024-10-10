@@ -15,19 +15,11 @@ import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.task.*
-import utsjekk.task.history.TaskHistoryDao
 
 class SjekkStatusStrategyTest {
     @BeforeEach
     fun reset() {
-        TestRuntime.oppdrag.reset()
-        TestRuntime.kafka.reset()
-        TestRuntime.clear(
-            TaskDao.TABLE_NAME,
-            TaskHistoryDao.TABLE_NAME,
-            IverksettingDao.TABLE_NAME,
-            IverksettingResultatDao.TABLE_NAME,
-        )
+
     }
 
 //    @Test
