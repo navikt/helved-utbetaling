@@ -8,15 +8,13 @@ import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.appLog
-import utsjekk.clients.OppdragClient
+import utsjekk.clients.Oppdrag
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.task.Kind
 import utsjekk.task.TaskStrategy
 
-class StatusTaskStrategy(
-    private val oppdragClient: OppdragClient,
-) : TaskStrategy {
+class StatusTaskStrategy(private val oppdragClient: Oppdrag) : TaskStrategy {
     override suspend fun isApplicable(task: TaskDao): Boolean = task.kind == libs.task.Kind.SjekkStatus
 
     override suspend fun execute(task: TaskDao) {
@@ -34,9 +32,7 @@ class StatusTaskStrategy(
             OppdragStatus.KVITTERT_MED_MANGLER, OppdragStatus.KVITTERT_TEKNISK_FEIL, OppdragStatus.KVITTERT_FUNKSJONELL_FEIL -> {
                 IverksettingResultater.oppdater(oppdragIdDto.tilUtbetalingId(), OppdragResultat(status.status))
                 appLog.error("Mottok feilkvittering ${status.status} fra OS for oppdrag $oppdragIdDto")
-                secureLog.error(
-                    "Mottok feilkvittering ${status.status} fra OS for oppdrag $oppdragIdDto. Feilmelding: ${status.feilmelding}",
-                )
+                secureLog.error("Mottok feilkvittering ${status.status} fra OS for oppdrag $oppdragIdDto. Feilmelding: ${status.feilmelding}")
                 Tasks.update(task.id, libs.task.Status.MANUAL, status.feilmelding) {
                     Kind.valueOf(kind.name).retryStrategy(it)
                 }
