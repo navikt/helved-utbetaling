@@ -73,7 +73,7 @@ object TestRuntime : AutoCloseable {
         }
     }
 
-    private val ktor = testApplication.apply { suspend { start() } }
+    private val ktor = testApplication.apply { runBlocking { start() } }
 
     override fun close() {
         clear(

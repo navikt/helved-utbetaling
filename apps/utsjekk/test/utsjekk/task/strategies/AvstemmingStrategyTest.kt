@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
+import libs.postgres.concurrency.withLock
 import libs.task.TaskDao
 import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
@@ -27,9 +28,11 @@ class AvstemmingStrategyTest {
     fun reset() {
         runBlocking {
             withContext(TestRuntime.context) {
-                transaction {
-                    Tasks.forKind(libs.task.Kind.Avstemming).forEach {
-                        it.copy(status = libs.task.Status.COMPLETE).update()
+                withLock("task") {
+                    transaction {
+                        Tasks.forKind(libs.task.Kind.Avstemming).forEach {
+                            it.copy(status = libs.task.Status.COMPLETE).update()
+                        }
                     }
                 }
             }
