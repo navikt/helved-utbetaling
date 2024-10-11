@@ -105,6 +105,11 @@ object soap {
             )
     }
 
+    /**
+     * Satstyper for trekk:
+     * LOPD/LOPM/LOPP: Løpende trekk hhv. dagsats, månedssats, prosentsats
+     * SALD/SALM/SALP: Saldotrekk hhv. dagsats, månedssats, prosentsats
+     */
     enum class SatsType {
         DAG,
         UKE,
@@ -113,8 +118,12 @@ object soap {
         AAR,
         ENG,
         AKTO,
+        LOPD,
+        LOPM,
         LOPP,
         SALD,
+        SALM,
+        SALP,
     }
 
     data class Infomelding(
