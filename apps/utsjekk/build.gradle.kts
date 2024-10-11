@@ -6,8 +6,8 @@ application {
     mainClass.set("utsjekk.AppKt")
 }
 
-val ktorVersion = "2.3.12"
-val libVersion = "1.0.15"
+val ktorVersion = "3.0.0"
+val libVersion = "2.0.0"
 val kontraktVersion = "1.0_20241009152720_6229329"
 
 dependencies {
@@ -32,7 +32,7 @@ dependencies {
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.3")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.0")
 

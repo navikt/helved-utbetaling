@@ -22,7 +22,7 @@ class SimuleringFake : AutoCloseable {
 
     val config by lazy {
         SimuleringConfig(
-            host = "http://localhost:${simulering.port()}".let(::URI).toURL(),
+            host = "http://localhost:${simulering.engine.port}".let(::URI).toURL(),
             scope = "test"
         )
     }
