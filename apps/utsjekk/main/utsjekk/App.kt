@@ -20,7 +20,6 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
@@ -78,9 +77,9 @@ fun Application.server(
     statusProducer: Kafka<StatusEndretMelding> = StatusKafkaProducer(config.kafka),
 ) {
 
-    val meters = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
-        registry = meters
+        registry = metrics
         meterBinders += LogbackMetrics()
     }
 
@@ -141,6 +140,7 @@ fun Application.server(
                 },
             ),
             LeaderElector(config),
+            metrics
         )
 
     environment.monitor.subscribe(ApplicationStopping) {
@@ -155,7 +155,7 @@ fun Application.server(
             tasks()
         }
 
-        probes(meters)
+        probes(metrics)
     }
 }
 
