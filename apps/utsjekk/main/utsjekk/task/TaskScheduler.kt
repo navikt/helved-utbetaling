@@ -1,5 +1,7 @@
 package utsjekk.task
 
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import libs.job.Scheduler
@@ -20,20 +22,28 @@ import java.time.LocalDateTime
 class TaskScheduler(
     private val strategies: List<TaskStrategy>,
     private val elector: LeaderElector,
+    private val metrics: MeterRegistry,
 ) : Scheduler<TaskDao>(
     feedRPM = 120,
     errorCooldownMs = 100,
     context = Jdbc.context + Dispatchers.IO,
 ) {
-    override fun isLeader(): Boolean = runBlocking { elector.isLeader() }
+    private val meterTags = listOf(Tag.of("name", "task"))
+
+    override fun isLeader(): Boolean = runBlocking {
+        elector.isLeader()
+    }
 
     override suspend fun feed(): List<TaskDao> {
+        metrics.counter("scheduler_feed_rpm", meterTags).increment()
+
         return withLock("task") {
             transaction {
                 TaskDao.select {
                     it.status = listOf(IN_PROGRESS, FAIL)
                     it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
                 }.also {
+                    metrics.counter("scheduler_feed_size", meterTags).increment(it.size.toDouble())
                     appLog.info("Feeding scheduler with ${it.size} tasks")
                 }
             }
@@ -44,6 +54,7 @@ class TaskScheduler(
         withLock(fed.id.toString()) {
             strategies.single { it.isApplicable(fed) }.execute(fed)
         }
+        metrics.counter("scheduler_feed_result", meterTags + Tag.of("result", "ok"))
     }
 
     override suspend fun onError(fed: TaskDao, err: Throwable) {
@@ -51,5 +62,6 @@ class TaskScheduler(
         Tasks.update(fed.id, FAIL, err.message) {
             Kind.valueOf(kind.name).retryStrategy(it)
         }
+        metrics.counter("scheduler_feed_result", meterTags + Tag.of("result", "error"))
     }
 }
