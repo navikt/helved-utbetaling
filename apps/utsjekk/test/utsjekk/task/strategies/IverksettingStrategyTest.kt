@@ -152,7 +152,9 @@ class IverksettingStrategyTest {
         )
         assertEquals(expectedRecord, TestRuntime.kafka.waitFor(iverksetting.søker.personident))
 
-        val resultat = IverksettingResultater.hent(iverksetting)
-        assertEquals(OppdragStatus.OK_UTEN_UTBETALING, resultat.oppdragResultat?.oppdragStatus)
+        val oppdragResultat = awaitDatabase {
+           IverksettingResultater.hent(iverksetting).oppdragResultat
+        }
+        assertEquals(OppdragStatus.OK_UTEN_UTBETALING, oppdragResultat?.oppdragStatus)
     }
 }
