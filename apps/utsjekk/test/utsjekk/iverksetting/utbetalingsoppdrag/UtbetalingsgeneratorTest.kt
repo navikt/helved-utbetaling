@@ -46,7 +46,8 @@ class UtbetalingsgeneratorTest {
             sakId = sakId,
             erFørsteUtbetalingPåSak = true,
             andeler = listOf(andelMedPeriodeId("0", 0, null)),
-            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null)
+            personident = oppdrag1.utbetalingsoppdrag.aktør,
+            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null, oppdrag1.utbetalingsoppdrag.aktør)
         )
         assertEquals(expected1, oppdrag1)
 
@@ -66,7 +67,8 @@ class UtbetalingsgeneratorTest {
             sakId = sakId,
             erFørsteUtbetalingPåSak = false,
             andeler = listOf(andelMedPeriodeId("1", 0, null), andelMedPeriodeId("2", 1, 0)),
-            utbetalingsperiode(behId2, 1.apr, 31.may, 900, 1, 0)
+            personident = oppdrag2.utbetalingsoppdrag.aktør,
+            utbetalingsperiode(behId2, 1.apr, 31.may, 900, 1, 0, oppdrag2.utbetalingsoppdrag.aktør)
         )
         assertEquals(expected2, oppdrag2)
     }
@@ -101,13 +103,15 @@ class UtbetalingsgeneratorTest {
             sakId = sakId,
             erFørsteUtbetalingPåSak = true,
             andeler = listOf(andelMedPeriodeId("0", 0, null)),
-            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null),
+            personident = oppdrag1.utbetalingsoppdrag.aktør,
+            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null, oppdrag1.utbetalingsoppdrag.aktør),
         )
 
         val expected2 = beregnetUtbetalingsoppdrag(
             sakId = sakId,
             erFørsteUtbetalingPåSak = false,
             andeler = listOf(andelMedPeriodeId("1", 0, null)),
+            personident = oppdrag2.utbetalingsoppdrag.aktør
         )
 
         assertEquals(expected1, oppdrag1)

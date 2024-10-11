@@ -9,14 +9,39 @@ import utsjekk.simulering.PosteringType
 import utsjekk.simulering.SimuleringDetaljer
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlin.random.Random
 
 typealias AndelPeriode = Pair<LocalDate, LocalDate>
 
+
 object TestData {
     val DEFAULT_FAGSYSTEM: Fagsystem = Fagsystem.DAGPENGER
-    const val DEFAULT_PERSONIDENT: String = "15507600333"
     const val DEFAULT_SAKSBEHANDLER: String = "A123456"
     const val DEFAULT_BESLUTTER: String = "B23456"
+
+    fun Personident.Companion.random(): Personident {
+        val day = Random.nextInt(10, 28)
+        val month = Random.nextInt(10, 12)
+        val year = Random.nextInt(10, 99)
+        val individsifre = Random.nextInt(100, 999)
+
+        val candidate1 = "$day$month$year$individsifre"
+        val control1 = listOf(3, 7, 6, 1, 8, 9, 4, 5, 2).withIndex()
+            .sumOf { (idx, num) -> num * candidate1[idx].digitToInt() }
+            .let { 11 - (it % 11) }
+
+
+        val candidate2 = "$day$month$year$individsifre$control1"
+        val control2 = listOf(5, 4, 3, 2, 7, 6, 5, 4, 3, 2).withIndex()
+            .sumOf { (idx, num) -> num * candidate2[idx].digitToInt() }
+            .let { 11 - (it % 11) }
+
+        try {
+            return Personident("$day$month$year$individsifre$control1$control2")
+        } catch (e: IllegalStateException) {
+            return random()
+        }
+    }
 
     object dao {
         fun iverksetting(
@@ -50,7 +75,7 @@ object TestData {
             behandlingId: String = RandomOSURId.generate(),
             sakId: String = RandomOSURId.generate(),
             iverksettingId: String? = null,
-            personident: Personident = Personident(DEFAULT_PERSONIDENT),
+            personident: Personident = Personident.random(),
             vedtak: VedtaksdetaljerV2Dto = vedtaksdetaljer(),
             forrigeIverksetting: ForrigeIverksettingV2Dto? = null,
         ) = IverksettV2Dto(
@@ -120,7 +145,7 @@ object TestData {
                 sakId: SakId,
                 utbetalinger: List<UtbetalingV2Dto>,
                 behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
-                personident: String = DEFAULT_PERSONIDENT,
+                personident: String = Personident.random().verdi,
                 saksbehandlerId: String = DEFAULT_SAKSBEHANDLER,
                 forrigeIverksetting: ForrigeIverksettingV2Dto? = null,
             ) = utsjekk.simulering.api.SimuleringRequest(
@@ -181,7 +206,7 @@ object TestData {
 
         object client {
             fun simuleringResponse(
-                personident: String = DEFAULT_PERSONIDENT,
+                personident: String = Personident.random().verdi,
                 totalBeløp: Int = 700,
                 datoBeregnet: LocalDate = LocalDate.now(),
                 perioder: List<utsjekk.simulering.client.SimulertPeriode> = emptyList(),
@@ -207,7 +232,7 @@ object TestData {
                 sakId: SakId,
                 forfall: LocalDate = LocalDate.now(),
                 feilkonto: Boolean = false,
-                personident: String = DEFAULT_PERSONIDENT,
+                personident: String = Personident.random().verdi,
                 detaljer: List<utsjekk.simulering.client.PosteringDto> = emptyList(),
             ) = utsjekk.simulering.client.Utbetaling(
                 fagområde = fagområde,
@@ -288,7 +313,7 @@ object TestData {
                     forrigeIverksettingId = forrigeIverksettingId,
                 ),
                 søker = Søker(
-                    personident = DEFAULT_PERSONIDENT, // TODO: randomize
+                    personident = Personident.random().verdi,
                 ),
                 vedtak = vedtaksdetaljer(
                     andeler = andelsdatoer.map { (fom, tom) ->
@@ -345,7 +370,7 @@ object TestData {
             fagsakId: SakId = SakId(RandomOSURId.generate()),
             fagsystem: Fagsystem = DEFAULT_FAGSYSTEM,
             behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
-            personident: String = DEFAULT_PERSONIDENT,
+            personident: String = Personident.random().verdi,
             vedtaksdato: LocalDate = LocalDate.now(),
             brukersNavKontor: BrukersNavKontor? = null,
             iverksettingId: IverksettingId? = null,
@@ -388,12 +413,14 @@ object TestData {
             sakId: SakId,
             erFørsteUtbetalingPåSak: Boolean,
             andeler: List<AndelMedPeriodeId>,
+            personident: String,
             vararg utbetalingsperioder: Utbetalingsperiode,
         ) = BeregnetUtbetalingsoppdrag(
             utbetalingsoppdrag = utbetalingsoppdrag(
                 sakId = sakId,
                 erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
-                utbetalingsperioder = utbetalingsperioder.toList()
+                utbetalingsperioder = utbetalingsperioder.toList(),
+                aktør = personident,
             ),
             andeler = andeler,
         )
@@ -412,12 +439,13 @@ object TestData {
             sakId: SakId,
             erFørsteUtbetalingPåSak: Boolean,
             utbetalingsperioder: List<Utbetalingsperiode> = emptyList(),
+            aktør: String,
         ) = Utbetalingsoppdrag(
             erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
             fagsystem = DEFAULT_FAGSYSTEM,
             saksnummer = sakId.id,
             iverksettingId = null,
-            aktør = DEFAULT_PERSONIDENT,
+            aktør = aktør,
             saksbehandlerId = DEFAULT_SAKSBEHANDLER,
             beslutterId = DEFAULT_BESLUTTER,
             avstemmingstidspunkt = LocalDateTime.now(), // ca
@@ -432,6 +460,7 @@ object TestData {
             sats: Int,
             periodeId: Long,
             forrigePeriodeId: Long?,
+            utbetalesTil: String,
         ) = Utbetalingsperiode(
             erEndringPåEksisterendePeriode = false,
             opphør = null,
@@ -443,13 +472,13 @@ object TestData {
             tom = tom,
             sats = sats.toBigDecimal(),
             satstype = Satstype.DAGLIG,
-            utbetalesTil = DEFAULT_PERSONIDENT,
+            utbetalesTil = utbetalesTil,
             behandlingId = behandlingId.id,
             utbetalingsgrad = null,
         )
 
         fun simuleringDetaljer(
-            personident: String = DEFAULT_PERSONIDENT,
+            personident: String = Personident.random().verdi,
             datoBeregnet: LocalDate = LocalDate.now(),
             totalBeløp: Int = 800,
             perioder: List<utsjekk.simulering.Periode>,

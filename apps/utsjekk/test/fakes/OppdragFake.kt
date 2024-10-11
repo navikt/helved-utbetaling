@@ -14,10 +14,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.CompletableDeferred
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import no.nav.utsjekk.kontrakter.oppdrag.*
 import port
 import utsjekk.OppdragConfig
 import java.net.URI
@@ -85,38 +82,30 @@ private fun Application.oppdrag() {
                 dto.iverksettingId,
             )
 
-            val fakeResponse = iverksettinger[oppdragIdDto]?.also {
-                it.request.complete(dto)
-            }
+            val fakeResponse = iverksettinger[oppdragIdDto]?.also { it.request.complete(dto) }
 
             when (fakeResponse) {
-                null -> call.respond(HttpStatusCode.fromValue(600), "Du har glemt å sette expected response for oppdrag i testen.")
+                null -> call.respond(HttpStatusCode.Created, "fallback fake response")
                 else -> call.respond(fakeResponse.response)
             }
         }
 
         post("/status") {
             val dto = call.receive<OppdragIdDto>()
-
-            val fakeResponse = statuser[dto]?.also {
-                it.request.complete(dto)
-            }
+            val fakeResponse = statuser[dto]?.also { it.request.complete(dto) }
 
             when (fakeResponse) {
-                null -> call.respond(HttpStatusCode.NotFound, "Fant'n ikke")
-                else -> call.respond(HttpStatusCode.OK, fakeResponse.response)
+                null -> call.respond(OppdragStatusDto(OppdragStatus.KVITTERT_UKJENT, "fallback fake response"))
+                else -> call.respond(fakeResponse.response)
             }
         }
 
         post("/grensesnittavstemming") {
             val dto = call.receive<GrensesnittavstemmingRequest>()
-
-            val fakeResponse = avstemminger[dto.fagsystem]?.also {
-                it.request.complete(dto)
-            }
+            val fakeResponse = avstemminger[dto.fagsystem]?.also { it.request.complete(dto) }
 
             when (fakeResponse) {
-                null -> call.respond(HttpStatusCode.fromValue(600), "Du har glemt å sette expected response for avstemming i testen.")
+                null -> call.respond(HttpStatusCode.Created, "fallback fake response")
                 else -> call.respond(fakeResponse.response)
             }
         }

@@ -61,7 +61,7 @@ fun main() {
     }.start(wait = true)
 }
 
-fun Application.database(config: JdbcConfig) {
+fun database(config: JdbcConfig) {
     Jdbc.initialize(config)
 
     runBlocking {
@@ -143,7 +143,7 @@ fun Application.server(
             metrics
         )
 
-    environment.monitor.subscribe(ApplicationStopping) {
+    monitor.subscribe(ApplicationStopping) {
         scheduler.close()
         statusProducer.close()
     }

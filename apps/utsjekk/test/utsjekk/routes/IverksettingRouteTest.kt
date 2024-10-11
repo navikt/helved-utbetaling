@@ -55,20 +55,22 @@ class IverksettingRouteTest {
                 assertEquals(HttpStatusCode.Accepted, it.status)
             }
 
-            awaitDatabase {
-                IverksettingResultatDao.select {
-                    this.fagsystem = Fagsystem.TILLEGGSSTØNADER
-                    this.sakId = SakId(dto.sakId)
-                    this.behandlingId = BehandlingId(dto.behandlingId)
-                }.firstOrNull {
-                    it.oppdragResultat != null
+            val status = runBlocking {
+                awaitDatabase {
+                    IverksettingResultatDao.select {
+                        this.fagsystem = Fagsystem.TILLEGGSSTØNADER
+                        this.sakId = SakId(dto.sakId)
+                        this.behandlingId = BehandlingId(dto.behandlingId)
+                    }.firstOrNull {
+                        it.oppdragResultat != null
+                    }
                 }
-            }
 
-            val status = httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
-                bearerAuth(TestRuntime.azure.generateToken())
-                accept(ContentType.Application.Json)
-            }.body<IverksettStatus>()
+                httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+                    bearerAuth(TestRuntime.azure.generateToken())
+                    accept(ContentType.Application.Json)
+                }.body<IverksettStatus>()
+            }
 
             assertEquals(IverksettStatus.OK_UTEN_UTBETALING, status)
 

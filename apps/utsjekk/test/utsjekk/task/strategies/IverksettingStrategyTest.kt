@@ -4,10 +4,7 @@ import TestData
 import TestRuntime
 import awaitDatabase
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
-import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks

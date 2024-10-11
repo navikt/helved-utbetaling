@@ -47,6 +47,7 @@ class SimuleringMapperTest {
             )
         )
         val expected = simuleringDetaljer(
+            personident = dto.gjelderId,
             datoBeregnet = 28.may,
             totalBeløp = 800,
             perioder = listOf(
@@ -111,6 +112,7 @@ class SimuleringMapperTest {
             )
         )
         val expected = simuleringDetaljer(
+            personident = dto.gjelderId,
             datoBeregnet = 28.may,
             totalBeløp = 1300,
             perioder = listOf(
@@ -184,6 +186,7 @@ class SimuleringMapperTest {
             )
         )
         val expected = simuleringDetaljer(
+            personident = dto.gjelderId,
             datoBeregnet = 28.may,
             totalBeløp = 1300,
             perioder = listOf(
