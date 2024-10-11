@@ -8,13 +8,11 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.CompletableDeferred
-import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
@@ -29,7 +27,7 @@ class OppdragFake : AutoCloseable {
 
     val config by lazy {
         OppdragConfig(
-            host = "http://localhost:${oppdrag.port()}".let(::URI).toURL(),
+            host = "http://localhost:${oppdrag.engine.port}".let(::URI).toURL(),
             scope = "test"
         )
     }

@@ -22,8 +22,8 @@ class AzureFake : AutoCloseable {
 
     val config by lazy {
         AzureConfig(
-            tokenEndpoint = "http://localhost:${azure.port()}/token".let(::URI).toURL(),
-            jwks = "http://localhost:${azure.port()}/jwks".let(::URI).toURL(),
+            tokenEndpoint = "http://localhost:${azure.engine.port}/token".let(::URI).toURL(),
+            jwks = "http://localhost:${azure.engine.port}/jwks".let(::URI).toURL(),
             issuer = "test",
             clientId = "hei",
             clientSecret = "på deg"

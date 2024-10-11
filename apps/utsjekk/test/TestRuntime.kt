@@ -73,7 +73,7 @@ object TestRuntime : AutoCloseable {
         }
     }
 
-    private val ktor = testApplication.apply { start() }
+    private val ktor = testApplication.apply { suspend { start() } }
 
     override fun close() {
         clear(
@@ -91,9 +91,10 @@ object TestRuntime : AutoCloseable {
     }
 }
 
-fun NettyApplicationEngine.port(): Int = runBlocking {
-    resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
-}
+val NettyApplicationEngine.port: Int
+    get() = runBlocking {
+        resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
+    }
 
 private val testApplication: TestApplication by lazy {
     TestApplication {
