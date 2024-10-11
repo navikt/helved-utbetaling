@@ -12,9 +12,13 @@ import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import utsjekk.avstemming.AvstemmingTaskStrategy
+import utsjekk.clients.Oppdrag
 import java.time.LocalDateTime
 
 class AvstemmingStrategyTest {
@@ -88,5 +92,29 @@ class AvstemmingStrategyTest {
         }
 
         assertEquals(libs.task.Status.COMPLETE, actual?.status)
+    }
+
+    @Test
+    fun `kun manglende fagsystemer legges automatisk inn i task`() = runTest(TestRuntime.context) {
+        val oppdrag = object : Oppdrag {
+            override suspend fun avstem(grensesnittavstemming: GrensesnittavstemmingRequest) {}
+            override suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {}
+            override suspend fun hentStatus(oppdragIdDto: OppdragIdDto) = TODO("stub")
+        }
+
+        val strat = AvstemmingTaskStrategy(oppdrag)
+
+        suspend fun countActiveAvstemminger(): Int = transaction {
+            Tasks.forKind(libs.task.Kind.Avstemming).count { it.status.name == "IN_PROGRESS" }
+        }
+
+        reset()
+        assertEquals(0, countActiveAvstemminger())
+
+        strat.initiserAvstemmingForNyeFagsystemer()
+        assertEquals(3, countActiveAvstemminger())
+
+        strat.initiserAvstemmingForNyeFagsystemer()
+        assertEquals(3, countActiveAvstemminger())
     }
 }

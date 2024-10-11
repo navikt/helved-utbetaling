@@ -46,8 +46,6 @@ import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
 import java.io.File
-import javax.sql.DataSource
-import kotlin.coroutines.CoroutineContext
 
 val appLog = logger("app")
 
@@ -135,11 +133,11 @@ fun Application.server(
                 IverksettingTaskStrategy(oppdrag, iverksettinger),
                 StatusTaskStrategy(oppdrag),
                 AvstemmingTaskStrategy(oppdrag).apply {
-//                    runBlocking {
-//                        withContext(Postgres.context) {
-//                            initiserAvstemmingForNyeFagsystemer()
-//                        }
-//                    }
+                    runBlocking {
+                        withContext(Jdbc.context) {
+                            initiserAvstemmingForNyeFagsystemer()
+                        }
+                    }
                 },
             ),
             LeaderElector(config),
