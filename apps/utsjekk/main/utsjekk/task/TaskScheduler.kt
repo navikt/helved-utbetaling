@@ -28,9 +28,8 @@ class TaskScheduler(
     override fun isLeader(): Boolean = runBlocking { elector.isLeader() }
 
     override suspend fun feed(): List<TaskDao> {
-//        appLog.info("Locking 'task' in feed")
-//        val tasks = withLock("task") {
-            return transaction {
+        return withLock("task") {
+            transaction {
                 TaskDao.select {
                     it.status = listOf(IN_PROGRESS, FAIL)
                     it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
@@ -38,17 +37,13 @@ class TaskScheduler(
                     appLog.info("Feeding scheduler with ${it.size} tasks")
                 }
             }
-//        }
-//        appLog.info("Unlocking 'task' in feed")
-//        return tasks
+        }
     }
 
     override suspend fun task(fed: TaskDao) {
-//        appLog.info("Task with id ${fed.id} and kind ${fed.kind} locked for processing")
-//        withLock(fed.id.toString()) {
+        withLock(fed.id.toString()) {
             strategies.single { it.isApplicable(fed) }.execute(fed)
-//        }
-//        appLog.info("Task with id ${fed.id} unlocked")
+        }
     }
 
     override suspend fun onError(fed: TaskDao, err: Throwable) {
