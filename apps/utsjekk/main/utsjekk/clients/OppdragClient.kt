@@ -15,13 +15,19 @@ import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import utsjekk.Config
 import utsjekk.appLog
 
+interface Oppdrag {
+    suspend fun avstem(grensesnittavstemming: GrensesnittavstemmingRequest)
+    suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag)
+    suspend fun hentStatus(oppdragIdDto: OppdragIdDto): OppdragStatusDto
+}
+
 class OppdragClient(
     private val config: Config,
     private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
-) {
+) : Oppdrag {
 
-    suspend fun avstem(grensesnittavstemming: GrensesnittavstemmingRequest) {
+    override suspend fun avstem(grensesnittavstemming: GrensesnittavstemmingRequest) {
         val token = azure.getClientCredentialsToken(config.oppdrag.scope)
 
         val response = client.post("${config.oppdrag.host}/grensesnittavstemming") {
@@ -35,7 +41,7 @@ class OppdragClient(
         }
     }
 
-    suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {
+    override suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {
         val token = azure.getClientCredentialsToken(config.oppdrag.scope)
 
         val response = client.post("${config.oppdrag.host}/oppdrag") {
@@ -57,7 +63,7 @@ class OppdragClient(
         }
     }
 
-    suspend fun hentStatus(oppdragIdDto: OppdragIdDto): OppdragStatusDto {
+    override suspend fun hentStatus(oppdragIdDto: OppdragIdDto): OppdragStatusDto {
         val token = azure.getClientCredentialsToken(config.oppdrag.scope)
 
         val response = client.post("${config.oppdrag.host}/status") {

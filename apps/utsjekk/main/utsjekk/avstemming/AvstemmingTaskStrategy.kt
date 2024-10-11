@@ -2,19 +2,18 @@ package utsjekk.avstemming
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.concurrency.transaction
+import libs.postgres.concurrency.withLock
 import libs.task.TaskDao
 import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
-import utsjekk.clients.OppdragClient
+import utsjekk.clients.Oppdrag
 import utsjekk.task.Kind
 import utsjekk.task.TaskStrategy
 import java.time.LocalDate
 
-class AvstemmingTaskStrategy(
-    private val oppdrag: OppdragClient,
-) : TaskStrategy {
+class AvstemmingTaskStrategy(private val oppdrag: Oppdrag) : TaskStrategy {
     override suspend fun isApplicable(task: TaskDao): Boolean = task.kind == libs.task.Kind.Avstemming
 
     override suspend fun execute(task: TaskDao) {
@@ -49,7 +48,7 @@ class AvstemmingTaskStrategy(
     }
 
     suspend fun initiserAvstemmingForNyeFagsystemer() {
-//        withLock("initiser manglende avstemming tasks") {
+        withLock("initiser manglende avstemming tasks") {
             val aktiveFagsystemer = transaction {
                 TaskDao.select {
                     it.kind = libs.task.Kind.Avstemming
@@ -78,7 +77,7 @@ class AvstemmingTaskStrategy(
                         objectMapper.writeValueAsString(it)
                     }
                 }
-//        }
+        }
     }
 
     companion object {
