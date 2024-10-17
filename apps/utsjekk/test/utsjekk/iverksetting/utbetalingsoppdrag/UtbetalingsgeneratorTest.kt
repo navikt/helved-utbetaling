@@ -5,6 +5,7 @@ import TestData.domain.andelData
 import TestData.domain.andelMedPeriodeId
 import TestData.domain.behandlingsinformasjon
 import TestData.domain.beregnetUtbetalingsoppdrag
+import TestData.domain.hentFastsattDagsats
 import TestData.domain.utbetalingsperiode
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -47,7 +48,7 @@ class UtbetalingsgeneratorTest {
             erFørsteUtbetalingPåSak = true,
             andeler = listOf(andelMedPeriodeId("0", 0, null)),
             personident = oppdrag1.utbetalingsoppdrag.aktør,
-            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null, oppdrag1.utbetalingsoppdrag.aktør)
+            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null, oppdrag1.utbetalingsoppdrag.aktør, andel1.hentFastsattDagsats())
         )
         assertEquals(expected1, oppdrag1)
 
@@ -68,7 +69,7 @@ class UtbetalingsgeneratorTest {
             erFørsteUtbetalingPåSak = false,
             andeler = listOf(andelMedPeriodeId("1", 0, null), andelMedPeriodeId("2", 1, 0)),
             personident = oppdrag2.utbetalingsoppdrag.aktør,
-            utbetalingsperiode(behId2, 1.apr, 31.may, 900, 1, 0, oppdrag2.utbetalingsoppdrag.aktør)
+            utbetalingsperiode(behId2, 1.apr, 31.may, 900, 1, 0, oppdrag2.utbetalingsoppdrag.aktør, andel2.hentFastsattDagsats())
         )
         assertEquals(expected2, oppdrag2)
     }
@@ -104,7 +105,7 @@ class UtbetalingsgeneratorTest {
             erFørsteUtbetalingPåSak = true,
             andeler = listOf(andelMedPeriodeId("0", 0, null)),
             personident = oppdrag1.utbetalingsoppdrag.aktør,
-            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null, oppdrag1.utbetalingsoppdrag.aktør),
+            utbetalingsperiode(behId1, 1.feb, 31.mar, 700, 0, null, oppdrag1.utbetalingsoppdrag.aktør, andel1.hentFastsattDagsats()),
         )
 
         val expected2 = beregnetUtbetalingsoppdrag(

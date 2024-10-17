@@ -48,7 +48,11 @@ class SimuleringValidatorTest {
                         sakId = sakId,
                         utbetalinger = listOf(
                             utbetaling(
-                                stønadsdata = StønadsdataDagpengerDto(stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR, meldekortId = "M1")
+                                stønadsdata = StønadsdataDagpengerDto(
+                                    stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
+                                    meldekortId = "M1",
+                                    fastsattDagsats = 800u
+                                )
                             )
                         ),
                         forrigeIverksetting = forrigeIverksetting(
@@ -95,7 +99,11 @@ class SimuleringValidatorTest {
                         sakId = sakId,
                         utbetalinger = listOf(
                             utbetaling(
-                                stønadsdata = StønadsdataDagpengerDto(stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR, meldekortId = "M1")
+                                stønadsdata = StønadsdataDagpengerDto(
+                                    stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
+                                    meldekortId = "M1",
+                                    fastsattDagsats = 800u
+                                )
                             )
                         ),
                         forrigeIverksetting = forrigeIverksetting(
@@ -142,7 +150,11 @@ class SimuleringValidatorTest {
                         sakId = sakId,
                         utbetalinger = listOf(
                             utbetaling(
-                                stønadsdata = StønadsdataDagpengerDto(stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR, meldekortId = "M1")
+                                stønadsdata = StønadsdataDagpengerDto(
+                                    stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
+                                    meldekortId = "M1",
+                                    fastsattDagsats = 800u
+                                )
                             )
                         ),
 //                        forrigeIverksetting = forrigeIverksetting(
@@ -186,7 +198,11 @@ class SimuleringValidatorTest {
                     sakId = sakId,
                     utbetalinger = listOf(
                         utbetaling(
-                            stønadsdata = StønadsdataDagpengerDto(stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR, meldekortId = "M1")
+                            stønadsdata = StønadsdataDagpengerDto(
+                                stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
+                                meldekortId = "M1",
+                                fastsattDagsats = 800u
+                            )
                         )
                     ),
                     forrigeIverksetting = forrigeIverksetting(

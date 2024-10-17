@@ -117,8 +117,9 @@ object TestData {
         fun dagpengestønad(
             type: StønadTypeDagpenger = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
             ferietillegg: Ferietillegg? = null,
-            meldekortId: String = "M1"
-        ) = StønadsdataDagpengerDto(stønadstype = type, ferietillegg = ferietillegg, meldekortId = meldekortId)
+            meldekortId: String = "M1",
+            fastsattDagsats: UInt = 800u,
+        ) = StønadsdataDagpengerDto(stønadstype = type, ferietillegg = ferietillegg, meldekortId = meldekortId, fastsattDagsats = fastsattDagsats)
 
         fun tilleggstønad(
             type: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_AAP,
@@ -347,6 +348,7 @@ object TestData {
             stønadsdata: Stønadsdata = StønadsdataDagpenger(
                 stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
                 meldekortId = "M1",
+                fastsattDagsats = 800,
             )
         ): AndelTilkjentYtelse = AndelTilkjentYtelse(
             beløp = beløp,
@@ -395,6 +397,7 @@ object TestData {
                 stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
                 ferietillegg = null,
                 meldekortId = "M1",
+                fastsattDagsats = 800,
             ),
             periodeId: Long? = null,
             forrigePeriodeId: Long? = null,
@@ -408,6 +411,11 @@ object TestData {
             periodeId = periodeId,
             forrigePeriodeId = forrigePeriodeId,
         )
+
+        fun AndelData.hentFastsattDagsats(): Int? {
+            return if (this.stønadsdata is StønadsdataDagpenger) (this.stønadsdata as StønadsdataDagpenger).fastsattDagsats
+            else null
+        }
 
         fun beregnetUtbetalingsoppdrag(
             sakId: SakId,
@@ -461,6 +469,7 @@ object TestData {
             periodeId: Long,
             forrigePeriodeId: Long?,
             utbetalesTil: String,
+            fastsattDagsats: Int?,
         ) = Utbetalingsperiode(
             erEndringPåEksisterendePeriode = false,
             opphør = null,
@@ -475,6 +484,7 @@ object TestData {
             utbetalesTil = utbetalesTil,
             behandlingId = behandlingId.id,
             utbetalingsgrad = null,
+            fastsattDagsats = fastsattDagsats?.toBigDecimal(),
         )
 
         fun simuleringDetaljer(
