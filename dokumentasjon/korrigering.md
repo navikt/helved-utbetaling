@@ -7,7 +7,7 @@ For én utbetalingsperiode er det i hovedsak 5 typer endringer man kan gjøre:
   - i starten
   - i slutten
   - i begge ender
-- Forlenge periode:
+- Forkorte periode:
   - i starten
   - i slutten
   - i begge ender
