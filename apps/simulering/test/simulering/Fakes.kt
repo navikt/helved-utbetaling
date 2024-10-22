@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.serialization.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -35,21 +36,21 @@ class TestRuntime : Sts, Soap, AutoCloseable {
     val config: Config
         get() = Config(
             proxy = ProxyConfig(
-                host = "http://localhost:${ktor.port}".let(::URI).toURL(),
+                host = "http://localhost:${ktor.engine.port}".let(::URI).toURL(),
                 scope = "test",
                 simuleringPath = "cics/oppdrag/simulerFpServiceWSBinding"
             ),
             azure = AzureConfig(
-                tokenEndpoint = "http://localhost:${ktor.port}/token".let(::URI).toURL(),
-                jwks = "http://localhost:${ktor.port}/jwks".let(::URI).toURL(),
+                tokenEndpoint = "http://localhost:${ktor.engine.port}/token".let(::URI).toURL(),
+                jwks = "http://localhost:${ktor.engine.port}/jwks".let(::URI).toURL(),
                 issuer = "test",
                 clientId = "",
                 clientSecret = ""
             ),
             simulering = SoapConfig(
-                host = "http://localhost:${ktor.port}/cics".let(::URI).toURL(),
+                host = "http://localhost:${ktor.engine.port}/cics".let(::URI).toURL(),
                 sts = StsConfig(
-                    host = "http://localhost:${ktor.port}/gandalf".let(::URI).toURL(),
+                    host = "http://localhost:${ktor.engine.port}/gandalf".let(::URI).toURL(),
                     user = "",
                     pass = "",
                 )
@@ -92,6 +93,15 @@ class TestRuntime : Sts, Soap, AutoCloseable {
 private fun Application.fakes(fake: TestRuntime) {
     class XmlDeserializer : ContentConverter {
         override suspend fun deserialize(charset: Charset, typeInfo: TypeInfo, content: ByteReadChannel): Any? {
+            return null
+        }
+
+        override suspend fun serialize(
+            contentType: ContentType,
+            charset: Charset,
+            typeInfo: TypeInfo,
+            value: Any?
+        ): OutgoingContent? {
             return null
         }
     }
