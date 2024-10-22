@@ -1,11 +1,9 @@
 package oppdrag.routing
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.pipeline.*
 import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
@@ -90,7 +88,8 @@ fun Route.iverksettingRoutes(
     }
 }
 
-private suspend fun PipelineContext<Unit, ApplicationCall>.klarteIkkeSendeOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {
+
+private suspend fun RoutingContext.klarteIkkeSendeOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {
     appLog.error("Klarte ikke sende oppdrag for saksnr ${utbetalingsoppdrag.saksnummer}")
     call.respond(
         HttpStatusCode.InternalServerError,
@@ -98,7 +97,7 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.klarteIkkeSendeOppdra
     )
 }
 
-private suspend fun PipelineContext<Unit, ApplicationCall>.oppdragAlleredeSendt(utbetalingsoppdrag: Utbetalingsoppdrag) {
+private suspend fun RoutingContext.oppdragAlleredeSendt(utbetalingsoppdrag: Utbetalingsoppdrag) {
     appLog.info("Oppdrag er allerede sendt for saksnr ${utbetalingsoppdrag.saksnummer}")
     call.respond(
         HttpStatusCode.Conflict,

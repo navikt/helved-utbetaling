@@ -6,8 +6,8 @@ application {
     mainClass.set("oppdrag.AppKt")
 }
 
-val ktorVersion = "2.3.12"
-val libVersion = "1.0.15"
+val ktorVersion = "3.0.0"
+val libVersion = "2.0.0"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
