@@ -34,7 +34,7 @@ object TestRuntime : AutoCloseable {
     val oppdrag = OppdragFake(config)
     val datasource = Jdbc.initialize(config.postgres)
     val context = CoroutineDatasource(datasource)
-    val ktor = testApplication.apply { start() }
+    val ktor = testApplication.apply { runBlocking { start() }}
 
     fun clear() {
         val tables = listOf(OppdragLagerRepository.TABLE_NAME)
