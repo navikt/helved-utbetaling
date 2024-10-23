@@ -9,7 +9,7 @@ OS sitt begrep for en utbetalingsperiode. Et oppdrag kan inneholde mange oppdrag
 
 ### Klassekode
 Kalles også klassifiseringskode. En klassekode sendes med på alle utbetalingsperioder/oppdragslinjer til OS. Hver ytelse har et sett med
-klassekoder, og ofte skiller deles utbetalingen opp i ulike klassekoder fordi det skal regnskapsføres på ulike _kontoer_ i NAVs regnskap.
+klassekoder, og ofte deles utbetalingen opp i ulike klassekoder fordi det skal regnskapsføres på ulike _kontoer_ i NAVs regnskap.
 Det kan også være flere klassifiseringskoder på grunn av andre behov, eksempelvis at noen typer utbetalinger skal rapporteres til A-ordningen
 og andre ikke, eller at man ønsker mer detaljert informasjon på kontoutskrift eller Mine Utbetalinger utover hvilken ytelse det gjelder. 
 Klassekodene har ofte en logisk sammenheng med ulike undergrupper for den gitte ytelsen. For eksempel har tiltakspenger en klassekode for hver
@@ -19,7 +19,7 @@ Klassekodene har som oftest ikke noe meningsbærende navn, men noen av dem ender
 at utbetalinger på klassekoden ikke skal rapporteres til A-ordningen.
 
 ### Rammestyrte midler
-Noen ytelser er rammestyrte midler for NAV. Dette betyr at ytelsen knyttes til brukers lokale NAV-kontor, og hvert NAV-kontor må føre regnskap
+Noen ytelser er såkalte rammestyrte midler. Dette betyr at ytelsen knyttes til brukers lokale NAV-kontor, og hvert NAV-kontor må føre regnskap
 for hvor mye penger de bruker hvert år på ytelsen. De har gjerne en viss ramme/budsjett som de ikke kan overstige. For ytelser med rammestyrte midler
 må vi sende med brukers lokale NAV-kontor på alle utbetalinger slik at regnskapet blir riktig. Hvis bruker flytter, benytter vi alltid det nyeste
 NAV-kontoret på utbetalingene uavhengig av om det er en ny utbetaling eller en korrigering tilbake i tid.
@@ -31,4 +31,4 @@ men ikke alle. Eksempelvis kan en feilutbetaling motregnes mot en utbetaling på
 
 ### Etterbetaling
 En utbetaling som har blitt betalt ut til bruker, men som i ettertid korrigeres, fører til en etterbetaling hvis bruker skulle hatt et høyere beløp utbetalt. Bruker får da
-en etterbetaling med det resterende beløpet. 
+en ny utbetaling, kalt en etterbetaling, med det resterende beløpet. 
