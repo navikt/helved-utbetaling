@@ -139,7 +139,7 @@ Hvis vi feks. skal korrigere beløpet til 1000 kr fra 10.10-15.10, ville vi send
 ```
 
 Det generelle prinsippet som slår inn her er at hele kjeden overskrives fra endringstidspunktet. Hvis man ønsker å beholde noe av den tidligere
-kjeden etter endringstidspunktet, må man derfor eksplisitt sende periodene på nytt til OS. (TODO mer om dette i eget dokument om kjeding)
+kjeden etter endringstidspunktet, må man derfor eksplisitt sende periodene på nytt til OS. Les mer om dette i dokumentet om kjeding. 
 
 ## Forlenge periode
 
