@@ -30,37 +30,20 @@ object UtbetalingsoppdragService : UtbetalingService {
             utbetalingsperiode = ny.perioder
                 .sortedBy { it.fom } // TODO: vil ikke fungere ved ved forkorting/forlenging
                 .fold(listOf()) { acc, periode ->
-                    acc + if (acc.isEmpty()) {
-                        UtbetalingsperiodeDto(
-                            erEndringPåEksisterendePeriode = false,
-                            opphør = null,
-                            id = periode.id,
-                            forrigeId = forrigeUtbetaling?.sistePeriode()?.id,
-                            vedtaksdato = ny.vedtakstidspunkt.toLocalDate(),
-                            klassekode = klassekode(periode.stønad),
-                            fom = periode.fom,
-                            tom = periode.tom,
-                            sats = periode.beløp,
-                            satstype = satstype(periode),
-                            utbetalesTil = ny.personident.ident,
-                            behandlingId = ny.behandlingId.id,
-                        )
-                    } else {
-                        UtbetalingsperiodeDto(
-                            erEndringPåEksisterendePeriode = false,
-                            opphør = null,
-                            id = periode.id,
-                            forrigeId = acc.last().id,
-                            vedtaksdato = ny.vedtakstidspunkt.toLocalDate(),
-                            klassekode = klassekode(periode.stønad),
-                            fom = periode.fom,
-                            tom = periode.tom,
-                            sats = periode.beløp,
-                            satstype = satstype(periode),
-                            utbetalesTil = ny.personident.ident,
-                            behandlingId = ny.behandlingId.id,
-                        )
-                    }
+                    acc + UtbetalingsperiodeDto(
+                        erEndringPåEksisterendePeriode = false,
+                        opphør = null,
+                        id = periode.id,
+                        forrigeId = acc.lastOrNull()?.id ?: forrigeUtbetaling?.sistePeriode()?.id,
+                        vedtaksdato = ny.vedtakstidspunkt.toLocalDate(),
+                        klassekode = klassekode(periode.stønad),
+                        fom = periode.fom,
+                        tom = periode.tom,
+                        sats = periode.beløp,
+                        satstype = satstype(periode),
+                        utbetalesTil = ny.personident.ident,
+                        behandlingId = ny.behandlingId.id,
+                    )
                 },
         )
     }
