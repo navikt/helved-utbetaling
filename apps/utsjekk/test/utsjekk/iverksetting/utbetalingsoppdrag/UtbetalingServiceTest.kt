@@ -79,7 +79,51 @@ class UtbetalingServiceTest {
     }
 
     @Test
-    fun `legge til virkedager`() {
+    fun `lag en enkeltutbetaling`() {
+        val utbetaling = Utbetaling(
+            sakId = SakId(RandomOSURId.generate()),
+            behandlingId = BehandlingId(RandomOSURId.generate()),
+            personident = Personident.random(),
+            vedtakstidspunkt = 8.feb.atStartOfDay(),
+            saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+            beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
+            perioder = listOf(
+                Utbetalingsperiode(8.feb, 16.feb, 1500u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR),
+            )
+        )
+
+        val actual = UtbetalingsoppdragService.opprett(utbetaling, FagsystemDto.DAGPENGER)
+        val expected = UtbetalingsoppdragDto(
+            erFørsteUtbetalingPåSak = true,
+            fagsystem = FagsystemDto.DAGPENGER,
+            saksnummer = utbetaling.sakId.id,
+            aktør = utbetaling.personident.ident,
+            saksbehandlerId = TestData.DEFAULT_SAKSBEHANDLER,
+            beslutterId = TestData.DEFAULT_BESLUTTER,
+            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
+            brukersNavKontor = null,
+            utbetalingsperiode = listOf(
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[0].id,
+                    forrigeId = null,
+                    vedtaksdato = 8.feb,
+                    klassekode = "DPORAS",
+                    fom = 8.feb,
+                    tom = 16.feb,
+                    sats = 1500u,
+                    satstype = Satstype.ENGANGS,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+            )
+        )
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `begrens til virkedager`() {
         val utbetaling = Utbetaling(
             sakId = SakId(RandomOSURId.generate()),
             behandlingId = BehandlingId(RandomOSURId.generate()),
