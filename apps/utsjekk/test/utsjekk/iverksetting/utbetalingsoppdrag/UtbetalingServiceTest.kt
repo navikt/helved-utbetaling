@@ -10,7 +10,6 @@ import utsjekk.iverksetting.v3.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.*
 
 private val Int.feb: LocalDate get() = LocalDate.of(2021, 2, this)
 private val Int.mar: LocalDate get() = LocalDate.of(2021, 3, this)
@@ -34,7 +33,7 @@ class UtbetalingServiceTest {
             )
         )
 
-        val actual = UtbetalingsoppdragService.opprett(utbetaling, FagsystemDto.DAGPENGER)
+        val actual = UtbetalingsoppdragService.create(utbetaling, FagsystemDto.DAGPENGER)
         val expected = UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = true,
             fagsystem = FagsystemDto.DAGPENGER,
@@ -92,7 +91,7 @@ class UtbetalingServiceTest {
             )
         )
 
-        val actual = UtbetalingsoppdragService.opprett(utbetaling, FagsystemDto.DAGPENGER)
+        val actual = UtbetalingsoppdragService.create(utbetaling, FagsystemDto.DAGPENGER)
         val expected = UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = true,
             fagsystem = FagsystemDto.DAGPENGER,
@@ -140,7 +139,7 @@ class UtbetalingServiceTest {
             )
         )
 
-        val actual = UtbetalingsoppdragService.opprett(utbetaling, FagsystemDto.DAGPENGER)
+        val actual = UtbetalingsoppdragService.create(utbetaling, FagsystemDto.DAGPENGER)
         val expected = UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = true,
             fagsystem = FagsystemDto.DAGPENGER,
@@ -202,7 +201,7 @@ class UtbetalingServiceTest {
             )
         )
 
-        val actual = UtbetalingsoppdragService.opprett(utbetaling, FagsystemDto.DAGPENGER)
+        val actual = UtbetalingsoppdragService.create(utbetaling, FagsystemDto.DAGPENGER)
         val expected = UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = true,
             fagsystem = FagsystemDto.DAGPENGER,
@@ -276,8 +275,7 @@ class UtbetalingServiceTest {
 
     @Test
     fun `kjede med tidliger utbetaling`() {
-        val førsteId = UtbetalingId.random()
-        val første = Utbetaling(
+        val tidligereUtbetaling = Utbetaling(
             sakId = SakId(RandomOSURId.generate()),
             behandlingId = BehandlingId(RandomOSURId.generate()),
             personident = Personident.random(),
@@ -288,13 +286,13 @@ class UtbetalingServiceTest {
                 Utbetalingsperiode(1.feb, 28.feb, 20u * 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR),
             )
         )
-        DatabaseFake[førsteId] = første
+        val tidligereUtbetalingId = DatabaseFake.save(tidligereUtbetaling)
 
         val utbetaling = Utbetaling(
-            ref = førsteId,
-            sakId = SakId(RandomOSURId.generate()),
+            ref = tidligereUtbetalingId,
+            sakId = tidligereUtbetaling.sakId,
             behandlingId = BehandlingId(RandomOSURId.generate()),
-            personident = Personident.random(),
+            personident = tidligereUtbetaling.personident,
             vedtakstidspunkt = 1.mar.atStartOfDay(),
             saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
             beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
@@ -302,7 +300,7 @@ class UtbetalingServiceTest {
                 Utbetalingsperiode(1.mar, 31.mar, 23u * 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
             )
         )
-        val actual = UtbetalingsoppdragService.opprett(utbetaling, FagsystemDto.DAGPENGER)
+        val actual = UtbetalingsoppdragService.create(utbetaling, FagsystemDto.DAGPENGER)
         val expected = UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = false,
             fagsystem = FagsystemDto.DAGPENGER,
@@ -317,7 +315,7 @@ class UtbetalingServiceTest {
                     erEndringPåEksisterendePeriode = false,
                     opphør = null,
                     id = utbetaling.perioder[0].id,
-                    forrigeId = første.perioder[0].id,
+                    forrigeId = tidligereUtbetaling.sistePeriode().id,
                     vedtaksdato = 1.mar,
                     klassekode = "DPORAS",
                     fom = 1.mar,
@@ -331,15 +329,317 @@ class UtbetalingServiceTest {
         )
         assertEquals(expected, actual)
     }
+
+    // TODO: se igjennom denne testen om vi skal validere noe mer,
+    //  fordi den er identisk med `kjede med tidliger utbetaling`
+    @Test
+    fun `gjenbruk en behandlingId`() {
+        val tidligereUtbetaling = Utbetaling(
+            sakId = SakId(RandomOSURId.generate()),
+            behandlingId = BehandlingId(RandomOSURId.generate()),
+            personident = Personident.random(),
+            vedtakstidspunkt = 1.feb.atStartOfDay(),
+            saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+            beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
+            perioder = listOf(
+                Utbetalingsperiode(1.feb, 28.feb, 20u * 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR),
+            )
+        )
+        val tidligereUtbetalingId = DatabaseFake.save(tidligereUtbetaling)
+
+        val utbetaling = Utbetaling(
+            ref = tidligereUtbetalingId,
+            sakId = tidligereUtbetaling.sakId,
+            behandlingId = tidligereUtbetaling.behandlingId,
+            personident = tidligereUtbetaling.personident,
+            vedtakstidspunkt = 1.mar.atStartOfDay(),
+            saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+            beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
+            perioder = listOf(
+                Utbetalingsperiode(1.mar, 31.mar, 23u * 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+            )
+        )
+        val actual = UtbetalingsoppdragService.create(utbetaling, FagsystemDto.DAGPENGER)
+        val expected = UtbetalingsoppdragDto(
+            erFørsteUtbetalingPåSak = false,
+            fagsystem = FagsystemDto.DAGPENGER,
+            saksnummer = utbetaling.sakId.id,
+            aktør = utbetaling.personident.ident,
+            saksbehandlerId = TestData.DEFAULT_SAKSBEHANDLER,
+            beslutterId = TestData.DEFAULT_BESLUTTER,
+            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
+            brukersNavKontor = null,
+            utbetalingsperiode = listOf(
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[0].id,
+                    forrigeId = tidligereUtbetaling.sistePeriode().id,
+                    vedtaksdato = 1.mar,
+                    klassekode = "DPORAS",
+                    fom = 1.mar,
+                    tom = 31.mar,
+                    sats = 23u * 700u,
+                    satstype = Satstype.MÅNEDLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+            )
+        )
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `forkorte siste periode`() {
+        val tidligereUtbetaling = Utbetaling(
+            sakId = SakId(RandomOSURId.generate()),
+            behandlingId = BehandlingId(RandomOSURId.generate()),
+            personident = Personident.random(),
+            vedtakstidspunkt = 1.feb.atStartOfDay(),
+            saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+            beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
+            perioder = expand(1.feb, 5.feb, 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        )
+        val tidligereUtbetalingId = DatabaseFake.save(tidligereUtbetaling)
+
+        val utbetaling = Utbetaling(
+            ref = tidligereUtbetalingId,
+            sakId = tidligereUtbetaling.sakId,
+            behandlingId = BehandlingId(RandomOSURId.generate()),
+            personident = tidligereUtbetaling.personident,
+            vedtakstidspunkt = 1.feb.atStartOfDay(),
+            saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+            beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
+            perioder = expand(1.feb, 3.feb, 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        )
+
+        val actual = UtbetalingsoppdragService.replace(tidligereUtbetalingId, utbetaling, FagsystemDto.DAGPENGER)
+        val expected = UtbetalingsoppdragDto(
+            erFørsteUtbetalingPåSak = false,
+            fagsystem = FagsystemDto.DAGPENGER,
+            saksnummer = utbetaling.sakId.id,
+            aktør = utbetaling.personident.ident,
+            saksbehandlerId = TestData.DEFAULT_SAKSBEHANDLER,
+            beslutterId = TestData.DEFAULT_BESLUTTER,
+            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
+            brukersNavKontor = null,
+            utbetalingsperiode = listOf(
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[0].id,
+                    forrigeId = tidligereUtbetaling.førstePeriode().id,
+                    vedtaksdato = 1.feb,
+                    klassekode = "DPORAS",
+                    fom = 1.feb,
+                    tom = 1.feb,
+                    sats = 700u,
+                    satstype = Satstype.DAGLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[1].id,
+                    forrigeId = utbetaling.perioder[0].id,
+                    vedtaksdato = 1.feb,
+                    klassekode = "DPORAS",
+                    fom = 2.feb,
+                    tom = 2.feb,
+                    sats = 700u,
+                    satstype = Satstype.DAGLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[2].id,
+                    forrigeId = utbetaling.perioder[1].id,
+                    vedtaksdato = 1.feb,
+                    klassekode = "DPORAS",
+                    fom = 3.feb,
+                    tom = 3.feb,
+                    sats = 700u,
+                    satstype = Satstype.DAGLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+            )
+        )
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `forkort periode i starten`() {
+        val tidligereUtbetaling = Utbetaling(
+            sakId = SakId(RandomOSURId.generate()),
+            behandlingId = BehandlingId(RandomOSURId.generate()),
+            personident = Personident.random(),
+            vedtakstidspunkt = 1.feb.atStartOfDay(),
+            saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+            beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
+            perioder = expand(1.feb, 5.feb, 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        )
+        val tidligereUtbetalingId = DatabaseFake.save(tidligereUtbetaling)
+
+        val utbetaling = Utbetaling(
+            ref = tidligereUtbetalingId,
+            sakId = tidligereUtbetaling.sakId,
+            behandlingId = BehandlingId(RandomOSURId.generate()),
+            personident = tidligereUtbetaling.personident,
+            vedtakstidspunkt = 3.feb.atStartOfDay(),
+            saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+            beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
+            perioder = expand(3.feb, 5.feb, 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        )
+
+        val actual = UtbetalingsoppdragService.replace(tidligereUtbetalingId, utbetaling, FagsystemDto.DAGPENGER)
+        val expected = UtbetalingsoppdragDto(
+            erFørsteUtbetalingPåSak = false,
+            fagsystem = FagsystemDto.DAGPENGER,
+            saksnummer = utbetaling.sakId.id,
+            aktør = utbetaling.personident.ident,
+            saksbehandlerId = TestData.DEFAULT_SAKSBEHANDLER,
+            beslutterId = TestData.DEFAULT_BESLUTTER,
+            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
+            brukersNavKontor = null,
+            utbetalingsperiode = listOf(
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[0].id,
+                    forrigeId = tidligereUtbetaling.førstePeriode().id, // TODO: eller 3.feb? (tidligereUtbetaling.perioder[2].id)
+                    vedtaksdato = 3.feb,
+                    klassekode = "DPORAS",
+                    fom = 3.feb,
+                    tom = 3.feb,
+                    sats = 700u,
+                    satstype = Satstype.DAGLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[1].id,
+                    forrigeId = utbetaling.perioder[0].id,
+                    vedtaksdato = 3.feb,
+                    klassekode = "DPORAS",
+                    fom = 4.feb,
+                    tom = 4.feb,
+                    sats = 700u,
+                    satstype = Satstype.DAGLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[2].id,
+                    forrigeId = utbetaling.perioder[1].id,
+                    vedtaksdato = 3.feb,
+                    klassekode = "DPORAS",
+                    fom = 5.feb,
+                    tom = 5.feb,
+                    sats = 700u,
+                    satstype = Satstype.DAGLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+            )
+        )
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `forkort periode i begge ender`() {
+        val tidligereUtbetaling = Utbetaling(
+            sakId = SakId(RandomOSURId.generate()),
+            behandlingId = BehandlingId(RandomOSURId.generate()),
+            personident = Personident.random(),
+            vedtakstidspunkt = 1.feb.atStartOfDay(),
+            saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+            beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
+            perioder = expand(1.feb, 5.feb, 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        )
+        val tidligereUtbetalingId = DatabaseFake.save(tidligereUtbetaling)
+
+        val utbetaling = Utbetaling(
+            ref = tidligereUtbetalingId,
+            sakId = tidligereUtbetaling.sakId,
+            behandlingId = BehandlingId(RandomOSURId.generate()),
+            personident = tidligereUtbetaling.personident,
+            vedtakstidspunkt = 4.feb.atStartOfDay(),
+            saksbehandlerId = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+            beslutterId = Navident(TestData.DEFAULT_BESLUTTER),
+            perioder = expand(2.feb, 4.feb, 700u, Stønadstype.StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        )
+
+        val actual = UtbetalingsoppdragService.replace(tidligereUtbetalingId, utbetaling, FagsystemDto.DAGPENGER)
+        val expected = UtbetalingsoppdragDto(
+            erFørsteUtbetalingPåSak = false,
+            fagsystem = FagsystemDto.DAGPENGER,
+            saksnummer = utbetaling.sakId.id,
+            aktør = utbetaling.personident.ident,
+            saksbehandlerId = TestData.DEFAULT_SAKSBEHANDLER,
+            beslutterId = TestData.DEFAULT_BESLUTTER,
+            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
+            brukersNavKontor = null,
+            utbetalingsperiode = listOf(
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[0].id,
+                    forrigeId = tidligereUtbetaling.førstePeriode().id, // TODO: eller 2.feb? (tidligereUtbetaling.perioder[1].id)
+                    vedtaksdato = 4.feb,
+                    klassekode = "DPORAS",
+                    fom = 2.feb,
+                    tom = 2.feb,
+                    sats = 700u,
+                    satstype = Satstype.DAGLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[1].id,
+                    forrigeId = utbetaling.perioder[0].id,
+                    vedtaksdato = 4.feb,
+                    klassekode = "DPORAS",
+                    fom = 3.feb,
+                    tom = 3.feb,
+                    sats = 700u,
+                    satstype = Satstype.DAGLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = utbetaling.perioder[2].id,
+                    forrigeId = utbetaling.perioder[1].id,
+                    vedtaksdato = 4.feb,
+                    klassekode = "DPORAS",
+                    fom = 4.feb,
+                    tom = 4.feb,
+                    sats = 700u,
+                    satstype = Satstype.DAGLIG,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                ),
+            )
+        )
+        assertEquals(expected, actual)
+    }
 }
 
 private fun Personident.Companion.random(): Personident {
     return Personident(no.nav.utsjekk.kontrakter.felles.Personident.random().verdi)
 }
 
-private fun UtbetalingId.Companion.random(): UtbetalingId {
-    return UtbetalingId(UUID.randomUUID())
-}
 
 private fun expand(
     fom: LocalDate,
