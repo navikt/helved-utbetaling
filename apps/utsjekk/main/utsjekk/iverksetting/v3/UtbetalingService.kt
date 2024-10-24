@@ -7,17 +7,34 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 
 interface UtbetalingService {
-    fun opprett(ny: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto
-    fun korriger(ref: UUID, korrigert: Utbetaling): UtbetalingsoppdragDto
-    fun opphør(ref: UUID, fom: LocalDate): UtbetalingsoppdragDto
+    /**
+     * Legg til nytt utbetalingsoppdrag.
+     *  - nytt oppdrag
+     *  - kjede med et tidligere oppdrag (f.eks. forlenge)
+     */
+    fun create(ny: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto
+
+    /**
+     * Erstatt et utbetalingsoppdrag.
+     *  - endre beløp på et oppdrag
+     *  - endre periode på et oppdrag (f.eks. forkorte)
+     */
+    fun replace(id: UtbetalingId, korrigert: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto
+
+    /**
+     * Opphør et utbetalingsoppdrag.
+     *  - opphør mellom to datoer
+     *  - opphør fra og med en dato
+     */
+    fun stop(id: UtbetalingId, fom: LocalDate, tom: LocalDate?, fagsystem: FagsystemDto): UtbetalingsoppdragDto
 }
 
 object UtbetalingsoppdragService : UtbetalingService {
-    /**
-     * Opprett nytt utbetalingsoppdrag
-     */
-    override fun opprett(ny: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto {
-        val forrigeUtbetaling = ny.ref?.let { ref -> DatabaseFake[ref] ?: notFound("utbetaling with ref $ref") }
+    override fun create(ny: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto {
+        val forrigeUtbetaling = ny.ref?.let { ref ->
+            DatabaseFake.findOrNull(ref) ?: notFound("utbetaling with ref $ref")
+        }
+
         return UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = ny.ref == null,
             fagsystem = fagsystem,
@@ -28,7 +45,7 @@ object UtbetalingsoppdragService : UtbetalingService {
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = ny.perioder.first().brukersNavKontor?.enhet,
             utbetalingsperiode = ny.perioder
-                .sortedBy { it.fom } // TODO: vil ikke fungere ved ved forkorting/forlenging
+                .sortedBy { it.fom }
                 .fold(listOf()) { acc, periode ->
                     acc + UtbetalingsperiodeDto(
                         erEndringPåEksisterendePeriode = false,
@@ -48,26 +65,63 @@ object UtbetalingsoppdragService : UtbetalingService {
         )
     }
 
-    override fun korriger(ref: UUID, korrigert: Utbetaling): UtbetalingsoppdragDto {
-        TODO()
+    // TODO: valider at korrigerte perioder har fått nye IDer
+    override fun replace(id: UtbetalingId, korrigert: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto {
+        val forrigeUtbetaling = DatabaseFake.findOrNull(id) ?: notFound("utbetaling with id $id")
+        return UtbetalingsoppdragDto(
+            erFørsteUtbetalingPåSak = korrigert.ref == null,
+            fagsystem = fagsystem,
+            saksnummer = korrigert.sakId.id,
+            aktør = korrigert.personident.ident,
+            saksbehandlerId = korrigert.saksbehandlerId.ident,
+            beslutterId = korrigert.beslutterId.ident,
+            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
+            brukersNavKontor = korrigert.perioder.first().brukersNavKontor?.enhet,
+            utbetalingsperiode = korrigert.perioder
+                .sortedBy { it.fom }
+                .fold(listOf()) { acc, periode ->
+                    acc + UtbetalingsperiodeDto(
+                        erEndringPåEksisterendePeriode = false,
+                        opphør = null,
+                        id = periode.id,
+                        forrigeId = acc.lastOrNull()?.id ?: forrigeUtbetaling.førstePeriode().id,
+                        vedtaksdato = korrigert.vedtakstidspunkt.toLocalDate(),
+                        klassekode = klassekode(periode.stønad),
+                        fom = periode.fom,
+                        tom = periode.tom,
+                        sats = periode.beløp,
+                        satstype = satstype(periode),
+                        utbetalesTil = korrigert.personident.ident,
+                        behandlingId = korrigert.behandlingId.id,
+                    )
+                },
+        )
     }
 
-    override fun opphør(ref: UUID, fom: LocalDate): UtbetalingsoppdragDto {
+    override fun stop(
+        id: UtbetalingId,
+        fom: LocalDate,
+        tom: LocalDate?,
+        fagsystem: FagsystemDto
+    ): UtbetalingsoppdragDto {
         TODO()
     }
 }
 
-private fun Utbetaling.sistePeriode() = perioder.maxBy { it.tom }
+internal fun Utbetaling.sistePeriode() = perioder.maxBy { it.tom }
+internal fun Utbetaling.førstePeriode() = perioder.minBy { it.fom }
 
 internal object DatabaseFake {
     private val utbetalinger = mutableMapOf<UtbetalingId, Utbetaling>()
 
-    operator fun get(id: UtbetalingId): Utbetaling? {
+    fun findOrNull(id: UtbetalingId): Utbetaling? {
         return utbetalinger[id]
     }
 
-    operator fun set(id: UtbetalingId, utbetaling: Utbetaling) {
+    fun save(utbetaling: Utbetaling): UtbetalingId {
+        val id = UtbetalingId(UUID.randomUUID())
         utbetalinger[id] = utbetaling
+        return id
     }
 
     fun truncate() = utbetalinger.clear()
