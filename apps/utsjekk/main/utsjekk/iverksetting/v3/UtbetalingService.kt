@@ -188,6 +188,8 @@ object UtbetalingsoppdragService : UtbetalingService {
         )
     }
 
+    // TODO: Endring hvis man f.eks gjenbruker både sak og behandlingId.
+    //  Kan brukes til å lege til fler stønader i samme behandling
     private fun endring(
         utbetaling: Utbetaling,
         refPeriode: Utbetalingsperiode,
@@ -217,8 +219,8 @@ internal object DatabaseFake {
 }
 
 private fun satstype(periode: Utbetalingsperiode): Satstype = when {
-    periode.fom.dayOfMonth == 1 && periode.tom.plusDays(1) == periode.fom.plusMonths(1) -> Satstype.MÅNEDLIG
-    periode.fom == periode.tom -> Satstype.DAGLIG
+    periode.fom.dayOfMonth == 1 && periode.tom.plusDays(1) == periode.fom.plusMonths(1) -> Satstype.MND
+    periode.fom == periode.tom -> Satstype.DAG
     else -> Satstype.ENGANGS
 }
 

@@ -25,7 +25,9 @@ data class UtbetalingsoppdragDto(
     val utbetalingsperiode: List<UtbetalingsperiodeDto>,
     val avstemmingstidspunkt: LocalDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
     val brukersNavKontor: String? = null,
-)
+) {
+    companion object
+}
 
 data class UtbetalingsperiodeDto(
     val erEndringPåEksisterendePeriode: Boolean,
@@ -40,7 +42,9 @@ data class UtbetalingsperiodeDto(
     val behandlingId: String,
     val opphør: Opphør? = null,
     val forrigeId: UUID? = null,
-)
+) {
+    companion object
+}
 
 data class Opphør(val fom: LocalDate)
-enum class Satstype { DAGLIG, MÅNEDLIG, ENGANGS }
+enum class Satstype { DAG, VIRKEDAG, MND, ENGANGS }

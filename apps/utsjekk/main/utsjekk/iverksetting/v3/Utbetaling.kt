@@ -31,7 +31,9 @@ data class Utbetaling(
     val beslutterId: Navident,
     val perioder: List<Utbetalingsperiode>,
     val ref: UtbetalingId? = null
-)
+) {
+    companion object
+}
 
 @JvmInline
 value class NavEnhet(val enhet: String)
@@ -53,7 +55,9 @@ data class Utbetalingsperiode(
      * Navnet på feltet er ikke bestemt enda.
      */
     val fastsattDagsats: UInt? = null,
-)
+) {
+    companion object
+}
 
 sealed interface Stønadstype {
     companion object {
