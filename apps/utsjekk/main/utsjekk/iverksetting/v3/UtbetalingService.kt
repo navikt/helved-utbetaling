@@ -12,39 +12,41 @@ interface UtbetalingService {
      *  - nytt oppdrag
      *  - kjede med et tidligere oppdrag (f.eks. forlenge)
      */
-    fun create(ny: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto
+    fun create(utbetaling: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto
 
     /**
      * Erstatt et utbetalingsoppdrag.
      *  - endre beløp på et oppdrag
-     *  - endre periode på et oppdrag (f.eks. forkorte)
-     */
-    fun replace(id: UtbetalingId, korrigert: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto
-
-    /**
-     * Opphør et utbetalingsoppdrag.
-     *  - opphør mellom to datoer
+     *  - endre periode på et oppdrag (f.eks. forkorte siste periode)
      *  - opphør fra og med en dato
      */
-    fun stop(id: UtbetalingId, fom: LocalDate, tom: LocalDate?, fagsystem: FagsystemDto): UtbetalingsoppdragDto
+    fun update(id: UtbetalingId, utbetaling: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto
+
+    fun read(id: UtbetalingId): UtbetalingsoppdragDto = TODO("not implemented")
+
+    /**
+     * Slett en utbetalingsperiode.
+     *  - opphør hele perioden
+     */
+    fun delete(id: UtbetalingId): Unit = TODO("not implemented")
 }
 
 object UtbetalingsoppdragService : UtbetalingService {
-    override fun create(ny: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto {
-        val forrigeUtbetaling = ny.ref?.let { ref ->
+    override fun create(utbetaling: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto {
+        val forrigeUtbetaling = utbetaling.ref?.let { ref ->
             DatabaseFake.findOrNull(ref) ?: notFound("utbetaling with ref $ref")
         }
 
         return UtbetalingsoppdragDto(
-            erFørsteUtbetalingPåSak = ny.ref == null,
+            erFørsteUtbetalingPåSak = utbetaling.ref == null,
             fagsystem = fagsystem,
-            saksnummer = ny.sakId.id,
-            aktør = ny.personident.ident,
-            saksbehandlerId = ny.saksbehandlerId.ident,
-            beslutterId = ny.beslutterId.ident,
+            saksnummer = utbetaling.sakId.id,
+            aktør = utbetaling.personident.ident,
+            saksbehandlerId = utbetaling.saksbehandlerId.ident,
+            beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-            brukersNavKontor = ny.perioder.first().brukersNavKontor?.enhet,
-            utbetalingsperiode = ny.perioder
+            brukersNavKontor = utbetaling.perioder.last().brukersNavKontor?.enhet,
+            utbetalingsperiode = utbetaling.perioder
                 .sortedBy { it.fom }
                 .fold(listOf()) { acc, periode ->
                     acc + UtbetalingsperiodeDto(
@@ -52,56 +54,143 @@ object UtbetalingsoppdragService : UtbetalingService {
                         opphør = null,
                         id = periode.id,
                         forrigeId = acc.lastOrNull()?.id ?: forrigeUtbetaling?.sistePeriode()?.id,
-                        vedtaksdato = ny.vedtakstidspunkt.toLocalDate(),
+                        vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                         klassekode = klassekode(periode.stønad),
                         fom = periode.fom,
                         tom = periode.tom,
                         sats = periode.beløp,
                         satstype = satstype(periode),
-                        utbetalesTil = ny.personident.ident,
-                        behandlingId = ny.behandlingId.id,
+                        utbetalesTil = utbetaling.personident.ident,
+                        behandlingId = utbetaling.behandlingId.id,
                     )
                 },
         )
     }
 
-    // TODO: valider at korrigerte perioder har fått nye IDer
-    override fun replace(id: UtbetalingId, korrigert: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto {
+    // TODO: valider at utbetalingsperioder sine IDer er ivaretatt
+    // TODO: kan opphør skje med en MÅNEDSSATS midt i perioden?
+    // TODO: kan opphør skje med en ENGANGSSATS midt i perioden?
+    // TODO: ha med opphørsdato gjør kanskje dette enklere
+    override fun update(id: UtbetalingId, utbetaling: Utbetaling, fagsystem: FagsystemDto): UtbetalingsoppdragDto {
         val forrigeUtbetaling = DatabaseFake.findOrNull(id) ?: notFound("utbetaling with id $id")
+
+        fun Utbetaling.isMissing(periode: Utbetalingsperiode): Boolean {
+            return this.perioder.map { it.fom to it.tom }.contains(periode.fom to periode.tom).not()
+        }
+
+        fun Utbetaling.hasAll(perioder: List<Utbetalingsperiode>): Boolean {
+            return this.perioder.map { it.fom to it.tom }.containsAll(perioder.map { it.fom to it.tom })
+        }
+
+        fun opphørsdato(): LocalDate {
+            return forrigeUtbetaling.perioder
+                .first { fu -> fu.fom !in utbetaling.perioder.map { u -> u.fom } }
+                .fom
+        }
+
+        return if (utbetaling.isMissing(forrigeUtbetaling.førstePeriode())) {
+            opphør(
+                opphør = opphørsdato(),
+                utbetaling = utbetaling,
+                forrigeUtbetaling = forrigeUtbetaling,
+                fagsystem = fagsystem
+            )
+        } else if (utbetaling.hasAll(forrigeUtbetaling.perioder)) {
+            korriger(utbetaling, forrigeUtbetaling.førstePeriode(), fagsystem)
+        } else {
+            endring(utbetaling, forrigeUtbetaling.sistePeriode(), fagsystem)
+        }
+    }
+
+    private fun opphør(
+        opphør: LocalDate,
+        utbetaling: Utbetaling,
+        forrigeUtbetaling: Utbetaling,
+        fagsystem: FagsystemDto,
+    ): UtbetalingsoppdragDto {
+        val forrigePeriode = forrigeUtbetaling.sistePeriode()
+        val opphørsmelding = UtbetalingsperiodeDto(
+            erEndringPåEksisterendePeriode = false, // TODO
+            opphør = Opphør(opphør),
+            id = UUID.randomUUID(),
+            forrigeId = forrigePeriode.id,
+            vedtaksdato = forrigeUtbetaling.vedtakstidspunkt.toLocalDate(),
+            klassekode = klassekode(forrigePeriode.stønad),
+            fom = forrigePeriode.fom,
+            tom = forrigePeriode.tom,
+            sats = forrigePeriode.beløp,
+            satstype = satstype(forrigePeriode),
+            utbetalesTil = forrigeUtbetaling.personident.ident,
+            behandlingId = forrigeUtbetaling.behandlingId.id,
+        )
         return UtbetalingsoppdragDto(
-            erFørsteUtbetalingPåSak = korrigert.ref == null,
+            erFørsteUtbetalingPåSak = utbetaling.ref == null,
             fagsystem = fagsystem,
-            saksnummer = korrigert.sakId.id,
-            aktør = korrigert.personident.ident,
-            saksbehandlerId = korrigert.saksbehandlerId.ident,
-            beslutterId = korrigert.beslutterId.ident,
+            saksnummer = utbetaling.sakId.id,
+            aktør = utbetaling.personident.ident,
+            saksbehandlerId = utbetaling.saksbehandlerId.ident,
+            beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-            brukersNavKontor = korrigert.perioder.first().brukersNavKontor?.enhet,
-            utbetalingsperiode = korrigert.perioder
+            brukersNavKontor = utbetaling.perioder.last().brukersNavKontor?.enhet,
+            utbetalingsperiode = utbetaling.perioder
+                .sortedBy { it.fom }
+                .fold(listOf(opphørsmelding)) { acc, periode ->
+                    acc + UtbetalingsperiodeDto(
+                        erEndringPåEksisterendePeriode = false, // TODO
+                        opphør = null,
+                        id = UUID.randomUUID(),
+                        forrigeId = acc.lastOrNull()?.id,
+                        vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
+                        klassekode = klassekode(periode.stønad),
+                        fom = periode.fom,
+                        tom = periode.tom,
+                        sats = periode.beløp,
+                        satstype = satstype(periode),
+                        utbetalesTil = utbetaling.personident.ident,
+                        behandlingId = utbetaling.behandlingId.id,
+                    )
+                },
+        )
+    }
+
+    private fun korriger(
+        utbetaling: Utbetaling,
+        refPeriode: Utbetalingsperiode,
+        fagsystem: FagsystemDto
+    ): UtbetalingsoppdragDto {
+        return UtbetalingsoppdragDto(
+            erFørsteUtbetalingPåSak = utbetaling.ref == null,
+            fagsystem = fagsystem,
+            saksnummer = utbetaling.sakId.id,
+            aktør = utbetaling.personident.ident,
+            saksbehandlerId = utbetaling.saksbehandlerId.ident,
+            beslutterId = utbetaling.beslutterId.ident,
+            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
+            brukersNavKontor = utbetaling.perioder.last().brukersNavKontor?.enhet,
+            utbetalingsperiode = utbetaling.perioder
                 .sortedBy { it.fom }
                 .fold(listOf()) { acc, periode ->
                     acc + UtbetalingsperiodeDto(
-                        erEndringPåEksisterendePeriode = false,
+                        erEndringPåEksisterendePeriode = false, // TODO
                         opphør = null,
-                        id = periode.id,
-                        forrigeId = acc.lastOrNull()?.id ?: forrigeUtbetaling.førstePeriode().id,
-                        vedtaksdato = korrigert.vedtakstidspunkt.toLocalDate(),
+                        id = UUID.randomUUID(),
+                        forrigeId = acc.lastOrNull()?.id ?: refPeriode.id,
+                        vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                         klassekode = klassekode(periode.stønad),
                         fom = periode.fom,
                         tom = periode.tom,
                         sats = periode.beløp,
                         satstype = satstype(periode),
-                        utbetalesTil = korrigert.personident.ident,
-                        behandlingId = korrigert.behandlingId.id,
+                        utbetalesTil = utbetaling.personident.ident,
+                        behandlingId = utbetaling.behandlingId.id,
                     )
                 },
         )
     }
 
-    override fun stop(
-        id: UtbetalingId,
-        fom: LocalDate,
-        tom: LocalDate?,
+    private fun endring(
+        utbetaling: Utbetaling,
+        refPeriode: Utbetalingsperiode,
         fagsystem: FagsystemDto
     ): UtbetalingsoppdragDto {
         TODO()
