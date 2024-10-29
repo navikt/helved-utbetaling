@@ -1,7 +1,6 @@
 package utsjekk.iverksetting
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -9,6 +8,7 @@ import io.ktor.server.util.*
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
 import utsjekk.ApiError.Companion.badRequest
 import utsjekk.ApiError.Companion.notFound
+import utsjekk.appLog
 import utsjekk.client
 
 fun Route.iverksetting(service: Iverksettinger) {
@@ -19,6 +19,8 @@ fun Route.iverksetting(service: Iverksettinger) {
             } catch (ex: Exception) {
                 badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter")
             }
+
+            appLog.info("Behandler sakId ${dto.sakId} behandlingId ${dto.behandlingId}")
 
             dto.validate()
 
