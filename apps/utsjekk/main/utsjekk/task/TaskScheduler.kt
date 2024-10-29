@@ -44,7 +44,7 @@ class TaskScheduler(
                     it.scheduledFor = SelectTime(Operator.LE, LocalDateTime.now())
                 }.also {
                     metrics.counter("scheduler_feed_size", meterTags).increment(it.size.toDouble())
-                    appLog.info("Feeding scheduler with ${it.size} tasks")
+                    appLog.debug("Feeding scheduler with ${it.size} tasks")
                 }
             }
         }
