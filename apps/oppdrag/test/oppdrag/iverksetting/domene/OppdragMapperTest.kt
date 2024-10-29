@@ -81,7 +81,7 @@ class OppdragMapperTest {
                 fom = LocalDate.now(),
                 tom = LocalDate.now().plusDays(6),
                 beløp = 1354,
-                satstype = Satstype.DAGLIG,
+                satstype = Satstype.DAGLIG_INKL_HELG,
             )
         val utbetalingsoppdrag =
             etUtbetalingsoppdrag(

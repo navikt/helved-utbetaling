@@ -108,6 +108,7 @@ fun Fagsystem.into() = when (this) {
 
 fun Satstype.into() = when (this) {
     Satstype.DAGLIG -> client.Satstype.DAG
+    Satstype.DAGLIG_INKL_HELG -> client.Satstype.DAG7
     Satstype.MÅNEDLIG -> client.Satstype.MND
     Satstype.ENGANGS -> client.Satstype.ENG
 }
