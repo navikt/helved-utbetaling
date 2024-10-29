@@ -30,6 +30,7 @@ object rest {
 
     enum class SatsType(@get:JsonValue val verdi: String) {
         DAG("DAG"),
+        DAG_INKL_HELG("DAG7"),
         MÅNED("MND"),
         ENGANGS("ENG"),
     }

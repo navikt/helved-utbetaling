@@ -112,6 +112,7 @@ object soap {
      */
     enum class SatsType {
         DAG,
+        DAG7,
         UKE,
         `14DB`,
         MND,
