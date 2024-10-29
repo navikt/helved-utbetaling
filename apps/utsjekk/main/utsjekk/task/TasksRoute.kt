@@ -74,7 +74,7 @@ fun Route.tasks() {
 
             withContext(Jdbc.context) {
                 Tasks.update(id, libs.task.Status.valueOf(payload.status.name), payload.message) {
-                    Kind.valueOf(kind.name).retryStrategy(it)
+                    LocalDateTime.now()
                 }
                 call.respond(HttpStatusCode.OK)
             }
