@@ -2,6 +2,9 @@
 
 # utsjekk-oppdrag
 
+## OpenAPI 3.0
+[openapi.yaml](dokumentasjon/openapi.yml)
+
 ## DEVS
 
 ### Reusable testcontainers

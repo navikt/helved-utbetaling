@@ -1,0 +1,440 @@
+openapi: 3.0.1
+info:
+  version: "1"
+  title: API for iverksetting av vedtak
+servers:
+  - url: https://utsjekk.intern.nav.no
+    description: Generated server url
+security:
+  - Bearer:
+      - read
+      - write
+paths:
+  "/api/simulering/v2":
+    post:
+      tags:
+        - Simulering
+      summary: Simulering av utbetaling
+      description: Simulerer iverksetting
+      operationId: hentSimulering
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SimuleringRequestV2Dto"
+        required: true
+      responses:
+        '200':
+          description: simulering utfort ok
+          content:
+            application/json:
+              schema:
+                type: object
+        '204':
+          description: ingen endring i utbetaling paa saken, simulering utfores ikke
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: ugyldig format paa simulering
+          content:
+            application/json:
+              schema:
+                type: object
+        '409':
+          description: simuleringen er i konflikt med tidligere utbetalinger
+          content:
+            application/json:
+              schema:
+                type: object
+        '503':
+          description: OS/UR er midlertidig stengt
+          content:
+            application/json:
+              schema:
+                type: object
+  "/api/iverksetting/v2":
+    post:
+      tags:
+        - Iverksetting
+      summary: Start iverksetting av vedtak
+      description: Iverksetter utbetaling.
+      operationId: iverksett
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/IverksettV2Dto"
+        required: true
+      responses:
+        '202':
+          description: iverksetting er mottatt
+        '400':
+          description: ugyldig format paa iverksetting
+        '403':
+          description: ikke autorisert til aa starte iverksetting
+        '409':
+          description: iverksetting er i konflikt med tidligere iverksetting
+  "/api/iverksetting/{sakId}/{behandlingId}/{iverksettingId}/status":
+    get:
+      tags:
+        - Iverksetting
+      summary: Sjekk status paa iverksetting med gitt behandlingId og iverksettingId
+      operationId: hentStatus
+      parameters:
+        - name: sakId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: behandlingId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: iverksettingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status returnert i body
+          content:
+            application/json:
+              schema:
+                type: string
+                enum:
+                  - SENDT_TIL_OPPDRAG
+                  - FEILET_MOT_OPPDRAG
+                  - OK
+                  - IKKE_PaaBEGYNT
+                  - OK_UTEN_UTBETALING
+        '404':
+          description: Kunne ikke finne iverksetting
+          content:
+            application/json:
+              schema:
+                type: string
+                enum:
+                  - SENDT_TIL_OPPDRAG
+                  - FEILET_MOT_OPPDRAG
+                  - OK
+                  - IKKE_PaaBEGYNT
+                  - OK_UTEN_UTBETALING
+  "/api/iverksetting/{sakId}/{behandlingId}/status":
+    get:
+      tags:
+        - Iverksetting
+      summary: Sjekk status paa iverksetting med gitt behandlingId
+      operationId: hentStatus_1
+      parameters:
+        - name: sakId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: behandlingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status returnert i body
+          content:
+            application/json:
+              schema:
+                type: string
+                enum:
+                  - SENDT_TIL_OPPDRAG
+                  - FEILET_MOT_OPPDRAG
+                  - OK
+                  - IKKE_PaaBEGYNT
+                  - OK_UTEN_UTBETALING
+        '404':
+          description: Kunne ikke finne iverksetting
+          content:
+            application/json:
+              schema:
+                type: string
+                enum:
+                  - SENDT_TIL_OPPDRAG
+                  - FEILET_MOT_OPPDRAG
+                  - OK
+                  - IKKE_PaaBEGYNT
+                  - OK_UTEN_UTBETALING
+components:
+  schemas:
+    ForrigeIverksettingV2Dto:
+      required:
+        - behandlingId
+      type: object
+      properties:
+        behandlingId:
+          maxLength: 30
+          minLength: 1
+          type: string
+          description: Paa grunn av tekniske begrensninger hos OS/UR er det en lengdebegrensning
+            paa 30 tegn for behandlingId
+        iverksettingId:
+          type: string
+    JsonNode:
+      type: object
+    SimuleringRequestV2Dto:
+      required:
+        - behandlingId
+        - personident
+        - sakId
+        - saksbehandlerId
+        - utbetalinger
+      type: object
+      properties:
+        sakId:
+          type: string
+        behandlingId:
+          type: string
+        personident:
+          type: string
+          description: Fodselsnummer eller D-nummer
+          example: '15507600333'
+        saksbehandlerId:
+          type: string
+        utbetalinger:
+          type: array
+          items:
+            "$ref": "#/components/schemas/UtbetalingV2Dto"
+        forrigeIverksetting:
+          "$ref": "#/components/schemas/ForrigeIverksettingV2Dto"
+    StonadType:
+      type: object
+      properties:
+        json:
+          type: string
+          writeOnly: true
+    StonadTypeDagpenger:
+      type: string
+      allOf:
+        - "$ref": "#/components/schemas/StonadType"
+      enum:
+        - DAGPENGER_ARBEIDSSoKER_ORDINaeR
+        - DAGPENGER_PERMITTERING_ORDINaeR
+        - DAGPENGER_PERMITTERING_FISKEINDUSTRI
+        - DAGPENGER_EoS
+    StonadTypeTilleggsstonader:
+      type: string
+      allOf:
+        - "$ref": "#/components/schemas/StonadType"
+      enum:
+        - TILSYN_BARN_ENSLIG_FORSoRGER
+        - TILSYN_BARN_AAP
+        - TILSYN_BARN_ETTERLATTE
+        - LaeREMIDLER_ENSLIG_FORSoRGER
+        - LaeREMIDLER_AAP
+        - LaeREMIDLER_ETTERLATTE
+    StonadTypeTiltakspenger:
+      type: string
+      allOf:
+        - "$ref": "#/components/schemas/StonadType"
+      enum:
+        - ARBEIDSFORBEREDENDE_TRENING
+        - ARBEIDSRETTET_REHABILITERING
+        - ARBEIDSTRENING
+        - AVKLARING
+        - DIGITAL_JOBBKLUBB
+        - ENKELTPLASS_AMO
+        - ENKELTPLASS_VGS_OG_HoYERE_YRKESFAG
+        - FORSoK_OPPLaeRING_LENGRE_VARIGHET
+        - GRUPPE_AMO
+        - GRUPPE_VGS_OG_HoYERE_YRKESFAG
+        - HoYERE_UTDANNING
+        - INDIVIDUELL_JOBBSToTTE
+        - INDIVIDUELL_KARRIERESToTTE_UNG
+        - JOBBKLUBB
+        - OPPFoLGING
+        - UTVIDET_OPPFoLGING_I_NAV
+        - UTVIDET_OPPFoLGING_I_OPPLaeRING
+    StonadsdataDagpengerDto:
+      required:
+        - meldekortId
+        - stonadstype
+      type: object
+      allOf:
+        - "$ref": "#/components/schemas/StonadsdataDto"
+        - type: object
+          properties:
+            stonadstype:
+              type: string
+              enum:
+                - DAGPENGER_ARBEIDSSoKER_ORDINaeR
+                - DAGPENGER_PERMITTERING_ORDINaeR
+                - DAGPENGER_PERMITTERING_FISKEINDUSTRI
+                - DAGPENGER_EoS
+            ferietillegg:
+              type: string
+              enum:
+                - ORDINaeR
+                - AVDoD
+            meldekortId:
+              type: string
+    StonadsdataDto:
+      required:
+        - stonadstype
+      type: object
+      properties:
+        json:
+          "$ref": "#/components/schemas/JsonNode"
+        stonadstype:
+          oneOf:
+            - "$ref": "#/components/schemas/StonadTypeDagpenger"
+            - "$ref": "#/components/schemas/StonadTypeTilleggsstonader"
+            - "$ref": "#/components/schemas/StonadTypeTiltakspenger"
+    StonadsdataTilleggsstonaderDto:
+      required:
+        - stonadstype
+      type: object
+      allOf:
+        - "$ref": "#/components/schemas/StonadsdataDto"
+        - type: object
+          properties:
+            stonadstype:
+              type: string
+              enum:
+                - TILSYN_BARN_ENSLIG_FORSoRGER
+                - TILSYN_BARN_AAP
+                - TILSYN_BARN_ETTERLATTE
+                - LaeREMIDLER_ENSLIG_FORSoRGER
+                - LaeREMIDLER_AAP
+                - LaeREMIDLER_ETTERLATTE
+            brukersNavKontor:
+              type: string
+    StonadsdataTiltakspengerV2Dto:
+      required:
+        - barnetillegg
+        - brukersNavKontor
+        - meldekortId
+        - stonadstype
+      type: object
+      allOf:
+        - "$ref": "#/components/schemas/StonadsdataDto"
+        - type: object
+          properties:
+            stonadstype:
+              type: string
+              enum:
+                - ARBEIDSFORBEREDENDE_TRENING
+                - ARBEIDSRETTET_REHABILITERING
+                - ARBEIDSTRENING
+                - AVKLARING
+                - DIGITAL_JOBBKLUBB
+                - ENKELTPLASS_AMO
+                - ENKELTPLASS_VGS_OG_HoYERE_YRKESFAG
+                - FORSoK_OPPLaeRING_LENGRE_VARIGHET
+                - GRUPPE_AMO
+                - GRUPPE_VGS_OG_HoYERE_YRKESFAG
+                - HoYERE_UTDANNING
+                - INDIVIDUELL_JOBBSToTTE
+                - INDIVIDUELL_KARRIERESToTTE_UNG
+                - JOBBKLUBB
+                - OPPFoLGING
+                - UTVIDET_OPPFoLGING_I_NAV
+                - UTVIDET_OPPFoLGING_I_OPPLaeRING
+            barnetillegg:
+              type: boolean
+            brukersNavKontor:
+              type: string
+            meldekortId:
+              type: string
+    UtbetalingV2Dto:
+      required:
+        - belop
+        - fraOgMedDato
+        - satstype
+        - stonadsdata
+        - tilOgMedDato
+      type: object
+      properties:
+        belop:
+          type: integer
+          format: int32
+        satstype:
+          type: string
+          enum:
+            - DAGLIG
+            - MaaNEDLIG
+            - ENGANGS
+        fraOgMedDato:
+          type: string
+          format: date
+        tilOgMedDato:
+          type: string
+          format: date
+        stonadsdata:
+          oneOf:
+            - "$ref": "#/components/schemas/StonadsdataDagpengerDto"
+            - "$ref": "#/components/schemas/StonadsdataTilleggsstonaderDto"
+            - "$ref": "#/components/schemas/StonadsdataTiltakspengerV2Dto"
+    IverksettV2Dto:
+      required:
+        - behandlingId
+        - personident
+        - sakId
+        - vedtak
+      type: object
+      properties:
+        sakId:
+          maxLength: 25
+          minLength: 1
+          type: string
+          description: Paa grunn av tekniske begrensninger hos OS/UR er det en lengdebegrensning
+            paa 25 tegn for sakId
+        behandlingId:
+          maxLength: 30
+          minLength: 1
+          type: string
+          description: Paa grunn av tekniske begrensninger hos OS/UR er det en lengdebegrensning
+            paa 30 tegn for behandlingId
+        iverksettingId:
+          type: string
+        personident:
+          type: string
+          description: Fodselsnummer eller D-nummer
+          example: '15507600333'
+        vedtak:
+          "$ref": "#/components/schemas/VedtaksdetaljerV2Dto"
+        forrigeIverksetting:
+          "$ref": "#/components/schemas/ForrigeIverksettingV2Dto"
+    VedtaksdetaljerV2Dto:
+      required:
+        - beslutterId
+        - saksbehandlerId
+        - utbetalinger
+        - vedtakstidspunkt
+      type: object
+      properties:
+        vedtakstidspunkt:
+          type: string
+          format: date-time
+        saksbehandlerId:
+          pattern: "^[A-Z]\\d{6}$"
+          type: string
+          description: NAV-ident til saksbehandler, eller servicebruker til applikasjon
+            dersom vedtaket er fattet fullautomatisk
+          example: Z123456
+        beslutterId:
+          pattern: "^[A-Z]\\d{6}$"
+          type: string
+          description: NAV-ident til beslutter, eller servicebruker til applikasjon
+            dersom vedtaket er fattet fullautomatisk
+          example: Z123456
+        utbetalinger:
+          type: array
+          items:
+            "$ref": "#/components/schemas/UtbetalingV2Dto"
+      description: Maa vaere satt for utbetalingsvedtak
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      name: Authorization
+      in: header
