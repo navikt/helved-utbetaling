@@ -11,8 +11,8 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.doublereceive.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -54,7 +54,7 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(Netty, port = 8080){
+    embeddedServer(Netty, port = 8080) {
         val config = Config()
         database(config.jdbc)
         server(config)
@@ -91,11 +91,18 @@ fun Application.server(
         }
     }
 
-    install(CallLogging) {
-        logger = secureLog
-        filter { call -> call.request.path().startsWith("/probes").not() }
-        format { call ->
-            "${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMillis()}ms"
+    install(DoubleReceive)
+
+    install(CallLog) {
+        exclude { call -> call.request.path().startsWith("/probes") }
+        log { call ->
+            appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms")
+            secureLog.info(
+                """
+                ${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms
+                ${call.bodyAsText()}
+                """.trimIndent()
+            )
         }
     }
 
