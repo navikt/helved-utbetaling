@@ -65,6 +65,7 @@ spec:
           permissions:
             roles:
               - "prosessering-admin"
+        - application: helved-performance
         - application: tiltakspenger-vedtak
           namespace: tpts
         - application: tilleggsstonader-sak
