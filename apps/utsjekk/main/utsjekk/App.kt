@@ -186,7 +186,7 @@ value class Client(
     fun toFagsystem(): Fagsystem =
         when (name) {
             "utsjekk", "helved-performance" -> Fagsystem.DAGPENGER
-            "tiltakspenger-vedtak" -> Fagsystem.TILTAKSPENGER
+            "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
             "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
             else -> error("mangler mapping mellom app ($name) og fagsystem")
         }
