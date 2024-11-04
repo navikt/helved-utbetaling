@@ -13,7 +13,7 @@ import java.net.URI
 
 object Azp {
     const val DAGPENGER = "test:helved:utsjekk"
-    const val TILTAKSPENGER = "test:helved:tiltakspenger-vedtak"
+    const val TILTAKSPENGER = "test:helved:tiltakspenger-saksbehandling-api"
     const val TILLEGGSSTØNADER = "test:helved:tilleggsstonader-sak"
 }
 
