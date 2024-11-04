@@ -196,7 +196,7 @@ class IverksettingTaskStrategy(
     }
 
     private fun List<AndelTilkjentYtelse>.finnBrukersNavKontor(): BrukersNavKontor? =
-        firstNotNullOfOrNull {
+        sortedByDescending { it.periode.fom }.firstNotNullOfOrNull {
             when (it.stønadsdata) {
                 is StønadsdataTilleggsstønader -> it.stønadsdata.brukersNavKontor
                 is StønadsdataTiltakspenger -> it.stønadsdata.brukersNavKontor

@@ -1,14 +1,18 @@
 package utsjekk.task.strategies
 
 import TestData
+import TestData.domain.enAndelTilkjentYtelse
+import TestData.domain.vedtaksdetaljer
 import TestRuntime
 import awaitDatabase
-import io.ktor.http.*
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks
+import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.StønadTypeTiltakspenger
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
@@ -17,6 +21,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.OppdragResultat
+import utsjekk.iverksetting.StønadsdataTiltakspenger
 import utsjekk.iverksetting.behandlingId
 import utsjekk.iverksetting.iverksettingId
 import utsjekk.iverksetting.resultat.IverksettingResultater
@@ -156,5 +161,45 @@ class IverksettingStrategyTest {
            IverksettingResultater.hent(iverksetting).oppdragResultat
         }
         assertEquals(OppdragStatus.OK_UTEN_UTBETALING, oppdragResultat?.oppdragStatus)
+    }
+
+    @Test
+    fun `med brukers NAV-kontor`() = runTest(TestRuntime.context) {
+        val førsteNavKontor = "4401"
+        val sisteNavKontor = "3220"
+        val iverksetting = TestData.domain.iverksetting(fagsystem = Fagsystem.TILTAKSPENGER).copy(
+            vedtak = vedtaksdetaljer(
+                andeler = listOf(
+                    enAndelTilkjentYtelse(
+                        fom = LocalDate.of(2024, 2, 1),
+                        tom = LocalDate.of(2024, 2, 28),
+                        stønadsdata = StønadsdataTiltakspenger(stønadstype = StønadTypeTiltakspenger.JOBBKLUBB, brukersNavKontor = BrukersNavKontor(førsteNavKontor), meldekortId = "M1")
+                    ),
+                    enAndelTilkjentYtelse(
+                        fom = LocalDate.of(2024, 4, 1),
+                        tom = LocalDate.of(2024, 4, 15),
+                        stønadsdata = StønadsdataTiltakspenger(stønadstype = StønadTypeTiltakspenger.JOBBKLUBB, brukersNavKontor = BrukersNavKontor(sisteNavKontor), meldekortId = "M1")
+                    )
+                )
+            )
+        )
+        IverksettingResultater.opprett(iverksetting, resultat = null)
+        val oppdragIdDto = TestData.dto.oppdragId(iverksetting)
+
+        TestRuntime.oppdrag.iverksettRespondWith(oppdragIdDto, HttpStatusCode.Created)
+        TestRuntime.kafka.expect(iverksetting.søker.personident)
+        Tasks.create(libs.task.Kind.Iverksetting, iverksetting, null, objectMapper::writeValueAsString)
+        val expectedRecord = StatusEndretMelding(
+            sakId = iverksetting.sakId.id,
+            behandlingId = iverksetting.behandlingId.id,
+            iverksettingId = iverksetting.iverksettingId?.id,
+            fagsystem = iverksetting.fagsak.fagsystem,
+            status = IverksettStatus.SENDT_TIL_OPPDRAG,
+        )
+        assertEquals(expectedRecord, TestRuntime.kafka.waitFor(iverksetting.søker.personident))
+
+        val resultat = IverksettingResultater.hent(iverksetting)
+        assertEquals(sisteNavKontor, resultat.tilkjentYtelseForUtbetaling?.utbetalingsoppdrag?.brukersNavKontor)
+
     }
 }
