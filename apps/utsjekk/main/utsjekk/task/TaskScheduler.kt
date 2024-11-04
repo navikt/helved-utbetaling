@@ -54,7 +54,7 @@ class TaskScheduler(
         withLock(fed.id.toString()) {
             strategies.single { it.isApplicable(fed) }.execute(fed)
         }
-        metrics.counter("scheduler_feed_result", meterTags + Tag.of("result", "ok"))
+        metrics.counter("scheduler_feed_result", meterTags + Tag.of("result", "ok")).increment()
     }
 
     override suspend fun onError(fed: TaskDao, err: Throwable) {
@@ -62,6 +62,6 @@ class TaskScheduler(
         Tasks.update(fed.id, FAIL, err.message) {
             Kind.valueOf(kind.name).retryStrategy(it)
         }
-        metrics.counter("scheduler_feed_result", meterTags + Tag.of("result", "error"))
+        metrics.counter("scheduler_feed_result", meterTags + Tag.of("result", "error")).increment()
     }
 }
