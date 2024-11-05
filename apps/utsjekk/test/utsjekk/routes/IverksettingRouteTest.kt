@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.BehandlingId
+import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.IverksettingId
 import utsjekk.iverksetting.SakId
 import utsjekk.iverksetting.behandlingId
@@ -228,6 +229,16 @@ class IverksettingRouteTest {
             }
 
             assertEquals(HttpStatusCode.Accepted, res.status)
+
+            awaitDatabase {
+                IverksettingDao.select {
+                    this.fagsystem = Fagsystem.TILLEGGSSTØNADER
+                    this.sakId = SakId(dto.sakId)
+                    this.behandlingId = BehandlingId(dto.behandlingId)
+                }.firstOrNull()
+            }.also {
+                requireNotNull(it) { "iverksetting not found i db" }
+            }
 
             awaitDatabase {
                 IverksettingResultatDao.select {
