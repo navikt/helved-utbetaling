@@ -137,7 +137,7 @@ fun Application.server(
         TaskScheduler(
             listOf(
                 IverksettingTaskStrategy(oppdrag, iverksettinger),
-                StatusTaskStrategy(oppdrag),
+                StatusTaskStrategy(oppdrag, iverksettinger),
                 AvstemmingTaskStrategy(oppdrag).apply {
                     runBlocking {
                         withContext(Jdbc.context) {
