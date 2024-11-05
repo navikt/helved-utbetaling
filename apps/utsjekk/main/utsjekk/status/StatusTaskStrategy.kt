@@ -14,12 +14,22 @@ import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.task.Kind
 import utsjekk.task.TaskStrategy
 
-class StatusTaskStrategy(private val oppdragClient: Oppdrag) : TaskStrategy {
+class StatusTaskStrategy(
+    private val oppdragClient: Oppdrag,
+    private val service: Iverksettinger
+) : TaskStrategy {
     override suspend fun isApplicable(task: TaskDao): Boolean = task.kind == libs.task.Kind.SjekkStatus
 
     override suspend fun execute(task: TaskDao) {
         val oppdragIdDto = objectMapper.readValue<OppdragIdDto>(task.payload)
         val status = oppdragClient.hentStatus(oppdragIdDto)
+        val iverksetting = IverksettingDao.select {
+            this.fagsystem = oppdragIdDto.fagsystem
+            this.sakId = SakId(oppdragIdDto.sakId)
+            this.behandlingId = BehandlingId(oppdragIdDto.behandlingId)
+            this.iverksettingId = oppdragIdDto.iverksettingId?.let { IverksettingId(it) }
+        }.firstOrNull()
+        requireNotNull(iverksetting) { "Fant ikke iverksetting for oppdragId $oppdragIdDto i Status-task" }
 
         when (status.status) {
             OppdragStatus.KVITTERT_OK -> {
@@ -27,6 +37,7 @@ class StatusTaskStrategy(private val oppdragClient: Oppdrag) : TaskStrategy {
                 Tasks.update(task.id, libs.task.Status.COMPLETE, "") {
                     Kind.valueOf(kind.name).retryStrategy(it)
                 }
+                service.publiserStatusmelding(iverksetting.data)
             }
 
             OppdragStatus.KVITTERT_MED_MANGLER, OppdragStatus.KVITTERT_TEKNISK_FEIL, OppdragStatus.KVITTERT_FUNKSJONELL_FEIL -> {
@@ -36,6 +47,7 @@ class StatusTaskStrategy(private val oppdragClient: Oppdrag) : TaskStrategy {
                 Tasks.update(task.id, libs.task.Status.MANUAL, status.feilmelding) {
                     Kind.valueOf(kind.name).retryStrategy(it)
                 }
+                service.publiserStatusmelding(iverksetting.data)
             }
 
             OppdragStatus.KVITTERT_UKJENT -> {
