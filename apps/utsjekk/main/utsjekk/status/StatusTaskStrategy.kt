@@ -1,6 +1,7 @@
 package utsjekk.status
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks
 import libs.utils.secureLog
@@ -23,12 +24,16 @@ class StatusTaskStrategy(
     override suspend fun execute(task: TaskDao) {
         val oppdragIdDto = objectMapper.readValue<OppdragIdDto>(task.payload)
         val status = oppdragClient.hentStatus(oppdragIdDto)
-        val iverksetting = IverksettingDao.select {
-            this.fagsystem = oppdragIdDto.fagsystem
-            this.sakId = SakId(oppdragIdDto.sakId)
-            this.behandlingId = BehandlingId(oppdragIdDto.behandlingId)
-            this.iverksettingId = oppdragIdDto.iverksettingId?.let { IverksettingId(it) }
-        }.firstOrNull()
+
+        val iverksetting = transaction {
+            IverksettingDao.select {
+                this.fagsystem = oppdragIdDto.fagsystem
+                this.sakId = SakId(oppdragIdDto.sakId)
+                this.behandlingId = BehandlingId(oppdragIdDto.behandlingId)
+                this.iverksettingId = oppdragIdDto.iverksettingId?.let { IverksettingId(it) }
+            }.firstOrNull()
+        }
+
         requireNotNull(iverksetting) { "Fant ikke iverksetting for oppdragId $oppdragIdDto i Status-task" }
 
         when (status.status) {
