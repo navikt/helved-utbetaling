@@ -6,6 +6,7 @@ import utsjekk.iverksetting.IverksettingTaskStrategy
 import utsjekk.status.StatusTaskStrategy
 import java.time.LocalDateTime
 import java.util.*
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
@@ -26,6 +27,9 @@ data class TaskDto(
     val metadata: Map<String, String> = emptyMap(),
 ) {
     companion object {
+        private const val MINUTES_PER_DAY: Long = 24 * 60
+        private const val SECONDS_PER_DAY: Long = MINUTES_PER_DAY * 60
+
         fun from(task: TaskDao) =
             TaskDto(
                 id = task.id,
@@ -41,15 +45,13 @@ data class TaskDto(
             )
 
         val exponentialSec: RetryStrategy =
-            { attemptNumber -> LocalDateTime.now().plusSeconds(2.0.pow(attemptNumber).roundToLong() + 10) }
+            { attemptNumber -> LocalDateTime.now().plusSeconds(min(2.0.pow(attemptNumber).roundToLong() + 10, SECONDS_PER_DAY)) }
         val exponentialMin: RetryStrategy =
             { attemptNumber ->
-                if (attemptNumber <
-                    5
-                ) {
-                    LocalDateTime.now().plusSeconds(2)
+                if (attemptNumber < 5) {
+                    LocalDateTime.now().plusSeconds(10)
                 } else {
-                    LocalDateTime.now().plusMinutes(2.0.pow(attemptNumber).roundToLong() + 10)
+                    LocalDateTime.now().plusMinutes(min(2.0.pow(attemptNumber).roundToLong() + 10, MINUTES_PER_DAY))
                 }
             }
         val constant: RetryStrategy = { LocalDateTime.now().plusSeconds(30) }
