@@ -10,13 +10,18 @@ import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.objectMapper
+import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
+import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.IverksettingDao
+import utsjekk.iverksetting.behandlingId
+import utsjekk.iverksetting.iverksettingId
 import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.iverksetting.sakId
 import utsjekk.task.Status
 import java.time.LocalDateTime
 import java.util.UUID
@@ -47,7 +52,10 @@ class SjekkStatusStrategyTest {
         transaction {
             IverksettingDao(iverksetting, LocalDateTime.now()).insert()
         }
+
         TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
+        TestRuntime.kafka.expect(iverksetting.søker.personident)
+
         val taskId = Tasks.create(libs.task.Kind.SjekkStatus, oppdragId, null, objectMapper::writeValueAsString)
         createdTaskIds.add(taskId)
 
@@ -65,6 +73,16 @@ class SjekkStatusStrategyTest {
         assertEquals(Status.COMPLETE.name, task?.status?.name)
         val resultat = IverksettingResultater.hent(iverksetting)
         assertEquals(OppdragStatus.KVITTERT_OK, resultat.oppdragResultat?.oppdragStatus)
+
+        val expectedRecord = StatusEndretMelding(
+            sakId = iverksetting.sakId.id,
+            behandlingId = iverksetting.behandlingId.id,
+            iverksettingId = iverksetting.iverksettingId?.id,
+            fagsystem = iverksetting.fagsak.fagsystem,
+            status = IverksettStatus.OK,
+        )
+
+        assertEquals(expectedRecord, TestRuntime.kafka.waitFor(iverksetting.søker.personident))
     }
 
     @Test
@@ -76,7 +94,10 @@ class SjekkStatusStrategyTest {
         transaction {
             IverksettingDao(iverksetting, LocalDateTime.now()).insert()
         }
+
         TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
+        TestRuntime.kafka.expect(iverksetting.søker.personident)
+
         val taskId = Tasks.create(libs.task.Kind.SjekkStatus, oppdragId, null, objectMapper::writeValueAsString)
         createdTaskIds.add(taskId)
 
@@ -94,6 +115,16 @@ class SjekkStatusStrategyTest {
         assertEquals(Status.MANUAL.name, task?.status?.name)
         val resultat = IverksettingResultater.hent(iverksetting)
         assertEquals(OppdragStatus.KVITTERT_MED_MANGLER, resultat.oppdragResultat?.oppdragStatus)
+
+        val expectedRecord = StatusEndretMelding(
+            sakId = iverksetting.sakId.id,
+            behandlingId = iverksetting.behandlingId.id,
+            iverksettingId = iverksetting.iverksettingId?.id,
+            fagsystem = iverksetting.fagsak.fagsystem,
+            status = IverksettStatus.FEILET_MOT_OPPDRAG,
+        )
+
+        assertEquals(expectedRecord, TestRuntime.kafka.waitFor(iverksetting.søker.personident))
     }
 
     @Test
@@ -105,7 +136,9 @@ class SjekkStatusStrategyTest {
         transaction {
             IverksettingDao(iverksetting, LocalDateTime.now()).insert()
         }
+
         TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
+        TestRuntime.kafka.expect(iverksetting.søker.personident)
 
         val taskId = Tasks.create(libs.task.Kind.SjekkStatus, oppdragId, null, objectMapper::writeValueAsString)
         createdTaskIds.add(taskId)
@@ -124,6 +157,16 @@ class SjekkStatusStrategyTest {
         assertEquals(Status.MANUAL.name, task?.status?.name)
         val resultat = IverksettingResultater.hent(iverksetting)
         assertEquals(OppdragStatus.KVITTERT_TEKNISK_FEIL, resultat.oppdragResultat?.oppdragStatus)
+
+        val expectedRecord = StatusEndretMelding(
+            sakId = iverksetting.sakId.id,
+            behandlingId = iverksetting.behandlingId.id,
+            iverksettingId = iverksetting.iverksettingId?.id,
+            fagsystem = iverksetting.fagsak.fagsystem,
+            status = IverksettStatus.FEILET_MOT_OPPDRAG,
+        )
+
+        assertEquals(expectedRecord, TestRuntime.kafka.waitFor(iverksetting.søker.personident))
     }
 
     @Test
@@ -135,7 +178,10 @@ class SjekkStatusStrategyTest {
         transaction {
             IverksettingDao(iverksetting, LocalDateTime.now()).insert()
         }
+
         TestRuntime.oppdrag.statusRespondWith(oppdragId, oppdragStatus)
+        TestRuntime.kafka.expect(iverksetting.søker.personident)
+
         val taskId = Tasks.create(libs.task.Kind.SjekkStatus, oppdragId, null, objectMapper::writeValueAsString)
         createdTaskIds.add(taskId)
 
@@ -153,6 +199,16 @@ class SjekkStatusStrategyTest {
         assertEquals(Status.MANUAL.name, task?.status?.name)
         val resultat = IverksettingResultater.hent(iverksetting)
         assertEquals(OppdragStatus.KVITTERT_FUNKSJONELL_FEIL, resultat.oppdragResultat?.oppdragStatus)
+
+        val expectedRecord = StatusEndretMelding(
+            sakId = iverksetting.sakId.id,
+            behandlingId = iverksetting.behandlingId.id,
+            iverksettingId = iverksetting.iverksettingId?.id,
+            fagsystem = iverksetting.fagsak.fagsystem,
+            status = IverksettStatus.FEILET_MOT_OPPDRAG,
+        )
+
+        assertEquals(expectedRecord, TestRuntime.kafka.waitFor(iverksetting.søker.personident))
     }
 
     @Test
