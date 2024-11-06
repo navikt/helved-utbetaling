@@ -2,9 +2,9 @@
 
 # Utbetaling
 Utbetaling består av tre komponenter:
- - [utsjekk](apps/utsjekk/REAMDE.md)
- - [oppdrag](apps/oppdrag/REAMDE.md)
- - [simulering](apps/simulering/REAMDE.md)
+ - [utsjekk](apps/utsjekk/README.md)
+ - [oppdrag](apps/oppdrag/README.md)
+ - [simulering](apps/simulering/README.md)
 
 ## OpenAPI 3.0
 [openapi.yaml](dokumentasjon/openapi.yml)
