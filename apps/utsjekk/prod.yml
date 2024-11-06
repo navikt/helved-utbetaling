@@ -8,7 +8,7 @@ metadata:
 spec:
   image: {{ image }}
   ingresses:
-      - {{ ingress }}
+      - https://utsjekk.intern.nav.no
   liveness:
     path: /probes/health
     initialDelay: 30
@@ -38,25 +38,24 @@ spec:
     enabled: true
   leaderElection: true
   kafka:
-    pool: {{ kafka.pool }}
+    pool: nav-prod
   envFrom:
-    - secret: {{ unleash.apiToken }}
+    - secret: utsjekk-unleash-api-token
   env:
     - name: OPPDRAG_SCOPE
-      value: {{ oppdragscope }}
+      value: api://prod-gcp.helved.utsjekk-oppdrag/.default
     - name: SIMULERING_SCOPE
-      value: {{ simuleringscope }}
+      value: api://prod-gcp.helved.utsjekk-simulering/.default
   azure:
     application:
       enabled: true
       claims:
         groups:
-          - id: {{ groups.prosesseringAdmin }} # 0000-GA-Dagpenger-Prosessering-Admin gir tilgang til prosessering
-          - id: {{ groups.saksbehandlerDagpenger }} # 0000-GA-Dagpenger-Saksbehandler
-          - id: {{ groups.beslutterDagpenger }} # 0000-GA-Dagpenger-Beslutter
-          - id: {{ groups.saksbehandlerTiltakspenger }}
-          - id: {{ groups.beslutterTiltakspenger }}
-          - id: {{ groups.beslutterTilleggsstønader }}
+          - id: "2e9c63d8-322e-4c1f-b500-a0abb812761c" # 0000-GA-Dagpenger-Saksbehandler
+          - id: "70d54cad-53a3-4788-bbe3-565096f01da7" # 0000-GA-Dagpenger-Beslutter
+          - id: "6c6ce2e8-b2e2-4c4b-8194-215c8e27a5c7" # saksbehandler tiltakspenger
+          - id: "de518927-f657-4f37-9a64-14fdfd968dd2" # beslutter tiltakspenger
+          - id: "c1e9edec-0c10-4df2-8c74-324ab9922220" # beslutter tilleggsstønader
         extra:
           - NAVident
           - azp_name
@@ -64,16 +63,10 @@ spec:
     inbound:
       rules:
         - application: utsjekk-prosessering-test # Tester ny frontend for task-rammeverket
-        - application: helved-performance
         - application: tiltakspenger-saksbehandling-api
           namespace: tpts
         - application: tilleggsstonader-sak
           namespace: tilleggsstonader
-          # generer obo token: https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp.helved.utsjekk
-          #ref https://docs.nais.io/auth/entra-id/how-to/generate/?h=azure+token
-        - application: azure-token-generator
-          namespace: aura
-          cluster: dev-gcp
     outbound:
       rules:
         - application: utsjekk-oppdrag
@@ -82,15 +75,15 @@ spec:
         - host: helved-unleash-api.nav.cloud.nais.io
   gcp:
     sqlInstances:
-      - type: {{ db.version }} # IF This is changed, all data will be lost. Read on nais.io how to upgrade
+      - type: "POSTGRES_15" #WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade
         diskAutoresize: true
-        tier: {{ db.tier }}
+        tier: "db-custom-1-3840"
         cascadingDelete: false
-        highAvailability: {{ db.highAvailability }}
+        highAvailability: true
         pointInTimeRecovery: true
         maintenance:
           day: 7
           hour: 23
         databases:
-          - name: {{ db.name }}
+          - name: utsjekk
             envVarPrefix: DB
