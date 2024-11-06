@@ -69,9 +69,8 @@ jobs:
         env:
           PRINT_PAYLOAD: true
           CLUSTER: dev-gcp
-          RESOURCE: apps/${{ github.workflow }}/unleash-apitoken.yaml,apps/${{ github.workflow }}/nais.yaml
+          RESOURCE: apps/${{ github.workflow }}/unleash-dev.yml,apps/${{ github.workflow }}/dev.yml
           VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
-          VARS: apps/${{ github.workflow }}/vars-preprod.yaml
 
   deploy-prod:
     if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -93,6 +92,5 @@ jobs:
         env:
           PRINT_PAYLOAD: true
           CLUSTER: prod-gcp
-          RESOURCE: apps/${{ github.workflow }}/unleash-apitoken.yaml,apps/${{ github.workflow }}/nais.yaml
+          RESOURCE: apps/${{ github.workflow }}/unleash-prod.yml,apps/${{ github.workflow }}/prod.yml
           VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
-          VARS: apps/${{ github.workflow }}/vars-prod.yaml
