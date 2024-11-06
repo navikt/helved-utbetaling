@@ -16,3 +16,5 @@ groups:
   beslutterTilleggsstønader: "c1e9edec-0c10-4df2-8c74-324ab9922220"
 kafka:
   pool: nav-prod
+oppdragscope: api://prod-gcp.helved.utsjekk-oppdrag/.default
+simuleringscope: api://prod-gcp.helved.utsjekk-simulering/.default

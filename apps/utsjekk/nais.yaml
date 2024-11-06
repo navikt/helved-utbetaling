@@ -41,6 +41,11 @@ spec:
     pool: {{ kafka.pool }}
   envFrom:
     - secret: {{ unleash.apiToken }}
+  env:
+    - name: OPPDRAG_SCOPE
+      value: {{ oppdragscope }}
+    - name: SIMULERING_SCOPE
+      value: {{ simuleringscope }}
   azure:
     application:
       enabled: true
