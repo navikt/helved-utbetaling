@@ -63,7 +63,6 @@ spec:
   accessPolicy:
     inbound:
       rules:
-        - application: utsjekk # For å sette i gang grensesnittavstemming første gang
         - application: utsjekk-prosessering-test # Tester ny frontend for task-rammeverket
         - application: helved-performance
         - application: tiltakspenger-saksbehandling-api
