@@ -1,4 +1,4 @@
-![img](simulering-banner.png)
+![img](simulering.png)
 
 # Simulering
 API for å utføre simuleringer av beregninger mot oppdrag/UR.
