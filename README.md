@@ -1,6 +1,10 @@
-![img](banner.png)
+![img](utbetaling.png)
 
-# utsjekk-oppdrag
+# Utbetaling
+Utbetaling består av tre komponenter:
+ - [utsjekk](apps/utsjekk/REAMDE.md)
+ - [oppdrag](apps/oppdrag/REAMDE.md)
+ - [simulering](apps/simulering/REAMDE.md)
 
 ## OpenAPI 3.0
 [openapi.yaml](dokumentasjon/openapi.yml)
