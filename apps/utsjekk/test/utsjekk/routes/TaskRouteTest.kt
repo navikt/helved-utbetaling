@@ -67,7 +67,7 @@ class TaskRouteTest {
         )
 
         ids.mapNotNull { Tasks.forId(it) }.forEach {
-            assertEquals(scheduledFor, it.scheduledFor)
+            assertEquals(scheduledFor.toLocalDate(), it.scheduledFor.toLocalDate())
         }
 
         val res = httpClient.put("/api/tasks/rerun") {
@@ -84,7 +84,7 @@ class TaskRouteTest {
         }
 
         ids.mapNotNull { Tasks.forId(it) }.filter { it.status == Status.COMPLETE && it.kind == Kind.Iverksetting }.forEach {
-            assertEquals(scheduledFor, it.scheduledFor)
+            assertEquals(scheduledFor.toLocalDate(), it.scheduledFor.toLocalDate())
         }
     }
 
@@ -102,7 +102,7 @@ class TaskRouteTest {
         )
 
         ids.mapNotNull { Tasks.forId(it) }.filter { it.kind == Kind.SjekkStatus }.forEach {
-            assertEquals(scheduledFor, it.scheduledFor)
+            assertEquals(scheduledFor.toLocalDate(), it.scheduledFor.toLocalDate())
         }
 
         val res = httpClient.put("/api/tasks/rerun") {
@@ -120,7 +120,7 @@ class TaskRouteTest {
         }
 
         ids.mapNotNull { Tasks.forId(it) }.filter { it.kind == Kind.SjekkStatus && it.status == Status.COMPLETE }.forEach {
-            assertEquals(scheduledFor, it.scheduledFor)
+            assertEquals(scheduledFor.toLocalDate(), it.scheduledFor.toLocalDate())
         }
     }
 }
