@@ -13,7 +13,7 @@ import libs.task.TaskDao
 import libs.task.TaskHistory
 import libs.task.Tasks
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 fun Route.tasks() {
     route("/api/tasks") {
@@ -47,10 +47,28 @@ fun Route.tasks() {
             }
         }
 
-        put("/{id}/rekjør") {
-            val id =
-                call.parameters["id"]?.let(UUID::fromString)
-                    ?: return@put call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
+        put("/rerun") {
+            val status = call.parameters["status"]?.split(",")?.map { libs.task.Status.valueOf(it) }
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd query parameter 'status'")
+            val kind = call.parameters["kind"]?.split(",")?.map { libs.task.Kind.valueOf(it) }
+                ?: emptyList()
+
+            withContext(Jdbc.context) {
+                Tasks.rerunAll(status, kind)
+                call.respond(HttpStatusCode.OK)
+            }
+        }
+
+        put("/{id}/rerun") {
+            val id = call.parameters["id"]?.let(UUID::fromString)
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
+
+            withContext(Jdbc.context) {
+                transaction {
+                    TaskDao.select { it.id = id }
+                }
+            }.singleOrNull()
+                ?: return@put call.respond(HttpStatusCode.NotFound, "Fant ikke task med id $id")
 
             withContext(Jdbc.context) {
                 Tasks.rekjør(id)
@@ -62,7 +80,7 @@ fun Route.tasks() {
         patch("/{id}") {
             val id =
                 call.parameters["id"]?.let(UUID::fromString)
-                    ?: return@patch call.respond(HttpStatusCode.BadRequest, "mangler påkrevd path parameter 'id'")
+                    ?: return@patch call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
 
             withContext(Jdbc.context) {
                 transaction {
