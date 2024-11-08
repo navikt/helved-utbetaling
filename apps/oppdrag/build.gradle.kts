@@ -23,7 +23,7 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.3")
 
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.1")
 
     testImplementation(kotlin("test"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
