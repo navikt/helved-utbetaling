@@ -62,7 +62,7 @@ spec:
   accessPolicy:
     inbound:
       rules:
-        - application: utsjekk-prosessering-test # Tester ny frontend for task-rammeverket
+        - application: helved-peisen
         - application: helved-performance
         - application: tiltakspenger-saksbehandling-api
           namespace: tpts
