@@ -51,7 +51,7 @@ class AvstemmingTaskStrategy(private val oppdrag: Oppdrag) : TaskStrategy {
         withLock("initiser manglende avstemming tasks") {
             val aktiveFagsystemer = transaction {
                 TaskDao.select {
-                    it.kind = libs.task.Kind.Avstemming
+                    it.kind = listOf(libs.task.Kind.Avstemming)
                     it.status = listOf(libs.task.Status.IN_PROGRESS)
                 }
             }.map {
