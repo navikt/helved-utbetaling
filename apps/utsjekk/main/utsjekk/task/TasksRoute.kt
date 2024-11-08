@@ -20,6 +20,7 @@ fun Route.tasks() {
             val status = call.parameters["status"]?.split(",")?.map { libs.task.Status.valueOf(it) }
             val after = call.parameters["after"]?.let { LocalDateTime.parse(it) }
             val kind = call.parameters["kind"]?.split(",")?.map { libs.task.Kind.valueOf(it) }
+            val id = call.parameters["id"]
 
             val page = call.parameters["page"]?.toInt()
             val pageSize = call.parameters["pageSize"]?.toInt() ?: 20
@@ -33,14 +34,26 @@ fun Route.tasks() {
                             status = status,
                             after = after,
                             kind = kind,
+                            payload = id,
                             limit = pageSize,
                             offset = (page - 1) * pageSize,
                             order = order,
                         ).map(TaskDto::from)
-                    val count = Tasks.count(status, after, kind)
+                    val count = Tasks.count(
+                        status = status,
+                        after = after,
+                        kind = kind,
+                        payload = id
+                    )
                     call.respond(PaginatedTasksDto(tasks, page, pageSize, count))
                 } else {
-                    val tasks = Tasks.filterBy(status = status, after = after, kind = kind, order = order)
+                    val tasks = Tasks.filterBy(
+                        status = status,
+                        after = after,
+                        kind = kind,
+                        payload = id,
+                        order = order
+                    )
                     call.respond(tasks)
                 }
             }
