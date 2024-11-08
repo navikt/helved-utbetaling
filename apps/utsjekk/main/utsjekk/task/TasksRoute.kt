@@ -1,7 +1,6 @@
 package utsjekk.task
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -20,7 +19,7 @@ fun Route.tasks() {
         get {
             val status = call.parameters["status"]?.split(",")?.map { libs.task.Status.valueOf(it) }
             val after = call.parameters["after"]?.let { LocalDateTime.parse(it) }
-            val kind = call.parameters["kind"]?.let { libs.task.Kind.valueOf(it) }
+            val kind = call.parameters["kind"]?.split(",")?.map { libs.task.Kind.valueOf(it) }
 
             val page = call.parameters["page"]?.toInt()
             val pageSize = call.parameters["pageSize"]?.toInt() ?: 20
