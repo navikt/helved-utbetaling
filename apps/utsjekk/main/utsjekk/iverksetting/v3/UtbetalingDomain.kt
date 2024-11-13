@@ -170,16 +170,26 @@ private fun satstype(satstyper: List<Satstype>): Satstype {
         return Satstype.MND
     }
 
-    badRequest(msg = "inkonsistens blant datoene i periodene.", field = "fom/tom", doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder")
+    badRequest(
+        msg = "inkonsistens blant datoene i periodene.",
+        doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+    )
 }
 
-// TODO: valider at alle perioder ved dag/virkedag har likt beløp, ellers er det ikke en dagsats
 private fun beløp(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): UInt =
     when (satstype) {
-        Satstype.DAG,
-        Satstype.VIRKEDAG -> perioder.first().beløp
+        Satstype.DAG, Satstype.VIRKEDAG -> perioder.map { it.beløp }.toSet().singleOrNull() 
+            ?: badRequest(
+                msg = "fant fler ulike beløp blant dagene",
+                field = "beløp",
+                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            )
 
-        else -> perioder.singleOrNull()?.beløp
-            ?: error("denne feiler hvis konsumenten sender inn f.eks 2 månedsperioder eller engangsutbetalinger i samme request") // TODO: badRequest()
+        else -> perioder.singleOrNull()?.beløp 
+            ?: badRequest(
+                msg = "forventet kun en periode, da sammenslåing av beløp ikke er støttet",
+                field = "beløp",
+                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            )
     }
 
