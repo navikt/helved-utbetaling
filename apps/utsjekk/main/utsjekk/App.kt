@@ -44,6 +44,7 @@ import utsjekk.status.StatusKafkaProducer
 import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
+import utsjekk.iverksetting.v3.utbetalingRoute 
 import java.io.File
 
 val appLog = logger("app")
@@ -107,14 +108,9 @@ fun Application.server(
     }
 
     install(StatusPages) {
-        exception<Throwable> { call, cause ->
+        exception<Throwable> { call, cause -> 
             when (cause) {
-                is ApiError.BadRequest -> call.respond(HttpStatusCode.BadRequest, cause.message)
-                is ApiError.NotFound -> call.respond(HttpStatusCode.NotFound, cause.message)
-                is ApiError.Conflict -> call.respond(HttpStatusCode.Conflict, cause.message)
-                is ApiError.Unauthorized -> call.respond(HttpStatusCode.Unauthorized, cause.message)
-                is ApiError.Forbidden -> call.respond(HttpStatusCode.Forbidden, cause.message)
-                is ApiError.Unavailable -> call.respond(HttpStatusCode.ServiceUnavailable, cause.message)
+                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse) 
                 else -> {
                     secureLog.error("Unknown error.", cause)
                     call.respond(HttpStatusCode.UnprocessableEntity, "Unknown error. See logs")
@@ -159,6 +155,7 @@ fun Application.server(
         authenticate(TokenProvider.AZURE) {
             iverksetting(iverksettinger)
             simulering(simuleringValidator, simulering)
+            utbetalingRoute()
             tasks()
         }
 
@@ -169,7 +166,7 @@ fun Application.server(
 fun ApplicationCall.navident(): String =
     principal<JWTPrincipal>()
         ?.getClaim("NAVident", String::class)
-        ?: ApiError.forbidden("missing claims: NAVident")
+        ?: forbidden("missing JWT claim", "NAVident", "https://navikt.github.io/utsjekk-docs/kom_i_gang")
 
 fun ApplicationCall.client(): Client =
     principal<JWTPrincipal>()
@@ -177,7 +174,7 @@ fun ApplicationCall.client(): Client =
         ?.split(":")
         ?.last()
         ?.let(::Client)
-        ?: ApiError.forbidden("missing claims: azp_name")
+        ?: forbidden("missing JWT claim", "azp_name", "https://navikt.github.io/utsjekk-docs/kom_i_gang")
 
 @JvmInline
 value class Client(
@@ -188,6 +185,9 @@ value class Client(
             "utsjekk", "helved-performance" -> Fagsystem.DAGPENGER
             "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
             "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
-            else -> error("mangler mapping mellom app ($name) og fagsystem")
+            else -> forbidden(
+                msg = "mangler mapping mellom appname ($name) og fagsystem-enum",
+                doc = "https://navikt.github.io/utsjekk-docs/kom_i_gang",
+            )
         }
 }

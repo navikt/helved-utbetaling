@@ -3,8 +3,8 @@ package utsjekk.simulering
 import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import utsjekk.ApiError.Companion.badRequest
-import utsjekk.ApiError.Companion.conflict
+import utsjekk.badRequest
+import utsjekk.conflict
 import utsjekk.iverksetting.Iverksettinger
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.behandlingId

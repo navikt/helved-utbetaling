@@ -100,7 +100,7 @@ class IverksettingRouteTest {
         }
 
         assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
-        assertEquals("Iverksetting er skrudd av for fagsystem ${Fagsystem.TILLEGGSSTØNADER}", res.bodyAsText())
+        assertEquals("""{"msg":"Iverksetting er skrudd av for fagsystem TILLEGGSSTØNADER","field":null,"doc":"https://navikt.github.io/utsjekk-docs/"}""", res.bodyAsText())
     }
 
     @Test
@@ -205,7 +205,7 @@ class IverksettingRouteTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        assertEquals("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", res.bodyAsText())
+        assertEquals("""{"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","field":null,"doc":"https://navikt.github.io/utsjekk-docs/"}""", res.bodyAsText())
     }
 
     @Test

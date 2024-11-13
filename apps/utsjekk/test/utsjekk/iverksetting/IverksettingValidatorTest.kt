@@ -5,6 +5,7 @@ import TestRuntime
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -27,14 +28,14 @@ class IverksettingValidatorTest {
             forrigeBehandlingId = forrigeIverksetting.behandlingId,
         )
 
-        val err = assertThrows<ApiError.BadRequest> {
+        val err = assertThrows<ApiError> {
             transaction {
                 IverksettingValidator.validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
             }
         }
 
-        assertTrue(err.message.contains("Fant ikke iverksetting med sakId ${iverksetting.sakId}"))
-
+        assertTrue(err.msg.contains("Fant ikke iverksetting med sakId ${iverksetting.sakId}"))
+        assertEquals(400, err.statusCode)
     }
 
     @Test
@@ -57,13 +58,14 @@ class IverksettingValidatorTest {
                 forrigeBehandlingId = forrigeIverksetting.behandlingId,
             )
 
-            val err = assertThrows<ApiError.BadRequest> {
+            val err = assertThrows<ApiError> {
                 transaction {
                     IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 }
             }
 
-            assertTrue(err.message.contains("Forrige iverksetting stemmer ikke med siste mottatte iverksetting på saken."))
+            assertTrue(err.msg.contains("Forrige iverksetting stemmer ikke med siste mottatte iverksetting på saken."))
+            assertEquals(400, err.statusCode)
         }
 
     @Test
@@ -93,13 +95,14 @@ class IverksettingValidatorTest {
                 forrigeIverksettingId = forrigeIverksetting.iverksettingId
             )
 
-            val err = assertThrows<ApiError.BadRequest> {
+            val err = assertThrows<ApiError> {
                 transaction {
                     IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 }
             }
 
-            assertTrue(err.message.contains("Forrige iverksetting stemmer ikke med siste mottatte iverksetting på saken."))
+            assertTrue(err.msg.contains("Forrige iverksetting stemmer ikke med siste mottatte iverksetting på saken."))
+            assertEquals(400, err.statusCode)
         }
 
     @Test
@@ -113,13 +116,14 @@ class IverksettingValidatorTest {
                 sakId = sisteMottattDao.data.sakId
             )
 
-            val err = assertThrows<ApiError.BadRequest> {
+            val err = assertThrows<ApiError> {
                 transaction {
                     IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 }
             }
 
-            assertTrue(err.message.contains("Forrige iverksetting stemmer ikke med siste mottatte iverksetting på saken."))
+            assertTrue(err.msg.contains("Forrige iverksetting stemmer ikke med siste mottatte iverksetting på saken."))
+            assertEquals(400, err.statusCode)
         }
 
     @Test
@@ -129,13 +133,14 @@ class IverksettingValidatorTest {
                 forrigeBehandlingId = BehandlingId(RandomOSURId.generate())
             )
 
-            val err = assertThrows<ApiError.BadRequest> {
+            val err = assertThrows<ApiError> {
                 transaction {
                     IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 }
             }
 
-            assertTrue(err.message.contains("Det er ikke registrert noen tidligere iverksettinger på saken, men forrigeIverksetting er satt"))
+            assertTrue(err.msg.contains("Det er ikke registrert noen tidligere iverksettinger på saken, men forrigeIverksetting er satt"))
+            assertEquals(400, err.statusCode)
         }
 
     @Test
@@ -147,13 +152,14 @@ class IverksettingValidatorTest {
                 }
             }
 
-            val err = assertThrows<ApiError.Conflict> {
+            val err = assertThrows<ApiError> {
                 transaction {
                     IverksettingValidator.validerAtIverksettingIkkeAlleredeErMottatt(dao.data)
                 }
             }
 
-            assertTrue(err.message.contains("Iverksettingen er allerede mottatt"))
+            assertTrue(err.msg.contains("Iverksettingen er allerede mottatt"))
+            assertEquals(409, err.statusCode)
         }
 
     @Test
@@ -174,12 +180,13 @@ class IverksettingValidatorTest {
             forrigeBehandlingId = dao.behandlingId
         )
 
-        val err = assertThrows<ApiError.Conflict> {
+        val err = assertThrows<ApiError> {
             transaction {
                 IverksettingValidator.validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting)
             }
         }
 
-        assertTrue(err.message.contains("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet"))
+        assertTrue(err.msg.contains("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet"))
+        assertEquals(409, err.statusCode)
     }
 }

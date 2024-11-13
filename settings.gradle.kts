@@ -1,4 +1,4 @@
-rootProject.name = "helved-oppdrag"
+rootProject.name = "helved-utbetaling"
 
 include(
     "apps:oppdrag",

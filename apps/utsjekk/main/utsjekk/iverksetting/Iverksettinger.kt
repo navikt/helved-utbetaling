@@ -10,10 +10,10 @@ import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import utsjekk.ApiError.Companion.serviceUnavailable
 import utsjekk.FeatureToggles
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.unavailable
 import java.time.LocalDateTime
 
 class Iverksettinger(
@@ -34,7 +34,7 @@ class Iverksettinger(
     suspend fun iverksett(iverksetting: Iverksetting) {
         val fagsystem = iverksetting.fagsak.fagsystem
         if (toggles.isDisabled(fagsystem)) {
-            serviceUnavailable("Iverksetting er skrudd av for fagsystem $fagsystem")
+            unavailable("Iverksetting er skrudd av for fagsystem $fagsystem")
         }
 
         withContext(Jdbc.context) {

@@ -1,6 +1,6 @@
 package utsjekk.iverksetting.v3
 
-import utsjekk.ApiError.Companion.badRequest
+import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -22,7 +22,7 @@ data class UtbetalingsoppdragDto(
     val aktør: String,
     val saksbehandlerId: String,
     val beslutterId: String,
-    val utbetalingsperiode: List<UtbetalingsperiodeDto>,
+    val utbetalingsperiode: UtbetalingsperiodeDto,
     val avstemmingstidspunkt: LocalDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
     val brukersNavKontor: String? = null,
 ) {
@@ -41,10 +41,9 @@ data class UtbetalingsperiodeDto(
     val utbetalesTil: String,
     val behandlingId: String,
     val opphør: Opphør? = null,
-    val forrigeId: UUID? = null,
+    val forrigeId: UUID? = null, // TODO: treng denne?
 ) {
     companion object
 }
 
 data class Opphør(val fom: LocalDate)
-enum class Satstype { DAG, VIRKEDAG, MND, ENGANGS }

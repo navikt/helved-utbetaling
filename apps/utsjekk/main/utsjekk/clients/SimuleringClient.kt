@@ -10,8 +10,7 @@ import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.postgres.Jdbc
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import utsjekk.ApiError
-import utsjekk.Config
+import utsjekk.*
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.lagAndelData
 import utsjekk.iverksetting.resultat.IverksettingResultater
@@ -43,11 +42,11 @@ class SimuleringClient(
 
         val hentetSimulering = when (response.status) {
             HttpStatusCode.OK -> response.body<client.SimuleringResponse>()
-            HttpStatusCode.NotFound -> ApiError.notFound(response.bodyAsText())
-            HttpStatusCode.Conflict -> ApiError.conflict(response.bodyAsText())
-            HttpStatusCode.BadRequest -> ApiError.badRequest(response.bodyAsText())
-            HttpStatusCode.ServiceUnavailable -> ApiError.serviceUnavailable(response.bodyAsText())
-            else -> error("HTTP ${response.status} feil fra utsjekk-oppdrag: ${response.bodyAsText()}")
+            HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
+            HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
+            HttpStatusCode.BadRequest -> badRequest(response.bodyAsText(), "simuleringsresultat")
+            HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "utsjekk-simulering")
+            else -> error("HTTP ${response.status} feil fra utsjekk-simulering: ${response.bodyAsText()}")
         }
 
         val detaljer = SimuleringDetaljer.from(hentetSimulering, simulering.behandlingsinformasjon.fagsystem)

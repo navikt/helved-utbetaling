@@ -113,6 +113,10 @@ private val testApplication: TestApplication by lazy {
     }
 }
 
+val http: HttpClient by lazy {
+    HttpClient()
+}
+
 val httpClient: HttpClient by lazy {
     testApplication.createClient {
         install(ContentNegotiation) {
