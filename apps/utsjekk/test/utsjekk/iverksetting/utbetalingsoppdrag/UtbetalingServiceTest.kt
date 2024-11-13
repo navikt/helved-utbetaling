@@ -72,12 +72,6 @@ class UtbetalingServiceTest {
      */
 
     /**
-     * periode { fom: 01.02.21, tom: 28.02.21, stønad = ORDINÆR }  leses som MND
-     * periode { fom: 01.02.21, tom: 28.02.21, stønad = TILLEGG }  leses som MND
-     * utledes begge til hver sin utbetaling av Satstype.MND
-     */
-
-    /**
      * FROM
      * { "fom": 01.02.21, "tom": 28.02.21 },  <-- MND
      * TO

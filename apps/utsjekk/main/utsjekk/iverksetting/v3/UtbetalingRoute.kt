@@ -12,8 +12,8 @@ import java.util.UUID
 fun Route.utbetalingRoute() {
     post("/utbetalinger") {
         val dto = call.receive<UtbetalingApi>()
+        dto.validate()
         val domain = Utbetaling.from(dto)
-        // domain.validate()
         val id = DatabaseFake.save(domain)
         call.respond(HttpStatusCode.Created, id)
     }

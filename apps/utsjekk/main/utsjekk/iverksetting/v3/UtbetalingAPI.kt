@@ -1,9 +1,10 @@
 package utsjekk.iverksetting.v3
 
-import utsjekk.avstemming.nesteVirkedag
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
+import utsjekk.avstemming.nesteVirkedag
+import utsjekk.badRequest
 
 data class UtbetalingApi(
     val sakId: SakId,
@@ -26,6 +27,13 @@ data class UtbetalingApi(
             saksbehandlerId = domain.saksbehandlerId,
             perioder = UtbetalingsperiodeApi.from(domain.periode)
         )
+    }
+
+    fun validate() {
+        failOnÅrsskifte()
+        // validate beløp
+        // validate fom/tom
+        // validate stønadstype opp mot e.g. fastsattdagpengesats
     }
 }
 
@@ -76,3 +84,14 @@ data class UtbetalingsperiodeApi(
         }
     }
 }
+
+private fun UtbetalingApi.failOnÅrsskifte() {
+    if (perioder.minBy { it.fom }.fom.year != perioder.maxBy { it.tom }.tom.year) {
+        badRequest(
+            msg = "periode strekker seg over årsskifte",
+            field = "tom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
+

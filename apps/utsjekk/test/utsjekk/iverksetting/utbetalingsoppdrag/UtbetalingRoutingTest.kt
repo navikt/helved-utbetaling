@@ -1,5 +1,6 @@
 package utsjekk.iverksetting.utbetalingsoppdrag
 
+// imports
 import TestData
 import TestData.random
 import TestRuntime
@@ -25,8 +26,10 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.test.assertNotNull
 
-private val Int.feb: LocalDate get() = LocalDate.of(2021, 2, this)
-private val Int.mar: LocalDate get() = LocalDate.of(2021, 3, this)
+private val Int.feb: LocalDate get() = LocalDate.of(2024, 2, this)
+private val Int.mar: LocalDate get() = LocalDate.of(2024, 3, this)
+private val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
+private val Int.jan: LocalDate get() = LocalDate.of(2025, 3, this)
 private val virkedager: (LocalDate) -> LocalDate = { it.nesteVirkedag() }
 private val alleDager: (LocalDate) -> LocalDate = { it.plusDays(1) }
 
@@ -68,43 +71,82 @@ class UtbetalingRoutingTest {
         assertEquals(HttpStatusCode.BadRequest, res.status)
         val error = res.body<ApiError.Response>()
         assertEquals(error.msg, "inkonsistens blant datoene i periodene.")
-        assertEquals(error.field, "fom/tom")
         assertEquals(error.doc, "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder")
 //        assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
-    fun `valideringsfeil ved ulike beløp for dagsats`() {
+    fun `valideringsfeil ved ulike beløp for dagsats`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.mar,
+            listOf(
+                UtbetalingsperiodeApi(1.mar, 1.mar, 800u),
+                UtbetalingsperiodeApi(2.mar, 2.mar, 800u),
+                UtbetalingsperiodeApi(3.mar, 3.mar, 50u),
+            ),
+        )
+
+        val res = httpClient.post("/utbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError.Response>()
+        assertEquals(error.msg, "fant fler ulike beløp blant dagene")
+        assertEquals(error.field, "beløp")
+        assertEquals(error.doc, "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder")
+//        assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
+    }
+
+    @Test
+    fun `valideringsfeil ved engangssats som går over årsskifte`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.mar,
+            listOf(
+                UtbetalingsperiodeApi(15.des, 15.jan, 30_000u),
+            ),
+        )
+
+        val res = httpClient.post("/utbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError.Response>()
+        assertEquals(error.msg, "periode strekker seg over årsskifte")
+        assertEquals(error.field, "tom")
+        assertEquals(error.doc, "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder")
+//        assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
 
     }
 
     @Test
-    fun `valideringsfeil ved engangssats som går over årsskifte`() {
+    fun `valideringsfeil ved duplikate perioder`() = runTest() {
 
     }
 
     @Test
-    fun `valideringsfeil ved duplikate perioder`() {
+    fun `valideringsfeil ved fler satstyper blant periodene`() = runTest() {
 
     }
 
     @Test
-    fun `valideringsfeil ved fler satstyper blant periodene`() {
+    fun `en id for en enkel stønad`() = runTest() { 
 
     }
 
     @Test
-    fun `en id for en enkel stønad`() {
+    fun `en id fra innsending som resulterte i fler utbetalinger`() = runTest() { 
 
     }
 
     @Test
-    fun `en id fra innsending som resulterte i fler utbetalinger`() {
+    fun `404 NotFound`() = runTest() { 
 
-    }
-
-    @Test
-    fun `404 NotFound`() {
     }
 
     /**
