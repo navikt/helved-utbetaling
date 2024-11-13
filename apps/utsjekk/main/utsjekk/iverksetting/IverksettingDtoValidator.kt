@@ -7,7 +7,8 @@ import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
 import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDagpengerDto
-import utsjekk.ApiError.Companion.badRequest
+import utsjekk.badRequest
+import java.time.LocalDate
 import java.time.YearMonth
 
 fun IverksettV2Dto.validate() {
@@ -22,30 +23,25 @@ fun IverksettV2Dto.validate() {
 
 internal fun sakIdTilfredsstillerLengdebegrensning(iverksettDto: IverksettV2Dto) {
     if (iverksettDto.sakId.length !in 1..GyldigSakId.MAKSLENGDE) {
-        badRequest(
-            "SakId må være mellom 1 og ${GyldigSakId.MAKSLENGDE} tegn lang",
-        )
+        badRequest(msg = "lengde må være [1 <= ${GyldigSakId.MAKSLENGDE}]", field = "sakId")
     }
 }
 
 internal fun behandlingIdTilfredsstillerLengdebegrensning(iverksettDto: IverksettV2Dto) {
     if (iverksettDto.behandlingId.length !in 1..GyldigBehandlingId.MAKSLENGDE) {
-        badRequest(
-            "BehandlingId må være mellom 1 og ${GyldigBehandlingId.MAKSLENGDE} tegn lang",
-        )
+        badRequest(msg = "lengde må være [1 <= ${GyldigBehandlingId.MAKSLENGDE}]", field = "behandlingId")
     }
 }
 
 internal fun fraOgMedKommerFørTilOgMedIUtbetalingsperioder(iverksettDto: IverksettV2Dto) {
     val alleErOk =
         iverksettDto.vedtak.utbetalinger.all {
+//            it.fraOgMedDato <= it.tilOgMedDato // TODO: test ut dette
             !it.tilOgMedDato.isBefore(it.fraOgMedDato)
         }
 
     if (!alleErOk) {
-        badRequest(
-            "Utbetalinger inneholder perioder der tilOgMedDato er før fraOgMedDato",
-        )
+        badRequest(msg = "fom må være før eller lik tom", field = "fraOgMedDato/tilOgMedDato")
     }
 }
 
@@ -65,9 +61,7 @@ internal fun utbetalingsperioderMedLikStønadsdataOverlapperIkkeITid(iverksettDt
             }
 
     if (!allePerioderErUavhengige) {
-        badRequest(
-            "Utbetalinger inneholder perioder som overlapper i tid",
-        )
+        badRequest("Utbetalinger inneholder perioder som overlapper i tid")
     }
 }
 

@@ -18,20 +18,24 @@ class IverksettingDtoValidatorTest {
     fun `skal få 400 hvis sakId er for lang`() {
         val iverksettDto = TestData.dto.iverksetting(sakId = RandomOSURId.generate() + RandomOSURId.generate())
 
-        val ex = assertThrows<ApiError.BadRequest> {
+        val ex = assertThrows<ApiError> {
             sakIdTilfredsstillerLengdebegrensning(iverksettDto)
         }
-        assertEquals("SakId må være mellom 1 og ${GyldigSakId.MAKSLENGDE} tegn lang", ex.message)
+        assertEquals("lengde må være [1 <= ${GyldigSakId.MAKSLENGDE}]", ex.msg)
+        assertEquals("sakId", ex.field)
+        assertEquals(400, ex.statusCode)
     }
 
     @Test
     fun `skal få 400 hvis behandlingId er for lang`() {
         val iverksettDto = TestData.dto.iverksetting(behandlingId = RandomOSURId.generate() + RandomOSURId.generate())
 
-        val ex = assertThrows<ApiError.BadRequest> {
+        val ex = assertThrows<ApiError> {
             behandlingIdTilfredsstillerLengdebegrensning(iverksettDto)
         }
-        assertEquals("BehandlingId må være mellom 1 og ${GyldigBehandlingId.MAKSLENGDE} tegn lang", ex.message)
+        assertEquals("lengde må være [1 <= ${GyldigBehandlingId.MAKSLENGDE}]", ex.msg)
+        assertEquals("behandlingId", ex.field)
+        assertEquals(400, ex.statusCode)
     }
 
     @Test
@@ -52,10 +56,12 @@ class IverksettingDtoValidatorTest {
                 ),
             )
 
-        val ex = assertThrows<ApiError.BadRequest> {
+        val ex = assertThrows<ApiError> {
             fraOgMedKommerFørTilOgMedIUtbetalingsperioder(iverksettDto)
         }
-        assertEquals("Utbetalinger inneholder perioder der tilOgMedDato er før fraOgMedDato", ex.message)
+        assertEquals("fom må være før eller lik tom", ex.msg)
+        assertEquals("fraOgMedDato/tilOgMedDato", ex.field)
+        assertEquals(400, ex.statusCode)
     }
 
     @Test
@@ -81,10 +87,11 @@ class IverksettingDtoValidatorTest {
                 ),
             )
 
-        val ex = assertThrows<ApiError.BadRequest> {
+        val ex = assertThrows<ApiError> {
             utbetalingsperioderMedLikStønadsdataOverlapperIkkeITid(iverksettDto)
         }
-        assertEquals("Utbetalinger inneholder perioder som overlapper i tid", ex.message)
+        assertEquals("Utbetalinger inneholder perioder som overlapper i tid", ex.msg)
+        assertEquals(400, ex.statusCode)
     }
 
     @Test
@@ -149,10 +156,11 @@ class IverksettingDtoValidatorTest {
                 tmpIverksettDto.vedtak.copy(utbetalinger = listOf(enUtbetalingsperiode, enUtbetalingsperiode)),
             )
 
-        val ex = assertThrows<ApiError.BadRequest> {
+        val ex = assertThrows<ApiError> {
             utbetalingsperioderMedLikStønadsdataOverlapperIkkeITid(iverksettDto)
         }
-        assertEquals("Utbetalinger inneholder perioder som overlapper i tid", ex.message)
+        assertEquals("Utbetalinger inneholder perioder som overlapper i tid", ex.msg)
+        assertEquals(400, ex.statusCode)
     }
 
     @Test
@@ -171,13 +179,14 @@ class IverksettingDtoValidatorTest {
             ),
         )
 
-        val ex = assertThrows<ApiError.BadRequest> {
+        val ex = assertThrows<ApiError> {
             ingenUtbetalingsperioderHarStønadstypeEØSOgFerietilleggTilAvdød(iverksettDto)
         }
         assertEquals(
             "Ferietillegg til avdød er ikke tillatt for stønadstypen ${StønadTypeDagpenger.DAGPENGER_EØS}",
-            ex.message
+            ex.msg
         )
+        assertEquals(400, ex.statusCode)
     }
 
     @Test
@@ -194,10 +203,11 @@ class IverksettingDtoValidatorTest {
             )
         )
 
-        val ex = assertThrows<ApiError.BadRequest> {
+        val ex = assertThrows<ApiError> {
             utbetalingsperioderSamsvarerMedSatstype(dto)
         }
-        assertEquals("Det finnes utbetalinger med månedssats der periodene ikke samsvarer med hele måneder", ex.message)
+        assertEquals("Det finnes utbetalinger med månedssats der periodene ikke samsvarer med hele måneder", ex.msg)
+        assertEquals(400, ex.statusCode)
     }
 
     @Test
@@ -209,11 +219,12 @@ class IverksettingDtoValidatorTest {
             )
         )
 
-        val ex = assertThrows<ApiError.BadRequest> {
+        val ex = assertThrows<ApiError> {
             iverksettingIdSkalEntenIkkeVæreSattEllerVæreSattForNåværendeOgForrige(dto)
         }
 
-        assertEquals("IverksettingId er satt for nåværende iverksetting, men ikke forrige iverksetting", ex.message)
+        assertEquals("IverksettingId er satt for nåværende iverksetting, men ikke forrige iverksetting", ex.msg)
+        assertEquals(400, ex.statusCode)
     }
 
     @Test
@@ -225,10 +236,11 @@ class IverksettingDtoValidatorTest {
             )
         )
 
-        val ex = assertThrows<ApiError.BadRequest> {
+        val ex = assertThrows<ApiError> {
             iverksettingIdSkalEntenIkkeVæreSattEllerVæreSattForNåværendeOgForrige(dto)
         }
 
-        assertEquals("IverksettingId er satt for forrige iverksetting, men ikke nåværende iverksetting", ex.message)
+        assertEquals("IverksettingId er satt for forrige iverksetting, men ikke nåværende iverksetting", ex.msg)
+        assertEquals(400, ex.statusCode)
     }
 }

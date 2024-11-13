@@ -1,17 +1,21 @@
 package utsjekk.iverksetting.utbetalingsoppdrag
 
+import TestData
 import TestData.random
+import TestRuntime
+import http
 import httpClient
+import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import utsjekk.ApiError
 import utsjekk.avstemming.nesteVirkedag
 import utsjekk.iverksetting.RandomOSURId
 import utsjekk.iverksetting.v3.*
@@ -19,67 +23,95 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
+import kotlin.test.assertNotNull
 
 private val Int.feb: LocalDate get() = LocalDate.of(2021, 2, this)
 private val Int.mar: LocalDate get() = LocalDate.of(2021, 3, this)
 private val virkedager: (LocalDate) -> LocalDate = { it.nesteVirkedag() }
 private val alleDager: (LocalDate) -> LocalDate = { it.plusDays(1) }
 
-class UtbetalingServiceTest {
+class UtbetalingRoutingTest {
 
-    /*
-     * periode { "fom": 04.08.24, "tom": 04.08.24 } (søndag) leses som DAG 
-     * utledes til ENGANGS
-     */
+    @Test
+    fun `kan opprette stønad`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            listOf(UtbetalingsperiodeApi(1.feb, 28.feb, 24_000u)),
+        )
 
-    /*
-     * periode { "fom": 01.08.24, "tom": 25.08.24 } leses som ENGANGS 
-     * utledes til ENGANGS
-     * WARN: årsskifte 
-     */
+        val res = httpClient.post("/utbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
 
-    /*
-     * periode { "fom": 01.02.21, "tom": 31.03.21 } leses som ENGANGS 
-     * utledes til ENGANGS
-     * WARN: årsskifte 
-     */
+        assertEquals(HttpStatusCode.Created, res.status)
+        assertNotNull(res.body<UtbetalingId>())
+    }
 
-    /**
-     * periode { "fom": 01.08.24, "tom": 01.08.24 } (tor) leses som VIRKEDAG 
-     * periode { "fom": 02.08.24, "tom": 02.08.24 } (fre) leses som VIRKEDAG 
-     * periode { "fom": 05.08.24, "tom": 05.08.24 } (man) leses som VIRKEDAG 
-     * utledes til VIRKEDAG
-     */
+    @Test
+    fun `valideringsfeil ved ulike satstyper blant periodene`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            listOf(
+                UtbetalingsperiodeApi(1.feb, 28.feb, 24_000u),
+                UtbetalingsperiodeApi(1.mar, 1.mar, 800u),
+            ),
+        )
 
-    /**
-     * periode { "fom": 01.08.24, "tom": 01.08.24 } (tor) leses som VIRKEDAG 
-     * periode { "fom": 02.08.24, "tom": 02.08.24 } (fre) leses som VIRKEDAG 
-     * periode { "fom": 03.08.24, "tom": 03.08.24 } (lør) leses som DAG 
-     * periode { "fom": 04.08.24, "tom": 04.08.24 } (søn) leses som DAG 
-     * periode { "fom": 05.08.24, "tom": 05.08.24 } (man) leses som VIRKEDAG 
-     * utledes til DAG
-     */
+        val res = httpClient.post("/utbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
 
-    /**
-     * periode { "fom": 01.02.21, "tom": 28.02.21 }  leses som MND
-     * utledes til MND
-     */
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError.Response>()
+        assertEquals(error.msg, "inkonsistens blant datoene i periodene.")
+        assertEquals(error.field, "fom/tom")
+        assertEquals(error.doc, "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder")
+//        assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
+    }
 
+    @Test
+    fun `valideringsfeil ved ulike beløp for dagsats`() {
 
-    /**
-     * periode { "fom": 01.02.21, "tom": 28.02.21 }  leses som MND
-     * utledes til MND
-     */
+    }
 
-    /**
-     * periode { fom: 01.02.21, tom: 28.02.21, stønad = ORDINÆR }  leses som MND
-     * periode { fom: 01.02.21, tom: 28.02.21, stønad = TILLEGG }  leses som MND
-     * utledes begge til hver sin utbetaling av Satstype.MND
-     */
+    @Test
+    fun `valideringsfeil ved engangssats som går over årsskifte`() {
+
+    }
+
+    @Test
+    fun `valideringsfeil ved duplikate perioder`() {
+
+    }
+
+    @Test
+    fun `valideringsfeil ved fler satstyper blant periodene`() {
+
+    }
+
+    @Test
+    fun `en id for en enkel stønad`() {
+
+    }
+
+    @Test
+    fun `en id fra innsending som resulterte i fler utbetalinger`() {
+
+    }
+
+    @Test
+    fun `404 NotFound`() {
+    }
 
     /**
      * FROM
-     * { "fom": 01.02.21, "tom": 28.02.21 },  <-- MND
+     *  "perioder": [
+     *      { "fom": 01.02.21, "tom": 28.02.21 },  <-- MND
+     *  ]
      * TO
      * ╭───────MND──────╮
      * │ 1.feb - 28.feb │
@@ -100,8 +132,8 @@ class UtbetalingServiceTest {
         // }
         //
         // 
-        //
-        // // val utbetaling = Utbetaling.dagpenger(vedtakstidspunkt = 1.feb, feb)
+
+        // val utbetaling = Utbetaling.dagpenger(vedtakstidspunkt = 1.feb, feb)
         // val expected = UtbetalingsoppdragDto.dagpenger(
         //     utbetaling, 
         //     UtbetalingsperiodeDto.mnd(utbetaling, feb.id, null, 1.feb, 28.feb, 20u * 700u, "DPORAS")
@@ -111,7 +143,7 @@ class UtbetalingServiceTest {
     }
 
     /**
-     * En periode 8.feb - 16.feb mappes til      
+     * En periode 8.feb - 16.feb mappes til
      * ╭───────ENG──────╮
      * │ 8.feb - 16.feb │
      * ╰────────────────╯
@@ -152,7 +184,7 @@ class UtbetalingServiceTest {
     }
 
     /**
-     * En liste med 5.feb .. 8.feb   
+     * En liste med 5.feb .. 8.feb
      * ╭──────DAG──────╮
      * │ 5.feb - 8.feb │
      * ╰───────────────╯
@@ -176,17 +208,17 @@ class UtbetalingServiceTest {
 
     // @Test
     // fun `kjede med tidliger utbetaling`() {
-        // val feb = Utbetalingsperiode.dagpenger(1.feb, 28.feb, 20u * 700u)
-        // val utbet1 = Utbetaling.dagpenger(1.feb, listOf(feb))
-        // val utbet1ID = DatabaseFake.save(utbet1)
-        // val mar = Utbetalingsperiode.dagpenger(1.mar, 31.mar, 23u * 700u)
-        // val utbet2 = Utbetaling.dagpenger(ref = utbet1ID to utbet1, 1.mar, listOf(mar))
-        // val expected = UtbetalingsoppdragDto.dagpenger(
-        //     from = utbet2,
-        //     perioder = listOf(UtbetalingsperiodeDto.mnd(utbet2, mar.id, feb.id, 1.mar, 31.mar, 23u * 700u, "DPORAS")),
-        //     erFørsteUtbetalingPåSak = false,
-        // )
-        // assertEquals(expected, UtbetalingsoppdragService.create(utbet2, FagsystemDto.DAGPENGER))
+    // val feb = Utbetalingsperiode.dagpenger(1.feb, 28.feb, 20u * 700u)
+    // val utbet1 = Utbetaling.dagpenger(1.feb, listOf(feb))
+    // val utbet1ID = DatabaseFake.save(utbet1)
+    // val mar = Utbetalingsperiode.dagpenger(1.mar, 31.mar, 23u * 700u)
+    // val utbet2 = Utbetaling.dagpenger(ref = utbet1ID to utbet1, 1.mar, listOf(mar))
+    // val expected = UtbetalingsoppdragDto.dagpenger(
+    //     from = utbet2,
+    //     perioder = listOf(UtbetalingsperiodeDto.mnd(utbet2, mar.id, feb.id, 1.mar, 31.mar, 23u * 700u, "DPORAS")),
+    //     erFørsteUtbetalingPåSak = false,
+    // )
+    // assertEquals(expected, UtbetalingsoppdragService.create(utbet2, FagsystemDto.DAGPENGER))
     // }
 
     /**
@@ -282,6 +314,7 @@ class UtbetalingServiceTest {
 
         assertEquals(expected(), actual) */
     }
+
     /**
      * ╭───────────────╮              ╭───────────────╮
      * │ 1.feb - 5.feb │ skal bli til │ 2.feb - 4.feb │
@@ -320,7 +353,7 @@ private fun Personident.Companion.random(): Personident {
 private fun UtbetalingApi.Companion.dagpenger(
     vedtakstidspunkt: LocalDate,
     perioder: List<UtbetalingsperiodeApi>,
-    stønad: StønadTypeDagpenger,
+    stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
     sakId: SakId = SakId(RandomOSURId.generate()),
     personident: Personident = Personident.random(),
     behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
@@ -328,14 +361,14 @@ private fun UtbetalingApi.Companion.dagpenger(
     beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
 ): UtbetalingApi {
     return UtbetalingApi(
-        sakId, 
+        sakId,
         behandlingId,
         personident,
         vedtakstidspunkt.atStartOfDay(),
         stønad,
         beslutterId,
         saksbehandlerId,
-        perioder, 
+        perioder,
     )
 }
 
@@ -367,7 +400,7 @@ private fun Utbetalingsperiode.Companion.dagpenger(
     fom: LocalDate,
     tom: LocalDate,
     beløp: UInt,
-    satstype: Satstype,  
+    satstype: Satstype,
     id: UUID = UUID.randomUUID(),
     betalendeEnhet: NavEnhet? = null,
     fastsattDagpengesats: UInt? = null,
@@ -412,7 +445,7 @@ private fun Utbetaling.Companion.dagpenger(
     personident,
     vedtakstidspunkt.atStartOfDay(),
     stønad,
-    beslutterId = beslutterId,
+    beslutterId,
     saksbehandlerId,
     periode,
 )

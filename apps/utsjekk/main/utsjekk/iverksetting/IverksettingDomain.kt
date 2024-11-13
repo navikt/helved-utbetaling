@@ -28,8 +28,8 @@ value class BehandlingId(val id: String)
 value class IverksettingId(val id: String)
 
 data class Iverksetting(
-    val fagsak: Fagsakdetaljer,
     val behandling: Behandlingsdetaljer,
+    val fagsak: Fagsakdetaljer,
     val søker: Søker,
     val vedtak: Vedtaksdetaljer,
 ) {

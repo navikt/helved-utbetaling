@@ -6,10 +6,10 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
-import utsjekk.ApiError.Companion.badRequest
-import utsjekk.ApiError.Companion.notFound
 import utsjekk.appLog
+import utsjekk.badRequest
 import utsjekk.client
+import utsjekk.notFound
 
 fun Route.iverksetting(service: Iverksettinger) {
     route("/api/iverksetting") {
