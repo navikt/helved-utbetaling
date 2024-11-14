@@ -307,31 +307,31 @@ class UtbetalingServiceTest {
     }
 }
 
-private fun Personident.Companion.random(): Personident {
-    return Personident(no.nav.utsjekk.kontrakter.felles.Personident.random().verdi)
-}
+// private fun Personident.Companion.random(): Personident {
+//     return Personident(no.nav.utsjekk.kontrakter.felles.Personident.random().verdi)
+// }
 
-private fun UtbetalingApi.Companion.dagpenger(
-    vedtakstidspunkt: LocalDate,
-    perioder: List<UtbetalingsperiodeApi>,
-    stønad: StønadTypeDagpenger,
-    sakId: SakId = SakId(RandomOSURId.generate()),
-    personident: Personident = Personident.random(),
-    behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
-    saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
-    beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
-): UtbetalingApi {
-    return UtbetalingApi(
-        sakId, 
-        behandlingId,
-        personident,
-        vedtakstidspunkt.atStartOfDay(),
-        stønad,
-        beslutterId,
-        saksbehandlerId,
-        perioder, 
-    )
-}
+// private fun UtbetalingApi.Companion.dagpenger(
+//     vedtakstidspunkt: LocalDate,
+//     perioder: List<UtbetalingsperiodeApi>,
+//     stønad: StønadTypeDagpenger,
+//     sakId: SakId = SakId(RandomOSURId.generate()),
+//     personident: Personident = Personident.random(),
+//     behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
+//     saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+//     beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
+// ): UtbetalingApi {
+//     return UtbetalingApi(
+//         sakId, 
+//         behandlingId,
+//         personident,
+//         vedtakstidspunkt.atStartOfDay(),
+//         stønad,
+//         beslutterId,
+//         saksbehandlerId,
+//         perioder, 
+//     )
+// }
 
 // private fun UtbetalingsperiodeApi.Companion.new(
 //     fom: LocalDate,
@@ -342,38 +342,38 @@ private fun UtbetalingApi.Companion.dagpenger(
 //     fastsattDagpengesats: UInt? = null,
 // ) = UtbetalingsperiodeApi( fom, tom, beløp, stønad, UUID.randomUUID(), betalendeEnhet, fastsattDagpengesats)
 
-private fun UtbetalingsperiodeApi.Companion.expand(
-    fom: LocalDate,
-    tom: LocalDate,
-    beløp: UInt,
-    expansionStrategy: (LocalDate) -> LocalDate,
-    betalendeEnhet: NavEnhet? = null,
-    fastsattDagpengesats: UInt? = null,
-): List<UtbetalingsperiodeApi> = buildList {
-    var date = fom
-    while (date.isBefore(tom) || date.isEqual(tom)) {
-        add(UtbetalingsperiodeApi(date, date, beløp, UUID.randomUUID(), betalendeEnhet, fastsattDagpengesats))
-        date = expansionStrategy(date)
-    }
-}
+// private fun UtbetalingsperiodeApi.Companion.expand(
+//     fom: LocalDate,
+//     tom: LocalDate,
+//     beløp: UInt,
+//     expansionStrategy: (LocalDate) -> LocalDate,
+//     betalendeEnhet: NavEnhet? = null,
+//     fastsattDagpengesats: UInt? = null,
+// ): List<UtbetalingsperiodeApi> = buildList {
+//     var date = fom
+//     while (date.isBefore(tom) || date.isEqual(tom)) {
+//         add(UtbetalingsperiodeApi(date, date, beløp, UUID.randomUUID(), betalendeEnhet, fastsattDagpengesats))
+//         date = expansionStrategy(date)
+//     }
+// }
 
-private fun Utbetalingsperiode.Companion.dagpenger(
-    fom: LocalDate,
-    tom: LocalDate,
-    beløp: UInt,
-    satstype: Satstype,  
-    id: UUID = UUID.randomUUID(),
-    betalendeEnhet: NavEnhet? = null,
-    fastsattDagpengesats: UInt? = null,
-): Utbetalingsperiode = Utbetalingsperiode(
-    fom,
-    tom,
-    beløp,
-    satstype,
-    id,
-    betalendeEnhet,
-    fastsattDagpengesats,
-)
+// private fun Utbetalingsperiode.Companion.dagpenger(
+//     fom: LocalDate,
+//     tom: LocalDate,
+//     beløp: UInt,
+//     satstype: Satstype,  
+//     id: UUID = UUID.randomUUID(),
+//     betalendeEnhet: NavEnhet? = null,
+//     fastsattDagpengesats: UInt? = null,
+// ): Utbetalingsperiode = Utbetalingsperiode(
+//     fom,
+//     tom,
+//     beløp,
+//     satstype,
+//     id,
+//     betalendeEnhet,
+//     fastsattDagpengesats,
+// )
 
 // private fun Utbetaling.Companion.dagpenger(
 //     ref: Pair<UtbetalingId, Utbetaling>,
@@ -391,120 +391,120 @@ private fun Utbetalingsperiode.Companion.dagpenger(
 //     ref.first
 // )
 
-private fun Utbetaling.Companion.dagpenger(
-    vedtakstidspunkt: LocalDate,
-    periode: Utbetalingsperiode,
-    stønad: StønadTypeDagpenger,
-    sakId: SakId = SakId(RandomOSURId.generate()),
-    personident: Personident = Personident.random(),
-    behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
-    saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
-    beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
-): Utbetaling = Utbetaling(
-    sakId,
-    behandlingId,
-    personident,
-    vedtakstidspunkt.atStartOfDay(),
-    stønad,
-    beslutterId = beslutterId,
-    saksbehandlerId,
-    periode,
-)
+// private fun Utbetaling.Companion.dagpenger(
+//     vedtakstidspunkt: LocalDate,
+//     periode: Utbetalingsperiode,
+//     stønad: StønadTypeDagpenger,
+//     sakId: SakId = SakId(RandomOSURId.generate()),
+//     personident: Personident = Personident.random(),
+//     behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
+//     saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+//     beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
+// ): Utbetaling = Utbetaling(
+//     sakId,
+//     behandlingId,
+//     personident,
+//     vedtakstidspunkt.atStartOfDay(),
+//     stønad,
+//     beslutterId = beslutterId,
+//     saksbehandlerId,
+//     periode,
+// )
 
-private fun UtbetalingsperiodeDto.Companion.opphør(
-    from: Utbetaling,
-    opphør: LocalDate,
-    id: UUID,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.DAG, opphør = opphør)
+// private fun UtbetalingsperiodeDto.Companion.opphør(
+//     from: Utbetaling,
+//     opphør: LocalDate,
+//     id: UUID,
+//     forrigeId: UUID?,
+//     fom: LocalDate,
+//     tom: LocalDate,
+//     sats: UInt,
+//     klassekode: String,
+// ) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.DAG, opphør = opphør)
 
-private fun UtbetalingsperiodeDto.Companion.default(
-    from: Utbetaling,
-    id: UUID,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-    satstype: Satstype = Satstype.MND,
-    erEndringPåEsksisterendePeriode: Boolean = false,
-    opphør: LocalDate? = null,
-): UtbetalingsperiodeDto = UtbetalingsperiodeDto(
-    erEndringPåEksisterendePeriode = erEndringPåEsksisterendePeriode,
-    opphør = opphør?.let(::Opphør),
-    id = id,
-    forrigeId = forrigeId,
-    vedtaksdato = from.vedtakstidspunkt.toLocalDate(),
-    klassekode = klassekode,
-    fom = fom,
-    tom = tom,
-    sats = sats,
-    satstype = satstype,
-    utbetalesTil = from.personident.ident,
-    behandlingId = from.behandlingId.id,
-)
+// private fun UtbetalingsperiodeDto.Companion.default(
+//     from: Utbetaling,
+//     id: UUID,
+//     forrigeId: UUID?,
+//     fom: LocalDate,
+//     tom: LocalDate,
+//     sats: UInt,
+//     klassekode: String,
+//     satstype: Satstype = Satstype.MND,
+//     erEndringPåEsksisterendePeriode: Boolean = false,
+//     opphør: LocalDate? = null,
+// ): UtbetalingsperiodeDto = UtbetalingsperiodeDto(
+//     erEndringPåEksisterendePeriode = erEndringPåEsksisterendePeriode,
+//     opphør = opphør?.let(::Opphør),
+//     id = id,
+//     forrigeId = forrigeId,
+//     vedtaksdato = from.vedtakstidspunkt.toLocalDate(),
+//     klassekode = klassekode,
+//     fom = fom,
+//     tom = tom,
+//     sats = sats,
+//     satstype = satstype,
+//     utbetalesTil = from.personident.ident,
+//     behandlingId = from.behandlingId.id,
+// )
 
-private fun UtbetalingsperiodeDto.Companion.dag(
-    from: Utbetaling,
-    id: UUID,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.DAG)
+// private fun UtbetalingsperiodeDto.Companion.dag(
+//     from: Utbetaling,
+//     id: UUID,
+//     forrigeId: UUID?,
+//     fom: LocalDate,
+//     tom: LocalDate,
+//     sats: UInt,
+//     klassekode: String,
+// ) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.DAG)
 
-private fun UtbetalingsperiodeDto.Companion.virkedag(
-    from: Utbetaling,
-    id: UUID,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.VIRKEDAG)
+// private fun UtbetalingsperiodeDto.Companion.virkedag(
+//     from: Utbetaling,
+//     id: UUID,
+//     forrigeId: UUID?,
+//     fom: LocalDate,
+//     tom: LocalDate,
+//     sats: UInt,
+//     klassekode: String,
+// ) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.VIRKEDAG)
 
-private fun UtbetalingsperiodeDto.Companion.mnd(
-    from: Utbetaling,
-    id: UUID,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.MND)
+// private fun UtbetalingsperiodeDto.Companion.mnd(
+//     from: Utbetaling,
+//     id: UUID,
+//     forrigeId: UUID?,
+//     fom: LocalDate,
+//     tom: LocalDate,
+//     sats: UInt,
+//     klassekode: String,
+// ) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.MND)
 
-private fun UtbetalingsperiodeDto.Companion.eng(
-    from: Utbetaling,
-    id: UUID,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.ENGANGS)
-
-private fun UtbetalingsoppdragDto.Companion.dagpenger(
-    from: Utbetaling,
-    periode: UtbetalingsperiodeDto,
-    erFørsteUtbetalingPåSak: Boolean = true,
-    fagsystem: FagsystemDto = FagsystemDto.DAGPENGER,
-    saksbehandlerId: String = TestData.DEFAULT_SAKSBEHANDLER,
-    beslutterId: String = TestData.DEFAULT_BESLUTTER,
-    avstemmingstidspunkt: LocalDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-    brukersNavKontor: String? = null,
-): UtbetalingsoppdragDto = UtbetalingsoppdragDto(
-    erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
-    fagsystem = fagsystem,
-    saksnummer = from.sakId.id,
-    aktør = from.personident.ident,
-    saksbehandlerId = saksbehandlerId,
-    beslutterId = beslutterId,
-    avstemmingstidspunkt = avstemmingstidspunkt,
-    brukersNavKontor = brukersNavKontor,
-    utbetalingsperiode = periode,
-)
+// private fun UtbetalingsperiodeDto.Companion.eng(
+//     from: Utbetaling,
+//     id: UUID,
+//     forrigeId: UUID?,
+//     fom: LocalDate,
+//     tom: LocalDate,
+//     sats: UInt,
+//     klassekode: String,
+// ) = UtbetalingsperiodeDto.default(from, id, forrigeId, fom, tom, sats, klassekode, Satstype.ENGANGS)
+//
+// private fun UtbetalingsoppdragDto.Companion.dagpenger(
+//     from: Utbetaling,
+//     periode: UtbetalingsperiodeDto,
+//     erFørsteUtbetalingPåSak: Boolean = true,
+//     fagsystem: FagsystemDto = FagsystemDto.DAGPENGER,
+//     saksbehandlerId: String = TestData.DEFAULT_SAKSBEHANDLER,
+//     beslutterId: String = TestData.DEFAULT_BESLUTTER,
+//     avstemmingstidspunkt: LocalDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
+//     brukersNavKontor: String? = null,
+// ): UtbetalingsoppdragDto = UtbetalingsoppdragDto(
+//     erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
+//     fagsystem = fagsystem,
+//     saksnummer = from.sakId.id,
+//     aktør = from.personident.ident,
+//     saksbehandlerId = saksbehandlerId,
+//     beslutterId = beslutterId,
+//     avstemmingstidspunkt = avstemmingstidspunkt,
+//     brukersNavKontor = brukersNavKontor,
+//     utbetalingsperiode = periode,
+// )

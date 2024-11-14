@@ -9,28 +9,16 @@ import java.util.*
 
 @JvmInline
 value class SakId(val id: String)
-
 @JvmInline
 value class BehandlingId(val id: String)
-
-@JvmInline
-value class Personident(val ident: String) {
-    companion object
-}
-
-@JvmInline
-value class Navident(val ident: String) {
-    companion object
-}
-
 @JvmInline
 value class NavEnhet(val enhet: String)
-
-
 @JvmInline
-value class UtbetalingId(val id: UUID) {
-    companion object
-}
+value class Personident(val ident: String) { companion object }
+@JvmInline
+value class Navident(val ident: String) { companion object }
+@JvmInline
+value class UtbetalingId(val id: UUID) { companion object }
 
 data class Utbetaling(
     val sakId: SakId,
@@ -45,13 +33,13 @@ data class Utbetaling(
     companion object {
         fun from(dto: UtbetalingApi): Utbetaling =
             Utbetaling(
-                sakId = dto.sakId,
-                behandlingId = dto.behandlingId,
-                personident = dto.personident,
+                sakId = SakId(dto.sakId),
+                behandlingId = BehandlingId(dto.behandlingId),
+                personident = Personident(dto.personident),
                 vedtakstidspunkt = dto.vedtakstidspunkt,
                 stønad = dto.stønad,
-                beslutterId = dto.beslutterId,
-                saksbehandlerId = dto.saksbehandlerId,
+                beslutterId = Navident(dto.beslutterId),
+                saksbehandlerId = Navident(dto.saksbehandlerId),
                 periode = Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom }),
             )
     }
@@ -62,7 +50,7 @@ data class Utbetalingsperiode(
     val tom: LocalDate,
     val beløp: UInt,
     val satstype: Satstype,
-    val id: UUID = UUID.randomUUID(),
+    // val id: UUID = UUID.randomUUID(),
     val betalendeEnhet: NavEnhet? = null,
     val fastsattDagpengesats: UInt? = null,
 ) {
@@ -74,8 +62,8 @@ data class Utbetalingsperiode(
                 fom = perioder.first().fom,
                 tom = perioder.last().tom,
                 beløp = beløp(perioder, satstype),
-                id = UUID.randomUUID(),
-                betalendeEnhet = perioder.last().betalendeEnhet, // baserer oss på lastest news
+                // id = UUID.randomUUID(),
+                betalendeEnhet = perioder.last().betalendeEnhet?.let(::NavEnhet), // baserer oss på lastest news
                 fastsattDagpengesats = perioder.last().fastsattDagpengesats, // baserer oss på lastest news
                 satstype = satstype,
             )

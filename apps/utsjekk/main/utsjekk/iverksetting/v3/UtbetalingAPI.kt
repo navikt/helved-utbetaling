@@ -7,30 +7,31 @@ import utsjekk.avstemming.nesteVirkedag
 import utsjekk.badRequest
 
 data class UtbetalingApi(
-    val sakId: SakId,
-    val behandlingId: BehandlingId,
-    val personident: Personident,
+    val sakId: String,
+    val behandlingId: String,
+    val personident: String,
     val vedtakstidspunkt: LocalDateTime,
     val stønad: Stønadstype,
-    val beslutterId: Navident,
-    val saksbehandlerId: Navident,
+    val beslutterId: String,
+    val saksbehandlerId: String,
     val perioder: List<UtbetalingsperiodeApi>,
 ) {
     companion object {
         fun from(domain: Utbetaling) = UtbetalingApi(
-            sakId = domain.sakId,
-            behandlingId = domain.behandlingId,
-            personident = domain.personident,
+            sakId = domain.sakId.id,
+            behandlingId = domain.behandlingId.id,
+            personident = domain.personident.ident,
             vedtakstidspunkt = domain.vedtakstidspunkt,
             stønad = domain.stønad,
-            beslutterId = domain.beslutterId,
-            saksbehandlerId = domain.saksbehandlerId,
+            beslutterId = domain.beslutterId.ident,
+            saksbehandlerId = domain.saksbehandlerId.ident,
             perioder = UtbetalingsperiodeApi.from(domain.periode)
         )
     }
 
     fun validate() {
         failOnÅrsskifte()
+        failOnDuplicatePerioder()
         // validate beløp
         // validate fom/tom
         // validate stønadstype opp mot e.g. fastsattdagpengesats
@@ -41,12 +42,11 @@ data class UtbetalingsperiodeApi(
     val fom: LocalDate,
     val tom: LocalDate,
     val beløp: UInt,
-    val id: UUID = UUID.randomUUID(),
 
     /**
      * Dette feltet brukes hvis budsjettet til et lokalkontor skal brukes i beregningene.
      */
-    val betalendeEnhet: NavEnhet? = null,
+    val betalendeEnhet: String? = null,
 
     /**
      * Dagpenger har særegen skatteberegning og må fylle inn dette feltet.
@@ -60,8 +60,7 @@ data class UtbetalingsperiodeApi(
                     fom = domain.fom,
                     tom = domain.tom,
                     beløp = domain.beløp,
-                    id = domain.id,
-                    betalendeEnhet = domain.betalendeEnhet,
+                    betalendeEnhet = domain.betalendeEnhet?.enhet,
                     fastsattDagpengesats = domain.fastsattDagpengesats,
                 )
             )
@@ -73,8 +72,7 @@ data class UtbetalingsperiodeApi(
                         fom = date,
                         tom = date,
                         beløp = domain.beløp,
-                        id = UUID.randomUUID(),
-                        betalendeEnhet = domain.betalendeEnhet,
+                        betalendeEnhet = domain.betalendeEnhet?.enhet,
                         fastsattDagpengesats = domain.fastsattDagpengesats,
                     )
                     add(periode)
@@ -94,4 +92,21 @@ private fun UtbetalingApi.failOnÅrsskifte() {
         )
     }
 }
+
+private fun UtbetalingApi.failOnDuplicatePerioder() {
+    if(perioder.groupBy { it.fom }.any { (_, perioder) -> perioder.size != 1 }) {
+        badRequest(
+            msg = "kan ikke sende inn duplikate perioder",
+            field = "fom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+    if(perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }) {
+        badRequest(
+            msg = "kan ikke sende inn duplikate perioder",
+            field = "tom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+} 
 
