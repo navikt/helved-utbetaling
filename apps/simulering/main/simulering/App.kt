@@ -1,5 +1,6 @@
 package simulering
 
+// imports
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -47,7 +48,7 @@ fun Application.app(config: Config = Config()) {
         }
     }
 
-    install(DoubleReceive) // TODO: Used to log request body in CallLogging.
+    install(DoubleReceive) // Used to log request body in CallLogging.
 
     install(CallLogging) {
         level = Level.INFO
