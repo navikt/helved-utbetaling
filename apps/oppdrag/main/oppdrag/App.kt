@@ -1,5 +1,6 @@
 package oppdrag
 
+// imports
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -87,11 +88,11 @@ fun Application.server(config: Config = Config()) {
     val avstemmingProducer = AvstemmingMQProducer(mq, config.avstemming)
     val avstemmingService = GrensesnittavstemmingService(avstemmingProducer)
 
-    environment.monitor.subscribe(ApplicationStopping) {
+    monitor.subscribe(ApplicationStopping) {
         oppdragConsumer.close()
     }
 
-    environment.monitor.subscribe(ApplicationStarted) {
+    monitor.subscribe(ApplicationStarted) {
         oppdragConsumer.start()
     }
 
