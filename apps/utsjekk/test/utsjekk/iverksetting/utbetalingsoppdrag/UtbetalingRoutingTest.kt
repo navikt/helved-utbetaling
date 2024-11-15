@@ -146,6 +146,25 @@ class UtbetalingRoutingTest {
 
     @Test
     fun `bad request when tom is before fom`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 10.des,
+            listOf(
+                UtbetalingsperiodeApi(10.des, 9.des, 1_000u),
+            ),
+        )
+
+        val res = httpClient.post("/utbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError.Response>()
+        assertEquals(error.msg, "fom må være før eller lik tom")
+        assertEquals(error.field, "fom")
+        assertEquals(error.doc, "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder")
+//        assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test

@@ -32,6 +32,7 @@ data class UtbetalingApi(
     fun validate() {
         failOnÅrsskifte()
         failOnDuplicatePerioder()
+        failOnTomBeforeFom()
         // validate beløp
         // validate fom/tom
         // validate stønadstype opp mot e.g. fastsattdagpengesats
@@ -110,3 +111,12 @@ private fun UtbetalingApi.failOnDuplicatePerioder() {
     }
 } 
 
+private fun UtbetalingApi.failOnTomBeforeFom() {
+    if(!perioder.all { it.fom <= it.tom }) {
+        badRequest(
+            msg = "fom må være før eller lik tom",
+            field = "fom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
