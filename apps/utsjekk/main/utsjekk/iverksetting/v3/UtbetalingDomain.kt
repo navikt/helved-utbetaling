@@ -103,6 +103,7 @@ enum class StønadTypeDagpenger : Stønadstype {
     EØS_FERIETILLEGG_AVDØD;
 }
 
+// TODO: legg til klassekodene for barnetillegg
 enum class StønadTypeTiltakspenger : Stønadstype {
     ARBEIDSFORBEREDENDE_TRENING,
     ARBEIDSRETTET_REHABILITERING,
@@ -144,8 +145,10 @@ private fun satstype(fom: LocalDate, tom: LocalDate): Satstype = when {
     else -> Satstype.ENGANGS
 }
 
+// TODO: hva skjer hvis jeg sender inn arbeidsager i påskeuka. blir det riktig å lage en tykk melding fra fom - tom med satstype  DAG?
+// må vi kjede i dette tilfellet? må vi kreve at teamene splitter opp utbetalingene slik at det ikke blir kjeder.
 private fun satstype(satstyper: List<Satstype>): Satstype {
-    if (satstyper.size == 1 && satstyper.any { it in listOf(Satstype.ENGANGS, Satstype.DAG, Satstype.VIRKEDAG) }) {
+    if (satstyper.size == 1) {
         return Satstype.ENGANGS
     }
     if (satstyper.all { it == Satstype.VIRKEDAG }) {
@@ -154,7 +157,7 @@ private fun satstype(satstyper: List<Satstype>): Satstype {
     if (satstyper.all { it in listOf(Satstype.DAG, Satstype.VIRKEDAG) }) {
         return Satstype.DAG
     }
-    if (satstyper.size == 1 && satstyper.all { it == Satstype.MND }) {
+    if (satstyper.all { it == Satstype.MND }) {
         return Satstype.MND
     }
 
@@ -166,7 +169,7 @@ private fun satstype(satstyper: List<Satstype>): Satstype {
 
 private fun beløp(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): UInt =
     when (satstype) {
-        Satstype.DAG, Satstype.VIRKEDAG -> perioder.map { it.beløp }.toSet().singleOrNull() 
+        Satstype.DAG, Satstype.VIRKEDAG, Satstype.MND -> perioder.map { it.beløp }.toSet().singleOrNull() 
             ?: badRequest(
                 msg = "fant fler ulike beløp blant dagene",
                 field = "beløp",
