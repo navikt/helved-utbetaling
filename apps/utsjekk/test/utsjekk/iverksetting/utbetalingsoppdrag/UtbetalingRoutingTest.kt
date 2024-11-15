@@ -9,7 +9,7 @@ import httpClient
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.bodyAsBytes
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -40,7 +40,27 @@ class UtbetalingRoutingTest {
     fun `can create Utbetaling`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
-            listOf(UtbetalingsperiodeApi(1.feb, 28.feb, 24_000u)),
+            listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val res = httpClient.post("/utbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.Created, res.status)
+        assertNotNull(res.body<UtbetalingId>())
+    }
+
+    @Test
+    fun `can create Utbetaling with multiple MND`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            listOf(
+                UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u),
+                UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u),
+            ),
         )
 
         val res = httpClient.post("/utbetalinger") {
@@ -58,7 +78,7 @@ class UtbetalingRoutingTest {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             listOf(
-                UtbetalingsperiodeApi(1.feb, 28.feb, 24_000u), // <-- must be a single day or..
+                UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u), // <-- must be a single day or..
                 UtbetalingsperiodeApi(1.mar, 1.mar, 800u),     // <-- must be sent in a different request 
             ),
         )
@@ -125,12 +145,16 @@ class UtbetalingRoutingTest {
     }
 
     @Test
+    fun `bad request when tom is before fom`() = runTest() {
+    }
+
+    @Test
     fun `bad request when fom is duplicate`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 10.des,
             listOf(
-                UtbetalingsperiodeApi(10.des, 9.des, 10_000u),
                 UtbetalingsperiodeApi(10.des, 10.des, 10_000u),
+                UtbetalingsperiodeApi(10.des, 11.des, 10_000u),
             ),
         )
 
@@ -169,14 +193,14 @@ class UtbetalingRoutingTest {
         assertEquals(error.msg, "kan ikke sende inn duplikate perioder")
         assertEquals(error.field, "tom")
         assertEquals(error.doc, "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder")
-//        assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
+        // assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
     fun `can get Utbetaling`() = runTest() { 
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
-            listOf(UtbetalingsperiodeApi(1.feb, 28.feb, 24_000u)),
+            listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
         val uid = httpClient.post("/utbetalinger") {
