@@ -7,13 +7,13 @@ import java.time.MonthDay
 fun LocalDate.nesteVirkedag(): LocalDate {
     var nesteDag = this.plusDays(1)
 
-    while (nesteDag.erVirkedag()) {
+    while (nesteDag.erHelligdag()) {
         nesteDag = nesteDag.plusDays(1)
     }
     return nesteDag
 }
 
-fun LocalDate.erVirkedag(): Boolean {
+fun LocalDate.erHelligdag(): Boolean {
     val helligDager = FASTE_HELLIGDAGER + beregnBevegeligeHelligdager(year)
     val erHelg = dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
     val erHelligdag = helligDager.contains(MonthDay.from(this))

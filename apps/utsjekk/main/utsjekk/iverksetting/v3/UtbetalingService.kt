@@ -46,7 +46,6 @@ object UtbetalingsoppdragService : UtbetalingService {
                 erEndringPåEksisterendePeriode = false,
                 opphør = null,
                 id = UUID.randomUUID(), // trenger vi denne uten kjeding? utbetaling.periode.id,
-                forrigeId = null,
                 vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                 klassekode = klassekode(utbetaling.stønad),
                 fom = utbetaling.periode.fom,

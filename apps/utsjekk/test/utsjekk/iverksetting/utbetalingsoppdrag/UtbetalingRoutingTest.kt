@@ -257,7 +257,7 @@ private fun Personident.Companion.random(): Personident {
     return Personident(no.nav.utsjekk.kontrakter.felles.Personident.random().verdi)
 }
 
-private fun UtbetalingApi.Companion.dagpenger(
+fun UtbetalingApi.Companion.dagpenger(
     vedtakstidspunkt: LocalDate,
     perioder: List<UtbetalingsperiodeApi>,
     stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
@@ -310,10 +310,10 @@ private fun Utbetalingsperiode.Companion.dagpenger(
     fastsattDagpengesats,
 )
 
-private fun Utbetaling.Companion.dagpenger(
+fun Utbetaling.Companion.dagpenger(
     vedtakstidspunkt: LocalDate,
     periode: Utbetalingsperiode,
-    stønad: StønadTypeDagpenger,
+    stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
     sakId: SakId = SakId(RandomOSURId.generate()),
     personident: Personident = Personident.random(),
     behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
@@ -330,94 +330,3 @@ private fun Utbetaling.Companion.dagpenger(
     periode,
 )
 
-private fun UtbetalingsperiodeDto.Companion.opphør(
-    from: Utbetaling,
-    opphør: LocalDate,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, forrigeId, fom, tom, sats, klassekode, Satstype.DAG, opphør = opphør)
-
-private fun UtbetalingsperiodeDto.Companion.default(
-    from: Utbetaling,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-    satstype: Satstype = Satstype.MND,
-    erEndringPåEsksisterendePeriode: Boolean = false,
-    opphør: LocalDate? = null,
-): UtbetalingsperiodeDto = UtbetalingsperiodeDto(
-    erEndringPåEksisterendePeriode = erEndringPåEsksisterendePeriode,
-    opphør = opphør?.let(::Opphør),
-    vedtaksdato = from.vedtakstidspunkt.toLocalDate(),
-    klassekode = klassekode,
-    fom = fom,
-    tom = tom,
-    sats = sats,
-    satstype = satstype,
-    utbetalesTil = from.personident.ident,
-    behandlingId = from.behandlingId.id,
-    id = UUID.randomUUID(),
-    forrigeId = forrigeId,
-)
-
-private fun UtbetalingsperiodeDto.Companion.dag(
-    from: Utbetaling,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, forrigeId, fom, tom, sats, klassekode, Satstype.DAG)
-
-private fun UtbetalingsperiodeDto.Companion.virkedag(
-    from: Utbetaling,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, forrigeId, fom, tom, sats, klassekode, Satstype.VIRKEDAG)
-
-private fun UtbetalingsperiodeDto.Companion.mnd(
-    from: Utbetaling,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, forrigeId, fom, tom, sats, klassekode, Satstype.MND)
-
-private fun UtbetalingsperiodeDto.Companion.eng(
-    from: Utbetaling,
-    forrigeId: UUID?,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, forrigeId, fom, tom, sats, klassekode, Satstype.ENGANGS)
-
-private fun UtbetalingsoppdragDto.Companion.dagpenger(
-    from: Utbetaling,
-    periode: UtbetalingsperiodeDto,
-    erFørsteUtbetalingPåSak: Boolean = true,
-    fagsystem: FagsystemDto = FagsystemDto.DAGPENGER,
-    saksbehandlerId: String = TestData.DEFAULT_SAKSBEHANDLER,
-    beslutterId: String = TestData.DEFAULT_BESLUTTER,
-    avstemmingstidspunkt: LocalDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-    brukersNavKontor: String? = null,
-): UtbetalingsoppdragDto = UtbetalingsoppdragDto(
-    erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
-    fagsystem = fagsystem,
-    saksnummer = from.sakId.id,
-    aktør = from.personident.ident,
-    saksbehandlerId = saksbehandlerId,
-    beslutterId = beslutterId,
-    avstemmingstidspunkt = avstemmingstidspunkt,
-    brukersNavKontor = brukersNavKontor,
-    utbetalingsperiode = periode,
-)
