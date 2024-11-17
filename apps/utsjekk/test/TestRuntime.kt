@@ -22,11 +22,9 @@ import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.TaskHistoryDao
-import utsjekk.Config
-import utsjekk.appLog
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.server
+import utsjekk.*
 import java.io.File
 
 object TestRuntime : AutoCloseable {
@@ -104,11 +102,12 @@ private val testApplication: TestApplication by lazy {
                     Migrator(File("migrations")).migrate()
                 }
             }
-            server(
-                config = TestRuntime.config,
-                featureToggles = TestRuntime.unleash,
-                statusProducer = TestRuntime.kafka
-            )
+            val config = TestRuntime.config
+            val metrics = telemetry()
+            database(config.jdbc)
+            val iverksettinger = iverksetting(TestRuntime.unleash, TestRuntime.kafka)
+            scheduler(config, iverksettinger, metrics)
+            routes(config, iverksettinger, metrics)
         }
     }
 }
