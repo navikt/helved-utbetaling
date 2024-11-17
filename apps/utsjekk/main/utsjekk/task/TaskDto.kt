@@ -77,6 +77,10 @@ enum class Kind(
         retryStrategy = TaskDto.exponentialSec,
         metadataStrategy = IverksettingTaskStrategy::metadataStrategy,
     ),
+    // Utbetaling(
+    //     retryStrategy = TaskDto.exponentialSec,
+    //     metadataStrategy = UtbetalingTaskStrategy::metadataStrategy,
+    // ),
     SjekkStatus(
         retryStrategy = TaskDto.exponentialMin,
         metadataStrategy = StatusTaskStrategy::metadataStrategy,
