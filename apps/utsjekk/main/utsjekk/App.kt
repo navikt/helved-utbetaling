@@ -19,6 +19,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
+import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
@@ -26,6 +27,7 @@ import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.kafka.Kafka
+import libs.kafka.KafkaConfig
 import libs.postgres.Jdbc
 import libs.postgres.JdbcConfig
 import libs.postgres.Migrator
@@ -58,33 +60,97 @@ fun main() {
 
     embeddedServer(Netty, port = 8080) {
         val config = Config()
+        val metrics = telemetry()
         database(config.jdbc)
-        server(config)
+        val statusProducer = kafka(config.kafka)
+        val unleash = featureToggles(config.unleash)
+        val iverksettinger = iverksetting(unleash, statusProducer)
+        scheduler(config, iverksettinger, metrics)
+        routes(config, iverksettinger, metrics)
     }.start(wait = true)
 }
 
-fun database(config: JdbcConfig) {
-    Jdbc.initialize(config)
+fun Application.telemetry(
+    metrics: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
+): PrometheusMeterRegistry {
+    install(MicrometerMetrics) {
+        registry = metrics
+        meterBinders += LogbackMetrics()
+    }
+    appLog.info("setup telemetry")
+    return metrics
+}
 
+fun Application.database(config: JdbcConfig) {
+    Jdbc.initialize(config)
     runBlocking {
         withContext(Jdbc.context) {
             Migrator(File("migrations")).migrate()
         }
     }
+    appLog.info("setup database")
 }
 
-fun Application.server(
-    config: Config = Config(),
-    featureToggles: FeatureToggles = UnleashFeatureToggles(config.unleash),
-    statusProducer: Kafka<StatusEndretMelding> = StatusKafkaProducer(config.kafka),
-) {
-
-    val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-    install(MicrometerMetrics) {
-        registry = metrics
-        meterBinders += LogbackMetrics()
+fun Application.kafka(
+    config: KafkaConfig,
+    statusProducer: Kafka<StatusEndretMelding> = StatusKafkaProducer(config),
+): Kafka<StatusEndretMelding> {
+    monitor.subscribe(ApplicationStopping) {
+        statusProducer.close()
     }
+    appLog.info("setup kafka")
+    return statusProducer
+}
 
+fun Application.featureToggles(
+    config: UnleashConfig,
+    featureToggles: FeatureToggles = UnleashFeatureToggles(config),
+): FeatureToggles {
+    appLog.info("setup featureToggles")
+    return featureToggles
+}
+
+fun Application.iverksetting(
+    featureToggles: FeatureToggles,
+    statusProducer: Kafka<StatusEndretMelding>, 
+): Iverksettinger {
+    appLog.info("setup iverksettinger")
+    return Iverksettinger(featureToggles, statusProducer)
+}
+
+fun Application.scheduler(
+    config: Config,
+    iverksettinger: Iverksettinger,
+    metrics: MeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
+) {
+    val oppdrag = OppdragClient(config)
+    val scheduler = TaskScheduler(
+        listOf(
+            IverksettingTaskStrategy(oppdrag, iverksettinger),
+            StatusTaskStrategy(oppdrag, iverksettinger),
+            AvstemmingTaskStrategy(oppdrag).apply {
+                runBlocking {
+                    withContext(Jdbc.context) {
+                        initiserAvstemmingForNyeFagsystemer()
+                    }
+                }
+            },
+        ),
+        LeaderElector(config),
+        metrics
+    )
+
+    monitor.subscribe(ApplicationStopping) {
+        scheduler.close()
+    }
+    appLog.info("setup scheduler")
+}
+
+fun Application.routes(
+    config: Config,
+    iverksettinger: Iverksettinger,
+    metrics: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
+) {
     install(ContentNegotiation) {
         jackson {
             registerModule(JavaTimeModule())
@@ -93,8 +159,13 @@ fun Application.server(
         }
     }
 
-    install(DoubleReceive)
+    install(Authentication) {
+        jwt(TokenProvider.AZURE) {
+            configure(config.azure)
+        }
+    }
 
+    install(DoubleReceive)
     install(CallLog) {
         exclude { call -> call.request.path().startsWith("/probes") }
         log { call ->
@@ -120,37 +191,8 @@ fun Application.server(
         }
     }
 
-    install(Authentication) {
-        jwt(TokenProvider.AZURE) {
-            configure(config.azure)
-        }
-    }
-
-    val oppdrag = OppdragClient(config)
     val simulering = SimuleringClient(config)
-    val iverksettinger = Iverksettinger(featureToggles, statusProducer)
     val simuleringValidator = SimuleringValidator(iverksettinger)
-    val scheduler =
-        TaskScheduler(
-            listOf(
-                IverksettingTaskStrategy(oppdrag, iverksettinger),
-                StatusTaskStrategy(oppdrag, iverksettinger),
-                AvstemmingTaskStrategy(oppdrag).apply {
-                    runBlocking {
-                        withContext(Jdbc.context) {
-                            initiserAvstemmingForNyeFagsystemer()
-                        }
-                    }
-                },
-            ),
-            LeaderElector(config),
-            metrics
-        )
-
-    monitor.subscribe(ApplicationStopping) {
-        scheduler.close()
-        statusProducer.close()
-    }
 
     routing {
         authenticate(TokenProvider.AZURE) {
@@ -162,6 +204,8 @@ fun Application.server(
 
         probes(metrics)
     }
+
+    appLog.info("setup routes")
 }
 
 fun ApplicationCall.navident(): String =

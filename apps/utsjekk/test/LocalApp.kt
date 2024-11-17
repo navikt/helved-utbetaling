@@ -11,11 +11,9 @@ import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
-import utsjekk.appLog
-import utsjekk.database
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.server
+import utsjekk.*
 import utsjekk.task.Status
 import java.time.LocalDateTime
 import java.util.*
@@ -30,39 +28,41 @@ fun main() {
 }
 
 fun Application.testApp() {
-    database(TestRuntime.config.jdbc)
-    server(
-        config = TestRuntime.config,
-        featureToggles = TestRuntime.unleash,
-        statusProducer = TestRuntime.kafka,
-    ).apply {
-        routing {
-            get("/token") {
-                call.respond(AzureToken(3600, TestRuntime.azure.generateToken()))
-            }
+    val config = TestRuntime.config
+    val metrics = telemetry()
+    database(config.jdbc)
+    val iverksettinger = iverksetting(TestRuntime.unleash, TestRuntime.kafka)
+    scheduler(config, iverksettinger, metrics)
+    routes(config, iverksettinger, metrics)
+    testRouting()
+}
 
-            post("/libs/task") {
-                val numberOfTasks = call.request.queryParameters["numberOfTasks"]?.toIntOrNull() ?: 10
+fun Application.testRouting() {
+    routing {
+        get("/token") {
+            call.respond(AzureToken(3600, TestRuntime.azure.generateToken()))
+        }
 
-                withContext(Jdbc.context) {
-                    transaction {
-                        for (i in 1..numberOfTasks) {
-                            val iverksetting = TestData.domain.iverksetting()
+        post("/libs/task") {
+            val numberOfTasks = call.request.queryParameters["numberOfTasks"]?.toIntOrNull() ?: 10
 
-                            iverksetting.dao().insert()
-                            iverksetting.resultatDao().insert()
+            withContext(Jdbc.context) {
+                transaction {
+                    for (i in 1..numberOfTasks) {
+                        val iverksetting = TestData.domain.iverksetting()
 
-                            enTask(payload = iverksetting).insert()
-                        }
+                        iverksetting.dao().insert()
+                        iverksetting.resultatDao().insert()
+
+                        enTask(payload = iverksetting).insert()
                     }
                 }
-
-                call.respond(HttpStatusCode.Created)
             }
+
+            call.respond(HttpStatusCode.Created)
         }
     }
 }
-
 private fun Iverksetting.dao(): IverksettingDao = IverksettingDao(this, mottattTidspunkt = LocalDateTime.now())
 
 private fun Iverksetting.resultatDao(): IverksettingResultatDao =
