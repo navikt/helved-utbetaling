@@ -1,7 +1,7 @@
 package utsjekk.iverksetting.v3
 
 import com.fasterxml.jackson.annotation.JsonCreator
-import utsjekk.avstemming.erVirkedag
+import utsjekk.avstemming.erHelligdag
 import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -141,24 +141,24 @@ enum class StønadTypeTilleggsstønader : Stønadstype {
 
 private fun satstype(fom: LocalDate, tom: LocalDate): Satstype = when {
     fom.dayOfMonth == 1 && tom.plusDays(1) == fom.plusMonths(1) -> Satstype.MND
-    fom == tom -> if (fom.erVirkedag()) Satstype.VIRKEDAG else Satstype.DAG
+    fom == tom -> if (fom.erHelligdag()) Satstype.DAG else Satstype.VIRKEDAG
     else -> Satstype.ENGANGS
 }
 
 // TODO: hva skjer hvis jeg sender inn arbeidsager i påskeuka. blir det riktig å lage en tykk melding fra fom - tom med satstype  DAG?
 // må vi kjede i dette tilfellet? må vi kreve at teamene splitter opp utbetalingene slik at det ikke blir kjeder.
 private fun satstype(satstyper: List<Satstype>): Satstype {
-    if (satstyper.size == 1) {
+    if (satstyper.size == 1 && satstyper.none { it == Satstype.MND }) {
         return Satstype.ENGANGS
     }
     if (satstyper.all { it == Satstype.VIRKEDAG }) {
         return Satstype.VIRKEDAG
     }
-    if (satstyper.all { it in listOf(Satstype.DAG, Satstype.VIRKEDAG) }) {
-        return Satstype.DAG
-    }
     if (satstyper.all { it == Satstype.MND }) {
         return Satstype.MND
+    }
+    if (satstyper.any { it == Satstype.DAG }) { 
+        return Satstype.DAG
     }
 
     badRequest(
