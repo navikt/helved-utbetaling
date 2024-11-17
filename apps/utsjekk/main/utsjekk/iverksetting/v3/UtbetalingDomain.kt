@@ -83,9 +83,13 @@ sealed interface Stønadstype {
                 .recoverCatching { StønadTypeTilleggsstønader.valueOf(str) }
                 .recoverCatching { StønadTypeTiltakspenger.valueOf(str) }
                 .getOrThrow()
-
     }
 
+    fun asFagsystemStr() = when (this) {
+        is StønadTypeDagpenger -> "DAGPENGER"
+        is StønadTypeTiltakspenger -> "TILTAKSPENGER"
+        is StønadTypeTilleggsstønader -> "TILLEGGSSTØNADER"
+    }
 }
 
 enum class StønadTypeDagpenger : Stønadstype {
