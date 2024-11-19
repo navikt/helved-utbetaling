@@ -1,4 +1,4 @@
-package utsjekk.iverksetting.v3
+package utsjekk.utbetaling
 
 import utsjekk.task.TaskStrategy
 import utsjekk.task.Kind
@@ -8,7 +8,7 @@ import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
-class UtbetalingTaskStategy(
+class UtbetalingTaskStrategy(
 
 ): TaskStrategy {
     override suspend fun isApplicable(task: TaskDao): Boolean {
@@ -16,11 +16,9 @@ class UtbetalingTaskStategy(
     }
 
     override suspend fun execute(task: TaskDao) {
-        val utbetaling = objectMapper.readValue<Utbetaling>(task.payload)
-        val fagsystem = FagsystemDto.valueOf(utbetaling.stønad.asFagsystemStr())
+        val oppdrag = objectMapper.readValue<UtbetalingsoppdragDto>(task.payload)
 
-        // TODO: vi har mistet CRUD-konteksten her
-        val dto = UtbetalingsoppdragService.create(utbetaling, fagsystem)
+        // todo: oppdrag
 
         Tasks.update(task.id, libs.task.Status.COMPLETE, "") {
             TaskDto.exponentialSec(it)

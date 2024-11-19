@@ -3,6 +3,7 @@ package utsjekk.task
 import libs.task.TaskDao
 import utsjekk.avstemming.AvstemmingTaskStrategy
 import utsjekk.iverksetting.IverksettingTaskStrategy
+import utsjekk.utbetaling.UtbetalingTaskStrategy
 import utsjekk.status.StatusTaskStrategy
 import java.time.LocalDateTime
 import java.util.*
@@ -77,10 +78,10 @@ enum class Kind(
         retryStrategy = TaskDto.exponentialSec,
         metadataStrategy = IverksettingTaskStrategy::metadataStrategy,
     ),
-    // Utbetaling(
-    //     retryStrategy = TaskDto.exponentialSec,
-    //     metadataStrategy = UtbetalingTaskStrategy::metadataStrategy,
-    // ),
+    Utbetaling(
+        retryStrategy = TaskDto.exponentialSec,
+        metadataStrategy = UtbetalingTaskStrategy::metadataStrategy,
+    ),
     SjekkStatus(
         retryStrategy = TaskDto.exponentialMin,
         metadataStrategy = StatusTaskStrategy::metadataStrategy,

@@ -47,7 +47,7 @@ import utsjekk.status.StatusKafkaProducer
 import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
-import utsjekk.iverksetting.v3.utbetalingRoute 
+import utsjekk.utbetaling.utbetalingRoute 
 import java.io.File
 
 val appLog = logger("app")
