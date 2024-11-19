@@ -1,4 +1,4 @@
-package utsjekk.iverksetting.v3
+package utsjekk.utbetaling
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import utsjekk.avstemming.erHelligdag

@@ -1,4 +1,4 @@
-package utsjekk.iverksetting.utbetalingsoppdrag
+package utsjekk.utbetaling
 
 // imports
 import TestData
@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test
 import utsjekk.ApiError
 import utsjekk.avstemming.nesteVirkedag
 import utsjekk.iverksetting.RandomOSURId
-import utsjekk.iverksetting.v3.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit

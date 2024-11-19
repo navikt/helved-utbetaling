@@ -1,4 +1,4 @@
-package utsjekk.iverksetting.v3
+package utsjekk.utbetaling
 
 import utsjekk.badRequest
 import java.time.LocalDate
@@ -9,11 +9,16 @@ import java.util.*
 enum class FagsystemDto(val kode: String) {
     DAGPENGER("DP"),
     TILTAKSPENGER("TILTPENG"),
-    TILLEGGSSTØNADER("TILLST"),
-}
+    TILLEGGSSTØNADER("TILLST");
 
-fun String.tilFagsystem(): FagsystemDto = FagsystemDto.entries.find { it.kode == this }
-    ?: badRequest("$this er ukjent fagsystem")
+    companion object {
+        fun from(stønad: Stønadstype): FagsystemDto {
+            return FagsystemDto.entries
+                .find { it.name == stønad.asFagsystemStr() }
+                ?: badRequest("$stønad er ukjent fagsystem")
+        }
+    }
+}
 
 data class UtbetalingsoppdragDto(
     val erFørsteUtbetalingPåSak: Boolean,
