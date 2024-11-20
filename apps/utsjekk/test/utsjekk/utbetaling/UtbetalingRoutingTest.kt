@@ -285,7 +285,7 @@ class UtbetalingRoutingTest {
             setBody(updatedUtbetaling)
         }
 
-        assertEquals(HttpStatusCode.OK, res.status)
+        assertEquals(HttpStatusCode.NoContent, res.status)
     }
 
     @Test
@@ -450,6 +450,41 @@ class UtbetalingRoutingTest {
         assertEquals("perioder", error.field)
         assertEquals("https://navikt.github.io/utsjekk-docs/utbetalinger/perioder", error.doc)
         // assertEquals(200, http.head(error.doc).status.value)
+    }
+
+    @Test
+    fun `can delete Utbetaling`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+        httpClient.delete("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+        httpClient.get("/utbetalinger/${uid}") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.also {
+            assertEquals(HttpStatusCode.NotFound, it.status)
+            val error = it.body<ApiError.Response>()
+            assertEquals("utbetaling", error.msg)
+            assertEquals("uid", error.field)
+            assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
+            assertEquals(200, http.head(error.doc).status.value)
+        }
     }
 }
 
