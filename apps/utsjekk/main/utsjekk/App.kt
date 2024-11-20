@@ -228,7 +228,7 @@ value class Client(
     fun toFagsystem(): Fagsystem =
         when (name) {
             "utsjekk", "helved-performance" -> Fagsystem.DAGPENGER
-            "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
+            "tiltakspenger-saksbehandling-api", "helved-peisen" -> Fagsystem.TILTAKSPENGER
             "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
             else -> forbidden(
                 msg = "mangler mapping mellom appname ($name) og fagsystem-enum",
