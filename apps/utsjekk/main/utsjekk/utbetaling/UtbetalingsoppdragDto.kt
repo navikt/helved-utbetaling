@@ -52,3 +52,4 @@ data class UtbetalingsperiodeDto(
 }
 
 data class Opphør(val fom: LocalDate)
+

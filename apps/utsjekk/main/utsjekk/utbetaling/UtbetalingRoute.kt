@@ -43,7 +43,7 @@ fun Route.utbetalingRoute() {
                 ?.let(UtbetalingApi::from)
                 ?: notFound(msg = "utbetaling", field = "uid")
 
-            call.respond(dto)
+            call.respond(HttpStatusCode.OK, dto)
         }
 
         put {
@@ -60,9 +60,25 @@ fun Route.utbetalingRoute() {
                     DatabaseError.Unknown -> internalServerError("unknown database error")
                 }
             } 
-            call.respond(HttpStatusCode.OK)
+            call.respond(HttpStatusCode.NoContent)
         }
-    
+
+        delete {
+            val uid = call.parameters["uid"]
+                ?.let(::uuid)
+                ?.let(::UtbetalingId)
+                ?: badRequest(msg = "missing path param", field = "uid") 
+
+            val dto = call.receive<UtbetalingApi>().also { it.validate() }
+            val domain = Utbetaling.from(dto)
+            UtbetalingService.delete(uid, domain).onFailure { 
+                when (it) {
+                    DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
+                    DatabaseError.Unknown -> internalServerError("unknown database error")
+                }
+            }
+            call.respond(HttpStatusCode.NoContent)
+        }
     }
 }
 
