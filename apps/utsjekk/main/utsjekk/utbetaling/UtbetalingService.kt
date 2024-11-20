@@ -18,7 +18,7 @@ object UtbetalingService {
      */
     suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling) {
         val oppdrag = UtbetalingsoppdragDto(
-            erFørsteUtbetalingPåSak = true,
+            erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
             fagsystem = FagsystemDto.from(utbetaling.stønad),
             saksnummer = utbetaling.sakId.id,
             aktør = utbetaling.personident.ident,
@@ -29,7 +29,7 @@ object UtbetalingService {
             utbetalingsperiode = UtbetalingsperiodeDto(
                 erEndringPåEksisterendePeriode = false,
                 opphør = null,
-                id = UUID.randomUUID(), // trenger vi denne uten kjeding? utbetaling.periode.id,
+                id = utbetaling.periode.id, 
                 vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                 klassekode = klassekode(utbetaling.stønad),
                 fom = utbetaling.periode.fom,
@@ -64,7 +64,42 @@ object UtbetalingService {
      *  - endre periode på et oppdrag (f.eks. forkorte siste periode)
      *  - opphør fra og med en dato
      */
-    suspend fun update(uid: UtbetalingId, utbetaling: Utbetaling) {}
+    suspend fun update(uid: UtbetalingId, utbetaling: Utbetaling) {
+        val existing = DatabaseFake.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
+        existing.validateDiff(utbetaling)
+        val oppdrag = UtbetalingsoppdragDto(
+            erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
+            fagsystem = FagsystemDto.from(utbetaling.stønad),
+            saksnummer = utbetaling.sakId.id,
+            aktør = utbetaling.personident.ident,
+            saksbehandlerId = utbetaling.saksbehandlerId.ident,
+            beslutterId = utbetaling.beslutterId.ident,
+            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
+            brukersNavKontor = utbetaling.periode.betalendeEnhet?.enhet,
+            utbetalingsperiode = UtbetalingsperiodeDto(
+                erEndringPåEksisterendePeriode = true,
+                opphør = null,
+                id = utbetaling.periode.id, 
+                idRef = existing.periode.id,
+                vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
+                klassekode = klassekode(utbetaling.stønad),
+                fom = utbetaling.periode.fom,
+                tom = utbetaling.periode.tom,
+                sats = utbetaling.periode.beløp,
+                satstype = utbetaling.periode.satstype,
+                utbetalesTil = utbetaling.personident.ident,
+                behandlingId = utbetaling.behandlingId.id,
+            )
+        )
+        withContext(Jdbc.context) {
+            transaction {
+                Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
+                    objectMapper.writeValueAsString(it)
+                }
+                DatabaseFake.update(uid, utbetaling)
+            }
+        }
+    }
 
     /**
      * Slett en utbetalingsperiode (opphør hele perioden).
@@ -77,6 +112,10 @@ internal object DatabaseFake {
 
     fun findOrNull(uid: UtbetalingId): Utbetaling? {
         return utbetalinger[uid]
+    }
+
+    fun update(uid: UtbetalingId, utbetaling: Utbetaling) {
+        utbetalinger[uid] = utbetaling
     }
 
     fun save(uid: UtbetalingId, utbetaling: Utbetaling) {

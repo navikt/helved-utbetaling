@@ -45,7 +45,7 @@ class UtbetalingApiToDomainTest {
         val domain = Utbetaling.from(api)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 4.feb, 
-            periode = Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS),
+            periode = Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS, id = domain.periode.id),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),
@@ -70,7 +70,7 @@ class UtbetalingApiToDomainTest {
         val domain = Utbetaling.from(api)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.aug, 
-            periode = Utbetalingsperiode.dagpenger(1.aug, 24.aug, 7500u, Satstype.ENGANGS),
+            periode = Utbetalingsperiode.dagpenger(1.aug, 24.aug, 7500u, Satstype.ENGANGS, id = domain.periode.id),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),
@@ -95,7 +95,7 @@ class UtbetalingApiToDomainTest {
         val domain = Utbetaling.from(api)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb, 
-            periode = Utbetalingsperiode.dagpenger(1.feb, 31.mar, 35_000u, Satstype.ENGANGS),
+            periode = Utbetalingsperiode.dagpenger(1.feb, 31.mar, 35_000u, Satstype.ENGANGS, id = domain.periode.id),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),
@@ -123,7 +123,7 @@ class UtbetalingApiToDomainTest {
         val domain = Utbetaling.from(api)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 5.aug, 
-            periode = Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.VIRKEDAG),
+            periode = Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.VIRKEDAG, id = domain.periode.id),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),
@@ -153,7 +153,7 @@ class UtbetalingApiToDomainTest {
         val domain = Utbetaling.from(api)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 5.aug, 
-            periode = Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.DAG),
+            periode = Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.DAG, id = domain.periode.id),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),
@@ -179,7 +179,7 @@ class UtbetalingApiToDomainTest {
         val domain = Utbetaling.from(api)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 29.feb, 
-            periode = Utbetalingsperiode.dagpenger(1.feb, 29.feb, 26_000u, Satstype.MND),
+            periode = Utbetalingsperiode.dagpenger(1.feb, 29.feb, 26_000u, Satstype.MND, id = domain.periode.id),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),
@@ -206,7 +206,7 @@ class UtbetalingApiToDomainTest {
         val domain = Utbetaling.from(api)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 31.mar, 
-            periode = Utbetalingsperiode.dagpenger(1.feb, 31.mar, 8_000u, Satstype.MND),
+            periode = Utbetalingsperiode.dagpenger(1.feb, 31.mar, 8_000u, Satstype.MND, id = domain.periode.id),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),
@@ -228,7 +228,9 @@ private fun Utbetalingsperiode.Companion.dagpenger(
     satstype: Satstype,  
     betalendeEnhet: NavEnhet? = null,
     fastsattDagpengesats: UInt? = null,
+    id: UUID = UUID.randomUUID(),
 ): Utbetalingsperiode = Utbetalingsperiode(
+    id,
     fom,
     tom,
     beløp,

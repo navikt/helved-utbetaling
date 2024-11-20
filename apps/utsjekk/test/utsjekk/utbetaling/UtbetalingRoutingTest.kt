@@ -308,7 +308,9 @@ private fun Utbetalingsperiode.Companion.dagpenger(
     satstype: Satstype,
     betalendeEnhet: NavEnhet? = null,
     fastsattDagpengesats: UInt? = null,
+    id: UUID = UUID.randomUUID(),
 ): Utbetalingsperiode = Utbetalingsperiode(
+    id,
     fom,
     tom,
     beløp,
