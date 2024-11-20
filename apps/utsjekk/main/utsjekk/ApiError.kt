@@ -48,6 +48,12 @@ fun unprocessable(
     doc: String? = null,
 ) : Nothing = throw ApiError(422, msg, field, doc)
 
+fun internalServerError(
+    msg: String, 
+    field: String? = null,
+    doc: String? = null,
+) : Nothing = throw ApiError(500, msg, field, doc)
+
 fun unavailable(
     msg: String, 
     field: String? = null,

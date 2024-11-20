@@ -7,16 +7,23 @@ import libs.postgres.concurrency.transaction
 import libs.postgres.Jdbc
 import libs.task.TaskDao
 import libs.task.Tasks
+import libs.utils.Result
+import libs.utils.Ok
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import kotlinx.coroutines.withContext
 import utsjekk.notFound
+
+enum class DatabaseError {
+    Conflict,
+    Unknown,
+}
 
 object UtbetalingService {
 
     /**
      * Legg til nytt utbetalingsoppdrag.
      */
-    suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling) {
+    suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError>  {
         val oppdrag = UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
             fagsystem = FagsystemDto.from(utbetaling.stønad),
@@ -41,7 +48,7 @@ object UtbetalingService {
             )
         )
 
-        withContext(Jdbc.context) {
+        return withContext(Jdbc.context) {
             transaction {
                 Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
                     objectMapper.writeValueAsString(it)
@@ -64,7 +71,7 @@ object UtbetalingService {
      *  - endre periode på et oppdrag (f.eks. forkorte siste periode)
      *  - opphør fra og med en dato
      */
-    suspend fun update(uid: UtbetalingId, utbetaling: Utbetaling) {
+    suspend fun update(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
         val existing = DatabaseFake.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
         existing.validateDiff(utbetaling)
         val oppdrag = UtbetalingsoppdragDto(
@@ -91,7 +98,7 @@ object UtbetalingService {
                 behandlingId = utbetaling.behandlingId.id,
             )
         )
-        withContext(Jdbc.context) {
+        return withContext(Jdbc.context) {
             transaction {
                 Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
                     objectMapper.writeValueAsString(it)
@@ -114,12 +121,14 @@ internal object DatabaseFake {
         return utbetalinger[uid]
     }
 
-    fun update(uid: UtbetalingId, utbetaling: Utbetaling) {
+    fun update(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
         utbetalinger[uid] = utbetaling
+        return Ok(Unit)
     }
 
-    fun save(uid: UtbetalingId, utbetaling: Utbetaling) {
+    fun save(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
         utbetalinger[uid] = utbetaling
+        return Ok(Unit)
     }
 
     fun truncate() { 
