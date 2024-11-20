@@ -15,7 +15,7 @@ object UtbetalingService {
     /**
      * Legg til nytt utbetalingsoppdrag.
      */
-    suspend fun create(utbetaling: Utbetaling): UtbetalingId {
+    suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling) {
         val oppdrag = UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = true,
             fagsystem = FagsystemDto.from(utbetaling.stønad),
@@ -40,12 +40,12 @@ object UtbetalingService {
             )
         )
 
-        return withContext(Jdbc.context) {
+        withContext(Jdbc.context) {
             transaction {
                 Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
                     objectMapper.writeValueAsString(it)
                 }
-                DatabaseFake.save(utbetaling)
+                DatabaseFake.save(uid, utbetaling)
             }
         }
     } 
@@ -53,7 +53,7 @@ object UtbetalingService {
     /**
      * Hent eksisterende utbetalingsoppdrag
      */
-    suspend fun read(id: UtbetalingId): UtbetalingsoppdragDto = TODO("not implemented")
+    suspend fun read(uid: UtbetalingId): Utbetaling = TODO("not implemented")
 
     /**
      * Erstatt et utbetalingsoppdrag.
@@ -61,25 +61,23 @@ object UtbetalingService {
      *  - endre periode på et oppdrag (f.eks. forkorte siste periode)
      *  - opphør fra og med en dato
      */
-    suspend fun update(id: UtbetalingId, utbetaling: Utbetaling) {}
+    suspend fun update(uid: UtbetalingId, utbetaling: Utbetaling) {}
 
     /**
      * Slett en utbetalingsperiode (opphør hele perioden).
      */
-    suspend fun delete(id: UtbetalingId) {}
+    suspend fun delete(uid: UtbetalingId) {}
 }
 
 internal object DatabaseFake {
     private val utbetalinger = mutableMapOf<UtbetalingId, Utbetaling>()
 
-    fun findOrNull(id: UtbetalingId): Utbetaling? {
-        return utbetalinger[id]
+    fun findOrNull(uid: UtbetalingId): Utbetaling? {
+        return utbetalinger[uid]
     }
 
-    fun save(utbetaling: Utbetaling): UtbetalingId {
-        val id = UtbetalingId(UUID.randomUUID())
-        utbetalinger[id] = utbetaling
-        return id
+    fun save(uid: UtbetalingId, utbetaling: Utbetaling) {
+        utbetalinger[uid] = utbetaling
     }
 
     fun truncate() { 

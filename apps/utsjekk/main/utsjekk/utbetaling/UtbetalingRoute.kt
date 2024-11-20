@@ -10,25 +10,40 @@ import utsjekk.badRequest
 import utsjekk.notFound
 
 fun Route.utbetalingRoute() {
-    route("/utbetalinger") { 
+    route("/utbetalinger/{uid}") { 
         post {
+            val uid = call.parameters["uid"]
+                ?.let(::uuid)
+                ?.let(::UtbetalingId)
+                ?: badRequest(msg = "missing path param", field = "uid") 
+
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
             val domain = Utbetaling.from(dto)
-            val uid = UtbetalingService.create(domain)
-            call.respond(HttpStatusCode.Created, uid.id)
+            UtbetalingService.create(uid, domain)
+            call.response.headers.append(HttpHeaders.Location, "/utbetalinger/${uid.id}")
+            call.respond(HttpStatusCode.Created)
         }
 
-        get("/{id}") {
-            val uid = call.parameters["id"]
-                ?.let(UUID::fromString) // can fail
+        get {
+            val uid = call.parameters["uid"]
+                ?.let(::uuid)
                 ?.let(::UtbetalingId)
-                ?: badRequest(msg = "missing path param", field = "id")
+                ?: badRequest(msg = "missing path param", field = "uid") 
 
             DatabaseFake.findOrNull(uid)
                 ?.let(UtbetalingApi::from)
                 ?.let { call.respond(it) }
-                ?: notFound(msg = "utbetaling", field = "id")
+                ?: notFound(msg = "utbetaling", field = "uid")
         }
+    
+    }
+}
+
+private fun uuid(str: String): UUID {
+    return try {
+        UUID.fromString(str)
+    } catch(e: Exception) {
+        badRequest(msg = "path param must be UUIDv4", field = "uid")
     }
 }
 

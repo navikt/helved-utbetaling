@@ -42,14 +42,15 @@ class UtbetalingRoutingTest {
             listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
-        val res = httpClient.post("/utbetalinger") {
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
         }
 
         assertEquals(HttpStatusCode.Created, res.status)
-        assertNotNull(res.body<UtbetalingId>())
+        assertEquals("/utbetalinger/$uid", res.headers["location"])
     }
 
     @Test
@@ -62,14 +63,15 @@ class UtbetalingRoutingTest {
             ),
         )
 
-        val res = httpClient.post("/utbetalinger") {
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
         }
 
         assertEquals(HttpStatusCode.Created, res.status)
-        assertNotNull(res.body<UtbetalingId>())
+        assertEquals("/utbetalinger/$uid", res.headers["location"])
     }
 
     @Test
@@ -81,8 +83,8 @@ class UtbetalingRoutingTest {
                 UtbetalingsperiodeApi(1.mar, 1.mar, 800u),     // <-- must be sent in a different request 
             ),
         )
-
-        val res = httpClient.post("/utbetalinger") {
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
@@ -106,7 +108,8 @@ class UtbetalingRoutingTest {
             ),
         )
 
-        val res = httpClient.post("/utbetalinger") {
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
@@ -121,7 +124,7 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `bad request when dates span over New Year's Eve`() = runTest() {
+    fun `bad request when dates span over New Years Eve`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.mar,
             listOf(
@@ -129,7 +132,8 @@ class UtbetalingRoutingTest {
             ),
         )
 
-        val res = httpClient.post("/utbetalinger") {
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
@@ -152,7 +156,8 @@ class UtbetalingRoutingTest {
             ),
         )
 
-        val res = httpClient.post("/utbetalinger") {
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
@@ -176,7 +181,8 @@ class UtbetalingRoutingTest {
             ),
         )
 
-        val res = httpClient.post("/utbetalinger") {
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
@@ -200,7 +206,8 @@ class UtbetalingRoutingTest {
             ),
         )
 
-        val res = httpClient.post("/utbetalinger") {
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
@@ -221,13 +228,14 @@ class UtbetalingRoutingTest {
             listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
-        val uid = httpClient.post("/utbetalinger") {
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
         }.also { 
             assertEquals(HttpStatusCode.Created, it.status)
-        }.body<UUID>()
+        }
 
         val res = httpClient.get("/utbetalinger/${uid}") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -246,7 +254,7 @@ class UtbetalingRoutingTest {
             assertEquals(HttpStatusCode.NotFound, it.status)
         }.body<ApiError.Response>()
         assertEquals("utbetaling", error.msg)
-        assertEquals("id", error.field)
+        assertEquals("uid", error.field)
         assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
         assertEquals(200, http.head(error.doc).status.value)
     }
