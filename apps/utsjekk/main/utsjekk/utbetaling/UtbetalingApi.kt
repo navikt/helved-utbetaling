@@ -36,6 +36,7 @@ data class UtbetalingApi(
         // validate beløp
         // validate fom/tom
         // validate stønadstype opp mot e.g. fastsattdagpengesats
+        // validate sakId ikke er for lang
     }
 }
 

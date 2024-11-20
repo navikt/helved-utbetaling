@@ -19,7 +19,7 @@ fun Route.utbetalingRoute() {
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
             val domain = Utbetaling.from(dto)
-            UtbetalingService.create(uid, domain)
+            UtbetalingService.create(uid, domain) // TODO: kan feile med sql unique constraint violation
             call.response.headers.append(HttpHeaders.Location, "/utbetalinger/${uid.id}")
             call.respond(HttpStatusCode.Created)
         }
@@ -30,10 +30,11 @@ fun Route.utbetalingRoute() {
                 ?.let(::UtbetalingId)
                 ?: badRequest(msg = "missing path param", field = "uid") 
 
-            DatabaseFake.findOrNull(uid)
+            val dto = UtbetalingService.read(uid)
                 ?.let(UtbetalingApi::from)
-                ?.let { call.respond(it) }
                 ?: notFound(msg = "utbetaling", field = "uid")
+
+            call.respond(dto)
         }
     
     }
