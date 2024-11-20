@@ -9,6 +9,7 @@ import libs.task.TaskDao
 import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import kotlinx.coroutines.withContext
+import utsjekk.notFound
 
 object UtbetalingService {
 
@@ -53,7 +54,9 @@ object UtbetalingService {
     /**
      * Hent eksisterende utbetalingsoppdrag
      */
-    suspend fun read(uid: UtbetalingId): Utbetaling = TODO("not implemented")
+    suspend fun read(uid: UtbetalingId): Utbetaling? {
+        return DatabaseFake.findOrNull(uid)
+    }
 
     /**
      * Erstatt et utbetalingsoppdrag.
