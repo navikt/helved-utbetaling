@@ -8,6 +8,9 @@ import io.ktor.server.util.*
 import java.util.UUID
 import utsjekk.badRequest
 import utsjekk.notFound
+import utsjekk.internalServerError
+import utsjekk.conflict
+import libs.utils.*
 
 fun Route.utbetalingRoute() {
     route("/utbetalinger/{uid}") { 
@@ -19,7 +22,13 @@ fun Route.utbetalingRoute() {
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
             val domain = Utbetaling.from(dto)
-            UtbetalingService.create(uid, domain) // TODO: kan feile med sql unique constraint violation
+
+            UtbetalingService.create(uid, domain).onFailure {
+                when (it) {
+                    DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
+                    DatabaseError.Unknown -> internalServerError("unknown database error")
+                }
+            } 
             call.response.headers.append(HttpHeaders.Location, "/utbetalinger/${uid.id}")
             call.respond(HttpStatusCode.Created)
         }
@@ -45,7 +54,12 @@ fun Route.utbetalingRoute() {
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
             val domain = Utbetaling.from(dto)
-            UtbetalingService.update(uid, domain) // TODO: return Result<T, E>
+            UtbetalingService.update(uid, domain).onFailure {
+                when (it) {
+                    DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
+                    DatabaseError.Unknown -> internalServerError("unknown database error")
+                }
+            } 
             call.respond(HttpStatusCode.OK)
         }
     
