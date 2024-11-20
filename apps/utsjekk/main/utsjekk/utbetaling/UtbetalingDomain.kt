@@ -45,12 +45,17 @@ data class Utbetaling(
     }
 
     fun validateDiff(other: Utbetaling) {
+        if (sakId != other.sakId) badRequest("cant change immutable field", "sakId")
+        if (behandlingId != other.behandlingId) badRequest("cant change immutable field", "behandlingId")
+        if (personident != other.personident) badRequest("cant change immutable field", "personident")
+        if (stønad != other.stønad) badRequest("cant change immutable field", "stønad")
+        periode.validateDiff(other.periode)
     }
 
 }
 
 data class Utbetalingsperiode(
-    val id: UUID = UUID.randomUUID(),
+    val id: UUID,
     val fom: LocalDate,
     val tom: LocalDate,
     val beløp: UInt,
@@ -63,13 +68,23 @@ data class Utbetalingsperiode(
             val satstype = satstype(perioder.map { satstype(it.fom, it.tom) }) // may throw bad request
 
             return Utbetalingsperiode(
+                id = UUID.randomUUID(),
                 fom = perioder.first().fom,
                 tom = perioder.last().tom,
                 beløp = beløp(perioder, satstype),
-                // id = UUID.randomUUID(),
                 betalendeEnhet = perioder.last().betalendeEnhet?.let(::NavEnhet), // baserer oss på lastest news
                 fastsattDagpengesats = perioder.last().fastsattDagpengesats, // baserer oss på lastest news
                 satstype = satstype,
+            )
+        }
+    }
+
+    fun validateDiff(other: Utbetalingsperiode) {
+        if (satstype != other.satstype) {
+            badRequest(
+                msg = "cant change the flavour of perioder",
+                field = "perioder",
+                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
             )
         }
     }

@@ -258,6 +258,199 @@ class UtbetalingRoutingTest {
         assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
         assertEquals(200, http.head(error.doc).status.value)
     }
+
+    @Test
+    fun `can update Utbetaling`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val updatedUtbetaling = utbetaling.copy(
+            vedtakstidspunkt = 8.des.atStartOfDay(),
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+        val res = httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(updatedUtbetaling)
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+    }
+
+    @Test
+    fun `bad request when sakId changes`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val updatedUtbetaling = utbetaling.copy(
+            sakId = "this shit should not change"
+        )
+        val error = httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(updatedUtbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.BadRequest, it.status)
+        }.body<ApiError.Response>()
+        assertEquals("cant change immutable field", error.msg)
+        assertEquals("sakId", error.field)
+        assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
+        assertEquals(200, http.head(error.doc).status.value)
+    }
+
+    @Test
+    fun `bad request when behandlingId changes`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val updatedUtbetaling = utbetaling.copy(
+            behandlingId = "this shit should not change"
+        )
+        val error = httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(updatedUtbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.BadRequest, it.status)
+        }.body<ApiError.Response>()
+        assertEquals("cant change immutable field", error.msg)
+        assertEquals("behandlingId", error.field)
+        assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
+        assertEquals(200, http.head(error.doc).status.value)
+    }
+
+    @Test
+    fun `bad request when personident changes`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val updatedUtbetaling = utbetaling.copy(
+            personident = "this shit should not change"
+        )
+        val error = httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(updatedUtbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.BadRequest, it.status)
+        }.body<ApiError.Response>()
+        assertEquals("cant change immutable field", error.msg)
+        assertEquals("personident", error.field)
+        assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
+        assertEquals(200, http.head(error.doc).status.value)
+    }
+
+    @Test
+    fun `bad request when stønad changes`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val updatedUtbetaling = utbetaling.copy(
+            stønad = StønadTypeDagpenger.PERMITTERING_ORDINÆR
+        )
+        val error = httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(updatedUtbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.BadRequest, it.status)
+        }.body<ApiError.Response>()
+        assertEquals("cant change immutable field", error.msg)
+        assertEquals("stønad", error.field)
+        assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
+        assertEquals(200, http.head(error.doc).status.value)
+    }
+
+    @Test
+    fun `bad request when satstype changes`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val updatedUtbetaling = utbetaling.copy(
+            vedtakstidspunkt = 2.feb.atStartOfDay(),
+            perioder = listOf(
+                UtbetalingsperiodeApi(1.feb, 1.feb, 2_000u),
+                UtbetalingsperiodeApi(2.feb, 2.feb, 2_000u),
+            ),
+        )
+        val error = httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(updatedUtbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.BadRequest, it.status)
+        }.body<ApiError.Response>()
+        assertEquals("cant change the flavour of perioder", error.msg)
+        assertEquals("perioder", error.field)
+        assertEquals("https://navikt.github.io/utsjekk-docs/utbetalinger/perioder", error.doc)
+        // assertEquals(200, http.head(error.doc).status.value)
+    }
 }
 
 private fun Personident.Companion.random(): Personident {
