@@ -6,6 +6,7 @@ import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 
 @JvmInline
 value class SakId(val id: String)
@@ -91,6 +92,20 @@ data class Utbetalingsperiode(
 }
 
 enum class Satstype { DAG, VIRKEDAG, MND, ENGANGS }
+
+data class UtbetalingStatus(
+    val opprettet: LocalDateTime,
+    val endret: LocalDateTime,
+    val status: Status,
+)
+
+enum class Status {
+    SENDT_TIL_OPPDRAG,
+    FEILET_MOT_OPPDRAG,
+    OK,
+    IKKE_PÅBEGYNT,
+    OK_UTEN_UTBETALING,
+}
 
 sealed interface Stønadstype {
 

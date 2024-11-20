@@ -67,6 +67,14 @@ object UtbetalingService {
     }
 
     /**
+     * Hent eksisterende utbetalingsoppdrag
+     */
+    suspend fun status(uid: UtbetalingId): UtbetalingStatus {
+        DatabaseFake.findOrNull(uid) ?: notFound("utbetaling", "uid")
+        return DatabaseFake.findStatusOrNull(uid) ?: notFound("status for utbetaling", "uid")
+    }
+
+    /**
      * Erstatt et utbetalingsoppdrag.
      *  - endre beløp på et oppdrag
      *  - endre periode på et oppdrag (f.eks. forkorte siste periode)
@@ -153,9 +161,14 @@ object UtbetalingService {
 internal object DatabaseFake {
     private val history = mutableMapOf<UtbetalingId, Utbetaling>() 
     private val utbetalinger = mutableMapOf<UtbetalingId, Utbetaling>()
+    private val statuses = mutableMapOf<UtbetalingId, UtbetalingStatus>()
 
     fun findOrNull(uid: UtbetalingId): Utbetaling? {
         return utbetalinger[uid]
+    }
+
+    fun findStatusOrNull(uid: UtbetalingId): UtbetalingStatus? {
+        return statuses[uid]
     }
 
     fun update(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
@@ -165,16 +178,20 @@ internal object DatabaseFake {
 
     fun save(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
         utbetalinger[uid] = utbetaling
+        val now = LocalDateTime.now()
+        statuses[uid] = UtbetalingStatus(now, now, Status.IKKE_PÅBEGYNT)
         return Ok(Unit)
     }
 
     fun softDelete(uid: UtbetalingId): Result<Unit, DatabaseError> {
         history[uid] = utbetalinger[uid] ?: notFound(msg = "existing utbetaling", field = "uid")
         utbetalinger.remove(uid)
+        statuses.remove(uid)
         return Ok(Unit)
     }
     fun truncate() { 
         utbetalinger.clear() 
+        statuses.clear() 
     }
 }
 
