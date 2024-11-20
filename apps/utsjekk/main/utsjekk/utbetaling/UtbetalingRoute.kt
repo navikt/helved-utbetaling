@@ -36,6 +36,18 @@ fun Route.utbetalingRoute() {
 
             call.respond(dto)
         }
+
+        put {
+            val uid = call.parameters["uid"]
+                ?.let(::uuid)
+                ?.let(::UtbetalingId)
+                ?: badRequest(msg = "missing path param", field = "uid") 
+
+            val dto = call.receive<UtbetalingApi>().also { it.validate() }
+            val domain = Utbetaling.from(dto)
+            UtbetalingService.update(uid, domain) // TODO: return Result<T, E>
+            call.respond(HttpStatusCode.OK)
+        }
     
     }
 }

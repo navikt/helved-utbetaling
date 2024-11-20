@@ -43,14 +43,18 @@ data class Utbetaling(
                 periode = Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom }),
             )
     }
+
+    fun validateDiff(other: Utbetaling) {
+    }
+
 }
 
 data class Utbetalingsperiode(
+    val id: UUID = UUID.randomUUID(),
     val fom: LocalDate,
     val tom: LocalDate,
     val beløp: UInt,
     val satstype: Satstype,
-    // val id: UUID = UUID.randomUUID(),
     val betalendeEnhet: NavEnhet? = null,
     val fastsattDagpengesats: UInt? = null,
 ) {
