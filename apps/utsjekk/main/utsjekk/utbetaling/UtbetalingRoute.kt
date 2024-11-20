@@ -46,6 +46,19 @@ fun Route.utbetalingRoute() {
             call.respond(HttpStatusCode.OK, dto)
         }
 
+        get("/status") {
+            val uid = call.parameters["uid"]
+                ?.let(::uuid)
+                ?.let(::UtbetalingId)
+                ?: badRequest(msg = "missing path param", field = "uid") 
+
+            val dto = UtbetalingService.status(uid)
+                ?.let(UtbetalingStatusApi::from)
+                ?: notFound(msg = "status for utbetaling", field = "uid")
+
+            call.respond(HttpStatusCode.OK, dto)
+        }
+
         put {
             val uid = call.parameters["uid"]
                 ?.let(::uuid)

@@ -486,6 +486,31 @@ class UtbetalingRoutingTest {
             assertEquals(200, http.head(error.doc).status.value)
         }
     }
+
+    @Test
+    fun `can get UtbetalingStatus`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also { 
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val status = httpClient.get("/utbetalinger/${uid}/status") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.also {
+            assertEquals(HttpStatusCode.OK, it.status)
+        }.body<UtbetalingStatus>()
+        assertEquals(Status.IKKE_PÅBEGYNT, status.status)
+    }
 }
 
 private fun Personident.Companion.random(): Personident {
