@@ -55,7 +55,7 @@ spec:
           - id: "70d54cad-53a3-4788-bbe3-565096f01da7" # 0000-GA-Dagpenger-Beslutter
           - id: "6c6ce2e8-b2e2-4c4b-8194-215c8e27a5c7" # saksbehandler tiltakspenger
           - id: "de518927-f657-4f37-9a64-14fdfd968dd2" # beslutter tiltakspenger
-          - id: "c1e9edec-0c10-4df2-8c74-324ab9922220" # beslutter tilleggsstønader
+          - id: "c1e9edec-0c10-4df2-8c74-324ab9922220" # saksbehandler tilleggsstønader
         extra:
           - NAVident
           - azp_name
