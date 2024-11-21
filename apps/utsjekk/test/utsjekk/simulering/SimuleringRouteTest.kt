@@ -11,6 +11,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
 import no.nav.utsjekk.kontrakter.felles.StønadTypeTiltakspenger
 import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDagpengerDto
@@ -102,6 +103,7 @@ class SimuleringRouteTest {
         val sakId = SakId("en-sakid")
         val iverksetting = iverksetting(
             sakId = sakId,
+            fagsystem = Fagsystem.TILLEGGSSTØNADER,
             behandlingId = forrigeBehandlingId,
             iverksettingId = forrigeIverksettingId,
         )
