@@ -12,7 +12,7 @@ import port
 import java.net.URI
 
 object Azp {
-    const val DAGPENGER = "test:helved:utsjekk"
+    const val DAGPENGER = "test:helved:helved-performance"
     const val TILTAKSPENGER = "test:helved:tiltakspenger-saksbehandling-api"
     const val TILLEGGSSTØNADER = "test:helved:tilleggsstonader-sak"
 }

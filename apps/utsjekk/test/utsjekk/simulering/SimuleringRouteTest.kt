@@ -5,6 +5,7 @@ import TestData.dto.api.forrigeIverksetting
 import TestData.dto.api.simuleringRequest
 import TestData.dto.api.utbetaling
 import TestRuntime
+import fakes.Azp
 import httpClient
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -30,7 +31,7 @@ class SimuleringRouteTest {
         val behId = BehandlingId("noe-tull")
         val res = httpClient.post("/api/simulering/v2") {
             contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
+            bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILLEGGSSTØNADER))
             setBody(
                 simuleringRequest(
                     sakId = sakId,
@@ -72,7 +73,7 @@ class SimuleringRouteTest {
         val behId = BehandlingId("noe-tull")
         val res = httpClient.post("/api/simulering/v2") {
             contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
+            bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILTAKSPENGER))
             setBody(
                 simuleringRequest(
                     sakId = sakId,
@@ -114,7 +115,7 @@ class SimuleringRouteTest {
 
         val res = httpClient.post("/api/simulering/v2") {
             contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken("test:helved:utsjekk"))
+            bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILLEGGSSTØNADER))
             setBody(
                 simuleringRequest(
                     sakId = sakId,
