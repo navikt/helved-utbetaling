@@ -64,7 +64,6 @@ spec:
     inbound:
       rules:
         - application: helved-peisen
-        - application: utsjekk
         - application: helved-performance
         - application: tiltakspenger-saksbehandling-api
           namespace: tpts
