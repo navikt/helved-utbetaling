@@ -1,8 +1,5 @@
 package utsjekk.utbetaling
 
-// imports
-import TestData
-import TestData.random
 import TestRuntime
 import http
 import httpClient
@@ -11,27 +8,11 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import utsjekk.ApiError
-import utsjekk.avstemming.nesteVirkedag
-import utsjekk.iverksetting.RandomOSURId
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 import java.util.*
-import kotlin.test.assertNotNull
-
-private val Int.feb: LocalDate get() = LocalDate.of(2024, 2, this)
-private val Int.mar: LocalDate get() = LocalDate.of(2024, 3, this)
-private val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
-private val Int.jan: LocalDate get() = LocalDate.of(2025, 3, this)
-private val virkedager: (LocalDate) -> LocalDate = { it.nesteVirkedag() }
-private val alleDager: (LocalDate) -> LocalDate = { it.plusDays(1) }
 
 class UtbetalingRoutingTest {
     
@@ -512,83 +493,4 @@ class UtbetalingRoutingTest {
         assertEquals(Status.IKKE_PÅBEGYNT, status.status)
     }
 }
-
-private fun Personident.Companion.random(): Personident {
-    return Personident(no.nav.utsjekk.kontrakter.felles.Personident.random().verdi)
-}
-
-fun UtbetalingApi.Companion.dagpenger(
-    vedtakstidspunkt: LocalDate,
-    perioder: List<UtbetalingsperiodeApi>,
-    stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
-    sakId: SakId = SakId(RandomOSURId.generate()),
-    personident: Personident = Personident.random(),
-    behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
-    saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
-    beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
-): UtbetalingApi {
-    return UtbetalingApi(
-        sakId.id,
-        behandlingId.id,
-        personident.ident,
-        vedtakstidspunkt.atStartOfDay(),
-        stønad,
-        beslutterId.ident,
-        saksbehandlerId.ident,
-        perioder,
-    )
-}
-
-private fun UtbetalingsperiodeApi.Companion.expand(
-    fom: LocalDate,
-    tom: LocalDate,
-    beløp: UInt,
-    expansionStrategy: (LocalDate) -> LocalDate,
-    betalendeEnhet: NavEnhet? = null,
-    fastsattDagpengesats: UInt? = null,
-): List<UtbetalingsperiodeApi> = buildList {
-    var date = fom
-    while (date.isBefore(tom) || date.isEqual(tom)) {
-        add(UtbetalingsperiodeApi(date, date, beløp, betalendeEnhet?.enhet, fastsattDagpengesats))
-        date = expansionStrategy(date)
-    }
-}
-
-private fun Utbetalingsperiode.Companion.dagpenger(
-    fom: LocalDate,
-    tom: LocalDate,
-    beløp: UInt,
-    satstype: Satstype,
-    betalendeEnhet: NavEnhet? = null,
-    fastsattDagpengesats: UInt? = null,
-    id: UUID = UUID.randomUUID(),
-): Utbetalingsperiode = Utbetalingsperiode(
-    id,
-    fom,
-    tom,
-    beløp,
-    satstype,
-    betalendeEnhet,
-    fastsattDagpengesats,
-)
-
-fun Utbetaling.Companion.dagpenger(
-    vedtakstidspunkt: LocalDate,
-    periode: Utbetalingsperiode,
-    stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
-    sakId: SakId = SakId(RandomOSURId.generate()),
-    personident: Personident = Personident.random(),
-    behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
-    saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
-    beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
-): Utbetaling = Utbetaling(
-    sakId,
-    behandlingId,
-    personident,
-    vedtakstidspunkt.atStartOfDay(),
-    stønad,
-    beslutterId,
-    saksbehandlerId,
-    periode,
-)
 

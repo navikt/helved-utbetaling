@@ -108,6 +108,7 @@ enum class Status {
 }
 
 sealed interface Stønadstype {
+    val name: String
 
     companion object {
         @JsonCreator
