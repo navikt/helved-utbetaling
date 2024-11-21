@@ -25,6 +25,8 @@ import libs.task.TaskHistoryDao
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.*
+import utsjekk.utbetaling.UtbetalingDao
+import utsjekk.utbetaling.UtbetalingStatusDao
 import java.io.File
 
 object TestRuntime : AutoCloseable {
@@ -79,6 +81,8 @@ object TestRuntime : AutoCloseable {
             TaskHistoryDao.TABLE_NAME,
             IverksettingDao.TABLE_NAME,
             IverksettingResultatDao.TABLE_NAME,
+            UtbetalingDao.TABLE_NAME,
+            UtbetalingStatusDao.TABLE_NAME,
         )
         postgres.close()
         ktor.stop()
@@ -99,12 +103,14 @@ private val testApplication: TestApplication by lazy {
         application {
             runBlocking {
                 withContext(TestRuntime.context) {
-                    Migrator(File("migrations")).migrate()
+                    Migrator(
+                        File("migrations"),
+                        File("test/utsjekk/utbetaling/migrations"),
+                    ).migrate()
                 }
             }
             val config = TestRuntime.config
             val metrics = telemetry()
-            database(config.jdbc)
             val iverksettinger = iverksetting(TestRuntime.unleash, TestRuntime.kafka)
             scheduler(config, iverksettinger, metrics)
             routes(config, iverksettinger, metrics)
