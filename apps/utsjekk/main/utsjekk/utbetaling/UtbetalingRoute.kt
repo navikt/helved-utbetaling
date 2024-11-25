@@ -52,9 +52,7 @@ fun Route.utbetalingRoute() {
                 ?.let(::UtbetalingId)
                 ?: badRequest(msg = "missing path param", field = "uid") 
 
-            val dto = UtbetalingService.status(uid)
-                ?.let(UtbetalingStatusApi::from)
-                ?: notFound(msg = "status for utbetaling", field = "uid")
+            val dto = UtbetalingService.status(uid).let(UtbetalingStatusApi::from)
 
             call.respond(HttpStatusCode.OK, dto)
         }

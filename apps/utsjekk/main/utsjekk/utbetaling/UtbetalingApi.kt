@@ -86,15 +86,15 @@ data class UtbetalingsperiodeApi(
 }
 
 data class UtbetalingStatusApi(
-    val opprettet: LocalDateTime,
-    val endret: LocalDateTime,
+    // val opprettet: LocalDateTime,
+    // val endret: LocalDateTime,
     val status: Status,
 ) {
     companion object {
         fun from(domain: UtbetalingStatus): UtbetalingStatusApi = 
             UtbetalingStatusApi(
-                opprettet = domain.opprettet,
-                endret = domain.endret, 
+                // opprettet = domain.opprettet,
+                // endret = domain.endret, 
                 status = domain.status,
             ) 
     }
