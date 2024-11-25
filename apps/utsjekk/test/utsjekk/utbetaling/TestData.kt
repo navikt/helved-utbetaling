@@ -88,6 +88,7 @@ fun UtbetalingsperiodeDto.Companion.eng(
 ) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.ENGANGS)
 
 fun UtbetalingsoppdragDto.Companion.dagpenger(
+    uid: UtbetalingId, 
     from: Utbetaling,
     periode: UtbetalingsperiodeDto,
     erFørsteUtbetalingPåSak: Boolean = true,
@@ -95,6 +96,7 @@ fun UtbetalingsoppdragDto.Companion.dagpenger(
     avstemmingstidspunkt: LocalDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
     brukersNavKontor: String? = null,
 ): UtbetalingsoppdragDto = UtbetalingsoppdragDto(
+    uid = uid,
     erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
     fagsystem = fagsystem,
     saksnummer = from.sakId.id,

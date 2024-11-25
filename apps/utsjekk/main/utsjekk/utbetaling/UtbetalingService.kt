@@ -22,6 +22,7 @@ object UtbetalingService {
      */
     suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError>  {
         val oppdrag = UtbetalingsoppdragDto(
+            uid = uid,
             erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
             fagsystem = FagsystemDto.from(utbetaling.stønad),
             saksnummer = utbetaling.sakId.id,
@@ -96,6 +97,7 @@ object UtbetalingService {
 
         existing.validateDiff(utbetaling)
         val oppdrag = UtbetalingsoppdragDto(
+            uid = uid,
             erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
             fagsystem = FagsystemDto.from(utbetaling.stønad),
             saksnummer = utbetaling.sakId.id,
@@ -143,6 +145,7 @@ object UtbetalingService {
         // val existing = DatabaseFake.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
         existing.validateDiff(utbetaling)
         val oppdrag = UtbetalingsoppdragDto(
+            uid = uid,
             erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
             fagsystem = FagsystemDto.from(utbetaling.stønad),
             saksnummer = utbetaling.sakId.id,
