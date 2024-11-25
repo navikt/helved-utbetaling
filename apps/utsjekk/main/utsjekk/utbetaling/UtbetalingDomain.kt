@@ -94,8 +94,6 @@ data class Utbetalingsperiode(
 enum class Satstype { DAG, VIRKEDAG, MND, ENGANGS }
 
 data class UtbetalingStatus(
-    val opprettet: LocalDateTime,
-    val endret: LocalDateTime,
     val status: Status,
 )
 

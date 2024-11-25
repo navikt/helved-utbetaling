@@ -10,14 +10,10 @@ import libs.task.Tasks
 import libs.utils.Result
 import libs.utils.Ok
 import libs.utils.Err
+import libs.utils.onSuccess
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import kotlinx.coroutines.withContext
 import utsjekk.notFound
-
-enum class DatabaseError {
-    Conflict,
-    Unknown,
-}
 
 object UtbetalingService {
 
@@ -54,7 +50,10 @@ object UtbetalingService {
                 Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
                     objectMapper.writeValueAsString(it)
                 }
-                DatabaseFake.save(uid, utbetaling)
+                UtbetalingDao(utbetaling).insert(uid)
+                    .onSuccess {
+                        UtbetalingStatusDao(UtbetalingStatus(status = Status.IKKE_PÅBEGYNT)).insert(uid)
+                    }
             }
         }
     } 
@@ -63,15 +62,22 @@ object UtbetalingService {
      * Hent eksisterende utbetalingsoppdrag
      */
     suspend fun read(uid: UtbetalingId): Utbetaling? {
-        return DatabaseFake.findOrNull(uid)
+        return withContext(Jdbc.context) {
+            transaction {
+                UtbetalingDao.findOrNull(uid)?.data
+            }
+        }
     }
 
     /**
      * Hent eksisterende utbetalingsoppdrag
      */
     suspend fun status(uid: UtbetalingId): UtbetalingStatus {
-        DatabaseFake.findOrNull(uid) ?: notFound("utbetaling", "uid")
-        return DatabaseFake.findStatusOrNull(uid) ?: notFound("status for utbetaling", "uid")
+        return withContext(Jdbc.context) {
+            transaction {
+                UtbetalingStatusDao.findOrNull(uid)?.data ?: notFound("status for utbetaling", "uid")
+            }
+        }
     }
 
     /**
@@ -81,7 +87,13 @@ object UtbetalingService {
      *  - opphør fra og med en dato
      */
     suspend fun update(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
-        val existing = DatabaseFake.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
+        val dao = withContext(Jdbc.context) {
+            transaction {
+                UtbetalingDao.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
+            }
+        }
+        val existing = dao.data
+
         existing.validateDiff(utbetaling)
         val oppdrag = UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
@@ -112,7 +124,8 @@ object UtbetalingService {
                 Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
                     objectMapper.writeValueAsString(it)
                 }
-                DatabaseFake.update(uid, utbetaling)
+                
+                dao.copy(data = utbetaling).update(uid)
             }
         }
     }
@@ -121,7 +134,13 @@ object UtbetalingService {
      * Slett en utbetalingsperiode (opphør hele perioden).
      */
     suspend fun delete(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
-        val existing = DatabaseFake.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
+        val dao = withContext(Jdbc.context) {
+            transaction {
+                UtbetalingDao.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
+            }
+        }
+        val existing = dao.data
+        // val existing = DatabaseFake.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
         existing.validateDiff(utbetaling)
         val oppdrag = UtbetalingsoppdragDto(
             erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
@@ -152,46 +171,9 @@ object UtbetalingService {
                 Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
                     objectMapper.writeValueAsString(it)
                 }
-                DatabaseFake.softDelete(uid)
+                UtbetalingDao.delete(uid) // todo: with history
             }
         }
-    }
-}
-
-internal object DatabaseFake {
-    private val history = mutableMapOf<UtbetalingId, Utbetaling>() 
-    private val utbetalinger = mutableMapOf<UtbetalingId, Utbetaling>()
-    private val statuses = mutableMapOf<UtbetalingId, UtbetalingStatus>()
-
-    fun findOrNull(uid: UtbetalingId): Utbetaling? {
-        return utbetalinger[uid]
-    }
-
-    fun findStatusOrNull(uid: UtbetalingId): UtbetalingStatus? {
-        return statuses[uid]
-    }
-
-    fun update(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
-        utbetalinger[uid] = utbetaling
-        return Ok(Unit)
-    }
-
-    fun save(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
-        utbetalinger[uid] = utbetaling
-        val now = LocalDateTime.now()
-        statuses[uid] = UtbetalingStatus(now, now, Status.IKKE_PÅBEGYNT)
-        return Ok(Unit)
-    }
-
-    fun softDelete(uid: UtbetalingId): Result<Unit, DatabaseError> {
-        history[uid] = utbetalinger[uid] ?: notFound(msg = "existing utbetaling", field = "uid")
-        utbetalinger.remove(uid)
-        statuses.remove(uid)
-        return Ok(Unit)
-    }
-    fun truncate() { 
-        utbetalinger.clear() 
-        statuses.clear() 
     }
 }
 

@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS utbetaling_status
     utbetaling_id UUID        NOT NULL,
     created_at    TIMESTAMP   NOT NULL,     -- technical
     updated_at    TIMESTAMP   NOT NULL,     -- technical
-    status        TEXT        NOT NULL 
+    status        JSON        NOT NULL 
 );
 
 CREATE INDEX IF NOT EXISTS utbetaling_status_uid_idx ON utbetaling_status (utbetaling_id);
