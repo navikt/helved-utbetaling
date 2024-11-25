@@ -91,6 +91,7 @@ data class Utbetalingsperiode(
     }
 }
 
+// TODO: VIRKEDAG er egentlig MAN-FRE, DAG er alle dager - helligdager (påske, jul osv skal ikke skrelles vekk ved f.eks DAG)
 enum class Satstype { DAG, VIRKEDAG, MND, ENGANGS }
 
 data class UtbetalingStatus(
