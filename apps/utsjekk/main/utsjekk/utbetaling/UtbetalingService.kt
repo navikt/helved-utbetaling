@@ -107,7 +107,7 @@ object UtbetalingService {
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.periode.betalendeEnhet?.enhet,
             utbetalingsperiode = UtbetalingsperiodeDto(
-                erEndringPåEksisterendePeriode = true,
+                erEndringPåEksisterendePeriode = false, // ENDR brukes bare ved kjeding 
                 opphør = null,
                 id = utbetaling.periode.id, 
                 idRef = existing.periode.id,
@@ -155,7 +155,7 @@ object UtbetalingService {
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.periode.betalendeEnhet?.enhet,
             utbetalingsperiode = UtbetalingsperiodeDto(
-                erEndringPåEksisterendePeriode = true,
+                erEndringPåEksisterendePeriode = false, // ENDR brukes bare ved kjeding
                 opphør = Opphør(utbetaling.periode.fom),
                 id = utbetaling.periode.id, 
                 idRef = existing.periode.id, // hva skal disse IDene være?
