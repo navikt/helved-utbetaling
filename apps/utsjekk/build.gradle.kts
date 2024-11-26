@@ -22,7 +22,7 @@ dependencies {
     implementation("no.nav.utsjekk.kontrakter:felles:$kontraktVersion")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.21")
-    implementation("io.getunleash:unleash-client-java:9.2.4")
+    implementation("io.getunleash:unleash-client-java:9.2.5")
 
     implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
