@@ -104,8 +104,10 @@ private val testApplication: TestApplication by lazy {
             runBlocking {
                 withContext(TestRuntime.context) {
                     Migrator(
-                        File("migrations"),
-                        File("test/utsjekk/utbetaling/migrations"),
+                        listOf(
+                            File("migrations"),
+                            File("test/utsjekk/utbetaling/migrations")
+                        )
                     ).migrate()
                 }
             }

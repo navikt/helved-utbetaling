@@ -5,9 +5,11 @@ import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import libs.auth.AzureToken
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
+import libs.postgres.Migrator
 import libs.task.TaskDao
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -17,6 +19,7 @@ import utsjekk.*
 import utsjekk.task.Status
 import java.time.LocalDateTime
 import java.util.*
+import java.io.File
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -30,7 +33,19 @@ fun main() {
 fun Application.testApp() {
     val config = TestRuntime.config
     val metrics = telemetry()
-    database(config.jdbc)
+
+    runBlocking {
+        Jdbc.initialize(config.jdbc)
+        withContext(Jdbc.context) {
+            Migrator(
+                listOf(
+                    File("migrations"),
+                    File("test/utsjekk/utbetaling/migrations")
+                )
+            ).migrate()
+        }
+        appLog.info("setup database")
+    }
     val iverksettinger = iverksetting(TestRuntime.unleash, TestRuntime.kafka)
     scheduler(config, iverksettinger, metrics)
     routes(config, iverksettinger, metrics)
