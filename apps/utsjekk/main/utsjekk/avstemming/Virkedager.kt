@@ -15,9 +15,12 @@ fun LocalDate.nesteVirkedag(): LocalDate {
 
 fun LocalDate.erHelligdag(): Boolean {
     val helligDager = FASTE_HELLIGDAGER + beregnBevegeligeHelligdager(year)
-    val erHelg = dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
     val erHelligdag = helligDager.contains(MonthDay.from(this))
-    return erHelg || erHelligdag
+    return erHelg() || erHelligdag
+}
+
+fun LocalDate.erHelg(): Boolean {
+    return dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
 }
 
 private val FASTE_HELLIGDAGER = setOf(
