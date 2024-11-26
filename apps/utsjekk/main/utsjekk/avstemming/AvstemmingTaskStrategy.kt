@@ -3,6 +3,7 @@ package utsjekk.avstemming
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.concurrency.transaction
 import libs.postgres.concurrency.withLock
+import utsjekk.task.exponentialSec
 import libs.task.TaskDao
 import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
@@ -34,9 +35,7 @@ class AvstemmingTaskStrategy(private val oppdrag: Oppdrag) : TaskStrategy {
             )
 
         transaction {
-            Tasks.update(task.id, libs.task.Status.COMPLETE, "") {
-                Kind.valueOf(kind.name).retryStrategy(it)
-            }
+            Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::exponentialSec) 
             Tasks.create(
                 libs.task.Kind.Avstemming,
                 nesteGrensesnittavstemming,

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks
+import utsjekk.task.exponentialSec
 import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
@@ -25,9 +26,7 @@ class IverksettingTaskStrategy(
     override suspend fun execute(task: TaskDao) {
         val iverksetting = objectMapper.readValue<Iverksetting>(task.payload)
         updateIverksetting(iverksetting)
-        Tasks.update(task.id, libs.task.Status.COMPLETE, "") {
-            Kind.valueOf(kind.name).retryStrategy(it)
-        }
+        Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::exponentialSec)
     }
 
     private suspend fun updateIverksetting(iverksetting: Iverksetting) {

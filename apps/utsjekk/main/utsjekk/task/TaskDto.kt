@@ -1,6 +1,7 @@
 package utsjekk.task
 
 import libs.task.TaskDao
+import libs.task.RetryStrategy
 import utsjekk.avstemming.AvstemmingTaskStrategy
 import utsjekk.iverksetting.IverksettingTaskStrategy
 import utsjekk.utbetaling.UtbetalingTaskStrategy
@@ -11,9 +12,10 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
-typealias RetryStrategy = (attemptNumber: Int) -> LocalDateTime
-
 typealias MetadataStrategy = (payload: String) -> Map<String, String>
+
+private const val MINUTES_PER_DAY: Long = 24 * 60
+private const val SECONDS_PER_DAY: Long = MINUTES_PER_DAY * 60
 
 data class TaskDto(
     val id: UUID,
@@ -28,8 +30,6 @@ data class TaskDto(
     val metadata: Map<String, String> = emptyMap(),
 ) {
     companion object {
-        private const val MINUTES_PER_DAY: Long = 24 * 60
-        private const val SECONDS_PER_DAY: Long = MINUTES_PER_DAY * 60
 
         fun from(task: TaskDao) =
             TaskDto(
@@ -44,19 +44,17 @@ data class TaskDto(
                 message = task.message,
                 metadata = Kind.valueOf(task.kind.name).metadataStrategy(task.payload),
             )
-
-        val exponentialSec: RetryStrategy =
-            { attemptNumber -> LocalDateTime.now().plusSeconds(min(2.0.pow(attemptNumber).roundToLong() + 10, SECONDS_PER_DAY)) }
-        val exponentialMin: RetryStrategy =
-            { attemptNumber ->
-                if (attemptNumber < 5) {
-                    LocalDateTime.now().plusSeconds(10)
-                } else {
-                    LocalDateTime.now().plusMinutes(min(2.0.pow(attemptNumber).roundToLong() + 10, MINUTES_PER_DAY))
-                }
-            }
-        val constant: RetryStrategy = { LocalDateTime.now().plusSeconds(30) }
     }
+}
+
+fun TaskDao.exponentialSec(): LocalDateTime = 
+    LocalDateTime.now().plusSeconds(min(2.0.pow(attempt).roundToLong() + 10, SECONDS_PER_DAY))
+
+fun TaskDao.constant10Sec(): LocalDateTime = LocalDateTime.now().plusSeconds(10)
+
+fun TaskDao.exponentialMin(): LocalDateTime = when (attempt) {
+    0, 1, 2, 3, 4, 5 -> constant10Sec()
+    else -> LocalDateTime.now().plusMinutes(min(2.0.pow(attempt).roundToLong() + 10, MINUTES_PER_DAY))
 }
 
 enum class Status {
@@ -64,26 +62,13 @@ enum class Status {
     COMPLETE,
     FAIL,
     MANUAL,
-}
+T}
 
 enum class Kind(
-    val retryStrategy: RetryStrategy,
     val metadataStrategy: MetadataStrategy,
 ) {
-    Avstemming(
-        retryStrategy = TaskDto.constant,
-        metadataStrategy = AvstemmingTaskStrategy::metadataStrategy,
-    ),
-    Iverksetting(
-        retryStrategy = TaskDto.exponentialSec,
-        metadataStrategy = IverksettingTaskStrategy::metadataStrategy,
-    ),
-    Utbetaling(
-        retryStrategy = TaskDto.exponentialSec,
-        metadataStrategy = UtbetalingTaskStrategy::metadataStrategy,
-    ),
-    SjekkStatus(
-        retryStrategy = TaskDto.exponentialMin,
-        metadataStrategy = StatusTaskStrategy::metadataStrategy,
-    ),
+    Avstemming(metadataStrategy = AvstemmingTaskStrategy::metadataStrategy),
+    Iverksetting(metadataStrategy = IverksettingTaskStrategy::metadataStrategy),
+    Utbetaling(metadataStrategy = UtbetalingTaskStrategy::metadataStrategy),
+    SjekkStatus(metadataStrategy = StatusTaskStrategy::metadataStrategy),
 }

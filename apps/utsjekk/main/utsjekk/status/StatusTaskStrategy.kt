@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks
+import utsjekk.task.exponentialSec
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
@@ -39,9 +40,7 @@ class StatusTaskStrategy(
         when (status.status) {
             OppdragStatus.KVITTERT_OK -> {
                 IverksettingResultater.oppdater(oppdragIdDto.tilUtbetalingId(), OppdragResultat(status.status))
-                Tasks.update(task.id, libs.task.Status.COMPLETE, "") {
-                    Kind.valueOf(kind.name).retryStrategy(it)
-                }
+                Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::exponentialSec)
                 service.publiserStatusmelding(iverksetting.data)
             }
 
@@ -49,24 +48,18 @@ class StatusTaskStrategy(
                 IverksettingResultater.oppdater(oppdragIdDto.tilUtbetalingId(), OppdragResultat(status.status))
                 appLog.error("Mottok feilkvittering ${status.status} fra OS for oppdrag $oppdragIdDto")
                 secureLog.error("Mottok feilkvittering ${status.status} fra OS for oppdrag $oppdragIdDto. Feilmelding: ${status.feilmelding}")
-                Tasks.update(task.id, libs.task.Status.MANUAL, status.feilmelding) {
-                    Kind.valueOf(kind.name).retryStrategy(it)
-                }
+                Tasks.update(task.id, libs.task.Status.MANUAL, status.feilmelding, TaskDao::exponentialSec)
                 service.publiserStatusmelding(iverksetting.data)
             }
 
             OppdragStatus.KVITTERT_UKJENT -> {
                 IverksettingResultater.oppdater(oppdragIdDto.tilUtbetalingId(), OppdragResultat(status.status))
                 appLog.error("Mottok ukjent kvittering fra OS for oppdrag $oppdragIdDto")
-                Tasks.update(task.id, libs.task.Status.MANUAL, "Ukjent kvittering fra OS") {
-                    Kind.valueOf(kind.name).retryStrategy(it)
-                }
+                Tasks.update(task.id, libs.task.Status.MANUAL, "Ukjent kvittering fra OS", TaskDao::exponentialSec)
             }
 
             OppdragStatus.LAGT_PÅ_KØ -> {
-                Tasks.update(task.id, task.status, null) {
-                    Kind.valueOf(kind.name).retryStrategy(it)
-                }
+                Tasks.update(task.id, task.status, null, TaskDao::exponentialSec)
             }
 
             OppdragStatus.OK_UTEN_UTBETALING -> {

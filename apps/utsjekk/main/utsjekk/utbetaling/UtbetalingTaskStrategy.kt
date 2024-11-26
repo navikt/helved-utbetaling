@@ -3,6 +3,7 @@ package utsjekk.utbetaling
 import utsjekk.task.TaskStrategy
 import utsjekk.task.Kind
 import utsjekk.task.TaskDto
+import utsjekk.task.exponentialSec
 import utsjekk.clients.Oppdrag
 import utsjekk.notFound
 import libs.task.TaskDao
@@ -26,9 +27,7 @@ class UtbetalingTaskStrategy(
 
         iverksett(oppdrag)
 
-        Tasks.update(task.id, libs.task.Status.COMPLETE, "") {
-            TaskDto.exponentialSec(it)
-        }
+        Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::exponentialSec)
     }
 
     private suspend fun iverksett(oppdrag: UtbetalingsoppdragDto) {
