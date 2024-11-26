@@ -6,6 +6,7 @@ import libs.utils.Resource
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.TestRuntime
@@ -98,6 +99,14 @@ class OppdragLagerRepositoryTest {
             val hentetOppdatertOppdrag = OppdragLagerRepository.hentOppdrag(oppdragLager.id)
 
             assertTrue(kvitteringsmelding.erLik(hentetOppdatertOppdrag.kvitteringsmelding!!))
+        }
+    }
+
+    @Test
+    fun `klarer å deserialisere utbetalingsoppdrag fra db`() {
+        val utbetalingsoppdrag = Resource.read("/json/utbetalingsoppdrag.json")
+        assertDoesNotThrow {
+            jackson.readValue(utbetalingsoppdrag, Utbetalingsoppdrag::class.java)
         }
     }
 
