@@ -223,7 +223,7 @@ private fun oppdragLager(it: ResultSet): OppdragLager {
     )
 }
 
-private val jackson: ObjectMapper = jacksonObjectMapper().apply {
+val jackson: ObjectMapper = jacksonObjectMapper().apply {
     registerModule(JavaTimeModule())
     disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
     disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
