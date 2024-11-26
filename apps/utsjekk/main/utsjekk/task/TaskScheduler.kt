@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import libs.job.Scheduler
 import libs.postgres.Jdbc
+import utsjekk.task.exponentialSec
 import libs.postgres.concurrency.transaction
 import libs.postgres.concurrency.withLock
 import libs.task.Operator
@@ -59,9 +60,7 @@ class TaskScheduler(
 
     override suspend fun onError(fed: TaskDao, err: Throwable) {
         secureLog.error("Ukjent feil oppstod ved uførelse av task. Se logger", err)
-        Tasks.update(fed.id, FAIL, err.message) {
-            Kind.valueOf(kind.name).retryStrategy(it)
-        }
+        Tasks.update(fed.id, FAIL, err.message, TaskDao::exponentialSec)
         metrics.counter("scheduler_feed_result", meterTags + Tag.of("result", "error")).increment()
     }
 }

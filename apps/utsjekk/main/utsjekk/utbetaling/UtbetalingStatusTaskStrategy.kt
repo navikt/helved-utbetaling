@@ -3,6 +3,7 @@ package utsjekk.utbetaling
 import utsjekk.task.TaskStrategy
 import utsjekk.task.Kind
 import utsjekk.task.TaskDto
+import utsjekk.task.exponentialMin
 import utsjekk.clients.Oppdrag
 import utsjekk.notFound
 import libs.task.TaskDao
@@ -36,31 +37,31 @@ class UtbetalingStatusTaskStrategy(
 
         if (uDao == null) {
             appLog.error("Fant ikke utbetaling $uId. Stopper status task ${task.id}")
-            Tasks.update(task.id, libs.task.Status.FAIL, "fant ikke utbetaling med id $uId", TaskDao::retry)
+            Tasks.update(task.id, libs.task.Status.FAIL, "fant ikke utbetaling med id $uId", TaskDao::exponentialMin)
         }
 
         uDao?.data?.let { utbetaling -> 
             val statusDto = oppdragClient.hentStatus(oppdragId(utbetaling))
             when (statusDto.status) {
                 OppdragStatus.KVITTERT_OK -> {
-                    Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::retry)
+                    Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::exponentialMin)
                     val utbetalingStatus = insertOrUpdateStatus(uId, Status.OK)
                     statusProducer.produce(uId.id.toString(), utbetalingStatus)
                 }
                 OppdragStatus.KVITTERT_MED_MANGLER, OppdragStatus.KVITTERT_TEKNISK_FEIL, OppdragStatus.KVITTERT_FUNKSJONELL_FEIL -> { 
                     appLog.error("Mottok feilkvittering ${statusDto.status} fra OS for utbetaling $uId")
                     secureLog.error("Mottok feilkvittering ${statusDto.status} fra OS for utbetaling $uId. Feilmelding: ${statusDto.feilmelding}")
-                    Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::retry)
+                    Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::exponentialMin)
                     val utbetalingStatus = insertOrUpdateStatus(uId, Status.FEILET_MOT_OPPDRAG)
                     statusProducer.produce(uId.id.toString(), utbetalingStatus)
                 }
                 OppdragStatus.KVITTERT_UKJENT -> { 
                     appLog.error("Mottok ukjent kvittering fra OS for utbetaling $uId")
-                    Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::retry)
+                    Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::exponentialMin)
                     insertOrUpdateStatus(uId, Status.FEILET_MOT_OPPDRAG)
                 }
                 OppdragStatus.LAGT_PÅ_KØ -> { 
-                    Tasks.update(task.id, task.status, null, TaskDao::retry)
+                    Tasks.update(task.id, task.status, null, TaskDao::exponentialMin)
                     insertOrUpdateStatus(uId, Status.SENDT_TIL_OPPDRAG)
                 }
                 OppdragStatus.OK_UTEN_UTBETALING -> { 
@@ -71,7 +72,7 @@ class UtbetalingStatusTaskStrategy(
     }
 }
 
-private fun TaskDao.retry(attempt: Int) = TaskDto.exponentialMin(attempt)
+// private fun TaskDao.retry() = TaskDao::exponentialSec
 
 private suspend fun insertOrUpdateStatus(
     uId: UtbetalingId,
