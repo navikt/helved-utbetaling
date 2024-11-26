@@ -3,7 +3,7 @@ package utsjekk.utbetaling
 import utsjekk.task.TaskStrategy
 import utsjekk.task.Kind
 import utsjekk.task.TaskDto
-import utsjekk.clients.OppdragClient
+import utsjekk.clients.Oppdrag
 import utsjekk.notFound
 import libs.task.TaskDao
 import libs.postgres.concurrency.transaction
@@ -14,7 +14,7 @@ import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import com.fasterxml.jackson.module.kotlin.readValue
 
 class UtbetalingTaskStrategy(
-    private val oppdragClient: OppdragClient,
+    private val oppdragClient: Oppdrag,
     private val statusProducer: Kafka<UtbetalingStatus>,
 ): TaskStrategy {
     override suspend fun isApplicable(task: TaskDao): Boolean {
