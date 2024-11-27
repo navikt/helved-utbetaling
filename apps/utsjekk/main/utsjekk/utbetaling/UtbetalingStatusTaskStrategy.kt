@@ -21,7 +21,7 @@ import libs.utils.secureLog
 
 class UtbetalingStatusTaskStrategy(
     private val oppdragClient: Oppdrag,
-    private val statusProducer: Kafka<UtbetalingStatus>,
+    // private val statusProducer: Kafka<UtbetalingStatus>,
 ): TaskStrategy {
 
     override suspend fun isApplicable(task: TaskDao): Boolean {
@@ -46,14 +46,14 @@ class UtbetalingStatusTaskStrategy(
                 OppdragStatus.KVITTERT_OK -> {
                     Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::exponentialMin)
                     val utbetalingStatus = insertOrUpdateStatus(uId, Status.OK)
-                    statusProducer.produce(uId.id.toString(), utbetalingStatus)
+                    // statusProducer.produce(uId.id.toString(), utbetalingStatus)
                 }
                 OppdragStatus.KVITTERT_MED_MANGLER, OppdragStatus.KVITTERT_TEKNISK_FEIL, OppdragStatus.KVITTERT_FUNKSJONELL_FEIL -> { 
                     appLog.error("Mottok feilkvittering ${statusDto.status} fra OS for utbetaling $uId")
                     secureLog.error("Mottok feilkvittering ${statusDto.status} fra OS for utbetaling $uId. Feilmelding: ${statusDto.feilmelding}")
                     Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::exponentialMin)
                     val utbetalingStatus = insertOrUpdateStatus(uId, Status.FEILET_MOT_OPPDRAG)
-                    statusProducer.produce(uId.id.toString(), utbetalingStatus)
+                    // statusProducer.produce(uId.id.toString(), utbetalingStatus)
                 }
                 OppdragStatus.KVITTERT_UKJENT -> { 
                     appLog.error("Mottok ukjent kvittering fra OS for utbetaling $uId")
