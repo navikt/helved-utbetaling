@@ -39,7 +39,13 @@ data class Utbetaling(
         val periode: Utbetalingsperiode,
 ) {
     companion object {
-        fun from(dto: UtbetalingApi): Utbetaling =
+
+        // vi skal ikke lage ny periodeId, men gjennbruke den fra databasen
+        fun from(dto: UtbetalingApi): Utbetaling { 
+            return from(dto, 0u)
+        }
+
+        fun from(dto: UtbetalingApi, periodeId: UInt): Utbetaling =
                 Utbetaling(
                         sakId = SakId(dto.sakId),
                         behandlingId = BehandlingId(dto.behandlingId),
@@ -48,23 +54,20 @@ data class Utbetaling(
                         stønad = dto.stønad,
                         beslutterId = Navident(dto.beslutterId),
                         saksbehandlerId = Navident(dto.saksbehandlerId),
-                        periode = Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom }),
+                        periode = Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom }, periodeId),
                 )
     }
 
     fun validateDiff(other: Utbetaling) {
         if (sakId != other.sakId) badRequest("cant change immutable field", "sakId")
-        if (behandlingId != other.behandlingId)
-                badRequest("cant change immutable field", "behandlingId")
-        if (personident != other.personident)
-                badRequest("cant change immutable field", "personident")
+        if (personident != other.personident) badRequest("cant change immutable field", "personident") // TODO: oppslag mot PDL, se at det fortsatt er samme person, ikke nødvendigvis samme ident
         if (stønad != other.stønad) badRequest("cant change immutable field", "stønad")
         periode.validateDiff(other.periode)
     }
 }
 
 data class Utbetalingsperiode(
-        val id: UUID,
+        val id: UInt,
         val fom: LocalDate,
         val tom: LocalDate,
         val beløp: UInt,
@@ -73,12 +76,11 @@ data class Utbetalingsperiode(
         val fastsattDagpengesats: UInt? = null,
 ) {
     companion object {
-        fun from(perioder: List<UtbetalingsperiodeApi>): Utbetalingsperiode {
-            val satstype =
-                    satstype(perioder.map { satstype(it.fom, it.tom) }) // may throw bad request
+        fun from(perioder: List<UtbetalingsperiodeApi>, periodeId: UInt): Utbetalingsperiode {
+            val satstype = satstype(perioder.map { satstype(it.fom, it.tom) }) // may throw bad request
 
             return Utbetalingsperiode(
-                    id = UUID.randomUUID(),
+                    id = periodeId, 
                     fom = perioder.first().fom,
                     tom = perioder.last().tom,
                     beløp = beløp(perioder, satstype),
@@ -94,6 +96,9 @@ data class Utbetalingsperiode(
     }
 
     fun validateDiff(other: Utbetalingsperiode) {
+        if (id != other.id) {
+            error("periode.id for utbetaling må være lik ${id} != ${other.id}")
+        }
         if (satstype != other.satstype) {
             badRequest(
                     msg = "cant change the flavour of perioder",

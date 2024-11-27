@@ -12,6 +12,7 @@ import utsjekk.internalServerError
 import utsjekk.conflict
 import libs.utils.*
 
+// TODO: valider at stønad (enum) tilhører AZP (claims)
 fun Route.utbetalingRoute() {
     route("/utbetalinger/{uid}") { 
         post {
@@ -21,7 +22,8 @@ fun Route.utbetalingRoute() {
                 ?: badRequest(msg = "missing path param", field = "uid") 
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
-            val domain = Utbetaling.from(dto)
+            val periodeId = 1u // TODO: select mot databasen
+            val domain = Utbetaling.from(dto, periodeId)
 
             UtbetalingService.create(uid, domain).onFailure {
                 when (it) {

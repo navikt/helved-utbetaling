@@ -103,12 +103,7 @@ private val testApplication: TestApplication by lazy {
         application {
             runBlocking {
                 withContext(TestRuntime.context) {
-                    Migrator(
-                        listOf(
-                            File("migrations"),
-                            File("test/utsjekk/utbetaling/migrations")
-                        )
-                    ).migrate()
+                    Migrator(File("migrations")).migrate()
                 }
             }
             val config = TestRuntime.config

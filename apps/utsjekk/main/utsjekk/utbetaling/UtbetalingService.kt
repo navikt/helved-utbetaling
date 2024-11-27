@@ -94,11 +94,11 @@ object UtbetalingService {
             }
         }
         val existing = dao.data
-
+        val utbetaling = utbetaling.copy(periode = utbetaling.periode.copy(id = existing.periode.id))
         existing.validateDiff(utbetaling)
         val oppdrag = UtbetalingsoppdragDto(
             uid = uid,
-            erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
+            erFørsteUtbetalingPåSak = false, // TODO: hvis man endrer på førsteUtbetalingPåSak, er denne true eller false da?
             fagsystem = FagsystemDto.from(utbetaling.stønad),
             saksnummer = utbetaling.sakId.id,
             aktør = utbetaling.personident.ident,
@@ -107,10 +107,9 @@ object UtbetalingService {
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.periode.betalendeEnhet?.enhet,
             utbetalingsperiode = UtbetalingsperiodeDto(
-                erEndringPåEksisterendePeriode = false, // ENDR brukes bare ved kjeding 
+                erEndringPåEksisterendePeriode = true,
                 opphør = null,
-                id = utbetaling.periode.id, 
-                idRef = existing.periode.id,
+                id = existing.periode.id, // TODO hva skal denne væer 
                 vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                 klassekode = klassekode(utbetaling.stønad),
                 fom = utbetaling.periode.fom,
@@ -142,11 +141,11 @@ object UtbetalingService {
             }
         }
         val existing = dao.data
-        // val existing = DatabaseFake.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
-        existing.validateDiff(utbetaling)
+        val utbetaling = utbetaling.copy(periode = utbetaling.periode.copy(id = existing.periode.id))
+        existing.validateDiff(utbetaling) // TODO: valider alt unntatt behandligId?
         val oppdrag = UtbetalingsoppdragDto(
             uid = uid,
-            erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
+            erFørsteUtbetalingPåSak = false,
             fagsystem = FagsystemDto.from(utbetaling.stønad),
             saksnummer = utbetaling.sakId.id,
             aktør = utbetaling.personident.ident,
@@ -155,10 +154,9 @@ object UtbetalingService {
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.periode.betalendeEnhet?.enhet,
             utbetalingsperiode = UtbetalingsperiodeDto(
-                erEndringPåEksisterendePeriode = false, // ENDR brukes bare ved kjeding
+                erEndringPåEksisterendePeriode = true, // opphør er alltid en ENDR
                 opphør = Opphør(utbetaling.periode.fom),
-                id = utbetaling.periode.id, 
-                idRef = existing.periode.id, // hva skal disse IDene være?
+                id = existing.periode.id, // endrer på eksisterende delytelseId 
                 vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                 klassekode = klassekode(utbetaling.stønad),
                 fom = utbetaling.periode.fom,
