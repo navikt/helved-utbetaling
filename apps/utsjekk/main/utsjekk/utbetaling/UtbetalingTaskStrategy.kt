@@ -35,7 +35,7 @@ class UtbetalingTaskStrategy(
 
         transaction {
             val status = UtbetalingStatusDao.findOrNull(oppdrag.uid)
-                ?: error("status for utbetaling {uid} mangler. Kan løses ved å manuelt legge inn en rad i utbetaling_status") 
+                ?: error("status for utbetaling {uid} mangler. Kan løses ved å manuelt legge inn en rad i utbetaling_status") // TODO: kan like gjerne bare lage den hvis den mangler 
 
             status.copy(data = status.data.copy(status = Status.SENDT_TIL_OPPDRAG))
                 .update(oppdrag.uid)

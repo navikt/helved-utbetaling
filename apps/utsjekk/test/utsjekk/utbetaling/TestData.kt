@@ -52,7 +52,7 @@ fun UtbetalingsperiodeDto.Companion.default(
     satstype = satstype,
     utbetalesTil = from.personident.ident,
     behandlingId = from.behandlingId.id,
-    id = UUID.randomUUID(), // TODO: gjør dette enklere å teste
+    id = 1u, // TODO: denne øker per utbetaling for en sak
 )
 
 fun UtbetalingsperiodeDto.Companion.dag(
@@ -152,7 +152,7 @@ fun Utbetalingsperiode.Companion.dagpenger(
     satstype: Satstype,
     betalendeEnhet: NavEnhet? = null,
     fastsattDagpengesats: UInt? = null,
-    id: UUID = UUID.randomUUID(),
+    id: UInt = 1u, // denne øker med +1 for hver utbetaling på en sakId 
 ): Utbetalingsperiode = Utbetalingsperiode(
     id,
     fom,

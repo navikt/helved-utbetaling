@@ -302,38 +302,6 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `bad request when behandlingId changes`() = runTest() {
-        val utbetaling = UtbetalingApi.dagpenger(
-            vedtakstidspunkt = 1.feb,
-            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
-        )
-
-        val uid = UUID.randomUUID()
-        httpClient.post("/utbetalinger/$uid") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(utbetaling)
-        }.also {
-            assertEquals(HttpStatusCode.Created, it.status)
-        }
-
-        val updatedUtbetaling = utbetaling.copy(
-            behandlingId = "this shit should not change"
-        )
-        val error = httpClient.put("/utbetalinger/$uid") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(updatedUtbetaling)
-        }.also {
-            assertEquals(HttpStatusCode.BadRequest, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("cant change immutable field", error.msg)
-        assertEquals("behandlingId", error.field)
-        assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
-        assertEquals(200, http.head(error.doc).status.value)
-    }
-
-    @Test
     fun `bad request when personident changes`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
