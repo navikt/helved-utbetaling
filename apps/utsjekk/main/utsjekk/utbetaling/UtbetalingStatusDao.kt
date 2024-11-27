@@ -50,7 +50,7 @@ data class UtbetalingStatusDao(
     suspend fun update(id: UtbetalingId) {
         val sql = """
             UPDATE $TABLE_NAME
-            SET status = ?, updated_at = ? 
+            SET status = to_json(?::json), updated_at = ? 
             WHERE utbetaling_id = ?
         """.trimIndent()
 
