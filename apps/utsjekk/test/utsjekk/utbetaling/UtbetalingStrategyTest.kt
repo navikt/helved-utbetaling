@@ -33,7 +33,10 @@ class UtbetalingStrategyTest {
     fun `task is applicable`() = runTest() {
         val kafka = KafkaFake()
         val oppdrag = OppdragFake()
-        val strategy = UtbetalingTaskStrategy(oppdrag, kafka)
+        val strategy = UtbetalingTaskStrategy(
+            oppdrag, 
+            // kafka
+        )
         val task = task()
         assertTrue(strategy.isApplicable(task))
     }
@@ -42,7 +45,10 @@ class UtbetalingStrategyTest {
     fun `task is not applicable`() = runTest() {
         val kafka = KafkaFake()
         val oppdrag = OppdragFake()
-        val strategy = UtbetalingTaskStrategy(oppdrag, kafka)
+        val strategy = UtbetalingTaskStrategy(
+            oppdrag, 
+            // kafka
+        )
         val task = task(kind = libs.task.Kind.Iverksetting)
         assertFalse(strategy.isApplicable(task))
     }

@@ -16,7 +16,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 
 class UtbetalingTaskStrategy(
     private val oppdragClient: Oppdrag,
-    private val statusProducer: Kafka<UtbetalingStatus>,
+    // private val statusProducer: Kafka<UtbetalingStatus>,
 ): TaskStrategy {
     override suspend fun isApplicable(task: TaskDao): Boolean {
         return task.kind == libs.task.Kind.Utbetaling
@@ -47,7 +47,7 @@ class UtbetalingTaskStrategy(
                 uid.id.toString()
             }
 
-            statusProducer.produce(oppdrag.uid.id.toString(), status.data)
+            // statusProducer.produce(oppdrag.uid.id.toString(), status.data)
         }
     }
 
