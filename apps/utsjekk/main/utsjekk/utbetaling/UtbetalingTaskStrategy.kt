@@ -44,7 +44,7 @@ class UtbetalingTaskStrategy(
                 kind = libs.task.Kind.StatusUtbetaling,
                 payload = oppdrag.uid
             ) { uid ->
-                uid.id.toString()
+                objectMapper.writeValueAsString(uid)
             }
 
             // statusProducer.produce(oppdrag.uid.id.toString(), status.data)

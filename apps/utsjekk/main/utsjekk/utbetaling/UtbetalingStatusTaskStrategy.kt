@@ -1,6 +1,7 @@
 package utsjekk.utbetaling
 
 import utsjekk.task.TaskStrategy
+import java.util.UUID
 import utsjekk.task.Kind
 import utsjekk.task.TaskDto
 import utsjekk.task.exponentialMin
@@ -61,7 +62,7 @@ class UtbetalingStatusTaskStrategy(
                     insertOrUpdateStatus(uId, Status.FEILET_MOT_OPPDRAG)
                 }
                 OppdragStatus.LAGT_PÅ_KØ -> { 
-                    Tasks.update(task.id, task.status, null, TaskDao::exponentialMin)
+                    Tasks.update(task.id, libs.task.Status.IN_PROGRESS, null, TaskDao::exponentialMin)
                     insertOrUpdateStatus(uId, Status.SENDT_TIL_OPPDRAG)
                 }
                 OppdragStatus.OK_UTEN_UTBETALING -> { 
