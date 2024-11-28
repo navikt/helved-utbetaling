@@ -8,6 +8,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
 import oppdrag.iverksetting.domene.OppdragMapper
 import oppdrag.iverksetting.tilstand.OppdragId
 import oppdrag.iverksetting.tilstand.OppdragLager
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.random.Random
@@ -57,6 +58,7 @@ fun enUtbetalingsperiode(
     opphør: Opphør? = null,
     satstype: Satstype = Satstype.MÅNEDLIG,
     behandlingId: String = RandomOSURId.generate(),
+    fastsattDagsats: BigDecimal? = null,
 ) = Utbetalingsperiode(
     erEndringPåEksisterendePeriode = false,
     opphør = opphør,
@@ -71,6 +73,7 @@ fun enUtbetalingsperiode(
     utbetalesTil = aktør,
     behandlingId = behandlingId,
     utbetalingsgrad = 50,
+    fastsattDagsats = fastsattDagsats,
 )
 
 internal val Utbetalingsoppdrag.somOppdragLager: OppdragLager

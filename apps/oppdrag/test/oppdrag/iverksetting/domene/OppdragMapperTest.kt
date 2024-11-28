@@ -15,6 +15,7 @@ import oppdrag.etUtbetalingsoppdrag
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.time.LocalDate
 
 class OppdragMapperTest {
@@ -87,6 +88,29 @@ class OppdragMapperTest {
             etUtbetalingsoppdrag(
                 fagsystem = Fagsystem.TILTAKSPENGER,
                 brukersNavKontor = "0220",
+                utbetalingsperiode = arrayOf(periode),
+            )
+
+        val oppdrag110 = OppdragMapper.tilOppdrag110(utbetalingsoppdrag)
+
+        assertOppdrag110(utbetalingsoppdrag, oppdrag110)
+        assertOppdragslinje150(periode, utbetalingsoppdrag, oppdrag110.oppdragsLinje150s[0])
+    }
+
+    @Test
+    fun `mappe vedtak for dagpenger`() {
+        val periode =
+            enUtbetalingsperiode(
+                klassifisering = "DPORAS",
+                fom = LocalDate.now(),
+                tom = LocalDate.now().plusDays(6),
+                beløp = 500,
+                satstype = Satstype.DAGLIG,
+                fastsattDagsats = BigDecimal(800)
+            )
+        val utbetalingsoppdrag =
+            etUtbetalingsoppdrag(
+                fagsystem = Fagsystem.DAGPENGER,
                 utbetalingsperiode = arrayOf(periode),
             )
 
@@ -190,6 +214,12 @@ class OppdragMapperTest {
                 utbetalingsoppdrag.saksnummer + "#" + utbetalingsperiode.forrigePeriodeId.toString(),
                 oppdragsLinje150.refDelytelseId,
             )
+        }
+        if (utbetalingsperiode.fastsattDagsats != null) {
+            assertEquals(utbetalingsperiode.fastsattDagsats, oppdragsLinje150.vedtakssats157.vedtakssats)
+        }
+        else {
+            assertNull(oppdragsLinje150.vedtakssats157)
         }
     }
 

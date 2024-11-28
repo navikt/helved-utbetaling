@@ -114,6 +114,11 @@ internal object OppdragMapper {
                     },
                 )
             }
+            utbetalingsperiode.fastsattDagsats?.let { fastsattDagsats ->
+                vedtakssats157 = objectFactory.createVedtakssats157().apply {
+                    vedtakssats = fastsattDagsats
+                }
+            }
         }
     }
 
