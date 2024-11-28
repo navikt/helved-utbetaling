@@ -36,7 +36,7 @@ object client {
         val faktiskTom: LocalDate,
         val belop: Int,
         val sats: Double,
-        val satstype: Satstype?,
+        val satstype: String?,
         val klassekode: String,
         val trekkVedtakId: Long?,
         val refunderesOrgNr: String?,
