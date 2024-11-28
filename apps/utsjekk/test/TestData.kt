@@ -259,7 +259,7 @@ object TestData {
                 tom,
                 beløp,
                 sats,
-                satstype,
+                satstype?.name,
                 klassekode,
                 trekkVedtakId,
                 refunderesOrgNr,
