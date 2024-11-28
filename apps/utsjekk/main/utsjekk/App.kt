@@ -1,9 +1,30 @@
 package utsjekk
 
-// imports
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.jackson.jackson
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.ApplicationStopping
+import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.auth.principal
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.doublereceive.DoubleReceive
+import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
+import io.ktor.server.response.respond
+import io.ktor.server.routing.routing
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -48,7 +69,11 @@ import utsjekk.status.StatusKafkaProducer
 import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
-import utsjekk.utbetaling.* 
+import utsjekk.utbetaling.UtbetalingStatusTaskStrategy
+import utsjekk.utbetaling.UtbetalingTaskStrategy
+import utsjekk.utbetaling.utbetalingRoute
+import java.io.File
+import utsjekk.utbetaling.*
 
 val appLog = logger("app")
 
@@ -70,9 +95,7 @@ fun main() {
     }.start(wait = true)
 }
 
-fun Application.telemetry(
-    metrics: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
-): PrometheusMeterRegistry {
+fun Application.telemetry(metrics: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)): PrometheusMeterRegistry {
     install(MicrometerMetrics) {
         registry = metrics
         meterBinders += LogbackMetrics()
@@ -112,7 +135,7 @@ fun Application.featureToggles(
 
 fun Application.iverksetting(
     featureToggles: FeatureToggles,
-    statusProducer: Kafka<StatusEndretMelding>, 
+    statusProducer: Kafka<StatusEndretMelding>,
 ): Iverksettinger {
     appLog.info("setup iverksettinger")
     return Iverksettinger(featureToggles, statusProducer)
@@ -124,23 +147,24 @@ fun Application.scheduler(
     metrics: MeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
 ) {
     val oppdrag = OppdragClient(config)
-    val scheduler = TaskScheduler(
-        listOf(
-            IverksettingTaskStrategy(oppdrag, iverksettinger),
-            StatusTaskStrategy(oppdrag, iverksettinger),
-            AvstemmingTaskStrategy(oppdrag).apply {
-                runBlocking {
-                    withContext(Jdbc.context) {
-                        initiserAvstemmingForNyeFagsystemer()
+    val scheduler =
+        TaskScheduler(
+            listOf(
+                IverksettingTaskStrategy(oppdrag, iverksettinger),
+                StatusTaskStrategy(oppdrag, iverksettinger),
+                AvstemmingTaskStrategy(oppdrag).apply {
+                    runBlocking {
+                        withContext(Jdbc.context) {
+                            initiserAvstemmingForNyeFagsystemer()
+                        }
                     }
-                }
-            },
-            UtbetalingTaskStrategy(oppdrag),
-            UtbetalingStatusTaskStrategy(oppdrag),
-        ),
-        LeaderElector(config),
-        metrics
-    )
+                },
+                UtbetalingTaskStrategy(oppdrag),
+                UtbetalingStatusTaskStrategy(oppdrag),
+            ),
+            LeaderElector(config),
+            metrics,
+        )
 
     monitor.subscribe(ApplicationStopping) {
         scheduler.close()
@@ -171,20 +195,28 @@ fun Application.routes(
     install(CallLog) {
         exclude { call -> call.request.path().startsWith("/probes") }
         log { call ->
-            appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms")
+            appLog.info(
+                "${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms",
+            )
             secureLog.info(
                 """
                 ${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms
                 ${call.bodyAsText()}
-                """.trimIndent()
+                """.trimIndent(),
             )
         }
     }
 
     install(StatusPages) {
-        exception<Throwable> { call, cause -> 
+        exception<Throwable> { call, cause ->
             when (cause) {
-                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse) 
+                is BadRequestException ->
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        "Klarte ikke håndtere melding. Sjekk at formatet på meldingen din er korrekt.",
+                    )
+
+                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse)
                 else -> {
                     secureLog.error("Unknown error.", cause)
                     call.respond(HttpStatusCode.InternalServerError, "Unknown error")
@@ -233,9 +265,10 @@ value class Client(
             "helved-performance" -> Fagsystem.DAGPENGER
             "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
             "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
-            else -> forbidden(
-                msg = "mangler mapping mellom appname ($name) og fagsystem-enum",
-                doc = "https://navikt.github.io/utsjekk-docs/kom_i_gang",
-            )
+            else ->
+                forbidden(
+                    msg = "mangler mapping mellom appname ($name) og fagsystem-enum",
+                    doc = "https://navikt.github.io/utsjekk-docs/kom_i_gang",
+                )
         }
 }
