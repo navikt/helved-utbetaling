@@ -64,6 +64,7 @@ fun Stønadsdata.Companion.from(dto: StønadsdataDto): Stønadsdata {
             stønadstype = dto.stønadstype,
             ferietillegg = dto.ferietillegg,
             meldekortId = dto.meldekortId,
+            fastsattDagsats = dto.fastsattDagsats,
         )
 
         is StønadsdataTiltakspengerV2Dto -> StønadsdataTiltakspenger(

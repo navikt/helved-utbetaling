@@ -4,6 +4,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.Opphør
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
 import utsjekk.iverksetting.AndelData
 import utsjekk.iverksetting.Behandlingsinformasjon
+import utsjekk.iverksetting.StønadsdataDagpenger
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -55,5 +56,11 @@ internal data class UtbetalingsperiodeMal(
             satstype = andel.satstype,
             utbetalesTil = behandlingsinformasjon.personident,
             behandlingId = behandlingsinformasjon.behandlingId.id,
+            fastsattDagsats =
+                if (andel.stønadsdata is StønadsdataDagpenger) {
+                    BigDecimal(andel.stønadsdata.fastsattDagsats.toInt())
+                } else {
+                    null
+                },
         )
 }
