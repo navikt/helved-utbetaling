@@ -161,30 +161,14 @@ object soap {
                                     datoOppdragGjelderFom = LocalDate.EPOCH,
                                     enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
                                     oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) },
-                                ),
-                            simuleringsPeriode =
-                                SimuleringsPeriode(
-                                    datoSimulerFom = dto.finnSimuleringFom(),
-                                    datoSimulerTom = dto.utbetalingsperioder.maxBy { it.tom }.tom,
-                                ),
+                                )
                         ),
                 )
         }
     }
 
-    private fun rest.SimuleringRequest.finnSimuleringFom(): LocalDate {
-        val tidligstePeriode = this.utbetalingsperioder.minBy { it.fom }
-        val opphør = this.utbetalingsperioder.find { it.opphør != null }?.opphør
-        return if (opphør != null) {
-            minOf(tidligstePeriode.fom, opphør.fom)
-        } else {
-            tidligstePeriode.fom
-        }
-    }
-
     data class SimulerRequest(
         val oppdrag: Oppdrag,
-        val simuleringsPeriode: SimuleringsPeriode,
     )
 
     @JsonPropertyOrder(
@@ -220,11 +204,6 @@ object soap {
         val typeEnhet: String,
         val enhet: String,
         val datoEnhetFom: LocalDate?,
-    )
-
-    data class SimuleringsPeriode(
-        val datoSimulerFom: LocalDate,
-        val datoSimulerTom: LocalDate,
     )
 
     data class RefusjonsInfo(
