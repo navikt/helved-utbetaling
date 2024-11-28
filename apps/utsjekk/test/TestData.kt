@@ -7,6 +7,7 @@ import utsjekk.simulering.Fagområde
 import utsjekk.simulering.Postering
 import utsjekk.simulering.PosteringType
 import utsjekk.simulering.SimuleringDetaljer
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.random.Random
@@ -117,8 +118,9 @@ object TestData {
         fun dagpengestønad(
             type: StønadTypeDagpenger = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
             ferietillegg: Ferietillegg? = null,
-            meldekortId: String = "M1"
-        ) = StønadsdataDagpengerDto(stønadstype = type, ferietillegg = ferietillegg, meldekortId = meldekortId)
+            meldekortId: String = "M1",
+            fastsattDagsats: UInt = 1000u,
+        ) = StønadsdataDagpengerDto(stønadstype = type, ferietillegg = ferietillegg, meldekortId = meldekortId, fastsattDagsats = fastsattDagsats)
 
         fun tilleggstønad(
             type: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_AAP,
@@ -347,6 +349,7 @@ object TestData {
             stønadsdata: Stønadsdata = StønadsdataDagpenger(
                 stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
                 meldekortId = "M1",
+                fastsattDagsats = 1000u,
             )
         ): AndelTilkjentYtelse = AndelTilkjentYtelse(
             beløp = beløp,
@@ -395,6 +398,7 @@ object TestData {
                 stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
                 ferietillegg = null,
                 meldekortId = "M1",
+                fastsattDagsats = 1000u,
             ),
             periodeId: Long? = null,
             forrigePeriodeId: Long? = null,
@@ -475,6 +479,7 @@ object TestData {
             utbetalesTil = utbetalesTil,
             behandlingId = behandlingId.id,
             utbetalingsgrad = null,
+            fastsattDagsats = BigDecimal(1000)
         )
 
         fun simuleringDetaljer(

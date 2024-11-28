@@ -130,6 +130,7 @@ class SimuleringRouteTest {
                             stønadsdata = StønadsdataDagpengerDto(
                                stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR,
                                 meldekortId = "M1",
+                                fastsattDagsats = 1000u,
                             )
                         )
                     ),

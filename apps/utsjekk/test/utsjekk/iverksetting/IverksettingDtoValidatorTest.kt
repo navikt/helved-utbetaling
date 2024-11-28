@@ -173,6 +173,7 @@ class IverksettingDtoValidatorTest {
                             stønadstype = StønadTypeDagpenger.DAGPENGER_EØS,
                             ferietillegg = Ferietillegg.AVDØD,
                             meldekortId = "M1",
+                            fastsattDagsats = 1000u,
                         ),
                     )
                 )

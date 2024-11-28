@@ -155,7 +155,8 @@ sealed class Stønadsdata(open val stønadstype: StønadType) {
 data class StønadsdataDagpenger(
     override val stønadstype: StønadTypeDagpenger,
     val ferietillegg: Ferietillegg? = null,
-    val meldekortId: String
+    val meldekortId: String,
+    val fastsattDagsats: UInt,
 ) :
     Stønadsdata(stønadstype) {
     fun tilKlassifiseringDagpenger(): String =
