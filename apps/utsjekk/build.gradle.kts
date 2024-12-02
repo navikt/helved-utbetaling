@@ -21,7 +21,7 @@ dependencies {
     implementation("no.nav.utsjekk.kontrakter:iverksett:$kontraktVersion")
     implementation("no.nav.utsjekk.kontrakter:felles:$kontraktVersion")
 
-    implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.21")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.0")
     implementation("io.getunleash:unleash-client-java:9.2.5")
 
     implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
