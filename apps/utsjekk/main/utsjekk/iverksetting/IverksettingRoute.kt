@@ -33,10 +33,6 @@ fun Route.iverksetting(service: Iverksettinger) {
             call.respond(HttpStatusCode.Accepted)
         }
 
-        post("/tilleggstonader") {
-            call.respond(HttpStatusCode.Accepted)
-        }
-
         get("/{sakId}/{behandlingId}/status") {
             val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
             val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
