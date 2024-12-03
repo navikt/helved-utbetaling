@@ -187,7 +187,7 @@ fun Application.routes(
                 is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse) 
                 else -> {
                     secureLog.error("Unknown error.", cause)
-                    call.respond(HttpStatusCode.UnprocessableEntity, "Unknown error. See logs")
+                    call.respond(HttpStatusCode.InternalServerError, "Unknown error")
                 }
             }
         }
