@@ -1,13 +1,13 @@
 package utsjekk.task
 
 import libs.task.TaskDao
-import libs.task.RetryStrategy
 import utsjekk.avstemming.AvstemmingTaskStrategy
+import utsjekk.avstemming.erHelligdag
 import utsjekk.iverksetting.IverksettingTaskStrategy
-import utsjekk.utbetaling.UtbetalingTaskStrategy
 import utsjekk.status.StatusTaskStrategy
+import utsjekk.utbetaling.UtbetalingTaskStrategy
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToLong
@@ -56,6 +56,13 @@ fun TaskDao.exponentialMin(): LocalDateTime = when (attempt) {
     0, 1, 2, 3, 4, 5 -> constant10Sec()
     else -> LocalDateTime.now().plusMinutes(min(2.0.pow(attempt).roundToLong() + 10, MINUTES_PER_DAY))
 }
+
+fun TaskDao.exponentialMinAccountForWeekendsAndPublicHolidays(): LocalDateTime =
+    if (this.scheduledFor.toLocalDate().erHelligdag()) {
+        this.scheduledFor.plusDays(1).withHour(8).withMinute(0)
+    } else {
+        this.exponentialMin()
+    }
 
 enum class Status {
     IN_PROGRESS,
