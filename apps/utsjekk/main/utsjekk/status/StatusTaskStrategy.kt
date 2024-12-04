@@ -13,8 +13,8 @@ import utsjekk.appLog
 import utsjekk.clients.Oppdrag
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultater
-import utsjekk.task.Kind
 import utsjekk.task.TaskStrategy
+import utsjekk.task.exponentialMinAccountForWeekendsAndPublicHolidays
 
 class StatusTaskStrategy(
     private val oppdragClient: Oppdrag,
@@ -59,7 +59,7 @@ class StatusTaskStrategy(
             }
 
             OppdragStatus.LAGT_PÅ_KØ -> {
-                Tasks.update(task.id, task.status, null, TaskDao::exponentialSec)
+                Tasks.update(task.id, task.status, null, TaskDao::exponentialMinAccountForWeekendsAndPublicHolidays)
             }
 
             OppdragStatus.OK_UTEN_UTBETALING -> {
