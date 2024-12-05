@@ -4,6 +4,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.http.*
 import kotlinx.coroutines.withContext
 import libs.auth.AzureTokenProvider
@@ -21,7 +22,7 @@ import utsjekk.simulering.oppsummering.OppsummeringGenerator
 
 class SimuleringClient(
     private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(),
+    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
 
