@@ -71,6 +71,15 @@ class UtbetalingStatusTaskStrategy(
             }
         }
     }
+
+    companion object {
+        fun metadataStrategy(payload: String): Map<String, String> {
+            val uid = objectMapper.readValue<UtbetalingId>(payload)
+            return mapOf(
+                "utbetalingId" to uid.id.toString(),
+            )
+        }
+    }
 }
 
 private suspend fun insertOrUpdateStatus(

@@ -6,6 +6,7 @@ import utsjekk.avstemming.erHelligdag
 import utsjekk.iverksetting.IverksettingTaskStrategy
 import utsjekk.status.StatusTaskStrategy
 import utsjekk.utbetaling.UtbetalingTaskStrategy
+import utsjekk.utbetaling.UtbetalingStatusTaskStrategy
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.math.min
@@ -77,5 +78,6 @@ enum class Kind(
     Avstemming(metadataStrategy = AvstemmingTaskStrategy::metadataStrategy),
     Iverksetting(metadataStrategy = IverksettingTaskStrategy::metadataStrategy),
     Utbetaling(metadataStrategy = UtbetalingTaskStrategy::metadataStrategy),
+    StatusUtbetaling(metadataStrategy = UtbetalingStatusTaskStrategy::metadataStrategy),
     SjekkStatus(metadataStrategy = StatusTaskStrategy::metadataStrategy),
 }
