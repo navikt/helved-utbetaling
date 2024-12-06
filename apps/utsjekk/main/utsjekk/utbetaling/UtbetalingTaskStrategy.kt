@@ -53,12 +53,12 @@ class UtbetalingTaskStrategy(
 
     companion object {
         fun metadataStrategy(payload: String): Map<String, String> {
-            val utbetaling = objectMapper.readValue<Utbetaling>(payload)
+            val utbetaling = objectMapper.readValue<UtbetalingsoppdragDto>(payload)
             return mapOf(
-                "sakId" to utbetaling.sakId.id,
-                "behandlingId" to utbetaling.behandlingId.id,
+                "sakId" to utbetaling.saksnummer,
+                "behandlingId" to utbetaling.utbetalingsperiode.behandlingId,
                 "iverksettingId" to null.toString(),
-                "fagsystem" to utbetaling.stønad.asFagsystemStr()
+                "fagsystem" to utbetaling.fagsystem.name,
             )
         }
     }
