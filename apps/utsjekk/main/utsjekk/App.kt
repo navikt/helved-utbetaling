@@ -18,10 +18,11 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
@@ -48,7 +49,6 @@ import utsjekk.status.StatusTaskStrategy
 import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
 import utsjekk.utbetaling.* 
-import java.io.File
 
 val appLog = logger("app")
 

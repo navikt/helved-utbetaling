@@ -12,14 +12,16 @@ val libVersion = "3.0.10"
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
+    implementation("no.nav.helved:ktor:$libVersion")
     implementation("no.nav.helved:mq:$libVersion")
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20241126095338_e7e661d")
 
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-server-core:$ktorVersion")
+    implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
+    implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
+    implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.1")
 
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
