@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
+import libs.ktor.*
 import libs.utils.logger
 import libs.utils.secureLog
 import org.slf4j.event.Level
@@ -48,22 +49,18 @@ fun Application.app(config: Config = Config()) {
         }
     }
 
-    install(DoubleReceive) // Used to log request body in CallLogging.
-
-    install(CallLogging) {
-        level = Level.INFO
-        format { call ->
-            runBlocking {
-                buildString {
-                    appendLine("${call.request.httpMethod.value} ${call.request.local.uri} ${call.response.status()}")
-                    appendLine("${call.request.headers}")
-                    appendLine(call.receiveText()) // requires install(DoubleReceive)
-                }
-            }
+    install(DoubleReceive)
+    install(CallLog) {
+        exclude { call -> call.request.path().startsWith("/probes") }
+        log { call ->
+            appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms")
+            secureLog.info(
+                """
+                ${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms
+                ${call.bodyAsText()}
+                """.trimIndent()
+            )
         }
-        filter { call -> call.request.path().startsWith("/actuator").not() }
-
-        logger = secureLog
     }
 
     val simulering = SimuleringService(config)

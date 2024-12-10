@@ -8,10 +8,12 @@ application {
 
 val ktorVersion = "3.0.1"
 val libVersion = "3.0.10"
+val kontraktVersion = "1.0_20241126095338_e7e661d"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:http:$libVersion")
+    implementation("no.nav.helved:ktor:$libVersion")
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:ws:$libVersion")
     implementation("no.nav.helved:xml:$libVersion")
@@ -27,7 +29,7 @@ dependencies {
     implementation("jakarta.xml.ws:jakarta.xml.ws-api:4.0.2")
     implementation("com.sun.xml.ws:jaxws-rt:4.0.3")
 
-    implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20241029145217_29f9f5d")
+    implementation("no.nav.utsjekk.kontrakter:oppdrag:$kontraktVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
 
     testImplementation(kotlin("test"))
