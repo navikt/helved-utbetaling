@@ -1,7 +1,7 @@
 package utsjekk.iverksetting
 
 import kotlinx.coroutines.withContext
-import libs.kafka.Kafka
+import libs.kafka.vanilla.Kafka
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.task.Tasks

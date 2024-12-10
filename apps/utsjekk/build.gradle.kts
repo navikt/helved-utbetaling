@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "3.0.1"
-val libVersion = "2.1.8"
+val libVersion = "3.0.9"
 val kontraktVersion = "1.0_20241126095338_e7e661d"
 
 dependencies {
@@ -21,6 +21,7 @@ dependencies {
     implementation("no.nav.utsjekk.kontrakter:iverksett:$kontraktVersion")
     implementation("no.nav.utsjekk.kontrakter:felles:$kontraktVersion")
 
+    implementation("org.apache.kafka:kafka-clients:3.9.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.0")
     implementation("io.getunleash:unleash-client-java:9.2.5")
 

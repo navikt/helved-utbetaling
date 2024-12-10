@@ -19,9 +19,9 @@ import utsjekk.*
 import java.util.*
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import libs.kafka.Kafka
+import libs.kafka.vanilla.Kafka
 import utsjekk.clients.Oppdrag
-import libs.kafka.KafkaConfig
+import libs.kafka.vanilla.KafkaConfig
 import libs.task.TaskDao
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
