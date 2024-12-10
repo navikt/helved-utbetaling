@@ -9,7 +9,7 @@ import utsjekk.notFound
 import libs.task.TaskDao
 import libs.postgres.concurrency.transaction
 import libs.task.Tasks
-import libs.kafka.Kafka
+import libs.kafka.vanilla.Kafka
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import com.fasterxml.jackson.module.kotlin.readValue

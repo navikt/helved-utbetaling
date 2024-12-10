@@ -1,7 +1,7 @@
 package utsjekk
 
 import libs.auth.AzureConfig
-import libs.kafka.KafkaConfig
+import libs.kafka.vanilla.KafkaConfig
 import libs.postgres.JdbcConfig
 import libs.utils.env
 import java.net.URI

@@ -1,8 +1,8 @@
 package utsjekk.status
 
-import libs.kafka.Kafka
-import libs.kafka.KafkaConfig
-import libs.kafka.KafkaFactory
+import libs.kafka.vanilla.Kafka
+import libs.kafka.vanilla.KafkaConfig
+import libs.kafka.vanilla.KafkaFactory
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding

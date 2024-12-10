@@ -26,8 +26,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
-import libs.kafka.Kafka
-import libs.kafka.KafkaConfig
+import libs.kafka.vanilla.Kafka
+import libs.kafka.vanilla.KafkaConfig
 import libs.postgres.Jdbc
 import libs.postgres.JdbcConfig
 import libs.postgres.Migrator

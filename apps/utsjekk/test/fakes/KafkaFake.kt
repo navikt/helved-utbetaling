@@ -1,8 +1,8 @@
 package fakes
 
 import kotlinx.coroutines.CompletableDeferred
-import libs.kafka.Kafka
-import libs.kafka.KafkaConfig
+import libs.kafka.vanilla.Kafka
+import libs.kafka.vanilla.KafkaConfig
 import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 
 class KafkaFake : Kafka<StatusEndretMelding> {
