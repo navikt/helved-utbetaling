@@ -81,7 +81,7 @@ fun Application.server(config: Config = Config()) {
 
     install(DoubleReceive)
     install(CallLog) {
-        exclude { call -> call.request.path().startsWith("/probes") }
+        exclude { call -> call.request.path().startsWith("/actuator") }
         log { call ->
             appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms")
             secureLog.info(
