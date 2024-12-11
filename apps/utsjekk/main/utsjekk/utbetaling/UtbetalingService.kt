@@ -212,7 +212,7 @@ private fun klassekode(stønadstype: StønadTypeTiltakspenger): String = when (s
 
 private fun klassekode(stønadstype: StønadTypeTilleggsstønader): String = when (stønadstype) {
     StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER -> TODO()
-    StønadTypeTilleggsstønader.TILSYN_BARN_AAP -> TODO()
+    StønadTypeTilleggsstønader.TILSYN_BARN_AAP -> "TSTBASISP4-OP"
     StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE -> TODO()
     StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER -> TODO()
     StønadTypeTilleggsstønader.LÆREMIDLER_AAP -> TODO()
