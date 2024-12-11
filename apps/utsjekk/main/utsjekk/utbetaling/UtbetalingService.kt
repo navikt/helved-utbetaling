@@ -191,51 +191,63 @@ private fun klassekode(stønadstype: Stønadstype): String = when (stønadstype)
 }
 
 private fun klassekode(stønadstype: StønadTypeTiltakspenger): String = when (stønadstype) {
-    StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING -> TODO()
-    StønadTypeTiltakspenger.ARBEIDSRETTET_REHABILITERING -> TODO()
-    StønadTypeTiltakspenger.ARBEIDSTRENING -> TODO()
-    StønadTypeTiltakspenger.AVKLARING -> TODO()
-    StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB -> TODO()
-    StønadTypeTiltakspenger.ENKELTPLASS_AMO -> TODO()
-    StønadTypeTiltakspenger.ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG -> TODO()
-    StønadTypeTiltakspenger.FORSØK_OPPLÆRING_LENGRE_VARIGHET -> TODO()
-    StønadTypeTiltakspenger.GRUPPE_AMO -> TODO()
-    StønadTypeTiltakspenger.GRUPPE_VGS_OG_HØYERE_YRKESFAG -> TODO()
-    StønadTypeTiltakspenger.HØYERE_UTDANNING -> TODO()
-    StønadTypeTiltakspenger.INDIVIDUELL_JOBBSTØTTE -> TODO()
-    StønadTypeTiltakspenger.INDIVIDUELL_KARRIERESTØTTE_UNG -> TODO()
-    StønadTypeTiltakspenger.JOBBKLUBB -> TODO()
-    StønadTypeTiltakspenger.OPPFØLGING -> TODO()
-    StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_NAV -> TODO()
-    StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING -> TODO()
+    StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING_BARN -> "TPTPAFT"
+    StønadTypeTiltakspenger.ARBEIDSRETTET_REHABILITERING_BARN -> "TPTPARREHABAGDAG"
+    StønadTypeTiltakspenger.ARBEIDSTRENING_BARN -> "TPTPATT"
+    StønadTypeTiltakspenger.AVKLARING_BARN -> "TPTPAAG"
+    StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB_BARN -> "TPTPDJB"
+    StønadTypeTiltakspenger.ENKELTPLASS_AMO_BARN -> "TPTPEPAMO"
+    StønadTypeTiltakspenger.ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG_BARN -> "TPTPEPVGSHOU"
+    StønadTypeTiltakspenger.FORSØK_OPPLÆRING_LENGRE_VARIGHET_BARN -> "TPTPFLV"
+    StønadTypeTiltakspenger.GRUPPE_AMO_BARN -> "TPTPGRAMO"
+    StønadTypeTiltakspenger.GRUPPE_VGS_OG_HØYERE_YRKESFAG_BARN -> "TPTPGRVGSHOY"
+    StønadTypeTiltakspenger.HØYERE_UTDANNING_BARN -> "TPTPHOYUTD"
+    StønadTypeTiltakspenger.INDIVIDUELL_JOBBSTØTTE_BARN -> "TPTPIPS"
+    StønadTypeTiltakspenger.INDIVIDUELL_KARRIERESTØTTE_UNG_BARN -> "TPTPIPSUNG"
+    StønadTypeTiltakspenger.JOBBKLUBB_BARN -> "TPTPJK2009"
+    StønadTypeTiltakspenger.OPPFØLGING_BARN -> "TPTPOPPFAG"
+    StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_NAV_BARN -> "TPTPUAOPPF"
+    StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING_BARN -> "TPTPUOPPFOPPL"
+    StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING -> "TPTPAFT"
+    StønadTypeTiltakspenger.ARBEIDSRETTET_REHABILITERING -> "TPTPARREHABAGDAG"
+    StønadTypeTiltakspenger.ARBEIDSTRENING -> "TPTPATT"
+    StønadTypeTiltakspenger.AVKLARING -> "TPTPAAG"
+    StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB -> "TPTPDJB"
+    StønadTypeTiltakspenger.ENKELTPLASS_AMO -> "TPTPEPAMO"
+    StønadTypeTiltakspenger.ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG -> "TPTPEPVGSHOU"
+    StønadTypeTiltakspenger.FORSØK_OPPLÆRING_LENGRE_VARIGHET -> "TPTPFLV"
+    StønadTypeTiltakspenger.GRUPPE_AMO -> "TPTPGRAMO"
+    StønadTypeTiltakspenger.GRUPPE_VGS_OG_HØYERE_YRKESFAG -> "TPTPGRVGSHOY"
+    StønadTypeTiltakspenger.HØYERE_UTDANNING -> "TPTPHOYUTD"
+    StønadTypeTiltakspenger.INDIVIDUELL_JOBBSTØTTE -> "TPTPIPS"
+    StønadTypeTiltakspenger.INDIVIDUELL_KARRIERESTØTTE_UNG -> "TPTPIPSUNG"
+    StønadTypeTiltakspenger.JOBBKLUBB -> "TPTPJK2009"
+    StønadTypeTiltakspenger.OPPFØLGING -> "TPTPOPPFAG"
+    StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_NAV -> "TPTPUAOPPF"
+    StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING -> "TPTPUOPPFOPPL"
 }
 
 private fun klassekode(stønadstype: StønadTypeTilleggsstønader): String = when (stønadstype) {
-    StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER -> TODO()
+
+    StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER -> "TSTBASISP2-OP"
     StønadTypeTilleggsstønader.TILSYN_BARN_AAP -> "TSTBASISP4-OP"
-    StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE -> TODO()
-    StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER -> TODO()
-    StønadTypeTilleggsstønader.LÆREMIDLER_AAP -> TODO()
-    StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE -> TODO()
-    StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER_BARNETILLEGG -> TODO()
-    StønadTypeTilleggsstønader.TILSYN_BARN_AAP_BARNETILLEGG -> TODO()
-    StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE_BARNETILLEGG -> TODO()
-    StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER_BARNETILLEGG -> TODO()
-    StønadTypeTilleggsstønader.LÆREMIDLER_AAP_BARNETILLEGG -> TODO()
-    StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE_BARNETILLEGG -> TODO()
+    StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE -> "TSTBASISP5-OP"
+    StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER -> "TSLMASISP2-OP"
+    StønadTypeTilleggsstønader.LÆREMIDLER_AAP -> "TSLMASISP3-OP"
+    StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE -> "TSLMASISP4-OP"
 }
 
 private fun klassekode(stønadstype: StønadTypeDagpenger): String = when (stønadstype) {
     StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR -> "DPORAS"
     StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG -> "DPORASFE"
     StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG_AVDØD -> "DPORASFE-IOP"
-    StønadTypeDagpenger.PERMITTERING_ORDINÆR -> TODO()
-    StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG -> TODO()
-    StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG_AVDØD -> TODO()
-    StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI -> TODO()
-    StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI_FERIETILLEGG -> TODO()
-    StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI_FERIETILLEGG_AVDØD -> TODO()
-    StønadTypeDagpenger.EØS -> TODO()
-    StønadTypeDagpenger.EØS_FERIETILLEGG -> TODO()
-    StønadTypeDagpenger.EØS_FERIETILLEGG_AVDØD -> TODO()
+    StønadTypeDagpenger.PERMITTERING_ORDINÆR -> "DPPEASFE1"
+    StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG -> "DPPEAS"
+    StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG_AVDØD -> "DPPEASFE1-IOP"
+    StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI -> "DPPEFIFE1"
+    StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI_FERIETILLEGG -> "DPPEFI"
+    StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI_FERIETILLEGG_AVDØD -> "DPPEFIFE1-IOP"
+    StønadTypeDagpenger.EØS -> "DPFEASISP"
+    StønadTypeDagpenger.EØS_FERIETILLEGG -> "DPDPASISP1"
 }
+
