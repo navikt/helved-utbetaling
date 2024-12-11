@@ -23,7 +23,7 @@ dependencies {
 
     implementation("org.apache.kafka:kafka-clients:3.9.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.0")
-    implementation("io.getunleash:unleash-client-java:9.2.5")
+    implementation("io.getunleash:unleash-client-java:9.2.6")
 
     implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
