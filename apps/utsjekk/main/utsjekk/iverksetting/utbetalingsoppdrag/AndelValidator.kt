@@ -34,7 +34,6 @@ internal object AndelValidator {
     private fun validerSatstype(andelData: AndelData) {
         when (andelData.satstype) {
             Satstype.MÅNEDLIG -> validerMånedssats(andelData)
-            Satstype.ENGANGS -> validerEngangssats(andelData)
             else -> return
         }
     }
@@ -42,12 +41,6 @@ internal object AndelValidator {
     private fun validerMånedssats(andelData: AndelData) {
         require(andelData.fom.dayOfMonth == 1 && andelData.tom == andelData.tom.sisteDagIMåneden()) {
             "Utbetalinger med satstype ${andelData.satstype.name} må starte den første i måneden og slutte den siste i måneden"
-        }
-    }
-
-    private fun validerEngangssats(andelData: AndelData) {
-        require(andelData.fom == andelData.tom) {
-            "Engangsutbetalinger må ha samme fom og tom"
         }
     }
 
