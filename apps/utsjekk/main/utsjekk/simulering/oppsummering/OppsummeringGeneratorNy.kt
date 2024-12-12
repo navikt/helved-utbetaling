@@ -6,6 +6,7 @@ import utsjekk.simulering.PosteringType
 import utsjekk.simulering.SimuleringDetaljer
 import utsjekk.simulering.api
 import java.time.LocalDate
+import java.time.YearMonth
 import kotlin.math.abs
 
 object OppsummeringGeneratorNy {
@@ -25,7 +26,7 @@ object OppsummeringGeneratorNy {
     }
 
     private fun List<Periode>.slåSammenInnenforSammeMåned(): List<Periode> {
-        val måneder = this.groupBy { it.fom.month }
+        val måneder = this.groupBy { YearMonth.of(it.fom.year, it.fom.month) }
         return måneder.values.map { perioder ->
             Periode(
                 perioder.minBy { it.fom }.fom,
