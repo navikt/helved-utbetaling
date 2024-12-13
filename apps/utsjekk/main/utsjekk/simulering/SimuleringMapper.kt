@@ -88,6 +88,7 @@ fun PosteringType.Mapper.from(dto: client.PosteringType) = when (dto) {
 }
 
 fun Fagområde.Mapper.from(dto: client.Fagområde) = when (dto) {
+    client.Fagområde.AAP -> Fagområde.AAP
     client.Fagområde.TILLST -> Fagområde.TILLEGGSSTØNADER
     client.Fagområde.TSTARENA -> Fagområde.TILLEGGSSTØNADER_ARENA
     client.Fagområde.MTSTAREN -> Fagområde.TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING
@@ -101,6 +102,7 @@ fun Fagområde.Mapper.from(dto: client.Fagområde) = when (dto) {
 }
 
 fun Fagsystem.into() = when (this) {
+    Fagsystem.AAP -> client.Fagområde.AAP
     Fagsystem.DAGPENGER -> client.Fagområde.DP
     Fagsystem.TILTAKSPENGER -> client.Fagområde.TILTPENG
     Fagsystem.TILLEGGSSTØNADER -> client.Fagområde.TILLST
@@ -134,5 +136,7 @@ fun Fagsystem.inFagområde(fagområde: client.Fagområde): Boolean {
             Fagområde.TILLEGGSSTØNADER_ARENA,
             Fagområde.TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING,
         )
+
+        Fagsystem.AAP -> fagområde in listOf(Fagområde.AAP)
     }
 }

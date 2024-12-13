@@ -115,9 +115,9 @@ class AvstemmingStrategyTest {
         assertEquals(0, countActiveAvstemminger())
 
         strat.initiserAvstemmingForNyeFagsystemer()
-        assertEquals(3, countActiveAvstemminger())
+        assertEquals(4, countActiveAvstemminger())
 
         strat.initiserAvstemmingForNyeFagsystemer()
-        assertEquals(3, countActiveAvstemminger())
+        assertEquals(4, countActiveAvstemminger())
     }
 }

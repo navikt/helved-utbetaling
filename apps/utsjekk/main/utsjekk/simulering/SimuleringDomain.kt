@@ -54,6 +54,8 @@ enum class PosteringType {
 }
 
 enum class Fagområde {
+    AAP,
+
     TILLEGGSSTØNADER,
     TILLEGGSSTØNADER_ARENA,
     TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING,
