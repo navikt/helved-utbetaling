@@ -229,9 +229,10 @@ value class Client(
 ) {
     fun toFagsystem(): Fagsystem =
         when (name) {
+            "azure-token-generator" -> Fagsystem.AAP
             "helved-performance" -> Fagsystem.DAGPENGER
+            "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
             "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
-            "tilleggsstonader-sak", "azure-token-generator" -> Fagsystem.TILLEGGSSTØNADER
             else -> forbidden(
                 msg = "mangler mapping mellom appname ($name) og fagsystem-enum",
                 doc = "https://navikt.github.io/utsjekk-docs/kom_i_gang",

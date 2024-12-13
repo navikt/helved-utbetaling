@@ -135,6 +135,7 @@ data class OppdragResultat(
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes(
+    JsonSubTypes.Type(StønadsdataAAP::class, name = "aap"),
     JsonSubTypes.Type(StønadsdataDagpenger::class, name = "dagpenger"),
     JsonSubTypes.Type(StønadsdataTiltakspenger::class, name = "tiltakspenger"),
     JsonSubTypes.Type(StønadsdataTilleggsstønader::class, name = "tilleggsstønader"),
@@ -144,6 +145,7 @@ sealed class Stønadsdata(open val stønadstype: StønadType) {
 
     fun tilKlassifisering(): String =
         when (this) {
+            is StønadsdataAAP -> this.tilKlassifiseringAAP()
             is StønadsdataDagpenger -> this.tilKlassifiseringDagpenger()
             is StønadsdataTiltakspenger -> this.tilKlassifiseringTiltakspenger()
             is StønadsdataTilleggsstønader -> this.tilKlassifiseringTilleggsstønader()
@@ -263,6 +265,18 @@ data class StønadsdataTilleggsstønader(
 
     override fun tilKjedenøkkel(): Kjedenøkkel =
         KjedenøkkelStandard(klassifiseringskode = this.tilKlassifiseringTilleggsstønader())
+}
+
+data class StønadsdataAAP(
+    override val stønadstype: StønadTypeAAP,
+) : Stønadsdata(stønadstype) {
+    fun tilKlassifiseringAAP() =
+        when (stønadstype) {
+            StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING -> "AAPUAA"
+        }
+
+    override fun tilKjedenøkkel(): Kjedenøkkel =
+        KjedenøkkelStandard(klassifiseringskode = this.tilKlassifiseringAAP())
 }
 
 data class AndelTilkjentYtelse(
