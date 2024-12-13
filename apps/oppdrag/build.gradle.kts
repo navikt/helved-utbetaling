@@ -15,7 +15,7 @@ dependencies {
     implementation("no.nav.helved:ktor:$libVersion")
     implementation("no.nav.helved:mq:$libVersion")
 
-    implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20241126095338_e7e661d")
+    implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20241213094750_71deb79")
 
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
