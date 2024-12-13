@@ -29,6 +29,7 @@ class UnleashFeatureToggles(config: utsjekk.UnleashConfig) : FeatureToggles {
     )
 
     private val killswitches: Map<Fagsystem, String> = mapOf(
+        Fagsystem.AAP to "utsjekk.stopp-iverksetting-aap",
         Fagsystem.TILLEGGSSTØNADER to "utsjekk.stopp-iverksetting-tilleggsstonader",
         Fagsystem.DAGPENGER to "utsjekk.stopp-iverksetting-dagpenger",
         Fagsystem.TILTAKSPENGER to "utsjekk.stopp-iverksetting-tiltakspenger",
