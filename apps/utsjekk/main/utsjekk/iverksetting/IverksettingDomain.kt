@@ -269,6 +269,7 @@ data class StønadsdataTilleggsstønader(
 
 data class StønadsdataAAP(
     override val stønadstype: StønadTypeAAP,
+    val fastsattDagsats: UInt,
 ) : Stønadsdata(stønadstype) {
     fun tilKlassifiseringAAP() =
         when (stønadstype) {
