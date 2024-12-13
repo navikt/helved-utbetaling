@@ -60,7 +60,10 @@ fun AndelTilkjentYtelse.Companion.from(dto: UtbetalingV2Dto): AndelTilkjentYtels
 
 fun Stønadsdata.Companion.from(dto: StønadsdataDto): Stønadsdata {
     return when (dto) {
-        is StønadsdataAAPDto -> StønadsdataAAP(stønadstype = dto.stønadstype)
+        is StønadsdataAAPDto -> StønadsdataAAP(
+            stønadstype = dto.stønadstype,
+            fastsattDagsats = dto.fastsattDagsats
+        )
         is StønadsdataDagpengerDto -> StønadsdataDagpenger(
             stønadstype = dto.stønadstype,
             ferietillegg = dto.ferietillegg,
