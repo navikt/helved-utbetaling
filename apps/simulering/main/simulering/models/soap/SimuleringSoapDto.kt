@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
+import no.trygdeetaten.skjema.oppdrag.Vedtakssats157
 import simulering.models.rest.*
+import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
@@ -248,6 +250,7 @@ object soap {
         val refDelytelseId: String?,
         @JsonProperty("ns2:attestant")
         val attestant: List<Attestant>,
+        val vedtakssats157: Vedtakssats157?,
     ) {
         companion object {
             fun from(
@@ -285,6 +288,11 @@ object soap {
                     brukKjoreplan = "N",
                     attestant = listOf(Attestant(dto.saksbehandler)),
                     utbetalesTilId = utbetalingsperiode.utbetalesTil,
+                    vedtakssats157 = utbetalingsperiode.fastsattDagsats?.let { fastsattDagsats ->
+                        Vedtakssats157().apply {
+                            vedtakssats = BigDecimal.valueOf(fastsattDagsats.toLong())
+                        }
+                    }
                 )
         }
 
