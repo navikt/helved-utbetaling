@@ -19,7 +19,6 @@ import utsjekk.iverksetting.tilAndelData
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import utsjekk.simulering.*
 import utsjekk.simulering.oppsummering.OppsummeringGenerator
-import utsjekk.simulering.oppsummering.OppsummeringGeneratorNy
 
 class SimuleringClient(
     private val config: Config,
@@ -53,11 +52,7 @@ class SimuleringClient(
 
 
         val detaljer = SimuleringDetaljer.from(hentetSimulering, simulering.behandlingsinformasjon.fagsystem)
-        return if (config.simulering.scope.contains("dev-gcp")) {
-            OppsummeringGeneratorNy.lagOppsummering(detaljer)
-        } else {
-            OppsummeringGenerator.lagOppsummering(detaljer)
-        }
+        return OppsummeringGenerator.lagOppsummering(detaljer)
     }
 
     private suspend fun hentUtbetalingsoppdrag(sim: Simulering): Utbetalingsoppdrag {
