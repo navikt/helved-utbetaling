@@ -229,6 +229,7 @@ object soap {
         "refFagsystemId",
         "refDelytelseId",
         "ns2:attestant",
+        "ns2:vedtakssats",
     )
     data class Oppdragslinje(
         val kodeEndringLinje: String,
@@ -248,6 +249,7 @@ object soap {
         val refDelytelseId: String?,
         @JsonProperty("ns2:attestant")
         val attestant: List<Attestant>,
+        @JsonProperty("ns2:vedtakssats")
         val vedtakssats: Vedtakssats?,
     ) {
         companion object {
