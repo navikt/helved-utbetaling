@@ -27,7 +27,8 @@ class SimuleringMappingTest {
                     sats = 1772,
                     satstype = rest.SatsType.DAG,
                     opphør = rest.Opphør(LocalDate.of(2024, 6, 3)),
-                    utbetalesTil = "12489404263"
+                    utbetalesTil = "12489404263",
+                    fastsattDagsats = null,
                 )
             )
         )

@@ -364,6 +364,7 @@ internal fun enSimuleringRequestBody(): rest.SimuleringRequest {
                 satstype = rest.SatsType.DAG,
                 utbetalesTil = "22479409483",
                 opphør = null,
+                fastsattDagsats = null,
             ),
         ),
     )
