@@ -3,6 +3,7 @@ package utsjekk.simulering
 import no.nav.utsjekk.kontrakter.felles.Personident
 import no.nav.utsjekk.kontrakter.iverksett.ForrigeIverksettingV2Dto
 import no.nav.utsjekk.kontrakter.iverksett.UtbetalingV2Dto
+import java.math.BigDecimal
 import java.time.LocalDate
 
 object client {
@@ -68,6 +69,7 @@ object client {
         val satstype: Satstype,
         val opphør: Opphør?,
         val utbetalesTil: String,
+        val fastsattDagsats: BigDecimal?,
     ) {
         companion object Mapper
     }
