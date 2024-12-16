@@ -59,7 +59,7 @@ internal data class UtbetalingsperiodeMal(
             behandlingId = behandlingsinformasjon.behandlingId.id,
             fastsattDagsats =
                 when (andel.stønadsdata) {
-                    is StønadsdataAAP -> BigDecimal(andel.stønadsdata.fastsattDagsats.toInt())
+                    is StønadsdataAAP -> andel.stønadsdata.fastsattDagsats?.let {BigDecimal(it.toInt()) }
                     is StønadsdataDagpenger -> BigDecimal(andel.stønadsdata.fastsattDagsats.toInt())
                     else -> null
                 },
