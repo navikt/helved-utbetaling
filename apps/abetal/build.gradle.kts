@@ -24,7 +24,7 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.14.1")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.14.2")
 
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 
