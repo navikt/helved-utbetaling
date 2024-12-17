@@ -34,9 +34,8 @@ import oppdrag.grensesnittavstemming.AvstemmingMQProducer
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
 import oppdrag.iverksetting.OppdragMQConsumer
 import oppdrag.iverksetting.OppdragService
-import oppdrag.routing.actuators
-import oppdrag.routing.avstemmingRoutes
-import oppdrag.routing.iverksettingRoutes
+import oppdrag.utbetaling.*
+import oppdrag.routing.*
 
 val appLog = logger("app")
 
@@ -103,6 +102,7 @@ fun Application.server(config: Config = Config()) {
     val mq = MQ(config.mq)
     val oppdragConsumer = OppdragMQConsumer(config.oppdrag, mq)
     val oppdragService = OppdragService(config.oppdrag, mq)
+    val utbetalingService = UtbetalingService(config.oppdrag, mq)
     val avstemmingProducer = AvstemmingMQProducer(mq, config.avstemming)
     val avstemmingService = GrensesnittavstemmingService(avstemmingProducer)
 
@@ -117,6 +117,7 @@ fun Application.server(config: Config = Config()) {
     routing {
         authenticate(TokenProvider.AZURE) {
             iverksettingRoutes(oppdragService)
+            utbetalingRoutes(utbetalingService)
             avstemmingRoutes(avstemmingService)
         }
         actuators(prometheus)
