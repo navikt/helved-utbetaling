@@ -9,6 +9,9 @@ import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.math.abs
 
+/**
+ * Se dokumentasjon: https://github.com/navikt/helved-utbetaling/blob/main/dokumentasjon/simulering.md
+ */
 object OppsummeringGenerator {
     fun lagOppsummering(detaljer: SimuleringDetaljer): api.SimuleringRespons {
         val oppsummeringer =
@@ -41,11 +44,6 @@ object OppsummeringGenerator {
     private fun beregnNyttBeløp(posteringer: List<Postering>): Int =
         posteringer.summerBarePositivePosteringer(PosteringType.YTELSE) - posteringer.summerBarePositivePosteringer(PosteringType.FEILUTBETALING, KLASSEKODE_FEILUTBETALING)
 
-    /**
-     * Hvis perioden har en positiv feilutbetaling, kan det per def ikke være noen etterbetaling (det overskytende beløpet ville i så fall kansellert ut feilutbetalingen)
-     * Hvis perioden har en negativ feilutbetaling, betyr det at man øker ytelsen i en periode det er registrert feilutbetaling på tidligere og tilbakekrevingsbehandlingen ikke er avsluttet.
-     * Ved iverksetting av vedtaket ville feilutbetalingen i OS blitt redusert tilsvarende beløpet på posteringen for den negative feilutbetalingen.
-     */
     private fun beregnEtterbetaling(posteringer: List<Postering>): Int {
         val justeringer = posteringer.summerPosteringer(PosteringType.FEILUTBETALING, KLASSEKODE_JUSTERING)
         val resultat = beregnNyttBeløp(posteringer) - beregnTidligereUtbetalt(posteringer)
