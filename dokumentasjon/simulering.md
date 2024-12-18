@@ -10,7 +10,8 @@ Generelt gjelder følgende om responsen som kommer fra OS:
 Simuleringen er delt opp i ulike _beregningsperioder_. Beregningsperiodene vil aldri spenne over flere måneder. Man kan få flere
 beregningsperioder innenfor samme måned – for dagytelser kan periodene være på dagsnivå. Innenfor hver beregningsperiode har man ett eller
 flere _stoppnivåer_. Man kan få flere stoppnivåer i responsen feks. i tilfeller med flere ulike mottakere på oppdragslinjene for perioden. Vi slår
-sammen alle stoppnivåer i vår kode. Innenfor hvert stoppnivå er det et sett med _detaljer_ som vi kaller posteringer. 
+sammen alle stoppnivåer i vår kode for å forenkle responsen. Det er et designvalg som ikke nødvendigvis vil holde i alle caser i all fremtid. 
+Innenfor hvert stoppnivå er det et sett med _detaljer_ som vi kaller posteringer. 
 
 Under følger en beskrivelse med eksempler på hvordan responsen fra simuleringstjenesten vil se ut for ulike caser.
 
