@@ -3,6 +3,7 @@ package utsjekk.task.strategies
 import TestRuntime
 import awaitDatabase
 import io.ktor.http.*
+import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -14,13 +15,15 @@ import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.avstemming.AvstemmingTaskStrategy
 import utsjekk.clients.Oppdrag
-import java.time.LocalDateTime
+import utsjekk.utbetaling.*
+import utsjekk.utbetaling.UtbetalingsoppdragDto
 
 class AvstemmingStrategyTest {
 
@@ -103,6 +106,8 @@ class AvstemmingStrategyTest {
             override suspend fun avstem(grensesnittavstemming: GrensesnittavstemmingRequest) {}
             override suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {}
             override suspend fun hentStatus(oppdragIdDto: OppdragIdDto) = TODO("stub")
+            override suspend fun utbetal(utbetalingsoppdrag: UtbetalingsoppdragDto) {}
+            override suspend fun utbetalStatus(uid: UtbetalingId): OppdragStatusDto = TODO("stub")
         }
 
         val strat = AvstemmingTaskStrategy(oppdrag)
