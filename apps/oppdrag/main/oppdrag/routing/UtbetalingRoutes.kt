@@ -1,9 +1,11 @@
 package oppdrag.routing
 
 import io.ktor.server.routing.*
+import io.ktor.http.*
 import oppdrag.utbetaling.*
 import java.util.UUID
 import io.ktor.server.request.*
+import io.ktor.server.response.*
 
 fun Route.utbetalingRoutes(
     service: UtbetalingService,
@@ -22,7 +24,18 @@ fun Route.utbetalingRoutes(
         }
 
         get("/status") {
+            val uid = call.parameters["uid"]
+                ?.let(::uuid)
+                ?.let(::UtbetalingId)
+                ?: error("missing path param uid") 
 
+
+            val status = service.hentStatusForOppdrag(uid)
+            if (status == null) {
+                call.respond(HttpStatusCode.NotFound)
+            } else {
+                call.respond(HttpStatusCode.OK, status)
+            }
         }
     }
 }
