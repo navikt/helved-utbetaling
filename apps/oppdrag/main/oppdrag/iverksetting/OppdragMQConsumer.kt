@@ -13,6 +13,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
 import oppdrag.appLog
+import oppdrag.utbetaling.*
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.domene.status
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
@@ -51,37 +52,64 @@ class OppdragMQConsumer(
             }
         }
 
-        if (førsteOppdragUtenKvittering == null) {
+        // TODO: lagre alle kvitteringer i egen tabell
+        val førsteUtbetalingsoppdragUtenKvittering = runBlocking {
+                withContext(Jdbc.context) {
+                    transaction {
+                        UtbetalingDao.findOrNull(oppdragIdKvittering)
+                        .find { utbet -> utbet.status == OppdragStatus.LAGT_PÅ_KØ }
+                    }
+                }
+            }
+
+        if (førsteOppdragUtenKvittering == null && førsteUtbetalingsoppdragUtenKvittering == null) {
             appLog.warn("Oppdraget tilknyttet mottatt kvittering har uventet status i databasen. Oppdraget er: $oppdragIdKvittering")
             return
         }
-        val oppdragId = førsteOppdragUtenKvittering.id
 
-        if (kvittering.mmel != null) {
+        førsteOppdragUtenKvittering?.id?.let { oppdragId ->
+            if (kvittering.mmel != null) {
+                runBlocking {
+                    withContext(Jdbc.context) {
+                        transaction {
+                            OppdragLagerRepository.oppdaterKvitteringsmelding(
+                                oppdragId,
+                                kvittering.mmel,
+                                førsteOppdragUtenKvittering.versjon,
+                            )
+                        }
+                    }
+                }
+            }
+
             runBlocking {
                 withContext(Jdbc.context) {
                     transaction {
-                        OppdragLagerRepository.oppdaterKvitteringsmelding(
+                        OppdragLagerRepository.oppdaterStatus(
                             oppdragId,
-                            kvittering.mmel,
-                            førsteOppdragUtenKvittering.versjon,
+                            kvittering.status,
+                            førsteOppdragUtenKvittering.versjon
                         )
+                    }
+                }
+            }
+        } 
+
+        førsteUtbetalingsoppdragUtenKvittering?.let { utbetDao ->
+            runBlocking {
+                withContext(Jdbc.context) {
+                    transaction {
+                        utbetDao
+                            .copy(
+                                kvittering = kvittering.mmel ?: utbetDao.kvittering, 
+                                status = kvittering.status
+                            )
+                            .update()
                     }
                 }
             }
         }
 
-        runBlocking {
-            withContext(Jdbc.context) {
-                transaction {
-                    OppdragLagerRepository.oppdaterStatus(
-                        oppdragId,
-                        kvittering.status,
-                        førsteOppdragUtenKvittering.versjon
-                    )
-                }
-            }
-        }
     }
 
     private fun leggTilNamespacePrefiks(xml: String): String {

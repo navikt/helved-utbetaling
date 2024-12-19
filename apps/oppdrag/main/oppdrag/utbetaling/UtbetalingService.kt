@@ -3,10 +3,12 @@ package oppdrag.utbetaling
 import libs.mq.MQ
 import libs.postgres.concurrency.transaction
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.OppdragMapper
 import oppdrag.iverksetting.OppdragMQProducer
 import oppdrag.appLog
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.postgresql.util.PSQLException
 
 object SQL_STATE {
@@ -24,15 +26,19 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
             val oppdrag = OppdragMapper.tilOppdrag(oppdrag110)
 
             val dao = UtbetalingDao(
+                uid = dto.uid,
                 data = oppdrag,
                 sakId = dto.saksnummer,
                 behandlingId = dto.utbetalingsperiode.behandlingId,
                 personident = dto.utbetalingsperiode.utbetalesTil,
                 klassekode = dto.utbetalingsperiode.klassekode,
+                kvittering = null,
+                fagsystem = dto.fagsystem.kode,
+                status = OppdragStatus.LAGT_PÅ_KØ,
             )
 
             transaction {
-                dao.insert(dto.uid);
+                dao.insert();
             }
 
             appLog.debug("Legger utbetalingsoppdrag med saksnummer ${dto.saksnummer} på kø")
@@ -47,8 +53,13 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
 
     suspend fun hentStatusForOppdrag(
         uid: UtbetalingId,
-    ): UtbetalingDao {
-        return UtbetalingDao.find(uid)
+    ): OppdragStatusDto? {
+        return UtbetalingDao.find(uid)?.let { dao ->
+            OppdragStatusDto(
+                status = dao.status,
+                feilmelding = dao.kvittering?.beskrMelding,
+            )
+        }
     }
 }
 
