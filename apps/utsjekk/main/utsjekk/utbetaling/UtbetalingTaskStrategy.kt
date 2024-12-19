@@ -31,7 +31,7 @@ class UtbetalingTaskStrategy(
     }
 
     private suspend fun iverksett(oppdrag: UtbetalingsoppdragDto) {
-        oppdragClient.iverksettOppdrag(oppdrag.into())
+        oppdragClient.utbetal(oppdrag)
 
         transaction {
             val status = UtbetalingStatusDao.findOrNull(oppdrag.uid)

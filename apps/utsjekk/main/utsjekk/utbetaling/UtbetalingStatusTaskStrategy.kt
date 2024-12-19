@@ -42,8 +42,7 @@ class UtbetalingStatusTaskStrategy(
             return
         }
 
-        val utbetaling = uDao.data
-        val statusDto = oppdragClient.hentStatus(oppdragId(utbetaling))
+        val statusDto = oppdragClient.utbetalStatus(uId)
         when (statusDto.status) {
             OppdragStatus.KVITTERT_OK -> {
                 Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::exponentialMin)

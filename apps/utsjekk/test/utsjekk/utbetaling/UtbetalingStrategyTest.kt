@@ -78,6 +78,7 @@ class UtbetalingStrategyTest {
 
     class OppdragFake: Oppdrag {
         private val oppdrag = mutableMapOf<OppdragIdDto, OppdragStatusDto>() 
+        private val oppdragV2 = mutableMapOf<UtbetalingId, OppdragStatusDto>() 
 
         override suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {
             val oppdragIdDto = OppdragIdDto(
@@ -95,6 +96,14 @@ class UtbetalingStrategyTest {
 
         override suspend fun avstem(grensesnittavstemming: GrensesnittavstemmingRequest) {
             TODO("not implemented")
+        }
+
+        override suspend fun utbetal(utbetalingsoppdrag: UtbetalingsoppdragDto) {
+            oppdragV2[utbetalingsoppdrag.uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_OK, "")
+        }
+
+        override suspend fun utbetalStatus(uid: UtbetalingId): OppdragStatusDto {
+            return oppdragV2[uid] ?: error("status for oppdrag not found")
         }
     }
 }

@@ -88,9 +88,7 @@ class UtbetalingStatusStrategyTest {
             uDao.insert(uid)
         }
 
-        val oppdragDto = utbetalingsoppdragDto(utbetaling, uid) 
-        val oppdragIdDto = oppdragIdDto(oppdragDto.into())
-        oppdragFake.oppdrag[oppdragIdDto] = OppdragStatusDto(status = OppdragStatus.LAGT_PÅ_KØ, "")
+        oppdragFake.oppdragV2[uid] = OppdragStatusDto(status = OppdragStatus.LAGT_PÅ_KØ, "")
 
         assertTrue(strategy.isApplicable(task))
         strategy.execute(task)
@@ -114,9 +112,7 @@ class UtbetalingStatusStrategyTest {
             uDao.insert(uid)
         }
 
-        val oppdragDto = utbetalingsoppdragDto(utbetaling, uid) 
-        val oppdragIdDto = oppdragIdDto(oppdragDto.into())
-        oppdragFake.oppdrag[oppdragIdDto] = OppdragStatusDto(status = OppdragStatus.KVITTERT_OK, "")
+        oppdragFake.oppdragV2[uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_OK, "")
 
         assertTrue(strategy.isApplicable(task))
         strategy.execute(task)
@@ -140,9 +136,7 @@ class UtbetalingStatusStrategyTest {
             uDao.insert(uid)
         }
 
-        val oppdragDto = utbetalingsoppdragDto(utbetaling, uid) 
-        val oppdragIdDto = oppdragIdDto(oppdragDto.into())
-        oppdragFake.oppdrag[oppdragIdDto] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
+        oppdragFake.oppdragV2[uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
 
         assertTrue(strategy.isApplicable(task))
         strategy.execute(task)
@@ -166,9 +160,7 @@ class UtbetalingStatusStrategyTest {
             uDao.insert(uid)
         }
 
-        val oppdragDto = utbetalingsoppdragDto(utbetaling, uid) 
-        val oppdragIdDto = oppdragIdDto(oppdragDto.into())
-        oppdragFake.oppdrag[oppdragIdDto] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
+        oppdragFake.oppdragV2[uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
 
         assertTrue(strategy.isApplicable(task))
         strategy.execute(task)
@@ -192,9 +184,7 @@ class UtbetalingStatusStrategyTest {
             uDao.insert(uid)
         }
 
-        val oppdragDto = utbetalingsoppdragDto(utbetaling, uid) 
-        val oppdragIdDto = oppdragIdDto(oppdragDto.into())
-        oppdragFake.oppdrag[oppdragIdDto] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
+        oppdragFake.oppdragV2[uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
 
         assertTrue(strategy.isApplicable(task))
         strategy.execute(task)
@@ -218,9 +208,7 @@ class UtbetalingStatusStrategyTest {
             uDao.insert(uid)
         }
 
-        val oppdragDto = utbetalingsoppdragDto(utbetaling, uid) 
-        val oppdragIdDto = oppdragIdDto(oppdragDto.into())
-        oppdragFake.oppdrag[oppdragIdDto] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
+        oppdragFake.oppdragV2[uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
 
         assertTrue(strategy.isApplicable(task))
         strategy.execute(task)
@@ -231,6 +219,7 @@ class UtbetalingStatusStrategyTest {
 
     class OppdragFake: Oppdrag {
         val oppdrag = mutableMapOf<OppdragIdDto, OppdragStatusDto>() 
+        val oppdragV2 = mutableMapOf<UtbetalingId, OppdragStatusDto>() 
 
         override suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {
             val oppdragIdDto = OppdragIdDto(
@@ -248,6 +237,14 @@ class UtbetalingStatusStrategyTest {
 
         override suspend fun avstem(grensesnittavstemming: GrensesnittavstemmingRequest) {
             TODO("not implemented")
+        }
+
+        override suspend fun utbetal(utbetalingsoppdrag: UtbetalingsoppdragDto) {
+            oppdragV2[utbetalingsoppdrag.uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_OK, "")
+        }
+
+        override suspend fun utbetalStatus(uid: UtbetalingId): OppdragStatusDto {
+            return oppdragV2[uid] ?: error("status for oppdrag not found")
         }
     }
 

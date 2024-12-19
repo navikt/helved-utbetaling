@@ -14,11 +14,17 @@ import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import utsjekk.Config
 import utsjekk.appLog
+import utsjekk.utbetaling.*
 
 interface Oppdrag {
+    // v1
     suspend fun avstem(grensesnittavstemming: GrensesnittavstemmingRequest)
     suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag)
     suspend fun hentStatus(oppdragIdDto: OppdragIdDto): OppdragStatusDto
+
+    // v2
+    suspend fun utbetal(utbetalingsoppdrag: UtbetalingsoppdragDto)
+    suspend fun utbetalStatus(uid: UtbetalingId): OppdragStatusDto
 }
 
 class OppdragClient(
@@ -75,6 +81,43 @@ class OppdragClient(
         return when (response.status) {
             HttpStatusCode.OK -> response.body<OppdragStatusDto>()
             HttpStatusCode.NotFound -> throw HttpError("Fant ikke status for oppdrag $oppdragIdDto", response.status)
+            else -> throw HttpError("Feil fra utsjekk-oppdrag: ${response.bodyAsText()}", response.status)
+        }
+    }
+
+    override suspend fun utbetal(utbetalingsoppdrag: UtbetalingsoppdragDto) {
+        val token = azure.getClientCredentialsToken(config.oppdrag.scope)
+        val uid =utbetalingsoppdrag.uid.id 
+        val response = client.post("${config.oppdrag.host}/utbetalingsoppdrag/$uid") {
+            bearerAuth(token.access_token)
+            contentType(ContentType.Application.Json)
+            setBody(utbetalingsoppdrag)
+        }
+
+        val body = runCatching {
+            response.bodyAsText()
+        }.getOrElse {
+            "Unknown ${response.status} error"
+        }
+
+        when (response.status.value) {
+            201 -> {}
+            409 -> appLog.info("Oppdrag er allerede sendt for saksnr ${utbetalingsoppdrag.saksnummer}")
+            else -> throw HttpError(body, response.status)
+        }
+
+    }
+
+    override suspend fun utbetalStatus(uid: UtbetalingId): OppdragStatusDto {
+        val token = azure.getClientCredentialsToken(config.oppdrag.scope)
+        val response = client.get("${config.oppdrag.host}/utbetalingsoppdrag/$uid/status") {
+            bearerAuth(token.access_token)
+            accept(ContentType.Application.Json)
+        }
+
+        return when (response.status) {
+            HttpStatusCode.OK -> response.body<OppdragStatusDto>()
+            HttpStatusCode.NotFound -> throw HttpError("Fant ikke status for utbetaling $uid", response.status)
             else -> throw HttpError("Feil fra utsjekk-oppdrag: ${response.bodyAsText()}", response.status)
         }
     }
