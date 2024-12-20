@@ -9,6 +9,7 @@ import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.OppdragMapper
 import oppdrag.iverksetting.OppdragMQProducer
 import oppdrag.appLog
+import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.postgresql.util.PSQLException
 import kotlinx.coroutines.withContext
@@ -50,7 +51,7 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
         } catch (e: PSQLException) {
             when (e.sqlState) {
                 SQL_STATE.CONSTRAINT_VIOLATION -> throw OppdragAlleredeSendtException(dto.saksnummer)
-                else -> throw UkjentOppdragLagerException(dto.saksnummer)
+                else -> throw UkjentOppdragLagerException(e, dto.saksnummer)
             }
         }
     }
@@ -77,8 +78,9 @@ class OppdragAlleredeSendtException(saksnummer: String) : RuntimeException() {
     }
 }
 
-class UkjentOppdragLagerException(saksnummer: String) : RuntimeException() {
+class UkjentOppdragLagerException(e: PSQLException, saksnummer: String) : RuntimeException() {
     init {
         appLog.info("Ukjent feil ved opprettelse av oppdrag med saksnummer $saksnummer.")
+        secureLog.error("Ukjent feil ved opprettelse av oppdrag med saksnummer $saksnummer.", e)
     }
 }
