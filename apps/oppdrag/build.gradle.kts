@@ -6,7 +6,7 @@ application {
     mainClass.set("oppdrag.AppKt")
 }
 
-val ktorVersion = "3.0.2"
+val ktorVersion = "3.0.3"
 val libVersion = "3.0.18"
 
 dependencies {
