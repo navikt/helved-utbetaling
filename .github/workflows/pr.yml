@@ -16,6 +16,8 @@ jobs:
           java-version: 21
           distribution: temurin
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          dependency-graph: generate-and-submit
 
       # exclude libs:mq:test because two mq testcontainers is not always working
 #      - run: ./gradlew test --continue --no-daemon --parallel
