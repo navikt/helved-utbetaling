@@ -40,13 +40,13 @@ data class UtbetalingDao(
                 behandling_id, 
                 personident, 
                 klassekode,
-                kvittering,
                 fagsystem,
                 status,
                 created_at,
                 updated_at,
-                data
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, to_json(?::json))
+                data,
+                kvittering
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, to_json(?::json), to_json(?::json))
         """.trimIndent()
 
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
@@ -56,8 +56,8 @@ data class UtbetalingDao(
             stmt.setString(4, behandlingId)
             stmt.setString(5, personident)
             stmt.setString(6, klassekode)
-            stmt.setObject(7, fagsystem)
-            stmt.setObject(8, status)
+            stmt.setString(7, fagsystem)
+            stmt.setString(8, status.name)
             stmt.setTimestamp(9, Timestamp.valueOf(created_at))
             stmt.setTimestamp(10, Timestamp.valueOf(updated_at))
             stmt.setString(11, objectMapper.writeValueAsString(data))
@@ -74,7 +74,6 @@ data class UtbetalingDao(
         val sql = """
             UPDATE $TABLE_NAME
             SET 
-                data = to_json(?::json),
                 updated_at = ?,
                 kvittering = to_json(?::json),
                 status = ?
@@ -82,11 +81,10 @@ data class UtbetalingDao(
         """.trimIndent()
 
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, objectMapper.writeValueAsString(data))
-            stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
-            stmt.setString(3, objectMapper.writeValueAsString(kvittering))
-            stmt.setObject(4, status)
-            stmt.setObject(5, uid.id)
+            stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
+            stmt.setString(2, objectMapper.writeValueAsString(kvittering))
+            stmt.setString(3, status.name)
+            stmt.setObject(4, uid.id)
 
             daoLog.debug(sql)
             secureLog.debug(stmt.toString())
