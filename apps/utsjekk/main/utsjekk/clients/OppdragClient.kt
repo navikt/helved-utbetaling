@@ -29,7 +29,7 @@ interface Oppdrag {
 
 class OppdragClient(
     private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(),
+    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) : Oppdrag {
 
