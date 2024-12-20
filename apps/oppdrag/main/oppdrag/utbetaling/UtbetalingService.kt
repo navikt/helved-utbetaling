@@ -2,6 +2,7 @@ package oppdrag.utbetaling
 
 import libs.mq.MQ
 import libs.postgres.concurrency.transaction
+import libs.postgres.Jdbc
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import oppdrag.OppdragConfig
@@ -10,6 +11,7 @@ import oppdrag.iverksetting.OppdragMQProducer
 import oppdrag.appLog
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import org.postgresql.util.PSQLException
+import kotlinx.coroutines.withContext
 
 object SQL_STATE {
     const val CONSTRAINT_VIOLATION = "23505"
@@ -37,8 +39,10 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
                 status = OppdragStatus.LAGT_PÅ_KØ,
             )
 
-            transaction {
-                dao.insert();
+            withContext(Jdbc.context) {
+                transaction {
+                    dao.insert();
+                }
             }
 
             appLog.debug("Legger utbetalingsoppdrag med saksnummer ${dto.saksnummer} på kø")
@@ -54,11 +58,15 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
     suspend fun hentStatusForOppdrag(
         uid: UtbetalingId,
     ): OppdragStatusDto? {
-        return UtbetalingDao.find(uid)?.let { dao ->
-            OppdragStatusDto(
-                status = dao.status,
-                feilmelding = dao.kvittering?.beskrMelding,
-            )
+        return withContext(Jdbc.context) {
+            transaction {
+                UtbetalingDao.findOrNull(uid)?.let { dao ->
+                    OppdragStatusDto(
+                        status = dao.status,
+                        feilmelding = dao.kvittering?.beskrMelding,
+                    )
+                }
+            }
         }
     }
 }

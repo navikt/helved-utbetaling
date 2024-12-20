@@ -97,7 +97,7 @@ data class UtbetalingDao(
     companion object {
         const val TABLE_NAME = "utbetalingsoppdrag"
 
-        suspend fun find(id: UtbetalingId): UtbetalingDao {
+        suspend fun findOrNull(id: UtbetalingId): UtbetalingDao? {
             val sql = """
                 SELECT * FROM $TABLE_NAME
                 WHERE utbetaling_id = ?
@@ -108,7 +108,7 @@ data class UtbetalingDao(
 
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from).single()
+                stmt.executeQuery().map(::from).singleOrNull()
             }
         }
 
