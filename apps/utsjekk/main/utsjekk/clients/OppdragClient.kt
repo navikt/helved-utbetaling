@@ -110,7 +110,7 @@ class OppdragClient(
 
     override suspend fun utbetalStatus(uid: UtbetalingId): OppdragStatusDto {
         val token = azure.getClientCredentialsToken(config.oppdrag.scope)
-        val response = client.get("${config.oppdrag.host}/utbetalingsoppdrag/$uid/status") {
+        val response = client.get("${config.oppdrag.host}/utbetalingsoppdrag/${uid.id}/status") {
             bearerAuth(token.access_token)
             accept(ContentType.Application.Json)
         }
