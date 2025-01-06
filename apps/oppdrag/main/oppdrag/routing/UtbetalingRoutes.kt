@@ -21,6 +21,7 @@ fun Route.utbetalingRoutes(
             val dto = call.receive<UtbetalingsoppdragDto>()
 
             service.opprettOppdrag(dto)
+            call.respond(HttpStatusCode.Accepted)
         }
 
         get("/status") {
