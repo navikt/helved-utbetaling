@@ -36,7 +36,7 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
                 personident = dto.utbetalingsperiode.utbetalesTil,
                 klassekode = dto.utbetalingsperiode.klassekode,
                 kvittering = null,
-                fagsystem = dto.fagsystem.kode,
+                fagsystem = dto.fagsystem.name,
                 status = OppdragStatus.LAGT_PÅ_KØ,
             )
 
