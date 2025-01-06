@@ -24,10 +24,19 @@ class OppdragMQProducer(private val config: OppdragConfig, mq: MQ) {
         val oppdragId = oppdrag.oppdrag110?.oppdragsLinje150s?.lastOrNull()?.henvisning
         val oppdragXml = mapper.writeValueAsString(oppdrag)
 
-        appLog.info(
-            "Sender oppdrag for fagsystem=${oppdrag.oppdrag110.kodeFagomraade} og " +
-                    "fagsak=${oppdrag.oppdrag110.fagsystemId} behandling=$oppdragId til Oppdragsystemet",
-        )
+        appLog.info("""Sender oppdrag til Oppdragsystemet
+            fagsystem=${oppdrag.oppdrag110.kodeFagomraade}
+            fagsak=${oppdrag.oppdrag110.fagsystemId} 
+            behandling=$oppdragId 
+            """.trimIndent())
+
+        secureLog.info("""Sender oppdrag til Oppdragsystemet 
+            fagsystem=${oppdrag.oppdrag110.kodeFagomraade}
+            fagsak=${oppdrag.oppdrag110.fagsystemId} 
+            behandling=$oppdragId 
+            
+            $oppdragXml
+            """.trimIndent())
 
         runCatching {
             producer.produce(oppdragXml) {
