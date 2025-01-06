@@ -123,4 +123,4 @@ class OppdragClient(
     }
 }
 
-class HttpError(override val message: String, val code: HttpStatusCode) : RuntimeException(message)
+class HttpError(override val message: String, val code: HttpStatusCode) : RuntimeException("$code: $message")
