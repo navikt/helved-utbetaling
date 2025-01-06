@@ -101,7 +101,7 @@ class OppdragClient(
         }
 
         when (response.status.value) {
-            201 -> {}
+            in 200..299 -> {}
             409 -> appLog.info("Oppdrag er allerede sendt for saksnr ${utbetalingsoppdrag.saksnummer}")
             else -> throw HttpError(body, response.status)
         }
