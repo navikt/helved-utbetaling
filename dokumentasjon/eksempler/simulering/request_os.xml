@@ -1,0 +1,41 @@
+<!-- Request fra Utsjekk-simulering til OS -->
+<soap:Body>
+    <ns3:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/entiteter/oppdragSkjema"
+                                 xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt">
+        <request>
+            <oppdrag>
+                <kodeEndring>ENDR</kodeEndring>
+                <kodeFagomraade>AAP</kodeFagomraade>
+                <fagsystemId>20241213-TEST4</fagsystemId>
+                <utbetFrekvens>MND</utbetFrekvens>
+                <oppdragGjelderId>26859599337</oppdragGjelderId>
+                <datoOppdragGjelderFom>1970-01-01</datoOppdragGjelderFom>
+                <saksbehId>Z990123</saksbehId>
+                <ns2:enhet>
+                    <typeEnhet>BOS</typeEnhet>
+                    <enhet>8020</enhet>
+                    <datoEnhetFom>1970-01-01</datoEnhetFom>
+                </ns2:enhet>
+                <oppdragslinje>
+                    <kodeEndringLinje>NY</kodeEndringLinje>
+                    <delytelseId>20241213-TEST4#1</delytelseId>
+                    <kodeKlassifik>AAPUAA</kodeKlassifik>
+                    <datoVedtakFom>2024-11-01</datoVedtakFom>
+                    <datoVedtakTom>2024-12-20</datoVedtakTom>
+                    <sats>1000</sats>
+                    <fradragTillegg>T</fradragTillegg>
+                    <typeSats>DAG</typeSats>
+                    <brukKjoreplan>N</brukKjoreplan>
+                    <saksbehId>Z990123</saksbehId>
+                    <utbetalesTilId>26859599337</utbetalesTilId>
+                    <refFagsystemId>20241213-TEST4</refFagsystemId>
+                    <refDelytelseId>20241213-TEST4#0</refDelytelseId>
+                    <ns2:attestant>
+                        <attestantId>Z990123</attestantId>
+                    </ns2:attestant>
+                </oppdragslinje>
+            </oppdrag>
+        </request>
+    </ns3:simulerBeregningRequest>
+
+</soap:Body>

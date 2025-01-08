@@ -1,0 +1,119 @@
+// Respons fra Utsjekk-simulering til Utsjekk
+{
+  "gjelderId": "26859599337",
+  "datoBeregnet": "2024-11-01",
+  "totalBelop": 0,
+  "perioder": [
+    {
+      "fom": "2024-11-01",
+      "tom": "2024-11-30",
+      "utbetalinger": [
+        {
+          "fagområde": "AAP",
+          "fagSystemId": "20241213-TEST4",
+          "utbetalesTilId": "26859599337",
+          "forfall": "2025-01-08",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "YTEL",
+              "faktiskFom": "2024-11-01",
+              "faktiskTom": "2024-11-30",
+              "belop": 21000,
+              "sats": 1000.0,
+              "satstype": "DAG",
+              "klassekode": "AAPUAA",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            },
+            {
+              "type": "YTEL",
+              "faktiskFom": "2024-11-01",
+              "faktiskTom": "2024-11-30",
+              "belop": -21000,
+              "sats": 1000.0,
+              "satstype": "DAG",
+              "klassekode": "AAPUAA",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fom": "2024-12-01",
+      "tom": "2024-12-13",
+      "utbetalinger": [
+        {
+          "fagområde": "AAP",
+          "fagSystemId": "20241213-TEST4",
+          "utbetalesTilId": "26859599337",
+          "forfall": "2025-01-08",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "YTEL",
+              "faktiskFom": "2024-12-01",
+              "faktiskTom": "2024-12-13",
+              "belop": 10000,
+              "sats": 1000.0,
+              "satstype": "DAG",
+              "klassekode": "AAPUAA",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            },
+            {
+              "type": "YTEL",
+              "faktiskFom": "2024-12-01",
+              "faktiskTom": "2024-12-13",
+              "belop": -10000,
+              "sats": 1000.0,
+              "satstype": "DAG",
+              "klassekode": "AAPUAA",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fom": "2024-12-14",
+      "tom": "2024-12-20",
+      "utbetalinger": [
+        {
+          "fagområde": "AAP",
+          "fagSystemId": "20241213-TEST4",
+          "utbetalesTilId": "26859599337",
+          "forfall": "2025-01-08",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "SKAT",
+              "faktiskFom": "2024-12-14",
+              "faktiskTom": "2024-12-20",
+              "belop": -5000,
+              "sats": 0.0,
+              "satstype": null,
+              "klassekode": "FSKTSKAT",
+              "trekkVedtakId": 13252602,
+              "refunderesOrgNr": null
+            },
+            {
+              "type": "YTEL",
+              "faktiskFom": "2024-12-14",
+              "faktiskTom": "2024-12-20",
+              "belop": 5000,
+              "sats": 1000.0,
+              "satstype": "DAG",
+              "klassekode": "AAPUAA",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

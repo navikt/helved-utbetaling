@@ -1,0 +1,25 @@
+// Request fra Utsjekk til Utsjekk-simulering
+{
+  "fagområde": "AAP",
+  "sakId": "20241213-TEST4",
+  "personident": {
+    "verdi": "26859599337"
+  },
+  "erFørsteUtbetalingPåSak": false,
+  "saksbehandler": "Z990123",
+  "utbetalingsperioder": [
+    {
+      "periodeId": "1",
+      "forrigePeriodeId": "0",
+      "erEndringPåEksisterendePeriode": false,
+      "klassekode": "AAPUAA",
+      "fom": "2024-11-01",
+      "tom": "2024-12-20",
+      "sats": 1000,
+      "satstype": "DAG",
+      "opphør": null,
+      "utbetalesTil": "26859599337",
+      "fastsattDagsats": null
+    }
+  ]
+}

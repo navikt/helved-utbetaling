@@ -1,0 +1,225 @@
+<!-- Respons fra OS til Utsjekk-simulering -->
+<SOAP-ENV:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+                   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Body>
+        <simulerBeregningResponse
+                xmlns="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt">
+            <response xmlns="">
+                <simulering>
+                    <gjelderId>26859599337</gjelderId>
+                    <gjelderNavn>JUL TAUS</gjelderNavn>
+                    <datoBeregnet>2024-11-01</datoBeregnet>
+                    <kodeFaggruppe>ARBYT</kodeFaggruppe>
+                    <belop>0.00</belop>
+                    <beregningsPeriode xmlns="http://nav.no/system/os/entiteter/beregningSkjema">
+                        <periodeFom xmlns="">2024-11-01</periodeFom>
+                        <periodeTom xmlns="">2024-11-30</periodeTom>
+                        <beregningStoppnivaa>
+                            <kodeFagomraade xmlns="">AAP</kodeFagomraade>
+                            <stoppNivaaId xmlns="">1</stoppNivaaId>
+                            <behandlendeEnhet xmlns="">8020</behandlendeEnhet>
+                            <oppdragsId xmlns="">73461791</oppdragsId>
+                            <fagsystemId xmlns="">20241213-TEST4</fagsystemId>
+                            <kid xmlns=""></kid>
+                            <utbetalesTilId xmlns="">26859599337</utbetalesTilId>
+                            <utbetalesTilNavn xmlns="">JUL TAUS</utbetalesTilNavn>
+                            <bilagsType xmlns="">U</bilagsType>
+                            <forfall xmlns="">2025-01-08</forfall>
+                            <feilkonto xmlns="">false</feilkonto>
+                            <beregningStoppnivaaDetaljer>
+                                <faktiskFom xmlns="">2024-11-01</faktiskFom>
+                                <faktiskTom xmlns="">2024-11-30</faktiskTom>
+                                <kontoStreng xmlns="">3411000</kontoStreng>
+                                <behandlingskode xmlns="">2</behandlingskode>
+                                <belop xmlns="">21000.00</belop>
+                                <trekkVedtakId xmlns="">0</trekkVedtakId>
+                                <stonadId xmlns=""></stonadId>
+                                <korrigering xmlns=""></korrigering>
+                                <tilbakeforing xmlns="">false</tilbakeforing>
+                                <linjeId xmlns="">2</linjeId>
+                                <sats xmlns="">1000.00</sats>
+                                <typeSats xmlns="">DAG</typeSats>
+                                <antallSats xmlns="">21.00</antallSats>
+                                <saksbehId xmlns="">Z990123</saksbehId>
+                                <uforeGrad xmlns="">0</uforeGrad>
+                                <kravhaverId xmlns=""></kravhaverId>
+                                <delytelseId xmlns="">20241213-TEST4#1</delytelseId>
+                                <bostedsenhet xmlns="">8020</bostedsenhet>
+                                <skykldnerId xmlns=""></skykldnerId>
+                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
+                                <typeKlasse xmlns="">YTEL</typeKlasse>
+                                <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
+                                <refunderesOrgNr xmlns=""></refunderesOrgNr>
+                            </beregningStoppnivaaDetaljer>
+                            <beregningStoppnivaaDetaljer>
+                                <faktiskFom xmlns="">2024-11-01</faktiskFom>
+                                <faktiskTom xmlns="">2024-11-30</faktiskTom>
+                                <kontoStreng xmlns="">3411000</kontoStreng>
+                                <behandlingskode xmlns="">2</behandlingskode>
+                                <belop xmlns="">-21000.00</belop>
+                                <trekkVedtakId xmlns="">0</trekkVedtakId>
+                                <stonadId xmlns=""></stonadId>
+                                <korrigering xmlns=""></korrigering>
+                                <tilbakeforing xmlns="">true</tilbakeforing>
+                                <linjeId xmlns="">1</linjeId>
+                                <sats xmlns="">1000.00</sats>
+                                <typeSats xmlns="">DAG</typeSats>
+                                <antallSats xmlns="">0.00</antallSats>
+                                <saksbehId xmlns="">K231B215</saksbehId>
+                                <uforeGrad xmlns="">0</uforeGrad>
+                                <kravhaverId xmlns=""></kravhaverId>
+                                <delytelseId xmlns=""></delytelseId>
+                                <bostedsenhet xmlns="">8020</bostedsenhet>
+                                <skykldnerId xmlns=""></skykldnerId>
+                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
+                                <typeKlasse xmlns="">YTEL</typeKlasse>
+                                <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
+                                <refunderesOrgNr xmlns=""></refunderesOrgNr>
+                            </beregningStoppnivaaDetaljer>
+                        </beregningStoppnivaa>
+                    </beregningsPeriode>
+                    <beregningsPeriode xmlns="http://nav.no/system/os/entiteter/beregningSkjema">
+                        <periodeFom xmlns="">2024-12-01</periodeFom>
+                        <periodeTom xmlns="">2024-12-13</periodeTom>
+                        <beregningStoppnivaa>
+                            <kodeFagomraade xmlns="">AAP</kodeFagomraade>
+                            <stoppNivaaId xmlns="">2</stoppNivaaId>
+                            <behandlendeEnhet xmlns="">8020</behandlendeEnhet>
+                            <oppdragsId xmlns="">73461791</oppdragsId>
+                            <fagsystemId xmlns="">20241213-TEST4</fagsystemId>
+                            <kid xmlns=""></kid>
+                            <utbetalesTilId xmlns="">26859599337</utbetalesTilId>
+                            <utbetalesTilNavn xmlns="">JUL TAUS</utbetalesTilNavn>
+                            <bilagsType xmlns="">U</bilagsType>
+                            <forfall xmlns="">2025-01-08</forfall>
+                            <feilkonto xmlns="">false</feilkonto>
+                            <beregningStoppnivaaDetaljer>
+                                <faktiskFom xmlns="">2024-12-01</faktiskFom>
+                                <faktiskTom xmlns="">2024-12-13</faktiskTom>
+                                <kontoStreng xmlns="">3411000</kontoStreng>
+                                <behandlingskode xmlns="">2</behandlingskode>
+                                <belop xmlns="">10000.00</belop>
+                                <trekkVedtakId xmlns="">0</trekkVedtakId>
+                                <stonadId xmlns=""></stonadId>
+                                <korrigering xmlns=""></korrigering>
+                                <tilbakeforing xmlns="">false</tilbakeforing>
+                                <linjeId xmlns="">2</linjeId>
+                                <sats xmlns="">1000.00</sats>
+                                <typeSats xmlns="">DAG</typeSats>
+                                <antallSats xmlns="">10.00</antallSats>
+                                <saksbehId xmlns="">Z990123</saksbehId>
+                                <uforeGrad xmlns="">0</uforeGrad>
+                                <kravhaverId xmlns=""></kravhaverId>
+                                <delytelseId xmlns="">20241213-TEST4#1</delytelseId>
+                                <bostedsenhet xmlns="">8020</bostedsenhet>
+                                <skykldnerId xmlns=""></skykldnerId>
+                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
+                                <typeKlasse xmlns="">YTEL</typeKlasse>
+                                <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
+                                <refunderesOrgNr xmlns=""></refunderesOrgNr>
+                            </beregningStoppnivaaDetaljer>
+                            <beregningStoppnivaaDetaljer>
+                                <faktiskFom xmlns="">2024-12-01</faktiskFom>
+                                <faktiskTom xmlns="">2024-12-13</faktiskTom>
+                                <kontoStreng xmlns="">3411000</kontoStreng>
+                                <behandlingskode xmlns="">2</behandlingskode>
+                                <belop xmlns="">-10000.00</belop>
+                                <trekkVedtakId xmlns="">0</trekkVedtakId>
+                                <stonadId xmlns=""></stonadId>
+                                <korrigering xmlns=""></korrigering>
+                                <tilbakeforing xmlns="">true</tilbakeforing>
+                                <linjeId xmlns="">1</linjeId>
+                                <sats xmlns="">1000.00</sats>
+                                <typeSats xmlns="">DAG</typeSats>
+                                <antallSats xmlns="">0.00</antallSats>
+                                <saksbehId xmlns="">K231B215</saksbehId>
+                                <uforeGrad xmlns="">0</uforeGrad>
+                                <kravhaverId xmlns=""></kravhaverId>
+                                <delytelseId xmlns=""></delytelseId>
+                                <bostedsenhet xmlns="">8020</bostedsenhet>
+                                <skykldnerId xmlns=""></skykldnerId>
+                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
+                                <typeKlasse xmlns="">YTEL</typeKlasse>
+                                <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
+                                <refunderesOrgNr xmlns=""></refunderesOrgNr>
+                            </beregningStoppnivaaDetaljer>
+                        </beregningStoppnivaa>
+                    </beregningsPeriode>
+                    <beregningsPeriode xmlns="http://nav.no/system/os/entiteter/beregningSkjema">
+                        <periodeFom xmlns="">2024-12-14</periodeFom>
+                        <periodeTom xmlns="">2024-12-20</periodeTom>
+                        <beregningStoppnivaa>
+                            <kodeFagomraade xmlns="">AAP</kodeFagomraade>
+                            <stoppNivaaId xmlns="">2</stoppNivaaId>
+                            <behandlendeEnhet xmlns="">8020</behandlendeEnhet>
+                            <oppdragsId xmlns="">73461791</oppdragsId>
+                            <fagsystemId xmlns="">20241213-TEST4</fagsystemId>
+                            <kid xmlns=""></kid>
+                            <utbetalesTilId xmlns="">26859599337</utbetalesTilId>
+                            <utbetalesTilNavn xmlns="">JUL TAUS</utbetalesTilNavn>
+                            <bilagsType xmlns="">U</bilagsType>
+                            <forfall xmlns="">2025-01-08</forfall>
+                            <feilkonto xmlns="">false</feilkonto>
+                            <beregningStoppnivaaDetaljer>
+                                <faktiskFom xmlns="">2024-12-14</faktiskFom>
+                                <faktiskTom xmlns="">2024-12-20</faktiskTom>
+                                <kontoStreng xmlns="">0510000</kontoStreng>
+                                <behandlingskode xmlns="">0</behandlingskode>
+                                <belop xmlns="">-5000.00</belop>
+                                <trekkVedtakId xmlns="">13252602</trekkVedtakId>
+                                <stonadId xmlns=""></stonadId>
+                                <korrigering xmlns=""></korrigering>
+                                <tilbakeforing xmlns="">false</tilbakeforing>
+                                <linjeId xmlns="">0</linjeId>
+                                <sats xmlns="">0.00</sats>
+                                <typeSats xmlns=""></typeSats>
+                                <antallSats xmlns="">5.00</antallSats>
+                                <saksbehId xmlns="">K231SKA2</saksbehId>
+                                <uforeGrad xmlns="">0</uforeGrad>
+                                <kravhaverId xmlns=""></kravhaverId>
+                                <delytelseId xmlns=""></delytelseId>
+                                <bostedsenhet xmlns="">8020</bostedsenhet>
+                                <skykldnerId xmlns=""></skykldnerId>
+                                <klassekode xmlns="">FSKTSKAT</klassekode>
+                                <klasseKodeBeskrivelse xmlns="">Forskuddskatt</klasseKodeBeskrivelse>
+                                <typeKlasse xmlns="">SKAT</typeKlasse>
+                                <typeKlasseBeskrivelse xmlns="">Klassetype for skatt</typeKlasseBeskrivelse>
+                                <refunderesOrgNr xmlns=""></refunderesOrgNr>
+                            </beregningStoppnivaaDetaljer>
+                            <beregningStoppnivaaDetaljer>
+                                <faktiskFom xmlns="">2024-12-14</faktiskFom>
+                                <faktiskTom xmlns="">2024-12-20</faktiskTom>
+                                <kontoStreng xmlns="">3411000</kontoStreng>
+                                <behandlingskode xmlns="">2</behandlingskode>
+                                <belop xmlns="">5000.00</belop>
+                                <trekkVedtakId xmlns="">0</trekkVedtakId>
+                                <stonadId xmlns=""></stonadId>
+                                <korrigering xmlns=""></korrigering>
+                                <tilbakeforing xmlns="">false</tilbakeforing>
+                                <linjeId xmlns="">2</linjeId>
+                                <sats xmlns="">1000.00</sats>
+                                <typeSats xmlns="">DAG</typeSats>
+                                <antallSats xmlns="">5.00</antallSats>
+                                <saksbehId xmlns="">Z990123</saksbehId>
+                                <uforeGrad xmlns="">0</uforeGrad>
+                                <kravhaverId xmlns=""></kravhaverId>
+                                <delytelseId xmlns="">20241213-TEST4#1</delytelseId>
+                                <bostedsenhet xmlns="">8020</bostedsenhet>
+                                <skykldnerId xmlns=""></skykldnerId>
+                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
+                                <typeKlasse xmlns="">YTEL</typeKlasse>
+                                <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
+                                <refunderesOrgNr xmlns=""></refunderesOrgNr>
+                            </beregningStoppnivaaDetaljer>
+                        </beregningStoppnivaa>
+                    </beregningsPeriode>
+                </simulering>
+            </response>
+        </simulerBeregningResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
