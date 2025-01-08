@@ -1,0 +1,21 @@
+// Request som sendes fra vedtaksløsning til Utsjekk API
+{
+  "sakId": "20241213-TEST4",
+  "behandlingId": "002",
+  "personident": "26859599337",
+  "saksbehandlerId": "Z990123",
+  "utbetalinger": [
+    {
+      "beløp": 1000,
+      "satstype": "DAGLIG",
+      "fraOgMedDato": "2024-11-01",
+      "tilOgMedDato": "2024-12-20",
+      "stønadsdata": {
+        "stønadstype": "AAP_UNDER_ARBEIDSAVKLARING"
+      }
+    }
+  ],
+  "forrigeIverksetting": {
+    "behandlingId": "001"
+  }
+}

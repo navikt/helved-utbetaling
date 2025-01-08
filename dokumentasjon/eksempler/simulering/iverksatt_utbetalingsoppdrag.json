@@ -1,0 +1,30 @@
+// Ferdig iverksatt Utbetalingsoppdrag fra Utsjekk. Simuleringen i eksempelet utvider perioden fra 13.12 til 20.12.
+{
+  "erFørsteUtbetalingPåSak": true,
+  "fagsystem": "AAP",
+  "saksnummer": "20241213-TEST4",
+  "iverksettingId": null,
+  "aktør": "26859599337",
+  "saksbehandlerId": "Z994230",
+  "beslutterId": "B123456",
+  "avstemmingstidspunkt": "2024-12-13T15:21:12.702637803",
+  "utbetalingsperiode": [
+    {
+      "erEndringPåEksisterendePeriode": false,
+      "opphør": null,
+      "periodeId": 0,
+      "forrigePeriodeId": null,
+      "vedtaksdato": "2024-12-13",
+      "klassifisering": "AAPUAA",
+      "fom": "2024-11-01",
+      "tom": "2024-12-13",
+      "sats": 1000,
+      "satstype": "DAGLIG",
+      "utbetalesTil": "26859599337",
+      "behandlingId": "001",
+      "utbetalingsgrad": null,
+      "fastsattDagsats": 1000
+    }
+  ],
+  "brukersNavKontor": null
+}
