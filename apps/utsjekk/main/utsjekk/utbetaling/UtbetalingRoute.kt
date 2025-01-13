@@ -1,28 +1,33 @@
 package utsjekk.utbetaling
 
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.util.*
-import java.util.UUID
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.server.routing.route
+import libs.utils.onFailure
 import utsjekk.badRequest
-import utsjekk.notFound
-import utsjekk.internalServerError
 import utsjekk.conflict
-import libs.utils.*
+import utsjekk.internalServerError
+import utsjekk.notFound
+import java.util.UUID
 
 // TODO: valider at stønad (enum) tilhører AZP (claims)
 fun Route.utbetalingRoute() {
-    route("/utbetalinger/{uid}") { 
+    route("/utbetalinger/{uid}") {
         post {
             val uid = call.parameters["uid"]
                 ?.let(::uuid)
                 ?.let(::UtbetalingId)
-                ?: badRequest(msg = "missing path param", field = "uid") 
+                ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
-            val periodeId = 1u // TODO: select mot databasen
+            val periodeId = UtbetalingService.count(SakId(dto.sakId), dto.stønad) + 1u
             val domain = Utbetaling.from(dto, periodeId)
 
             UtbetalingService.create(uid, domain).onFailure {
@@ -30,7 +35,7 @@ fun Route.utbetalingRoute() {
                     DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
                     DatabaseError.Unknown -> internalServerError("unknown database error")
                 }
-            } 
+            }
             call.response.headers.append(HttpHeaders.Location, "/utbetalinger/${uid.id}")
             call.respond(HttpStatusCode.Created)
         }
@@ -39,7 +44,7 @@ fun Route.utbetalingRoute() {
             val uid = call.parameters["uid"]
                 ?.let(::uuid)
                 ?.let(::UtbetalingId)
-                ?: badRequest(msg = "missing path param", field = "uid") 
+                ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = UtbetalingService.read(uid)
                 ?.let(UtbetalingApi::from)
@@ -52,7 +57,7 @@ fun Route.utbetalingRoute() {
             val uid = call.parameters["uid"]
                 ?.let(::uuid)
                 ?.let(::UtbetalingId)
-                ?: badRequest(msg = "missing path param", field = "uid") 
+                ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = UtbetalingService.status(uid).let(UtbetalingStatusApi::from)
 
@@ -63,7 +68,7 @@ fun Route.utbetalingRoute() {
             val uid = call.parameters["uid"]
                 ?.let(::uuid)
                 ?.let(::UtbetalingId)
-                ?: badRequest(msg = "missing path param", field = "uid") 
+                ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
             val domain = Utbetaling.from(dto)
@@ -72,7 +77,7 @@ fun Route.utbetalingRoute() {
                     DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
                     DatabaseError.Unknown -> internalServerError("unknown database error")
                 }
-            } 
+            }
             call.respond(HttpStatusCode.NoContent)
         }
 
@@ -80,11 +85,11 @@ fun Route.utbetalingRoute() {
             val uid = call.parameters["uid"]
                 ?.let(::uuid)
                 ?.let(::UtbetalingId)
-                ?: badRequest(msg = "missing path param", field = "uid") 
+                ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
             val domain = Utbetaling.from(dto)
-            UtbetalingService.delete(uid, domain).onFailure { 
+            UtbetalingService.delete(uid, domain).onFailure {
                 when (it) {
                     DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
                     DatabaseError.Unknown -> internalServerError("unknown database error")
@@ -98,7 +103,7 @@ fun Route.utbetalingRoute() {
 private fun uuid(str: String): UUID {
     return try {
         UUID.fromString(str)
-    } catch(e: Exception) {
+    } catch (e: Exception) {
         badRequest(msg = "path param must be UUIDv4", field = "uid")
     }
 }

@@ -1,26 +1,22 @@
 package utsjekk.utbetaling
 
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
-import java.util.*
-import libs.postgres.concurrency.transaction
+import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
-import libs.task.TaskDao
+import libs.postgres.concurrency.transaction
 import libs.task.Tasks
 import libs.utils.Result
-import libs.utils.Ok
-import libs.utils.Err
 import libs.utils.onSuccess
 import no.nav.utsjekk.kontrakter.felles.objectMapper
-import kotlinx.coroutines.withContext
 import utsjekk.notFound
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 object UtbetalingService {
 
     /**
      * Legg til nytt utbetalingsoppdrag.
      */
-    suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError>  {
+    suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
         // TODO: finnes det noe fra før dersom det er sendt inn 1 periode som senere har blitt slettet/annulert/opphørt?
         val erFørsteUtbetalingPåSak = withContext(Jdbc.context) {
             transaction {
@@ -32,7 +28,7 @@ object UtbetalingService {
 
         val oppdrag = UtbetalingsoppdragDto(
             uid = uid,
-            erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak, 
+            erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
             fagsystem = FagsystemDto.from(utbetaling.stønad),
             saksnummer = utbetaling.sakId.id,
             aktør = utbetaling.personident.ident,
@@ -43,7 +39,7 @@ object UtbetalingService {
             utbetalingsperiode = UtbetalingsperiodeDto(
                 erEndringPåEksisterendePeriode = false,
                 opphør = null,
-                id = utbetaling.periode.id, 
+                id = utbetaling.periode.id,
                 vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                 klassekode = klassekode(utbetaling.stønad),
                 fom = utbetaling.periode.fom,
@@ -66,7 +62,7 @@ object UtbetalingService {
                     }
             }
         }
-    } 
+    }
 
     /**
      * Hent eksisterende utbetalingsoppdrag
@@ -134,7 +130,7 @@ object UtbetalingService {
                 Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
                     objectMapper.writeValueAsString(it)
                 }
-                
+
                 dao.copy(data = utbetaling).update(uid)
             }
         }
@@ -182,6 +178,17 @@ object UtbetalingService {
                     objectMapper.writeValueAsString(it)
                 }
                 UtbetalingDao.delete(uid) // todo: with history
+            }
+        }
+    }
+
+    suspend fun count(sakId: SakId, stønadstype: Stønadstype): UInt {
+        return withContext(Jdbc.context) {
+            transaction {
+                UtbetalingDao.find(sakId)
+                    .map { it.stønad.asFagsystemStr() }
+                    .count { it == stønadstype.asFagsystemStr() }
+                    .toUInt()
             }
         }
     }
