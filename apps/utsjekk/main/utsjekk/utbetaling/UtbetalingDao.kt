@@ -36,6 +36,7 @@ suspend fun <T>tryResult(block: suspend () -> T): Result<T, Throwable> {
 
 data class UtbetalingDao(
     val data: Utbetaling,
+    val stønad: Stønadstype = data.stønad,
     val created_at: LocalDateTime = LocalDateTime.now(),
     val updated_at: LocalDateTime = created_at,
 ) {
@@ -116,6 +117,20 @@ data class UtbetalingDao(
             }
         }
 
+        suspend fun find(sakId: SakId): List<UtbetalingDao> {
+            val sql = """
+                SELECT * FROM $TABLE_NAME
+                WHERE sak_id = ?
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt -> 
+                stmt.setObject(1, sakId.id)
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
         // TODO: create history
         suspend fun delete(id: UtbetalingId): Result<Unit, DatabaseError> {
             val sql = """
@@ -138,6 +153,7 @@ data class UtbetalingDao(
 
         fun from(rs: ResultSet)= UtbetalingDao(
             data = objectMapper.readValue(rs.getString("data"), Utbetaling::class.java),
+            stønad = rs.getString("stønad").let(Stønadstype::valueOf),
             created_at = rs.getTimestamp("created_at").toLocalDateTime(),
             updated_at = rs.getTimestamp("updated_at").toLocalDateTime(),
         )

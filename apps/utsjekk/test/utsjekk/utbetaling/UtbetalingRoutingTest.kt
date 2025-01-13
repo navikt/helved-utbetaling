@@ -1,6 +1,7 @@
 package utsjekk.utbetaling
 
 import TestRuntime
+import com.fasterxml.jackson.module.kotlin.readValue
 import http
 import httpClient
 import io.ktor.client.*
@@ -8,11 +9,14 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import java.util.*
 import kotlinx.coroutines.test.runTest
+import libs.task.*
+import no.nav.utsjekk.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.ApiError
-import java.util.*
+import kotlin.test.assertFalse
 
 class UtbetalingRoutingTest {
     
@@ -241,7 +245,7 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `can update Utbetaling`() = runTest() {
+    fun `can update Utbetaling`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
@@ -266,6 +270,13 @@ class UtbetalingRoutingTest {
             setBody(updatedUtbetaling)
         }
 
+
+        val oppdragDto = Tasks.forKind(Kind.Utbetaling)
+            .map { objectMapper.readValue<UtbetalingsoppdragDto>(it.payload) }
+            .filter { it.uid.id == uid }
+            .maxBy { it.utbetalingsperiode.vedtaksdato }
+
+        assertFalse(oppdragDto.erFørsteUtbetalingPåSak)
         assertEquals(HttpStatusCode.NoContent, res.status)
     }
 
