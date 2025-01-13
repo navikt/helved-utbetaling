@@ -21,9 +21,18 @@ object UtbetalingService {
      * Legg til nytt utbetalingsoppdrag.
      */
     suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError>  {
+        // TODO: finnes det noe fra før dersom det er sendt inn 1 periode som senere har blitt slettet/annulert/opphørt?
+        val erFørsteUtbetalingPåSak = withContext(Jdbc.context) {
+            transaction {
+                UtbetalingDao.find(utbetaling.sakId)
+                    .map { it.stønad.asFagsystemStr() }
+                    .any { it == utbetaling.stønad.asFagsystemStr() }
+            }
+        }
+
         val oppdrag = UtbetalingsoppdragDto(
             uid = uid,
-            erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
+            erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak, 
             fagsystem = FagsystemDto.from(utbetaling.stønad),
             saksnummer = utbetaling.sakId.id,
             aktør = utbetaling.personident.ident,
