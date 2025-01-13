@@ -270,14 +270,46 @@ class UtbetalingRoutingTest {
             setBody(updatedUtbetaling)
         }
 
+        assertEquals(HttpStatusCode.NoContent, res.status)
+    }
+
+    @Test
+    fun `can add new periode to Utbetaling`() = runTest(TestRuntime.context) {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid1 = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid1") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val utbetaling2 = UtbetalingApi.dagpenger(
+            sakId = SakId(utbetaling.sakId),
+            vedtakstidspunkt = 1.mar,
+            perioder = listOf(UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u)),
+        )
+
+        val uid2 = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling2)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
 
         val oppdragDto = Tasks.forKind(Kind.Utbetaling)
             .map { objectMapper.readValue<UtbetalingsoppdragDto>(it.payload) }
-            .filter { it.uid.id == uid }
+            .filter { it.uid.id == uid2 }
             .maxBy { it.utbetalingsperiode.vedtaksdato }
 
         assertFalse(oppdragDto.erFørsteUtbetalingPåSak)
-        assertEquals(HttpStatusCode.NoContent, res.status)
     }
 
     @Test
