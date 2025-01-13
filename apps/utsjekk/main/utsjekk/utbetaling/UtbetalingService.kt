@@ -26,7 +26,7 @@ object UtbetalingService {
             transaction {
                 UtbetalingDao.find(utbetaling.sakId)
                     .map { it.stønad.asFagsystemStr() }
-                    .any { it == utbetaling.stønad.asFagsystemStr() }
+                    .none { it == utbetaling.stønad.asFagsystemStr() }
             }
         }
 
