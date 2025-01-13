@@ -310,6 +310,7 @@ class UtbetalingRoutingTest {
             .maxBy { it.utbetalingsperiode.vedtaksdato }
 
         assertFalse(oppdragDto.erFørsteUtbetalingPåSak)
+        assertEquals(2u, oppdragDto.utbetalingsperiode.id)
     }
 
     @Test
