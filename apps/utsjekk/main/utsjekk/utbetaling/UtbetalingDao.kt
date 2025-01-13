@@ -2,15 +2,13 @@ package utsjekk.utbetaling
 
 import libs.postgres.concurrency.connection
 import libs.postgres.map
-import libs.utils.secureLog
-import libs.utils.logger
 import libs.utils.Result
-import libs.utils.Ok
-import libs.utils.Err
-import libs.utils.mapErr
+import libs.utils.logger
 import libs.utils.map
+import libs.utils.mapErr
+import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
-import utsjekk.appLog
+import org.intellij.lang.annotations.Language
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
@@ -30,7 +28,7 @@ enum class DatabaseError {
     Unknown,
 }
 
-suspend fun <T>tryResult(block: suspend () -> T): Result<T, Throwable> {
+suspend fun <T> tryResult(block: suspend () -> T): Result<T, Throwable> {
     return Result.catch { block() }
 }
 
@@ -72,8 +70,8 @@ data class UtbetalingDao(
                 stmt.executeUpdate()
             }
         }
-        .map { Unit }
-        .mapErr { DatabaseError.Unknown }
+            .map { Unit }
+            .mapErr { DatabaseError.Unknown }
     }
 
     // TODO: create history
@@ -95,20 +93,26 @@ data class UtbetalingDao(
                 stmt.executeUpdate()
             }
         }
-        .map { Unit }
-        .mapErr { DatabaseError.Unknown }
+            .map { Unit }
+            .mapErr { DatabaseError.Unknown }
     }
 
     companion object {
         const val TABLE_NAME = "utbetaling"
 
-        suspend fun findOrNull(id: UtbetalingId): UtbetalingDao? {
-            val sql = """
-                SELECT * FROM $TABLE_NAME
-                WHERE utbetaling_id = ?
-            """.trimIndent()
+        suspend fun findOrNull(id: UtbetalingId, withHistory: Boolean = false): UtbetalingDao? {
+            val sql = when (withHistory) {
+                true -> """
+                    SELECT * FROM $TABLE_NAME
+                    WHERE utbetaling_id = ?;
+                """.trimIndent()
+                false -> """
+                    SELECT * FROM $TABLE_NAME
+                    WHERE utbetaling_id = ? AND deleted_at IS null;
+                """.trimIndent()
+            }
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt -> 
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, id.id)
 
                 daoLog.debug(sql)
@@ -117,13 +121,14 @@ data class UtbetalingDao(
             }
         }
 
+        // todo: Finner utbetalinger som er slettet. Mulig vi må endre på dette.
         suspend fun find(sakId: SakId): List<UtbetalingDao> {
             val sql = """
                 SELECT * FROM $TABLE_NAME
                 WHERE sak_id = ?
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt -> 
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, sakId.id)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
@@ -134,24 +139,26 @@ data class UtbetalingDao(
         // TODO: create history
         suspend fun delete(id: UtbetalingId): Result<Unit, DatabaseError> {
             val sql = """
-                DELETE FROM $TABLE_NAME
+                UPDATE $TABLE_NAME
+                SET deleted_at = ?
                 WHERE utbetaling_id = ?
             """.trimIndent()
 
             return tryResult {
-                coroutineContext.connection.prepareStatement(sql).use { stmt -> 
-                    stmt.setObject(1, id.id)
+                coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                    stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
+                    stmt.setObject(2, id.id)
 
                     daoLog.debug(sql)
                     secureLog.debug(stmt.toString())
                     stmt.executeUpdate()
                 }
             }
-            .map { Unit }
-            .mapErr { DatabaseError.Unknown }
+                .map { Unit }
+                .mapErr { DatabaseError.Unknown }
         }
 
-        fun from(rs: ResultSet)= UtbetalingDao(
+        fun from(rs: ResultSet) = UtbetalingDao(
             data = objectMapper.readValue(rs.getString("data"), Utbetaling::class.java),
             stønad = rs.getString("stønad").let(Stønadstype::valueOf),
             created_at = rs.getTimestamp("created_at").toLocalDateTime(),

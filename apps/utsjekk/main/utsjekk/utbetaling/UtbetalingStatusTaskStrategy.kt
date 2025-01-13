@@ -33,7 +33,7 @@ class UtbetalingStatusTaskStrategy(
         val uId = objectMapper.readValue<UtbetalingId>(task.payload)
 
         val uDao = transaction {
-            UtbetalingDao.findOrNull(uId)
+            UtbetalingDao.findOrNull(uId, withHistory = true)
         }
 
         if (uDao == null) {
