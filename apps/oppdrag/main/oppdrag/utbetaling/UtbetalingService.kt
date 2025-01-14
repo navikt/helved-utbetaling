@@ -3,7 +3,6 @@ package oppdrag.utbetaling
 import libs.mq.MQ
 import libs.postgres.concurrency.transaction
 import libs.postgres.Jdbc
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import oppdrag.OppdragConfig
 import oppdrag.iverksetting.domene.OppdragMapper
@@ -61,7 +60,7 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
     ): OppdragStatusDto? {
         return withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.findOrNull(uid)?.let { dao ->
+                UtbetalingDao.findLatestOrNull(uid)?.let { dao ->
                     OppdragStatusDto(
                         status = dao.status,
                         feilmelding = dao.kvittering?.beskrMelding,
