@@ -1,13 +1,8 @@
 package oppdrag.utbetaling
 
-import java.io.PrintWriter
-import java.sql.Connection
 import java.util.UUID
-import javax.sql.DataSource
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.test.runTest
-import libs.mq.MQ
 import libs.postgres.concurrency.*
 import libs.utils.Resource
 import libs.xml.XMLMapper
@@ -19,8 +14,6 @@ import oppdrag.etUtbetalingsoppdrag
 import oppdrag.iverksetting.domene.OppdragMapper
 import oppdrag.iverksetting.tilstand.OppdragId
 import org.junit.jupiter.api.*
-import org.postgresql.util.PSQLException
-import org.postgresql.util.ServerErrorMessage
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class UtbetalingDaoTest {
@@ -89,7 +82,7 @@ class UtbetalingDaoTest {
                 status = OppdragStatus.LAGT_PÅ_KØ,
             ).insert()
 
-            assertNotNull(UtbetalingDao.findOrNull(uid))
+            assertNotNull(UtbetalingDao.findLatestOrNull(uid))
         }
     }
 

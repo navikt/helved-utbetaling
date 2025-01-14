@@ -19,6 +19,7 @@ private val daoLog = logger("dao")
 
 
 data class UtbetalingDao(
+    val id: UUID = UUID.randomUUID(),
     val uid: UtbetalingId,
     val data: Oppdrag,
     val sakId: String,
@@ -50,7 +51,7 @@ data class UtbetalingDao(
         """.trimIndent()
 
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
-            stmt.setObject(1, UUID.randomUUID())
+            stmt.setObject(1, id)
             stmt.setObject(2, uid.id)
             stmt.setString(3, sakId)
             stmt.setString(4, behandlingId)
@@ -77,14 +78,14 @@ data class UtbetalingDao(
                 updated_at = ?,
                 kvittering = to_json(?::json),
                 status = ?
-            WHERE utbetaling_id = ?
+            WHERE id = ?
         """.trimIndent()
 
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
             stmt.setString(2, objectMapper.writeValueAsString(kvittering))
             stmt.setString(3, status.name)
-            stmt.setObject(4, uid.id)
+            stmt.setObject(4, id)
 
             daoLog.debug(sql)
             secureLog.debug(stmt.toString())
@@ -95,7 +96,7 @@ data class UtbetalingDao(
     companion object {
         const val TABLE_NAME = "utbetalingsoppdrag"
 
-        suspend fun findOrNull(id: UtbetalingId): UtbetalingDao? {
+        suspend fun findLatestOrNull(id: UtbetalingId): UtbetalingDao? {
             val sql = """
                 SELECT * FROM $TABLE_NAME
                 WHERE utbetaling_id = ?
@@ -106,7 +107,7 @@ data class UtbetalingDao(
 
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from).singleOrNull()
+                stmt.executeQuery().map(::from).maxByOrNull { it.created_at }
             }
         }
 
@@ -131,14 +132,14 @@ data class UtbetalingDao(
         }
 
         // TODO: create history
-        suspend fun delete(id: UtbetalingId) {
+        suspend fun delete(id: UUID) {
             val sql = """
                 DELETE FROM $TABLE_NAME
-                WHERE utbetaling_id = ?
+                WHERE id = ?
             """.trimIndent()
 
             coroutineContext.connection.prepareStatement(sql).use { stmt -> 
-                stmt.setObject(1, id.id)
+                stmt.setObject(1, id)
 
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
@@ -149,6 +150,7 @@ data class UtbetalingDao(
         fun from(rs: ResultSet):UtbetalingDao { 
             val kvittering: String? = rs.getString("kvittering")
             return UtbetalingDao(
+                id = UUID.fromString(rs.getString("id")),
                 uid = UtbetalingId(UUID.fromString(rs.getString("utbetaling_id"))),
                 data = objectMapper.readValue(rs.getString("data"), Oppdrag::class.java),
                 created_at = rs.getTimestamp("created_at").toLocalDateTime(),
