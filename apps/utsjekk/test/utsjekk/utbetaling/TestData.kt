@@ -6,15 +6,12 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
-import utsjekk.avstemming.nesteVirkedag
 
 val Int.jan: LocalDate get() = LocalDate.of(2025, 3, this)
 val Int.feb: LocalDate get() = LocalDate.of(2024, 2, this)
 val Int.mar: LocalDate get() = LocalDate.of(2024, 3, this)
 val Int.aug: LocalDate get() = LocalDate.of(2024, 8, this)
 val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
-val virkedager: (LocalDate) -> LocalDate = { it.nesteVirkedag() }
-val alleDager: (LocalDate) -> LocalDate = { it.plusDays(1) }
 
 fun Personident.Companion.random(): Personident {
     return Personident(no.nav.utsjekk.kontrakter.felles.Personident.random().verdi)
@@ -62,30 +59,6 @@ fun UtbetalingsperiodeDto.Companion.dag(
     klassekode: String,
 ) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.DAG)
 
-fun UtbetalingsperiodeDto.Companion.virkedag(
-    from: Utbetaling,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.VIRKEDAG)
-
-fun UtbetalingsperiodeDto.Companion.mnd(
-    from: Utbetaling,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.MND)
-
-fun UtbetalingsperiodeDto.Companion.eng(
-    from: Utbetaling,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    klassekode: String,
-) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.ENGANGS)
-
 fun UtbetalingsoppdragDto.Companion.dagpenger(
     uid: UtbetalingId,
     from: Utbetaling,
@@ -127,21 +100,6 @@ fun UtbetalingApi.Companion.dagpenger(
         saksbehandlerId.ident,
         perioder,
     )
-}
-
-fun UtbetalingsperiodeApi.Companion.expand(
-    fom: LocalDate,
-    tom: LocalDate,
-    beløp: UInt,
-    expansionStrategy: (LocalDate) -> LocalDate,
-    betalendeEnhet: NavEnhet? = null,
-    fastsattDagpengesats: UInt? = null,
-): List<UtbetalingsperiodeApi> = buildList {
-    var date = fom
-    while (date.isBefore(tom) || date.isEqual(tom)) {
-        add(UtbetalingsperiodeApi(date, date, beløp, betalendeEnhet?.enhet, fastsattDagpengesats))
-        date = expansionStrategy(date)
-    }
 }
 
 fun Utbetalingsperiode.Companion.dagpenger(

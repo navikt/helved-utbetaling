@@ -1,23 +1,21 @@
 package utsjekk.utbetaling
 
+import com.fasterxml.jackson.module.kotlin.readValue
+import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
+import libs.task.Tasks
+import libs.utils.secureLog
+import no.nav.utsjekk.kontrakter.felles.objectMapper
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import utsjekk.appLog
+import utsjekk.clients.Oppdrag
 import utsjekk.task.TaskStrategy
 import utsjekk.task.exponentialMin
-import utsjekk.clients.Oppdrag
-import libs.task.TaskDao
-import libs.postgres.concurrency.transaction
-import libs.task.Tasks
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
-import com.fasterxml.jackson.module.kotlin.readValue
-import utsjekk.appLog
-import libs.utils.secureLog
 
 class UtbetalingStatusTaskStrategy(
     private val oppdragClient: Oppdrag,
     // private val statusProducer: Kafka<UtbetalingStatus>,
-): TaskStrategy {
+) : TaskStrategy {
 
     override suspend fun isApplicable(task: TaskDao): Boolean {
         return task.kind == libs.task.Kind.StatusUtbetaling
@@ -40,26 +38,30 @@ class UtbetalingStatusTaskStrategy(
         when (statusDto.status) {
             OppdragStatus.KVITTERT_OK -> {
                 Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::exponentialMin)
-                val utbetalingStatus = insertOrUpdateStatus(uId, Status.OK)
+//                val utbetalingStatus = insertOrUpdateStatus(uId, Status.OK)
                 // statusProducer.produce(uId.id.toString(), utbetalingStatus)
             }
-            OppdragStatus.KVITTERT_MED_MANGLER, OppdragStatus.KVITTERT_TEKNISK_FEIL, OppdragStatus.KVITTERT_FUNKSJONELL_FEIL -> { 
+
+            OppdragStatus.KVITTERT_MED_MANGLER, OppdragStatus.KVITTERT_TEKNISK_FEIL, OppdragStatus.KVITTERT_FUNKSJONELL_FEIL -> {
                 appLog.error("Mottok feilkvittering ${statusDto.status} fra OS for utbetaling $uId")
                 secureLog.error("Mottok feilkvittering ${statusDto.status} fra OS for utbetaling $uId. Feilmelding: ${statusDto.feilmelding}")
                 Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::exponentialMin)
-                val utbetalingStatus = insertOrUpdateStatus(uId, Status.FEILET_MOT_OPPDRAG)
+//                val utbetalingStatus = insertOrUpdateStatus(uId, Status.FEILET_MOT_OPPDRAG)
                 // statusProducer.produce(uId.id.toString(), utbetalingStatus)
             }
-            OppdragStatus.KVITTERT_UKJENT -> { 
+
+            OppdragStatus.KVITTERT_UKJENT -> {
                 appLog.error("Mottok ukjent kvittering fra OS for utbetaling $uId")
                 Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::exponentialMin)
                 insertOrUpdateStatus(uId, Status.FEILET_MOT_OPPDRAG)
             }
-            OppdragStatus.LAGT_PÅ_KØ -> { 
+
+            OppdragStatus.LAGT_PÅ_KØ -> {
                 Tasks.update(task.id, libs.task.Status.IN_PROGRESS, null, TaskDao::exponentialMin)
                 insertOrUpdateStatus(uId, Status.SENDT_TIL_OPPDRAG)
             }
-            OppdragStatus.OK_UTEN_UTBETALING -> { 
+
+            OppdragStatus.OK_UTEN_UTBETALING -> {
                 error("Status ${statusDto.status} skal aldri mottas fra utsjekk-oppdrag")
             }
         }
@@ -86,31 +88,14 @@ private suspend fun insertOrUpdateStatus(
     }
 }
 
-private suspend fun utled(uId: UtbetalingId, dao: UtbetalingStatusDao, status: Status) : UtbetalingStatus {
+private suspend fun utled(uId: UtbetalingId, dao: UtbetalingStatusDao, status: Status): UtbetalingStatus {
     val uStatus = dao.data.copy(status = status)
     dao.copy(data = uStatus).update(uId)
     return uStatus
 }
 
-private suspend fun insert(uId: UtbetalingId, status: Status) : UtbetalingStatus {
+private suspend fun insert(uId: UtbetalingId, status: Status): UtbetalingStatus {
     val uStatus = UtbetalingStatus(status)
-    UtbetalingStatusDao(data = uStatus).insert(uId) 
+    UtbetalingStatusDao(data = uStatus).insert(uId)
     return uStatus
-}
-
-private fun oppdragId(u: Utbetaling): OppdragIdDto {
-    return OppdragIdDto(
-        fagsystem = fagsystem(u.stønad),
-        sakId = u.sakId.id,
-        behandlingId = u.behandlingId.id,
-        iverksettingId = null,
-    )
-}
-
-private fun fagsystem(stønad: Stønadstype): Fagsystem {
-    return when (stønad) {
-        is StønadTypeDagpenger -> Fagsystem.DAGPENGER
-        is StønadTypeTiltakspenger -> Fagsystem.TILTAKSPENGER
-        is StønadTypeTilleggsstønader -> Fagsystem.TILLEGGSSTØNADER
-    }
 }

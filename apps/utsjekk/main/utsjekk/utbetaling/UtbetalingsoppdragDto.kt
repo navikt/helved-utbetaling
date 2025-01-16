@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 enum class FagsystemDto(val kode: String) {
-    DAGPENGER("DP"), // TDOO: trenger ikke koden i denne appen
+    DAGPENGER("DP"), // TODO: trenger ikke koden i denne appen
     TILTAKSPENGER("TILTPENG"),
     TILLEGGSSTØNADER("TILLST");
 

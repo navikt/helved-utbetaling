@@ -188,12 +188,6 @@ object UtbetalingService {
     }
 }
 
-private fun satstype(periode: Utbetalingsperiode): Satstype = when {
-    periode.fom.dayOfMonth == 1 && periode.tom.plusDays(1) == periode.fom.plusMonths(1) -> Satstype.MND
-    periode.fom == periode.tom -> Satstype.DAG
-    else -> Satstype.ENGANGS
-}
-
 internal fun klassekode(stønadstype: Stønadstype): String = when (stønadstype) {
     is StønadTypeDagpenger -> klassekode(stønadstype)
     is StønadTypeTilleggsstønader -> klassekode(stønadstype)
