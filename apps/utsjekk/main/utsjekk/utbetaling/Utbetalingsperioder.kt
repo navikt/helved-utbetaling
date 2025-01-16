@@ -1,0 +1,110 @@
+package utsjekk.utbetaling
+
+import java.time.LocalDate
+
+
+object Utbetalingsperioder {
+    fun utled(existing: Utbetaling, new: Utbetaling): List<UtbetalingsperiodeDto> {
+        val existing = existing.copy(perioder = existing.perioder.sortedBy { it.fom })
+        val new = new.copy(perioder = new.perioder.sortedBy { it.fom })
+
+        val opphørsdato = opphørsdato(existing.perioder, new.perioder)
+        val nyeLinjer = nyeLinjer(existing, new, opphørsdato)
+
+        return if (opphørsdato != null) {
+            listOf(opphørslinje(new, existing.perioder.last(), opphørsdato)) + nyeLinjer
+        } else {
+            nyeLinjer
+        }
+    }
+
+    private fun nyeLinjer(
+        existing: Utbetaling,
+        new: Utbetaling,
+        opphørsdato: LocalDate?,
+    ): List<UtbetalingsperiodeDto> {
+        val sistePeriodeId = existing.perioder.last().id
+        var førsteEndring = existing.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
+
+        // todo: Skriv om denne
+        // Hvis perioden som inneholder første endring kun endrer tom så ønsker vi ikke å sende denne inn på nytt til OS
+        if (existing.perioder[førsteEndring].tom != new.perioder[førsteEndring].tom
+            && existing.perioder[førsteEndring].beløp == new.perioder[førsteEndring].beløp
+            && existing.perioder[førsteEndring].fom == new.perioder[førsteEndring].fom
+        ) {
+            førsteEndring += 1
+        }
+
+        return new.perioder
+            .slice(førsteEndring until new.perioder.size)
+            .filter { if (opphørsdato != null) it.fom >= opphørsdato else true }
+            .mapIndexed { index, it ->
+                utbetalingslinje(
+                    utbetaling = new,
+                    periode = it,
+                    periodeId = sistePeriodeId + index.toUInt() + 1u,
+                    forrigePeriodeId = sistePeriodeId + index.toUInt()
+                )
+            }
+    }
+
+    private fun opphørsdato(existing: List<Utbetalingsperiode>, new: List<Utbetalingsperiode>): LocalDate? {
+        if (new.first().fom > existing.first().fom) {
+            // Forkorter fom i starten. Må opphøre fra start
+            return existing.first().fom
+        }
+
+        // Hvis det finnes et mellomrom må vi opphøre fra starten av mellomrommet
+        val opphørsdato = new
+            .windowed(2)
+            .find { it.first().tom < it.last().fom.minusDays(1) }
+            ?.first()?.tom?.plusDays(1)
+
+        // Hvis vi ikke har opphørsdato i et mellomrom kan det hende at den siste perioden i
+        // ny utbetaling er kortere enn siste perioden i eksisterende utbetaling
+        return opphørsdato ?: if (new.last().tom != existing.last().tom) new.last().tom.plusDays(
+            1
+        ) else null
+    }
+
+    private fun utbetalingslinje(
+        utbetaling: Utbetaling,
+        periode: Utbetalingsperiode,
+        periodeId: UInt,
+        forrigePeriodeId: UInt,
+    ): UtbetalingsperiodeDto {
+        return UtbetalingsperiodeDto(
+            erEndringPåEksisterendePeriode = false,
+            id = periodeId,
+            forrigePeriodeId = forrigePeriodeId,
+            vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
+            klassekode = klassekode(utbetaling.stønad),
+            fom = periode.fom,
+            tom = periode.tom,
+            sats = periode.beløp,
+            satstype = periode.satstype,
+            utbetalesTil = utbetaling.personident.ident,
+            behandlingId = utbetaling.behandlingId.id,
+        )
+    }
+
+    private fun opphørslinje(
+        new: Utbetaling,
+        sistePeriode: Utbetalingsperiode,
+        opphørsdato: LocalDate,
+    ): UtbetalingsperiodeDto {
+        return UtbetalingsperiodeDto(
+            erEndringPåEksisterendePeriode = true,
+            id = sistePeriode.id,
+            opphør = Opphør(opphørsdato),
+            vedtaksdato = new.vedtakstidspunkt.toLocalDate(),
+            klassekode = klassekode(new.stønad),
+            fom = sistePeriode.fom,
+            tom = sistePeriode.tom,
+            sats = sistePeriode.beløp,
+            satstype = sistePeriode.satstype,
+            utbetalesTil = new.personident.ident,
+            behandlingId = new.behandlingId.id,
+        )
+    }
+}

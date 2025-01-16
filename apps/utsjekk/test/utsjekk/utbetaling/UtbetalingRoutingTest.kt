@@ -4,22 +4,30 @@ import TestRuntime
 import com.fasterxml.jackson.module.kotlin.readValue
 import http
 import httpClient
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import java.util.*
+import io.ktor.client.call.body
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.head
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import kotlinx.coroutines.test.runTest
-import libs.task.*
+import libs.task.Kind
+import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.ApiError
+import java.util.UUID
 import kotlin.test.assertFalse
 
 class UtbetalingRoutingTest {
-    
+
     @Test
     fun `can create Utbetaling`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
@@ -207,7 +215,7 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `can get Utbetaling`() = runTest() { 
+    fun `can get Utbetaling`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
@@ -218,7 +226,7 @@ class UtbetalingRoutingTest {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
-        }.also { 
+        }.also {
             assertEquals(HttpStatusCode.Created, it.status)
         }
 
@@ -231,7 +239,7 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `not found when Utbetaling is missing`() = runTest() { 
+    fun `not found when Utbetaling is missing`() = runTest {
         val error = httpClient.get("/utbetalinger/${UUID.randomUUID()}") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
@@ -307,10 +315,10 @@ class UtbetalingRoutingTest {
         val oppdragDto = Tasks.forKind(Kind.Utbetaling)
             .map { objectMapper.readValue<UtbetalingsoppdragDto>(it.payload) }
             .filter { it.uid.id == uid2 }
-            .maxBy { it.utbetalingsperiode.vedtaksdato }
+            .maxBy { it.utbetalingsperioder.maxBy { it.vedtaksdato }.vedtaksdato }
 
         assertFalse(oppdragDto.erFørsteUtbetalingPåSak)
-        assertEquals(2u, oppdragDto.utbetalingsperiode.id)
+        assertEquals(2u, oppdragDto.utbetalingsperioder.last().id)
     }
 
     @Test
@@ -492,7 +500,7 @@ class UtbetalingRoutingTest {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
-        }.also { 
+        }.also {
             assertEquals(HttpStatusCode.Created, it.status)
         }
 
@@ -505,4 +513,3 @@ class UtbetalingRoutingTest {
         assertEquals(Status.IKKE_PÅBEGYNT, status.status)
     }
 }
-

@@ -1,10 +1,9 @@
 package utsjekk.utbetaling
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.*
 import utsjekk.avstemming.nesteVirkedag
 import utsjekk.badRequest
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class UtbetalingApi(
     val sakId: String,
@@ -25,7 +24,7 @@ data class UtbetalingApi(
             stønad = domain.stønad,
             beslutterId = domain.beslutterId.ident,
             saksbehandlerId = domain.saksbehandlerId.ident,
-            perioder = UtbetalingsperiodeApi.from(domain.periode)
+            perioder = UtbetalingsperiodeApi.from(domain.perioder),
         )
     }
 
@@ -56,32 +55,34 @@ data class UtbetalingsperiodeApi(
     val fastsattDagpengesats: UInt? = null,
 ) {
     companion object {
-        fun from(domain: Utbetalingsperiode): List<UtbetalingsperiodeApi> = when (domain.satstype) {
-            Satstype.ENGANGS, Satstype.MND -> listOf(
-                UtbetalingsperiodeApi(
-                    fom = domain.fom,
-                    tom = domain.tom,
-                    beløp = domain.beløp,
-                    betalendeEnhet = domain.betalendeEnhet?.enhet,
-                    fastsattDagpengesats = domain.fastsattDagpengesats,
-                )
-            )
-
-            Satstype.DAG, Satstype.VIRKEDAG -> buildList {
-                var date = domain.fom
-                while (date.isBefore(domain.tom) || date.isEqual(domain.tom)) {
-                    val periode = UtbetalingsperiodeApi(
-                        fom = date,
-                        tom = date,
-                        beløp = domain.beløp,
-                        betalendeEnhet = domain.betalendeEnhet?.enhet,
-                        fastsattDagpengesats = domain.fastsattDagpengesats,
+        fun from(domain: List<Utbetalingsperiode>): List<UtbetalingsperiodeApi> = domain.map {
+            when (it.satstype) {
+                Satstype.ENGANGS, Satstype.MND -> listOf(
+                    UtbetalingsperiodeApi(
+                        fom = it.fom,
+                        tom = it.tom,
+                        beløp = it.beløp,
+                        betalendeEnhet = it.betalendeEnhet?.enhet,
+                        fastsattDagpengesats = it.fastsattDagpengesats,
                     )
-                    add(periode)
-                    date = if (domain.satstype == Satstype.DAG) date.plusDays(1) else date.nesteVirkedag()
+                )
+
+                Satstype.DAG, Satstype.VIRKEDAG -> buildList {
+                    var date = it.fom
+                    while (date.isBefore(it.tom) || date.isEqual(it.tom)) {
+                        val periode = UtbetalingsperiodeApi(
+                            fom = date,
+                            tom = date,
+                            beløp = it.beløp,
+                            betalendeEnhet = it.betalendeEnhet?.enhet,
+                            fastsattDagpengesats = it.fastsattDagpengesats,
+                        )
+                        add(periode)
+                        date = if (it.satstype == Satstype.DAG) date.plusDays(1) else date.nesteVirkedag()
+                    }
                 }
             }
-        }
+        }.flatten()
     }
 }
 
@@ -91,12 +92,12 @@ data class UtbetalingStatusApi(
     val status: Status,
 ) {
     companion object {
-        fun from(domain: UtbetalingStatus): UtbetalingStatusApi = 
+        fun from(domain: UtbetalingStatus): UtbetalingStatusApi =
             UtbetalingStatusApi(
                 // opprettet = domain.opprettet,
                 // endret = domain.endret, 
                 status = domain.status,
-            ) 
+            )
     }
 }
 
@@ -111,24 +112,24 @@ private fun UtbetalingApi.failOnÅrsskifte() {
 }
 
 private fun UtbetalingApi.failOnDuplicatePerioder() {
-    if(perioder.groupBy { it.fom }.any { (_, perioder) -> perioder.size != 1 }) {
+    if (perioder.groupBy { it.fom }.any { (_, perioder) -> perioder.size != 1 }) {
         badRequest(
             msg = "kan ikke sende inn duplikate perioder",
             field = "fom",
             doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
         )
     }
-    if(perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }) {
+    if (perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }) {
         badRequest(
             msg = "kan ikke sende inn duplikate perioder",
             field = "tom",
             doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
         )
     }
-} 
+}
 
 private fun UtbetalingApi.failOnTomBeforeFom() {
-    if(!perioder.all { it.fom <= it.tom }) {
+    if (!perioder.all { it.fom <= it.tom }) {
         badRequest(
             msg = "fom må være før eller lik tom",
             field = "fom",
