@@ -61,14 +61,15 @@ data class UtbetalingsperiodeDto(
     val utbetalesTil: String,
     val behandlingId: String,
     val opphør: Opphør? = null,
+    val forrigePeriodeId: UInt? = null,
 ) {
     companion object;
 
     fun into() = no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode(
         erEndringPåEksisterendePeriode= erEndringPåEksisterendePeriode,
         opphør= opphør?.let { no.nav.utsjekk.kontrakter.oppdrag.Opphør(it.fom) },
-        periodeId= id.hashCode().toLong(), // TODO: denne skal byttes ut med en long i databasen også
-        forrigePeriodeId= null,
+        periodeId= id.toLong(), // TODO: denne skal byttes ut med en long i databasen også
+        forrigePeriodeId= forrigePeriodeId?.toLong(),
         vedtaksdato= vedtaksdato,
         klassifisering= klassekode,
         fom= fom,
