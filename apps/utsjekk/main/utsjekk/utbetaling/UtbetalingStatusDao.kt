@@ -29,7 +29,7 @@ data class UtbetalingStatusDao(
                 created_at,
                 updated_at,
                 status
-            ) VALUES (?, ?, ?, ?, to_json(?::json))
+            ) VALUES (?, ?, ?, ?, ?::jsonb)
         """.trimIndent()
 
         val now = LocalDateTime.now()
@@ -50,7 +50,7 @@ data class UtbetalingStatusDao(
     suspend fun update(id: UtbetalingId) {
         val sql = """
             UPDATE $TABLE_NAME
-            SET status = to_json(?::json), updated_at = ? 
+            SET status = ?::jsonb, updated_at = ? 
             WHERE utbetaling_id = ?
         """.trimIndent()
 

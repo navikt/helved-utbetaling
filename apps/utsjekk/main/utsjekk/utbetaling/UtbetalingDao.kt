@@ -50,7 +50,7 @@ data class UtbetalingDao(
                 created_at,
                 updated_at,
                 data
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, to_json(?::json))
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)
         """.trimIndent()
 
         return tryResult {
@@ -78,7 +78,7 @@ data class UtbetalingDao(
     suspend fun update(id: UtbetalingId): Result<Unit, DatabaseError> {
         val sql = """
             UPDATE $TABLE_NAME
-            SET data = to_json(?::json), updated_at = ?
+            SET data = ?::jsonb, updated_at = ?
             WHERE utbetaling_id = ?
         """.trimIndent()
 
@@ -135,6 +135,7 @@ data class UtbetalingDao(
                 stmt.executeQuery().map(::from)
             }
         }
+
 
         // TODO: create history
         suspend fun delete(id: UtbetalingId): Result<Unit, DatabaseError> {
