@@ -72,7 +72,7 @@ internal object OppdragMapper {
         utbetalingsperiode: Utbetalingsperiode,
         utbetalingsoppdrag: Utbetalingsoppdrag,
     ): OppdragsLinje150 {
-        val sakIdKomprimert = utbetalingsoppdrag.saksnummer
+        val sakIdKomprimert = utbetalingsoppdrag.saksnummer // TODO: Bytt ut med komprimert utbetalings-id
 
         val attestant =
             objectFactory.createAttestant180().apply {
