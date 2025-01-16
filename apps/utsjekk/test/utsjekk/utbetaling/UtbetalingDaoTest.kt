@@ -1,15 +1,13 @@
 package utsjekk.utbetaling
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.*
+import TestRuntime
 import kotlinx.coroutines.test.runTest
+import libs.postgres.concurrency.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import libs.postgres.concurrency.transaction
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertNotEquals
 
 class UtbetalingDaoTest {
 
@@ -18,7 +16,8 @@ class UtbetalingDaoTest {
         val uid = UtbetalingId.random()
 
         transaction {
-            val utbet = Utbetaling.dagpenger(1.mar, Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS))
+            val utbet =
+                Utbetaling.dagpenger(1.mar, listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)))
             UtbetalingDao(utbet).insert(uid)
         }
         transaction {
@@ -37,7 +36,8 @@ class UtbetalingDaoTest {
         val uid = UtbetalingId.random()
 
         transaction {
-            val utbet = Utbetaling.dagpenger(1.mar, Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS))
+            val utbet =
+                Utbetaling.dagpenger(1.mar, listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)))
             UtbetalingDao(utbet).insert(uid)
         }
         transaction {

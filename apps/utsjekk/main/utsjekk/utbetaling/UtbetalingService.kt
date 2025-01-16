@@ -35,20 +35,22 @@ object UtbetalingService {
             saksbehandlerId = utbetaling.saksbehandlerId.ident,
             beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-            brukersNavKontor = utbetaling.periode.betalendeEnhet?.enhet,
-            utbetalingsperiode = UtbetalingsperiodeDto(
-                erEndringPåEksisterendePeriode = false,
-                opphør = null,
-                id = utbetaling.periode.id,
-                vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
-                klassekode = klassekode(utbetaling.stønad),
-                fom = utbetaling.periode.fom,
-                tom = utbetaling.periode.tom,
-                sats = utbetaling.periode.beløp,
-                satstype = utbetaling.periode.satstype,
-                utbetalesTil = utbetaling.personident.ident,
-                behandlingId = utbetaling.behandlingId.id,
-            )
+            brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
+            utbetalingsperioder = utbetaling.perioder.map { periode ->
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = false,
+                    opphør = null,
+                    id = periode.id,
+                    vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
+                    klassekode = klassekode(utbetaling.stønad),
+                    fom = periode.fom,
+                    tom = periode.tom,
+                    sats = periode.beløp,
+                    satstype = periode.satstype,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                )
+            }
         )
 
         return withContext(Jdbc.context) {
@@ -99,31 +101,20 @@ object UtbetalingService {
             }
         }
         val existing = dao.data
-        val utbetaling = utbetaling.copy(periode = utbetaling.periode.copy(id = existing.periode.id))
+
         existing.validateDiff(utbetaling)
+
         val oppdrag = UtbetalingsoppdragDto(
             uid = uid,
-            erFørsteUtbetalingPåSak = false, // TODO: hvis man endrer på førsteUtbetalingPåSak, er denne true eller false da?
+            erFørsteUtbetalingPåSak = false,
             fagsystem = FagsystemDto.from(utbetaling.stønad),
             saksnummer = utbetaling.sakId.id,
             aktør = utbetaling.personident.ident,
             saksbehandlerId = utbetaling.saksbehandlerId.ident,
             beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-            brukersNavKontor = utbetaling.periode.betalendeEnhet?.enhet,
-            utbetalingsperiode = UtbetalingsperiodeDto(
-                erEndringPåEksisterendePeriode = true,
-                opphør = null,
-                id = existing.periode.id, // TODO hva skal denne væer 
-                vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
-                klassekode = klassekode(utbetaling.stønad),
-                fom = utbetaling.periode.fom,
-                tom = utbetaling.periode.tom,
-                sats = utbetaling.periode.beløp,
-                satstype = utbetaling.periode.satstype,
-                utbetalesTil = utbetaling.personident.ident,
-                behandlingId = utbetaling.behandlingId.id,
-            )
+            brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
+            utbetalingsperioder = Utbetalingsperioder.utled(existing, utbetaling)
         )
         return withContext(Jdbc.context) {
             transaction {
@@ -146,8 +137,9 @@ object UtbetalingService {
             }
         }
         val existing = dao.data
-        val utbetaling = utbetaling.copy(periode = utbetaling.periode.copy(id = existing.periode.id))
+
         existing.validateDiff(utbetaling) // TODO: valider alt unntatt behandligId?
+
         val oppdrag = UtbetalingsoppdragDto(
             uid = uid,
             erFørsteUtbetalingPåSak = false,
@@ -157,20 +149,22 @@ object UtbetalingService {
             saksbehandlerId = utbetaling.saksbehandlerId.ident,
             beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-            brukersNavKontor = utbetaling.periode.betalendeEnhet?.enhet,
-            utbetalingsperiode = UtbetalingsperiodeDto(
-                erEndringPåEksisterendePeriode = true, // opphør er alltid en ENDR
-                opphør = Opphør(utbetaling.periode.fom),
-                id = existing.periode.id, // endrer på eksisterende delytelseId 
-                vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
-                klassekode = klassekode(utbetaling.stønad),
-                fom = utbetaling.periode.fom,
-                tom = utbetaling.periode.tom,
-                sats = utbetaling.periode.beløp,
-                satstype = utbetaling.periode.satstype,
-                utbetalesTil = utbetaling.personident.ident,
-                behandlingId = utbetaling.behandlingId.id,
-            )
+            brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
+            utbetalingsperioder = listOf(utbetaling.perioder.maxBy { it.fom }.let { sistePeriode ->
+                UtbetalingsperiodeDto(
+                    erEndringPåEksisterendePeriode = true, // opphør er alltid en ENDR
+                    opphør = Opphør(utbetaling.perioder.minBy { it.fom }.fom),
+                    id = sistePeriode.id, // endrer på eksisterende delytelseId
+                    vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
+                    klassekode = klassekode(utbetaling.stønad),
+                    fom = sistePeriode.fom,
+                    tom = sistePeriode.tom,
+                    sats = sistePeriode.beløp,
+                    satstype = sistePeriode.satstype,
+                    utbetalesTil = utbetaling.personident.ident,
+                    behandlingId = utbetaling.behandlingId.id,
+                )
+            })
         )
         return withContext(Jdbc.context) {
             transaction {
@@ -200,7 +194,7 @@ private fun satstype(periode: Utbetalingsperiode): Satstype = when {
     else -> Satstype.ENGANGS
 }
 
-private fun klassekode(stønadstype: Stønadstype): String = when (stønadstype) {
+internal fun klassekode(stønadstype: Stønadstype): String = when (stønadstype) {
     is StønadTypeDagpenger -> klassekode(stønadstype)
     is StønadTypeTilleggsstønader -> klassekode(stønadstype)
     is StønadTypeTiltakspenger -> klassekode(stønadstype)

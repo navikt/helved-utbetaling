@@ -1,37 +1,23 @@
 package utsjekk.utbetaling
 
 import TestRuntime
-import http
-import httpClient
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import io.ktor.client.*
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.CompletableDeferred
+import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
+import libs.task.Tasks
+import no.nav.utsjekk.kontrakter.felles.objectMapper
+import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
-import utsjekk.*
-import java.util.*
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
-import libs.kafka.vanilla.Kafka
 import utsjekk.clients.Oppdrag
-import libs.kafka.vanilla.KafkaConfig
-import libs.task.TaskDao
-import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import java.time.LocalDateTime
+import java.util.UUID
 import kotlin.test.assertTrue
-import kotlin.test.assertFalse
-import libs.task.Tasks
-import libs.postgres.concurrency.transaction
 
 class UtbetalingStatusStrategyTest {
 
@@ -78,8 +64,8 @@ class UtbetalingStatusStrategyTest {
         val uid = UtbetalingId(UUID.randomUUID())
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
-            vedtakstidspunkt = 1.feb, 
-            periode = Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG)
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
         val uDao = UtbetalingDao(utbetaling)
 
@@ -102,8 +88,8 @@ class UtbetalingStatusStrategyTest {
         val uid = UtbetalingId(UUID.randomUUID())
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
-            vedtakstidspunkt = 1.feb, 
-            periode = Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG)
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
         val uDao = UtbetalingDao(utbetaling)
 
@@ -126,8 +112,8 @@ class UtbetalingStatusStrategyTest {
         val uid = UtbetalingId(UUID.randomUUID())
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
-            vedtakstidspunkt = 1.feb, 
-            periode = Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG)
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
         val uDao = UtbetalingDao(utbetaling)
 
@@ -150,8 +136,8 @@ class UtbetalingStatusStrategyTest {
         val uid = UtbetalingId(UUID.randomUUID())
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
-            vedtakstidspunkt = 1.feb, 
-            periode = Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG)
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
         val uDao = UtbetalingDao(utbetaling)
 
@@ -174,8 +160,8 @@ class UtbetalingStatusStrategyTest {
         val uid = UtbetalingId(UUID.randomUUID())
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
-            vedtakstidspunkt = 1.feb, 
-            periode = Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG)
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
         val uDao = UtbetalingDao(utbetaling)
 
@@ -198,8 +184,8 @@ class UtbetalingStatusStrategyTest {
         val uid = UtbetalingId(UUID.randomUUID())
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
-            vedtakstidspunkt = 1.feb, 
-            periode = Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG)
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
         val uDao = UtbetalingDao(utbetaling)
 
@@ -217,16 +203,16 @@ class UtbetalingStatusStrategyTest {
         assertEquals(libs.task.Status.MANUAL, actual.status)
     }
 
-    class OppdragFake: Oppdrag {
-        val oppdrag = mutableMapOf<OppdragIdDto, OppdragStatusDto>() 
-        val oppdragV2 = mutableMapOf<UtbetalingId, OppdragStatusDto>() 
+    class OppdragFake : Oppdrag {
+        val oppdrag = mutableMapOf<OppdragIdDto, OppdragStatusDto>()
+        val oppdragV2 = mutableMapOf<UtbetalingId, OppdragStatusDto>()
 
         override suspend fun iverksettOppdrag(utbetalingsoppdrag: Utbetalingsoppdrag) {
             val oppdragIdDto = OppdragIdDto(
                 fagsystem = utbetalingsoppdrag.fagsystem,
-                sakId = utbetalingsoppdrag.saksnummer, 
-                behandlingId = utbetalingsoppdrag.utbetalingsperiode.single().behandlingId, 
-                iverksettingId = null, 
+                sakId = utbetalingsoppdrag.saksnummer,
+                behandlingId = utbetalingsoppdrag.utbetalingsperiode.single().behandlingId,
+                iverksettingId = null,
             )
             oppdrag[oppdragIdDto] = OppdragStatusDto(status = OppdragStatus.KVITTERT_OK, "")
         }
@@ -249,45 +235,6 @@ class UtbetalingStatusStrategyTest {
     }
 
 }
-
-private fun oppdragIdDto(u: Utbetalingsoppdrag): OppdragIdDto {
-    return OppdragIdDto(
-        fagsystem = u.fagsystem,
-        sakId = u.saksnummer, 
-        behandlingId = u.utbetalingsperiode.single().behandlingId, 
-        iverksettingId = null, 
-    )
-}
-
-private fun utbetalingsoppdragDto(
-    utbetaling: Utbetaling,
-    uid: UtbetalingId,
-) = UtbetalingsoppdragDto (
-    uid, 
-    erFørsteUtbetalingPåSak = true, // TODO: må vi gjøre sql select på sakid for fagområde?
-    fagsystem = FagsystemDto.DAGPENGER,
-    saksnummer = utbetaling.sakId.id,
-    aktør = utbetaling.personident.ident,
-    saksbehandlerId = utbetaling.saksbehandlerId.ident,
-    beslutterId = utbetaling.beslutterId.ident,
-    avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-    brukersNavKontor = utbetaling.periode.betalendeEnhet?.enhet,
-    utbetalingsperiode = utbetaling.periode.let {
-        UtbetalingsperiodeDto(
-            erEndringPåEksisterendePeriode = false,
-            opphør = null,
-            id = it.id, 
-            vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
-            klassekode = "DPORAS",
-            fom = it.fom,
-            tom = it.tom,
-            sats = it.beløp,
-            satstype = it.satstype,
-            utbetalesTil = utbetaling.personident.ident,
-            behandlingId = utbetaling.behandlingId.id,
-        )
-    }
-)
 
 private fun task(
     status: libs.task.Status = libs.task.Status.IN_PROGRESS,

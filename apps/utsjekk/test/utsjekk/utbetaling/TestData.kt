@@ -7,7 +7,6 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
 import utsjekk.avstemming.nesteVirkedag
-import utsjekk.avstemming.erHelligdag
 
 val Int.jan: LocalDate get() = LocalDate.of(2025, 3, this)
 val Int.feb: LocalDate get() = LocalDate.of(2024, 2, this)
@@ -88,9 +87,9 @@ fun UtbetalingsperiodeDto.Companion.eng(
 ) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.ENGANGS)
 
 fun UtbetalingsoppdragDto.Companion.dagpenger(
-    uid: UtbetalingId, 
+    uid: UtbetalingId,
     from: Utbetaling,
-    periode: UtbetalingsperiodeDto,
+    perioder: List<UtbetalingsperiodeDto>,
     erFørsteUtbetalingPåSak: Boolean = true,
     fagsystem: FagsystemDto = FagsystemDto.DAGPENGER,
     avstemmingstidspunkt: LocalDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
@@ -105,7 +104,7 @@ fun UtbetalingsoppdragDto.Companion.dagpenger(
     beslutterId = from.beslutterId.ident,
     avstemmingstidspunkt = avstemmingstidspunkt,
     brukersNavKontor = brukersNavKontor,
-    utbetalingsperiode = periode,
+    utbetalingsperioder = perioder,
 )
 
 fun UtbetalingApi.Companion.dagpenger(
@@ -165,7 +164,7 @@ fun Utbetalingsperiode.Companion.dagpenger(
 
 fun Utbetaling.Companion.dagpenger(
     vedtakstidspunkt: LocalDate,
-    periode: Utbetalingsperiode,
+    perioder: List<Utbetalingsperiode>,
     stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
     sakId: SakId = SakId(RandomOSURId.generate()),
     personident: Personident = Personident.random(),
@@ -180,6 +179,6 @@ fun Utbetaling.Companion.dagpenger(
     stønad,
     beslutterId,
     saksbehandlerId,
-    periode,
+    perioder,
 )
 

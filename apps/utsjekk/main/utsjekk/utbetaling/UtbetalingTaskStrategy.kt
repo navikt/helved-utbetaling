@@ -1,23 +1,18 @@
 package utsjekk.utbetaling
 
-import utsjekk.task.TaskStrategy
-import utsjekk.task.Kind
-import utsjekk.task.TaskDto
-import utsjekk.task.exponentialSec
-import utsjekk.clients.Oppdrag
-import utsjekk.notFound
-import libs.task.TaskDao
-import libs.postgres.concurrency.transaction
-import libs.task.Tasks
-import libs.kafka.vanilla.Kafka
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import com.fasterxml.jackson.module.kotlin.readValue
+import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
+import libs.task.Tasks
+import no.nav.utsjekk.kontrakter.felles.objectMapper
+import utsjekk.clients.Oppdrag
+import utsjekk.task.TaskStrategy
+import utsjekk.task.exponentialSec
 
 class UtbetalingTaskStrategy(
     private val oppdragClient: Oppdrag,
     // private val statusProducer: Kafka<UtbetalingStatus>,
-): TaskStrategy {
+) : TaskStrategy {
     override suspend fun isApplicable(task: TaskDao): Boolean {
         return task.kind == libs.task.Kind.Utbetaling
     }
@@ -56,7 +51,7 @@ class UtbetalingTaskStrategy(
             val utbetaling = objectMapper.readValue<UtbetalingsoppdragDto>(payload)
             return mapOf(
                 "sakId" to utbetaling.saksnummer,
-                "behandlingId" to utbetaling.utbetalingsperiode.behandlingId,
+                "behandlingId" to utbetaling.utbetalingsperioder.maxBy { it.fom }.behandlingId,
                 "iverksettingId" to null.toString(),
                 "fagsystem" to utbetaling.fagsystem.name,
             )

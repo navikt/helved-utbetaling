@@ -1,19 +1,13 @@
 package utsjekk.utbetaling
 
 import utsjekk.task.TaskStrategy
-import java.util.UUID
-import utsjekk.task.Kind
-import utsjekk.task.TaskDto
 import utsjekk.task.exponentialMin
 import utsjekk.clients.Oppdrag
-import utsjekk.notFound
 import libs.task.TaskDao
 import libs.postgres.concurrency.transaction
 import libs.task.Tasks
-import libs.kafka.vanilla.Kafka
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -87,12 +81,12 @@ private suspend fun insertOrUpdateStatus(
 ): UtbetalingStatus {
     return transaction {
         UtbetalingStatusDao.findOrNull(uId)
-            ?.let { dao -> update(uId, dao, status) }
+            ?.let { dao -> utled(uId, dao, status) }
             ?: insert(uId, status)
     }
 }
 
-private suspend fun update(uId: UtbetalingId, dao: UtbetalingStatusDao, status: Status) : UtbetalingStatus {
+private suspend fun utled(uId: UtbetalingId, dao: UtbetalingStatusDao, status: Status) : UtbetalingStatus {
     val uStatus = dao.data.copy(status = status)
     dao.copy(data = uStatus).update(uId)
     return uStatus
