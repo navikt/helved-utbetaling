@@ -3,11 +3,15 @@ package oppdrag.iverksetting.domene
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
-import no.trygdeetaten.skjema.oppdrag.*
+import no.trygdeetaten.skjema.oppdrag.ObjectFactory
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import no.trygdeetaten.skjema.oppdrag.Oppdrag110
+import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
+import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.*
+import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 
@@ -72,7 +76,7 @@ internal object OppdragMapper {
         utbetalingsperiode: Utbetalingsperiode,
         utbetalingsoppdrag: Utbetalingsoppdrag,
     ): OppdragsLinje150 {
-        val sakIdKomprimert = utbetalingsoppdrag.saksnummer // TODO: Bytt ut med komprimert utbetalings-id
+        val sakIdKomprimert = utbetalingsoppdrag.saksnummer
 
         val attestant =
             objectFactory.createAttestant180().apply {
