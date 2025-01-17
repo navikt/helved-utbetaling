@@ -85,6 +85,7 @@ object Utbetalingsperioder {
             satstype = periode.satstype,
             utbetalesTil = utbetaling.personident.ident,
             behandlingId = utbetaling.behandlingId.id,
+            fastsattDagsats = periode.fastsattDagpengesats,
         )
     }
 

@@ -1,13 +1,17 @@
-package oppdrag.iverksetting.domene
+package oppdrag.utbetaling
 
+import UUIDEncoder.encode
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
 import no.trygdeetaten.skjema.oppdrag.ObjectFactory
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag110
 import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
+import oppdrag.iverksetting.domene.Endringskode
+import oppdrag.iverksetting.domene.Kvitteringstatus
+import oppdrag.iverksetting.domene.OppdragSkjemaConstants
+import oppdrag.iverksetting.domene.Utbetalingsfrekvens
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -15,12 +19,11 @@ import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 
-internal object OppdragMapper {
+internal object UtbetalingsoppdragMapper {
     private val objectFactory = ObjectFactory()
+    private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
 
-    val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
-
-    fun tilOppdrag110(utbetalingsoppdrag: Utbetalingsoppdrag): Oppdrag110 =
+    fun tilOppdrag110(utbetalingsoppdrag: UtbetalingsoppdragDto): Oppdrag110 =
         objectFactory.createOppdrag110().apply {
             kodeAksjon = OppdragSkjemaConstants.KODE_AKSJON
             kodeEndring =
@@ -38,7 +41,7 @@ internal object OppdragMapper {
                     tidspktMelding = utbetalingsoppdrag.avstemmingstidspunkt.format(timeFormatter)
                 }
             tilOppdragsEnhet120(utbetalingsoppdrag).map { oppdragsEnhet120s.add(it) }
-            utbetalingsoppdrag.utbetalingsperiode.map { periode ->
+            utbetalingsoppdrag.utbetalingsperioder.map { periode ->
                 oppdragsLinje150s.add(
                     tilOppdragsLinje150(
                         utbetalingsperiode = periode,
@@ -48,7 +51,7 @@ internal object OppdragMapper {
             }
         }
 
-    private fun tilOppdragsEnhet120(utbetalingsoppdrag: Utbetalingsoppdrag) =
+    private fun tilOppdragsEnhet120(utbetalingsoppdrag: UtbetalingsoppdragDto) =
         if (utbetalingsoppdrag.brukersNavKontor == null) {
             listOf(
                 objectFactory.createOppdragsEnhet120().apply {
@@ -73,14 +76,14 @@ internal object OppdragMapper {
         }
 
     private fun tilOppdragsLinje150(
-        utbetalingsperiode: Utbetalingsperiode,
-        utbetalingsoppdrag: Utbetalingsoppdrag,
+        utbetalingsperiode: UtbetalingsperiodeDto,
+        utbetalingsoppdrag: UtbetalingsoppdragDto,
     ): OppdragsLinje150 {
-        val sakIdKomprimert = utbetalingsoppdrag.saksnummer
+        val komprimertId: String = utbetalingsoppdrag.uid.id.encode()
 
         val attestant =
             objectFactory.createAttestant180().apply {
-                attestantId = utbetalingsoppdrag.beslutterId ?: utbetalingsoppdrag.saksbehandlerId
+                attestantId = utbetalingsoppdrag.beslutterId
             }
 
         return objectFactory.createOppdragsLinje150().apply {
@@ -92,35 +95,27 @@ internal object OppdragMapper {
             }
             if (!utbetalingsperiode.erEndringPåEksisterendePeriode) {
                 utbetalingsperiode.forrigePeriodeId?.let {
-                    refDelytelseId = "$sakIdKomprimert#$it"
-                    refFagsystemId = sakIdKomprimert
+                    refDelytelseId = "$komprimertId#$it"
+                    refFagsystemId = utbetalingsoppdrag.saksnummer
                 }
             }
             vedtakId = utbetalingsperiode.vedtaksdato.toString()
-            delytelseId = "$sakIdKomprimert#${utbetalingsperiode.periodeId}"
-            kodeKlassifik = utbetalingsperiode.klassifisering
+            delytelseId = "$komprimertId#${utbetalingsperiode.id}"
+            kodeKlassifik = utbetalingsperiode.klassekode
             datoVedtakFom = utbetalingsperiode.fom.toXMLDate()
             datoVedtakTom = utbetalingsperiode.tom.toXMLDate()
-            sats = utbetalingsperiode.sats
+            sats = BigDecimal.valueOf(utbetalingsperiode.sats.toLong())
             fradragTillegg = OppdragSkjemaConstants.FRADRAG_TILLEGG
-            typeSats = utbetalingsperiode.satstype.tilOppdragskode()
+            typeSats = utbetalingsperiode.satstype.value
             brukKjoreplan = OppdragSkjemaConstants.BRUK_KJØREPLAN_DEFAULT
             saksbehId = utbetalingsoppdrag.saksbehandlerId
             utbetalesTilId = utbetalingsperiode.utbetalesTil
             henvisning = utbetalingsperiode.behandlingId
             attestant180s.add(attestant)
 
-            utbetalingsperiode.utbetalingsgrad?.let { utbetalingsgrad ->
-                grad170s.add(
-                    objectFactory.createGrad170().apply {
-                        typeGrad = Gradtype.UTBETALINGSGRAD.kode
-                        grad = utbetalingsgrad.toBigInteger()
-                    },
-                )
-            }
             utbetalingsperiode.fastsattDagsats?.let { fastsattDagsats ->
                 vedtakssats157 = objectFactory.createVedtakssats157().apply {
-                    vedtakssats = fastsattDagsats
+                    vedtakssats = BigDecimal.valueOf(fastsattDagsats.toLong())
                 }
             }
         }

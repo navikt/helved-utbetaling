@@ -46,7 +46,8 @@ data class UtbetalingsperiodeDto(
     val utbetalesTil: String,
     val behandlingId: String,
     val opphør: Opphør? = null,
-    val forrigePeriodeId: UInt? = null, // TODO: Håndter denne i helved-oppdrag
+    val forrigePeriodeId: UInt? = null,
+    val fastsattDagsats: UInt? = null,
 ) {
     companion object;
 }

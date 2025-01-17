@@ -1,19 +1,18 @@
 package oppdrag.utbetaling
 
+import kotlinx.coroutines.withContext
 import libs.mq.MQ
-import libs.postgres.concurrency.transaction
 import libs.postgres.Jdbc
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
-import oppdrag.OppdragConfig
-import oppdrag.iverksetting.domene.OppdragMapper
-import oppdrag.iverksetting.OppdragMQProducer
-import oppdrag.appLog
+import libs.postgres.concurrency.transaction
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
+import oppdrag.OppdragConfig
+import oppdrag.appLog
+import oppdrag.iverksetting.OppdragMQProducer
 import org.postgresql.util.PSQLException
-import kotlinx.coroutines.withContext
 
-object SQL_STATE {
+object SqlState {
     const val CONSTRAINT_VIOLATION = "23505"
 }
 
@@ -24,16 +23,17 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
         try {
             appLog.debug("Lagrer utbetalingsoppdrag med saksnummer ${dto.saksnummer} i databasen")
 
-            val oppdrag110 = OppdragMapper.tilOppdrag110(dto.into())
-            val oppdrag = OppdragMapper.tilOppdrag(oppdrag110)
+            val oppdrag110 = UtbetalingsoppdragMapper.tilOppdrag110(dto)
+            val oppdrag = UtbetalingsoppdragMapper.tilOppdrag(oppdrag110)
+            val sistePeriode = dto.utbetalingsperioder.last()
 
             val dao = UtbetalingDao(
                 uid = dto.uid,
                 data = oppdrag,
                 sakId = dto.saksnummer,
-                behandlingId = dto.utbetalingsperiode.behandlingId,
-                personident = dto.utbetalingsperiode.utbetalesTil,
-                klassekode = dto.utbetalingsperiode.klassekode,
+                behandlingId = sistePeriode.behandlingId,
+                personident = sistePeriode.utbetalesTil,
+                klassekode = sistePeriode.klassekode,
                 kvittering = null,
                 fagsystem = dto.fagsystem.name,
                 status = OppdragStatus.LAGT_PÅ_KØ,
@@ -41,7 +41,7 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
 
             withContext(Jdbc.context) {
                 transaction {
-                    dao.insert();
+                    dao.insert()
                 }
             }
 
@@ -49,7 +49,7 @@ class UtbetalingService(config: OppdragConfig, mq: MQ) {
             oppdragSender.sendOppdrag(oppdrag)
         } catch (e: PSQLException) {
             when (e.sqlState) {
-                SQL_STATE.CONSTRAINT_VIOLATION -> throw OppdragAlleredeSendtException(dto.saksnummer)
+                SqlState.CONSTRAINT_VIOLATION -> throw OppdragAlleredeSendtException(dto.saksnummer)
                 else -> throw UkjentOppdragLagerException(e, dto.saksnummer)
             }
         }
