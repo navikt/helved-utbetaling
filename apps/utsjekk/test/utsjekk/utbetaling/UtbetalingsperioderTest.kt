@@ -100,7 +100,6 @@ class UtbetalingsperioderTest {
         }
     }
 
-
     /** Scenario 6-1 Endre tom på første periode i en utbetaling
      *
      * 1:    ╭────────────────╮╭──────────────╮
@@ -194,6 +193,36 @@ class UtbetalingsperioderTest {
             assertEquals(false, it.erEndringPåEksisterendePeriode)
             assertEquals(16.jan, it.fom)
             assertEquals(25.jan, it.tom)
+        }
+    }
+
+    /** Scenario 6-3 Endre tom på en utbetaling
+     *
+     * 1:    ╭────────────────────────────────╮
+     *       │              100,-             │
+     *       ╰────────────────────────────────╯
+     * 2:    ╭────────────────────────────────────────────────╮
+     *       │                      100,-                     │
+     *       ╰────────────────────────────────────────────────╯
+     * Res:  ╭────────────────────────────────────────────────╮
+     *       │                      100,-                     │
+     *       ╰────────────────────────────────────────────────╯
+     */
+    @Test
+    fun `forlenge tom`() {
+        val existing =
+            Utbetaling.dagpenger(1.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.ENGANGS)))
+        val new =
+            Utbetaling.dagpenger(2.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 15.jan, 100u, Satstype.ENGANGS)))
+
+        val perioder = Utbetalingsperioder.utled(existing, new)
+
+        assertEquals(1, perioder.size)
+
+        perioder.first().also {
+            assertEquals(1.jan, it.fom)
+            assertEquals(15.jan, it.tom)
+            assertEquals(100u, it.sats)
         }
     }
 
