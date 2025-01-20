@@ -3,6 +3,7 @@ package utsjekk.utbetaling
 import com.fasterxml.jackson.annotation.JsonCreator
 import utsjekk.avstemming.erHelg
 import utsjekk.badRequest
+import utsjekk.conflict
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -72,7 +73,26 @@ data class Utbetaling(
         val gyldigSatstype = perioder.first().satstype
         if (other.perioder.any { it.satstype != gyldigSatstype }) {
             badRequest(
-                msg = "cant change the flavour of perioder",
+                msg = "can't change the flavour of perioder",
+                field = "perioder",
+                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
+            )
+        }
+        validateDiff(perioder, other.perioder)
+    }
+
+    private fun validateDiff(a: List<Utbetalingsperiode>, b: List<Utbetalingsperiode>) {
+        val ingenEndring = a.zip(b).all { (first, second) ->
+            first.beløp == second.beløp
+                    && first.fom == second.fom
+                    && first.tom == second.tom
+                    && first.satstype == second.satstype
+                    && first.betalendeEnhet == second.betalendeEnhet
+                    && first.fastsattDagpengesats == second.fastsattDagpengesats
+        }
+        if (ingenEndring) {
+            conflict(
+                msg = "periods allready exists",
                 field = "perioder",
                 doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
             )
