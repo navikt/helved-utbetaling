@@ -26,8 +26,9 @@ object Utbetalingsperioder {
         val sistePeriodeId = existing.perioder.last().id
         var førsteEndring = existing.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
 
-        // todo: Skriv om denne
-        // Hvis perioden som inneholder første endring kun endrer tom så ønsker vi ikke å sende denne inn på nytt til OS
+        // Om første endring er en forkorting av tom ønsker vi ikke sende med denne som en ny utbetalingslinje.
+        // Opphørslinjen tar ansvar for forkortingen av perioden, og vi ønsker bare å sende med alt etter perioden
+        // som har endret seg.
         if (existing.perioder[førsteEndring].tom > new.perioder[førsteEndring].tom
             && existing.perioder[førsteEndring].beløp == new.perioder[førsteEndring].beløp
             && existing.perioder[førsteEndring].fom == new.perioder[førsteEndring].fom
