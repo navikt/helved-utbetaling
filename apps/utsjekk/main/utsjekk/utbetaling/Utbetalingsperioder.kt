@@ -28,7 +28,7 @@ object Utbetalingsperioder {
 
         // todo: Skriv om denne
         // Hvis perioden som inneholder første endring kun endrer tom så ønsker vi ikke å sende denne inn på nytt til OS
-        if (existing.perioder[førsteEndring].tom != new.perioder[førsteEndring].tom
+        if (existing.perioder[førsteEndring].tom > new.perioder[førsteEndring].tom
             && existing.perioder[førsteEndring].beløp == new.perioder[førsteEndring].beløp
             && existing.perioder[førsteEndring].fom == new.perioder[førsteEndring].fom
         ) {
@@ -62,7 +62,7 @@ object Utbetalingsperioder {
 
         // Hvis vi ikke har opphørsdato i et mellomrom kan det hende at den siste perioden i
         // ny utbetaling er kortere enn siste perioden i eksisterende utbetaling
-        return opphørsdato ?: if (new.last().tom != existing.last().tom) new.last().tom.plusDays(
+        return opphørsdato ?: if (new.last().tom < existing.last().tom) new.last().tom.plusDays(
             1
         ) else null
     }

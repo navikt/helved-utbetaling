@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-val Int.jan: LocalDate get() = LocalDate.of(2025, 3, this)
+val Int.jan: LocalDate get() = LocalDate.of(2025, 1, this)
 val Int.feb: LocalDate get() = LocalDate.of(2024, 2, this)
 val Int.mar: LocalDate get() = LocalDate.of(2024, 3, this)
 val Int.aug: LocalDate get() = LocalDate.of(2024, 8, this)
