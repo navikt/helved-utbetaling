@@ -322,6 +322,34 @@ class UtbetalingRoutingTest {
     }
 
     @Test
+    fun `conflict when adding periods that already exists`() = runTest(TestRuntime.context) {
+        val person = Personident.random()
+        val postDto = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            personident = person,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(postDto)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val putDto = postDto.copy(vedtakstidspunkt = 1.mar.atStartOfDay())
+        httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(putDto)
+        }.also {
+            assertEquals(HttpStatusCode.Conflict, it.status)
+        }
+    }
+
+    @Test
     fun `bad request when sakId changes`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
