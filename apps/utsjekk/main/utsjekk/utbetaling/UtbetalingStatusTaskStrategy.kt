@@ -53,12 +53,12 @@ class UtbetalingStatusTaskStrategy(
             OppdragStatus.KVITTERT_UKJENT -> {
                 appLog.error("Mottok ukjent kvittering fra OS for utbetaling $uId")
                 Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::exponentialMin)
-                update(uId, uDao, Status.FEILET_MOT_OPPDRAG)
+                transaction { uDao.copy(status = Status.FEILET_MOT_OPPDRAG).update(uId) }
             }
 
             OppdragStatus.LAGT_PÅ_KØ -> {
                 Tasks.update(task.id, libs.task.Status.IN_PROGRESS, null, TaskDao::exponentialMin)
-                update(uId, uDao, Status.SENDT_TIL_OPPDRAG)
+                transaction { uDao.copy(status = Status.SENDT_TIL_OPPDRAG).update(uId) }
             }
 
             OppdragStatus.OK_UTEN_UTBETALING -> {
@@ -74,16 +74,6 @@ class UtbetalingStatusTaskStrategy(
                 "utbetalingId" to uid.id.toString(),
             )
         }
-    }
-}
-
-private suspend fun update(
-    id: UtbetalingId,
-    dao: UtbetalingDao,
-    status: Status,
-) {
-    transaction {
-        dao.copy(status = status).update(id)
     }
 }
 

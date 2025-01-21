@@ -16,7 +16,6 @@ import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.coroutines.coroutineContext
 
-// enum class DaoError {
 private val daoLog = logger("dao")
 
 enum class DatabaseError {
@@ -34,6 +33,7 @@ data class UtbetalingDao(
     val stønad: Stønadstype = data.stønad,
     val created_at: LocalDateTime = LocalDateTime.now(),
     val updated_at: LocalDateTime = created_at,
+    val deleted_at: LocalDateTime? = null,
 ) {
     suspend fun insert(id: UtbetalingId): Result<Unit, DatabaseError> {
         val sql = """
@@ -73,18 +73,22 @@ data class UtbetalingDao(
             .mapErr { DatabaseError.Unknown }
     }
 
-    // TODO: create history
     suspend fun update(id: UtbetalingId): Result<Unit, DatabaseError> {
         val sql = """
             UPDATE $TABLE_NAME
-            SET data = ?::jsonb, updated_at = ?
-            WHERE utbetaling_id = ?
+            SET updated_at = ?, status = ?
+            WHERE utbetaling_id = ? AND deleted_at IS NULL AND id IN (
+                SELECT id 
+                FROM $TABLE_NAME
+                ORDER BY created_at DESC
+                LIMIT 1
+            )
         """.trimIndent()
 
         return tryResult {
             coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, objectMapper.writeValueAsString(data))
-                stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
+                stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
+                stmt.setString(2, status.name)
                 stmt.setObject(3, id.id)
 
                 daoLog.debug(sql)
@@ -100,28 +104,27 @@ data class UtbetalingDao(
         const val TABLE_NAME = "utbetaling"
 
         suspend fun findOrNull(id: UtbetalingId, withHistory: Boolean = false): UtbetalingDao? {
-            val sql = when (withHistory) {
-                true -> """
-                    SELECT * FROM $TABLE_NAME
-                    WHERE utbetaling_id = ?;
-                """.trimIndent()
-                false -> """
-                    SELECT * FROM $TABLE_NAME
-                    WHERE utbetaling_id = ? AND deleted_at IS null;
-                """.trimIndent()
-            }
+            val sql = """
+                SELECT * FROM $TABLE_NAME
+                WHERE utbetaling_id = ?
+                ORDER BY created_at DESC
+                LIMIT 1
+            """.trimIndent()
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, id.id)
 
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from).singleOrNull()
+                stmt.executeQuery()
+                    .map(::from)
+                    .filter { it.deleted_at == null || withHistory }
+                    .singleOrNull()
             }
         }
 
-        // todo: Finner utbetalinger som er slettet. Mulig vi må endre på dette.
-        suspend fun find(sakId: SakId): List<UtbetalingDao> {
+        // TODO: finner også historikk.
+        suspend fun find(sakId: SakId, withHistory: Boolean = false): List<UtbetalingDao> {
             val sql = """
                 SELECT * FROM $TABLE_NAME
                 WHERE sak_id = ?
@@ -131,12 +134,17 @@ data class UtbetalingDao(
                 stmt.setObject(1, sakId.id)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
+                stmt.executeQuery()
+                    .map(::from)
+                    .filter { it.deleted_at == null || withHistory }
+                    // TODO: groupBy utbetalingId, hent siste per gruppe og flatmap
             }
         }
 
-
-        // TODO: create history
+        /**
+         * Vi ønsker å markerer utbetalingen (inkl all historikk) som deleted 
+         * slik at det gjenspeiler opphøret hos PO Utbetaling.
+         */
         suspend fun delete(id: UtbetalingId): Result<Unit, DatabaseError> {
             val sql = """
                 UPDATE $TABLE_NAME
@@ -164,6 +172,7 @@ data class UtbetalingDao(
             status = rs.getString("status").let(Status::valueOf),
             created_at = rs.getTimestamp("created_at").toLocalDateTime(),
             updated_at = rs.getTimestamp("updated_at").toLocalDateTime(),
+            deleted_at = rs.getTimestamp("deleted_at")?.toLocalDateTime(),
         )
     }
 }
