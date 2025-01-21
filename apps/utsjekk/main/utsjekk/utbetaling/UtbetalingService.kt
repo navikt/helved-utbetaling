@@ -99,7 +99,8 @@ object UtbetalingService {
         }
         val existing = dao.data
 
-        existing.validateDiff(utbetaling)
+        existing.validateLockedFields(utbetaling)
+        existing.validateMinimumChanges(utbetaling)
 
         val oppdrag = UtbetalingsoppdragDto(
             uid = uid,
@@ -119,7 +120,7 @@ object UtbetalingService {
                     objectMapper.writeValueAsString(it)
                 }
 
-                dao.copy(data = utbetaling).update(uid)
+                UtbetalingDao(data = utbetaling).insert(uid)
             }
         }
     }
@@ -135,7 +136,7 @@ object UtbetalingService {
         }
         val existing = dao.data
 
-        existing.validateDiff(utbetaling) // TODO: valider alt unntatt behandligId?
+        existing.validateLockedFields(utbetaling)
 
         val oppdrag = UtbetalingsoppdragDto(
             uid = uid,
