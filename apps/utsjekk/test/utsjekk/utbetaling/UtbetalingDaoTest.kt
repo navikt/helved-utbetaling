@@ -3,6 +3,7 @@ package utsjekk.utbetaling
 import TestRuntime
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
+import libs.utils.onFailure
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNotEquals
@@ -34,10 +35,9 @@ class UtbetalingDaoTest {
     @Test
     fun `can update utbetaling`() = runTest(TestRuntime.context) {
         val uid = UtbetalingId.random()
+        val utbet = Utbetaling.dagpenger(1.mar, listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)))
 
         transaction {
-            val utbet =
-                Utbetaling.dagpenger(1.mar, listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)))
             UtbetalingDao(utbet, Status.IKKE_PÅBEGYNT).insert(uid)
         }
         transaction {
