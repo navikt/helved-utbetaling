@@ -25,7 +25,7 @@ class UtbetalingStatusTaskStrategy(
         val uId = objectMapper.readValue<UtbetalingId>(task.payload)
 
         val uDao = transaction {
-            UtbetalingDao.findOrNull(uId, withHistory = true)
+            UtbetalingDao.findOrNull(uId, history = true)
         }
 
         if (uDao == null) {

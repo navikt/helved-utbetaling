@@ -20,7 +20,7 @@ object UtbetalingService {
         // TODO: finnes det noe fra før dersom det er sendt inn 1 periode som senere har blitt slettet/annulert/opphørt?
         val erFørsteUtbetalingPåSak = withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.find(utbetaling.sakId)
+                UtbetalingDao.find(utbetaling.sakId, history = true)
                     .map { it.stønad.asFagsystemStr() }
                     .none { it == utbetaling.stønad.asFagsystemStr() }
             }
@@ -169,7 +169,7 @@ object UtbetalingService {
                 Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
                     objectMapper.writeValueAsString(it)
                 }
-                UtbetalingDao.delete(uid) // todo: with history
+                UtbetalingDao.delete(uid)
             }
         }
     }
@@ -177,7 +177,7 @@ object UtbetalingService {
     suspend fun count(sakId: SakId, stønadstype: Stønadstype): UInt {
         return withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.find(sakId)
+                UtbetalingDao.find(sakId, history = true)
                     .map { it.stønad.asFagsystemStr() }
                     .count { it == stønadstype.asFagsystemStr() }
                     .toUInt()

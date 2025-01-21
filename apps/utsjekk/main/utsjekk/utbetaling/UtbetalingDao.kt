@@ -103,7 +103,7 @@ data class UtbetalingDao(
     companion object {
         const val TABLE_NAME = "utbetaling"
 
-        suspend fun findOrNull(id: UtbetalingId, withHistory: Boolean = false): UtbetalingDao? {
+        suspend fun findOrNull(id: UtbetalingId, history: Boolean = false): UtbetalingDao? {
             val sql = """
                 SELECT * FROM $TABLE_NAME
                 WHERE utbetaling_id = ?
@@ -118,13 +118,12 @@ data class UtbetalingDao(
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery()
                     .map(::from)
-                    .filter { it.deleted_at == null || withHistory }
+                    .filter { it.deleted_at == null || history }
                     .singleOrNull()
             }
         }
 
-        // TODO: finner også historikk.
-        suspend fun find(sakId: SakId, withHistory: Boolean = false): List<UtbetalingDao> {
+        suspend fun find(sakId: SakId, history: Boolean = false): List<UtbetalingDao> {
             val sql = """
                 SELECT * FROM $TABLE_NAME
                 WHERE sak_id = ?
@@ -136,8 +135,7 @@ data class UtbetalingDao(
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery()
                     .map(::from)
-                    .filter { it.deleted_at == null || withHistory }
-                    // TODO: groupBy utbetalingId, hent siste per gruppe og flatmap
+                    .filter { it.deleted_at == null || history }
             }
         }
 
