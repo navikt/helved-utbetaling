@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "3.0.3"
-val libVersion = "3.0.32"
+val libVersion = "3.0.52"
 val kontraktVersion = "1.0_20241213145703_7ff5f9c"
 
 dependencies {
@@ -28,7 +28,7 @@ dependencies {
 
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
 
