@@ -62,7 +62,7 @@ data class Utbetaling(
             )
     }
 
-    fun validateDiff(other: Utbetaling) {
+    fun validateLockedFields(other: Utbetaling) {
         if (sakId != other.sakId) badRequest("cant change immutable field", "sakId")
         if (personident != other.personident) badRequest(
             "cant change immutable field",
@@ -78,11 +78,11 @@ data class Utbetaling(
                 doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
             )
         }
-        validateDiff(perioder, other.perioder)
+        // validateDiff(perioder, other.perioder)
     }
 
-    private fun validateDiff(a: List<Utbetalingsperiode>, b: List<Utbetalingsperiode>) {
-        val ingenEndring = a.zip(b).all { (first, second) ->
+    fun validateMinimumChanges(other: Utbetaling) {
+        val ingenEndring = perioder.zip(other.perioder).all { (first, second) ->
             first.beløp == second.beløp
                     && first.fom == second.fom
                     && first.tom == second.tom

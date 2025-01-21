@@ -270,7 +270,7 @@ class UtbetalingRoutingTest {
 
         val updatedUtbetaling = utbetaling.copy(
             vedtakstidspunkt = 8.des.atStartOfDay(),
-            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 25_000u)),
         )
         val res = httpClient.put("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -475,7 +475,7 @@ class UtbetalingRoutingTest {
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
         }.body<ApiError.Response>()
-        assertEquals("cant change the flavour of perioder", error.msg)
+        assertEquals("can't change the flavour of perioder", error.msg)
         assertEquals("perioder", error.field)
         assertEquals("https://navikt.github.io/utsjekk-docs/utbetalinger/perioder", error.doc)
         // assertEquals(200, http.head(error.doc).status.value)
