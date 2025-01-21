@@ -26,7 +26,6 @@ import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.*
 import utsjekk.utbetaling.UtbetalingDao
-import utsjekk.utbetaling.UtbetalingStatusDao
 import java.io.File
 
 object TestRuntime : AutoCloseable {
@@ -82,7 +81,6 @@ object TestRuntime : AutoCloseable {
             IverksettingDao.TABLE_NAME,
             IverksettingResultatDao.TABLE_NAME,
             UtbetalingDao.TABLE_NAME,
-            UtbetalingStatusDao.TABLE_NAME,
         )
         postgres.close()
         ktor.stop()

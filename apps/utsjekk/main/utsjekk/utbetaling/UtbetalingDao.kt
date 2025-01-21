@@ -6,6 +6,7 @@ import libs.utils.Result
 import libs.utils.logger
 import libs.utils.map
 import libs.utils.mapErr
+import utsjekk.utbetaling.*
 import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import org.intellij.lang.annotations.Language
@@ -16,11 +17,6 @@ import java.util.UUID
 import kotlin.coroutines.coroutineContext
 
 // enum class DaoError {
-//     NotFound,
-//     Conflict,
-//     Serde,
-// }
-
 private val daoLog = logger("dao")
 
 enum class DatabaseError {
@@ -34,6 +30,7 @@ suspend fun <T> tryResult(block: suspend () -> T): Result<T, Throwable> {
 
 data class UtbetalingDao(
     val data: Utbetaling,
+    val status: Status = Status.IKKE_PÅBEGYNT,
     val stønad: Stønadstype = data.stønad,
     val created_at: LocalDateTime = LocalDateTime.now(),
     val updated_at: LocalDateTime = created_at,
@@ -49,8 +46,9 @@ data class UtbetalingDao(
                 stønad,
                 created_at,
                 updated_at,
-                data
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)
+                data,
+                status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?)
         """.trimIndent()
 
         return tryResult {
@@ -64,6 +62,7 @@ data class UtbetalingDao(
                 stmt.setTimestamp(7, Timestamp.valueOf(created_at))
                 stmt.setTimestamp(8, Timestamp.valueOf(updated_at))
                 stmt.setString(9, objectMapper.writeValueAsString(data))
+                stmt.setString(10, status.name)
 
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
@@ -162,6 +161,7 @@ data class UtbetalingDao(
         fun from(rs: ResultSet) = UtbetalingDao(
             data = objectMapper.readValue(rs.getString("data"), Utbetaling::class.java),
             stønad = rs.getString("stønad").let(Stønadstype::valueOf),
+            status = rs.getString("status").let(Status::valueOf),
             created_at = rs.getTimestamp("created_at").toLocalDateTime(),
             updated_at = rs.getTimestamp("updated_at").toLocalDateTime(),
         )

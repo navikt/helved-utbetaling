@@ -537,7 +537,7 @@ class UtbetalingRoutingTest {
             accept(ContentType.Application.Json)
         }.also {
             assertEquals(HttpStatusCode.OK, it.status)
-        }.body<UtbetalingStatus>()
-        assertEquals(Status.IKKE_PÅBEGYNT, status.status)
+        }.body<Status>()
+        assertEquals(Status.IKKE_PÅBEGYNT, status)
     }
 }
