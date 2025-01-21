@@ -3,6 +3,7 @@ package utsjekk.utbetaling
 import TestRuntime
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.delay
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks
@@ -15,6 +16,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.clients.Oppdrag
+import utsjekk.utbetaling.Status
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.test.assertTrue
@@ -67,7 +69,7 @@ class UtbetalingStatusStrategyTest {
             vedtakstidspunkt = 1.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
-        val uDao = UtbetalingDao(utbetaling)
+        val uDao = UtbetalingDao(utbetaling, Status.`IKKE_PÅBEGYNT`)
 
         transaction {
             task.insert()
@@ -91,7 +93,7 @@ class UtbetalingStatusStrategyTest {
             vedtakstidspunkt = 1.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
-        val uDao = UtbetalingDao(utbetaling)
+        val uDao = UtbetalingDao(utbetaling, Status.IKKE_PÅBEGYNT)
 
         transaction {
             task.insert()
@@ -115,14 +117,13 @@ class UtbetalingStatusStrategyTest {
             vedtakstidspunkt = 1.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
-        val uDao = UtbetalingDao(utbetaling)
-
-        transaction {
-            task.insert()
-            uDao.insert(uid)
-        }
 
         oppdragFake.oppdragV2[uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
+
+        transaction {
+            UtbetalingDao(utbetaling, Status.IKKE_PÅBEGYNT).insert(uid)
+            task.insert()
+        }
 
         assertTrue(strategy.isApplicable(task))
         strategy.execute(task)
@@ -139,7 +140,7 @@ class UtbetalingStatusStrategyTest {
             vedtakstidspunkt = 1.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
-        val uDao = UtbetalingDao(utbetaling)
+        val uDao = UtbetalingDao(utbetaling, Status.`IKKE_PÅBEGYNT`)
 
         transaction {
             task.insert()
@@ -163,7 +164,7 @@ class UtbetalingStatusStrategyTest {
             vedtakstidspunkt = 1.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
         )
-        val uDao = UtbetalingDao(utbetaling)
+        val uDao = UtbetalingDao(utbetaling, Status.IKKE_PÅBEGYNT)
 
         transaction {
             task.insert()
@@ -190,8 +191,8 @@ class UtbetalingStatusStrategyTest {
         val uDao = UtbetalingDao(utbetaling)
 
         transaction {
-            task.insert()
             uDao.insert(uid)
+            task.insert()
         }
 
         oppdragFake.oppdragV2[uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")

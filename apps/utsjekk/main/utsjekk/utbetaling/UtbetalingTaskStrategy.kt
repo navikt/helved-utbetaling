@@ -6,6 +6,7 @@ import libs.task.TaskDao
 import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import utsjekk.clients.Oppdrag
+import utsjekk.utbetaling.*
 import utsjekk.task.TaskStrategy
 import utsjekk.task.exponentialSec
 
@@ -29,11 +30,9 @@ class UtbetalingTaskStrategy(
         oppdragClient.utbetal(oppdrag)
 
         transaction {
-            val status = UtbetalingStatusDao.findOrNull(oppdrag.uid)
-                ?: error("status for utbetaling {uid} mangler. Kan løses ved å manuelt legge inn en rad i utbetaling_status") // TODO: kan like gjerne bare lage den hvis den mangler 
+            val dao = UtbetalingDao.findOrNull(oppdrag.uid) ?: error("utbetaling {uid} mangler. Kan løses ved å manuelt legge inn en rad i utbetaling")
 
-            status.copy(data = status.data.copy(status = Status.SENDT_TIL_OPPDRAG))
-                .update(oppdrag.uid)
+            dao.copy(status = Status.SENDT_TIL_OPPDRAG).update(oppdrag.uid)
 
             Tasks.create(
                 kind = libs.task.Kind.StatusUtbetaling,

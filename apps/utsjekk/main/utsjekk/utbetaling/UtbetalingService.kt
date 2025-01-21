@@ -58,10 +58,7 @@ object UtbetalingService {
                 Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
                     objectMapper.writeValueAsString(it)
                 }
-                UtbetalingDao(utbetaling).insert(uid)
-                    .onSuccess {
-                        UtbetalingStatusDao(UtbetalingStatus(status = Status.IKKE_PÅBEGYNT)).insert(uid)
-                    }
+                UtbetalingDao(utbetaling, Status.IKKE_PÅBEGYNT).insert(uid)
             }
         }
     }
@@ -80,10 +77,10 @@ object UtbetalingService {
     /**
      * Hent eksisterende utbetalingsoppdrag
      */
-    suspend fun status(uid: UtbetalingId): UtbetalingStatus {
+    suspend fun status(uid: UtbetalingId): Status {
         return withContext(Jdbc.context) {
             transaction {
-                UtbetalingStatusDao.findOrNull(uid)?.data ?: notFound("status for utbetaling", "uid")
+                UtbetalingDao.findOrNull(uid)?.status ?: notFound("status for utbetaling", "uid")
             }
         }
     }

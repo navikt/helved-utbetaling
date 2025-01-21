@@ -53,12 +53,12 @@ class UtbetalingStatusTaskStrategy(
             OppdragStatus.KVITTERT_UKJENT -> {
                 appLog.error("Mottok ukjent kvittering fra OS for utbetaling $uId")
                 Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::exponentialMin)
-                insertOrUpdateStatus(uId, Status.FEILET_MOT_OPPDRAG)
+                update(uId, uDao, Status.FEILET_MOT_OPPDRAG)
             }
 
             OppdragStatus.LAGT_PÅ_KØ -> {
                 Tasks.update(task.id, libs.task.Status.IN_PROGRESS, null, TaskDao::exponentialMin)
-                insertOrUpdateStatus(uId, Status.SENDT_TIL_OPPDRAG)
+                update(uId, uDao, Status.SENDT_TIL_OPPDRAG)
             }
 
             OppdragStatus.OK_UTEN_UTBETALING -> {
@@ -77,25 +77,13 @@ class UtbetalingStatusTaskStrategy(
     }
 }
 
-private suspend fun insertOrUpdateStatus(
-    uId: UtbetalingId,
+private suspend fun update(
+    id: UtbetalingId,
+    dao: UtbetalingDao,
     status: Status,
-): UtbetalingStatus {
-    return transaction {
-        UtbetalingStatusDao.findOrNull(uId)
-            ?.let { dao -> utled(uId, dao, status) }
-            ?: insert(uId, status)
+) {
+    transaction {
+        dao.copy(status = status).update(id)
     }
 }
 
-private suspend fun utled(uId: UtbetalingId, dao: UtbetalingStatusDao, status: Status): UtbetalingStatus {
-    val uStatus = dao.data.copy(status = status)
-    dao.copy(data = uStatus).update(uId)
-    return uStatus
-}
-
-private suspend fun insert(uId: UtbetalingId, status: Status): UtbetalingStatus {
-    val uStatus = UtbetalingStatus(status)
-    UtbetalingStatusDao(data = uStatus).insert(uId)
-    return uStatus
-}

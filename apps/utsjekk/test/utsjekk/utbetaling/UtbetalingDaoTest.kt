@@ -6,6 +6,7 @@ import libs.postgres.concurrency.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNotEquals
+import utsjekk.utbetaling.Status
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -14,11 +15,10 @@ class UtbetalingDaoTest {
     @Test
     fun `can insert get and delete utbetaling`() = runTest(TestRuntime.context) {
         val uid = UtbetalingId.random()
+        val data = Utbetaling.dagpenger(1.mar, listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)))
 
         transaction {
-            val utbet =
-                Utbetaling.dagpenger(1.mar, listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)))
-            UtbetalingDao(utbet).insert(uid)
+            UtbetalingDao(data, Status.OK).insert(uid)
         }
         transaction {
             assertNotNull(UtbetalingDao.findOrNull(uid))
@@ -38,7 +38,7 @@ class UtbetalingDaoTest {
         transaction {
             val utbet =
                 Utbetaling.dagpenger(1.mar, listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)))
-            UtbetalingDao(utbet).insert(uid)
+            UtbetalingDao(utbet, Status.IKKE_PÅBEGYNT).insert(uid)
         }
         transaction {
             val utbet = requireNotNull(UtbetalingDao.findOrNull(uid))
