@@ -38,7 +38,7 @@ class UtbetalingStatusTaskStrategy(
         when (statusDto.status) {
             OppdragStatus.KVITTERT_OK -> {
                 Tasks.update(task.id, libs.task.Status.COMPLETE, "", TaskDao::exponentialMin)
-//                val utbetalingStatus = insertOrUpdateStatus(uId, Status.OK)
+                transaction { uDao.copy(status = Status.OK).update(uId) }
                 // statusProducer.produce(uId.id.toString(), utbetalingStatus)
             }
 
@@ -46,7 +46,7 @@ class UtbetalingStatusTaskStrategy(
                 appLog.error("Mottok feilkvittering ${statusDto.status} fra OS for utbetaling $uId")
                 secureLog.error("Mottok feilkvittering ${statusDto.status} fra OS for utbetaling $uId. Feilmelding: ${statusDto.feilmelding}")
                 Tasks.update(task.id, libs.task.Status.MANUAL, statusDto.feilmelding, TaskDao::exponentialMin)
-//                val utbetalingStatus = insertOrUpdateStatus(uId, Status.FEILET_MOT_OPPDRAG)
+                transaction { uDao.copy(status = Status.FEILET_MOT_OPPDRAG).update(uId) }
                 // statusProducer.produce(uId.id.toString(), utbetalingStatus)
             }
 
