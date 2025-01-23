@@ -26,6 +26,7 @@ object UtbetalingService {
             }
         }
 
+        var forrigeId: PeriodeId? = null
         val oppdrag = UtbetalingsoppdragDto(
             uid = uid,
             erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
@@ -36,11 +37,14 @@ object UtbetalingService {
             beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
-            utbetalingsperioder = utbetaling.perioder.map { periode ->
+            utbetalingsperioder = utbetaling.perioder.mapIndexed { i, periode ->
+                val id = if(i == utbetaling.perioder.size - 1) utbetaling.lastPeriodeId else PeriodeId()
+
                 UtbetalingsperiodeDto(
                     erEndringPåEksisterendePeriode = false,
                     opphør = null,
-                    id = periode.id,
+                    id = id.toString(),
+                    forrigePeriodeId = forrigeId.toString().also { forrigeId = id},
                     vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                     klassekode = klassekode(utbetaling.stønad),
                     fom = periode.fom,
@@ -112,7 +116,7 @@ object UtbetalingService {
             beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
-            utbetalingsperioder = Utbetalingsperioder.utled(existing, utbetaling)
+            utbetalingsperioder = Utbetalingsperioder.utled(existing, utbetaling) // TODO: vi kan kanskje sette lastPeriodeId i utled funksjonen i stedenfor
         )
         return withContext(Jdbc.context) {
             transaction {
@@ -120,7 +124,8 @@ object UtbetalingService {
                     objectMapper.writeValueAsString(it)
                 }
 
-                UtbetalingDao(data = utbetaling).insert(uid)
+                val newLastPeriodeId = PeriodeId.decode(oppdrag.utbetalingsperioder.last().id)
+                UtbetalingDao(data = utbetaling.copy(lastPeriodeId = newLastPeriodeId)).insert(uid)
             }
         }
     }
@@ -152,7 +157,7 @@ object UtbetalingService {
                 UtbetalingsperiodeDto(
                     erEndringPåEksisterendePeriode = true, // opphør er alltid en ENDR
                     opphør = Opphør(utbetaling.perioder.minBy { it.fom }.fom),
-                    id = sistePeriode.id, // endrer på eksisterende delytelseId
+                    id = existing.lastPeriodeId.toString(), // endrer på eksisterende delytelseId
                     vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                     klassekode = klassekode(utbetaling.stønad),
                     fom = sistePeriode.fom,
@@ -174,13 +179,10 @@ object UtbetalingService {
         }
     }
 
-    suspend fun count(sakId: SakId, stønadstype: Stønadstype): UInt {
+    suspend fun lastOrNull(uid: UtbetalingId): Utbetaling? {
         return withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.find(sakId, history = true)
-                    .map { it.stønad.asFagsystemStr() }
-                    .count { it == stønadstype.asFagsystemStr() }
-                    .toUInt()
+                UtbetalingDao.findOrNull(uid, history = true)?.data
             }
         }
     }

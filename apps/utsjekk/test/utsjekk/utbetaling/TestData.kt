@@ -37,6 +37,7 @@ fun UtbetalingsperiodeDto.Companion.default(
     satstype: Satstype = Satstype.MND,
     erEndringPåEsksisterendePeriode: Boolean = false,
     opphør: LocalDate? = null,
+    periodeId: PeriodeId = PeriodeId(),
 ): UtbetalingsperiodeDto = UtbetalingsperiodeDto(
     erEndringPåEksisterendePeriode = erEndringPåEsksisterendePeriode,
     opphør = opphør?.let(::Opphør),
@@ -48,7 +49,7 @@ fun UtbetalingsperiodeDto.Companion.default(
     satstype = satstype,
     utbetalesTil = from.personident.ident,
     behandlingId = from.behandlingId.id,
-    id = 1u, // TODO: denne øker per utbetaling for en sak
+    id = periodeId.toString(),
 )
 
 fun UtbetalingsperiodeDto.Companion.dag(
@@ -109,9 +110,7 @@ fun Utbetalingsperiode.Companion.dagpenger(
     satstype: Satstype,
     betalendeEnhet: NavEnhet? = null,
     fastsattDagpengesats: UInt? = null,
-    id: UInt = 1u, // denne øker med +1 for hver utbetaling på en sakId 
 ): Utbetalingsperiode = Utbetalingsperiode(
-    id,
     fom,
     tom,
     beløp,
@@ -123,6 +122,7 @@ fun Utbetalingsperiode.Companion.dagpenger(
 fun Utbetaling.Companion.dagpenger(
     vedtakstidspunkt: LocalDate,
     perioder: List<Utbetalingsperiode>,
+    lastPeriodeId: PeriodeId = PeriodeId(),
     stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
     sakId: SakId = SakId(RandomOSURId.generate()),
     personident: Personident = Personident.random(),
@@ -132,6 +132,7 @@ fun Utbetaling.Companion.dagpenger(
 ): Utbetaling = Utbetaling(
     sakId,
     behandlingId,
+    lastPeriodeId,
     personident,
     vedtakstidspunkt.atStartOfDay(),
     stønad,

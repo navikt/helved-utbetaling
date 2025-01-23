@@ -12,7 +12,7 @@ object Utbetalingsperioder {
         val nyeLinjer = nyeLinjer(existing, new, opphørsdato)
 
         return if (opphørsdato != null) {
-            listOf(opphørslinje(new, existing.perioder.last(), opphørsdato)) + nyeLinjer
+            listOf(opphørslinje(new, existing.perioder.last(), existing.lastPeriodeId, opphørsdato)) + nyeLinjer
         } else {
             nyeLinjer
         }
@@ -23,7 +23,7 @@ object Utbetalingsperioder {
         new: Utbetaling,
         opphørsdato: LocalDate?,
     ): List<UtbetalingsperiodeDto> {
-        val sistePeriodeId = existing.perioder.last().id
+        var sistePeriodeId = existing.lastPeriodeId
         var førsteEndring = existing.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
 
         // Om første endring er en forkorting av tom ønsker vi ikke sende med denne som en ny utbetalingslinje.
@@ -39,13 +39,16 @@ object Utbetalingsperioder {
         return new.perioder
             .slice(førsteEndring until new.perioder.size)
             .filter { if (opphørsdato != null) it.fom >= opphørsdato else true }
-            .mapIndexed { index, it ->
+            .map { p ->
+                val pid = PeriodeId()
                 utbetalingslinje(
                     utbetaling = new,
-                    periode = it,
-                    periodeId = sistePeriodeId + index.toUInt() + 1u,
-                    forrigePeriodeId = sistePeriodeId + index.toUInt()
-                )
+                    periode = p,
+                    periodeId = pid,
+                    forrigePeriodeId = sistePeriodeId,
+                ).also {
+                    sistePeriodeId = pid
+                }
             }
     }
 
@@ -71,13 +74,13 @@ object Utbetalingsperioder {
     private fun utbetalingslinje(
         utbetaling: Utbetaling,
         periode: Utbetalingsperiode,
-        periodeId: UInt,
-        forrigePeriodeId: UInt,
+        periodeId: PeriodeId,
+        forrigePeriodeId: PeriodeId,
     ): UtbetalingsperiodeDto {
         return UtbetalingsperiodeDto(
             erEndringPåEksisterendePeriode = false,
-            id = periodeId,
-            forrigePeriodeId = forrigePeriodeId,
+            id = periodeId.toString(),
+            forrigePeriodeId = forrigePeriodeId.toString(),
             vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
             klassekode = klassekode(utbetaling.stønad),
             fom = periode.fom,
@@ -93,11 +96,12 @@ object Utbetalingsperioder {
     private fun opphørslinje(
         new: Utbetaling,
         sistePeriode: Utbetalingsperiode,
+        periodeId: PeriodeId,
         opphørsdato: LocalDate,
     ): UtbetalingsperiodeDto {
         return UtbetalingsperiodeDto(
             erEndringPåEksisterendePeriode = true,
-            id = sistePeriode.id,
+            id = periodeId.toString(),
             opphør = Opphør(opphørsdato),
             vedtaksdato = new.vedtakstidspunkt.toLocalDate(),
             klassekode = klassekode(new.stønad),
