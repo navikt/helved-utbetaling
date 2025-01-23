@@ -33,7 +33,7 @@ data class UtbetalingsoppdragDto(
 
 data class UtbetalingsperiodeDto(
     val erEndringPåEksisterendePeriode: Boolean,
-    val id: UInt,
+    val id: String,
     val vedtaksdato: LocalDate,
     val klassekode: String,
     val fom: LocalDate,
@@ -43,7 +43,7 @@ data class UtbetalingsperiodeDto(
     val utbetalesTil: String,
     val behandlingId: String,
     val opphør: Opphør? = null,
-    val forrigePeriodeId: UInt? = null,
+    val forrigePeriodeId: String? = null,
     val fastsattDagsats: UInt? = null,
 ) {
     companion object;

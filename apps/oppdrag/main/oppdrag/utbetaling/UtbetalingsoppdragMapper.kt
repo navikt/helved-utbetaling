@@ -26,8 +26,7 @@ internal object UtbetalingsoppdragMapper {
     fun tilOppdrag110(utbetalingsoppdrag: UtbetalingsoppdragDto): Oppdrag110 =
         objectFactory.createOppdrag110().apply {
             kodeAksjon = OppdragSkjemaConstants.KODE_AKSJON
-            kodeEndring =
-                if (utbetalingsoppdrag.erFørsteUtbetalingPåSak) Endringskode.NY.kode else Endringskode.ENDRING.kode
+            kodeEndring = if (utbetalingsoppdrag.erFørsteUtbetalingPåSak) Endringskode.NY.kode else Endringskode.ENDRING.kode
             kodeFagomraade = utbetalingsoppdrag.fagsystem.kode
             fagsystemId = utbetalingsoppdrag.saksnummer
             utbetFrekvens = Utbetalingsfrekvens.MÅNEDLIG.kode
@@ -79,28 +78,25 @@ internal object UtbetalingsoppdragMapper {
         utbetalingsperiode: UtbetalingsperiodeDto,
         utbetalingsoppdrag: UtbetalingsoppdragDto,
     ): OppdragsLinje150 {
-        val komprimertId: String = utbetalingsoppdrag.uid.id.encode()
-
         val attestant =
             objectFactory.createAttestant180().apply {
                 attestantId = utbetalingsoppdrag.beslutterId
             }
 
         return objectFactory.createOppdragsLinje150().apply {
-            kodeEndringLinje =
-                if (utbetalingsperiode.erEndringPåEksisterendePeriode) Endringskode.ENDRING.kode else Endringskode.NY.kode
+            kodeEndringLinje = if (utbetalingsperiode.erEndringPåEksisterendePeriode) Endringskode.ENDRING.kode else Endringskode.NY.kode
             utbetalingsperiode.opphør?.let {
                 kodeStatusLinje = TkodeStatusLinje.OPPH
                 datoStatusFom = it.fom.toXMLDate()
             }
             if (!utbetalingsperiode.erEndringPåEksisterendePeriode) {
                 utbetalingsperiode.forrigePeriodeId?.let {
-                    refDelytelseId = "$komprimertId#$it"
+                    refDelytelseId = it
                     refFagsystemId = utbetalingsoppdrag.saksnummer
                 }
             }
             vedtakId = utbetalingsperiode.vedtaksdato.toString()
-            delytelseId = "$komprimertId#${utbetalingsperiode.id}"
+            delytelseId = utbetalingsperiode.id
             kodeKlassifik = utbetalingsperiode.klassekode
             datoVedtakFom = utbetalingsperiode.fom.toXMLDate()
             datoVedtakTom = utbetalingsperiode.tom.toXMLDate()
