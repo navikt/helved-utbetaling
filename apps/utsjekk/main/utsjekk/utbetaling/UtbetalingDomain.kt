@@ -43,12 +43,6 @@ data class Utbetaling(
     val perioder: List<Utbetalingsperiode>,
 ) {
     companion object {
-
-        // vi skal ikke lage ny periodeId, men gjennbruke den fra databasen
-        fun from(dto: UtbetalingApi): Utbetaling {
-            return from(dto, 0u)
-        }
-
         fun from(dto: UtbetalingApi, periodeId: UInt): Utbetaling =
             Utbetaling(
                 sakId = SakId(dto.sakId),
