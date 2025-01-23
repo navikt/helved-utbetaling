@@ -19,7 +19,7 @@ class UtbetalingApiToDomainTest {
             vedtakstidspunkt = 4.feb,
             listOf(UtbetalingsperiodeApi(4.feb, 4.feb, 500u)),
         )
-        val domain = Utbetaling.from(api)
+        val domain = Utbetaling.from(api, 1u)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 4.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS, id = domain.perioder.first().id)),
@@ -44,7 +44,7 @@ class UtbetalingApiToDomainTest {
             vedtakstidspunkt = 1.aug,
             listOf(UtbetalingsperiodeApi(1.aug, 24.aug, 7500u)),
         )
-        val domain = Utbetaling.from(api)
+        val domain = Utbetaling.from(api, 1u)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.aug,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 24.aug, 7500u, Satstype.ENGANGS, id = domain.perioder.first().id)),
@@ -69,7 +69,7 @@ class UtbetalingApiToDomainTest {
             vedtakstidspunkt = 1.feb,
             listOf(UtbetalingsperiodeApi(1.feb, 31.mar, 35_000u)),
         )
-        val domain = Utbetaling.from(api)
+        val domain = Utbetaling.from(api, 1u)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 31.mar, 35_000u, Satstype.ENGANGS, id = domain.perioder.first().id)),
@@ -98,7 +98,7 @@ class UtbetalingApiToDomainTest {
                 UtbetalingsperiodeApi(5.aug, 5.aug, 100u),
             ),
         )
-        val domain = Utbetaling.from(api)
+        val domain = Utbetaling.from(api, 1u)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 5.aug,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.VIRKEDAG, id = domain.perioder.first().id)),
@@ -129,7 +129,7 @@ class UtbetalingApiToDomainTest {
                 UtbetalingsperiodeApi(5.aug, 5.aug, 100u),
             ),
         )
-        val domain = Utbetaling.from(api)
+        val domain = Utbetaling.from(api, 1u)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 5.aug,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.DAG, id = domain.perioder.first().id)),
@@ -156,7 +156,7 @@ class UtbetalingApiToDomainTest {
                 UtbetalingsperiodeApi(1.feb, 29.feb, 26_000u),
             ),
         )
-        val domain = Utbetaling.from(api)
+        val domain = Utbetaling.from(api, 1u)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 29.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 29.feb, 26_000u, Satstype.MND, id = domain.perioder.first().id)),
@@ -184,7 +184,7 @@ class UtbetalingApiToDomainTest {
                 UtbetalingsperiodeApi(1.mar, 31.mar, 8_000u),
             ),
         )
-        val domain = Utbetaling.from(api)
+        val domain = Utbetaling.from(api, 1u)
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 31.mar,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 31.mar, 8_000u, Satstype.MND, id = domain.perioder.first().id)),
