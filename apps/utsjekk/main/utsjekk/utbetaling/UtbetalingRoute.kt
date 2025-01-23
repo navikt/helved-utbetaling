@@ -27,8 +27,7 @@ fun Route.utbetalingRoute() {
                 ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
-            val periodeId = UtbetalingService.count(SakId(dto.sakId), dto.stønad) + 1u
-            val domain = Utbetaling.from(dto, periodeId)
+            val domain = Utbetaling.from(dto, PeriodeId())
 
             UtbetalingService.create(uid, domain).onFailure {
                 when (it) {
@@ -71,8 +70,8 @@ fun Route.utbetalingRoute() {
                 ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
-            val periodeId = UtbetalingService.count(SakId(dto.sakId), dto.stønad)
-            val domain = Utbetaling.from(dto, periodeId)
+            val existing = UtbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
+            val domain = Utbetaling.from(dto, existing.lastPeriodeId)
             UtbetalingService.update(uid, domain).onFailure {
                 when (it) {
                     DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
@@ -89,8 +88,9 @@ fun Route.utbetalingRoute() {
                 ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
-            val periodeId = UtbetalingService.count(SakId(dto.sakId), dto.stønad)
-            val domain = Utbetaling.from(dto, periodeId)
+            val existing = UtbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
+            val domain = Utbetaling.from(dto, existing.lastPeriodeId)
+
             UtbetalingService.delete(uid, domain).onFailure {
                 when (it) {
                     DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")

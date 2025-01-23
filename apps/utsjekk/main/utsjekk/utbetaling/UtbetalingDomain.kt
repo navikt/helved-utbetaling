@@ -4,9 +4,14 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import utsjekk.avstemming.erHelg
 import utsjekk.badRequest
 import utsjekk.conflict
+import utsjekk.appLog
+import libs.utils.logger
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import java.util.Base64
+import java.nio.ByteBuffer
+import kotlin.getOrThrow
 
 @JvmInline
 value class SakId(val id: String)
@@ -35,6 +40,7 @@ value class UtbetalingId(val id: UUID) {
 data class Utbetaling(
     val sakId: SakId,
     val behandlingId: BehandlingId,
+    val lastPeriodeId: PeriodeId,
     val personident: Personident,
     val vedtakstidspunkt: LocalDateTime,
     val stønad: Stønadstype,
@@ -43,16 +49,17 @@ data class Utbetaling(
     val perioder: List<Utbetalingsperiode>,
 ) {
     companion object {
-        fun from(dto: UtbetalingApi, periodeId: UInt): Utbetaling =
+        fun from(dto: UtbetalingApi, lastPeriodeId: PeriodeId): Utbetaling =
             Utbetaling(
                 sakId = SakId(dto.sakId),
                 behandlingId = BehandlingId(dto.behandlingId),
+                lastPeriodeId = lastPeriodeId,
                 personident = Personident(dto.personident),
                 vedtakstidspunkt = dto.vedtakstidspunkt,
                 stønad = dto.stønad,
                 beslutterId = Navident(dto.beslutterId),
                 saksbehandlerId = Navident(dto.saksbehandlerId),
-                perioder = listOf(Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom }, periodeId)),
+                perioder = listOf(Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom })),
             )
     }
 
@@ -94,8 +101,46 @@ data class Utbetaling(
     }
 }
 
+@JvmInline
+value class PeriodeId (private val id: UUID) {
+    constructor() : this(UUID.randomUUID())
+
+    init { 
+        toString() // ikke bruk en periodeId som ikke lar seg sendes over SOAP
+    }
+    companion object {
+        fun decode(encoded: String): PeriodeId {
+            try {
+                val byteBuffer: ByteBuffer = ByteBuffer.wrap(Base64.getDecoder().decode(encoded))
+                // ||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+                // ^ les neste 64 og lag en long
+                return PeriodeId(UUID(byteBuffer.long, byteBuffer.long))
+            } catch (e: Throwable) {
+                appLog.warn("Klarte ikke dekomprimere UUID: $this")
+                throw e
+            }
+        }
+    }
+
+    /**
+     * UUID er 128 bit eller 36 tegn
+     * Oppdrag begrenses til 30 tegn (eller 240 bits)
+     * To Longs er 128 bits
+     */
+    override fun toString(): String {
+        val byteBuffer = ByteBuffer.allocate(java.lang.Long.BYTES * 2).apply { // 128 bits
+            putLong(id.mostSignificantBits) // første 64 bits
+            putLong(id.leastSignificantBits) // siste 64 bits
+        }
+
+        // e.g. dNl8DVZKQM2gJ0AcJ/pNKQ== (24 tegn)
+        return Base64.getEncoder().encodeToString(byteBuffer.array()).also {
+            require(it.length <= 30) { "base64 encoding av UUID ble over 30 tegn." }
+        }
+    }
+}
+
 data class Utbetalingsperiode(
-    val id: UInt,
     val fom: LocalDate,
     val tom: LocalDate,
     val beløp: UInt,
@@ -104,20 +149,15 @@ data class Utbetalingsperiode(
     val fastsattDagpengesats: UInt? = null,
 ) {
     companion object {
-        fun from(perioder: List<UtbetalingsperiodeApi>, periodeId: UInt): Utbetalingsperiode {
+        fun from(perioder: List<UtbetalingsperiodeApi>): Utbetalingsperiode {
             val satstype = satstype(perioder.map { satstype(it.fom, it.tom) }) // may throw bad request
 
             return Utbetalingsperiode(
-                id = periodeId,
                 fom = perioder.first().fom,
                 tom = perioder.last().tom,
                 beløp = beløp(perioder, satstype),
-                betalendeEnhet =
-                    perioder.last()
-                        .betalendeEnhet
-                        ?.let(::NavEnhet), // baserer oss på lastest news
-                fastsattDagpengesats =
-                    perioder.last().fastsattDagpengesats, // baserer oss på lastest news
+                betalendeEnhet = perioder.last().betalendeEnhet ?.let(::NavEnhet), // baserer oss på lastest news
+                fastsattDagpengesats = perioder.last().fastsattDagpengesats, // baserer oss på lastest news
                 satstype = satstype,
             )
         }
