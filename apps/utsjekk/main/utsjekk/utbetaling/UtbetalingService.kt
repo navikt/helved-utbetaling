@@ -44,7 +44,7 @@ object UtbetalingService {
                     erEndringPåEksisterendePeriode = false,
                     opphør = null,
                     id = id.toString(),
-                    forrigePeriodeId = forrigeId.toString().also { forrigeId = id},
+                    forrigePeriodeId = forrigeId?.toString().also { forrigeId = id},
                     vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                     klassekode = klassekode(utbetaling.stønad),
                     fom = periode.fom,
