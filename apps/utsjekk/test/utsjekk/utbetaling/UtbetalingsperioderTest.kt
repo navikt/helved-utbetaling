@@ -86,11 +86,39 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `forkorte tom`() {
-        val existing =
-            Utbetaling.dagpenger(1.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG)))
-        val new =
-            Utbetaling.dagpenger(2.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG)))
+        val existing = Utbetaling.dagpenger(1.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG)))
+        val new = Utbetaling.dagpenger(2.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG)))
 
+        val perioder = Utbetalingsperioder.utled(existing, new)
+
+        assertEquals(1, perioder.size)
+
+        perioder.first().also {
+            assertEquals(6.jan, it.opphør?.fom)
+        }
+    }
+
+    /** Scenario 6 Endre tom på en utbetaling (med fler perioder)
+     *
+     * 1:    ╭────────────────╮╭──────────────╮
+     *       │      100,-     ││     200,-    │
+     *       ╰────────────────╯╰──────────────╯
+     * 2:    ╭────────────────╮
+     *       │      100,-     │
+     *       ╰────────────────╯
+     * Res:                   ^
+     *                        ╰ OPPHØR
+     */
+    @Test
+    fun `forkorte tom hvor existing har fler perioder enn ny`() {
+        val existing = Utbetaling.dagpenger(
+            1.jan, 
+            listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
+                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u, Satstype.DAG),
+            )
+        )
+        val new = Utbetaling.dagpenger(2.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG)))
         val perioder = Utbetalingsperioder.utled(existing, new)
 
         assertEquals(1, perioder.size)

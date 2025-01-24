@@ -25,6 +25,7 @@ object Utbetalingsperioder {
     ): List<UtbetalingsperiodeDto> {
         var sistePeriodeId = existing.lastPeriodeId
         var førsteEndring = existing.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
+        if (førsteEndring == -1) return emptyList()
 
         // Om første endring er en forkorting av tom ønsker vi ikke sende med denne som en ny utbetalingslinje.
         // Opphørslinjen tar ansvar for forkortingen av perioden, og vi ønsker bare å sende med alt etter perioden
