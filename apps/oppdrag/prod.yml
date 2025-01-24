@@ -20,10 +20,10 @@ spec:
             - port: 1414
   resources:
     limits:
-      memory: 512Mi
+      memory: 1024Mi
     requests:
-      memory: 256Mi
-      cpu: 50m
+      memory: 512Mi
+      cpu: 100m
   replicas:
     min: 2
     max: 4
