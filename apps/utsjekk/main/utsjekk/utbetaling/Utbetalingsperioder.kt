@@ -23,22 +23,32 @@ object Utbetalingsperioder {
         new: Utbetaling,
         opphørsdato: LocalDate?,
     ): List<UtbetalingsperiodeDto> {
-        var sistePeriodeId = existing.lastPeriodeId
-        var førsteEndring = existing.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
-        if (førsteEndring == -1) return emptyList()
+        var førsteEndringIdx = existing.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
 
-        // Om første endring er en forkorting av tom ønsker vi ikke sende med denne som en ny utbetalingslinje.
-        // Opphørslinjen tar ansvar for forkortingen av perioden, og vi ønsker bare å sende med alt etter perioden
-        // som har endret seg.
-        if (existing.perioder[førsteEndring].tom > new.perioder[førsteEndring].tom
-            && existing.perioder[førsteEndring].beløp == new.perioder[førsteEndring].beløp
-            && existing.perioder[førsteEndring].fom == new.perioder[førsteEndring].fom
-        ) {
-            førsteEndring += 1
+        when {
+            førsteEndringIdx == -1 && new.perioder.size > existing.perioder.size -> { 
+                // De(n) nye endringen(e) kommer etter siste eksisterende periode.
+                førsteEndringIdx = existing.perioder.size
+            }
+            førsteEndringIdx == -1 -> {
+                return emptyList()
+            }
+            else -> {
+                // Om første endring er en forkorting av tom ønsker vi ikke sende med denne som en ny utbetalingslinje.
+                // Opphørslinjen tar ansvar for forkortingen av perioden, og vi ønsker bare å sende med alt etter perioden
+                // som har endret seg.
+                if (existing.perioder[førsteEndringIdx].tom > new.perioder[førsteEndringIdx].tom
+                    && existing.perioder[førsteEndringIdx].beløp == new.perioder[førsteEndringIdx].beløp
+                    && existing.perioder[førsteEndringIdx].fom == new.perioder[førsteEndringIdx].fom
+                ) {
+                    førsteEndringIdx += 1
+                }
+            }
         }
 
+        var sistePeriodeId = existing.lastPeriodeId
         return new.perioder
-            .slice(førsteEndring until new.perioder.size)
+            .slice(førsteEndringIdx until new.perioder.size)
             .filter { if (opphørsdato != null) it.fom >= opphørsdato else true }
             .map { p ->
                 val pid = PeriodeId()

@@ -73,6 +73,46 @@ class UtbetalingsperioderTest {
         }
     }
 
+    /** 
+     * 1:   ╭────────────────╮╭──────────────╮
+     *      │      100,-     ││     200,-    │
+     *      ╰────────────────╯╰──────────────╯
+     * 2:   ╭────────────────╮╭──────────────╮╭──────────────╮                                                                                                    
+     *      │      100,-     ││     200,-    ││     300,-    │                                                                                                    
+     *      ╰────────────────╯╰──────────────╯╰──────────────╯                                                                                                    
+     * Res:                                   ╭──────────────╮
+     *                                        │     300,-    │
+     *                                        ╰──────────────╯
+     */
+    @Test
+    fun `legge til en ekstra periode`() {
+        val existing = Utbetaling.dagpenger(
+            1.jan, 
+            listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
+                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u, Satstype.DAG),
+            )
+        )
+        val new = Utbetaling.dagpenger(
+            2.jan, 
+            listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
+                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u, Satstype.DAG),
+                Utbetalingsperiode.dagpenger(11.jan, 15.jan, 300u, Satstype.DAG),
+            )
+        )
+        val perioder = Utbetalingsperioder.utled(existing, new)
+
+        assertEquals(1, perioder.size)
+
+        perioder.last().also {
+            assertEquals(300u, it.sats)
+            assertEquals(false, it.erEndringPåEksisterendePeriode)
+            assertEquals(11.jan, it.fom)
+            assertEquals(15.jan, it.tom)
+        }
+    }
+
     /** Scenario 6 Endre tom på en utbetaling
      *
      * 1:    ╭────────────────────────────────╮
