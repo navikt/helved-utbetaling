@@ -96,6 +96,9 @@ data class Utbetaling(
     }
 
     fun validateMinimumChanges(other: Utbetaling) {
+        if (perioder.size != other.perioder.size) {
+            return
+        }
         val ingenEndring = perioder.zip(other.perioder).all { (first, second) ->
             first.beløp == second.beløp
                     && first.fom == second.fom
