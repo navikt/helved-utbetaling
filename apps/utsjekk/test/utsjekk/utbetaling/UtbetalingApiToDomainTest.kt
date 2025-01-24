@@ -5,6 +5,7 @@ import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import com.github.dockerjava.api.model.LocalNodeState
 
 class UtbetalingApiToDomainTest {
 
@@ -20,8 +21,8 @@ class UtbetalingApiToDomainTest {
             vedtakstidspunkt = 4.feb,
             listOf(UtbetalingsperiodeApi(4.feb, 4.feb, 500u)),
         )
-        val pid = PeriodeId()
-        val domain = Utbetaling.from(api, pid)
+        val domain = Utbetaling.from(api)
+        val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 4.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)),
@@ -47,8 +48,8 @@ class UtbetalingApiToDomainTest {
             vedtakstidspunkt = 1.aug,
             listOf(UtbetalingsperiodeApi(1.aug, 24.aug, 7500u)),
         )
-        val pid = PeriodeId()
-        val domain = Utbetaling.from(api, pid)
+        val domain = Utbetaling.from(api)
+        val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.aug,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 24.aug, 7500u, Satstype.ENGANGS)),
@@ -74,8 +75,8 @@ class UtbetalingApiToDomainTest {
             vedtakstidspunkt = 1.feb,
             listOf(UtbetalingsperiodeApi(1.feb, 31.mar, 35_000u)),
         )
-        val pid = PeriodeId()
-        val domain = Utbetaling.from(api, pid)
+        val domain = Utbetaling.from(api)
+        val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 31.mar, 35_000u, Satstype.ENGANGS)),
@@ -105,8 +106,8 @@ class UtbetalingApiToDomainTest {
                 UtbetalingsperiodeApi(5.aug, 5.aug, 100u),
             ),
         )
-        val pid = PeriodeId()
-        val domain = Utbetaling.from(api, pid)
+        val domain = Utbetaling.from(api)
+        val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 5.aug,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.VIRKEDAG)),
@@ -138,8 +139,8 @@ class UtbetalingApiToDomainTest {
                 UtbetalingsperiodeApi(5.aug, 5.aug, 100u),
             ),
         )
-        val pid = PeriodeId()
-        val domain = Utbetaling.from(api, pid)
+        val domain = Utbetaling.from(api)
+        val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 5.aug,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.DAG)),
@@ -167,8 +168,8 @@ class UtbetalingApiToDomainTest {
                 UtbetalingsperiodeApi(1.feb, 29.feb, 26_000u),
             ),
         )
-        val lastPeriodeId = PeriodeId() 
-        val domain = Utbetaling.from(api, lastPeriodeId)
+        val domain = Utbetaling.from(api)
+        val lastPeriodeId = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 29.feb,
             lastPeriodeId = lastPeriodeId,
@@ -197,8 +198,8 @@ class UtbetalingApiToDomainTest {
                 UtbetalingsperiodeApi(1.mar, 31.mar, 8_000u),
             ),
         )
-        val pid = PeriodeId()
-        val domain = Utbetaling.from(api, pid)
+        val domain = Utbetaling.from(api)
+        val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             lastPeriodeId = pid,
             vedtakstidspunkt = 31.mar,
