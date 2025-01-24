@@ -59,6 +59,19 @@ data class Utbetaling(
                 stønad = dto.stønad,
                 beslutterId = Navident(dto.beslutterId),
                 saksbehandlerId = Navident(dto.saksbehandlerId),
+                perioder = dto.perioder.sortedBy { it.fom }.map(Utbetalingsperiode::from),
+            )
+
+        fun from(dto: UtbetalingApi): Utbetaling =
+            Utbetaling(
+                sakId = SakId(dto.sakId),
+                behandlingId = BehandlingId(dto.behandlingId),
+                lastPeriodeId = PeriodeId(),
+                personident = Personident(dto.personident),
+                vedtakstidspunkt = dto.vedtakstidspunkt,
+                stønad = dto.stønad,
+                beslutterId = Navident(dto.beslutterId),
+                saksbehandlerId = Navident(dto.saksbehandlerId),
                 perioder = listOf(Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom })),
             )
     }
@@ -161,6 +174,15 @@ data class Utbetalingsperiode(
                 satstype = satstype,
             )
         }
+
+        fun from(periode: UtbetalingsperiodeApi) = Utbetalingsperiode(
+            fom = periode.fom,
+            tom = periode.tom,
+            beløp = periode.beløp,
+            betalendeEnhet = periode.betalendeEnhet ?.let(::NavEnhet), // TODO: her kan det henne perioder får ulike enheter
+            fastsattDagpengesats = periode.fastsattDagpengesats,
+            satstype = satstype(periode.fom, periode.tom),
+        )
     }
 }
 

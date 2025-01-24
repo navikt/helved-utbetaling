@@ -27,7 +27,7 @@ fun Route.utbetalingRoute() {
                 ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
-            val domain = Utbetaling.from(dto, PeriodeId())
+            val domain = Utbetaling.from(dto)
 
             UtbetalingService.create(uid, domain).onFailure {
                 when (it) {
