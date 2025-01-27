@@ -2,9 +2,9 @@ package utsjekk.clients
 
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.http.*
 import kotlinx.coroutines.withContext
 import libs.auth.AzureTokenProvider
@@ -19,12 +19,30 @@ import utsjekk.iverksetting.tilAndelData
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import utsjekk.simulering.*
 import utsjekk.simulering.oppsummering.OppsummeringGenerator
+import utsjekk.utbetaling.UtbetalingsoppdragDto
 
 class SimuleringClient(
     private val config: Config,
     private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
+    suspend fun simuler(utbetaling: UtbetalingsoppdragDto, oboToken: String): client.SimuleringResponse {
+        val response = client.post("${config.simulering.host}/simuler") {
+            bearerAuth(azure.getOnBehalfOfToken(oboToken, config.simulering.scope).access_token)
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        // TODO: Gå gjennom feilmeldinger og responser som sendes til konsument
+        return when (response.status) {
+            HttpStatusCode.OK -> response.body<client.SimuleringResponse>()
+            HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
+            HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
+            HttpStatusCode.BadRequest -> badRequest(response.bodyAsText(), "simuleringsresultat")
+            HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "utsjekk-simulering")
+            else -> error("HTTP ${response.status} feil fra utsjekk-simulering: ${response.bodyAsText()}")
+        }
+    }
 
     suspend fun hentSimuleringsresultatMedOppsummering(
         simulering: Simulering,

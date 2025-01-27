@@ -56,6 +56,7 @@ import utsjekk.task.TaskScheduler
 import utsjekk.task.tasks
 import utsjekk.utbetaling.UtbetalingStatusTaskStrategy
 import utsjekk.utbetaling.UtbetalingTaskStrategy
+import utsjekk.utbetaling.simulering.SimuleringService
 import utsjekk.utbetaling.utbetalingRoute
 import java.io.File
 
@@ -210,13 +211,14 @@ fun Application.routes(
     }
 
     val simulering = SimuleringClient(config)
+    val simuleringService = SimuleringService(simulering)
     val simuleringValidator = SimuleringValidator(iverksettinger)
 
     routing {
         authenticate(TokenProvider.AZURE) {
             iverksetting(iverksettinger)
             simulering(simuleringValidator, simulering)
-            utbetalingRoute()
+            utbetalingRoute(simuleringService)
             tasks()
         }
 
