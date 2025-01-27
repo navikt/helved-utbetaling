@@ -15,6 +15,7 @@ import io.ktor.server.routing.*
 import port
 import utsjekk.SimuleringConfig
 import utsjekk.simulering.client
+import utsjekk.utbetaling.UtbetalingsoppdragDto
 import java.net.URI
 
 class SimuleringFake : AutoCloseable {
@@ -50,6 +51,10 @@ private fun Application.simulering() {
     }
 
     routing {
+        post("/simuler") {
+            val req = call.receive<UtbetalingsoppdragDto>()
+            call.respond(simuleringResponse)
+        }
         post("/simulering") {
             val req = call.receive<client.SimuleringRequest>()
             call.respond(simuleringResponse)

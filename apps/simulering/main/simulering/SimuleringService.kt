@@ -37,6 +37,12 @@ class SimuleringService(private val config: Config) {
     private val sts = StsClient(config.simulering.sts, http, proxyAuth = ::getAzureToken)
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
 
+    suspend fun simuler(request: SimulerBeregningRequest): rest.SimuleringResponse {
+        val xml = xmlMapper.writeValueAsString(request).replace(Regex("ns\\d="), "xmlns:$0")
+        val response = soap.call(SimulerAction.BEREGNING, xml)
+        return json(response).intoDto()
+    }
+
     suspend fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse {
         val request = SimulerBeregningRequest.from(request)
         val xml = xmlMapper.writeValueAsString(request).replace(Regex("ns\\d="), "xmlns:$0")

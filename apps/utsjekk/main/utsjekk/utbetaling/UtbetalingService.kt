@@ -5,7 +5,6 @@ import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.task.Tasks
 import libs.utils.Result
-import libs.utils.onSuccess
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import utsjekk.notFound
 import java.time.LocalDateTime
@@ -116,7 +115,7 @@ object UtbetalingService {
             beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
-            utbetalingsperioder = Utbetalingsperioder.utled(existing, utbetaling) // TODO: vi kan kanskje sette lastPeriodeId i utled funksjonen i stedenfor
+            utbetalingsperioder = Utbetalingsperioder.utled(existing, utbetaling)
         )
         return withContext(Jdbc.context) {
             transaction {

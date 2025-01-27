@@ -2,6 +2,7 @@ package utsjekk.utbetaling
 
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.authorization
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -15,11 +16,29 @@ import utsjekk.badRequest
 import utsjekk.conflict
 import utsjekk.internalServerError
 import utsjekk.notFound
+import utsjekk.unauthorized
+import utsjekk.utbetaling.simulering.SimuleringService
 import java.util.UUID
 
 // TODO: valider at stønad (enum) tilhører AZP (claims)
-fun Route.utbetalingRoute() {
+fun Route.utbetalingRoute(simuleringService: SimuleringService) {
+
     route("/utbetalinger/{uid}") {
+        post("/simuler") {
+            val uid = call.parameters["uid"]
+                ?.let(::uuid)
+                ?.let(::UtbetalingId)
+                ?: badRequest(msg = "missing path param", field = "uid")
+
+            val dto = call.receive<UtbetalingApi>().also { it.validate() }
+            val domain = Utbetaling.from(dto)
+            val token = call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing")
+
+            val response = simuleringService.simuler(uid, domain, token)
+
+            call.respond(HttpStatusCode.OK, response)
+        }
+
         post {
             val uid = call.parameters["uid"]
                 ?.let(::uuid)

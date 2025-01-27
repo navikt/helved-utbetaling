@@ -30,7 +30,7 @@ import utsjekk.iverksetting.RandomOSURId
 class UtbetalingRoutingTest {
 
     @Test
-    fun `can create Utbetaling`() = runTest() {
+    fun `can create Utbetaling`() = runTest {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
