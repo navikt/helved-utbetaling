@@ -24,21 +24,6 @@ import java.util.UUID
 fun Route.utbetalingRoute(simuleringService: SimuleringService) {
 
     route("/utbetalinger/{uid}") {
-        post("/simuler") {
-            val uid = call.parameters["uid"]
-                ?.let(::uuid)
-                ?.let(::UtbetalingId)
-                ?: badRequest(msg = "missing path param", field = "uid")
-
-            val dto = call.receive<UtbetalingApi>().also { it.validate() }
-            val domain = Utbetaling.from(dto)
-            val token = call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing")
-
-            val response = simuleringService.simuler(uid, domain, token)
-
-            call.respond(HttpStatusCode.OK, response)
-        }
-
 
         post {
             val uid = call.parameters["uid"]
@@ -119,6 +104,37 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
             }
             call.respond(HttpStatusCode.NoContent)
         }
+
+        route("/simuler") {
+            post {
+                val uid = call.parameters["uid"]
+                    ?.let(::uuid)
+                    ?.let(::UtbetalingId)
+                    ?: badRequest(msg = "missing path param", field = "uid")
+
+                val dto = call.receive<UtbetalingApi>().also { it.validate() }
+                val domain = Utbetaling.from(dto)
+                val token = call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing")
+
+                val response = simuleringService.simuler(uid, domain, token)
+
+                call.respond(HttpStatusCode.OK, response)
+            }
+            delete {
+                val uid = call.parameters["uid"]
+                    ?.let(::uuid)
+                    ?.let(::UtbetalingId)
+                    ?: badRequest(msg = "missing path param", field = "uid")
+
+                val dto = call.receive<UtbetalingApi>().also { it.validate() }
+                val token = call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing")
+                val existing = UtbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
+                val domain = Utbetaling.from(dto, existing.lastPeriodeId)
+                val response = simuleringService.simulerDelete(uid, domain, token)
+                call.respond(HttpStatusCode.OK, response)
+            }
+        }
+
     }
 }
 
