@@ -39,6 +39,7 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
             call.respond(HttpStatusCode.OK, response)
         }
 
+
         post {
             val uid = call.parameters["uid"]
                 ?.let(::uuid)
