@@ -92,6 +92,7 @@ data class Utbetaling(
                 doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
             )
         }
+        // TODO: valider ved delete at periodene i delete requesten er lik existing
         // validateDiff(perioder, other.perioder)
     }
 
