@@ -20,7 +20,7 @@ fun Routing.simulering(
     service: SimuleringService,
     metrics: MeterRegistry,
 ) {
-    route("/simulering") {
+    route("/simuler") {
         post {
             runCatching {
                 val dto: UtbetalingsoppdragDto = call.receive()
