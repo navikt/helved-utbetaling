@@ -7,6 +7,7 @@ import libs.task.Tasks
 import libs.utils.Result
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import utsjekk.notFound
+import utsjekk.locked
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
@@ -101,6 +102,11 @@ object UtbetalingService {
                 UtbetalingDao.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
             }
         }
+
+        if(dao.status != Status.OK) {
+            locked("utbetalingen har et pågående oppdrag, vent til dette er ferdig") 
+        }
+
         val existing = dao.data
 
         existing.validateLockedFields(utbetaling)
@@ -139,6 +145,11 @@ object UtbetalingService {
                 UtbetalingDao.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
             }
         }
+
+        if(dao.status != Status.OK) {
+            locked("utbetalingen har et pågående oppdrag, vent til dette er ferdig") 
+        }
+
         val existing = dao.data
 
         existing.validateLockedFields(utbetaling)
