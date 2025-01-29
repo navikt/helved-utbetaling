@@ -100,7 +100,7 @@ object Utbetalingsperioder {
             satstype = periode.satstype,
             utbetalesTil = utbetaling.personident.ident,
             behandlingId = utbetaling.behandlingId.id,
-            fastsattDagsats = periode.fastsattDagpengesats,
+            fastsattDagsats = periode.fastsattDagsats,
         )
     }
 
@@ -122,6 +122,7 @@ object Utbetalingsperioder {
             satstype = sistePeriode.satstype,
             utbetalesTil = new.personident.ident,
             behandlingId = new.behandlingId.id,
+            fastsattDagsats = sistePeriode.fastsattDagsats,
         )
     }
 }

@@ -32,9 +32,10 @@ data class UtbetalingApi(
         failOnÅrsskifte()
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
+        failOnIllegalUseOfFastsattDagsats()
         // validate beløp
         // validate fom/tom
-        // validate stønadstype opp mot e.g. fastsattdagpengesats
+        // validate stønadstype opp mot e.g. fastsattDagsats
         // validate sakId ikke er for lang
     }
 }
@@ -52,7 +53,7 @@ data class UtbetalingsperiodeApi(
     /**
      * Dagpenger har særegen skatteberegning og må fylle inn dette feltet.
      */
-    val fastsattDagpengesats: UInt? = null,
+    val fastsattDagsats: UInt? = null,
 ) {
     companion object {
         fun from(domain: List<Utbetalingsperiode>): List<UtbetalingsperiodeApi> = domain.map {
@@ -63,7 +64,7 @@ data class UtbetalingsperiodeApi(
                         tom = it.tom,
                         beløp = it.beløp,
                         betalendeEnhet = it.betalendeEnhet?.enhet,
-                        fastsattDagpengesats = it.fastsattDagpengesats,
+                        fastsattDagsats = it.fastsattDagsats,
                     )
                 )
 
@@ -75,7 +76,7 @@ data class UtbetalingsperiodeApi(
                             tom = date,
                             beløp = it.beløp,
                             betalendeEnhet = it.betalendeEnhet?.enhet,
-                            fastsattDagpengesats = it.fastsattDagpengesats,
+                            fastsattDagsats = it.fastsattDagsats,
                         )
                         add(periode)
                         date = if (it.satstype == Satstype.DAG) date.plusDays(1) else date.nesteVirkedag()
@@ -118,6 +119,18 @@ private fun UtbetalingApi.failOnTomBeforeFom() {
         badRequest(
             msg = "fom må være før eller lik tom",
             field = "fom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
+
+private fun UtbetalingApi.failOnIllegalUseOfFastsattDagsats() {
+    when (stønad) {
+        is StønadTypeDagpenger -> {}
+        is StønadTypeAAP -> {}
+        else -> badRequest(
+            msg = "reservert felt for Dagpenger og AAP",
+            field = "fastsattDagsats",
             doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
         )
     }

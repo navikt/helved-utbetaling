@@ -106,7 +106,7 @@ data class Utbetaling(
                     && first.tom == second.tom
                     && first.satstype == second.satstype
                     && first.betalendeEnhet == second.betalendeEnhet
-                    && first.fastsattDagpengesats == second.fastsattDagpengesats
+                    && first.fastsattDagsats == second.fastsattDagsats
         }
         if (ingenEndring) {
             conflict(
@@ -163,7 +163,7 @@ data class Utbetalingsperiode(
     val beløp: UInt,
     val satstype: Satstype,
     val betalendeEnhet: NavEnhet? = null,
-    val fastsattDagpengesats: UInt? = null,
+    val fastsattDagsats: UInt? = null,
 ) {
     companion object {
         fun from(perioder: List<UtbetalingsperiodeApi>): Utbetalingsperiode {
@@ -174,7 +174,7 @@ data class Utbetalingsperiode(
                 tom = perioder.last().tom,
                 beløp = beløp(perioder, satstype),
                 betalendeEnhet = perioder.last().betalendeEnhet ?.let(::NavEnhet), // baserer oss på lastest news
-                fastsattDagpengesats = perioder.last().fastsattDagpengesats, // baserer oss på lastest news
+                fastsattDagsats = perioder.last().fastsattDagsats, // baserer oss på lastest news
                 satstype = satstype,
             )
         }
@@ -184,7 +184,7 @@ data class Utbetalingsperiode(
             tom = periode.tom,
             beløp = periode.beløp,
             betalendeEnhet = periode.betalendeEnhet ?.let(::NavEnhet), // TODO: her kan det henne perioder får ulike enheter
-            fastsattDagpengesats = periode.fastsattDagpengesats,
+            fastsattDagsats = periode.fastsattDagsats,
             satstype = satstype(periode.fom, periode.tom),
         )
     }
@@ -226,6 +226,7 @@ sealed interface Stønadstype {
             runCatching { StønadTypeDagpenger.valueOf(str) }
                 .recoverCatching { StønadTypeTilleggsstønader.valueOf(str) }
                 .recoverCatching { StønadTypeTiltakspenger.valueOf(str) }
+                .recoverCatching { StønadTypeAAP.valueOf(str) }
                 .getOrThrow()
     }
 
@@ -234,6 +235,7 @@ sealed interface Stønadstype {
             is StønadTypeDagpenger -> "DAGPENGER"
             is StønadTypeTiltakspenger -> "TILTAKSPENGER"
             is StønadTypeTilleggsstønader -> "TILLEGGSSTØNADER"
+            is StønadTypeAAP -> "AAP"
         }
 }
 
@@ -296,6 +298,10 @@ enum class StønadTypeTilleggsstønader : Stønadstype {
     LÆREMIDLER_ENSLIG_FORSØRGER,
     LÆREMIDLER_AAP,
     LÆREMIDLER_ETTERLATTE,
+}
+
+enum class StønadTypeAAP: Stønadstype {
+    AAP_UNDER_ARBEIDSAVKLARING,
 }
 
 private fun satstype(fom: LocalDate, tom: LocalDate): Satstype =
