@@ -48,6 +48,12 @@ fun unprocessable(
     doc: String? = null,
 ) : Nothing = throw ApiError(422, msg, field, doc)
 
+fun locked(
+    msg: String, 
+    field: String? = null,
+    doc: String? = null,
+) : Nothing = throw ApiError(423, msg, field, doc)
+
 fun internalServerError(
     msg: String, 
     field: String? = null,
@@ -59,4 +65,3 @@ fun unavailable(
     field: String? = null,
     doc: String? = null,
 ) : Nothing = throw ApiError(503, msg, field, doc)
-

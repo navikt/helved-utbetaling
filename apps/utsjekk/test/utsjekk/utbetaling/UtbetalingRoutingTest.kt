@@ -19,6 +19,7 @@ import io.ktor.http.contentType
 import java.util.UUID
 import kotlin.test.assertFalse
 import kotlinx.coroutines.test.runTest
+import libs.postgres.concurrency.transaction
 import libs.task.Kind
 import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -268,6 +269,12 @@ class UtbetalingRoutingTest {
         }.also {
             assertEquals(HttpStatusCode.Created, it.status)
         }
+        transaction {
+            UtbetalingDao
+            .findOrNull(UtbetalingId(uid))!!
+            .copy(status = Status.OK)
+            .update(UtbetalingId(uid))
+        }
 
         val updatedUtbetaling = utbetaling.copy(
             vedtakstidspunkt = 8.des.atStartOfDay(),
@@ -280,6 +287,34 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.NoContent, res.status)
+    }
+
+    @Test
+    fun `cant update Utbetaling in flight`() = runTest(TestRuntime.context) {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+        val updatedUtbetaling = utbetaling.copy(
+            vedtakstidspunkt = 8.des.atStartOfDay(),
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 25_000u)),
+        )
+        val res = httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(updatedUtbetaling)
+        }
+
+        assertEquals(HttpStatusCode.Locked, res.status)
     }
 
     @Test
@@ -344,6 +379,13 @@ class UtbetalingRoutingTest {
             assertEquals(HttpStatusCode.Created, it.status)
         }
 
+        transaction {
+            UtbetalingDao
+            .findOrNull(UtbetalingId(uid))!!
+            .copy(status = Status.OK)
+            .update(UtbetalingId(uid))
+        }
+
         val putDto = postDto.copy(vedtakstidspunkt = 1.mar.atStartOfDay())
         httpClient.put("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -355,7 +397,7 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `bad request when sakId changes`() = runTest() {
+    fun `bad request when sakId changes`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
@@ -368,6 +410,12 @@ class UtbetalingRoutingTest {
             setBody(utbetaling)
         }.also {
             assertEquals(HttpStatusCode.Created, it.status)
+        }
+        transaction {
+            UtbetalingDao
+            .findOrNull(UtbetalingId(uid))!!
+            .copy(status = Status.OK)
+            .update(UtbetalingId(uid))
         }
 
         val updatedUtbetaling = utbetaling.copy(
@@ -387,7 +435,7 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `bad request when personident changes`() = runTest() {
+    fun `bad request when personident changes`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
@@ -400,6 +448,12 @@ class UtbetalingRoutingTest {
             setBody(utbetaling)
         }.also {
             assertEquals(HttpStatusCode.Created, it.status)
+        }
+        transaction {
+            UtbetalingDao
+            .findOrNull(UtbetalingId(uid))!!
+            .copy(status = Status.OK)
+            .update(UtbetalingId(uid))
         }
 
         val updatedUtbetaling = utbetaling.copy(
@@ -419,7 +473,7 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `bad request when stønad changes`() = runTest() {
+    fun `bad request when stønad changes`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
@@ -432,6 +486,12 @@ class UtbetalingRoutingTest {
             setBody(utbetaling)
         }.also {
             assertEquals(HttpStatusCode.Created, it.status)
+        }
+        transaction {
+            UtbetalingDao
+            .findOrNull(UtbetalingId(uid))!!
+            .copy(status = Status.OK)
+            .update(UtbetalingId(uid))
         }
 
         val updatedUtbetaling = utbetaling.copy(
@@ -451,7 +511,7 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `bad request when satstype changes`() = runTest() {
+    fun `bad request when satstype changes`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
@@ -464,6 +524,12 @@ class UtbetalingRoutingTest {
             setBody(utbetaling)
         }.also {
             assertEquals(HttpStatusCode.Created, it.status)
+        }
+        transaction {
+            UtbetalingDao
+            .findOrNull(UtbetalingId(uid))!!
+            .copy(status = Status.OK)
+            .update(UtbetalingId(uid))
         }
 
         val updatedUtbetaling = utbetaling.copy(
@@ -487,7 +553,7 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `can delete Utbetaling`() = runTest() {
+    fun `can delete Utbetaling`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
@@ -501,6 +567,14 @@ class UtbetalingRoutingTest {
         }.also {
             assertEquals(HttpStatusCode.Created, it.status)
         }
+
+        transaction {
+            UtbetalingDao
+            .findOrNull(UtbetalingId(uid))!!
+            .copy(status = Status.OK)
+            .update(UtbetalingId(uid))
+        }
+
         httpClient.delete("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
