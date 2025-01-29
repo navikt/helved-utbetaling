@@ -52,6 +52,7 @@ object UtbetalingService {
                     satstype = periode.satstype,
                     utbetalesTil = utbetaling.personident.ident,
                     behandlingId = utbetaling.behandlingId.id,
+                    fastsattDagsats = periode.fastsattDagsats
                 )
             }
         )
@@ -165,6 +166,7 @@ object UtbetalingService {
                     satstype = sistePeriode.satstype,
                     utbetalesTil = utbetaling.personident.ident,
                     behandlingId = utbetaling.behandlingId.id,
+                    fastsattDagsats = sistePeriode.fastsattDagsats,
                 )
             })
         )
@@ -191,6 +193,7 @@ internal fun klassekode(stønadstype: Stønadstype): String = when (stønadstype
     is StønadTypeDagpenger -> klassekode(stønadstype)
     is StønadTypeTilleggsstønader -> klassekode(stønadstype)
     is StønadTypeTiltakspenger -> klassekode(stønadstype)
+    is StønadTypeAAP -> klassekode(stønadstype)
 }
 
 private fun klassekode(stønadstype: StønadTypeTiltakspenger): String = when (stønadstype) {
@@ -252,5 +255,9 @@ private fun klassekode(stønadstype: StønadTypeDagpenger): String = when (støn
     StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI_FERIETILLEGG_AVDØD -> "DPPEFIFE1-IOP"
     StønadTypeDagpenger.EØS -> "DPFEASISP"
     StønadTypeDagpenger.EØS_FERIETILLEGG -> "DPDPASISP1"
+}
+
+private fun klassekode(stønadstype: StønadTypeAAP): String = when (stønadstype) {
+    StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING -> "AAPUAA"
 }
 
