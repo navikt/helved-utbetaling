@@ -8,7 +8,8 @@ import java.time.temporal.ChronoUnit
 enum class FagsystemDto(val kode: String) {
     DAGPENGER("DP"), // TODO: trenger ikke koden i denne appen
     TILTAKSPENGER("TILTPENG"),
-    TILLEGGSSTØNADER("TILLST");
+    TILLEGGSSTØNADER("TILLST"),
+    AAP("AAP");
 
     companion object {
         fun from(stønad: Stønadstype): FagsystemDto {
