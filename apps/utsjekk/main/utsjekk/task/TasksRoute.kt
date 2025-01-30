@@ -88,6 +88,23 @@ fun Route.tasks() {
             }
         }
 
+        put("/{id}/stop") {
+            val id = call.parameters["id"]?.let(UUID::fromString)
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
+
+            withContext(Jdbc.context) {
+                transaction {
+                    TaskDao.select { it.id = id }
+                }
+            }.singleOrNull()
+                ?: return@put call.respond(HttpStatusCode.NotFound, "Fant ikke task med id $id")
+
+            withContext(Jdbc.context) {
+                Tasks.stop(id)
+                call.respond(HttpStatusCode.OK)
+            }
+        }
+
         patch("/{id}") {
             val id = call.parameters["id"]?.let(UUID::fromString)
                 ?: return@patch call.respond(HttpStatusCode.BadRequest, "Mangler påkrevd path parameter 'id'")
