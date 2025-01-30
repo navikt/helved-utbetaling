@@ -17,6 +17,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.random.Random
+import utsjekk.badRequest
 
 @JvmInline
 value class SakId(val id: String)
@@ -295,7 +296,7 @@ data class AndelTilkjentYtelse(
 
 data class Periode(val fom: LocalDate, val tom: LocalDate) : Comparable<Periode> {
     init {
-        require(tom >= fom) { "Tom-dato $tom før fom-dato $fom er ugyldig" }
+        if (tom < fom) badRequest("Tom-dato $tom før fom-dato $fom er ugyldig")
     }
 
     override fun compareTo(other: Periode): Int {

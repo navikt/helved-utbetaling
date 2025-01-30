@@ -2,6 +2,7 @@ package utsjekk.iverksetting.utbetalingsoppdrag
 
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import utsjekk.iverksetting.AndelData
+import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.*
@@ -39,8 +40,8 @@ internal object AndelValidator {
     }
 
     private fun validerMånedssats(andelData: AndelData) {
-        require(andelData.fom.dayOfMonth == 1 && andelData.tom == andelData.tom.sisteDagIMåneden()) {
-            "Utbetalinger med satstype ${andelData.satstype.name} må starte den første i måneden og slutte den siste i måneden"
+        if (andelData.fom.dayOfMonth != 1 || andelData.tom != andelData.tom.sisteDagIMåneden()) {
+            badRequest("Utbetalinger med satstype ${andelData.satstype.name} må starte den første i måneden og slutte den siste i måneden")
         }
     }
 
