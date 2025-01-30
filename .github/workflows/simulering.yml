@@ -6,6 +6,9 @@ on:
     branches: [ main ]
     paths:
       - 'apps/simulering/**'
+      - '.github/workflows/simulering.yml'
+      - 'build.gradle.kts'
+      - 'Dockerfile'
 
 jobs:
   build:

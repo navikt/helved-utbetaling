@@ -6,6 +6,9 @@ on:
     branches: [ main ]
     paths:
       - 'apps/oppdrag/**'
+      - '.github/workflows/oppdrag.yml'
+      - 'build.gradle.kts'
+      - 'Dockerfile'
 
 jobs:
   build:
