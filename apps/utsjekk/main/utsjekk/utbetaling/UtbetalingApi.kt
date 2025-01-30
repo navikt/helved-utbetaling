@@ -128,10 +128,14 @@ private fun UtbetalingApi.failOnIllegalUseOfFastsattDagsats() {
     when (stønad) {
         is StønadTypeDagpenger -> {}
         is StønadTypeAAP -> {}
-        else -> badRequest(
-            msg = "reservert felt for Dagpenger og AAP",
-            field = "fastsattDagsats",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-        )
+        else -> {
+            if (perioder.any { it.fastsattDagsats != null }) {
+                badRequest(
+                    msg = "reservert felt for Dagpenger og AAP",
+                    field = "fastsattDagsats",
+                    doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+                )
+            }
+        }
     }
 }
