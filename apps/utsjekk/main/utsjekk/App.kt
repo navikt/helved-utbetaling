@@ -195,16 +195,27 @@ fun Application.routes(
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             when (cause) {
-                is BadRequestException ->
-                    call.respond(
-                        HttpStatusCode.BadRequest,
-                        "Klarte ikke håndtere melding. Sjekk at formatet på meldingen din er korrekt.",
-                    )
+                is ApiError -> {
+                    call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse)
+                }
 
-                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse)
+                is BadRequestException -> {
+                    val res = ApiError.Response(
+                        msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l.",
+                        field = null,
+                        doc = "https://navikt.github.io/utsjekk-docs/",
+                    )
+                    call.respond(HttpStatusCode.BadRequest, res)
+                }
+
                 else -> {
-                    secureLog.error("Unknown error.", cause)
-                    call.respond(HttpStatusCode.InternalServerError, "Unknown error")
+                    secureLog.error("Intern feil", cause)
+                    val res = ApiError.Response(
+                        msg = "Intern feil, årsaken logges av sikkerhetsmessig grunn i secureLog.", 
+                        field = null,
+                        doc = "https://navikt.github.io/utsjekk-docs/"
+                    ) 
+                    call.respond(HttpStatusCode.InternalServerError, res)
                 }
             }
         }

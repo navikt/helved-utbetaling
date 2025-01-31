@@ -8,8 +8,18 @@ class ApiError(
     val field: String?,
     private val doc: String?,
 ) : RuntimeException(msg) {
-    data class Response(val msg: String, val field: String?, val doc: String)
-    val asResponse get() = Response(this.msg, this.field, this.doc ?: DEFAULT_DOC_STR)
+
+    data class Response(
+        val msg: String,
+        val field: String?,
+        val doc: String,
+    )
+
+    val asResponse get() = Response(
+        this.msg,
+        this.field,
+        this.doc ?: DEFAULT_DOC_STR,
+    )
 }
 
 fun badRequest(
