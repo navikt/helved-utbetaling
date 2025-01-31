@@ -19,13 +19,15 @@ class UtbetalingApiToDomainTest {
     fun `1 dag utledes til ENGANGS`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 4.feb,
-            listOf(UtbetalingsperiodeApi(4.feb, 4.feb, 500u)),
+            periodeType = PeriodeType.EN_GANG,
+            perioder = listOf(UtbetalingsperiodeApi(4.feb, 4.feb, 500u)),
         )
         val domain = Utbetaling.from(api)
         val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 4.feb,
-            perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)),
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u)),
             lastPeriodeId = pid,
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
@@ -46,13 +48,15 @@ class UtbetalingApiToDomainTest {
     fun `èn periode på mer enn 1 dag utledes til ENGANGS`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.aug,
-            listOf(UtbetalingsperiodeApi(1.aug, 24.aug, 7500u)),
+            periodeType = PeriodeType.EN_GANG,
+            perioder = listOf(UtbetalingsperiodeApi(1.aug, 24.aug, 7500u)),
         )
         val domain = Utbetaling.from(api)
         val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.aug,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 24.aug, 7500u, Satstype.ENGANGS)),
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 24.aug, 7500u)),
             lastPeriodeId = pid,
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
@@ -73,13 +77,15 @@ class UtbetalingApiToDomainTest {
     fun `1 periode på 3 fulle MND utledes til ENGANGS`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
-            listOf(UtbetalingsperiodeApi(1.feb, 31.mar, 35_000u)),
+            periodeType = PeriodeType.EN_GANG,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 31.mar, 35_000u)),
         )
         val domain = Utbetaling.from(api)
         val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 31.mar, 35_000u, Satstype.ENGANGS)),
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 31.mar, 35_000u)),
             lastPeriodeId = pid,
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
@@ -100,6 +106,7 @@ class UtbetalingApiToDomainTest {
     fun `3 virkedager utledes til VIRKEDAG`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 5.aug,
+            periodeType = PeriodeType.UKEDAG,
             listOf(
                 UtbetalingsperiodeApi(1.aug, 1.aug, 100u),
                 UtbetalingsperiodeApi(2.aug, 2.aug, 100u),
@@ -110,7 +117,8 @@ class UtbetalingApiToDomainTest {
         val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 5.aug,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.VIRKEDAG)),
+            satstype = Satstype.VIRKEDAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u)),
             lastPeriodeId = pid,
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
@@ -131,6 +139,7 @@ class UtbetalingApiToDomainTest {
     fun `5 dager og virkedager utledes til DAG`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 5.aug,
+            periodeType = PeriodeType.DAG,
             listOf(
                 UtbetalingsperiodeApi(1.aug, 1.aug, 100u),
                 UtbetalingsperiodeApi(2.aug, 2.aug, 100u),
@@ -143,7 +152,8 @@ class UtbetalingApiToDomainTest {
         val pid = domain.lastPeriodeId
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 5.aug,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u, Satstype.DAG)),
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.aug, 5.aug, 100u)),
             lastPeriodeId = pid,
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
@@ -164,7 +174,8 @@ class UtbetalingApiToDomainTest {
     fun `1 MND utledes til MND`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 29.feb,
-            listOf(
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
                 UtbetalingsperiodeApi(1.feb, 29.feb, 26_000u),
             ),
         )
@@ -173,7 +184,8 @@ class UtbetalingApiToDomainTest {
         val expected = Utbetaling.dagpenger(
             vedtakstidspunkt = 29.feb,
             lastPeriodeId = lastPeriodeId,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 29.feb, 26_000u, Satstype.MND)),
+            satstype = Satstype.MND,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 29.feb, 26_000u)),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),
@@ -193,7 +205,8 @@ class UtbetalingApiToDomainTest {
     fun `2 MND utledes til MND`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 31.mar,
-            listOf(
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
                 UtbetalingsperiodeApi(1.feb, 29.feb, 8_000u),
                 UtbetalingsperiodeApi(1.mar, 31.mar, 8_000u),
             ),
@@ -203,7 +216,8 @@ class UtbetalingApiToDomainTest {
         val expected = Utbetaling.dagpenger(
             lastPeriodeId = pid,
             vedtakstidspunkt = 31.mar,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 31.mar, 8_000u, Satstype.MND)),
+            satstype = Satstype.MND,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 31.mar, 8_000u)),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),

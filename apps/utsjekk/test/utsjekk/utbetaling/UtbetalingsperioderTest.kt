@@ -20,9 +20,15 @@ class UtbetalingsperioderTest {
     @Test
     fun `endre beløp på en utbetaling`() {
         val existing =
-            Utbetaling.dagpenger(1.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG)))
+            Utbetaling.dagpenger(
+                vedtakstidspunkt = 1.jan, 
+                satstype = Satstype.DAG,
+                perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u)))
         val new =
-            Utbetaling.dagpenger(2.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 200u, Satstype.DAG)))
+            Utbetaling.dagpenger(
+                vedtakstidspunkt = 2.jan, 
+                satstype = Satstype.DAG,
+                perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 200u)))
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 
@@ -52,10 +58,16 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `forkorte fom`() {
-        val existing =
-            Utbetaling.dagpenger(1.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG)))
-        val new =
-            Utbetaling.dagpenger(2.jan, listOf(Utbetalingsperiode.dagpenger(5.jan, 10.jan, 100u, Satstype.DAG)))
+        val existing = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.jan,
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u)),
+        )
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(5.jan, 10.jan, 100u)),
+        )
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 
@@ -87,18 +99,20 @@ class UtbetalingsperioderTest {
     @Test
     fun `legge til en ekstra periode`() {
         val existing = Utbetaling.dagpenger(
-            1.jan, 
-            listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u, Satstype.DAG),
+            vedtakstidspunkt = 1.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u),
+                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u),
             )
         )
         val new = Utbetaling.dagpenger(
-            2.jan, 
-            listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(11.jan, 15.jan, 300u, Satstype.DAG),
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u),
+                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u),
+                Utbetalingsperiode.dagpenger(11.jan, 15.jan, 300u),
             )
         )
         val perioder = Utbetalingsperioder.utled(existing, new)
@@ -126,8 +140,16 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `forkorte tom`() {
-        val existing = Utbetaling.dagpenger(1.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG)))
-        val new = Utbetaling.dagpenger(2.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG)))
+        val existing = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u)),
+        )
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u)),
+        )
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 
@@ -152,13 +174,18 @@ class UtbetalingsperioderTest {
     @Test
     fun `forkorte tom hvor existing har fler perioder enn ny`() {
         val existing = Utbetaling.dagpenger(
-            1.jan, 
-            listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u, Satstype.DAG),
+            vedtakstidspunkt = 1.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u),
+                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u),
             )
         )
-        val new = Utbetaling.dagpenger(2.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG)))
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u)),
+        )
         val perioder = Utbetalingsperioder.utled(existing, new)
 
         assertEquals(1, perioder.size)
@@ -184,16 +211,22 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `forkorte tom på første periode`() {
-        val existing =
-            Utbetaling.dagpenger(1.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(11.jan, 20.jan, 200u, Satstype.DAG),
-            ))
-        val new =
-            Utbetaling.dagpenger(2.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(11.jan, 20.jan, 200u, Satstype.DAG),
-            ))
+        val existing = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u),
+                Utbetalingsperiode.dagpenger(11.jan, 20.jan, 200u),
+            )
+        )
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u),
+                Utbetalingsperiode.dagpenger(11.jan, 20.jan, 200u),
+            )
+        )
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 
@@ -228,18 +261,24 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `forkorte fom på periode midt i utbetalingen`() {
-        val existing =
-            Utbetaling.dagpenger(1.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(6.jan, 15.jan, 200u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(16.jan, 25.jan, 100u, Satstype.DAG),
-            ))
-        val new =
-            Utbetaling.dagpenger(2.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(10.jan, 15.jan, 200u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(16.jan, 25.jan, 100u, Satstype.DAG),
-            ))
+        val existing = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u),
+                Utbetalingsperiode.dagpenger(6.jan, 15.jan, 200u),
+                Utbetalingsperiode.dagpenger(16.jan, 25.jan, 100u),
+            )
+        )
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u),
+                Utbetalingsperiode.dagpenger(10.jan, 15.jan, 200u),
+                Utbetalingsperiode.dagpenger(16.jan, 25.jan, 100u),
+            )
+        )
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 
@@ -278,10 +317,16 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `forlenge tom`() {
-        val existing =
-            Utbetaling.dagpenger(1.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.ENGANGS)))
-        val new =
-            Utbetaling.dagpenger(2.jan, listOf(Utbetalingsperiode.dagpenger(1.jan, 15.jan, 100u, Satstype.ENGANGS)))
+        val existing = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u))
+        )
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 15.jan, 100u)),
+        )
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 
@@ -308,15 +353,19 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `endre beløp i starten av en utbetaling`() {
-        val existing =
-            Utbetaling.dagpenger(1.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG),
-            ))
-        val new =
-            Utbetaling.dagpenger(2.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 200u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 100u, Satstype.DAG),
-            ))
+        val existing = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.jan,
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u)),
+        )
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 200u),
+                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 100u),
+            )
+        )
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 
@@ -351,15 +400,19 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `endre beløp i slutten av en utbetaling`() {
-        val existing =
-            Utbetaling.dagpenger(1.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG),
-            ))
-        val new =
-            Utbetaling.dagpenger(2.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u, Satstype.DAG),
-            ))
+        val existing = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.jan, 
+            satstype = Satstype.DAG,
+           perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u)),
+       )
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 5.jan, 100u),
+                Utbetalingsperiode.dagpenger(6.jan, 10.jan, 200u),
+            )
+        )
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 
@@ -387,16 +440,20 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `endre beløp i midten av en utbetaling`() {
-        val existing =
-            Utbetaling.dagpenger(1.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG),
-            ))
-        val new =
-            Utbetaling.dagpenger(2.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 3.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(4.jan, 6.jan, 200u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(7.jan, 10.jan, 100u, Satstype.DAG),
-            ))
+        val existing = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u)),
+        )
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 3.jan, 100u),
+                Utbetalingsperiode.dagpenger(4.jan, 6.jan, 200u),
+                Utbetalingsperiode.dagpenger(7.jan, 10.jan, 100u),
+            )
+        )
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 
@@ -433,15 +490,20 @@ class UtbetalingsperioderTest {
      */
     @Test
     fun `opphold i midten av en utbetaling`() {
-        val existing =
-            Utbetaling.dagpenger(1.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u, Satstype.DAG),
+        val existing = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 10.jan, 100u),
             ))
-        val new =
-            Utbetaling.dagpenger(2.jan, listOf(
-                Utbetalingsperiode.dagpenger(1.jan, 3.jan, 100u, Satstype.DAG),
-                Utbetalingsperiode.dagpenger(7.jan, 10.jan, 100u, Satstype.DAG),
-            ))
+        val new = Utbetaling.dagpenger(
+            vedtakstidspunkt = 2.jan, 
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 3.jan, 100u),
+                Utbetalingsperiode.dagpenger(7.jan, 10.jan, 100u),
+            )
+        )
 
         val perioder = Utbetalingsperioder.utled(existing, new)
 

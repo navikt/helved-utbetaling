@@ -24,7 +24,8 @@ class SimuleringRoutingTest {
   fun `kan simulere enkel utbetaling`() = runTest {
     val utbetaling = UtbetalingApi.dagpenger(
         vedtakstidspunkt = 1.feb,
-        listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        periodeType = PeriodeType.MND,
+        perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
     )
 
     val uid = UUID.randomUUID()
@@ -41,7 +42,8 @@ class SimuleringRoutingTest {
   fun `can simulate Utbetaling with multiple MND`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
-            listOf(
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
                 UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u),
                 UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u),
             ),
@@ -61,7 +63,8 @@ class SimuleringRoutingTest {
     fun `bad request with different kinds of utbetalingsperiode`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
-            listOf(
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
                 UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u), // <-- must be a single day or..
                 UtbetalingsperiodeApi(1.mar, 1.mar, 800u), // <-- must be sent in a different request
             ),
@@ -83,7 +86,8 @@ class SimuleringRoutingTest {
     fun `bad request with different beløp among days`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.mar,
-            listOf(
+            periodeType = PeriodeType.DAG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(1.mar, 1.mar, 800u),
                 UtbetalingsperiodeApi(2.mar, 2.mar, 800u),
                 UtbetalingsperiodeApi(3.mar, 3.mar, 50u), // <-- must be 800u
@@ -108,7 +112,8 @@ class SimuleringRoutingTest {
     fun `bad request when dates span over New Years Eve`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.mar,
-            listOf(
+            periodeType = PeriodeType.EN_GANG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(15.des, 15.jan, 30_000u), // <-- must be two requests: [15.12 - 31.12] and [1.1 - 15.1]
             ),
         )
@@ -131,7 +136,8 @@ class SimuleringRoutingTest {
     fun `bad request when tom is before fom`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 10.des,
-            listOf(
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(10.des, 9.des, 1_000u),
             ),
         )
@@ -154,7 +160,8 @@ class SimuleringRoutingTest {
     fun `bad request when fom is duplicate`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 10.des,
-            listOf(
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(10.des, 10.des, 10_000u),
                 UtbetalingsperiodeApi(10.des, 11.des, 10_000u),
             ),
@@ -178,7 +185,8 @@ class SimuleringRoutingTest {
     fun `bad request when tom is duplicate`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 10.des,
-            listOf(
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(10.des, 10.des, 10_000u),
                 UtbetalingsperiodeApi(9.des, 10.des, 1_000u),
             ),
@@ -202,6 +210,7 @@ class SimuleringRoutingTest {
     fun `can simulate update of Utbetaling`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -240,6 +249,7 @@ class SimuleringRoutingTest {
                 UtbetalingApi.dagpenger(
                     sakId = sakId,
                     vedtakstidspunkt = 1.feb,
+                    periodeType = PeriodeType.MND,
                     perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
                 )
             )
@@ -255,6 +265,7 @@ class SimuleringRoutingTest {
                 UtbetalingApi.dagpenger(
                     sakId = sakId,
                     vedtakstidspunkt = 1.mar,
+                    periodeType = PeriodeType.MND,
                     perioder = listOf(UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u)),
                 )
             )
@@ -269,6 +280,7 @@ class SimuleringRoutingTest {
         val postDto = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             personident = person,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -295,6 +307,7 @@ class SimuleringRoutingTest {
     fun `bad request when sakId changes`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -326,6 +339,7 @@ class SimuleringRoutingTest {
     fun `bad request when personident changes`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -357,6 +371,7 @@ class SimuleringRoutingTest {
     fun `bad request when stønad changes`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -388,6 +403,7 @@ class SimuleringRoutingTest {
     fun `bad request when satstype changes`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -402,6 +418,7 @@ class SimuleringRoutingTest {
 
         val updatedUtbetaling = utbetaling.copy(
             vedtakstidspunkt = 2.feb.atStartOfDay(),
+            periodeType = PeriodeType.UKEDAG,
             perioder = listOf(
                 UtbetalingsperiodeApi(1.feb, 1.feb, 2_000u),
                 UtbetalingsperiodeApi(2.feb, 2.feb, 2_000u),
@@ -424,6 +441,7 @@ class SimuleringRoutingTest {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+            periodeType = PeriodeType.MND,
         )
 
         val uid = UUID.randomUUID()
@@ -432,6 +450,7 @@ class SimuleringRoutingTest {
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
         }.also {
+            assertEquals("", it.bodyAsText())
             assertEquals(HttpStatusCode.Created, it.status)
         }
         httpClient.delete("/utbetalinger/$uid/simuler") {

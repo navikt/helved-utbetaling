@@ -50,7 +50,7 @@ object UtbetalingService {
                     fom = periode.fom,
                     tom = periode.tom,
                     sats = periode.beløp,
-                    satstype = periode.satstype,
+                    satstype = utbetaling.satstype,
                     utbetalesTil = utbetaling.personident.ident,
                     behandlingId = utbetaling.behandlingId.id,
                     fastsattDagsats = periode.fastsattDagsats
@@ -174,7 +174,7 @@ object UtbetalingService {
                     fom = sistePeriode.fom,
                     tom = sistePeriode.tom,
                     sats = sistePeriode.beløp,
-                    satstype = sistePeriode.satstype,
+                    satstype = utbetaling.satstype,
                     utbetalesTil = utbetaling.personident.ident,
                     behandlingId = utbetaling.behandlingId.id,
                     fastsattDagsats = sistePeriode.fastsattDagsats,

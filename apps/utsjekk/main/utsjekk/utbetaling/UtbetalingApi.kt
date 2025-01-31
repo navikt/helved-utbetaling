@@ -1,5 +1,6 @@
 package utsjekk.utbetaling
 
+import utsjekk.avstemming.erHelg
 import utsjekk.avstemming.nesteVirkedag
 import utsjekk.badRequest
 import java.time.LocalDate
@@ -13,6 +14,7 @@ data class UtbetalingApi(
     val stønad: Stønadstype,
     val beslutterId: String,
     val saksbehandlerId: String,
+    val periodeType: PeriodeType,
     val perioder: List<UtbetalingsperiodeApi>,
 ) {
     companion object {
@@ -24,7 +26,8 @@ data class UtbetalingApi(
             stønad = domain.stønad,
             beslutterId = domain.beslutterId.ident,
             saksbehandlerId = domain.saksbehandlerId.ident,
-            perioder = UtbetalingsperiodeApi.from(domain.perioder),
+            periodeType = PeriodeType.from(domain.satstype),
+            perioder = UtbetalingsperiodeApi.from(domain.perioder, domain.satstype),
         )
     }
 
@@ -33,10 +36,31 @@ data class UtbetalingApi(
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
         failOnIllegalUseOfFastsattDagsats()
+        failOnInconsistentPeriodeType()
         // validate beløp
         // validate fom/tom
         // validate stønadstype opp mot e.g. fastsattDagsats
         // validate sakId ikke er for lang
+    }
+}
+
+enum class PeriodeType {
+    /** man - fre */
+    UKEDAG,
+    /** man - søn */
+    DAG,
+    /** hele måneder */
+    MND,
+    /** engangsutbetaling */
+    EN_GANG;
+
+    companion object {
+        fun from(satstype: Satstype): PeriodeType = when (satstype) {
+            Satstype.DAG -> PeriodeType.DAG
+            Satstype.VIRKEDAG -> PeriodeType.UKEDAG
+            Satstype.MND -> PeriodeType.MND
+            Satstype.ENGANGS -> PeriodeType.EN_GANG
+        }
     }
 }
 
@@ -51,13 +75,13 @@ data class UtbetalingsperiodeApi(
     val betalendeEnhet: String? = null,
 
     /**
-     * Dagpenger har særegen skatteberegning og må fylle inn dette feltet.
+     * Dagpenger og AAP har særegen skatteberegning og må fylle inn dette feltet.
      */
     val fastsattDagsats: UInt? = null,
 ) {
     companion object {
-        fun from(domain: List<Utbetalingsperiode>): List<UtbetalingsperiodeApi> = domain.map {
-            when (it.satstype) {
+        fun from(domain: List<Utbetalingsperiode>, satstype: Satstype): List<UtbetalingsperiodeApi> = domain.map {
+            when (satstype) {
                 Satstype.ENGANGS, Satstype.MND -> listOf(
                     UtbetalingsperiodeApi(
                         fom = it.fom,
@@ -79,7 +103,7 @@ data class UtbetalingsperiodeApi(
                             fastsattDagsats = it.fastsattDagsats,
                         )
                         add(periode)
-                        date = if (it.satstype == Satstype.DAG) date.plusDays(1) else date.nesteVirkedag()
+                        date = if (satstype == Satstype.DAG) date.plusDays(1) else date.nesteVirkedag()
                     }
                 }
             }
@@ -139,3 +163,19 @@ private fun UtbetalingApi.failOnIllegalUseOfFastsattDagsats() {
         }
     }
 }
+
+private fun UtbetalingApi.failOnInconsistentPeriodeType() {
+    val consistent = when (periodeType) {
+        PeriodeType.UKEDAG -> perioder.all { it.fom == it.tom } && perioder.none { it.fom.erHelg() }
+        PeriodeType.DAG -> perioder.all { it.fom == it.tom }
+        PeriodeType.MND -> perioder.all { it.fom.dayOfMonth == 1 && it.tom.plusDays(1) == it.fom.plusMonths(1) }
+        PeriodeType.EN_GANG -> perioder.all { it.fom.year == it.tom.year } // tillater engangs over årsskifte 
+    }
+    if (!consistent) {
+        badRequest(
+            msg = "inkonsistens blant datoene i periodene.",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
+
