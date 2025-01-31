@@ -75,7 +75,7 @@ class SimuleringService(private val client: SimuleringClient) {
                     fom = sistePeriode.fom,
                     tom = sistePeriode.tom,
                     sats = sistePeriode.beløp,
-                    satstype = sistePeriode.satstype,
+                    satstype = new.satstype,
                     utbetalesTil = new.personident.ident,
                     behandlingId = new.behandlingId.id,
                 )
@@ -139,7 +139,7 @@ class SimuleringService(private val client: SimuleringClient) {
                     fom = periode.fom,
                     tom = periode.tom,
                     sats = periode.beløp,
-                    satstype = periode.satstype,
+                    satstype = utbetaling.satstype,
                     utbetalesTil = utbetaling.personident.ident,
                     behandlingId = utbetaling.behandlingId.id,
                 )

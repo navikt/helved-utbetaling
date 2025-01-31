@@ -16,7 +16,11 @@ class UtbetalingDaoTest {
     @Test
     fun `can insert get and delete utbetaling`() = runTest(TestRuntime.context) {
         val uid = UtbetalingId.random()
-        val data = Utbetaling.dagpenger(1.mar, listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)))
+        val data = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.mar, 
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u)),
+        )
 
         transaction {
             UtbetalingDao(data, Status.OK).insert(uid)
@@ -35,7 +39,11 @@ class UtbetalingDaoTest {
     @Test
     fun `can update utbetaling`() = runTest(TestRuntime.context) {
         val uid = UtbetalingId.random()
-        val utbet = Utbetaling.dagpenger(1.mar, listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u, Satstype.ENGANGS)))
+        val utbet = Utbetaling.dagpenger(
+            vedtakstidspunkt = 1.mar, 
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u)),
+        )
 
         transaction {
             UtbetalingDao(utbet, Status.IKKE_PÅBEGYNT).insert(uid)

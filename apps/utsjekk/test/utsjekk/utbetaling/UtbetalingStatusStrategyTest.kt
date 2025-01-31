@@ -67,7 +67,8 @@ class UtbetalingStatusStrategyTest {
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u))
         )
         val uDao = UtbetalingDao(utbetaling, Status.`IKKE_PÅBEGYNT`)
 
@@ -91,7 +92,8 @@ class UtbetalingStatusStrategyTest {
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u))
         )
         val uDao = UtbetalingDao(utbetaling, Status.IKKE_PÅBEGYNT)
 
@@ -115,7 +117,8 @@ class UtbetalingStatusStrategyTest {
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u))
         )
 
         oppdragFake.oppdragV2[uid] = OppdragStatusDto(status = OppdragStatus.KVITTERT_MED_MANGLER, "")
@@ -138,7 +141,8 @@ class UtbetalingStatusStrategyTest {
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u))
         )
         val uDao = UtbetalingDao(utbetaling, Status.`IKKE_PÅBEGYNT`)
 
@@ -162,7 +166,8 @@ class UtbetalingStatusStrategyTest {
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u))
         )
         val uDao = UtbetalingDao(utbetaling, Status.IKKE_PÅBEGYNT)
 
@@ -186,7 +191,8 @@ class UtbetalingStatusStrategyTest {
         val task = task(kind = libs.task.Kind.StatusUtbetaling, payload = uid)
         val utbetaling = Utbetaling.dagpenger(
             vedtakstidspunkt = 1.feb,
-            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u, Satstype.DAG))
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 8.feb, 800u))
         )
         val uDao = UtbetalingDao(utbetaling)
 

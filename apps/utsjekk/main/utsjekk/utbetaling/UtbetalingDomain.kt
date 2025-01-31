@@ -46,6 +46,7 @@ data class Utbetaling(
     val stønad: Stønadstype,
     val beslutterId: Navident,
     val saksbehandlerId: Navident,
+    val satstype: Satstype,
     val perioder: List<Utbetalingsperiode>,
 ) {
     companion object {
@@ -59,11 +60,13 @@ data class Utbetaling(
                 stønad = dto.stønad,
                 beslutterId = Navident(dto.beslutterId),
                 saksbehandlerId = Navident(dto.saksbehandlerId),
+                satstype = Satstype.from(dto.periodeType),
                 perioder = dto.perioder.sortedBy { it.fom }.map(Utbetalingsperiode::from),
             )
 
-        fun from(dto: UtbetalingApi): Utbetaling =
-            Utbetaling(
+        fun from(dto: UtbetalingApi): Utbetaling {
+            val satstype = Satstype.from(dto.periodeType)
+            return Utbetaling(
                 sakId = SakId(dto.sakId),
                 behandlingId = BehandlingId(dto.behandlingId),
                 lastPeriodeId = PeriodeId(),
@@ -72,20 +75,19 @@ data class Utbetaling(
                 stønad = dto.stønad,
                 beslutterId = Navident(dto.beslutterId),
                 saksbehandlerId = Navident(dto.saksbehandlerId),
-                perioder = listOf(Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom })),
+                satstype = satstype,
+                perioder = listOf(Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom }, satstype)),
             )
+        }
     }
 
     fun validateLockedFields(other: Utbetaling) {
         if (sakId != other.sakId) badRequest("cant change immutable field", "sakId")
-        if (personident != other.personident) badRequest(
-            "cant change immutable field",
-            "personident"
-        ) // TODO: oppslag mot PDL, se at det fortsatt er samme person, ikke nødvendigvis samme ident
+        // TODO: oppslag mot PDL, se at det fortsatt er samme person, ikke nødvendigvis samme ident
+        if (personident != other.personident) badRequest("cant change immutable field", "personident") 
         if (stønad != other.stønad) badRequest("cant change immutable field", "stønad")
 
-        val gyldigSatstype = perioder.first().satstype
-        if (other.perioder.any { it.satstype != gyldigSatstype }) {
+        if (satstype != other.satstype) {
             badRequest(
                 msg = "can't change the flavour of perioder",
                 field = "perioder",
@@ -104,7 +106,6 @@ data class Utbetaling(
             first.beløp == second.beløp
                     && first.fom == second.fom
                     && first.tom == second.tom
-                    && first.satstype == second.satstype
                     && first.betalendeEnhet == second.betalendeEnhet
                     && first.fastsattDagsats == second.fastsattDagsats
         }
@@ -161,21 +162,17 @@ data class Utbetalingsperiode(
     val fom: LocalDate,
     val tom: LocalDate,
     val beløp: UInt,
-    val satstype: Satstype,
     val betalendeEnhet: NavEnhet? = null,
     val fastsattDagsats: UInt? = null,
 ) {
     companion object {
-        fun from(perioder: List<UtbetalingsperiodeApi>): Utbetalingsperiode {
-            val satstype = satstype(perioder.map { satstype(it.fom, it.tom) }) // may throw bad request
-
+        fun from(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): Utbetalingsperiode {
             return Utbetalingsperiode(
                 fom = perioder.first().fom,
                 tom = perioder.last().tom,
                 beløp = beløp(perioder, satstype),
-                betalendeEnhet = perioder.last().betalendeEnhet ?.let(::NavEnhet), // baserer oss på lastest news
+                betalendeEnhet = perioder.last().betalendeEnhet ?.let(::NavEnhet), // Det er OK å basere seg på siste betalendeEnhet
                 fastsattDagsats = perioder.last().fastsattDagsats, // baserer oss på lastest news
-                satstype = satstype,
             )
         }
 
@@ -185,7 +182,6 @@ data class Utbetalingsperiode(
             beløp = periode.beløp,
             betalendeEnhet = periode.betalendeEnhet ?.let(::NavEnhet), // TODO: her kan det henne perioder får ulike enheter
             fastsattDagsats = periode.fastsattDagsats,
-            satstype = satstype(periode.fom, periode.tom),
         )
     }
 }
@@ -195,13 +191,19 @@ fun List<Utbetalingsperiode>.betalendeEnhet(): NavEnhet? {
 }
 
 enum class Satstype {
-    /** Alle dager, man-søn */
     DAG,
-
-    /** hverdager, man-fre */
-    VIRKEDAG,
+    VIRKEDAG, // TODO: rename, skal disse hete det samme som PeriodeType?
     MND,
-    ENGANGS
+    ENGANGS;
+    
+    companion object {
+        fun from(type: PeriodeType) = when(type) {
+            PeriodeType.UKEDAG -> Satstype.VIRKEDAG
+            PeriodeType.DAG -> Satstype.DAG
+            PeriodeType.MND -> Satstype.MND
+            PeriodeType.EN_GANG -> Satstype.ENGANGS
+        }
+    }
 }
 
 data class UtbetalingStatus(
@@ -304,32 +306,34 @@ enum class StønadTypeAAP: Stønadstype {
     AAP_UNDER_ARBEIDSAVKLARING,
 }
 
-private fun satstype(fom: LocalDate, tom: LocalDate): Satstype =
-    when {
-        fom.dayOfMonth == 1 && tom.plusDays(1) == fom.plusMonths(1) -> Satstype.MND
-        fom == tom -> if (fom.erHelg()) Satstype.DAG else Satstype.VIRKEDAG
-        else -> Satstype.ENGANGS
-    }
 
-private fun satstype(satstyper: List<Satstype>): Satstype {
-    if (satstyper.size == 1 && satstyper.none { it == Satstype.MND }) {
-        return Satstype.ENGANGS
-    }
-    if (satstyper.all { it == Satstype.VIRKEDAG }) {
-        return Satstype.VIRKEDAG
-    }
-    if (satstyper.all { it == Satstype.MND }) {
-        return Satstype.MND
-    }
-    if (satstyper.any { it == Satstype.DAG }) {
-        return Satstype.DAG
-    }
 
-    badRequest(
-        msg = "inkonsistens blant datoene i periodene.",
-        doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-    )
-}
+// private fun satstype(fom: LocalDate, tom: LocalDate): Satstype =
+//     when {
+//         fom.dayOfMonth == 1 && tom.plusDays(1) == fom.plusMonths(1) -> Satstype.MND
+//         fom == tom -> if (fom.erHelg()) Satstype.DAG else Satstype.VIRKEDAG
+//         else -> Satstype.ENGANGS
+//     }
+
+// private fun satstype(satstyper: List<Satstype>): Satstype {
+//     if (satstyper.size == 1 && satstyper.none { it == Satstype.MND }) {
+//         return Satstype.ENGANGS
+//     }
+//     if (satstyper.all { it == Satstype.VIRKEDAG }) {
+//         return Satstype.VIRKEDAG
+//     }
+//     if (satstyper.all { it == Satstype.MND }) {
+//         return Satstype.MND
+//     }
+//     if (satstyper.any { it == Satstype.DAG }) {
+//         return Satstype.DAG
+//     }
+//
+//     badRequest(
+//         msg = "inkonsistens blant datoene i periodene.",
+//         doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+//     )
+// }
 
 private fun beløp(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): UInt =
     when (satstype) {

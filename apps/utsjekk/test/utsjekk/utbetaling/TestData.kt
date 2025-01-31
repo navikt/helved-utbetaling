@@ -26,7 +26,7 @@ fun UtbetalingsperiodeDto.Companion.opphør(
     tom: LocalDate,
     sats: UInt,
     klassekode: String,
-) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.DAG, opphør = opphør)
+) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.VIRKEDAG, opphør = opphør)
 
 fun UtbetalingsperiodeDto.Companion.default(
     from: Utbetaling,
@@ -58,7 +58,7 @@ fun UtbetalingsperiodeDto.Companion.dag(
     tom: LocalDate,
     sats: UInt,
     klassekode: String,
-) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.DAG)
+) = UtbetalingsperiodeDto.default(from, fom, tom, sats, klassekode, Satstype.VIRKEDAG)
 
 fun UtbetalingsoppdragDto.Companion.dagpenger(
     uid: UtbetalingId,
@@ -83,6 +83,7 @@ fun UtbetalingsoppdragDto.Companion.dagpenger(
 
 fun UtbetalingApi.Companion.dagpenger(
     vedtakstidspunkt: LocalDate,
+    periodeType: PeriodeType,
     perioder: List<UtbetalingsperiodeApi>,
     stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
     sakId: SakId = SakId(RandomOSURId.generate()),
@@ -99,6 +100,7 @@ fun UtbetalingApi.Companion.dagpenger(
         stønad,
         beslutterId.ident,
         saksbehandlerId.ident,
+        periodeType,
         perioder,
     )
 }
@@ -107,14 +109,12 @@ fun Utbetalingsperiode.Companion.dagpenger(
     fom: LocalDate,
     tom: LocalDate,
     beløp: UInt,
-    satstype: Satstype,
     betalendeEnhet: NavEnhet? = null,
     fastsattDagpengesats: UInt? = null,
 ): Utbetalingsperiode = Utbetalingsperiode(
     fom,
     tom,
     beløp,
-    satstype,
     betalendeEnhet,
     fastsattDagpengesats,
 )
@@ -122,6 +122,7 @@ fun Utbetalingsperiode.Companion.dagpenger(
 fun Utbetaling.Companion.dagpenger(
     vedtakstidspunkt: LocalDate,
     perioder: List<Utbetalingsperiode>,
+    satstype: Satstype = Satstype.VIRKEDAG,
     lastPeriodeId: PeriodeId = PeriodeId(),
     stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
     sakId: SakId = SakId(RandomOSURId.generate()),
@@ -138,6 +139,7 @@ fun Utbetaling.Companion.dagpenger(
     stønad,
     beslutterId,
     saksbehandlerId,
+    satstype,
     perioder,
 )
 

@@ -34,7 +34,8 @@ class UtbetalingRoutingTest {
     fun `can create Utbetaling`() = runTest {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
-            listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
         val uid = UUID.randomUUID()
@@ -52,7 +53,8 @@ class UtbetalingRoutingTest {
     fun `can create Utbetaling with multiple MND`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
-            listOf(
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
                 UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u),
                 UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u),
             ),
@@ -73,7 +75,8 @@ class UtbetalingRoutingTest {
     fun `bad request with different kinds of utbetalingsperiode`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
-            listOf(
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
                 UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u), // <-- must be a single day or..
                 UtbetalingsperiodeApi(1.mar, 1.mar, 800u),     // <-- must be sent in a different request 
             ),
@@ -96,7 +99,8 @@ class UtbetalingRoutingTest {
     fun `bad request with different beløp among days`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.mar,
-            listOf(
+            periodeType = PeriodeType.DAG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(1.mar, 1.mar, 800u),
                 UtbetalingsperiodeApi(2.mar, 2.mar, 800u),
                 UtbetalingsperiodeApi(3.mar, 3.mar, 50u), // <-- must be 800u
@@ -122,7 +126,8 @@ class UtbetalingRoutingTest {
     fun `bad request when dates span over New Years Eve`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.mar,
-            listOf(
+            periodeType = PeriodeType.EN_GANG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(15.des, 15.jan, 30_000u), // <-- must be two requests: [15.12 - 31.12] and [1.1 - 15.1]
             ),
         )
@@ -146,7 +151,8 @@ class UtbetalingRoutingTest {
     fun `bad request when tom is before fom`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 10.des,
-            listOf(
+            periodeType = PeriodeType.EN_GANG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(10.des, 9.des, 1_000u),
             ),
         )
@@ -170,7 +176,8 @@ class UtbetalingRoutingTest {
     fun `bad request when fom is duplicate`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 10.des,
-            listOf(
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(10.des, 10.des, 10_000u),
                 UtbetalingsperiodeApi(10.des, 11.des, 10_000u),
             ),
@@ -195,7 +202,8 @@ class UtbetalingRoutingTest {
     fun `bad request when tom is duplicate`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 10.des,
-            listOf(
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(
                 UtbetalingsperiodeApi(10.des, 10.des, 10_000u),
                 UtbetalingsperiodeApi(9.des, 10.des, 1_000u),
             ),
@@ -220,7 +228,8 @@ class UtbetalingRoutingTest {
     fun `can get Utbetaling`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
-            listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
         val uid = UUID.randomUUID()
@@ -258,6 +267,7 @@ class UtbetalingRoutingTest {
     fun `can update Utbetaling`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -293,6 +303,7 @@ class UtbetalingRoutingTest {
     fun `cant update Utbetaling in flight`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -330,6 +341,7 @@ class UtbetalingRoutingTest {
                 UtbetalingApi.dagpenger(
                     sakId = sakId,
                     vedtakstidspunkt = 1.feb,
+                    periodeType = PeriodeType.MND,
                     perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
                 )
             )
@@ -345,6 +357,7 @@ class UtbetalingRoutingTest {
                 UtbetalingApi.dagpenger(
                     sakId = sakId,
                     vedtakstidspunkt = 1.mar,
+                    periodeType = PeriodeType.MND,
                     perioder = listOf(UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u)),
                 )
             )
@@ -367,6 +380,7 @@ class UtbetalingRoutingTest {
         val postDto = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             personident = person,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -400,6 +414,7 @@ class UtbetalingRoutingTest {
     fun `bad request when sakId changes`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -438,6 +453,7 @@ class UtbetalingRoutingTest {
     fun `bad request when personident changes`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -476,6 +492,7 @@ class UtbetalingRoutingTest {
     fun `bad request when stønad changes`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -514,6 +531,7 @@ class UtbetalingRoutingTest {
     fun `bad request when satstype changes`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -534,6 +552,7 @@ class UtbetalingRoutingTest {
 
         val updatedUtbetaling = utbetaling.copy(
             vedtakstidspunkt = 2.feb.atStartOfDay(),
+            periodeType = PeriodeType.UKEDAG,
             perioder = listOf(
                 UtbetalingsperiodeApi(1.feb, 1.feb, 2_000u),
                 UtbetalingsperiodeApi(2.feb, 2.feb, 2_000u),
@@ -556,6 +575,7 @@ class UtbetalingRoutingTest {
     fun `can delete Utbetaling`() = runTest(TestRuntime.context) {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
@@ -599,6 +619,7 @@ class UtbetalingRoutingTest {
     fun `can get UtbetalingStatus`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
             listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
         )
 
