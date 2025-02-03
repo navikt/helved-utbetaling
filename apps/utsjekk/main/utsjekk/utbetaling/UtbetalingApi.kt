@@ -37,6 +37,7 @@ data class UtbetalingApi(
         failOnTomBeforeFom()
         failOnIllegalUseOfFastsattDagsats()
         failOnInconsistentPeriodeType()
+        failOnIllegalFutureUtbetaling()
         // validate beløp
         // validate fom/tom
         // validate stønadstype opp mot e.g. fastsattDagsats
@@ -174,6 +175,16 @@ private fun UtbetalingApi.failOnInconsistentPeriodeType() {
     if (!consistent) {
         badRequest(
             msg = "inkonsistens blant datoene i periodene.",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
+
+private fun UtbetalingApi.failOnIllegalFutureUtbetaling() {
+    if (periodeType in listOf(PeriodeType.DAG, PeriodeType.UKEDAG) && perioder.maxBy{ it.tom }.tom.isAfter(LocalDate.now())) {
+        badRequest(
+            msg = "fremtidige utbetalinger er ikke støttet for periode dag/ukedag.",
+            field = "periode.tom",
             doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
         )
     }
