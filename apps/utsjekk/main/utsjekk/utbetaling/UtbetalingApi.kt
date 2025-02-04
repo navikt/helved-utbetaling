@@ -196,7 +196,7 @@ private fun UtbetalingApi.failOnTooLongPeriods() {
     if (periodeType in listOf(PeriodeType.DAG, PeriodeType.UKEDAG)) {
         val min = perioder.minBy { it.fom }.fom
         val max = perioder.maxBy { it.tom }.tom
-        if (ChronoUnit.DAYS.between(min, max) > 92) {
+        if (ChronoUnit.DAYS.between(min, max)+1 >= 92) {
             badRequest(
                 msg = "$periodeType støtter maks periode på 92 dager",
                 field = "perioder",
