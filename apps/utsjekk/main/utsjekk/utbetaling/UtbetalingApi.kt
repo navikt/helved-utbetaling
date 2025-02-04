@@ -5,6 +5,7 @@ import utsjekk.avstemming.nesteVirkedag
 import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 data class UtbetalingApi(
     val sakId: String,
@@ -38,6 +39,7 @@ data class UtbetalingApi(
         failOnIllegalUseOfFastsattDagsats()
         failOnInconsistentPeriodeType()
         failOnIllegalFutureUtbetaling()
+        failOnTooLongPeriods()
         // validate beløp
         // validate fom/tom
         // validate stønadstype opp mot e.g. fastsattDagsats
@@ -187,6 +189,20 @@ private fun UtbetalingApi.failOnIllegalFutureUtbetaling() {
             field = "periode.tom",
             doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
         )
+    }
+}
+
+private fun UtbetalingApi.failOnTooLongPeriods() {
+    if (periodeType in listOf(PeriodeType.DAG, PeriodeType.UKEDAG)) {
+        val min = perioder.minBy { it.fom }.fom
+        val max = perioder.maxBy { it.tom }.tom
+        if (ChronoUnit.DAYS.between(min, max) > 92) {
+            badRequest(
+                msg = "$periodeType støtter maks periode på 92 dager",
+                field = "perioder",
+                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            )
+        }
     }
 }
 
