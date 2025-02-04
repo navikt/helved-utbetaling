@@ -23,7 +23,7 @@ spec:
       memory: 1024Mi
     requests:
       memory: 512Mi
-      cpu: 100m
+      cpu: 200m
   replicas:
     min: 1
     max: 1
