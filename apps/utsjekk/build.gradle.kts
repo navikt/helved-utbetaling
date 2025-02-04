@@ -22,7 +22,7 @@ dependencies {
     implementation("no.nav.utsjekk.kontrakter:felles:$kontraktVersion")
 
     implementation("org.apache.kafka:kafka-clients:3.9.0")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.10")
     implementation("io.getunleash:unleash-client-java:9.3.2")
 
     implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
