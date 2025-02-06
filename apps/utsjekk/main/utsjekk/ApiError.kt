@@ -70,6 +70,12 @@ fun internalServerError(
     doc: String? = null,
 ) : Nothing = throw ApiError(500, msg, field, doc)
 
+fun notImplemented(
+    msg: String,
+    field: String? = null,
+    doc: String? = null,
+) : Nothing = throw ApiError(501, msg, field, doc)
+
 fun unavailable(
     msg: String, 
     field: String? = null,
