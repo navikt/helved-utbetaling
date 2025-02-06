@@ -27,11 +27,8 @@ private val FASTE_HELLIGDAGER = setOf(
     MonthDay.of(1, 1),
     MonthDay.of(5, 1),
     MonthDay.of(5, 17),
-    MonthDay.of(12, 24),
     MonthDay.of(12, 25),
     MonthDay.of(12, 26),
-    MonthDay.of(12, 30),
-    MonthDay.of(12, 31),
 )
 
 private fun beregnBevegeligeHelligdager(år: Int): Set<MonthDay> {
