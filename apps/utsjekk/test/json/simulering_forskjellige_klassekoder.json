@@ -1,0 +1,268 @@
+{
+  "gjelderId": "22479409483",
+  "datoBeregnet": "2025-01-24",
+  "totalBelop": 9917,
+  "perioder": [
+    {
+      "fom": "2024-08-20",
+      "tom": "2024-08-20",
+      "utbetalinger": [
+        {
+          "fagområde": "TILLST",
+          "fagSystemId": "2345",
+          "utbetalesTilId": "22479409483",
+          "forfall": "2025-01-24",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "YTEL",
+              "faktiskFom": "2024-08-20",
+              "faktiskTom": "2024-08-20",
+              "belop": 2190,
+              "sats": 2190.0,
+              "satstype": "DAG",
+              "klassekode": "TSLMASISP3-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fom": "2025-01-01",
+      "tom": "2025-01-01",
+      "utbetalinger": [
+        {
+          "fagområde": "TILLST",
+          "fagSystemId": "1234",
+          "utbetalesTilId": "22479409483",
+          "forfall": "2025-01-24",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "FEIL",
+              "faktiskFom": "2025-01-01",
+              "faktiskTom": "2025-01-01",
+              "belop": 201,
+              "sats": 0.0,
+              "satstype": null,
+              "klassekode": "KL_KODE_JUST_ARBYT",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            },
+            {
+              "type": "YTEL",
+              "faktiskFom": "2025-01-01",
+              "faktiskTom": "2025-01-01",
+              "belop": 301,
+              "sats": 301.0,
+              "satstype": "DAG",
+              "klassekode": "TSTBASISP4-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            },
+            {
+              "type": "YTEL",
+              "faktiskFom": "2025-01-01",
+              "faktiskTom": "2025-01-01",
+              "belop": -502,
+              "sats": 502.0,
+              "satstype": "DAG",
+              "klassekode": "TSTBASISP4-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        },
+        {
+          "fagområde": "TILLST",
+          "fagSystemId": "2345",
+          "utbetalesTilId": "22479409483",
+          "forfall": "2025-01-24",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "YTEL",
+              "faktiskFom": "2025-01-01",
+              "faktiskTom": "2025-01-01",
+              "belop": 2706,
+              "sats": 2706.0,
+              "satstype": "DAG",
+              "klassekode": "TSLMASISP3-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fom": "2025-01-20",
+      "tom": "2025-01-20",
+      "utbetalinger": [
+        {
+          "fagområde": "TILLST",
+          "fagSystemId": "1234",
+          "utbetalesTilId": "22479409483",
+          "forfall": "2025-01-24",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "FEIL",
+              "faktiskFom": "2025-01-20",
+              "faktiskTom": "2025-01-20",
+              "belop": -201,
+              "sats": 0.0,
+              "satstype": null,
+              "klassekode": "KL_KODE_JUST_ARBYT",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            },
+            {
+              "type": "YTEL",
+              "faktiskFom": "2025-01-20",
+              "faktiskTom": "2025-01-20",
+              "belop": 603,
+              "sats": 603.0,
+              "satstype": "DAG",
+              "klassekode": "TSTBASISP4-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fom": "2025-02-03",
+      "tom": "2025-02-03",
+      "utbetalinger": [
+        {
+          "fagområde": "TILLST",
+          "fagSystemId": "1234",
+          "utbetalesTilId": "22479409483",
+          "forfall": "2025-01-24",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "YTEL",
+              "faktiskFom": "2025-02-03",
+              "faktiskTom": "2025-02-03",
+              "belop": 1205,
+              "sats": 1205.0,
+              "satstype": "DAG",
+              "klassekode": "TSTBASISP4-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fom": "2025-03-03",
+      "tom": "2025-03-03",
+      "utbetalinger": [
+        {
+          "fagområde": "TILLST",
+          "fagSystemId": "1234",
+          "utbetalesTilId": "22479409483",
+          "forfall": "2025-01-24",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "YTEL",
+              "faktiskFom": "2025-03-03",
+              "faktiskTom": "2025-03-03",
+              "belop": 1305,
+              "sats": 1305.0,
+              "satstype": "DAG",
+              "klassekode": "TSTBASISP4-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fom": "2025-04-01",
+      "tom": "2025-04-01",
+      "utbetalinger": [
+        {
+          "fagområde": "TILLST",
+          "fagSystemId": "1234",
+          "utbetalesTilId": "22479409483",
+          "forfall": "2025-01-24",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "YTEL",
+              "faktiskFom": "2025-04-01",
+              "faktiskTom": "2025-04-01",
+              "belop": 1105,
+              "sats": 1105.0,
+              "satstype": "DAG",
+              "klassekode": "TSTBASISP4-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fom": "2025-05-01",
+      "tom": "2025-05-01",
+      "utbetalinger": [
+        {
+          "fagområde": "TILLST",
+          "fagSystemId": "1234",
+          "utbetalesTilId": "22479409483",
+          "forfall": "2025-01-24",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "YTEL",
+              "faktiskFom": "2025-05-01",
+              "faktiskTom": "2025-05-01",
+              "belop": 502,
+              "sats": 502.0,
+              "satstype": "DAG",
+              "klassekode": "TSTBASISP4-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fom": "2025-06-02",
+      "tom": "2025-06-02",
+      "utbetalinger": [
+        {
+          "fagområde": "TILLST",
+          "fagSystemId": "1234",
+          "utbetalesTilId": "22479409483",
+          "forfall": "2025-01-24",
+          "feilkonto": false,
+          "detaljer": [
+            {
+              "type": "YTEL",
+              "faktiskFom": "2025-06-02",
+              "faktiskTom": "2025-06-02",
+              "belop": 502,
+              "sats": 502.0,
+              "satstype": "DAG",
+              "klassekode": "TSTBASISP4-OP",
+              "trekkVedtakId": null,
+              "refunderesOrgNr": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
