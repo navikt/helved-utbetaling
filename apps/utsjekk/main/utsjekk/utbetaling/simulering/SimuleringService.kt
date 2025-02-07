@@ -25,7 +25,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 class SimuleringService(private val client: SimuleringClient) {
-    suspend fun simuler(uid: UtbetalingId, utbetaling: Utbetaling, oboToken: String): api.SimuleringRespons {
+    suspend fun simuler(uid: UtbetalingId, utbetaling: Utbetaling, oboToken: String): SimuleringApi {
         val dao = withContext(Jdbc.context) {
             transaction {
                 UtbetalingDao.findOrNull(uid)
@@ -39,8 +39,7 @@ class SimuleringService(private val client: SimuleringClient) {
         }
 
         val simulering = client.simuler(oppdrag, oboToken)
-        val detaljer = SimuleringDetaljer.from(simulering, Fagsystem.valueOf(oppdrag.fagsystem.name))
-        return OppsummeringGenerator.lagOppsummering(detaljer)
+        return SimuleringMapper.oppsummering(simulering)
     }
 
     suspend fun simulerDelete(
