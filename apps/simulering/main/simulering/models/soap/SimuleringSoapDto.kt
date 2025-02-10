@@ -304,9 +304,7 @@ object soap {
                     brukKjoreplan = "N",
                     attestant = listOf(Attestant(dto.saksbehandler)),
                     utbetalesTilId = utbetalingsperiode.utbetalesTil,
-                    vedtakssats = utbetalingsperiode.fastsattDagsats?.let { fastsattDagsats ->
-                        Vedtakssats(vedtakssats = fastsattDagsats.toInt())
-                    }
+                    vedtakssats = null,
                 )
 
             fun from(
@@ -340,9 +338,7 @@ object soap {
                     brukKjoreplan = "N",
                     attestant = listOf(Attestant(dto.saksbehandlerId)),
                     utbetalesTilId = utbetalingsperiode.utbetalesTil,
-                    vedtakssats = utbetalingsperiode.fastsattDagsats?.let { fastsattDagsats ->
-                        Vedtakssats(vedtakssats = fastsattDagsats.toInt())
-                    }
+                    vedtakssats = null,
                 )
         }
 
