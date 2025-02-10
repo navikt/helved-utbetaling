@@ -7,10 +7,7 @@ class ApiError(
     val msg: String,
     val field: String?,
     private val doc: String?,
-) : RuntimeException(msg) {
-    data class Response(val msg: String, val field: String?, val doc: String)
-    val asResponse get() = Response(this.msg, this.field, this.doc ?: DEFAULT_DOC_STR)
-}
+) : RuntimeException(msg)
 
 fun badRequest(
     msg: String,
@@ -48,6 +45,12 @@ fun unprocessable(
     doc: String? = null,
 ) : Nothing = throw ApiError(422, msg, field, doc)
 
+fun locked(
+    msg: String, 
+    field: String? = null,
+    doc: String? = null,
+) : Nothing = throw ApiError(423, msg, field, doc)
+
 fun internalServerError(
     msg: String, 
     field: String? = null,
@@ -59,4 +62,3 @@ fun unavailable(
     field: String? = null,
     doc: String? = null,
 ) : Nothing = throw ApiError(503, msg, field, doc)
-

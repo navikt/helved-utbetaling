@@ -1,24 +1,18 @@
 package abetal
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.ktor.client.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.jackson.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
-import libs.kafka.SslConfig
-import libs.kafka.StreamsConfig
 import libs.kafka.StreamsMock
+import io.ktor.server.testing.*
+import libs.kafka.StreamsConfig
+import libs.kafka.SslConfig
 
 object TestTopics {
-    val dagpenger by lazy { TestRuntime.kafka.testTopic(Topics.dagpenger) }
+    val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
     val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
+    val simuleringer by lazy { TestRuntime.kafka.testTopic(Topics.simuleringer) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
-    val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
 }
 
 object TestRuntime : AutoCloseable {
@@ -58,14 +52,3 @@ private val testApplication: TestApplication by lazy {
     }
 }
 
-val httpClient: HttpClient by lazy {
-    testApplication.createClient {
-        install(ContentNegotiation) {
-            jackson {
-                registerModule(JavaTimeModule())
-                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            }
-        }
-    }
-}
