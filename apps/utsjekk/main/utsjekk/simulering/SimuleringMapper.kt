@@ -62,7 +62,7 @@ fun client.Utbetalingsperiode.Mapper.from(domain: Utbetalingsperiode, fagsystem:
     satstype = domain.satstype.into(),
     opphør = domain.opphør?.let { client.Opphør(it.fom) },
     utbetalesTil = domain.utbetalesTil,
-    fastsattDagsats = if (fagsystem == Fagsystem.AAP) null else domain.fastsattDagsats,
+    fastsattDagsats = domain.fastsattDagsats,
 )
 
 fun client.Utbetaling.into(): List<Postering> {
