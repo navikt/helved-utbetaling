@@ -24,7 +24,7 @@ object rest {
         val satstype: SatsType,
         val opphør: Opphør?,
         val utbetalesTil: String,
-        val fastsattDagsats: UInt?,
+        // val fastsattDagsats: UInt?,
     )
 
     data class Opphør(val fom: LocalDate)

@@ -13,7 +13,8 @@ value class UtbetalingId(val id: UUID) {
 enum class FagsystemDto(val kode: String) {
     DAGPENGER("DP"),
     TILTAKSPENGER("TILTPENG"),
-    TILLEGGSSTØNADER("TILLST");
+    TILLEGGSSTØNADER("TILLST"),
+    AAP("AAP");
 }
 
 data class UtbetalingsoppdragDto(
@@ -44,7 +45,7 @@ data class UtbetalingsperiodeDto(
     val behandlingId: String,
     val opphør: Opphør? = null,
     val forrigePeriodeId: String? = null,
-    val fastsattDagsats: UInt? = null,
+    // val fastsattDagsats: UInt? = null,
 ) {
     companion object;
 }
