@@ -48,10 +48,10 @@ fun client.SimuleringRequest.Mapper.from(domain: Utbetalingsoppdrag) = client.Si
     personident = Personident(domain.aktør),
     erFørsteUtbetalingPåSak = domain.erFørsteUtbetalingPåSak,
     saksbehandler = domain.saksbehandlerId,
-    utbetalingsperioder = domain.utbetalingsperiode.map(client.Utbetalingsperiode::from),
+    utbetalingsperioder = domain.utbetalingsperiode.map { client.Utbetalingsperiode.from(it, domain.fagsystem) },
 )
 
-fun client.Utbetalingsperiode.Mapper.from(domain: Utbetalingsperiode) = client.Utbetalingsperiode(
+fun client.Utbetalingsperiode.Mapper.from(domain: Utbetalingsperiode, fagsystem: Fagsystem) = client.Utbetalingsperiode(
     periodeId = domain.periodeId.toString(),
     forrigePeriodeId = domain.forrigePeriodeId?.toString(),
     erEndringPåEksisterendePeriode = domain.erEndringPåEksisterendePeriode,
@@ -62,7 +62,7 @@ fun client.Utbetalingsperiode.Mapper.from(domain: Utbetalingsperiode) = client.U
     satstype = domain.satstype.into(),
     opphør = domain.opphør?.let { client.Opphør(it.fom) },
     utbetalesTil = domain.utbetalesTil,
-    fastsattDagsats = domain.fastsattDagsats,
+    fastsattDagsats = if (fagsystem == Fagsystem.AAP) null else domain.fastsattDagsats,
 )
 
 fun client.Utbetaling.into(): List<Postering> {
