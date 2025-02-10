@@ -1,9 +1,5 @@
 package abetal
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.netty.*
 import io.ktor.server.engine.*
@@ -15,10 +11,7 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.core.instrument.MeterRegistry
 import libs.utils.*
-import libs.kafka.Streams
-import libs.kafka.KafkaStreams
-import libs.kafka.Topology
-import libs.kafka.topology
+import libs.kafka.*
 
 val appLog = logger("app")
 
@@ -46,23 +39,14 @@ fun Application.abetal(
         kafka.close()
     }
 
-    val utbetProducer = kafka.createProducer(config.kafka, Topics.utbetalinger)
-
     kafka.connect(
         topology = createTopology(),
         config = config.kafka,
         registry = prometheus,
     )
 
-    install(ContentNegotiation) {
-        jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
-    }
     routing {
-        utbetalingRoute(utbetProducer)
+        probes(kafka, prometheus)
     }
 }
 
