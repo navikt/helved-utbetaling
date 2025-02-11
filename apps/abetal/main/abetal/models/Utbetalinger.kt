@@ -2,12 +2,10 @@ package abetal.models
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import abetal.*
-import libs.utils.logger
-import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.UUID
 import java.util.Base64
 import java.nio.ByteBuffer
+import java.time.*
 import kotlin.getOrThrow
 
 @JvmInline
@@ -43,9 +41,120 @@ data class Utbetaling(
     val stønad: Stønadstype,
     val beslutterId: Navident,
     val saksbehandlerId: Navident,
-    val satstype: Satstype,
+    val periodetype: Periodetype,
     val perioder: List<Utbetalingsperiode>,
-) 
+) {
+    fun validate() {
+        failOnÅrsskifte()
+        failOnDuplicatePerioder()
+        failOnTomBeforeFom()
+        failOnIllegalUseOfFastsattDagsats()
+        failOnInconsistentPeriodeType()
+        failOnIllegalFutureUtbetaling()
+        failOnTooLongPeriods()
+        // validate beløp
+        // validate fom/tom
+        // validate stønadstype opp mot e.g. fastsattDagsats
+        // validate sakId ikke er for lang
+    }
+}
+
+private fun Utbetaling.failOnÅrsskifte() {
+    if (perioder.minBy { it.fom }.fom.year != perioder.maxBy { it.tom }.tom.year) {
+        badRequest(
+            msg = "periode strekker seg over årsskifte",
+            field = "tom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
+
+private fun Utbetaling.failOnDuplicatePerioder() {
+    if (perioder.groupBy { it.fom }.any { (_, perioder) -> perioder.size != 1 }) {
+        badRequest(
+            msg = "kan ikke sende inn duplikate perioder",
+            field = "fom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+    if (perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }) {
+        badRequest(
+            msg = "kan ikke sende inn duplikate perioder",
+            field = "tom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
+
+private fun Utbetaling.failOnTomBeforeFom() {
+    if (!perioder.all { it.fom <= it.tom }) {
+        badRequest(
+            msg = "fom må være før eller lik tom",
+            field = "fom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
+
+private fun Utbetaling.failOnIllegalUseOfFastsattDagsats() {
+    when (stønad) {
+        is StønadTypeDagpenger -> {}
+        is StønadTypeAAP -> {}
+        else -> {
+            if (perioder.any { it.fastsattDagsats != null }) {
+                badRequest(
+                    msg = "reservert felt for Dagpenger og AAP",
+                    field = "fastsattDagsats",
+                    doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+                )
+            }
+        }
+    }
+}
+
+private fun Utbetaling.failOnInconsistentPeriodeType() {
+    fun LocalDate.erHelg(): Boolean {
+        return dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
+    }
+
+    val consistent = when (periodetype) {
+        Periodetype.UKEDAG -> perioder.all { it.fom == it.tom } && perioder.none { it.fom.erHelg() }
+        Periodetype.DAG -> perioder.all { it.fom == it.tom }
+        Periodetype.MND -> perioder.all { it.fom.dayOfMonth == 1 && it.tom.plusDays(1) == it.fom.plusMonths(1) }
+        Periodetype.EN_GANG -> perioder.all { it.fom.year == it.tom.year } // tillater engangs over årsskifte
+    }
+    if (!consistent) {
+        badRequest(
+            msg = "inkonsistens blant datoene i periodene",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
+
+private fun Utbetaling.failOnIllegalFutureUtbetaling() {
+    if (stønad is StønadTypeTilleggsstønader) return
+    if (periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG) && perioder.maxBy{ it.tom }.tom.isAfter(LocalDate.now())) {
+        badRequest(
+            msg = "fremtidige utbetalinger er ikke støttet for periode dag/ukedag",
+            field = "periode.tom",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+}
+
+private fun Utbetaling.failOnTooLongPeriods() {
+    if (periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG)) {
+        val min = perioder.minBy { it.fom }.fom
+        val max = perioder.maxBy { it.tom }.tom
+        if (java.time.temporal.ChronoUnit.DAYS.between(min, max)+1 > 92) {
+            badRequest(
+                msg = "$periodetype støtter maks periode på 92 dager",
+                field = "perioder",
+                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            )
+        }
+    }
+}
 
 @JvmInline
 value class PeriodeId (private val id: UUID) {
@@ -98,11 +207,11 @@ fun List<Utbetalingsperiode>.betalendeEnhet(): NavEnhet? {
     return sortedBy { it.tom }.find { it.betalendeEnhet != null }?.betalendeEnhet
 }
 
-enum class Satstype {
+enum class Periodetype {
     DAG,
-    VIRKEDAG, // TODO: rename, skal disse hete det samme som PeriodeType?
+    UKEDAG, // TODO: rename, skal disse hete det samme som PeriodeType?
     MND,
-    ENGANGS;
+    EN_GANG;
 }
 
 sealed interface Stønadstype {
