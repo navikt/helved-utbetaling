@@ -14,7 +14,7 @@ internal class AapTest {
   @Test
   fun `add to utbetalinger`() {
     val uid = UtbetalingId(UUID.randomUUID())
-    TestTopics.aap.produce("$uid") {
+    TestTopics.aap.produce("${uid.id}") {
       Utbetaling(
           sakId = SakId("1"),
           behandlingId = BehandlingId(""),
@@ -42,7 +42,7 @@ internal class AapTest {
       )
     }
 
-    TestTopics.status.assertThat().hasKey("$uid").hasValue(StatusReply(Status.MOTTATT))
-    TestTopics.utbetalinger.assertThat().hasKey("$uid")
+    TestTopics.status.assertThat().hasKey("${uid.id}").hasValue(StatusReply(Status.MOTTATT))
+    TestTopics.utbetalinger.assertThat().hasKey("${uid.id}")
   }
 }
