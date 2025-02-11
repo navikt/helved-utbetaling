@@ -11,7 +11,6 @@ import libs.kafka.SslConfig
 object TestTopics {
     val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
     val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
-    val simuleringer by lazy { TestRuntime.kafka.testTopic(Topics.simuleringer) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
 }
 
