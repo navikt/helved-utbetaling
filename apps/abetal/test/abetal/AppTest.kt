@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 val Int.jan: LocalDate
     get() = LocalDate.of(2025, 1, this)
@@ -31,8 +32,19 @@ internal class AapTest {
             )
         }
 
-        TestTopics.status.assertThat().hasKey("${uid.id}").hasValue(StatusReply(Status.MOTTATT))
-        TestTopics.utbetalinger.assertThat().hasKey("${uid.id}")
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasValue(StatusReply(Status.MOTTATT))
+
+        TestTopics.utbetalinger.assertThat()
+            .hasValuesForPredicate(uid.id.toString(), 1) {
+                it.perioder.size == 2
+            }
+
+        TestTopics.oppdrag.assertThat()
+            .hasValuesForPredicate(uid.id.toString(), 1) {
+                it.oppdrag110.kodeEndring == "NY"
+            }
     }
 
     @Test
@@ -54,6 +66,7 @@ internal class AapTest {
 
         TestTopics.status.assertThat().hasValueMatching("${uid.id}") {
             assertEquals("periode strekker seg over årsskifte", it.error!!.msg)
+            assertEquals(Status.FEILET, it.status)
         }
         TestTopics.utbetalinger.assertThat().isEmpty()
     }

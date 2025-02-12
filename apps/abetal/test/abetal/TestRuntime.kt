@@ -11,6 +11,7 @@ import libs.kafka.SslConfig
 object TestTopics {
     val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
     val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
+    val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
 }
 
@@ -34,7 +35,7 @@ object TestRuntime : AutoCloseable {
 
     override fun close() {
         ktor.stop()
-        kafka.close()
+        // kafka.close()
     }
 }
 

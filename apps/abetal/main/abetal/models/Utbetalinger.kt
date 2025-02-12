@@ -53,6 +53,41 @@ data class Utbetaling(
     }
 }
 
+fun Utbetaling.validateLockedFields(other: Utbetaling) {
+    if (sakId != other.sakId) badRequest("cant change immutable field", "sakId")
+    // TODO: oppslag mot PDL, se at det fortsatt er samme person, ikke nødvendigvis samme ident
+    if (personident != other.personident) badRequest("cant change immutable field", "personident")
+    if (stønad != other.stønad) badRequest("cant change immutable field", "stønad")
+
+    if (periodetype != other.periodetype) {
+        badRequest(
+            msg = "can't change the flavour of perioder",
+            field = "perioder",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
+        )
+    }
+}
+
+fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
+    if (perioder.size != other.perioder.size) {
+        return
+    }
+    val ingenEndring = perioder.zip(other.perioder).all { (first, second) ->
+        first.beløp == second.beløp
+                && first.fom == second.fom
+                && first.tom == second.tom
+                && first.betalendeEnhet == second.betalendeEnhet
+                && first.fastsattDagsats == second.fastsattDagsats
+    }
+    if (ingenEndring) {
+        conflict(
+            msg = "periods allready exists",
+            field = "perioder",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
+        )
+    }
+}
+
 private fun Utbetaling.failOnÅrsskifte() {
     if (perioder.minBy { it.fom }.fom.year != perioder.maxBy { it.tom }.tom.year) {
         badRequest(
@@ -201,15 +236,16 @@ fun List<Utbetalingsperiode>.betalendeEnhet(): NavEnhet? {
     return sortedBy { it.tom }.find { it.betalendeEnhet != null }?.betalendeEnhet
 }
 
-enum class Periodetype {
-    DAG,
-    UKEDAG, // TODO: rename, skal disse hete det samme som PeriodeType?
-    MND,
-    EN_GANG;
+enum class Periodetype(val satstype: String) {
+    DAG("DAG7"),
+    UKEDAG("DAG"),
+    MND("MND"),
+    EN_GANG("ENG");
 }
 
 sealed interface Stønadstype {
     val name: String
+    val klassekode: String
 
     companion object {
         @JsonCreator
@@ -220,78 +256,75 @@ sealed interface Stønadstype {
                 .recoverCatching { StønadTypeTiltakspenger.valueOf(str) }
                 .recoverCatching { StønadTypeAAP.valueOf(str) }
                 .getOrThrow()
+
+        fun fraKode(klassekode: String): Stønadstype =
+            (StønadTypeDagpenger.entries + StønadTypeTiltakspenger.entries + StønadTypeTilleggsstønader.entries + StønadTypeAAP.entries)
+                .single { it.klassekode == klassekode }
     }
-
-    fun asFagsystemStr() =
-        when (this) {
-            is StønadTypeDagpenger -> "DAGPENGER"
-            is StønadTypeTiltakspenger -> "TILTAKSPENGER"
-            is StønadTypeTilleggsstønader -> "TILLEGGSSTØNADER"
-            is StønadTypeAAP -> "AAP"
-        }
 }
 
-enum class StønadTypeDagpenger : Stønadstype {
-    ARBEIDSSØKER_ORDINÆR,
-    PERMITTERING_ORDINÆR,
-    PERMITTERING_FISKEINDUSTRI,
-    EØS,
-    ARBEIDSSØKER_ORDINÆR_FERIETILLEGG,
-    PERMITTERING_ORDINÆR_FERIETILLEGG,
-    PERMITTERING_FISKEINDUSTRI_FERIETILLEGG,
-    EØS_FERIETILLEGG,
-    ARBEIDSSØKER_ORDINÆR_FERIETILLEGG_AVDØD,
-    PERMITTERING_ORDINÆR_FERIETILLEGG_AVDØD,
-    PERMITTERING_FISKEINDUSTRI_FERIETILLEGG_AVDØD,
+enum class StønadTypeDagpenger(override val klassekode: String) : Stønadstype {
+    ARBEIDSSØKER_ORDINÆR("DPORAS"),
+    ARBEIDSSØKER_ORDINÆR_FERIETILLEGG("DPORASFE"),
+    ARBEIDSSØKER_ORDINÆR_FERIETILLEGG_AVDØD("DPORASFE-IOP"),
+    PERMITTERING_ORDINÆR("DPPEASFE1"),
+    PERMITTERING_ORDINÆR_FERIETILLEGG("DPPEAS"),
+    PERMITTERING_ORDINÆR_FERIETILLEGG_AVDØD("DPPEASFE1-IOP"),
+    PERMITTERING_FISKEINDUSTRI("DPPEFIFE1"),
+    PERMITTERING_FISKEINDUSTRI_FERIETILLEGG("DPPEFI"),
+    PERMITTERING_FISKEINDUSTRI_FERIETILLEGG_AVDØD("DPPEFIFE1-IOP"),
+    EØS("DPFEASISP"),
+    EØS_FERIETILLEGG("DPDPASISP1");
 }
 
-enum class StønadTypeTiltakspenger : Stønadstype {
-    ARBEIDSFORBEREDENDE_TRENING,
-    ARBEIDSRETTET_REHABILITERING,
-    ARBEIDSTRENING,
-    AVKLARING,
-    DIGITAL_JOBBKLUBB,
-    ENKELTPLASS_AMO,
-    ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG,
-    FORSØK_OPPLÆRING_LENGRE_VARIGHET,
-    GRUPPE_AMO,
-    GRUPPE_VGS_OG_HØYERE_YRKESFAG,
-    HØYERE_UTDANNING,
-    INDIVIDUELL_JOBBSTØTTE,
-    INDIVIDUELL_KARRIERESTØTTE_UNG,
-    JOBBKLUBB,
-    OPPFØLGING,
-    UTVIDET_OPPFØLGING_I_NAV,
-    UTVIDET_OPPFØLGING_I_OPPLÆRING,
-    ARBEIDSFORBEREDENDE_TRENING_BARN,
-    ARBEIDSRETTET_REHABILITERING_BARN,
-    ARBEIDSTRENING_BARN,
-    AVKLARING_BARN,
-    DIGITAL_JOBBKLUBB_BARN,
-    ENKELTPLASS_AMO_BARN,
-    ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG_BARN,
-    FORSØK_OPPLÆRING_LENGRE_VARIGHET_BARN,
-    GRUPPE_AMO_BARN,
-    GRUPPE_VGS_OG_HØYERE_YRKESFAG_BARN,
-    HØYERE_UTDANNING_BARN,
-    INDIVIDUELL_JOBBSTØTTE_BARN,
-    INDIVIDUELL_KARRIERESTØTTE_UNG_BARN,
-    JOBBKLUBB_BARN,
-    OPPFØLGING_BARN,
-    UTVIDET_OPPFØLGING_I_NAV_BARN,
-    UTVIDET_OPPFØLGING_I_OPPLÆRING_BARN,
+// TODO: legg til klassekodene for barnetillegg
+enum class StønadTypeTiltakspenger(override val klassekode: String) : Stønadstype {
+    ARBEIDSFORBEREDENDE_TRENING("TPBTAF"),
+    ARBEIDSRETTET_REHABILITERING("TPBTARREHABAGDAG"),
+    ARBEIDSTRENING("TPBTATTILT"),
+    AVKLARING("TPBTAAGR"),
+    DIGITAL_JOBBKLUBB("TPBTDJK"),
+    ENKELTPLASS_AMO("TPBTEPAMO"),
+    ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG("TPBTEPVGSHOY"),
+    FORSØK_OPPLÆRING_LENGRE_VARIGHET("TPBTFLV"),
+    GRUPPE_AMO("TPBTGRAMO"),
+    GRUPPE_VGS_OG_HØYERE_YRKESFAG("TPBTGRVGSHOY"),
+    HØYERE_UTDANNING("TPBTHOYUTD"),
+    INDIVIDUELL_JOBBSTØTTE("TPBTIPS"),
+    INDIVIDUELL_KARRIERESTØTTE_UNG("TPBTIPSUNG"),
+    JOBBKLUBB("TPBTJK2009"),
+    OPPFØLGING("TPBTOPPFAGR"),
+    UTVIDET_OPPFØLGING_I_NAV("TPBTUAOPPFL"),
+    UTVIDET_OPPFØLGING_I_OPPLÆRING("TPBTUOPPFOPPL"),
+    ARBEIDSFORBEREDENDE_TRENING_BARN("TPTPAFT"),
+    ARBEIDSRETTET_REHABILITERING_BARN("TPTPARREHABAGDAG"),
+    ARBEIDSTRENING_BARN("TPTPATT"),
+    AVKLARING_BARN("TPTPAAG"),
+    DIGITAL_JOBBKLUBB_BARN("TPTPDJB"),
+    ENKELTPLASS_AMO_BARN("TPTPEPAMO"),
+    ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG_BARN("TPTPEPVGSHOU"),
+    FORSØK_OPPLÆRING_LENGRE_VARIGHET_BARN("TPTPFLV"),
+    GRUPPE_AMO_BARN("TPTPGRAMO"),
+    GRUPPE_VGS_OG_HØYERE_YRKESFAG_BARN("TPTPGRVGSHOY"),
+    HØYERE_UTDANNING_BARN("TPTPHOYUTD"),
+    INDIVIDUELL_JOBBSTØTTE_BARN("TPTPIPS"),
+    INDIVIDUELL_KARRIERESTØTTE_UNG_BARN("TPTPIPSUNG"),
+    JOBBKLUBB_BARN("TPTPJK2009"),
+    OPPFØLGING_BARN("TPTPOPPFAG"),
+    UTVIDET_OPPFØLGING_I_NAV_BARN("TPTPUAOPPF"),
+    UTVIDET_OPPFØLGING_I_OPPLÆRING_BARN("TPTPUOPPFOPPL"),
 }
 
-enum class StønadTypeTilleggsstønader : Stønadstype {
-    TILSYN_BARN_ENSLIG_FORSØRGER,
-    TILSYN_BARN_AAP,
-    TILSYN_BARN_ETTERLATTE,
-    LÆREMIDLER_ENSLIG_FORSØRGER,
-    LÆREMIDLER_AAP,
-    LÆREMIDLER_ETTERLATTE,
+enum class StønadTypeTilleggsstønader(override val klassekode: String) : Stønadstype {
+    TILSYN_BARN_ENSLIG_FORSØRGER("TSTBASISP2-OP"),
+    TILSYN_BARN_AAP("TSTBASISP4-OP"),
+    TILSYN_BARN_ETTERLATTE("TSTBASISP5-OP"),
+    LÆREMIDLER_ENSLIG_FORSØRGER("TSLMASISP2-OP"),
+    LÆREMIDLER_AAP("TSLMASISP3-OP"),
+    LÆREMIDLER_ETTERLATTE("TSLMASISP4-OP"),
 }
 
-enum class StønadTypeAAP: Stønadstype {
-    AAP_UNDER_ARBEIDSAVKLARING,
+enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
+    AAP_UNDER_ARBEIDSAVKLARING("AAPUAA"),
 }
 
