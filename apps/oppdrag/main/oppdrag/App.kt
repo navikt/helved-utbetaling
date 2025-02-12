@@ -53,7 +53,9 @@ fun main() {
 }
 
 fun Application.database(config: JdbcConfig) {
-    Jdbc.initialize(config)
+    Jdbc.initialize(config) {
+        maximumPoolSize = 25 // 25-50% of postgres max_connection
+    }
 
     runBlocking {
         withContext(Jdbc.context) {
