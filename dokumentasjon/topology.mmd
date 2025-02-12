@@ -1,0 +1,74 @@
+
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#07cff6', 'textColor': '#dad9e0', 'lineColor': '#07cff6'}}}%%
+
+graph LR
+
+subgraph Topologi
+    %% TOPICS
+    aap.utbetalinger.v1([aap.utbetalinger.v1])
+	helved.utbetalinger.v1([helved.utbetalinger.v1])
+	helved.oppdrag.v1([helved.oppdrag.v1])
+	helved.status.v1([helved.status.v1])
+
+    %% JOINS
+    aap.utbetalinger.v1-left-join-helved.utbetalinger.v1{left-join}
+
+    %% STATE PROCESSORS
+    
+    
+    %% STATE STORES
+    helved.utbetalinger.v1-state-store[(helved.utbetalinger.v1-state-store)]
+    
+    %% DATABASES
+    
+    
+
+    %% PROCESSOR API JOBS
+    helved.utbetalinger.v1-to-table((helved.utbetalinger.v1-to-table))
+    
+    %% JOIN STREAMS
+    aap.utbetalinger.v1 --> aap.utbetalinger.v1-left-join-helved.utbetalinger.v1
+	helved.utbetalinger.v1-state-store --> aap.utbetalinger.v1-left-join-helved.utbetalinger.v1
+	aap.utbetalinger.v1-left-join-helved.utbetalinger.v1 --> helved.oppdrag.v1
+	aap.utbetalinger.v1-left-join-helved.utbetalinger.v1 --> helved.utbetalinger.v1
+	aap.utbetalinger.v1-left-join-helved.utbetalinger.v1 --> helved.status.v1
+
+    %% TABLE STREAMS
+    helved.utbetalinger.v1 --> helved.utbetalinger.v1-state-store
+
+    %% JOB STREAMS
+    helved.utbetalinger.v1-to-table --> helved.utbetalinger.v1-state-store
+    
+    %% BRANCH STREAMS
+    aap.utbetalinger.v1 --> helved.oppdrag.v1
+	aap.utbetalinger.v1 --> helved.utbetalinger.v1
+	aap.utbetalinger.v1 --> helved.status.v1
+	aap.utbetalinger.v1 --> helved.status.v1
+	aap.utbetalinger.v1 --> helved.oppdrag.v1
+	aap.utbetalinger.v1 --> helved.utbetalinger.v1
+	aap.utbetalinger.v1 --> helved.status.v1
+
+    %% REPARTITION STREAMS
+    
+    
+    %% BASIC STREAMS
+    
+    
+    %% CUSTOM PROCESS STREAMS
+    
+end
+
+%% COLORS
+%% light    #dad9e0
+%% purple   #78369f
+%% pink     #c233b4
+%% dark     #2a204a
+%% blue     #07cff6
+
+%% STYLES
+style aap.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.utbetalinger.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.utbetalinger.v1-to-table fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
