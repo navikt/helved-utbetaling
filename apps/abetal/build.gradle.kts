@@ -3,20 +3,17 @@ plugins {
 }
 
 application {
-    mainClass.set("abetal.AppKt")
+    mainClass.set("abetal.AbetalKt")
 }
 
 val ktorVersion = "3.1.0"
-val libVersion = "3.0.70"
-val kontraktVersion = "1.0_20241213145703_7ff5f9c"
+val libVersion = "3.1.0"
 
 dependencies {
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:kafka:$libVersion")
+    implementation("no.nav.helved:xml:$libVersion")
     implementation("org.apache.kafka:kafka-clients:3.9.0")
-    implementation("no.nav.utsjekk.kontrakter:oppdrag:$kontraktVersion")
-    implementation("no.nav.utsjekk.kontrakter:iverksett:$kontraktVersion")
-    implementation("no.nav.utsjekk.kontrakter:felles:$kontraktVersion")
 
     implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
