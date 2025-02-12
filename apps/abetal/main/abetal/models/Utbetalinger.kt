@@ -18,19 +18,13 @@ value class BehandlingId(val id: String)
 value class NavEnhet(val enhet: String)
 
 @JvmInline
-value class Personident(val ident: String) {
-    companion object
-}
+value class Personident(val ident: String)
 
 @JvmInline
-value class Navident(val ident: String) {
-    companion object
-}
+value class Navident(val ident: String)
 
 @JvmInline
-value class UtbetalingId(val id: UUID) {
-    companion object
-}
+value class UtbetalingId(val id: UUID) 
 
 data class Utbetaling(
     val sakId: SakId,
