@@ -25,6 +25,6 @@
     <logger name="app"       level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="http"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="kafka"     level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="secureLog" level="INFO" additivity="false"><appender-ref ref="secureLog"/></logger>
+    <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="secureLog"/></logger>
 
 </configuration>

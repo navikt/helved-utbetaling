@@ -12,5 +12,9 @@ enum class Action {
 data class AapUtbetaling(
     val action: Action,
     val data: Utbetaling,
-    var error: ApiError? = null,
+)
+
+data class UtbetalingRequest(
+    val action: Action,
+    val data: Utbetaling,
 )
