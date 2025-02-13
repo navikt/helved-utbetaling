@@ -42,7 +42,7 @@ internal class AapTest {
             }
 
         TestTopics.oppdrag.assertThat().hasNumberOfRecordsForKey(uid.id.toString(), 1)
-            .hasLastValueMatching {
+            .withLastValue {
                 assertEquals("NY", it!!.oppdrag110.kodeEndring)
             }
     }
@@ -151,7 +151,7 @@ internal class AapTest {
         TestTopics.status.assertThat()
             .hasNumberOfRecordsForKey(uid.id.toString(), 2)
             .hasNumberOfRecords(2)
-            .hasLastValueMatching {
+            .withLastValue {
                 assertEquals("kan ikke sende inn duplikate perioder", it!!.error!!.msg)
             }
         TestTopics.utbetalinger.assertThat().isEmpty()

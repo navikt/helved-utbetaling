@@ -7,7 +7,7 @@ class Diagram {
 
     @Test
     fun `generate diagram`() {
-        val mermaid = TestRuntime.kafka.visulize().mermaid().generateDiagram()
+        val mermaid = TestRuntime.kafka.visulize().mermaid().generateDiagram(disableJobs = true)
         File("../../dokumentasjon/topology.mmd").apply { writeText(mermaid) }
 
         val uml = TestRuntime.kafka.visulize().uml()
