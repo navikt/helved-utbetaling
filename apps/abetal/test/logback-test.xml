@@ -6,6 +6,10 @@
         </encoder>
     </appender>
 
+    <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+
     <root level="INFO">
         <appender-ref ref="stdout"/>
     </root>
@@ -14,6 +18,6 @@
     <logger name="http"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="kafka"     level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="app"       level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="secureLog" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="stdout"/></logger>
 
 </configuration>

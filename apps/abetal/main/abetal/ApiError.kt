@@ -1,5 +1,7 @@
 package abetal
 
+import abetal.models.SakId
+
 internal const val DEFAULT_DOC_STR = "https://navikt.github.io/utsjekk-docs/"
 
 data class ApiError(

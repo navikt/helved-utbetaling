@@ -28,6 +28,7 @@ value class UtbetalingId(val id: UUID)
 
 data class Utbetaling(
     val sakId: SakId,
+    val førsteSak: Boolean,
     val behandlingId: BehandlingId,
     val lastPeriodeId: PeriodeId,
     val personident: Personident,
@@ -187,7 +188,13 @@ private fun Utbetaling.failOnTooLongPeriods() {
 }
 
 private fun Utbetaling.failOnDuplicate(prev: Utbetaling?) {
-    if (this == prev) conflict("Denne meldingen har du allerede sendt inn")
+    prev?.let {
+        appLog.info("next $this")
+        appLog.info("prev $prev")
+        if (this.copy(førsteSak = prev.førsteSak) == prev){
+            conflict("Denne meldingen har du allerede sendt inn")
+        } 
+    }
 }
 
 @JvmInline
