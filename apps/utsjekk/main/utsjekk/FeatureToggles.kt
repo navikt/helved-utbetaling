@@ -49,7 +49,9 @@ class UnleashFeatureToggles(config: utsjekk.UnleashConfig) : FeatureToggles {
 private object ByEnvironmentStrategy : Strategy {
 
     override fun getName(): String = "byEnvironment"
-    override fun isEnabled(map: Map<String, String>, ctx: UnleashContext): Boolean {
+    // override fun isEnabled(map: Map<String, String>, ctx: UnleashContext): Boolean { // 10.0.1+
+    override fun isEnabled(map: Map<String, String>): Boolean {
+        val ctx = UnleashContext.builder().build()
         return ctx.environment.map { map["miljø"]?.split(',')?.contains(it) ?: false }.orElse(false)
     }
 }
