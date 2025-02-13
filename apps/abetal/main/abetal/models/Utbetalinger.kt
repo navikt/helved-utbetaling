@@ -38,7 +38,7 @@ data class Utbetaling(
     val periodetype: Periodetype,
     val perioder: List<Utbetalingsperiode>,
 ) {
-    fun validate() {
+    fun validate(prev: Utbetaling?) {
         failOnÅrsskifte()
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
@@ -46,6 +46,7 @@ data class Utbetaling(
         failOnInconsistentPeriodeType()
         failOnIllegalFutureUtbetaling()
         failOnTooLongPeriods()
+        failOnDuplicate(prev)
         // validate beløp
         // validate fom/tom
         // validate stønadstype opp mot e.g. fastsattDagsats
@@ -183,6 +184,10 @@ private fun Utbetaling.failOnTooLongPeriods() {
             )
         }
     }
+}
+
+private fun Utbetaling.failOnDuplicate(prev: Utbetaling?) {
+    if (this == prev) conflict("Denne meldingen har du allerede sendt inn")
 }
 
 @JvmInline

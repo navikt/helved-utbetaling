@@ -22,7 +22,7 @@ fun createTopology(): Topology = topology {
         .leftJoinWith(utbetalinger)
         .map { new, prev ->
             Result.catch<Pair<Utbetaling, Oppdrag>> {
-                new.data.validate()
+                new.data.validate(prev)
                 new.data to when (new.action) {
                     Action.CREATE -> OppdragService.opprett(new.data, true) // TODO: join med e.g. sakid-topic
                     Action.UPDATE -> OppdragService.update(new.data, prev ?: notFound("previous utbetaling"))

@@ -2,7 +2,7 @@ package abetal
 
 internal const val DEFAULT_DOC_STR = "https://navikt.github.io/utsjekk-docs/"
 
-class ApiError(
+data class ApiError(
     val statusCode: Int,
     val msg: String,
     val field: String?,
