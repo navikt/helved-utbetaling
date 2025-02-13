@@ -23,11 +23,14 @@ fun createTopology(): Topology = topology {
         .map { new, prev ->
             Result.catch<Pair<Utbetaling, Oppdrag>> {
                 new.data.validate(prev)
-                new.data to when (new.action) {
+                val oppdrag = when (new.action) {
                     Action.CREATE -> OppdragService.opprett(new.data, true) // TODO: join med e.g. sakid-topic
                     Action.UPDATE -> OppdragService.update(new.data, prev ?: notFound("previous utbetaling"))
                     Action.DELETE -> OppdragService.delete(new.data, prev ?: notFound("previous utbetaling"))
                 }
+                val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
+                val new = new.data.copy(lastPeriodeId = lastPeriodeId)
+                new to oppdrag
             }
         }.branch({ it.isOk() }) {
             val result =  map { it -> it.unwrap() }
