@@ -11,6 +11,10 @@ subprojects {
             compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
         }
 
+        withType<JavaCompile>().configureEach {
+            options.isFork = true
+        }
+
         withType<Test> {
             useJUnitPlatform()
         }

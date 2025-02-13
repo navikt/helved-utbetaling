@@ -1,6 +1,6 @@
 package abetal
 
-private const val DEFAULT_DOC_STR = "https://navikt.github.io/utsjekk-docs/"
+internal const val DEFAULT_DOC_STR = "https://navikt.github.io/utsjekk-docs/"
 
 class ApiError(
     val statusCode: Int,

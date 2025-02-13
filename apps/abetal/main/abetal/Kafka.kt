@@ -21,7 +21,7 @@ fun createTopology(): Topology = topology {
     consume(Topics.aap)
         .leftJoinWith(utbetalinger)
         .map { new, prev ->
-            Result.catch<Pair<Utbetaling, Oppdrag>, ApiError> {
+            Result.catch<Pair<Utbetaling, Oppdrag>> {
                 new.data.validate()
                 new.data to when (new.action) {
                     Action.CREATE -> OppdragService.opprett(new.data, true) // TODO: join med e.g. sakid-topic
