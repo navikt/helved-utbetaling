@@ -34,6 +34,19 @@ value class UtbetalingId(val id: UUID) {
     companion object
 }
 
+enum class Årsak(val kode: String) {
+    AVVENT_AVREGNING("AVAV"),
+    AVVENT_REFUSJONSKRAV("AVRK"),
+}
+
+data class Avvent(
+    val fom: LocalDate,
+    val tom: LocalDate,
+    val overføres: LocalDate,
+    val årsak: Årsak? = null,
+    val feilregistrering: Boolean = false,
+)
+
 data class Utbetaling(
     val sakId: SakId,
     val behandlingId: BehandlingId,
@@ -45,6 +58,7 @@ data class Utbetaling(
     val saksbehandlerId: Navident,
     val satstype: Satstype,
     val perioder: List<Utbetalingsperiode>,
+    val avvent: Avvent?,
 ) {
     companion object {
         fun from(dto: UtbetalingApi, lastPeriodeId: PeriodeId): Utbetaling =
@@ -59,6 +73,7 @@ data class Utbetaling(
                 saksbehandlerId = Navident(dto.saksbehandlerId),
                 satstype = Satstype.from(dto.periodeType),
                 perioder = dto.perioder.sortedBy { it.fom }.map(Utbetalingsperiode::from),
+                avvent = dto.avvent,
             )
 
         fun from(dto: UtbetalingApi): Utbetaling {
@@ -74,6 +89,7 @@ data class Utbetaling(
                 saksbehandlerId = Navident(dto.saksbehandlerId),
                 satstype = satstype,
                 perioder = listOf(Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom }, satstype)),
+                avvent = dto.avvent,
             )
         }
     }

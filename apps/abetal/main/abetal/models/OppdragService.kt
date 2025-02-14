@@ -34,7 +34,7 @@ enum class Endringskode {
 
 enum class Kvitteringstatus(val kode: String) {
     OK("00"),
-    MED_MANGLER("04"),
+    MED_MANGLER("04"), // MED INFORMASJON
     FUNKSJONELL_FEIL("08"),
     TEKNISK_FEIL("12"),
     UKJENT("Ukjent");

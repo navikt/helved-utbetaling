@@ -39,6 +39,15 @@ internal object UtbetalingsoppdragMapper {
                     kodeKomponent = utbetalingsoppdrag.fagsystem.kode
                     tidspktMelding = utbetalingsoppdrag.avstemmingstidspunkt.format(timeFormatter)
                 }
+            utbetalingsoppdrag.avvent?.let { avvent ->
+                avvent118 = objectFactory.createAvvent118().apply {
+                    datoAvventFom = avvent.fom.toXMLDate()
+                    datoAvventTom = avvent.tom.toXMLDate()
+                    datoOverfores = avvent.overføres.toXMLDate()
+                    avvent.årsak?.let { årsak -> kodeArsak = årsak.kode }
+                    feilreg = if (avvent.feilregistrering) "J" else "N"
+                }
+            }
             tilOppdragsEnhet120(utbetalingsoppdrag).map { oppdragsEnhet120s.add(it) }
             utbetalingsoppdrag.utbetalingsperioder.map { periode ->
                 oppdragsLinje150s.add(
