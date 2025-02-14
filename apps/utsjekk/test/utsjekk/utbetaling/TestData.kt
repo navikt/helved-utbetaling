@@ -91,6 +91,7 @@ fun UtbetalingApi.Companion.dagpenger(
     behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
     saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
     beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
+    avvent: Avvent? = null,
 ): UtbetalingApi {
     return UtbetalingApi(
         sakId.id,
@@ -102,6 +103,7 @@ fun UtbetalingApi.Companion.dagpenger(
         saksbehandlerId.ident,
         periodeType,
         perioder,
+        avvent,
     )
 }
 
@@ -130,6 +132,7 @@ fun Utbetaling.Companion.dagpenger(
     behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
     saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
     beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
+    avvent: Avvent? = null,
 ): Utbetaling = Utbetaling(
     sakId,
     behandlingId,
@@ -141,5 +144,6 @@ fun Utbetaling.Companion.dagpenger(
     saksbehandlerId,
     satstype,
     perioder,
+    avvent,
 )
 

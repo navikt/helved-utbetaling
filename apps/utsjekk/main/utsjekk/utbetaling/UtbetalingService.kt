@@ -37,6 +37,15 @@ object UtbetalingService {
             beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
+            avvent = utbetaling.avvent?.let { avvent ->
+                AvventDto(
+                    fom = avvent.fom,
+                    tom = avvent.tom,
+                    overføres = avvent.overføres,
+                    årsak = avvent.årsak,
+                    feilregistrering = avvent.feilregistrering
+                )
+            },
             utbetalingsperioder = utbetaling.perioder.mapIndexed { i, periode ->
                 val id = if(i == utbetaling.perioder.size - 1) utbetaling.lastPeriodeId else PeriodeId()
 
@@ -122,6 +131,15 @@ object UtbetalingService {
             beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
+            avvent = utbetaling.avvent?.let { avvent ->
+                AvventDto(
+                    fom = avvent.fom,
+                    tom = avvent.tom,
+                    overføres = avvent.overføres,
+                    årsak = avvent.årsak,
+                    feilregistrering = avvent.feilregistrering
+                )
+            },
             utbetalingsperioder = Utbetalingsperioder.utled(existing, utbetaling)
         )
         return withContext(Jdbc.context) {
@@ -164,6 +182,15 @@ object UtbetalingService {
             beslutterId = utbetaling.beslutterId.ident,
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
+            avvent = utbetaling.avvent?.let { avvent ->
+                AvventDto(
+                    fom = avvent.fom,
+                    tom = avvent.tom,
+                    overføres = avvent.overføres,
+                    årsak = avvent.årsak,
+                    feilregistrering = avvent.feilregistrering
+                )
+            },
             utbetalingsperioder = listOf(utbetaling.perioder.maxBy { it.fom }.let { sistePeriode ->
                 UtbetalingsperiodeDto(
                     erEndringPåEksisterendePeriode = true, // opphør er alltid en ENDR

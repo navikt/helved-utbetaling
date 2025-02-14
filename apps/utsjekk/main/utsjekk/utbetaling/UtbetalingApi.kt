@@ -17,6 +17,7 @@ data class UtbetalingApi(
     val saksbehandlerId: String,
     val periodeType: PeriodeType,
     val perioder: List<UtbetalingsperiodeApi>,
+    val avvent: Avvent?,
 ) {
     companion object {
         fun from(domain: Utbetaling) = UtbetalingApi(
@@ -29,6 +30,7 @@ data class UtbetalingApi(
             saksbehandlerId = domain.saksbehandlerId.ident,
             periodeType = PeriodeType.from(domain.satstype),
             perioder = UtbetalingsperiodeApi.from(domain.perioder, domain.satstype),
+            avvent = domain.avvent,
         )
     }
 

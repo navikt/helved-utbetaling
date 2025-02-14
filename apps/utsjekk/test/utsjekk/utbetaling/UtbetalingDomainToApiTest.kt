@@ -28,6 +28,7 @@ class UtbetalingDomainToApiTest {
             lastPeriodeId = PeriodeId(UUID.fromString("848a1ca1-62bc-4a35-8070-73e69552d19e")),
             saksbehandlerId = Navident("S11111"),
             vedtakstidspunkt = LocalDateTime.parse("2025-02-06T12:40:00"),
+            avvent = null,
         )
         val api = UtbetalingApi.from(domain)
 

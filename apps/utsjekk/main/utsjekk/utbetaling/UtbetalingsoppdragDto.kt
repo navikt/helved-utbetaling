@@ -31,6 +31,7 @@ data class UtbetalingsoppdragDto(
     val utbetalingsperioder: List<UtbetalingsperiodeDto>,
     val avstemmingstidspunkt: LocalDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
     val brukersNavKontor: String? = null,
+    val avvent: AvventDto? = null,
 ) {
     companion object;
 }
@@ -52,6 +53,14 @@ data class UtbetalingsperiodeDto(
 ) {
     companion object;
 }
+
+data class AvventDto(
+    val fom: LocalDate,
+    val tom: LocalDate,
+    val overføres: LocalDate,
+    val årsak: Årsak? = null,
+    val feilregistrering: Boolean = false,
+)
 
 data class Opphør(val fom: LocalDate)
 
