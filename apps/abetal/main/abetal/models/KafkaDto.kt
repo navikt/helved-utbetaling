@@ -14,6 +14,8 @@ data class AapUtbetaling(
     val data: Utbetaling,
 )
 
+data class SakIdWrapper(val sakId: String, val uids: List<UtbetalingId>)
+
 data class UtbetalingRequest(
     val action: Action,
     val data: Utbetaling,

@@ -10,15 +10,15 @@ sealed interface Result<out V, out E> {
     data class Err<E>(val error: E) : Result<Nothing, E>
 
     companion object {
-        fun <V> catch(sakId: SakId, block: () -> V): Result<V, StatusReply> {
+        fun <V> catch(block: () -> V): Result<V, StatusReply> {
             return try {
                 Ok(block())
             } catch(e: ApiError) {
-                Err(StatusReply(sakId = sakId, status = Status.FEILET, error = e))
+                Err(StatusReply(status = Status.FEILET, error = e))
             } catch (e: Throwable) {
                 secureLog.error("Unknown server error", e)
                 val error = ApiError(500, "Unknown server error", null, DEFAULT_DOC_STR)
-                Err(StatusReply(sakId = sakId, status = Status.FEILET, error = error))
+                Err(StatusReply(status = Status.FEILET, error = error))
             }
         }
     }
