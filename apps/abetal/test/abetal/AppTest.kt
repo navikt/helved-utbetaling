@@ -31,19 +31,17 @@ internal class AapTest {
                 )
             )
         }
-
-        TestTopics.status.assertThat()
+         TestTopics.status.assertThat()
+             .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+             .hasValue(StatusReply(Status.MOTTATT))
+         TestTopics.utbetalinger.assertThat()
+             .hasValuesForPredicate(uid.id.toString(), 1) {
+                 it.perioder.size == 2
+             }
+         TestTopics.oppdrag.assertThat()
             .hasNumberOfRecordsForKey(uid.id.toString(), 1)
-            .hasValue(StatusReply(SakId("1"), Status.MOTTATT))
-
-        TestTopics.utbetalinger.assertThat()
-            .hasValuesForPredicate(uid.id.toString(), 1) {
-                it.perioder.size == 2
-            }
-
-        TestTopics.oppdrag.assertThat().hasNumberOfRecordsForKey(uid.id.toString(), 1)
             .withLastValue {
-                assertEquals("NY", it!!.oppdrag110.kodeEndring)
+                 assertEquals("NY", it!!.oppdrag110.kodeEndring)
             }
     }
 
@@ -117,13 +115,9 @@ internal class AapTest {
                 )
             )
         }
-
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey(uid.id.toString(), 2)
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
             .hasValueMatching("${uid.id}", 0) {
-                assertEquals(Status.MOTTATT, it.status)
-            }
-            .hasValueMatching("${uid.id}", 1) {
                 assertEquals(Status.FEILET, it.status)
                 assertEquals("periode strekker seg over årsskifte", it.error!!.msg)
             }
@@ -147,10 +141,9 @@ internal class AapTest {
                 )
             )
         }
-
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey(uid.id.toString(), 2)
-            .hasNumberOfRecords(2)
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasNumberOfRecords(1)
             .withLastValue {
                 assertEquals("kan ikke sende inn duplikate perioder", it!!.error!!.msg)
             }
@@ -174,11 +167,14 @@ internal class AapTest {
                 )
             )
         }
-
-        TestTopics.status.assertThat().hasValueMatching("${uid.id}", 1) {
-            assertEquals("kan ikke sende inn duplikate perioder", it.error!!.msg)
-        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasNumberOfRecords(1)
+            .withLastValue {
+                assertEquals("kan ikke sende inn duplikate perioder", it!!.error!!.msg)
+            }
         TestTopics.utbetalinger.assertThat().isEmpty()
+        TestTopics.oppdrag.assertThat().isEmpty()
     }
 
     @Test
@@ -196,11 +192,14 @@ internal class AapTest {
                 )
             )
         }
-
-        TestTopics.status.assertThat().hasValueMatching("${uid.id}", 1) {
-            assertEquals("fom må være før eller lik tom", it.error!!.msg)
-        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasNumberOfRecords(1)
+            .hasValueMatching("${uid.id}", 0) {
+                assertEquals("fom må være før eller lik tom", it.error!!.msg)
+            }
         TestTopics.utbetalinger.assertThat().isEmpty()
+        TestTopics.oppdrag.assertThat().isEmpty()
     }
 
     @Test
@@ -218,11 +217,14 @@ internal class AapTest {
                 )
             )
         }
-
-        TestTopics.status.assertThat().hasValueMatching("${uid.id}", 1) {
-            assertEquals("reservert felt for Dagpenger og AAP", it.error!!.msg)
-        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasNumberOfRecords(1)
+            .hasValueMatching("${uid.id}", 0) {
+                assertEquals("reservert felt for Dagpenger og AAP", it.error!!.msg)
+            }
         TestTopics.utbetalinger.assertThat().isEmpty()
+        TestTopics.oppdrag.assertThat().isEmpty()
     }
 
     @Test
@@ -241,11 +243,14 @@ internal class AapTest {
                 )
             )
         }
-
-        TestTopics.status.assertThat().hasValueMatching("${uid.id}", 1) {
-            assertEquals("inkonsistens blant datoene i periodene", it.error!!.msg)
-        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasNumberOfRecords(1)
+            .hasValueMatching("${uid.id}", 0) {
+                assertEquals("inkonsistens blant datoene i periodene", it.error!!.msg)
+            }
         TestTopics.utbetalinger.assertThat().isEmpty()
+        TestTopics.oppdrag.assertThat().isEmpty()
     }
 
     @Test
@@ -263,11 +268,14 @@ internal class AapTest {
                 )
             )
         }
-
-        TestTopics.status.assertThat().hasValueMatching("${uid.id}", 1) {
-            assertEquals("fremtidige utbetalinger er ikke støttet for periode dag/ukedag", it.error!!.msg)
-        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasNumberOfRecords(1)
+            .hasValueMatching("${uid.id}", 0) {
+                assertEquals("fremtidige utbetalinger er ikke støttet for periode dag/ukedag", it.error!!.msg)
+            }
         TestTopics.utbetalinger.assertThat().isEmpty()
+        TestTopics.oppdrag.assertThat().isEmpty()
     }
 
     @Test
@@ -285,10 +293,13 @@ internal class AapTest {
                 )
             )
         }
-
-        TestTopics.status.assertThat().hasValueMatching("${uid.id}", 1) {
-            assertEquals("DAG støtter maks periode på 92 dager", it.error!!.msg)
-        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasNumberOfRecords(1)
+            .hasValueMatching("${uid.id}", 0) {
+                assertEquals("DAG støtter maks periode på 92 dager", it.error!!.msg)
+            }
         TestTopics.utbetalinger.assertThat().isEmpty()
+        TestTopics.oppdrag.assertThat().isEmpty()
     }
 }

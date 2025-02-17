@@ -19,7 +19,7 @@ object TestData {
         saksbehandlerId: Navident = Navident(""),
     ) = Utbetaling(
         sakId = sakId,
-        førsteSak = førsteSak,
+        førsteUtbetalingPåSak = førsteSak,
         behandlingId = behandlingId,
         lastPeriodeId = lastPeriodeId,
         personident = personident,

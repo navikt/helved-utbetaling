@@ -68,7 +68,7 @@ object OppdragService {
         var forrigeId: PeriodeId? = null
         val oppdrag110 = objectFactory.createOppdrag110().apply { 
             kodeAksjon = OppdragSkjemaConstants.KODE_AKSJON
-            kodeEndring = if(new.førsteSak) Endringskode.NY.name else Endringskode.ENDR.name
+            kodeEndring = if(new.førsteUtbetalingPåSak) Endringskode.NY.name else Endringskode.ENDR.name
             kodeFagomraade = Fagsystem.from(new.stønad).name
             fagsystemId = new.sakId.id
             utbetFrekvens = Utbetalingsfrekvens.MÅNEDLIG.kode

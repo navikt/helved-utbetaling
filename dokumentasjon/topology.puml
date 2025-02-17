@@ -3,108 +3,120 @@
 queue "helved.oppdrag.v1" <<topic>> as helved_oppdrag_v1
 queue "helved.status.v1" <<topic>> as helved_status_v1
 queue "helved.utbetalinger.v1" <<topic>> as helved_utbetalinger_v1
-queue "helved.requests.v1" <<topic>> as helved_requests_v1
+queue "aap.utbetalinger.v1-left-join-helved.utbetalinger.v1-repartition" <<topic>> as aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition
+queue "aap.utbetalinger.v1-left-join-helved.saker.v1-repartition" <<topic>> as aap_utbetalinger_v1_left_join_helved_saker_v1_repartition
+queue "helved.saker.v1" <<topic>> as helved_saker_v1
 queue "aap.utbetalinger.v1" <<topic>> as aap_utbetalinger_v1
 package "Sub-topology: 0" {
 	database "helved.utbetalinger.v1-state-store" <<State Store>> as helved_utbetalinger_v1_state_store
-	agent "consume-helved.requests.v1" <<Source>> as consume_helved_requests_v1
-	agent "stateless-operation-log-consume-helved.requests.v1" <<Processor>> as stateless_operation_log_consume_helved_requests_v1
-	agent "skip-helved.requests.v1-tombstone" <<Processor>> as skip_helved_requests_v1_tombstone
-	agent "helved.requests.v1-left-join-helved.utbetalinger.v1" <<Processor>> as helved_requests_v1_left_join_helved_utbetalinger_v1
-	agent "KSTREAM-MAPVALUES-0000000020" <<Processor>> as KSTREAM_MAPVALUES_0000000020
-	agent "split-helved.requests.v1-left-join-helved.utbetalinger.v1" <<Processor>> as split_helved_requests_v1_left_join_helved_utbetalinger_v1
-	agent "split-helved.requests.v1-left-join-helved.utbetalinger.v1-branch-1" <<Processor>> as split_helved_requests_v1_left_join_helved_utbetalinger_v1_branch_1
-	agent "KSTREAM-MAPVALUES-0000000023" <<Processor>> as KSTREAM_MAPVALUES_0000000023
-	agent "consume-helved.utbetalinger.v1" <<Source>> as consume_helved_utbetalinger_v1
-	agent "split-helved.requests.v1-left-join-helved.utbetalinger.v1-branch-default" <<Processor>> as split_helved_requests_v1_left_join_helved_utbetalinger_v1_branch_default
+	agent "aap.utbetalinger.v1-left-join-helved.utbetalinger.v1-repartition-source" <<Source>> as aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition_source
+	agent "aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Processor>> as aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	agent "KSTREAM-MAPVALUES-0000000021" <<Processor>> as KSTREAM_MAPVALUES_0000000021
+	agent "split-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Processor>> as split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	agent "split-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1-branch-1" <<Processor>> as split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_branch_1
 	agent "KSTREAM-MAPVALUES-0000000024" <<Processor>> as KSTREAM_MAPVALUES_0000000024
-	agent "KSTREAM-MAPVALUES-0000000026" <<Processor>> as KSTREAM_MAPVALUES_0000000026
+	agent "consume-helved.utbetalinger.v1" <<Source>> as consume_helved_utbetalinger_v1
+	agent "split-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1-branch-default" <<Processor>> as split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_branch_default
+	agent "KSTREAM-MAPVALUES-0000000025" <<Processor>> as KSTREAM_MAPVALUES_0000000025
+	agent "KSTREAM-MAPVALUES-0000000027" <<Processor>> as KSTREAM_MAPVALUES_0000000027
 	agent "KSTREAM-MAPVALUES-0000000029" <<Processor>> as KSTREAM_MAPVALUES_0000000029
+	agent "KSTREAM-MAPVALUES-0000000032" <<Processor>> as KSTREAM_MAPVALUES_0000000032
 	agent "stateless-operation-log-consume-helved.utbetalinger.v1" <<Processor>> as stateless_operation_log_consume_helved_utbetalinger_v1
-	agent "stateless-operation-log-produced-helved.oppdrag.v1-via-branch-1-helved.requests.v1-left-join-helved.utbetalinger.v1" <<Processor>> as stateless_operation_log_produced_helved_oppdrag_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
-	agent "stateless-operation-log-produced-helved.status.v1-via-branch-default-helved.requests.v1-left-join-helved.utbetalinger.v1" <<Processor>> as stateless_operation_log_produced_helved_status_v1_via_branch_default_helved_requests_v1_left_join_helved_utbetalinger_v1
+	agent "stateless-operation-log-produced-helved.oppdrag.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Processor>> as stateless_operation_log_produced_helved_oppdrag_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	agent "stateless-operation-log-produced-helved.status.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Processor>> as stateless_operation_log_produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	agent "stateless-operation-log-produced-helved.status.v1-via-branch-default-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Processor>> as stateless_operation_log_produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
 	agent "stateless-operation-log-produced-helved.utbetalinger.v1" <<Processor>> as stateless_operation_log_produced_helved_utbetalinger_v1
-	agent "stateless-operation-log-produced-helved.utbetalinger.v1-via-branch-1-helved.requests.v1-left-join-helved.utbetalinger.v1" <<Processor>> as stateless_operation_log_produced_helved_utbetalinger_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
+	agent "stateless-operation-log-produced-helved.utbetalinger.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Processor>> as stateless_operation_log_produced_helved_utbetalinger_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
 	agent "helved.utbetalinger.v1-to-table" <<Processor>> as helved_utbetalinger_v1_to_table
-	agent "produced-helved.oppdrag.v1-via-branch-1-helved.requests.v1-left-join-helved.utbetalinger.v1" <<Sink>> as produced_helved_oppdrag_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
-	agent "produced-helved.status.v1-via-branch-default-helved.requests.v1-left-join-helved.utbetalinger.v1" <<Sink>> as produced_helved_status_v1_via_branch_default_helved_requests_v1_left_join_helved_utbetalinger_v1
-	agent "produced-helved.utbetalinger.v1-via-branch-1-helved.requests.v1-left-join-helved.utbetalinger.v1" <<Sink>> as produced_helved_utbetalinger_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
-	helved_requests_v1 --> consume_helved_requests_v1
-	helved_utbetalinger_v1_state_store -- helved_requests_v1_left_join_helved_utbetalinger_v1
+	agent "produced-helved.oppdrag.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Sink>> as produced_helved_oppdrag_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	agent "produced-helved.status.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Sink>> as produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	agent "produced-helved.status.v1-via-branch-default-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Sink>> as produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	agent "produced-helved.utbetalinger.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.utbetalinger.v1" <<Sink>> as produced_helved_utbetalinger_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition --> aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition_source
+	helved_utbetalinger_v1_state_store -- aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
 	helved_utbetalinger_v1 --> consume_helved_utbetalinger_v1
 	helved_utbetalinger_v1_state_store -- helved_utbetalinger_v1_to_table
-	helved_oppdrag_v1 <-- produced_helved_oppdrag_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
-	helved_status_v1 <-- produced_helved_status_v1_via_branch_default_helved_requests_v1_left_join_helved_utbetalinger_v1
-	helved_utbetalinger_v1 <-- produced_helved_utbetalinger_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
-	consume_helved_requests_v1 --> stateless_operation_log_consume_helved_requests_v1
-	stateless_operation_log_consume_helved_requests_v1 --> skip_helved_requests_v1_tombstone
-	skip_helved_requests_v1_tombstone --> helved_requests_v1_left_join_helved_utbetalinger_v1
-	helved_requests_v1_left_join_helved_utbetalinger_v1 --> KSTREAM_MAPVALUES_0000000020
-	KSTREAM_MAPVALUES_0000000020 --> split_helved_requests_v1_left_join_helved_utbetalinger_v1
-	split_helved_requests_v1_left_join_helved_utbetalinger_v1 --> split_helved_requests_v1_left_join_helved_utbetalinger_v1_branch_1
-	split_helved_requests_v1_left_join_helved_utbetalinger_v1 --> split_helved_requests_v1_left_join_helved_utbetalinger_v1_branch_default
-	split_helved_requests_v1_left_join_helved_utbetalinger_v1_branch_1 --> KSTREAM_MAPVALUES_0000000023
-	KSTREAM_MAPVALUES_0000000023 --> KSTREAM_MAPVALUES_0000000026
-	KSTREAM_MAPVALUES_0000000023 --> KSTREAM_MAPVALUES_0000000024
+	helved_oppdrag_v1 <-- produced_helved_oppdrag_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	helved_status_v1 <-- produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	helved_status_v1 <-- produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	helved_utbetalinger_v1 <-- produced_helved_utbetalinger_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition_source --> aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	aap_utbetalinger_v1_left_join_helved_utbetalinger_v1 --> KSTREAM_MAPVALUES_0000000021
+	KSTREAM_MAPVALUES_0000000021 --> split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1 --> split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_branch_1
+	split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1 --> split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_branch_default
+	split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_branch_1 --> KSTREAM_MAPVALUES_0000000024
+	KSTREAM_MAPVALUES_0000000024 --> KSTREAM_MAPVALUES_0000000025
+	KSTREAM_MAPVALUES_0000000024 --> KSTREAM_MAPVALUES_0000000027
+	KSTREAM_MAPVALUES_0000000024 --> KSTREAM_MAPVALUES_0000000029
 	consume_helved_utbetalinger_v1 --> stateless_operation_log_consume_helved_utbetalinger_v1
-	split_helved_requests_v1_left_join_helved_utbetalinger_v1_branch_default --> KSTREAM_MAPVALUES_0000000029
-	KSTREAM_MAPVALUES_0000000024 --> stateless_operation_log_produced_helved_utbetalinger_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
-	KSTREAM_MAPVALUES_0000000026 --> stateless_operation_log_produced_helved_oppdrag_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
-	KSTREAM_MAPVALUES_0000000029 --> stateless_operation_log_produced_helved_status_v1_via_branch_default_helved_requests_v1_left_join_helved_utbetalinger_v1
+	split_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_branch_default --> KSTREAM_MAPVALUES_0000000032
+	KSTREAM_MAPVALUES_0000000025 --> stateless_operation_log_produced_helved_utbetalinger_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	KSTREAM_MAPVALUES_0000000027 --> stateless_operation_log_produced_helved_oppdrag_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	KSTREAM_MAPVALUES_0000000029 --> stateless_operation_log_produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	KSTREAM_MAPVALUES_0000000032 --> stateless_operation_log_produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
 	stateless_operation_log_consume_helved_utbetalinger_v1 --> stateless_operation_log_produced_helved_utbetalinger_v1
-	stateless_operation_log_produced_helved_oppdrag_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1 --> produced_helved_oppdrag_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
-	stateless_operation_log_produced_helved_status_v1_via_branch_default_helved_requests_v1_left_join_helved_utbetalinger_v1 --> produced_helved_status_v1_via_branch_default_helved_requests_v1_left_join_helved_utbetalinger_v1
+	stateless_operation_log_produced_helved_oppdrag_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1 --> produced_helved_oppdrag_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	stateless_operation_log_produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1 --> produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
+	stateless_operation_log_produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1 --> produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
 	stateless_operation_log_produced_helved_utbetalinger_v1 --> helved_utbetalinger_v1_to_table
-	stateless_operation_log_produced_helved_utbetalinger_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1 --> produced_helved_utbetalinger_v1_via_branch_1_helved_requests_v1_left_join_helved_utbetalinger_v1
+	stateless_operation_log_produced_helved_utbetalinger_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1 --> produced_helved_utbetalinger_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_utbetalinger_v1
 }
 package "Sub-topology: 1" {
 	database "helved.status.v1-state-store" <<State Store>> as helved_status_v1_state_store
+	agent "consume-helved.status.v1" <<Source>> as consume_helved_status_v1
+	agent "stateless-operation-log-consume-helved.status.v1" <<Processor>> as stateless_operation_log_consume_helved_status_v1
+	agent "stateless-operation-log-produced-helved.status.v1" <<Processor>> as stateless_operation_log_produced_helved_status_v1
+	agent "helved.status.v1-to-table" <<Processor>> as helved_status_v1_to_table
+	helved_status_v1 --> consume_helved_status_v1
+	helved_status_v1_state_store -- helved_status_v1_to_table
+	consume_helved_status_v1 --> stateless_operation_log_consume_helved_status_v1
+	stateless_operation_log_consume_helved_status_v1 --> stateless_operation_log_produced_helved_status_v1
+	stateless_operation_log_produced_helved_status_v1 --> helved_status_v1_to_table
+}
+package "Sub-topology: 2" {
+	database "helved.saker.v1-state-store" <<State Store>> as helved_saker_v1_state_store
+	agent "aap.utbetalinger.v1-left-join-helved.saker.v1-repartition-source" <<Source>> as aap_utbetalinger_v1_left_join_helved_saker_v1_repartition_source
+	agent "aap.utbetalinger.v1-left-join-helved.saker.v1" <<Processor>> as aap_utbetalinger_v1_left_join_helved_saker_v1
+	agent "KSTREAM-MAPVALUES-0000000014" <<Processor>> as KSTREAM_MAPVALUES_0000000014
+	agent "KSTREAM-KEY-SELECT-0000000015" <<Processor>> as KSTREAM_KEY_SELECT_0000000015
+	agent "consume-helved.saker.v1" <<Source>> as consume_helved_saker_v1
+	agent "KSTREAM-MAPVALUES-0000000016" <<Processor>> as KSTREAM_MAPVALUES_0000000016
+	agent "stateless-operation-log-consume-helved.saker.v1" <<Processor>> as stateless_operation_log_consume_helved_saker_v1
+	agent "aap.utbetalinger.v1-left-join-helved.utbetalinger.v1-repartition-filter" <<Processor>> as aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition_filter
+	agent "stateless-operation-log-produced-helved.saker.v1" <<Processor>> as stateless_operation_log_produced_helved_saker_v1
+	agent "aap.utbetalinger.v1-left-join-helved.utbetalinger.v1-repartition-sink" <<Sink>> as aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition_sink
+	agent "helved.saker.v1-to-table" <<Processor>> as helved_saker_v1_to_table
+	aap_utbetalinger_v1_left_join_helved_saker_v1_repartition --> aap_utbetalinger_v1_left_join_helved_saker_v1_repartition_source
+	helved_saker_v1_state_store -- aap_utbetalinger_v1_left_join_helved_saker_v1
+	helved_saker_v1 --> consume_helved_saker_v1
+	aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition <-- aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition_sink
+	helved_saker_v1_state_store -- helved_saker_v1_to_table
+	aap_utbetalinger_v1_left_join_helved_saker_v1_repartition_source --> aap_utbetalinger_v1_left_join_helved_saker_v1
+	aap_utbetalinger_v1_left_join_helved_saker_v1 --> KSTREAM_MAPVALUES_0000000014
+	KSTREAM_MAPVALUES_0000000014 --> KSTREAM_KEY_SELECT_0000000015
+	KSTREAM_KEY_SELECT_0000000015 --> KSTREAM_MAPVALUES_0000000016
+	consume_helved_saker_v1 --> stateless_operation_log_consume_helved_saker_v1
+	KSTREAM_MAPVALUES_0000000016 --> aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition_filter
+	stateless_operation_log_consume_helved_saker_v1 --> stateless_operation_log_produced_helved_saker_v1
+	aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition_filter --> aap_utbetalinger_v1_left_join_helved_utbetalinger_v1_repartition_sink
+	stateless_operation_log_produced_helved_saker_v1 --> helved_saker_v1_to_table
+}
+package "Sub-topology: 3" {
 	agent "consume-aap.utbetalinger.v1" <<Source>> as consume_aap_utbetalinger_v1
 	agent "stateless-operation-log-consume-aap.utbetalinger.v1" <<Processor>> as stateless_operation_log_consume_aap_utbetalinger_v1
 	agent "skip-aap.utbetalinger.v1-tombstone" <<Processor>> as skip_aap_utbetalinger_v1_tombstone
-	agent "aap.utbetalinger.v1-left-join-helved.status.v1" <<Processor>> as aap_utbetalinger_v1_left_join_helved_status_v1
-	agent "KSTREAM-MAPVALUES-0000000007" <<Processor>> as KSTREAM_MAPVALUES_0000000007
-	agent "split-aap.utbetalinger.v1-left-join-helved.status.v1" <<Processor>> as split_aap_utbetalinger_v1_left_join_helved_status_v1
-	agent "split-aap.utbetalinger.v1-left-join-helved.status.v1-branch-1" <<Processor>> as split_aap_utbetalinger_v1_left_join_helved_status_v1_branch_1
-	agent "KSTREAM-MAPVALUES-0000000010" <<Processor>> as KSTREAM_MAPVALUES_0000000010
-	agent "consume-helved.status.v1" <<Source>> as consume_helved_status_v1
-	agent "split-aap.utbetalinger.v1-left-join-helved.status.v1-branch-default" <<Processor>> as split_aap_utbetalinger_v1_left_join_helved_status_v1_branch_default
-	agent "KSTREAM-MAPVALUES-0000000012" <<Processor>> as KSTREAM_MAPVALUES_0000000012
-	agent "KSTREAM-MAPVALUES-0000000015" <<Processor>> as KSTREAM_MAPVALUES_0000000015
-	agent "stateless-operation-log-consume-helved.status.v1" <<Processor>> as stateless_operation_log_consume_helved_status_v1
-	agent "stateless-operation-log-produced-helved.requests.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.status.v1" <<Processor>> as stateless_operation_log_produced_helved_requests_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	agent "stateless-operation-log-produced-helved.status.v1" <<Processor>> as stateless_operation_log_produced_helved_status_v1
-	agent "stateless-operation-log-produced-helved.status.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.status.v1" <<Processor>> as stateless_operation_log_produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	agent "stateless-operation-log-produced-helved.status.v1-via-branch-default-aap.utbetalinger.v1-left-join-helved.status.v1" <<Processor>> as stateless_operation_log_produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_status_v1
-	agent "helved.status.v1-to-table" <<Processor>> as helved_status_v1_to_table
-	agent "produced-helved.requests.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.status.v1" <<Sink>> as produced_helved_requests_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	agent "produced-helved.status.v1-via-branch-1-aap.utbetalinger.v1-left-join-helved.status.v1" <<Sink>> as produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	agent "produced-helved.status.v1-via-branch-default-aap.utbetalinger.v1-left-join-helved.status.v1" <<Sink>> as produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_status_v1
+	agent "KSTREAM-MAPVALUES-0000000008" <<Processor>> as KSTREAM_MAPVALUES_0000000008
+	agent "KSTREAM-KEY-SELECT-0000000009" <<Processor>> as KSTREAM_KEY_SELECT_0000000009
+	agent "aap.utbetalinger.v1-left-join-helved.saker.v1-repartition-filter" <<Processor>> as aap_utbetalinger_v1_left_join_helved_saker_v1_repartition_filter
+	agent "aap.utbetalinger.v1-left-join-helved.saker.v1-repartition-sink" <<Sink>> as aap_utbetalinger_v1_left_join_helved_saker_v1_repartition_sink
 	aap_utbetalinger_v1 --> consume_aap_utbetalinger_v1
-	helved_status_v1_state_store -- aap_utbetalinger_v1_left_join_helved_status_v1
-	helved_status_v1 --> consume_helved_status_v1
-	helved_status_v1_state_store -- helved_status_v1_to_table
-	helved_requests_v1 <-- produced_helved_requests_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	helved_status_v1 <-- produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	helved_status_v1 <-- produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_status_v1
+	aap_utbetalinger_v1_left_join_helved_saker_v1_repartition <-- aap_utbetalinger_v1_left_join_helved_saker_v1_repartition_sink
 	consume_aap_utbetalinger_v1 --> stateless_operation_log_consume_aap_utbetalinger_v1
 	stateless_operation_log_consume_aap_utbetalinger_v1 --> skip_aap_utbetalinger_v1_tombstone
-	skip_aap_utbetalinger_v1_tombstone --> aap_utbetalinger_v1_left_join_helved_status_v1
-	aap_utbetalinger_v1_left_join_helved_status_v1 --> KSTREAM_MAPVALUES_0000000007
-	KSTREAM_MAPVALUES_0000000007 --> split_aap_utbetalinger_v1_left_join_helved_status_v1
-	split_aap_utbetalinger_v1_left_join_helved_status_v1 --> split_aap_utbetalinger_v1_left_join_helved_status_v1_branch_1
-	split_aap_utbetalinger_v1_left_join_helved_status_v1 --> split_aap_utbetalinger_v1_left_join_helved_status_v1_branch_default
-	split_aap_utbetalinger_v1_left_join_helved_status_v1_branch_1 --> KSTREAM_MAPVALUES_0000000010
-	KSTREAM_MAPVALUES_0000000010 --> KSTREAM_MAPVALUES_0000000012
-	KSTREAM_MAPVALUES_0000000010 --> stateless_operation_log_produced_helved_requests_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	consume_helved_status_v1 --> stateless_operation_log_consume_helved_status_v1
-	split_aap_utbetalinger_v1_left_join_helved_status_v1_branch_default --> KSTREAM_MAPVALUES_0000000015
-	KSTREAM_MAPVALUES_0000000012 --> stateless_operation_log_produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	KSTREAM_MAPVALUES_0000000015 --> stateless_operation_log_produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_status_v1
-	stateless_operation_log_consume_helved_status_v1 --> stateless_operation_log_produced_helved_status_v1
-	stateless_operation_log_produced_helved_requests_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1 --> produced_helved_requests_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	stateless_operation_log_produced_helved_status_v1 --> helved_status_v1_to_table
-	stateless_operation_log_produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1 --> produced_helved_status_v1_via_branch_1_aap_utbetalinger_v1_left_join_helved_status_v1
-	stateless_operation_log_produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_status_v1 --> produced_helved_status_v1_via_branch_default_aap_utbetalinger_v1_left_join_helved_status_v1
+	skip_aap_utbetalinger_v1_tombstone --> KSTREAM_MAPVALUES_0000000008
+	KSTREAM_MAPVALUES_0000000008 --> KSTREAM_KEY_SELECT_0000000009
+	KSTREAM_KEY_SELECT_0000000009 --> aap_utbetalinger_v1_left_join_helved_saker_v1_repartition_filter
+	aap_utbetalinger_v1_left_join_helved_saker_v1_repartition_filter --> aap_utbetalinger_v1_left_join_helved_saker_v1_repartition_sink
 }
 @enduml

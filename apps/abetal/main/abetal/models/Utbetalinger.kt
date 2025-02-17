@@ -27,8 +27,8 @@ value class Navident(val ident: String)
 value class UtbetalingId(val id: UUID) 
 
 data class Utbetaling(
+    val førsteUtbetalingPåSak: Boolean = false,
     val sakId: SakId,
-    val førsteSak: Boolean,
     val behandlingId: BehandlingId,
     val lastPeriodeId: PeriodeId,
     val personident: Personident,
@@ -191,7 +191,7 @@ private fun Utbetaling.failOnDuplicate(prev: Utbetaling?) {
     prev?.let {
         appLog.info("next $this")
         appLog.info("prev $prev")
-        if (this.copy(førsteSak = prev.førsteSak) == prev){
+        if (this.copy(førsteUtbetalingPåSak = prev.førsteUtbetalingPåSak) == prev){
             conflict("Denne meldingen har du allerede sendt inn")
         } 
     }
