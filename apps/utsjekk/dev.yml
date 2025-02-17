@@ -77,6 +77,8 @@ spec:
         - application: azure-token-generator
           namespace: aura
           cluster: dev-gcp
+        - application: utbetal
+          namespace: aap
     outbound:
       rules:
         - application: utsjekk-oppdrag
