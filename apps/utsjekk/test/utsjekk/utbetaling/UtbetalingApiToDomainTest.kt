@@ -1,22 +1,20 @@
 package utsjekk.utbetaling
 
 import TestRuntime
-import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import com.github.dockerjava.api.model.LocalNodeState
 
 class UtbetalingApiToDomainTest {
 
-    /*
+    /**
      * ╭───────────────╮          ╭────ENGANGS────╮
      * │ 4.feb - 4.feb │ skal bli │ 4.feb - 4.feb │
      * │ 500,-         │          │ 500,-         │
      * ╰───────────────╯          ╰───────────────╯
      */
     @Test
-    fun `1 dag utledes til ENGANGS`() = runTest(TestRuntime.context) {
+    fun `engangsperiode på 1 dag`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 4.feb,
             periodeType = PeriodeType.EN_GANG,
@@ -45,7 +43,7 @@ class UtbetalingApiToDomainTest {
      * ╰────────────────╯          ╰────────────────╯
      */
     @Test
-    fun `èn periode på mer enn 1 dag utledes til ENGANGS`() = runTest(TestRuntime.context) {
+    fun `engangsperiode på under 1 mnd`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.aug,
             periodeType = PeriodeType.EN_GANG,
@@ -74,7 +72,7 @@ class UtbetalingApiToDomainTest {
      * ╰────────────────╯          ╰────────────────╯
      */
     @Test
-    fun `1 periode på 3 fulle MND utledes til ENGANGS`() = runTest(TestRuntime.context) {
+    fun `engangsperiode på 3 mnd`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
             periodeType = PeriodeType.EN_GANG,
@@ -103,7 +101,7 @@ class UtbetalingApiToDomainTest {
      * ╰───────╯╰───────╯╰───────╯          ╰───────────────╯
      */
     @Test
-    fun `3 virkedager utledes til VIRKEDAG`() = runTest(TestRuntime.context) {
+    fun `slår sammen dager uten helg`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 5.aug,
             periodeType = PeriodeType.UKEDAG,
@@ -136,7 +134,7 @@ class UtbetalingApiToDomainTest {
      * ╰───────╯╰───────╯╰───────╯╰───────╯╰───────╯          ╰───────────────╯
      */
     @Test
-    fun `5 dager og virkedager utledes til DAG`() = runTest(TestRuntime.context) {
+    fun `slår sammen dager med helg`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 5.aug,
             periodeType = PeriodeType.DAG,
@@ -171,7 +169,7 @@ class UtbetalingApiToDomainTest {
      * ╰────────────────╯          ╰────────────────╯
      */
     @Test
-    fun `1 MND utledes til MND`() = runTest(TestRuntime.context) {
+    fun `mapper en månedsperiode`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 29.feb,
             periodeType = PeriodeType.MND,
@@ -202,7 +200,7 @@ class UtbetalingApiToDomainTest {
      * ╰────────────────╯╰────────────────╯          ╰────────────────╯
      */
     @Test
-    fun `2 MND utledes til MND`() = runTest(TestRuntime.context) {
+    fun `slår sammen 2 måneder`() = runTest(TestRuntime.context) {
         val api = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 31.mar,
             periodeType = PeriodeType.MND,
@@ -218,6 +216,73 @@ class UtbetalingApiToDomainTest {
             vedtakstidspunkt = 31.mar,
             satstype = Satstype.MND,
             perioder = listOf(Utbetalingsperiode.dagpenger(1.feb, 31.mar, 8_000u)),
+            sakId = SakId(api.sakId),
+            personident = Personident(api.personident),
+            behandlingId = BehandlingId(api.behandlingId),
+            saksbehandlerId = Navident(api.saksbehandlerId),
+            beslutterId = Navident(api.beslutterId),
+        )
+        assertEquals(expected, domain)
+    }
+
+    /**
+     * ╭───────────────╮╭───────────────╮          ╭───────DAG─────╮
+     * │ 1.jan - 1.jan ││ 2.jan - 2.jan │ skal bli │ 1.jan - 2.jan │
+     * │ 1000,-        ││ 1000,-        │          │ 1000,-        │
+     * ╰───────────────╯╰───────────────╯          ╰───────────────╯
+     */
+    @Test
+    fun `slår sammen dager - oppdatering av utbetaling`() = runTest(TestRuntime.context) {
+        val api = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 3.jan,
+            periodeType = PeriodeType.DAG,
+            perioder = listOf(
+                UtbetalingsperiodeApi(1.jan, 1.jan, 1_000u),
+                UtbetalingsperiodeApi(2.jan, 2.jan, 1_000u),
+            ),
+        )
+        val domain = Utbetaling.from(api, PeriodeId())
+        val pid = domain.lastPeriodeId
+        val expected = Utbetaling.dagpenger(
+            lastPeriodeId = pid,
+            vedtakstidspunkt = 3.jan,
+            satstype = Satstype.DAG,
+            perioder = listOf(Utbetalingsperiode.dagpenger(1.jan, 2.jan, 1_000u)),
+            sakId = SakId(api.sakId),
+            personident = Personident(api.personident),
+            behandlingId = BehandlingId(api.behandlingId),
+            saksbehandlerId = Navident(api.saksbehandlerId),
+            beslutterId = Navident(api.beslutterId),
+        )
+        assertEquals(expected, domain)
+    }
+
+    /**
+     * ╭───────╮╭───────╮          ╭──DAG──╮╭──DAG──╮
+     * │ 1.jan ││ 3.jan │ skal bli │ 1.jan ││ 3.jan │
+     * │ 1000,-││ 1000,-│          │ 1000,-││ 1000,-│
+     * ╰───────╯╰───────╯          ╰───────╯╰───────╯
+     */
+    @Test
+    fun `slår sammen dager med opphold - oppdatering av utbetaling`() = runTest(TestRuntime.context) {
+        val api = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 3.jan,
+            periodeType = PeriodeType.DAG,
+            perioder = listOf(
+                UtbetalingsperiodeApi(1.jan, 1.jan, 1_000u),
+                UtbetalingsperiodeApi(3.jan, 3.jan, 1_000u),
+            ),
+        )
+        val domain = Utbetaling.from(api, PeriodeId())
+        val pid = domain.lastPeriodeId
+        val expected = Utbetaling.dagpenger(
+            lastPeriodeId = pid,
+            vedtakstidspunkt = 3.jan,
+            satstype = Satstype.DAG,
+            perioder = listOf(
+                Utbetalingsperiode.dagpenger(1.jan, 1.jan, 1_000u),
+                Utbetalingsperiode.dagpenger(3.jan, 3.jan, 1_000u)
+            ),
             sakId = SakId(api.sakId),
             personident = Personident(api.personident),
             behandlingId = BehandlingId(api.behandlingId),
