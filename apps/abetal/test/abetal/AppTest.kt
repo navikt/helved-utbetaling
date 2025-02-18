@@ -16,7 +16,7 @@ val Int.des: LocalDate
 internal class AapTest {
 
     @Test
-    fun `add to utbetalinger`() {
+    fun `add utbetaling`() {
         val uid = UtbetalingId(UUID.randomUUID())
         TestTopics.aap.produce("${uid.id}") {
             AapUtbetaling(

@@ -1,7 +1,5 @@
 package abetal
 
-import abetal.models.SakId
-
 internal const val DEFAULT_DOC_STR = "https://navikt.github.io/utsjekk-docs/"
 
 data class ApiError(
@@ -64,3 +62,4 @@ fun unavailable(
     field: String? = null,
     doc: String? = null,
 ) : Nothing = throw ApiError(503, msg, field, doc)
+
