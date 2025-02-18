@@ -22,7 +22,6 @@ object Tables {
 
 fun createTopology(): Topology = topology {
     val utbetalinger = consume(Tables.utbetalinger)
-    val status = consume(Tables.status)
     val saker = consume(Tables.saker)
     aapStream(utbetalinger, saker)
 }
@@ -66,6 +65,5 @@ fun Topology.aapStream(utbetalinger: KTable<Utbetaling>, saker: KTable<SakIdWrap
         }.default {
             map { it -> it.unwrapErr() }.produce(Topics.status)
         }
-
 } 
 
