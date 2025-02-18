@@ -52,7 +52,7 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
 
             val dto = UtbetalingService.read(uid)
                 ?.let(UtbetalingApi::from)
-                ?: notFound(msg = "utbetaling", field = "uid")
+                ?: notFound(msg = "Fant ikke utbetaling", field = "uid")
 
             call.respond(HttpStatusCode.OK, dto)
         }
@@ -77,6 +77,7 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
             val existing = UtbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
             val domain = Utbetaling.from(dto, existing.lastPeriodeId)
+
             UtbetalingService.update(uid, domain).onFailure {
                 when (it) {
                     DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")

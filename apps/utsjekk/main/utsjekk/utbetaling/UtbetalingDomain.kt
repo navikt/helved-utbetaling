@@ -1,9 +1,8 @@
 package utsjekk.utbetaling
 
 import com.fasterxml.jackson.annotation.JsonCreator
-import utsjekk.appLog
-import utsjekk.badRequest
-import utsjekk.conflict
+import utsjekk.*
+import utsjekk.avstemming.nesteUkedag
 import java.nio.ByteBuffer
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -72,8 +71,19 @@ data class Utbetaling(
                 beslutterId = Navident(dto.beslutterId),
                 saksbehandlerId = Navident(dto.saksbehandlerId),
                 satstype = Satstype.from(dto.periodeType),
-                perioder = dto.perioder.sortedBy { it.fom }.map(Utbetalingsperiode::from),
                 avvent = dto.avvent,
+                perioder = dto.perioder
+                    .sortedBy { it.fom }
+                    .groupBy { listOf(it.beløp, it.betalendeEnhet, it.fastsattDagsats) }
+                    .map { (_, perioder) ->
+                        perioder.splitWhen { a, b ->
+                            when (dto.periodeType) {
+                                PeriodeType.UKEDAG -> a.tom.nesteUkedag() != b.fom
+                                else -> a.tom.plusDays(1) != b.fom
+                            }
+                        }
+                            .map { Utbetalingsperiode.from(it, Satstype.from(dto.periodeType)) }
+                    }.flatten()
             )
 
         fun from(dto: UtbetalingApi): Utbetaling {
@@ -373,3 +383,17 @@ private fun beløp(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): U
                     "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
             )
     }
+
+fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
+    if (this.isEmpty()) return emptyList()
+
+    return this.drop(1).fold(mutableListOf(mutableListOf(this.first()))) { acc, item ->
+        val lastSublist = acc.last()
+        if (predicate(lastSublist.last(), item)) {
+            acc.add(mutableListOf(item))
+        } else {
+            lastSublist.add(item)
+        }
+        acc
+    }.map { it.toList() }
+}

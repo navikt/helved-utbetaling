@@ -13,6 +13,15 @@ fun LocalDate.nesteVirkedag(): LocalDate {
     return nesteDag
 }
 
+fun LocalDate.nesteUkedag(): LocalDate {
+    var nesteDag = this.plusDays(1)
+
+    while (nesteDag.erHelg()) {
+        nesteDag = nesteDag.plusDays(1)
+    }
+    return nesteDag
+}
+
 fun LocalDate.erHelligdag(): Boolean {
     val helligDager = FASTE_HELLIGDAGER + beregnBevegeligeHelligdager(year)
     val erHelligdag = helligDager.contains(MonthDay.from(this))

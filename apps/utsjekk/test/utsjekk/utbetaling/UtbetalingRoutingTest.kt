@@ -257,7 +257,7 @@ class UtbetalingRoutingTest {
         }.also {
             assertEquals(HttpStatusCode.NotFound, it.status)
         }.body<ApiError.Response>()
-        assertEquals("utbetaling", error.msg)
+        assertEquals("Fant ikke utbetaling", error.msg)
         assertEquals("uid", error.field)
         assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
         assertEquals(200, http.head(error.doc).status.value)
@@ -608,7 +608,7 @@ class UtbetalingRoutingTest {
         }.also {
             assertEquals(HttpStatusCode.NotFound, it.status)
             val error = it.body<ApiError.Response>()
-            assertEquals("utbetaling", error.msg)
+            assertEquals("Fant ikke utbetaling", error.msg)
             assertEquals("uid", error.field)
             assertEquals("https://navikt.github.io/utsjekk-docs/", error.doc)
             assertEquals(200, http.head(error.doc).status.value)
