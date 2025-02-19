@@ -1,4 +1,4 @@
-package overfør.models
+package urskog.models
 
 data class StatusReply(
     val status: Status = Status.MOTTATT, 

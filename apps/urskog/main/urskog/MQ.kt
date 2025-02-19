@@ -1,4 +1,4 @@
-package overfør
+package urskog
 
 import com.ibm.mq.jms.MQQueue
 import libs.mq.MQ
@@ -6,7 +6,7 @@ import libs.mq.MQProducer
 import libs.utils.secureLog
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import overfør.OppdragConfig
+import urskog.OppdragConfig
 
 class OppdragProducer(private val config: OppdragConfig, mq: MQ) {
     private val oppdragQueue = MQQueue(config.sendKø)

@@ -3,11 +3,11 @@ plugins {
 }
 
 application {
-    mainClass.set("abetal.OverførKt")
+    mainClass.set("urskog.UrskogKt")
 }
 
 val ktorVersion = "3.1.0"
-val libVersion = "3.1.12"
+val libVersion = "3.1.14"
 
 dependencies {
     implementation("no.nav.helved:utils:$libVersion")
@@ -26,10 +26,10 @@ dependencies {
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
 
-    testImplementation(kotlin("test"))
+    testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("no.nav.helved:kafka-test:$libVersion")
     testImplementation("no.nav.helved:mq-test:$libVersion")
-    testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
-    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    testImplementation(kotlin("test")) 
 }

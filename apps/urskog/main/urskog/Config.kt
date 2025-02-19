@@ -1,4 +1,4 @@
-package overfør
+package urskog
 
 import libs.kafka.StreamsConfig
 import libs.mq.MQConfig

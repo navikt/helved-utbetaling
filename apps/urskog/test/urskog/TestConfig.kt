@@ -1,4 +1,4 @@
-package overfør
+package urskog
 
 import libs.kafka.SslConfig
 import libs.kafka.StreamsConfig

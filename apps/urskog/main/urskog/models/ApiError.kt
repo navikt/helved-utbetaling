@@ -1,4 +1,4 @@
-package overfør.models
+package urskog.models
 
 internal const val DEFAULT_DOC_STR = "https://navikt.github.io/utsjekk-docs/"
 

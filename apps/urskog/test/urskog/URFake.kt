@@ -1,4 +1,4 @@
-package overfør
+package urskog
 
 import com.ibm.mq.jms.MQQueue
 import libs.mq.MQ
@@ -7,21 +7,19 @@ import libs.mq.MQProducer
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import overfør.Config
+import urskog.Config
 import javax.jms.TextMessage
 
-class MQFake(
+class URFake(
     private val config: Config,
     private val mq: MQ = MQ(config.mq)
 ): AutoCloseable {
-    val oppdrag = OppdragListener().apply { start() }
+    val oppdragskø = OppdragListener().apply { start() }
 
     inner class OppdragListener : MQConsumer(mq, MQQueue(config.oppdrag.sendKø)) {
-        private val received: MutableList<TextMessage> = mutableListOf()
         private val mapper = XMLMapper<Oppdrag>()
 
-        fun getReceived() = received.toList()
-        fun clearReceived() = received.clear()
+        val received: MutableList<TextMessage> = mutableListOf()
 
         override fun onMessage(message: TextMessage) {
             received.add(message)
