@@ -18,15 +18,13 @@ internal class AapTest {
     fun `add utbetaling`() {
         val uid = UtbetalingId(UUID.randomUUID())
         TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(1.jan),
-                        TestData.dag(2.jan),
-                    )
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.dag(1.jan),
+                    TestData.dag(2.jan),
                 )
             )
         }
@@ -47,24 +45,22 @@ internal class AapTest {
     @Test
     fun `lagrer ny sakId`() {
         val uid = UtbetalingId(UUID.randomUUID())
-        val sakId = SakId("1")
+        val sakId = SakId("${TestData.nextSakId}")
         TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    sakId = sakId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(1.jan),
-                        TestData.dag(2.jan),
-                    )
+                sakId = sakId,
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.dag(1.jan),
+                    TestData.dag(2.jan),
                 )
             )
         }
         TestTopics.saker.assertThat()
-            .hasNumberOfRecords(1)
             .hasKey("AAP-${sakId.id}")
+            .hasNumberOfRecordsForKey("AAP-${sakId.id}", 1)
             .hasValueMatching("AAP-${sakId.id}", 0) {
                 assertEquals(uid, it.uids.single())
             }
@@ -74,32 +70,28 @@ internal class AapTest {
     fun `appender uid på eksisterende sakId`() {
         val uid1 = UtbetalingId(UUID.randomUUID())
         val uid2 = UtbetalingId(UUID.randomUUID())
-        val sakId = SakId("1")
+        val sakId = SakId("${TestData.nextSakId}")
         TestTopics.aap.produce("${uid1.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    sakId = sakId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(1.jan),
-                        TestData.dag(2.jan),
-                    )
+                sakId = sakId,
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.dag(1.jan),
+                    TestData.dag(2.jan),
                 )
             )
         }
         TestTopics.aap.produce("${uid2.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    sakId = sakId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(1.jan),
-                        TestData.dag(2.jan),
-                    )
+                sakId = sakId,
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.dag(1.jan),
+                    TestData.dag(2.jan),
                 )
             )
         }
@@ -126,35 +118,18 @@ internal class AapTest {
     fun `setter andre utbetaling på sak til ENDR`() {
         val uid1 = UtbetalingId(UUID.randomUUID())
         val uid2 = UtbetalingId(UUID.randomUUID())
-        val sakId = SakId("1")
-        TestTopics.aap.produce("${uid1.id}") {
-            AapUtbetaling(
-                action = Action.CREATE,
-                data = TestData.utbetaling(
-                    sakId = sakId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(1.jan),
-                        TestData.dag(2.jan),
-                    )
-                )
+        val utbet = TestData.aapUtbetaling(
+            action = Action.CREATE,
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            periodetype = Periodetype.DAG,
+            perioder = listOf(
+                TestData.dag(1.jan),
+                TestData.dag(2.jan),
             )
-        }
-        TestTopics.aap.produce("${uid2.id}") {
-            AapUtbetaling(
-                action = Action.CREATE,
-                data = TestData.utbetaling(
-                    sakId = sakId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(1.jan),
-                        TestData.dag(2.jan),
-                    )
-                )
-            )
-        }
+        )
+        TestTopics.aap.produce("${uid1.id}") { utbet }
+        TestTopics.aap.produce("${uid2.id}") { utbet }
+
         TestTopics.oppdrag.assertThat()
             .hasValueMatching(uid1.id.toString(), 0) {
                 assertEquals("NY", it.oppdrag110.kodeEndring)
@@ -222,15 +197,13 @@ internal class AapTest {
     fun `error ved årsskifte`() {
         val uid = UtbetalingId(UUID.randomUUID())
         TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(31.des),
-                        TestData.dag(1.jan),
-                    )
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.dag(31.des),
+                    TestData.dag(1.jan),
                 )
             )
         }
@@ -248,15 +221,13 @@ internal class AapTest {
     fun `error ved to perioder med samme fom`() {
         val uid = UtbetalingId(UUID.randomUUID())
         TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.utbetalingsperiode(fom = 1.jan, tom = 2.jan),
-                        TestData.utbetalingsperiode(fom = 1.jan, tom = 3.jan),
-                    )
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.utbetalingsperiode(fom = 1.jan, tom = 2.jan),
+                    TestData.utbetalingsperiode(fom = 1.jan, tom = 3.jan),
                 )
             )
         }
@@ -274,15 +245,13 @@ internal class AapTest {
     fun `error ved to perioder med samme tom`() {
         val uid = UtbetalingId(UUID.randomUUID())
         TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.utbetalingsperiode(fom = 1.jan, tom = 2.jan),
-                        TestData.utbetalingsperiode(fom = 2.jan, tom = 2.jan),
-                    )
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.utbetalingsperiode(fom = 1.jan, tom = 2.jan),
+                    TestData.utbetalingsperiode(fom = 2.jan, tom = 2.jan),
                 )
             )
         }
@@ -300,65 +269,37 @@ internal class AapTest {
     fun `error ved tom før fom`() {
         val uid = UtbetalingId(UUID.randomUUID())
         TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.utbetalingsperiode(fom = 2.jan, tom = 1.jan),
-                    )
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.utbetalingsperiode(fom = 2.jan, tom = 1.jan),
                 )
             )
         }
         TestTopics.status.assertThat()
             .hasNumberOfRecordsForKey(uid.id.toString(), 1)
-            .hasNumberOfRecords(1)
             .hasValueMatching("${uid.id}", 0) {
                 assertEquals("fom må være før eller lik tom", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmpty()
-        TestTopics.oppdrag.assertThat().isEmpty()
-    }
-
-    @Test
-    fun `error ved ulovlig bruk av fastsatt dagsats`() {
-        val uid = UtbetalingId(UUID.randomUUID())
-        TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
-                action = Action.CREATE,
-                data = TestData.utbetaling(
-                    stønad = StønadTypeTiltakspenger.JOBBKLUBB,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(1.jan),
-                    )
-                )
-            )
-        }
-        TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
-            .hasNumberOfRecords(1)
-            .hasValueMatching("${uid.id}", 0) {
-                assertEquals("reservert felt for Dagpenger og AAP", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().isEmpty()
-        TestTopics.oppdrag.assertThat().isEmpty()
+        TestTopics.utbetalinger.assertThat()
+            .isEmptyForKey(uid.id.toString())
+        TestTopics.oppdrag.assertThat()
+            .isEmptyForKey(uid.id.toString())
     }
 
     @Test
     fun `error ved blanding av periodetyper`() {
         val uid = UtbetalingId(UUID.randomUUID())
         TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(2.jan),
-                        TestData.utbetalingsperiode(fom = 1.jan, tom = 31.jan),
-                    )
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.dag(2.jan),
+                    TestData.utbetalingsperiode(fom = 1.jan, tom = 31.jan),
                 )
             )
         }
@@ -368,57 +309,59 @@ internal class AapTest {
             .hasValueMatching("${uid.id}", 0) {
                 assertEquals("inkonsistens blant datoene i periodene", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmpty()
-        TestTopics.oppdrag.assertThat().isEmpty()
+        TestTopics.utbetalinger.assertThat()
+            .isEmptyForKey(uid.id.toString())
+        TestTopics.oppdrag.assertThat()
+            .isEmptyForKey(uid.id.toString())
     }
 
     @Test
     fun `error ved ulovlig fremtidig utbetaling`() {
         val uid = UtbetalingId(UUID.randomUUID())
         TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = listOf(
-                        TestData.dag(LocalDate.now().plusDays(1)),
-                    )
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = listOf(
+                    TestData.dag(LocalDate.now().plusDays(1)),
                 )
             )
         }
         TestTopics.status.assertThat()
             .hasNumberOfRecordsForKey(uid.id.toString(), 1)
-            .hasNumberOfRecords(1)
             .hasValueMatching("${uid.id}", 0) {
                 assertEquals("fremtidige utbetalinger er ikke støttet for periode dag/ukedag", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmpty()
-        TestTopics.oppdrag.assertThat().isEmpty()
+        TestTopics.utbetalinger.assertThat()
+            .isEmptyForKey(uid.id.toString())
+        TestTopics.oppdrag.assertThat()
+            .isEmptyForKey(uid.id.toString())
     }
 
     @Test
     fun `error ved for lange perioder`() {
         val uid = UtbetalingId(UUID.randomUUID())
+        val sakId = SakId("${TestData.nextSakId}")
         TestTopics.aap.produce("${uid.id}") {
-            AapUtbetaling(
+            TestData.aapUtbetaling(
                 action = Action.CREATE,
-                data = TestData.utbetaling(
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    periodetype = Periodetype.DAG,
-                    perioder = (1L..93L).map {
-                        TestData.dag(1.jan.minusDays(it))
-                    }
-                )
+                sakId = sakId,
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                periodetype = Periodetype.DAG,
+                perioder = (1L..93L).map {
+                    TestData.dag(1.jan.minusDays(it))
+                }
             )
         }
         TestTopics.status.assertThat()
             .hasNumberOfRecordsForKey(uid.id.toString(), 1)
-            .hasNumberOfRecords(1)
             .hasValueMatching("${uid.id}", 0) {
                 assertEquals("DAG støtter maks periode på 92 dager", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmpty()
-        TestTopics.oppdrag.assertThat().isEmpty()
+        TestTopics.utbetalinger.assertThat()
+            .isEmptyForKey(uid.id.toString())
+        TestTopics.oppdrag.assertThat()
+            .isEmptyForKey(uid.id.toString())
     }
 }

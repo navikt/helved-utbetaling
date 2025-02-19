@@ -66,7 +66,7 @@ private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy
 object OppdragService {
     fun opprett(new: Utbetaling): Oppdrag {
         var forrigeId: PeriodeId? = null
-        val oppdrag110 = objectFactory.createOppdrag110().apply { 
+        val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = OppdragSkjemaConstants.KODE_AKSJON
             kodeEndring = if(new.førsteUtbetalingPåSak) Endringskode.NY.name else Endringskode.ENDR.name
             kodeFagomraade = Fagsystem.from(new.stønad).name
@@ -79,11 +79,11 @@ object OppdragService {
                 val avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(timeFormatter)
                 nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = Fagsystem.from(new.stønad).name
-                tidspktMelding = avstemmingstidspunkt 
+                tidspktMelding = avstemmingstidspunkt
             }
             oppdragsEnhet120(new).forEach(oppdragsEnhet120s::add)
             new.perioder.mapIndexed { i, periode ->
-                val periodeId = if(i == new.perioder.size - 1) new.lastPeriodeId else PeriodeId()
+                val periodeId = if (i == new.perioder.size - 1) new.lastPeriodeId else PeriodeId()
                 oppdragsLinje150s.add(
                     oppdragsLinje150(
                         periodeId = periodeId,
@@ -120,7 +120,7 @@ object OppdragService {
                 val avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(timeFormatter)
                 nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = Fagsystem.from(new.stønad).name
-                tidspktMelding = avstemmingstidspunkt 
+                tidspktMelding = avstemmingstidspunkt
             }
             oppdragsEnhet120(new).forEach(oppdragsEnhet120s::add)
 
@@ -153,7 +153,7 @@ object OppdragService {
                 val avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(timeFormatter)
                 nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = Fagsystem.from(new.stønad).name
-                tidspktMelding = avstemmingstidspunkt 
+                tidspktMelding = avstemmingstidspunkt
             }
             oppdragsEnhet120(new).forEach(oppdragsEnhet120s::add)
             val sistePeriode = new.perioder.maxBy { it.fom }
@@ -203,7 +203,7 @@ private fun nyeLinjer(
     var førsteEndringIdx = prev.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
 
     when {
-        førsteEndringIdx == -1 && new.perioder.size > prev.perioder.size -> { 
+        førsteEndringIdx == -1 && new.perioder.size > prev.perioder.size -> {
             // De(n) nye endringen(e) kommer etter siste eksisterende periode.
             førsteEndringIdx = prev.perioder.size
         }

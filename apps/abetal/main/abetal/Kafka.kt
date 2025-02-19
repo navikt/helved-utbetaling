@@ -54,27 +54,21 @@ data class AapTuple(
 fun Topology.aapStream(utbetalinger: KTable<Utbetaling>, saker: KTable<SakIdWrapper>) {
     consume(Topics.aap)
         .map { key, aap -> AapTuple(key, aap) }
-        .rekey { (_, aap) -> "${Fagsystem.from(aap.data.stønad)}-${aap.data.sakId.id}" }
+        .rekey { (_, aap) -> "${Fagsystem.from(aap.stønad)}-${aap.sakId.id}" }
         .leftJoinWith(saker) { JsonSerde.jackson() }
-        .map { (uid, aap), sakIdWrapper ->
-            when (sakIdWrapper) {
-                null -> uid to UtbetalingRequest(aap.action, aap.data.copy(førsteUtbetalingPåSak = true))
-                else -> uid to UtbetalingRequest(aap.action, aap.data)
-            }
-        }
-        .rekey { (uid, _) -> uid }
-        .map { (_, utbetReq) -> utbetReq }
+        .map(::toDomain)
+        .rekey { utbetaling -> utbetaling.uid.id.toString() }
         .leftJoinWith(utbetalinger, JsonSerde::jackson)
-        .map { req, prev ->
+        .map { new, prev ->
             Result.catch {
-                req.data.validate(prev)
-                val oppdrag = when (req.action) {
-                    Action.CREATE -> OppdragService.opprett(req.data)
-                    Action.UPDATE -> OppdragService.update(req.data, prev ?: notFound("previous utbetaling"))
-                    Action.DELETE -> OppdragService.delete(req.data, prev ?: notFound("previous utbetaling"))
+                new.validate(prev)
+                val oppdrag = when (new.action) {
+                    Action.CREATE -> OppdragService.opprett(new)
+                    Action.UPDATE -> OppdragService.update(new, prev ?: notFound("previous utbetaling"))
+                    Action.DELETE -> OppdragService.delete(new, prev ?: notFound("previous utbetaling"))
                 }
                 val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                val utbetaling = req.data.copy(lastPeriodeId = lastPeriodeId)
+                val utbetaling = new.copy(lastPeriodeId = lastPeriodeId)
                 utbetaling to oppdrag
             }
         }.branch({ it.isOk() }) {

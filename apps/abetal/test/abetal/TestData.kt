@@ -5,21 +5,24 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 object TestData {
-    fun utbetaling(
-        stønad: Stønadstype,
+    var nextSakId: Int = 0
+        get() = field++
+
+    fun aapUtbetaling(
+        action: Action,
+        stønad: StønadTypeAAP,
         periodetype: Periodetype,
         perioder: List<Utbetalingsperiode>,
-        sakId: SakId = SakId("1"),
+        sakId: SakId = SakId("$nextSakId"),
         behandlingId: BehandlingId = BehandlingId(""),
-        lastPeriodeId: PeriodeId = PeriodeId(),
         personident: Personident = Personident(""),
         vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
         beslutterId: Navident = Navident(""),
         saksbehandlerId: Navident = Navident(""),
-    ) = Utbetaling(
+    ) = AapUtbetaling(
+        action = action,
         sakId = sakId,
         behandlingId = behandlingId,
-        lastPeriodeId = lastPeriodeId,
         personident = personident,
         vedtakstidspunkt = vedtakstidspunkt,
         stønad = stønad,

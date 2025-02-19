@@ -27,7 +27,9 @@ value class Navident(val ident: String)
 value class UtbetalingId(val id: UUID) 
 
 data class Utbetaling(
-    val førsteUtbetalingPåSak: Boolean = false,
+    val uid: UtbetalingId,
+    val action: Action,
+    val førsteUtbetalingPåSak: Boolean,
     val sakId: SakId,
     val behandlingId: BehandlingId,
     val lastPeriodeId: PeriodeId,
