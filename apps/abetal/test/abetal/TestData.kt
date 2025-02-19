@@ -9,7 +9,6 @@ object TestData {
         stønad: Stønadstype,
         periodetype: Periodetype,
         perioder: List<Utbetalingsperiode>,
-        førsteSak: Boolean = true,
         sakId: SakId = SakId("1"),
         behandlingId: BehandlingId = BehandlingId(""),
         lastPeriodeId: PeriodeId = PeriodeId(),
@@ -19,7 +18,6 @@ object TestData {
         saksbehandlerId: Navident = Navident(""),
     ) = Utbetaling(
         sakId = sakId,
-        førsteUtbetalingPåSak = førsteSak,
         behandlingId = behandlingId,
         lastPeriodeId = lastPeriodeId,
         personident = personident,

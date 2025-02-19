@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 
 val Int.jan: LocalDate
     get() = LocalDate.of(2025, 1, this)
@@ -31,17 +30,137 @@ internal class AapTest {
                 )
             )
         }
-         TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey(uid.id.toString(), 1)
-             .hasValue(StatusReply(Status.MOTTATT))
-         TestTopics.utbetalinger.assertThat()
-             .hasValuesForPredicate(uid.id.toString(), 1) {
-                 it.perioder.size == 2
-             }
-         TestTopics.oppdrag.assertThat()
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasValue(StatusReply(Status.MOTTATT))
+        TestTopics.utbetalinger.assertThat()
+            .hasValuesForPredicate(uid.id.toString(), 1) {
+                it.perioder.size == 2
+            }
+        TestTopics.oppdrag.assertThat()
             .hasNumberOfRecordsForKey(uid.id.toString(), 1)
             .withLastValue {
-                 assertEquals("NY", it!!.oppdrag110.kodeEndring)
+                assertEquals("NY", it!!.oppdrag110.kodeEndring)
+            }
+    }
+
+    @Test
+    fun `lagrer ny sakId`() {
+        val uid = UtbetalingId(UUID.randomUUID())
+        val sakId = SakId("1")
+        TestTopics.aap.produce("${uid.id}") {
+            AapUtbetaling(
+                action = Action.CREATE,
+                data = TestData.utbetaling(
+                    sakId = sakId,
+                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                    periodetype = Periodetype.DAG,
+                    perioder = listOf(
+                        TestData.dag(1.jan),
+                        TestData.dag(2.jan),
+                    )
+                )
+            )
+        }
+        TestTopics.saker.assertThat()
+            .hasNumberOfRecords(1)
+            .hasKey("AAP-${sakId.id}")
+            .hasValueMatching("AAP-${sakId.id}", 0) {
+                assertEquals(uid, it.uids.single())
+            }
+    }
+
+    @Test
+    fun `appender uid på eksisterende sakId`() {
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val uid2 = UtbetalingId(UUID.randomUUID())
+        val sakId = SakId("1")
+        TestTopics.aap.produce("${uid1.id}") {
+            AapUtbetaling(
+                action = Action.CREATE,
+                data = TestData.utbetaling(
+                    sakId = sakId,
+                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                    periodetype = Periodetype.DAG,
+                    perioder = listOf(
+                        TestData.dag(1.jan),
+                        TestData.dag(2.jan),
+                    )
+                )
+            )
+        }
+        TestTopics.aap.produce("${uid2.id}") {
+            AapUtbetaling(
+                action = Action.CREATE,
+                data = TestData.utbetaling(
+                    sakId = sakId,
+                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                    periodetype = Periodetype.DAG,
+                    perioder = listOf(
+                        TestData.dag(1.jan),
+                        TestData.dag(2.jan),
+                    )
+                )
+            )
+        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecords(2)
+            .hasNumberOfRecordsForKey(uid1.id.toString(), 1)
+            .hasNumberOfRecordsForKey(uid2.id.toString(), 1)
+            .hasValueMatching(uid1.id.toString(), 0) {
+                assertEquals(null, it.error)
+            }
+            .hasValueMatching(uid2.id.toString(), 0) {
+                assertEquals(null, it.error)
+            }
+
+        TestTopics.saker.assertThat()
+            .hasNumberOfRecords(2)
+            .hasNumberOfRecordsForKey("AAP-${sakId.id}", 2)
+            .hasLastValue("AAP-${sakId.id}") {
+                assertEquals(2, uids.size)
+            }
+    }
+
+    @Test
+    fun `setter andre utbetaling på sak til ENDR`() {
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val uid2 = UtbetalingId(UUID.randomUUID())
+        val sakId = SakId("1")
+        TestTopics.aap.produce("${uid1.id}") {
+            AapUtbetaling(
+                action = Action.CREATE,
+                data = TestData.utbetaling(
+                    sakId = sakId,
+                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                    periodetype = Periodetype.DAG,
+                    perioder = listOf(
+                        TestData.dag(1.jan),
+                        TestData.dag(2.jan),
+                    )
+                )
+            )
+        }
+        TestTopics.aap.produce("${uid2.id}") {
+            AapUtbetaling(
+                action = Action.CREATE,
+                data = TestData.utbetaling(
+                    sakId = sakId,
+                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                    periodetype = Periodetype.DAG,
+                    perioder = listOf(
+                        TestData.dag(1.jan),
+                        TestData.dag(2.jan),
+                    )
+                )
+            )
+        }
+        TestTopics.oppdrag.assertThat()
+            .hasValueMatching(uid1.id.toString(), 0) {
+                assertEquals("NY", it.oppdrag110.kodeEndring)
+            }
+            .hasValueMatching(uid2.id.toString(), 0) {
+                assertEquals("ENDR", it.oppdrag110.kodeEndring)
             }
     }
 
