@@ -1,7 +1,5 @@
 package abetal.models
 
-import abetal.ApiError
-
 
 enum class Action {
     CREATE,
@@ -14,7 +12,7 @@ data class AapUtbetaling(
     val data: Utbetaling,
 )
 
-data class SakIdWrapper(val sakId: String, val uids: List<UtbetalingId>)
+data class SakIdWrapper(val sakId: String, val uids: Set<UtbetalingId>)
 
 data class UtbetalingRequest(
     val action: Action,
