@@ -1,8 +1,8 @@
-package overfør
+package urskog
 
 import libs.kafka.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import overfør.models.*
+import urskog.models.*
 
 object Topics {
     val oppdrag = Topic<Oppdrag>("helved.oppdrag.v1", XmlSerde.serde())

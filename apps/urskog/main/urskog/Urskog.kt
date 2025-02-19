@@ -1,4 +1,4 @@
-package overfør
+package urskog
 
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -21,10 +21,10 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(Netty, port = 8080, module = Application::overfør).start(wait = true)
+    embeddedServer(Netty, port = 8080, module = Application::urskog).start(wait = true)
 }
 
-fun Application.overfør(
+fun Application.urskog(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
 ) {
