@@ -1,7 +1,7 @@
 package utsjekk.utbetaling
 
 import utsjekk.avstemming.erHelg
-import utsjekk.avstemming.nesteVirkedag
+import utsjekk.avstemming.nesteUkedag
 import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -108,7 +108,7 @@ data class UtbetalingsperiodeApi(
                             fastsattDagsats = it.fastsattDagsats,
                         )
                         add(periode)
-                        date = if (satstype == Satstype.DAG) date.plusDays(1) else date.nesteVirkedag()
+                        date = if (satstype == Satstype.DAG) date.plusDays(1) else date.nesteUkedag()
                     }
                 }
             }

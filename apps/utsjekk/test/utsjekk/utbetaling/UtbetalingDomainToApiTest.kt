@@ -32,6 +32,6 @@ class UtbetalingDomainToApiTest {
         )
         val api = UtbetalingApi.from(domain)
 
-        assertEquals(20, api.perioder.size)
+        assertEquals(22, api.perioder.size)
     }
 }
