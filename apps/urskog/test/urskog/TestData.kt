@@ -81,7 +81,7 @@ object TestData {
                 }
             }
             this.vedtakId = vedtakId.toString()
-            this.delytelseId = delytelseId
+            this.delytelseId = delytelsesId
             this.kodeKlassifik = klassekode
             this.datoVedtakFom = datoVedtakFom.toXMLDate()
             this.datoVedtakTom = datoVedtakTom.toXMLDate()

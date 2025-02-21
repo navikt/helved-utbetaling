@@ -1,36 +1,30 @@
 package urskog
 
 import com.ibm.mq.jms.MQQueue
-import libs.mq.MQ
-import libs.mq.MQConsumer
-import libs.mq.MQProducer
-import libs.xml.XMLMapper
-import no.trygdeetaten.skjema.oppdrag.Mmel
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import urskog.Config
 import javax.jms.TextMessage
+import libs.mq.*
+import libs.xml.XMLMapper
+import no.trygdeetaten.skjema.oppdrag.*
 
 class URFake(
     private val config: Config,
-    private val mq: MQ = MQ(config.mq)
+    val mq: MQ = MQ(config.mq),
 ): AutoCloseable {
+    private val kvitteringsKø = MQProducer(mq, MQQueue(config.oppdrag.kvitteringsKø))
+    private val mapper = XMLMapper<Oppdrag>()
     val oppdragskø = OppdragListener().apply { start() }
 
     inner class OppdragListener : MQConsumer(mq, MQQueue(config.oppdrag.sendKø)) {
-        private val mapper = XMLMapper<Oppdrag>()
-
         val received: MutableList<TextMessage> = mutableListOf()
 
         override fun onMessage(message: TextMessage) {
             received.add(message)
-
-            // val oppdrag = mapper.readValue(message.text).apply {
-            //     mmel = Mmel().apply {
-            //         alvorlighetsgrad = Kvitteringstatus.OK.kode
-            //     }
-            // }
-            //
-            // kvitteringsKø.produce(mapper.writeValueAsString(oppdrag))
+            val oppdrag = mapper.readValue(message.text).apply {
+                mmel = Mmel().apply {
+                    alvorlighetsgrad = "00" // 00/04/08/12
+                }
+            }
+            kvitteringsKø.produce(mapper.writeValueAsString(oppdrag))
         }
     }
 
@@ -44,6 +38,9 @@ class URFake(
     }
 
     override fun close() {
-
+        runCatching {
+            oppdragskø.close()
+        }
     }
 }
+

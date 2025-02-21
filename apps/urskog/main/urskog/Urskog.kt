@@ -10,8 +10,10 @@ import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import libs.kafka.*
-import libs.mq.MQ
 import libs.utils.*
+import urskog.models.UtbetalingId
+import org.apache.kafka.clients.producer.Producer
+import java.util.UUID
 
 val appLog = logger("app")
 
@@ -24,21 +26,18 @@ fun main() {
     embeddedServer(Netty, port = 8080, module = Application::urskog).start(wait = true)
 }
 
+class KafkaStartedEvent
+
 fun Application.urskog(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-    val mq = MQ(config.mq)
-    val oppdragProducer = OppdragProducer(config.oppdrag, mq)
+    val oppdragProducer = OppdragMQProducer(config)
 
     install(MicrometerMetrics) {
         registry = prometheus
         meterBinders += LogbackMetrics()
-    }
-
-    monitor.subscribe(ApplicationStopping) { 
-        kafka.close()
     }
 
     kafka.connect(
@@ -46,6 +45,19 @@ fun Application.urskog(
         config = config.kafka,
         registry = prometheus,
     )
+
+    val kvitteringProducer = kafka.createProducer(config.kafka, Topics.kvittering) 
+    val keystore = kafka.getStore<OppdragForeignKey, UUID>(StateStores.keystore)  
+    val kvitteringConsumer = KvitteringMQConsumer(config, kvitteringProducer, keystore)
+
+    monitor.subscribe(ApplicationStopping) { 
+        kafka.close()
+        kvitteringConsumer.close()
+    }
+
+    monitor.subscribe(ApplicationStarted) {
+        kvitteringConsumer.start()
+    }
 
     routing {
         probes(kafka, prometheus)
