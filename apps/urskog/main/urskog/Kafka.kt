@@ -3,29 +3,37 @@ package urskog
 import libs.kafka.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import urskog.models.*
+import urskog.models.Utbetaling
 
 object Topics {
-    val oppdrag = Topic<Oppdrag>("helved.oppdrag.v1", XmlSerde.serde())
-    // val kvittering = Topic<Kvittering>("helved.kvittering.v1", XmlSerde.serde())
-    val status = Topic<StatusReply>("helved.status.v1", JsonSerde.jackson())
+    private inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.serde<V>())
+    private inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.jackson<V>())
+
+    val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
+    val kvittering = Topic("helved.kvittering.v1", xml<Oppdrag>())
+    val utbetalinger = Topic("helved.utbetalinger.v1", Serdes(StringSerde, JsonSerde.jackson<Utbetaling>()))
+    val status = Topic("helved.status.v1", json<StatusReply>())
 }
 
-object Tables {
-    val status = Table(Topics.status)
+object StateStores {
+    val keystore: StateStoreName = "fk-uid-store"
 }
 
-fun createTopology(
-    oppdragProducer: OppdragProducer,
-): Topology = topology {
-    val status = consume(Tables.status)
+fun createTopology(oppdragProducer: OppdragMQProducer): Topology = topology {
     val oppdrag = consume(Topics.oppdrag)
 
     oppdrag
-        .map { oppdrag -> StatusReply(status = Status.HOS_OPPDRAG) }
+        .map { _ -> StatusReply(status = Status.HOS_OPPDRAG) }
         .produce(Topics.status)
 
     oppdrag.forEach { _, xml ->
         oppdragProducer.send(xml)
     }
+
+    consume(Topics.utbetalinger)
+        .map { u -> u }
+        .rekey(JsonSerde.jackson()) { utbetaling -> OppdragForeignKey.from(utbetaling) }
+        .map(JsonSerde.jackson()) { utbetaling -> utbetaling.uid }
+        .materialize(StateStores.keystore)
 }
 
