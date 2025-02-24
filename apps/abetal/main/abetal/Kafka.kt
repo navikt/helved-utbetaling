@@ -6,11 +6,13 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.util.UUID
 
 object Topics {
-    val aap = Topic<AapUtbetaling>("aap.utbetalinger.v1", JsonSerde.jackson())
-    val utbetalinger = Topic<Utbetaling>("helved.utbetalinger.v1", JsonSerde.jackson())
-    val oppdrag = Topic<Oppdrag>("helved.oppdrag.v1", XmlSerde.serde())
-    val status = Topic<StatusReply>("helved.status.v1", JsonSerde.jackson())
-    val saker = Topic<SakIdWrapper>("helved.saker.v1", JsonSerde.jackson())
+    private inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.jackson<V>())
+    private inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.serde<V>())
+    val aap = Topic("aap.utbetalinger.v1", json<AapUtbetaling>())
+    val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
+    val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
+    val status = Topic("helved.status.v1", json<StatusReply>())
+    val saker = Topic("helved.saker.v1", json<SakIdWrapper>())
 }
 
 object Tables {
@@ -31,12 +33,12 @@ data class UtbetalingTuple(
     val utbetaling: Utbetaling,
 )
 
-fun utbetalingToSak(utbetalinger: KTable<Utbetaling>, saker: KTable<SakIdWrapper>) {
+fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>, saker: KTable<String, SakIdWrapper>) {
     utbetalinger
         .toStream()
-        .map { key, utbetaling -> UtbetalingTuple(UUID.fromString(key), utbetaling) }
+        .map(JsonSerde.jackson()) { key, utbetaling -> UtbetalingTuple(UUID.fromString(key), utbetaling) }
         .rekey { (_, utbetaling) -> "${Fagsystem.from(utbetaling.stønad)}-${utbetaling.sakId.id}" }
-        .leftJoinWith(saker) { JsonSerde.jackson() }
+        .leftJoin(saker)
         .map { (uid, utbetaling), sakIdWrapper ->
             when (sakIdWrapper) {
                 null -> SakIdWrapper(utbetaling.sakId.id, setOf(UtbetalingId(uid)))
@@ -51,15 +53,15 @@ data class AapTuple(
     val aap: AapUtbetaling,
 )
 
-fun Topology.aapStream(utbetalinger: KTable<Utbetaling>, saker: KTable<SakIdWrapper>) {
+fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<String, SakIdWrapper>) {
     consume(Topics.aap)
-        .map { key, aap -> AapTuple(key, aap) }
+        .map(JsonSerde.jackson()) { key, aap -> AapTuple(key, aap) }
         .rekey { (_, aap) -> "${Fagsystem.from(aap.stønad)}-${aap.sakId.id}" }
-        .leftJoinWith(saker) { JsonSerde.jackson() }
-        .map(::toDomain)
+        .leftJoin(saker)
+        .map(JsonSerde.jackson(), ::toDomain)
         .rekey { utbetaling -> utbetaling.uid.id.toString() }
-        .leftJoinWith(utbetalinger, JsonSerde::jackson)
-        .map { new, prev ->
+        .leftJoin(utbetalinger)
+        .map(JsonSerde.jackson()) { new, prev ->
             Result.catch {
                 new.validate(prev)
                 val oppdrag = when (new.action) {
