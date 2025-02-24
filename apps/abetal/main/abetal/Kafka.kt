@@ -39,8 +39,7 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Stri
         .map(JsonSerde.jackson()) { key, utbetaling -> UtbetalingTuple(UUID.fromString(key), utbetaling) }
         .rekey { (_, utbetaling) -> "${Fagsystem.from(utbetaling.stønad)}-${utbetaling.sakId.id}" }
         .leftJoin(saker)
-        .map { (uid, utbetaling), sakIdWrapper ->
-            when (sakIdWrapper) {
+        .map(JsonSerde.jackson()) { (uid, utbetaling), sakIdWrapper -> when (sakIdWrapper) {
                 null -> SakIdWrapper(utbetaling.sakId.id, setOf(UtbetalingId(uid)))
                 else -> SakIdWrapper(utbetaling.sakId.id, sakIdWrapper.uids + UtbetalingId(uid))
             }
@@ -74,12 +73,12 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
                 utbetaling to oppdrag
             }
         }.branch({ it.isOk() }) {
-            val result = this.map { it -> it.unwrap() }
-            result.map { (utbetaling, _) -> utbetaling }.produce(Topics.utbetalinger)
-            result.map { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
-            result.map { (_, _) -> StatusReply() }.produce(Topics.status)
+            val result = this.map(JsonSerde.jackson()) { it -> it.unwrap() }
+            result.map(JsonSerde.jackson()) { (utbetaling, _) -> utbetaling }.produce(Topics.utbetalinger)
+            result.map(JsonSerde.jackson()) { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
+            result.map(JsonSerde.jackson()) { (_, _) -> StatusReply() }.produce(Topics.status)
         }.default {
-            map { it -> it.unwrapErr() }.produce(Topics.status)
+            map(JsonSerde.jackson()) { it -> it.unwrapErr() }.produce(Topics.status)
         }
 } 
 
