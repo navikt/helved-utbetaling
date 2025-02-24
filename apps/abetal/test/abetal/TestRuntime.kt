@@ -36,7 +36,6 @@ object TestRuntime : AutoCloseable {
 
     override fun close() {
         ktor.stop()
-        // kafka.close()
     }
 }
 
