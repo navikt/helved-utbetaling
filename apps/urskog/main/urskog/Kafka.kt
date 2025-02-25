@@ -36,15 +36,21 @@ fun createTopology(oppdragProducer: OppdragMQProducer): Topology = topology {
         .map(JsonSerde.jackson()) { utbetaling -> utbetaling.uid }
         .materialize(StateStores.keystore)
 
+    buildList<String> {
+        add("")
+    }
     consume(Topics.kvittering)
         .map { kvitt ->
-            // TODO: hent alle kartlagte feilscenaioer fra utsjekk-oppdrag
-            when (kvitt.mmel.alvorlighetsgrad) {
-                "00" -> StatusReply(Status.OK)
-                "04" -> StatusReply(Status.FEILET, ApiError(400, kvitt.mmel.beskrMelding, null, null))
-                "08" -> StatusReply(Status.FEILET, ApiError(400, kvitt.mmel.beskrMelding, null, null))
-                "12" -> StatusReply(Status.FEILET, ApiError(500, kvitt.mmel.mqReasonKode, null, null))
-                else -> StatusReply(Status.FEILET, ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute.", null, null))
+            if (kvitt.mmel == null) {
+                StatusReply(Status.OK)
+            } else {
+                when (kvitt.mmel.alvorlighetsgrad) {
+                    "00" -> StatusReply(Status.OK)
+                    "04" -> StatusReply(Status.FEILET, ApiError(400, kvitt.mmel.beskrMelding, null, null))
+                    "08" -> StatusReply(Status.FEILET, ApiError(400, kvitt.mmel.beskrMelding, null, null))
+                    "12" -> StatusReply(Status.FEILET, ApiError(500, kvitt.mmel.beskrMelding, null, null))
+                    else -> StatusReply(Status.FEILET, ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute.", null, null))
+                }
             }
         }
         .produce(Topics.status)
