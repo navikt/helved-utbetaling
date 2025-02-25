@@ -24,7 +24,7 @@ value class Personident(val ident: String)
 value class Navident(val ident: String)
 
 @JvmInline
-value class UtbetalingId(val id: UUID) 
+value class UtbetalingId(val id: UUID)
 
 data class Utbetaling(
     val uid: UtbetalingId,
@@ -191,8 +191,6 @@ private fun Utbetaling.failOnTooLongPeriods() {
 
 private fun Utbetaling.failOnDuplicate(prev: Utbetaling?) {
     prev?.let {
-        appLog.info("next $this")
-        appLog.info("prev $prev")
         if (this.copy(førsteUtbetalingPåSak = prev.førsteUtbetalingPåSak) == prev){
             conflict("Denne meldingen har du allerede sendt inn")
         } 
@@ -342,3 +340,61 @@ enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
     AAP_UNDER_ARBEIDSAVKLARING("AAPUAA"),
 }
 
+fun LocalDate.nesteUkedag(): LocalDate {
+    var nesteDag = this.plusDays(1)
+    while (nesteDag.dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)) {
+        nesteDag = nesteDag.plusDays(1)
+    }
+    return nesteDag
+}
+
+fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetalingsperiode> {
+    return sortedBy { it.fom }
+        .groupBy { listOf(it.beløp, it.betalendeEnhet, it.fastsattDagsats) }
+        .map { (_, perioder) ->
+            perioder.splitWhen { a, b ->
+                when (periodetype) {
+                    Periodetype.UKEDAG -> a.tom.nesteUkedag() != b.fom
+                    else -> a.tom.plusDays(1) != b.fom
+                }
+            }.map {
+                Utbetalingsperiode(
+                    fom = it.first().fom,
+                    tom = it.last().tom,
+                    beløp = beløp(it, periodetype),
+                    betalendeEnhet = it.last().betalendeEnhet,
+                    fastsattDagsats = it.last().fastsattDagsats,
+                )
+            }
+        }.flatten()
+}
+
+private fun beløp(perioder: List<Utbetalingsperiode>, periodetype: Periodetype): UInt =
+    when (periodetype) {
+        Periodetype.DAG, Periodetype.UKEDAG, Periodetype.MND ->
+            perioder.map { it.beløp }.toSet().singleOrNull() ?: badRequest(
+                msg = "fant fler ulike beløp blant dagene",
+                field = "beløp",
+                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            )
+
+        else -> perioder.singleOrNull()?.beløp ?: badRequest(
+            msg = "forventet kun en periode, da sammenslåing av beløp ikke er støttet",
+            field = "beløp",
+            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+        )
+    }
+
+private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
+    if (this.isEmpty()) return emptyList()
+
+    return this.drop(1).fold(mutableListOf(mutableListOf(this.first()))) { acc, item ->
+        val lastSublist = acc.last()
+        if (predicate(lastSublist.last(), item)) {
+            acc.add(mutableListOf(item))
+        } else {
+            lastSublist.add(item)
+        }
+        acc
+    }.map { it.toList() }
+}

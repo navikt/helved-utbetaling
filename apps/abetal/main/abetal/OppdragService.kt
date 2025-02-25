@@ -1,64 +1,16 @@
-package abetal.models
+package abetal
 
+import abetal.models.*
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 import no.trygdeetaten.skjema.oppdrag.*
-
-enum class Fagsystem {
-    DP,
-    TILTPENG,
-    TILLST,
-    AAP;
-
-    companion object {
-        fun from(stønad: Stønadstype) = when (stønad) {
-            is StønadTypeDagpenger -> Fagsystem.DP
-            is StønadTypeTiltakspenger -> Fagsystem.TILTPENG
-            is StønadTypeTilleggsstønader -> Fagsystem.TILLST
-            is StønadTypeAAP -> Fagsystem.AAP
-        }
-    }
-}
-
-enum class Endringskode {
-    NY,
-    ENDR,
-}
-
-enum class Kvitteringstatus(val kode: String) {
-    OK("00"),
-    MED_MANGLER("04"), // MED INFORMASJON
-    FUNKSJONELL_FEIL("08"),
-    TEKNISK_FEIL("12"),
-    UKJENT("Ukjent");
-}
-
-enum class Utbetalingsfrekvens(val kode: String) {
-    DAGLIG("DAG"),
-    UKENTLIG("UKE"),
-    MÅNEDLIG("MND"),
-    DAGLIG_14("14DG"),
-    ENGANGSUTBETALING("ENG"),
-}
-
-object OppdragSkjemaConstants {
-    val OPPDRAG_GJELDER_DATO_FOM: LocalDate = LocalDate.of(2000, 1, 1)
-    val BRUKERS_NAVKONTOR_FOM: LocalDate = LocalDate.of(1970, 1, 1)
-    val ENHET_FOM: LocalDate = LocalDate.of(1900, 1, 1)
-    val FRADRAG_TILLEGG = TfradragTillegg.T
-    const val KODE_AKSJON = "1"
-    const val ENHET_TYPE_BOSTEDSENHET = "BOS"
-    const val ENHET_TYPE_BEHANDLENDE_ENHET = "BEH"
-    const val ENHET = "8020"
-    const val BRUK_KJØREPLAN_DEFAULT = "N"
-}
 
 private val objectFactory = ObjectFactory()
 private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
@@ -126,7 +78,7 @@ object OppdragService {
 
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
-            val opphørsdato = opphørsdato(prev.perioder, new.perioder)
+            val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.periodetype)
             if (opphørsdato != null) oppdragsLinje150s.add(opphørslinje(new, prev.perioder.last(), prev.lastPeriodeId, opphørsdato))
             oppdragsLinje150s.addAll(nyeLinjer(new, prev, opphørsdato))
         }
@@ -178,6 +130,7 @@ object OppdragService {
 private fun opphørsdato(
     new: List<Utbetalingsperiode>,
     prev: List<Utbetalingsperiode>,
+    periodetype: Periodetype,
 ): LocalDate? {
     if (new.first().fom > prev.first().fom) {
         // Forkorter fom i starten. Må opphøre fra start
@@ -185,14 +138,21 @@ private fun opphørsdato(
     }
 
     // Hvis det finnes et mellomrom må vi opphøre fra starten av mellomrommet
+    // TODO: respekter periodetype
     val opphørsdato = new
         .windowed(2)
-        .find { it.first().tom < it.last().fom.minusDays(1) }
-        ?.first()?.tom?.plusDays(1)
+        .find {
+            if (periodetype != Periodetype.UKEDAG) {
+                it.first().tom.plusDays(1) < it.last().fom
+            } else {
+                it.first().tom.nesteUkedag() < it.last().fom
+            }
+        }
+        ?.first()?.tom?.plusDays(1) // kan sette nesteUkedag ved periodetype.ukedag hvis ønskelig
 
     // Hvis vi ikke har opphørsdato i et mellomrom kan det hende at den siste perioden i
     // ny utbetaling er kortere enn siste perioden i eksisterende utbetaling
-        return opphørsdato ?: if (new.last().tom < prev.last().tom) new.last().tom.plusDays(1) else null
+    return opphørsdato ?: if (new.last().tom < prev.last().tom) new.last().tom.plusDays(1) else null
 }
 
 private fun nyeLinjer(
@@ -256,29 +216,6 @@ private fun opphørslinje(
     utbetaling = new,
 )
 
-private fun oppdragsEnhet120(utbetaling: Utbetaling): List<OppdragsEnhet120> {
-    return utbetaling.perioder.betalendeEnhet()?.let { betalendeEnhet ->
-        listOf(
-            objectFactory.createOppdragsEnhet120().apply {
-                enhet = betalendeEnhet.enhet
-                typeEnhet = OppdragSkjemaConstants.ENHET_TYPE_BOSTEDSENHET
-                datoEnhetFom = OppdragSkjemaConstants.BRUKERS_NAVKONTOR_FOM.toXMLDate()
-            },
-            objectFactory.createOppdragsEnhet120().apply {
-                enhet = OppdragSkjemaConstants.ENHET
-                typeEnhet = OppdragSkjemaConstants.ENHET_TYPE_BEHANDLENDE_ENHET
-                datoEnhetFom = OppdragSkjemaConstants.ENHET_FOM.toXMLDate()
-            },
-        )
-    } ?: listOf(
-        objectFactory.createOppdragsEnhet120().apply {
-            enhet = OppdragSkjemaConstants.ENHET
-            typeEnhet = OppdragSkjemaConstants.ENHET_TYPE_BOSTEDSENHET
-            datoEnhetFom = OppdragSkjemaConstants.ENHET_FOM.toXMLDate()
-        },
-    )
-}
-
 private fun oppdragsLinje150(
     periodeId: PeriodeId,
     erEndringPåEksisterendePeriode: Boolean,
@@ -325,14 +262,28 @@ private fun oppdragsLinje150(
     }
 }
 
-val Oppdrag.kvitteringstatus: Kvitteringstatus
-    get() = when (getMmel()?.alvorlighetsgrad) {
-        "00" -> Kvitteringstatus.OK
-        "04" -> Kvitteringstatus.MED_MANGLER
-        "08" -> Kvitteringstatus.FUNKSJONELL_FEIL
-        "12" -> Kvitteringstatus.TEKNISK_FEIL
-        else -> Kvitteringstatus.UKJENT
-    }
+private fun oppdragsEnhet120(utbetaling: Utbetaling): List<OppdragsEnhet120> {
+    return utbetaling.perioder.betalendeEnhet()?.let { betalendeEnhet ->
+        listOf(
+            objectFactory.createOppdragsEnhet120().apply {
+                enhet = betalendeEnhet.enhet
+                typeEnhet = OppdragSkjemaConstants.ENHET_TYPE_BOSTEDSENHET
+                datoEnhetFom = OppdragSkjemaConstants.BRUKERS_NAVKONTOR_FOM.toXMLDate()
+            },
+            objectFactory.createOppdragsEnhet120().apply {
+                enhet = OppdragSkjemaConstants.ENHET
+                typeEnhet = OppdragSkjemaConstants.ENHET_TYPE_BEHANDLENDE_ENHET
+                datoEnhetFom = OppdragSkjemaConstants.ENHET_FOM.toXMLDate()
+            },
+        )
+    } ?: listOf(
+        objectFactory.createOppdragsEnhet120().apply {
+            enhet = OppdragSkjemaConstants.ENHET
+            typeEnhet = OppdragSkjemaConstants.ENHET_TYPE_BOSTEDSENHET
+            datoEnhetFom = OppdragSkjemaConstants.ENHET_FOM.toXMLDate()
+        },
+    )
+}
 
 internal fun LocalDate.toXMLDate(): XMLGregorianCalendar =
     DatatypeFactory.newInstance()
