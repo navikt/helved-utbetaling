@@ -63,6 +63,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
         .map(JsonSerde.jackson()) { new, prev ->
             Result.catch {
                 new.validate(prev)
+                val new = new.copy(perioder = new.perioder.aggreger(new.periodetype))
                 val oppdrag = when (new.action) {
                     Action.CREATE -> OppdragService.opprett(new)
                     Action.UPDATE -> OppdragService.update(new, prev ?: notFound("previous utbetaling"))

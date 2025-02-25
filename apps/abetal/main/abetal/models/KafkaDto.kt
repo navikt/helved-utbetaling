@@ -1,9 +1,10 @@
 package abetal.models
 
-import abetal.AapTuple
+import abetal.*
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
-
+import java.util.*
 
 enum class Action {
     CREATE,
@@ -43,3 +44,4 @@ fun toDomain(tuple: AapTuple, sakIdWrapper: SakIdWrapper?): Utbetaling {
 }
 
 data class SakIdWrapper(val sakId: String, val uids: Set<UtbetalingId>)
+
