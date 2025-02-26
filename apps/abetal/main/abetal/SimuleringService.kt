@@ -51,7 +51,6 @@ object SimuleringService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).format()
             saksbehId = new.saksbehandlerId.ident
             enhets.addAll(enheter(new))
-
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
             val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.periodetype)
