@@ -1,11 +1,10 @@
 package abetal.consumers
 
 import abetal.*
-import abetal.models.*
 import kotlin.test.assertEquals
+import models.*
 import no.trygdeetaten.skjema.oppdrag.*
 import org.junit.jupiter.api.Test
-import javax.xml.datatype.XMLGregorianCalendar
 
 // TODO: assert hele oppdrag XMLene for å verifisere at alle felter blir satt som forventet.
 internal class AapTest {

@@ -1,18 +1,17 @@
 package abetal
 
 import abetal.models.*
+import models.*
 import libs.kafka.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.util.UUID
 
 object Topics {
-    private inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.jackson<V>())
-    private inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.serde<V>())
     val aap = Topic("aap.utbetalinger.v1", json<AapUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
-    val saker = Topic("helved.saker.v1", json<SakIdWrapper>())
+    val saker = Topic("helved.saker.v1", jsonjson<SakKey, SakValue>())
 }
 
 object Tables {
@@ -33,15 +32,16 @@ data class UtbetalingTuple(
     val utbetaling: Utbetaling,
 )
 
-fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>, saker: KTable<String, SakIdWrapper>) {
+fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
     utbetalinger
         .toStream()
-        .map(JsonSerde.jackson()) { key, utbetaling -> UtbetalingTuple(UUID.fromString(key), utbetaling) }
-        .rekey { (_, utbetaling) -> "${Fagsystem.from(utbetaling.stønad)}-${utbetaling.sakId.id}" }
-        .leftJoin(saker)
-        .map(JsonSerde.jackson()) { (uid, utbetaling), sakIdWrapper -> when (sakIdWrapper) {
-                null -> SakIdWrapper(utbetaling.sakId.id, setOf(UtbetalingId(uid)))
-                else -> SakIdWrapper(utbetaling.sakId.id, sakIdWrapper.uids + UtbetalingId(uid))
+        // .secureLogWithKey { k, v -> warn("k:$k vedtatt:${v.vedtakstidspunkt}") }
+        .map { key, utbetaling -> UtbetalingTuple(UUID.fromString(key), utbetaling) }
+        .rekey { (_, utbetaling) -> SakKey(utbetaling.sakId, Fagsystem.from(utbetaling.stønad)) }
+        .leftJoin(jsonjson(), saker)
+        .map { (uid, _), prevSak -> when (prevSak) {
+                null -> SakValue(setOf(UtbetalingId(uid)))
+                else -> SakValue(prevSak.uids + UtbetalingId(uid))
             }
         }
         .produce(Topics.saker)
@@ -52,15 +52,16 @@ data class AapTuple(
     val aap: AapUtbetaling,
 )
 
-fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<String, SakIdWrapper>) {
+
+fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
     consume(Topics.aap)
-        .map(JsonSerde.jackson()) { key, aap -> AapTuple(key, aap) }
-        .rekey { (_, aap) -> "${Fagsystem.from(aap.stønad)}-${aap.sakId.id}" }
-        .leftJoin(saker)
-        .map(JsonSerde.jackson(), ::toDomain)
+        .map { key, aap -> AapTuple(key, aap) }
+        .rekey { (_, aap) -> SakKey(aap.sakId, Fagsystem.from(aap.stønad)) }
+        .leftJoin(jsonjson(), saker)
+        .map(::toDomain)
         .rekey { utbetaling -> utbetaling.uid.id.toString() }
-        .leftJoin(utbetalinger)
-        .map(JsonSerde.jackson()) { new, prev ->
+        .leftJoin(json(), utbetalinger)
+        .map { new, prev ->
             Result.catch {
                 new.validate(prev)
                 val new = new.copy(perioder = new.perioder.aggreger(new.periodetype))
@@ -74,12 +75,14 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
                 utbetaling to oppdrag
             }
         }.branch({ it.isOk() }) {
-            val result = this.map(JsonSerde.jackson()) { it -> it.unwrap() }
-            result.map(JsonSerde.jackson()) { (utbetaling, _) -> utbetaling }.produce(Topics.utbetalinger)
-            result.map(JsonSerde.jackson()) { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
-            result.map(JsonSerde.jackson()) { (_, _) -> StatusReply() }.produce(Topics.status)
+            val result = this.map { it -> it.unwrap() }
+            result.map { (utbetaling, _) -> utbetaling }.produce(Topics.utbetalinger)
+            result.map { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
+            result.map { (_, _) -> StatusReply() }.produce(Topics.status)
         }.default {
-            map(JsonSerde.jackson()) { it -> it.unwrapErr() }.produce(Topics.status)
+            map { it -> it.unwrapErr() }.produce(Topics.status)
         }
 } 
+
+inline fun <reified K: Any, reified V: Any> jsonjson() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jackson<V>())
 

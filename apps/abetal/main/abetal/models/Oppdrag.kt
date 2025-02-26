@@ -2,6 +2,7 @@ package abetal.models
 
 import java.time.LocalDate
 import no.trygdeetaten.skjema.oppdrag.*
+import models.*
 
 enum class Fagsystem {
     DP,
@@ -11,10 +12,10 @@ enum class Fagsystem {
 
     companion object {
         fun from(stønad: Stønadstype) = when (stønad) {
-            is StønadTypeDagpenger -> Fagsystem.DP
-            is StønadTypeTiltakspenger -> Fagsystem.TILTPENG
-            is StønadTypeTilleggsstønader -> Fagsystem.TILLST
-            is StønadTypeAAP -> Fagsystem.AAP
+            is StønadTypeDagpenger -> DP
+            is StønadTypeTiltakspenger -> TILTPENG
+            is StønadTypeTilleggsstønader -> TILLST
+            is StønadTypeAAP -> AAP
         }
     }
 }

@@ -7,9 +7,11 @@ application {
 }
 
 val ktorVersion = "3.1.0"
-val libVersion = "3.1.30"
+val libVersion = "3.1.36"
 
 dependencies {
+    implementation(project(":models"))
+
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:kafka:$libVersion")
     implementation("no.nav.helved:xml:$libVersion")

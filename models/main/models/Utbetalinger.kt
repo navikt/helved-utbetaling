@@ -1,30 +1,19 @@
-package abetal.models
+package models
 
 import com.fasterxml.jackson.annotation.JsonCreator
-import abetal.*
 import java.util.UUID
 import java.util.Base64
 import java.nio.ByteBuffer
 import java.time.*
 import kotlin.getOrThrow
+import libs.utils.secureLog
 
-@JvmInline
-value class SakId(val id: String)
-
-@JvmInline
-value class BehandlingId(val id: String)
-
-@JvmInline
-value class NavEnhet(val enhet: String)
-
-@JvmInline
-value class Personident(val ident: String)
-
-@JvmInline
-value class Navident(val ident: String)
-
-@JvmInline
-value class UtbetalingId(val id: UUID)
+@JvmInline value class SakId(val id: String)
+@JvmInline value class BehandlingId(val id: String)
+@JvmInline value class NavEnhet(val enhet: String)
+@JvmInline value class Personident(val ident: String)
+@JvmInline value class Navident(val ident: String)
+@JvmInline value class UtbetalingId(val id: UUID)
 
 data class Utbetaling(
     val uid: UtbetalingId,
@@ -45,147 +34,72 @@ data class Utbetaling(
         failOnÅrsskifte()
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
-        failOnIllegalUseOfFastsattDagsats()
         failOnInconsistentPeriodeType()
         failOnIllegalFutureUtbetaling()
-        failOnTooLongPeriods()
+        failOnTooManyPeriods()
         failOnDuplicate(prev)
-        // validate beløp
-        // validate fom/tom
-        // validate stønadstype opp mot e.g. fastsattDagsats
-        // validate sakId ikke er for lang
     }
 }
 
 fun Utbetaling.validateLockedFields(other: Utbetaling) {
-    if (sakId != other.sakId) badRequest("cant change immutable field", "sakId")
-    // TODO: oppslag mot PDL, se at det fortsatt er samme person, ikke nødvendigvis samme ident
-    if (personident != other.personident) badRequest("cant change immutable field", "personident")
-    if (stønad != other.stønad) badRequest("cant change immutable field", "stønad")
-
-    if (periodetype != other.periodetype) {
-        badRequest(
-            msg = "can't change the flavour of perioder",
-            field = "perioder",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
-        )
-    }
+    if (sakId != other.sakId) badRequest("cant change immutable field 'sakId'")
+    if (personident != other.personident) badRequest("cant change immutable field 'personident'")
+    if (stønad != other.stønad) badRequest("cant change immutable field")
+    if (periodetype != other.periodetype) badRequest("can't change periodetype", "/utbetalinger/perioder")
 }
 
 fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
-    if (perioder.size != other.perioder.size) {
-        return
-    }
-    val ingenEndring = perioder.zip(other.perioder).all { (first, second) ->
-        first.beløp == second.beløp
-                && first.fom == second.fom
-                && first.tom == second.tom
-                && first.betalendeEnhet == second.betalendeEnhet
-                && first.fastsattDagsats == second.fastsattDagsats
-    }
-    if (ingenEndring) {
-        conflict(
-            msg = "periods allready exists",
-            field = "perioder",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
-        )
-    }
+    if (perioder.size != other.perioder.size) return
+    val ingenEndring = perioder.zip(other.perioder).all { (l, r) -> l.beløp == r.beløp && l.fom == r.fom && l.tom == r.tom && l.betalendeEnhet == r.betalendeEnhet && l.fastsattDagsats == r.fastsattDagsats }
+    if (ingenEndring) conflict("periods allready exists", "/utbetalinger/perioder")
 }
 
 private fun Utbetaling.failOnÅrsskifte() {
     if (perioder.minBy { it.fom }.fom.year != perioder.maxBy { it.tom }.tom.year) {
-        badRequest(
-            msg = "periode strekker seg over årsskifte",
-            field = "tom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-        )
+        badRequest("periode strekker seg over årsskifte", "/utbetalinger/perioder")
     }
 }
 
 private fun Utbetaling.failOnDuplicatePerioder() {
-    if (perioder.groupBy { it.fom }.any { (_, perioder) -> perioder.size != 1 }) {
-        badRequest(
-            msg = "kan ikke sende inn duplikate perioder",
-            field = "fom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-        )
-    }
-    if (perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }) {
-        badRequest(
-            msg = "kan ikke sende inn duplikate perioder",
-            field = "tom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-        )
-    }
+    val dupFom = perioder.groupBy { it.fom }.any { (_, perioder) -> perioder.size != 1 }
+    if (dupFom) badRequest("kan ikke sende inn duplikate perioder", "/utbetalinger/perioder")
+    val dupTom = perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }
+    if (dupTom) badRequest("kan ikke sende inn duplikate perioder", "/utbetalinger/perioder")
 }
 
 private fun Utbetaling.failOnTomBeforeFom() {
-    if (!perioder.all { it.fom <= it.tom }) {
-        badRequest(
-            msg = "fom må være før eller lik tom",
-            field = "fom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-        )
-    }
-}
-
-private fun Utbetaling.failOnIllegalUseOfFastsattDagsats() {
-    when (stønad) {
-        is StønadTypeDagpenger -> {}
-        is StønadTypeAAP -> {}
-        else -> {
-            if (perioder.any { it.fastsattDagsats != null }) {
-                badRequest(
-                    msg = "reservert felt for Dagpenger og AAP",
-                    field = "fastsattDagsats",
-                    doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-                )
-            }
-        }
-    }
+    if (!perioder.all { it.fom <= it.tom }) badRequest("fom må være før eller lik tom", "/utbetalinger/perioder")
 }
 
 private fun Utbetaling.failOnInconsistentPeriodeType() {
-    fun LocalDate.erHelg(): Boolean {
-        return dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
-    }
-
+    fun LocalDate.erHelg() = dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
     val consistent = when (periodetype) {
         Periodetype.UKEDAG -> perioder.all { it.fom == it.tom } && perioder.none { it.fom.erHelg() }
         Periodetype.DAG -> perioder.all { it.fom == it.tom }
         Periodetype.MND -> perioder.all { it.fom.dayOfMonth == 1 && it.tom.plusDays(1) == it.fom.plusMonths(1) }
         Periodetype.EN_GANG -> perioder.all { it.fom.year == it.tom.year } // tillater engangs over årsskifte
     }
-    if (!consistent) {
-        badRequest(
-            msg = "inkonsistens blant datoene i periodene",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-        )
-    }
+    if (!consistent) badRequest("inkonsistens blant datoene i periodene")
 }
 
+// TODO: remove?
 private fun Utbetaling.failOnIllegalFutureUtbetaling() {
     if (stønad is StønadTypeTilleggsstønader) return
-    if (periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG) && perioder.maxBy{ it.tom }.tom.isAfter(LocalDate.now())) {
-        badRequest(
-            msg = "fremtidige utbetalinger er ikke støttet for periode dag/ukedag",
-            field = "periode.tom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-        )
-    }
+    val isDay = periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG) 
+    val dayIsFuture = perioder.maxBy{ it.tom }.tom.isAfter(LocalDate.now()) 
+    if (isDay && dayIsFuture) badRequest(
+        "fremtidige utbetalinger er ikke støttet for periode dag/ukedag",
+        "/utbetalinger/perioder"
+    )
 }
 
-private fun Utbetaling.failOnTooLongPeriods() {
+// TODO: remove?
+private fun Utbetaling.failOnTooManyPeriods() {
     if (periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG)) {
         val min = perioder.minBy { it.fom }.fom
         val max = perioder.maxBy { it.tom }.tom
-        if (java.time.temporal.ChronoUnit.DAYS.between(min, max)+1 > 92) {
-            badRequest(
-                msg = "$periodetype støtter maks periode på 92 dager",
-                field = "perioder",
-                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-            )
-        }
+        val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max)+1 > 92 
+        if (tooManyPeriods) badRequest("$periodetype støtter maks periode på 92 dager", "/utbetalinger/perioder")
     }
 }
 
@@ -212,7 +126,7 @@ value class PeriodeId (private val id: UUID) {
                 // ^ les neste 64 og lag en long
                 return PeriodeId(UUID(byteBuffer.long, byteBuffer.long))
             } catch (e: Throwable) {
-                appLog.warn("Klarte ikke dekomprimere UUID: $this")
+                secureLog.warn("Klarte ikke dekomprimere UUID: $this")
                 throw e
             }
         }
@@ -371,18 +285,10 @@ fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetaling
 
 private fun beløp(perioder: List<Utbetalingsperiode>, periodetype: Periodetype): UInt =
     when (periodetype) {
-        Periodetype.DAG, Periodetype.UKEDAG, Periodetype.MND ->
-            perioder.map { it.beløp }.toSet().singleOrNull() ?: badRequest(
-                msg = "fant fler ulike beløp blant dagene",
-                field = "beløp",
-                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-            )
-
-        else -> perioder.singleOrNull()?.beløp ?: badRequest(
-            msg = "forventet kun en periode, da sammenslåing av beløp ikke er støttet",
-            field = "beløp",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
-        )
+        Periodetype.DAG, Periodetype.UKEDAG, Periodetype.MND -> perioder.map { it.beløp }.toSet().singleOrNull() ?: 
+            badRequest("fant fler ulike beløp blant dagene", "/utbetalinger/perioder")
+        else -> perioder.singleOrNull()?.beløp ?: 
+            badRequest("forventet kun en periode, da sammenslåing av beløp ikke er støttet", "/utbetalinger/perioder")
     }
 
 private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
@@ -398,3 +304,4 @@ private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
         acc
     }.map { it.toList() }
 }
+

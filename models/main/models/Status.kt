@@ -1,6 +1,4 @@
-package abetal.models
-
-import abetal.ApiError
+package models
 
 data class StatusReply(
     val status: Status = Status.MOTTATT, 
@@ -13,3 +11,4 @@ enum class Status {
     MOTTATT,
     HOS_OPPDRAG,
 }
+

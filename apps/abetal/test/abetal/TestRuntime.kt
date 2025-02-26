@@ -1,7 +1,5 @@
 package abetal
 
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
 import kotlinx.coroutines.runBlocking
 import libs.kafka.StreamsMock
 import io.ktor.server.testing.*
@@ -38,11 +36,6 @@ object TestRuntime : AutoCloseable {
         ktor.stop()
     }
 }
-
-val NettyApplicationEngine.port: Int
-    get() = runBlocking {
-        resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
-    }
 
 private val testApplication: TestApplication by lazy {
     TestApplication {

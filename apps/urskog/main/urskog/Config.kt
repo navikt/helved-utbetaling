@@ -1,8 +1,13 @@
 package urskog
 
+import java.net.URI
+import java.net.URL
+import libs.auth.AzureConfig
 import libs.kafka.StreamsConfig
 import libs.mq.MQConfig
 import libs.utils.env
+import libs.ws.SoapConfig
+import libs.ws.StsConfig
 
 data class Config(
     val kafka: StreamsConfig = StreamsConfig(),
@@ -15,6 +20,16 @@ data class Config(
         username = "srvdp-oppdrag",
         password = env("MQ_PASSWORD"),
     ),
+    val proxy: ProxyConfig = ProxyConfig(),
+    val azure: AzureConfig = AzureConfig(),
+    val simulering: SoapConfig = SoapConfig(
+        host = URI("${proxy.host}/${env<String>("SIMULERING_PATH")}").toURL(),
+        sts = StsConfig(
+            host = URI("${proxy.host}/gandalf").toURL(),
+            user = "srv-simulering",
+            pass = env("servicebruker_passord"), // from secret utsjekk-oppdrag-simulering
+        ),
+    ),
 )
 
 typealias Queue = String
@@ -25,3 +40,7 @@ data class OppdragConfig(
     val sendKø: Queue = env("MQ_OPPDRAG_QUEUE"),
 )
 
+data class ProxyConfig(
+    val host: URL = env("PROXY_HOST"),
+    val scope: String = env("PROXY_SCOPE"),
+)
