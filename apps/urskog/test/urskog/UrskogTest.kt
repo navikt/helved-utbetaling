@@ -1,8 +1,9 @@
 package urskog
 
-import urskog.models.*
+import models.*
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.test.assertEquals
 import com.ibm.mq.jms.MQQueue
@@ -13,24 +14,33 @@ class UrskogTest {
 
     @Test
     fun `send to mq`() {
-        val uid = UUID.randomUUID()
-        val sakId = "$seq"
-        val behId = "$seq"
+        val uid = UtbetalingId(UUID.randomUUID())
+        val sakId = SakId("$seq")
+        val behId = BehandlingId("$seq")
         TestTopics.utbetalinger.produce(uid.toString()) {
             Utbetaling(
+                action = Action.CREATE,
                 uid = uid,
                 sakId = sakId,
                 behandlingId = behId,
                 stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                førsteUtbetalingPåSak = true,
+                lastPeriodeId = PeriodeId(),
+                personident = Personident(""),
+                vedtakstidspunkt = LocalDateTime.now(),
+                beslutterId = Navident(""),
+                saksbehandlerId = Navident(""),
+                periodetype = Periodetype.DAG,
+                perioder = listOf(),
             )
         }
 
         val oppdrag = TestData.oppdrag(
-            fagsystemId = sakId,
+            fagsystemId = sakId.id,
             fagområde = "AAP", 
             oppdragslinjer = listOf(
                 TestData.oppdragslinje(
-                    henvisning = behId,
+                    henvisning = behId.id,
 
                     delytelsesId = "a",
                     klassekode = "AAPUAA",
@@ -42,8 +52,7 @@ class UrskogTest {
             ),
         )
 
-        val keystore = TestRuntime.kafka.getStore<OppdragForeignKey, UUID>(StateStores.keystore)
-        // val fk = keystore.getOrNull(OppdragForeignKey(Fagsystem.AAP, sakId, behId))
+        val keystore = TestRuntime.kafka.getStore(Stores.keystore)
         val fk = keystore.getOrNull(OppdragForeignKey.from(oppdrag))
         assertEquals(uid, fk)
 

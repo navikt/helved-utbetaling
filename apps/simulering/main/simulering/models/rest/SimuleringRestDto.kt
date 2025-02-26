@@ -5,37 +5,6 @@ import no.nav.utsjekk.kontrakter.felles.Personident
 import java.time.LocalDate
 
 object rest {
-    data class SimuleringRequest(
-        val fagområde: String,
-        val sakId: String,
-        val personident: Personident,
-        val erFørsteUtbetalingPåSak: Boolean,
-        val saksbehandler: String,
-        val utbetalingsperioder: List<Utbetalingsperiode>,
-    )
-    data class Utbetalingsperiode(
-        val periodeId: String,
-        val forrigePeriodeId: String?,
-        val erEndringPåEksisterendePeriode: Boolean,
-        val klassekode: String,
-        val fom: LocalDate,
-        val tom: LocalDate,
-        val sats: Int,
-        val satstype: SatsType,
-        val opphør: Opphør?,
-        val utbetalesTil: String,
-        // val fastsattDagsats: UInt?,
-    )
-
-    data class Opphør(val fom: LocalDate)
-
-    enum class SatsType(@get:JsonValue val verdi: String) {
-        DAG("DAG"),
-        DAG_INKL_HELG("DAG7"),
-        MÅNED("MND"),
-        ENGANGS("ENG"),
-    }
-
     data class SimuleringResponse(
         val gjelderId: String,
         val datoBeregnet: LocalDate,

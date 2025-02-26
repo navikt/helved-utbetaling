@@ -5,7 +5,7 @@ const val DOC = "https://navikt.github.io/utsjekk-docs/"
 data class ApiError(
     val statusCode: Int,
     val msg: String,
-    val doc: String,
+    val doc: String = DOC,
 ) : RuntimeException(msg)
 
 fun badRequest(msg: String, doc: String = "") : Nothing          = throw ApiError(400, msg, "$DOC$doc")

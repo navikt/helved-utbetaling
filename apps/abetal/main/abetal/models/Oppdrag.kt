@@ -4,22 +4,6 @@ import java.time.LocalDate
 import no.trygdeetaten.skjema.oppdrag.*
 import models.*
 
-enum class Fagsystem {
-    DP,
-    TILTPENG,
-    TILLST,
-    AAP;
-
-    companion object {
-        fun from(stønad: Stønadstype) = when (stønad) {
-            is StønadTypeDagpenger -> DP
-            is StønadTypeTiltakspenger -> TILTPENG
-            is StønadTypeTilleggsstønader -> TILLST
-            is StønadTypeAAP -> AAP
-        }
-    }
-}
-
 enum class Endringskode {
     NY,
     ENDR,

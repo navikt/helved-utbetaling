@@ -1,16 +1,16 @@
 package urskog
 
 import com.ibm.mq.jms.MQQueue
+import java.util.UUID
 import javax.jms.TextMessage
 import libs.kafka.StateStore
 import libs.mq.*
 import libs.utils.secureLog
 import libs.xml.XMLMapper
+import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.clients.producer.*
 import urskog.OppdragConfig
-import urskog.models.*
-import java.util.UUID
 
 class OppdragMQProducer(
     private val config: Config,
@@ -40,7 +40,7 @@ class OppdragMQProducer(
 class KvitteringMQConsumer(
     private val config: Config,
     private val kvitteringProducer: Producer<String, Oppdrag>,
-    private val keystore: StateStore<OppdragForeignKey, UUID>,
+    private val keystore: StateStore<OppdragForeignKey, UtbetalingId>,
     mq: MQ = MQ(config.mq),
 ): MQConsumer(mq, MQQueue(config.oppdrag.kvitteringsKø)) {
     private val kvitteringQueue = MQQueue(config.oppdrag.kvitteringsKø)
@@ -70,14 +70,14 @@ class KvitteringMQConsumer(
 
 data class OppdragForeignKey(
     val fagsystem: Fagsystem,
-    val sakId: String,
-    val behandlingId: String?,
+    val sakId: SakId,
+    val behandlingId: BehandlingId? = null,
 ) {
     companion object {
         fun from(oppdrag: Oppdrag) = OppdragForeignKey(
             fagsystem = Fagsystem.valueOf(oppdrag.oppdrag110.kodeFagomraade),
-            sakId = oppdrag.oppdrag110.fagsystemId, 
-            behandlingId = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning
+            sakId = SakId(oppdrag.oppdrag110.fagsystemId), 
+            behandlingId = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.let(::BehandlingId)
         )
 
         fun from(utbetaling: Utbetaling) = OppdragForeignKey(

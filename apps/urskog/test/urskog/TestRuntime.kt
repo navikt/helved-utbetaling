@@ -25,7 +25,7 @@ object TestRuntime : AutoCloseable {
     val kafka = StreamsMock()
     private val mq: MQContainer = MQContainer("urskog")
 
-    val config: Config = TestConfig.create(mq.config)
+    val config: Config = TestConfig.create(mq.config, 8013, 8014)
 
     val oppdrag = URFake(config)
 
