@@ -1,20 +1,22 @@
 package abetal
 
-import abetal.models.*
+import abetal.models.Endringskode
+import abetal.models.OppdragSkjemaConstants
+import abetal.models.Utbetalingsfrekvens
 import models.*
+import no.trygdeetaten.skjema.oppdrag.*
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.GregorianCalendar
+import java.util.*
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
-import no.trygdeetaten.skjema.oppdrag.*
 
 private val objectFactory = ObjectFactory()
-private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+private fun LocalDateTime.format() = truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
 
 object OppdragService {
     fun opprett(new: Utbetaling): Oppdrag {
@@ -29,12 +31,12 @@ object OppdragService {
             datoOppdragGjelderFom = OppdragSkjemaConstants.OPPDRAG_GJELDER_DATO_FOM.toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(timeFormatter)
+                val avstemmingstidspunkt = LocalDateTime.now().format()
                 nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = Fagsystem.from(new.stønad).name
                 tidspktMelding = avstemmingstidspunkt
             }
-            oppdragsEnhet120(new).forEach(oppdragsEnhet120s::add)
+            oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.perioder.mapIndexed { i, periode ->
                 val periodeId = if (i == new.perioder.size - 1) new.lastPeriodeId else PeriodeId()
                 oppdragsLinje150s.add(
@@ -70,13 +72,12 @@ object OppdragService {
             datoOppdragGjelderFom = OppdragSkjemaConstants.OPPDRAG_GJELDER_DATO_FOM.toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(timeFormatter)
+                val avstemmingstidspunkt = LocalDateTime.now().format()
                 nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = Fagsystem.from(new.stønad).name
                 tidspktMelding = avstemmingstidspunkt
             }
-            oppdragsEnhet120(new).forEach(oppdragsEnhet120s::add)
-
+            oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
             val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.periodetype)
@@ -103,12 +104,12 @@ object OppdragService {
             datoOppdragGjelderFom = OppdragSkjemaConstants.OPPDRAG_GJELDER_DATO_FOM.toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(timeFormatter)
+                val avstemmingstidspunkt = LocalDateTime.now().format()
                 nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = Fagsystem.from(new.stønad).name
                 tidspktMelding = avstemmingstidspunkt
             }
-            oppdragsEnhet120(new).forEach(oppdragsEnhet120s::add)
+            oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }
             oppdragsLinje150s.add(
                 oppdragsLinje150(
@@ -128,7 +129,7 @@ object OppdragService {
     }
 }
 
-private fun opphørsdato(
+fun opphørsdato(
     new: List<Utbetalingsperiode>,
     prev: List<Utbetalingsperiode>,
     periodetype: Periodetype,

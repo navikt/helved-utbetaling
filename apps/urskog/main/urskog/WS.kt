@@ -1,18 +1,10 @@
 package urskog
 
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.databind.*
-import com.fasterxml.jackson.dataformat.xml.*
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
-import com.fasterxml.jackson.module.kotlin.*
 import io.ktor.client.plugins.logging.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
-import libs.utils.secureLog
 import libs.ws.*
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.*
 
 private object SimulerAction {
     private const val HOST = "http://nav.no"
@@ -28,7 +20,7 @@ class SimuleringService(private val config: Config) {
     private val sts = StsClient(config.simulering.sts, http, proxyAuth = ::getAzureToken)
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
 
-    fun simuler()  {
+    fun simuler(simulering: SimulerBeregningRequest)  {
 
     }
 

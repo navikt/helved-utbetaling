@@ -1,7 +1,6 @@
 package urskog
 
 import com.ibm.mq.jms.MQQueue
-import java.util.UUID
 import javax.jms.TextMessage
 import libs.kafka.StateStore
 import libs.mq.*
@@ -10,7 +9,6 @@ import libs.xml.XMLMapper
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.clients.producer.*
-import urskog.OppdragConfig
 
 class OppdragMQProducer(
     private val config: Config,
@@ -43,7 +41,6 @@ class KvitteringMQConsumer(
     private val keystore: StateStore<OppdragForeignKey, UtbetalingId>,
     mq: MQ = MQ(config.mq),
 ): MQConsumer(mq, MQQueue(config.oppdrag.kvitteringsKø)) {
-    private val kvitteringQueue = MQQueue(config.oppdrag.kvitteringsKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
     override fun onMessage(message: TextMessage) {

@@ -16,6 +16,7 @@ import libs.utils.secureLog
 @JvmInline value class UtbetalingId(val id: UUID)
 
 data class Utbetaling(
+    val simulate: Boolean,
     val uid: UtbetalingId,
     val action: Action,
     val førsteUtbetalingPåSak: Boolean,

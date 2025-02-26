@@ -19,6 +19,7 @@ class UrskogTest {
         val behId = BehandlingId("$seq")
         TestTopics.utbetalinger.produce(uid.toString()) {
             Utbetaling(
+                simulate = false,
                 action = Action.CREATE,
                 uid = uid,
                 sakId = sakId,
