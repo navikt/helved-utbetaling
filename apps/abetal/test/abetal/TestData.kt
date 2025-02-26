@@ -26,6 +26,7 @@ object Aap {
         vedtatt: LocalDateTime = LocalDateTime.now(),
         perioder: () -> List<Utbetalingsperiode>,
     ) = AapUtbetaling(
+        simulate = false,
         action = action,
         periodetype = Periodetype.UKEDAG,
         stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
@@ -64,6 +65,7 @@ fun utbetaling(
     saksbehandlerId: Navident = Navident(""),
     perioder: () -> List<Utbetalingsperiode>,
 ) = Utbetaling(
+    simulate = false,
     uid = uid,
     action = action,
     førsteUtbetalingPåSak = førsteUtbetalingPåSak,

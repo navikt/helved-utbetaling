@@ -6,6 +6,7 @@ import java.util.UUID
 import abetal.AapTuple
 
 data class AapUtbetaling(
+    val simulate: Boolean,
     val action: Action,
     val sakId: SakId,
     val behandlingId: BehandlingId,
@@ -20,6 +21,7 @@ data class AapUtbetaling(
 
 fun toDomain(tuple: AapTuple, sakValue: SakValue?): Utbetaling {
     return Utbetaling(
+        simulate = tuple.aap.simulate,
         uid = UtbetalingId(UUID.fromString(tuple.uid)),
         action = tuple.aap.action,
         førsteUtbetalingPåSak = sakValue?.uids?.isEmpty() ?: true,

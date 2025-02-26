@@ -72,7 +72,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
                 }
                 val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
                 val utbetaling = new.copy(lastPeriodeId = lastPeriodeId)
-                utbetaling to oppdrag
+                utbetaling to (oppdrag)
             }
         }.branch({ it.isOk() }) {
             val result = this.map { it -> it.unwrap() }
