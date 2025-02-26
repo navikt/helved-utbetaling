@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "3.1.0"
-val libVersion = "3.1.37"
+val libVersion = "3.1.41"
 
 dependencies {
     implementation(project(":models"))
@@ -24,6 +24,7 @@ dependencies {
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
 
     testImplementation(kotlin("test"))
+    testImplementation("org.apache.kafka:kafka-streams:3.9.0") // intercept StreamsBuilder
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("no.nav.helved:kafka-test:$libVersion")
 }

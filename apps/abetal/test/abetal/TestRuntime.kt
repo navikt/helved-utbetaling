@@ -5,6 +5,9 @@ import libs.kafka.StreamsMock
 import io.ktor.server.testing.*
 import libs.kafka.StreamsConfig
 import libs.kafka.SslConfig
+import org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG
+import org.apache.kafka.streams.state.BuiltInDslStoreSuppliers
+import java.util.*
 
 object TestTopics {
     val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
@@ -26,7 +29,11 @@ object TestRuntime : AutoCloseable {
 
     val config by lazy {
         Config(
-            kafka = StreamsConfig("", "", SslConfig("", "", ""))
+            kafka = StreamsConfig("", "", SslConfig("", "", ""), additionalProperties = Properties().apply {
+                put("state.dir", "build/kafka-streams")
+                put("max.task.idle.ms", -1L)
+                put(DSL_STORE_SUPPLIERS_CLASS_CONFIG, BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers::class.java)
+            })
         )
     }
 
