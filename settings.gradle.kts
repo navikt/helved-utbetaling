@@ -6,5 +6,6 @@ include(
     "apps:urskog",
     "apps:simulering",
     "apps:utsjekk",
+    "models",
 )
 

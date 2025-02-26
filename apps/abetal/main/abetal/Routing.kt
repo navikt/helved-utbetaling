@@ -1,11 +1,9 @@
 package abetal
 
 import io.ktor.http.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import java.util.*
 import libs.kafka.Streams
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {

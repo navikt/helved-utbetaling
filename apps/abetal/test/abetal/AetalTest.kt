@@ -1,10 +1,10 @@
 package abetal
 
 import abetal.models.*
-import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import kotlin.test.assertEquals
-
+import models.*
+import org.junit.jupiter.api.Test
 
 internal class AetalTest {
 
@@ -21,8 +21,8 @@ internal class AetalTest {
             }
         }
         TestTopics.saker.assertThat()
-            .hasNumberOfRecordsForKey("AAP-${sid.id}", 1)
-            .hasValueMatching("AAP-${sid.id}", 0) {
+            .hasNumberOfRecordsForKey(SakKey(sid, Fagsystem.AAP), 1)
+            .hasValueMatching(SakKey(sid, Fagsystem.AAP), 0) {
                 assertEquals(uid, it.uids.single())
             }
     }
@@ -61,8 +61,8 @@ internal class AetalTest {
 
         TestTopics.saker.assertThat()
             .hasNumberOfRecords(2)
-            .hasNumberOfRecordsForKey("${Fagsystem.AAP}-${sid.id}", 2)
-            .hasLastValue("${Fagsystem.AAP}-${sid.id}") {
+            .hasNumberOfRecordsForKey(SakKey(sid, Fagsystem.AAP), 2)
+            .hasLastValue(SakKey(sid, Fagsystem.AAP)) {
                 assertEquals(2, uids.size)
             }
     }

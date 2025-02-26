@@ -1,16 +1,9 @@
 package abetal.models
 
-import abetal.*
-import java.time.DayOfWeek
-import java.time.LocalDate
+import models.*
 import java.time.LocalDateTime
-import java.util.*
-
-enum class Action {
-    CREATE,
-    UPDATE,
-    DELETE
-}
+import java.util.UUID
+import abetal.AapTuple
 
 data class AapUtbetaling(
     val action: Action,
@@ -25,14 +18,14 @@ data class AapUtbetaling(
     val perioder: List<Utbetalingsperiode>,
 )
 
-fun toDomain(tuple: AapTuple, sakIdWrapper: SakIdWrapper?): Utbetaling {
+fun toDomain(tuple: AapTuple, sakValue: SakValue?): Utbetaling {
     return Utbetaling(
         uid = UtbetalingId(UUID.fromString(tuple.uid)),
         action = tuple.aap.action,
-        førsteUtbetalingPåSak = sakIdWrapper == null,
+        førsteUtbetalingPåSak = sakValue?.uids?.isEmpty() ?: true,
         sakId = tuple.aap.sakId,
         behandlingId = tuple.aap.behandlingId,
-        lastPeriodeId = PeriodeId(), // FIXME: Denne overskrives når vi utleder oppdragslinjene
+        lastPeriodeId = PeriodeId(),
         personident = tuple.aap.personident,
         vedtakstidspunkt = tuple.aap.vedtakstidspunkt,
         stønad = tuple.aap.stønad,
@@ -43,5 +36,6 @@ fun toDomain(tuple: AapTuple, sakIdWrapper: SakIdWrapper?): Utbetaling {
     )
 }
 
-data class SakIdWrapper(val sakId: String, val uids: Set<UtbetalingId>)
+data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
+data class SakValue(val uids: Set<UtbetalingId>)
 

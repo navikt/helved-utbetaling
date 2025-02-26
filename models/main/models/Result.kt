@@ -1,9 +1,6 @@
-package abetal
+package models
 
 import libs.utils.secureLog
-import abetal.models.SakId
-import abetal.models.StatusReply
-import abetal.models.Status
 
 sealed interface Result<out V, out E> {
     data class Ok<V>(val value: V) : Result<V, Nothing>
@@ -17,7 +14,7 @@ sealed interface Result<out V, out E> {
                 Err(StatusReply(status = Status.FEILET, error = e))
             } catch (e: Throwable) {
                 secureLog.error("Unknown server error", e)
-                val error = ApiError(500, "Unknown server error", null, DEFAULT_DOC_STR)
+                val error = ApiError(500, "Unknown server error", DOC)
                 Err(StatusReply(status = Status.FEILET, error = error))
             }
         }
