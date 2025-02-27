@@ -40,4 +40,4 @@ jobs:
           PRINT_PAYLOAD: true
           CLUSTER: ${{ matrix.env }}-gcp
           RESOURCE: topics/${{ matrix.name }}
-          VAR: kafka.pool=nav-${{ matrix.env }}
+          VAR: kafkapool=nav-${{ matrix.env }}

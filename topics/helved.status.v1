@@ -6,7 +6,7 @@ metadata:
   labels:
     team: helved
 spec:
-  pool: {{ kafka.pool }}
+  pool: {{kafkapool}}
   config:
     cleanupPolicy: compact,delete
     retentionHours: 168
