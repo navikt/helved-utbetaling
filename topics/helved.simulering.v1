@@ -1,0 +1,20 @@
+apiVersion: kafka.nais.io/v1
+kind: Topic
+metadata:
+  name: simulering.v1
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  pool: {{ kafka.pool }}
+  config:
+    cleanupPolicy: compact,delete
+    retentionHours: 168
+    partitions: 3
+  acl:
+    - team: helved
+      application: abetal
+      access: readwrite
+    - team: helved
+      application: urskog
+      access: readwrite
