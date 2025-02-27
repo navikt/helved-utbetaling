@@ -5,19 +5,19 @@ graph LR
 
 subgraph Topologi
     %% TOPICS
-    from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition([from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition])
+    from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition([from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition])
 	helved.utbetalinger.v1([helved.utbetalinger.v1])
 	consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1-repartition([consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1-repartition])
 	helved.oppdrag.v1([helved.oppdrag.v1])
 	helved.simulering.v1([helved.simulering.v1])
 	helved.status.v1([helved.status.v1])
-	from-aap.utbetalinger.v1-left-join-helved.saker.v1-repartition([from-aap.utbetalinger.v1-left-join-helved.saker.v1-repartition])
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition([from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition])
 	helved.saker.v1([helved.saker.v1])
-	aap.utbetalinger.v1([aap.utbetalinger.v1])
+	helved.aap-utbetalinger.v1([helved.aap-utbetalinger.v1])
 
     %% JOINS
-    from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1{left-join}
-	from-aap.utbetalinger.v1-left-join-helved.saker.v1{left-join}
+    from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1{left-join}
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1{left-join}
 	consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1{left-join}
 
     %% STATE PROCESSORS
@@ -35,15 +35,15 @@ subgraph Topologi
     
     
     %% JOIN STREAMS
-    from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition --> from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1
-	helved.utbetalinger.v1-state-store --> from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1
-	from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.status.v1
-	from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.simulering.v1
-	from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.utbetalinger.v1
-	from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.oppdrag.v1
-	from-aap.utbetalinger.v1-left-join-helved.saker.v1-repartition --> from-aap.utbetalinger.v1-left-join-helved.saker.v1
-	helved.saker.v1-state-store --> from-aap.utbetalinger.v1-left-join-helved.saker.v1
-	from-aap.utbetalinger.v1-left-join-helved.saker.v1 --> from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition
+    from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1
+	helved.utbetalinger.v1-state-store --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.status.v1
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.simulering.v1
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.oppdrag.v1
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.utbetalinger.v1
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1
+	helved.saker.v1-state-store --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1 --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition
 	consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1-repartition --> consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1
 	helved.saker.v1-state-store --> consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1
 	consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1 --> helved.saker.v1
@@ -60,10 +60,10 @@ subgraph Topologi
 
     %% REPARTITION STREAMS
     helved.utbetalinger.v1 --> |rekey| consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1-repartition
-	from-aap.utbetalinger.v1-left-join-helved.saker.v1-repartition --> |rekey| from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition --> |rekey| from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition
     
     %% BASIC STREAMS
-    aap.utbetalinger.v1 --> from-aap.utbetalinger.v1-left-join-helved.saker.v1-repartition
+    helved.aap-utbetalinger.v1 --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition
     
     %% CUSTOM PROCESS STREAMS
     
@@ -77,15 +77,15 @@ end
 %% blue     #07cff6
 
 %% STYLES
-style from-aap.utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.simulering.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style from-aap.utbetalinger.v1-left-join-helved.saker.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style aap.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.aap-utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 

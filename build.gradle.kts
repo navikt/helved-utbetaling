@@ -17,6 +17,7 @@ subprojects {
 
         withType<Test> {
             useJUnitPlatform()
+            // testLogging { events("passed", "skipped", "failed") }
         }
 
         sourceSets {

@@ -9,7 +9,7 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.util.UUID
 
 object Topics {
-    val aap = Topic("aap.utbetalinger.v1", json<AapUtbetaling>())
+    val aap = Topic("helved.aap-utbetalinger.v1", json<AapUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simulering = Topic("helved.simulering.v1", xml<SimulerBeregningRequest>())
