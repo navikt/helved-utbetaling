@@ -1,0 +1,60 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: urskog
+  namespace: helved
+  labels:
+    team: helved
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+spec:
+  image: {{ image }}
+  accessPolicy:
+    outbound:
+      external:
+        - host: helved-ws-proxy.dev-fss-pub.nais.io
+      rules:
+        - application: helved-ws-proxy
+          cluster: dev-fss
+  azure:
+    application:
+      enabled: true
+  liveness:
+    path: /probes/live
+  readiness:
+    path: /probes/ready
+  prometheus:
+    enabled: true
+    path: /probes/metric
+  replicas:
+    min: 1
+    max: 1
+  resources:
+    limits:
+      memory: 1024Mi
+    requests:
+      memory: 512Mi
+      cpu: 200m
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: loki
+  secureLogs:
+    enabled: true
+  kafka:
+    pool: nav-dev
+    streams: true
+  envFrom:
+    - secret: utsjekk-oppdrag-simulering
+  env:
+    - name: PROXY_HOST
+      value: https://helved-ws-proxy.dev-fss-pub.nais.io
+    - name: PROXY_SCOPE
+      value: api://dev-fss.helved.ws-proxy/.default
+    - name: SIMULERING_PATH
+      value: cics/oppdrag/simulerFpServiceWSBinding
