@@ -8,6 +8,7 @@ on:
       - 'apps/abetal/**'
       - '.github/workflows/abetal.yml'
       - 'build.gradle.kts'
+      - 'Dockerfile.streams'
       - 'models/**'
       - 'topics/**'
 
