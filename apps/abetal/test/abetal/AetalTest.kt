@@ -254,7 +254,7 @@ internal class AetalTest {
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE) {
                 listOf(
-                    Aap.dag(LocalDate.now().plusDays(1)),
+                    Aap.dag(LocalDate.now().nesteVirkedag()),
                 )
             }
         }
