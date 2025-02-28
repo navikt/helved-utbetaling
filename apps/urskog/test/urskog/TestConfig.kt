@@ -20,7 +20,6 @@ object TestConfig {
             scope = "test",
         )
         val oppdrag = OppdragConfig(
-            enabled = true,
             kvitteringsKø = "DEV.QUEUE.2",
             sendKø = "DEV.QUEUE.1"
         )
