@@ -35,7 +35,6 @@ data class Config(
 typealias Queue = String
 
 data class OppdragConfig(
-    val enabled: Boolean = env("OPPDRAG_ENABLED"),
     val kvitteringsKø: Queue = env("MQ_OPPDRAG_KVITTERING_QUEUE"),
     val sendKø: Queue = env("MQ_OPPDRAG_QUEUE"),
 )

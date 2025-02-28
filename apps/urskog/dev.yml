@@ -15,6 +15,9 @@ spec:
     outbound:
       external:
         - host: helved-ws-proxy.dev-fss-pub.nais.io
+        - host: mqls02.preprod.local
+          ports:
+            - port: 1413
       rules:
         - application: helved-ws-proxy
           cluster: dev-fss
@@ -50,7 +53,9 @@ spec:
     pool: nav-dev
     streams: true
   envFrom:
+     # TODO: sjekk hva disse inneholder, er det samme eller noe ulikt?
     - secret: utsjekk-oppdrag-simulering
+    - secret: utsjekk-oppdrag
   env:
     - name: PROXY_HOST
       value: https://helved-ws-proxy.dev-fss-pub.nais.io
@@ -58,3 +63,15 @@ spec:
       value: api://dev-fss.helved.ws-proxy/.default
     - name: SIMULERING_PATH
       value: cics/oppdrag/simulerFpServiceWSBinding
+    - name: MQ_HOSTNAME
+      value: mqls02.preprod.local
+    - name: MQ_PORT
+      value: "1413"
+    - name: MQ_MANAGER
+      value: MQLS02
+    - name: MQ_CHANNEL
+      value: Q1_DP_OPPDRAG
+    - name: MQ_OPPDRAG_QUEUE
+      value: QA.Q1_231.OB04_OPPDRAG_XML
+    - name: MQ_OPPDRAG_KVITTERING_QUEUE
+      value: QA.Q1_DP_OPPDRAG.OPPDRAG_DP_XML_KVITT
