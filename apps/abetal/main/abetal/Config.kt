@@ -1,8 +1,13 @@
 package abetal
 
-import libs.kafka.StreamsConfig
+import libs.kafka.*
+import java.util.Properties
 
 data class Config(
-    val kafka: StreamsConfig = StreamsConfig(),
+    val kafka: StreamsConfig = StreamsConfig(
+        additionalProperties = Properties().apply {
+            put("default.deserialization.exception.handler", ConsumeNextErrorHandler::class.java.name)
+        }
+    ),
 )
 
