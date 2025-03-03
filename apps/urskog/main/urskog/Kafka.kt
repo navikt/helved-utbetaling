@@ -26,6 +26,7 @@ fun createTopology(oppdragProducer: OppdragMQProducer): Topology = topology {
     oppdrag
         .map { uid, xml -> uid to xml }
         .rekey { (_, xml) -> OppdragForeignKey.from(xml) }
+        .secureLogWithKey { key, _ -> info("saving fk: $key")}
         .map { (uid, xml) -> 
             oppdragProducer.send(xml)
             UtbetalingId(UUID.fromString(uid))
