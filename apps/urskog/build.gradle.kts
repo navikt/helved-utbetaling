@@ -12,7 +12,7 @@ val libVersion = "3.1.47"
 dependencies {
     implementation(project(":models"))
     implementation("no.nav.helved:auth:$libVersion")
-    implementation("no.nav.helved:kafka:$libVersion")
+    implementation("no.nav.helved:kafka:3.1.51")
     implementation("no.nav.helved:mq:$libVersion")
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:ws:$libVersion")
@@ -27,7 +27,7 @@ dependencies {
     // implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
 
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    testImplementation("no.nav.helved:kafka-test:$libVersion")
+    testImplementation("no.nav.helved:kafka-test:3.1.51")
     testImplementation("no.nav.helved:mq-test:$libVersion")
     testImplementation(kotlin("test")) 
 }
