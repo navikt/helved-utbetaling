@@ -1,4 +1,4 @@
-val libVersion = "3.1.43"
+val libVersion = "3.1.44"
 
 dependencies {
     implementation("no.nav.helved:utils:$libVersion")
