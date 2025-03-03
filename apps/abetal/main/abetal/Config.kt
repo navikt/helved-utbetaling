@@ -6,7 +6,7 @@ import java.util.Properties
 data class Config(
     val kafka: StreamsConfig = StreamsConfig(
         additionalProperties = Properties().apply {
-            put("default.deserialization.exception.handler", ConsumeNextErrorHandler::class.java.name)
+            put("default.deserialization.exception.handler", ConsumeNextHandler::class.java.name)
         }
     ),
 )
