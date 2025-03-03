@@ -10,7 +10,7 @@ import libs.mq.MQContainer
 object TestTopics {
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
     // val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
-    val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
+    // val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
 }
 
