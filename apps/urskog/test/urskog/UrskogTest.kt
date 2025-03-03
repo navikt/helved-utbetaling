@@ -17,24 +17,6 @@ class UrskogTest {
         val uid = UtbetalingId(UUID.randomUUID())
         val sakId = SakId("$seq")
         val behId = BehandlingId("$seq")
-        TestTopics.utbetalinger.produce(uid.toString()) {
-            Utbetaling(
-                simulate = false,
-                action = Action.CREATE,
-                uid = uid,
-                sakId = sakId,
-                behandlingId = behId,
-                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                førsteUtbetalingPåSak = true,
-                lastPeriodeId = PeriodeId(),
-                personident = Personident(""),
-                vedtakstidspunkt = LocalDateTime.now(),
-                beslutterId = Navident(""),
-                saksbehandlerId = Navident(""),
-                periodetype = Periodetype.DAG,
-                perioder = listOf(),
-            )
-        }
 
         val oppdrag = TestData.oppdrag(
             fagsystemId = sakId.id,
@@ -42,7 +24,6 @@ class UrskogTest {
             oppdragslinjer = listOf(
                 TestData.oppdragslinje(
                     henvisning = behId.id,
-
                     delytelsesId = "a",
                     klassekode = "AAPUAA",
                     datoVedtakFom =  LocalDate.of(2025, 11, 3),
@@ -53,13 +34,13 @@ class UrskogTest {
             ),
         )
 
+        TestTopics.oppdrag.produce(uid.id.toString()) {
+            oppdrag
+        }
+
         val keystore = TestRuntime.kafka.getStore(Stores.keystore)
         val fk = keystore.getOrNull(OppdragForeignKey.from(oppdrag))
         assertEquals(uid, fk)
-
-        TestTopics.oppdrag.produce(uid.toString()) {
-            oppdrag
-        }
 
         val received = TestRuntime.oppdrag.oppdragskø.received
         assertEquals(1, received.size)
