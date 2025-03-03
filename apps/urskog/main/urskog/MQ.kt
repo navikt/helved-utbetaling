@@ -45,6 +45,7 @@ class KvitteringMQConsumer(
 
     override fun onMessage(message: TextMessage) {
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
+        Thread.sleep(500) // TEST: check for race condition
         val fk = OppdragForeignKey.from(kvittering)
         val uid = keystore.getOrNull(fk)
         appLog.info("Mottok kvittering $fk $uid")

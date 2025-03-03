@@ -48,6 +48,7 @@ class UrskogTest {
         var size: Int
         val queue = MQQueue(TestRuntime.config.oppdrag.kvitteringsKø)
         val mq = TestRuntime.oppdrag.mq
+        Thread.sleep(500) // TEST: make test complete while testing race-condition in kvitterinMqConsumer
         do { size = mq.depth(queue) } while (size > 0)
         val kvitteringTopic = TestRuntime.kafka.getProducer(Topics.kvittering)
         assertEquals(1, kvitteringTopic.history().size)
