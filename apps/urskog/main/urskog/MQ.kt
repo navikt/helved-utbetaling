@@ -55,7 +55,7 @@ class KvitteringMQConsumer(
             secureLog.error("$fk: uid not found for. Kvittering not redirected from MQ to Kafka\n${leggTilNamespacePrefiks(message.text)}");
         } else {
             // TODO: må man eksplisitt velge partition, eller vil den resolve likt som kafka-streams?
-            val record = ProducerRecord(Topics.kvittering.name, uid.toString(), kvittering)
+            val record = ProducerRecord(Topics.kvittering.name, uid.id.toString(), kvittering)
             kvitteringProducer.send(record) { md, err ->
                 when (err) {
                     null -> secureLog.trace(
