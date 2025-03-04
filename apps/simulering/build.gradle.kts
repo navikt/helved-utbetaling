@@ -30,7 +30,7 @@ dependencies {
     implementation("com.sun.xml.ws:jaxws-rt:4.0.3")
 
     implementation("no.nav.utsjekk.kontrakter:oppdrag:$kontraktVersion")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
 
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
