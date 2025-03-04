@@ -9,6 +9,7 @@ import libs.xml.XMLMapper
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.clients.producer.*
+import net.logstash.logback.argument.StructuredArguments.kv
 
 class OppdragMQProducer(
     private val config: Config,
@@ -55,7 +56,18 @@ class KvitteringMQConsumer(
         } else {
             // TODO: må man eksplisitt velge partition, eller vil den resolve likt som kafka-streams?
             val record = ProducerRecord(Topics.status.name, uid.toString(), kvittering)
-            kvitteringProducer.send(record)
+            kvitteringProducer.send(record) { md, err ->
+                when (err) {
+                    null -> secureLog.trace(
+                        "produce ${Topics.status.name}",
+                        kv("key", uid.toString()),
+                        kv("topic", Topics.status.name),
+                        kv("partition", md.partition()),
+                        kv("offset", md.offset()),
+                    ) 
+                    else -> secureLog.error("Failed to produce record for $uid")
+                }
+            }
         }
     }
 

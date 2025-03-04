@@ -24,7 +24,7 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.3")
-    // implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
 
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("no.nav.helved:kafka-test:3.1.51")
