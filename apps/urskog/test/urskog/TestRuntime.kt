@@ -6,6 +6,8 @@ import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import libs.kafka.StreamsMock
 import libs.mq.MQContainer
+import libs.mq.MQFake
+import libs.mq.MQ
 
 object TestTopics {
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
@@ -23,18 +25,12 @@ object TestRuntime : AutoCloseable {
     }
 
     val kafka = StreamsMock()
-    private val mq: MQContainer = MQContainer("urskog")
-
-    val config: Config = TestConfig.create(mq.config, 8013, 8014)
-
-    val oppdrag = URFake(config)
-
+    val mq: MQ = oppdragURFake()
+    val config: Config = TestConfig.create(8013, 8014)
     val ktor = testApplication.apply { runBlocking { start() }}
 
     override fun close() {
         ktor.stop()
-        mq.close()
-        oppdrag.close()
     }
 }
 
@@ -46,7 +42,7 @@ val NettyApplicationEngine.port: Int
 private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
-            urskog(TestRuntime.config, TestRuntime.kafka)
+            urskog(TestRuntime.config, TestRuntime.kafka, TestRuntime.mq)
         }
     }
 }

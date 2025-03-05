@@ -13,11 +13,10 @@ import net.logstash.logback.argument.StructuredArguments.kv
 
 class OppdragMQProducer(
     private val config: Config,
-    mq: MQ = MQ(config.mq),
+    mq: MQ,
 ) {
-    private val oppdragQueue = MQQueue(config.oppdrag.sendKø)
     private val kvitteringQueue = MQQueue(config.oppdrag.kvitteringsKø)
-    private val producer = MQProducer(mq, oppdragQueue)
+    private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
     fun send(oppdrag: Oppdrag) {
@@ -40,13 +39,14 @@ class KvitteringMQConsumer(
     private val config: Config,
     private val kvitteringProducer: Producer<String, Oppdrag>,
     private val keystore: StateStore<OppdragForeignKey, UtbetalingId>,
-    mq: MQ = MQ(config.mq),
-): MQConsumer(mq, MQQueue(config.oppdrag.kvitteringsKø)) {
+    mq: MQ,
+): AutoCloseable {
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
+    private val consumer = DefaultMQConsumer(mq, MQQueue(config.oppdrag.kvitteringsKø), ::onMessage)
 
-    override fun onMessage(message: TextMessage) {
+    fun onMessage(message: TextMessage) {
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
-        Thread.sleep(500) // TEST: check for race condition
+        Thread.sleep(1000) // TEST: check for race condition
         val fk = OppdragForeignKey.from(kvittering)
         val uid = keystore.getOrNull(fk)
         appLog.info("Mottok kvittering $fk $uid")
@@ -69,6 +69,15 @@ class KvitteringMQConsumer(
                 }
             }
         }
+    }
+
+
+    fun start() {
+        consumer.start()
+    }
+
+    override fun close() {
+        consumer.close()
     }
 
     private fun leggTilNamespacePrefiks(xml: String): String {
