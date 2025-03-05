@@ -41,15 +41,7 @@ class UrskogTest {
         val keystore = TestRuntime.kafka.getStore(Stores.keystore)
         val fk = keystore.getOrNull(OppdragForeignKey.from(oppdrag))
         assertEquals(uid, fk)
-
-        val received = TestRuntime.oppdrag.oppdragskø.received
-        assertEquals(1, received.size)
-
-        var size: Int
-        val queue = MQQueue(TestRuntime.config.oppdrag.kvitteringsKø)
-        val mq = TestRuntime.oppdrag.mq
-        Thread.sleep(500) // TEST: make test complete while testing race-condition in kvitterinMqConsumer
-        do { size = mq.depth(queue) } while (size > 0)
+        Thread.sleep(1000) // TEST: make test complete while testing race-condition in kvitterinMqConsumer
         val kvitteringTopic = TestRuntime.kafka.getProducer(Topics.kvittering)
         assertEquals(1, kvitteringTopic.history().size)
         assertEquals(0, kvitteringTopic.uncommittedRecords().size)

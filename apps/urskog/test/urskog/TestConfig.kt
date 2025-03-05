@@ -11,7 +11,6 @@ import java.net.URI
 
 object TestConfig {
     fun create(
-        mq: MQConfig,
         proxyPort: Int,
         azurePort: Int,
     ): Config {
@@ -43,6 +42,14 @@ object TestConfig {
         val simulering = SoapConfig(
             host = "${proxy.host}/cics/oppdrag/simulerFpServiceWSBinding".let(::URI).toURL(),
             sts = sts,
+        )
+        val mq = MQConfig(
+            host = "og hark",
+            port = 99,
+            channel = "",
+            manager = "anders",
+            username = "",
+            password = "",
         )
 
         return Config(
