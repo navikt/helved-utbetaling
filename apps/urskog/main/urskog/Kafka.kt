@@ -8,36 +8,35 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val kvittering = Topic("helved.kvittering.v1", xml<Oppdrag>())
-    // val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val status = Topic("helved.status.v1", json<StatusReply>())
+    val kvitteringQueue = Topic<OppdragForeignKey, Oppdrag>("helved.kvittering-queue.v1", Serdes(JsonSerde.jackson(), XmlSerde.serde()))
 }
 
 object Stores {
     val keystore = Store<OppdragForeignKey, UtbetalingId>("fk-uid-store", Serdes(JsonSerde.jackson(), JsonSerde.jackson()))
 }
 
+object Tables {
+    val kvitteringQueue = Table(Topics.kvitteringQueue)
+}
+
 fun createTopology(oppdragProducer: OppdragMQProducer): Topology = topology {
     val oppdrag = consume(Topics.oppdrag)
+    val kvitteringQueue = consume(Tables.kvitteringQueue)
 
     oppdrag
+        .map { xml -> oppdragProducer.send(xml) }
         .map { _ -> StatusReply(status = Status.HOS_OPPDRAG) }
         .produce(Topics.status)
 
-    oppdrag
-        .map { uid, xml -> uid to xml }
-        .rekey { (_, xml) -> OppdragForeignKey.from(xml) }
-        .secureLogWithKey { key, _ -> info("saving fk: $key")}
-        .map { (uid, xml) -> 
-            oppdragProducer.send(xml)
-            UtbetalingId(UUID.fromString(uid))
-        }
+    val kstore = oppdrag
+        .mapKeyAndValue { uid, xml -> OppdragForeignKey.from(xml) to UtbetalingId(UUID.fromString(uid)) }
         .materialize(Stores.keystore)
 
-    // consume(Topics.utbetalinger)
-    //     .map { u -> u }
-    //     .rekey { utbetaling -> OppdragForeignKey.from(utbetaling) }
-    //     .map { utbetaling -> utbetaling.uid }
-    //     .materialize(Stores.keystore)
+    kstore.join(kvitteringQueue)
+        .filter { (_, kvitt) -> kvitt != null }
+        .mapKeyAndValue { _, (uid, kvitt) -> uid.id.toString() to kvitt!! }
+        .produce(Topics.kvittering)
 
     consume(Topics.kvittering)
         .map { kvitt ->

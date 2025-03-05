@@ -11,8 +11,8 @@ import libs.mq.MQ
 
 object TestTopics {
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
-    // val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
-    // val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
+    val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
+    val kvitteringQueue by lazy { TestRuntime.kafka.testTopic(Topics.kvitteringQueue) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
 }
 

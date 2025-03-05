@@ -1,6 +1,11 @@
 package urskog
 
 import com.ibm.mq.jms.MQQueue
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import javax.jms.TextMessage
 import libs.kafka.StateStore
 import libs.mq.*
@@ -37,8 +42,7 @@ class OppdragMQProducer(
 
 class KvitteringMQConsumer(
     private val config: Config,
-    private val kvitteringProducer: Producer<String, Oppdrag>,
-    private val keystore: StateStore<OppdragForeignKey, UtbetalingId>,
+    private val kvitteringQueueProducer: Producer<OppdragForeignKey, Oppdrag>,
     mq: MQ,
 ): AutoCloseable {
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
@@ -46,27 +50,19 @@ class KvitteringMQConsumer(
 
     fun onMessage(message: TextMessage) {
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
-        Thread.sleep(1000) // TEST: check for race condition
         val fk = OppdragForeignKey.from(kvittering)
-        val uid = keystore.getOrNull(fk)
-        appLog.info("Mottok kvittering $fk $uid")
-        if (uid == null) {
-            appLog.error("uid not found for $fk. Kvittering not redirected from MQ to Kafka");
-            secureLog.error("$fk: uid not found for. Kvittering not redirected from MQ to Kafka\n${leggTilNamespacePrefiks(message.text)}");
-        } else {
-            // TODO: må man eksplisitt velge partition, eller vil den resolve likt som kafka-streams?
-            val record = ProducerRecord(Topics.kvittering.name, uid.id.toString(), kvittering)
-            kvitteringProducer.send(record) { md, err ->
-                when (err) {
-                    null -> secureLog.trace(
-                        "produce ${Topics.kvittering.name}",
-                        kv("key", uid.id.toString()),
-                        kv("topic", Topics.kvittering.name),
-                        kv("partition", md.partition()),
-                        kv("offset", md.offset()),
-                    ) 
-                    else -> secureLog.error("Failed to produce record for $uid")
-                }
+        appLog.info("Mottok kvittering $fk")
+        val record = ProducerRecord(Topics.kvitteringQueue.name, fk, kvittering)
+        kvitteringQueueProducer.send(record) { md, err ->
+            when (err) {
+                null -> secureLog.trace(
+                    "produce ${Topics.kvitteringQueue.name}",
+                    kv("key", fk.toJson()),
+                    kv("topic", Topics.kvitteringQueue.name),
+                    kv("partition", md.partition()),
+                    kv("offset", md.offset()),
+                ) 
+                else -> secureLog.error("Failed to produce record for ${fk.toJson()}")
             }
         }
     }
@@ -104,6 +100,16 @@ data class OppdragForeignKey(
             sakId = utbetaling.sakId,
             behandlingId = utbetaling.behandlingId,
         )
+    }
+
+    private val jackson: ObjectMapper = jacksonObjectMapper().apply {
+        registerModule(JavaTimeModule())
+        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+    }
+
+    fun toJson(): String {
+        return jackson.writeValueAsString(this)
     }
 }
 
