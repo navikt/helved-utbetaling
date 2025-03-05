@@ -23,7 +23,7 @@ fun oppdragURFake(): MQ {
     return mq
 }
 
-fun MQ.textMessage( xml: String): TextMessage {
+fun MQ.textMessage(xml: String): TextMessage {
     return transaction {
         it.createTextMessage(xml)
     }

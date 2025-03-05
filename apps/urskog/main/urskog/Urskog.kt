@@ -49,15 +49,12 @@ fun Application.urskog(
         registry = prometheus,
     )
 
-    val kvitteringProducer = kafka.createProducer(config.kafka, Topics.kvittering) 
-    val keystore = kafka.getStore(Stores.keystore)  
-    val kvitteringConsumer = KvitteringMQConsumer(config, kvitteringProducer, keystore, mq)
-    val consumerJob = CoroutineScope(Dispatchers.IO).launch {
-        kvitteringConsumer.start()
-    }   
+    val kvitteringQueueProducer = kafka.createProducer(config.kafka, Topics.kvitteringQueue) 
+    // val keystore = kafka.getStore(Stores.keystore)  
+    val kvitteringConsumer = KvitteringMQConsumer(config, kvitteringQueueProducer, mq)
 
     monitor.subscribe(ApplicationStopping) { 
-        consumerJob.cancel()
+        kvitteringConsumer.start()
         kafka.close()
         kvitteringConsumer.close()
     }
