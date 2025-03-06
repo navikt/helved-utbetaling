@@ -15,6 +15,7 @@ jobs:
         name:
           - helved.aap-utbetalinger.v1
           - helved.kvittering.v1
+          - helved.kvittering-queue.v1
           - helved.oppdrag.v1
           - helved.saker.v1
           - helved.simulering.v1

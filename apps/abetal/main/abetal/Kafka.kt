@@ -19,7 +19,6 @@ object Topics {
 
 object Tables {
     val utbetalinger = Table(Topics.utbetalinger)
-    val status = Table(Topics.status)
     val saker = Table(Topics.saker)
 }
 
