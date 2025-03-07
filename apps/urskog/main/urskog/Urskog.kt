@@ -37,6 +37,7 @@ fun Application.urskog(
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     val oppdragProducer = OppdragMQProducer(config, mq)
+    val simuleringService = SimuleringService(config)
 
     install(MicrometerMetrics) {
         registry = prometheus
@@ -44,7 +45,7 @@ fun Application.urskog(
     }
 
     kafka.connect(
-        topology = createTopology(oppdragProducer),
+        topology = createTopology(oppdragProducer, simuleringService),
         config = config.kafka,
         registry = prometheus,
     )

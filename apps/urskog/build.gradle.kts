@@ -26,7 +26,9 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.3")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
 
+    testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("no.nav.helved:auth-test:$libVersion")
     testImplementation("no.nav.helved:kafka-test:$libVersion")
     testImplementation("no.nav.helved:mq-test:$libVersion")
     testImplementation(kotlin("test")) 

@@ -5,8 +5,6 @@ import io.ktor.server.netty.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import libs.kafka.StreamsMock
-import libs.mq.MQContainer
-import libs.mq.MQFake
 import libs.mq.MQ
 
 object TestTopics {
@@ -14,6 +12,8 @@ object TestTopics {
     val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
     val kvitteringQueue by lazy { TestRuntime.kafka.testTopic(Topics.kvitteringQueue) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
+    val simulering by lazy { TestRuntime.kafka.testTopic(Topics.simulering) }
+    val simuleringResult by lazy { TestRuntime.kafka.testTopic(Topics.simuleringResult) }
 }
 
 object TestRuntime : AutoCloseable {
@@ -26,7 +26,8 @@ object TestRuntime : AutoCloseable {
 
     val kafka = StreamsMock()
     val mq: MQ = oppdragURFake()
-    val config: Config = TestConfig.create(8013, 8014)
+    val ws: WSFake = WSFake()
+    val config: Config = TestConfig.create(ws.proxyConfig, ws.azureConfig, ws.simuleringConfig)
     val ktor = testApplication.apply { runBlocking { start() }}
 
     override fun close() {
