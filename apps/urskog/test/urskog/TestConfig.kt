@@ -11,13 +11,10 @@ import java.net.URI
 
 object TestConfig {
     fun create(
-        proxyPort: Int,
-        azurePort: Int,
+        proxy: ProxyConfig,
+        azure: AzureConfig,
+        simulering: SoapConfig,
     ): Config {
-        val proxy = ProxyConfig(
-            host = "http://localhost:$proxyPort".let(::URI).toURL(),
-            scope = "test",
-        )
         val oppdrag = OppdragConfig(
             kvitteringsKø = "DEV.QUEUE.2",
             sendKø = "DEV.QUEUE.1"
@@ -26,22 +23,6 @@ object TestConfig {
             "",
             "",
             SslConfig("", "", ""),
-        )
-        val azure = AzureConfig(
-            tokenEndpoint = "http://localhost:$azurePort/token".let(::URI).toURL(),
-            jwks = "http://localhost:$azurePort/jwks".let(::URI).toURL(),
-            issuer = "test",
-            clientId = "",
-            clientSecret = ""
-        )
-        val sts = StsConfig(
-            host = "${proxy.host}/gandalf".let(::URI).toURL(),
-            user = "",
-            pass = "",
-        )
-        val simulering = SoapConfig(
-            host = "${proxy.host}/cics/oppdrag/simulerFpServiceWSBinding".let(::URI).toURL(),
-            sts = sts,
         )
         val mq = MQConfig(
             host = "og hark",
