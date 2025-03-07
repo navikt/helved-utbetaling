@@ -1,6 +1,6 @@
 package models
 
-const val DOC = "https://navikt.github.io/utsjekk-docs/"
+const val DOC = "https://helved-docs.intern.dev.nav.no/"
 
 data class ApiError(
     val statusCode: Int,

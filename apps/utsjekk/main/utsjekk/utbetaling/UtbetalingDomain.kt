@@ -114,7 +114,7 @@ data class Utbetaling(
             badRequest(
                 msg = "can't change the flavour of perioder",
                 field = "perioder",
-                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
+                doc = "utbetalinger/perioder",
             )
         }
         // TODO: valider ved delete at periodene i delete requesten er lik existing
@@ -136,7 +136,7 @@ data class Utbetaling(
             conflict(
                 msg = "periods allready exists",
                 field = "perioder",
-                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder",
+                doc = "utbetalinger/perioder",
             )
         }
     }
@@ -359,7 +359,7 @@ enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
 //
 //     badRequest(
 //         msg = "inkonsistens blant datoene i periodene.",
-//         doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+//         doc = "utbetalinger/perioder"
 //     )
 // }
 
@@ -371,7 +371,7 @@ private fun beløp(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): U
                     msg = "fant fler ulike beløp blant dagene",
                     field = "beløp",
                     doc =
-                        "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+                        "utbetalinger/perioder"
                 )
 
         else -> perioder.singleOrNull()?.beløp
@@ -380,7 +380,7 @@ private fun beløp(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): U
                     "forventet kun en periode, da sammenslåing av beløp ikke er støttet",
                 field = "beløp",
                 doc =
-                    "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+                    "${DEFAULT_DOC_STR}utbetalinger/perioder"
             )
     }
 
