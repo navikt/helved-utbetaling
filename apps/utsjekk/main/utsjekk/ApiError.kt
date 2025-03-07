@@ -1,6 +1,6 @@
 package utsjekk
 
-const val DEFAULT_DOC_STR = "https://helved-docs.intern.dev.nav.no/"
+const val DEFAULT_DOC_STR = "https://helved-docs.ekstern.dev.nav.no/"
 
 class ApiError(
     val statusCode: Int,

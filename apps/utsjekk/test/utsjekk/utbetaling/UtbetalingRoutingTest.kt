@@ -93,7 +93,6 @@ class UtbetalingRoutingTest {
         val error = res.body<ApiError.Response>()
         assertEquals(error.msg, "inkonsistens blant datoene i periodene.")
         assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
@@ -120,7 +119,6 @@ class UtbetalingRoutingTest {
         assertEquals(error.msg, "fant fler ulike beløp blant dagene")
         assertEquals(error.field, "beløp")
         assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
@@ -145,7 +143,6 @@ class UtbetalingRoutingTest {
         assertEquals(error.msg, "periode strekker seg over årsskifte")
         assertEquals(error.field, "tom")
         assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
@@ -170,7 +167,7 @@ class UtbetalingRoutingTest {
         assertEquals(error.msg, "fom må være før eller lik tom")
         assertEquals(error.field, "fom")
         assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
+        assertEquals(200, http.head(error.doc).status.value)
     }
 
     @Test
@@ -196,7 +193,6 @@ class UtbetalingRoutingTest {
         assertEquals(error.msg, "kan ikke sende inn duplikate perioder")
         assertEquals(error.field, "fom")
         assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
@@ -222,7 +218,6 @@ class UtbetalingRoutingTest {
         assertEquals(error.msg, "kan ikke sende inn duplikate perioder")
         assertEquals(error.field, "tom")
         assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
@@ -261,7 +256,7 @@ class UtbetalingRoutingTest {
         assertEquals("Fant ikke utbetaling", error.msg)
         assertEquals("uid", error.field)
         assertEquals(DEFAULT_DOC_STR, error.doc)
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
+        assertEquals(200, http.head(error.doc).status.value)
     }
 
     @Test
@@ -447,7 +442,6 @@ class UtbetalingRoutingTest {
         assertEquals("cant change immutable field", error.msg)
         assertEquals("sakId", error.field)
         assertEquals(DEFAULT_DOC_STR, error.doc)
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
@@ -486,7 +480,6 @@ class UtbetalingRoutingTest {
         assertEquals("cant change immutable field", error.msg)
         assertEquals("personident", error.field)
         assertEquals(DEFAULT_DOC_STR, error.doc)
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
@@ -525,7 +518,6 @@ class UtbetalingRoutingTest {
         assertEquals("cant change immutable field", error.msg)
         assertEquals("stønad", error.field)
         assertEquals(DEFAULT_DOC_STR, error.doc)
-        //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
     }
 
     @Test
@@ -569,7 +561,6 @@ class UtbetalingRoutingTest {
         assertEquals("can't change the flavour of perioder", error.msg)
         assertEquals("perioder", error.field)
         assertEquals("${DEFAULT_DOC_STR}utbetalinger/perioder", error.doc)
-        // assertEquals(200, http.head(error.doc).status.value)
     }
 
     @Test
@@ -612,7 +603,6 @@ class UtbetalingRoutingTest {
             assertEquals("Fant ikke utbetaling", error.msg)
             assertEquals("uid", error.field)
             assertEquals(DEFAULT_DOC_STR, error.doc)
-            //assertEquals(200, http.head(error.doc).status.value) // TODO: enable for å teste at doc lenka virker
         }
     }
 
