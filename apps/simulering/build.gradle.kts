@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "3.1.1"
-val libVersion = "3.1.43"
+val libVersion = "3.1.73"
 val kontraktVersion = "1.0_20241213145703_7ff5f9c"
 
 dependencies {
