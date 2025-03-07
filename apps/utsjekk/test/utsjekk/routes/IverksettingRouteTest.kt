@@ -32,6 +32,7 @@ import utsjekk.iverksetting.SakId
 import utsjekk.iverksetting.behandlingId
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import java.time.LocalDate
+import utsjekk.DEFAULT_DOC_STR
 
 class IverksettingRouteTest {
     @BeforeEach
@@ -100,7 +101,7 @@ class IverksettingRouteTest {
         }
 
         assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
-        assertEquals("""{"msg":"Iverksetting er skrudd av for fagsystem TILLEGGSSTØNADER","field":null,"doc":"https://navikt.github.io/utsjekk-docs/"}""", res.bodyAsText())
+        assertEquals("""{"msg":"Iverksetting er skrudd av for fagsystem TILLEGGSSTØNADER","field":null,"doc":"$DEFAULT_DOC_STR"}""", res.bodyAsText())
     }
 
     @Test
@@ -205,7 +206,7 @@ class IverksettingRouteTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        assertEquals("""{"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","field":null,"doc":"https://navikt.github.io/utsjekk-docs/"}""", res.bodyAsText())
+        assertEquals("""{"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","field":null,"doc":"${DEFAULT_DOC_STR}"}""", res.bodyAsText())
     }
 
     @Test

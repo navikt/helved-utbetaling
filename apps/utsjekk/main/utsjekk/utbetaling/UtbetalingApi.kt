@@ -121,7 +121,7 @@ private fun UtbetalingApi.failOnÅrsskifte() {
         badRequest(
             msg = "periode strekker seg over årsskifte",
             field = "tom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            doc = "utbetalinger/perioder"
         )
     }
 }
@@ -131,14 +131,14 @@ private fun UtbetalingApi.failOnDuplicatePerioder() {
         badRequest(
             msg = "kan ikke sende inn duplikate perioder",
             field = "fom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            doc = "utbetalinger/perioder"
         )
     }
     if (perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }) {
         badRequest(
             msg = "kan ikke sende inn duplikate perioder",
             field = "tom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            doc = "utbetalinger/perioder"
         )
     }
 }
@@ -148,7 +148,7 @@ private fun UtbetalingApi.failOnTomBeforeFom() {
         badRequest(
             msg = "fom må være før eller lik tom",
             field = "fom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            doc = "utbetalinger/perioder"
         )
     }
 }
@@ -162,7 +162,7 @@ private fun UtbetalingApi.failOnIllegalUseOfFastsattDagsats() {
                 badRequest(
                     msg = "reservert felt for Dagpenger og AAP",
                     field = "fastsattDagsats",
-                    doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+                    doc = "utbetalinger/perioder"
                 )
             }
         }
@@ -179,7 +179,7 @@ private fun UtbetalingApi.failOnInconsistentPeriodeType() {
     if (!consistent) {
         badRequest(
             msg = "inkonsistens blant datoene i periodene.",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            doc = "utbetalinger/perioder"
         )
     }
 }
@@ -189,7 +189,7 @@ private fun UtbetalingApi.failOnIllegalFutureUtbetaling() {
         badRequest(
             msg = "fremtidige utbetalinger er ikke støttet for periode dag/ukedag.",
             field = "periode.tom",
-            doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+            doc = "utbetalinger/perioder"
         )
     }
 }
@@ -202,7 +202,7 @@ private fun UtbetalingApi.failOnTooLongPeriods() {
             badRequest(
                 msg = "$periodeType støtter maks periode på 92 dager",
                 field = "perioder",
-                doc = "https://navikt.github.io/utsjekk-docs/utbetalinger/perioder"
+                doc = "utbetalinger/perioder"
             )
         }
     }

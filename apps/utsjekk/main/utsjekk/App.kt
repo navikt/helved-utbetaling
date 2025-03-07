@@ -203,7 +203,7 @@ fun Application.routes(
                     val res = ApiError.Response(
                         msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l.",
                         field = null,
-                        doc = "https://navikt.github.io/utsjekk-docs/",
+                        doc = "https://helved-docs.intern.dev.nav.no/v3/api",
                     )
                     call.respond(HttpStatusCode.BadRequest, res)
                 }
@@ -213,8 +213,8 @@ fun Application.routes(
                     val res = ApiError.Response(
                         msg = "Intern feil, årsaken logges av sikkerhetsmessig grunn i secureLog.", 
                         field = null,
-                        doc = "https://navikt.github.io/utsjekk-docs/"
-                    ) 
+                        doc = ""
+                    )
                     call.respond(HttpStatusCode.InternalServerError, res)
                 }
             }
@@ -242,7 +242,7 @@ fun Application.routes(
 fun ApplicationCall.navident(): String =
     principal<JWTPrincipal>()
         ?.getClaim("NAVident", String::class)
-        ?: forbidden("missing JWT claim", "NAVident", "https://navikt.github.io/utsjekk-docs/kom_i_gang")
+        ?: forbidden("missing JWT claim", "NAVident", "kom_i_gang")
 
 fun ApplicationCall.client(): Client =
     principal<JWTPrincipal>()
@@ -250,7 +250,7 @@ fun ApplicationCall.client(): Client =
         ?.split(":")
         ?.last()
         ?.let(::Client)
-        ?: forbidden("missing JWT claim", "azp_name", "https://navikt.github.io/utsjekk-docs/kom_i_gang")
+        ?: forbidden("missing JWT claim", "azp_name", "kom_i_gang")
 
 @JvmInline
 value class Client(
@@ -265,7 +265,7 @@ value class Client(
             else ->
                 forbidden(
                     msg = "mangler mapping mellom appname ($name) og fagsystem-enum",
-                    doc = "https://navikt.github.io/utsjekk-docs/kom_i_gang",
+                    doc = "kom_i_gang",
                 )
         }
 }
