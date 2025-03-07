@@ -80,7 +80,7 @@ class SimuleringRoutingTest {
         assertEquals(HttpStatusCode.BadRequest, res.status)
         val error = res.body<ApiError.Response>()
         assertEquals(error.msg, "inkonsistens blant datoene i periodene.")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
     }
 
     @Test
@@ -106,7 +106,7 @@ class SimuleringRoutingTest {
         val error = res.body<ApiError.Response>()
         assertEquals(error.msg, "fant fler ulike beløp blant dagene")
         assertEquals(error.field, "beløp")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
     }
 
     @Test
@@ -130,7 +130,7 @@ class SimuleringRoutingTest {
         val error = res.body<ApiError.Response>()
         assertEquals(error.msg, "periode strekker seg over årsskifte")
         assertEquals(error.field, "tom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
     }
 
     @Test
@@ -154,7 +154,7 @@ class SimuleringRoutingTest {
         val error = res.body<ApiError.Response>()
         assertEquals(error.msg, "fom må være før eller lik tom")
         assertEquals(error.field, "fom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
     }
 
     @Test
@@ -179,7 +179,7 @@ class SimuleringRoutingTest {
         val error = res.body<ApiError.Response>()
         assertEquals(error.msg, "kan ikke sende inn duplikate perioder")
         assertEquals(error.field, "fom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
     }
 
     @Test
@@ -204,7 +204,7 @@ class SimuleringRoutingTest {
         val error = res.body<ApiError.Response>()
         assertEquals(error.msg, "kan ikke sende inn duplikate perioder")
         assertEquals(error.field, "tom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}utbetalinger/perioder")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
     }
 
     @Test
@@ -434,7 +434,7 @@ class SimuleringRoutingTest {
         }.body<ApiError.Response>()
         assertEquals("can't change the flavour of perioder", error.msg)
         assertEquals("perioder", error.field)
-        assertEquals("${DEFAULT_DOC_STR}utbetalinger/perioder", error.doc)
+        assertEquals("${DEFAULT_DOC_STR}opprett_en_utbetaling", error.doc)
     }
 
     @Test

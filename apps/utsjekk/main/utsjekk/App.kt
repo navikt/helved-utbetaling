@@ -203,7 +203,7 @@ fun Application.routes(
                     val res = ApiError.Response(
                         msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l.",
                         field = null,
-                        doc = "https://helved-docs.intern.dev.nav.no/v3/api",
+                        doc = DEFAULT_DOC_STR,
                     )
                     call.respond(HttpStatusCode.BadRequest, res)
                 }

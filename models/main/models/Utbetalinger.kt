@@ -46,30 +46,30 @@ fun Utbetaling.validateLockedFields(other: Utbetaling) {
     if (sakId != other.sakId) badRequest("cant change immutable field 'sakId'")
     if (personident != other.personident) badRequest("cant change immutable field 'personident'")
     if (stønad != other.stønad) badRequest("cant change immutable field")
-    if (periodetype != other.periodetype) badRequest("can't change periodetype", "/utbetalinger/perioder")
+    if (periodetype != other.periodetype) badRequest("can't change periodetype", "opprett_en_utbetaling")
 }
 
 fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
     if (perioder.size != other.perioder.size) return
     val ingenEndring = perioder.zip(other.perioder).all { (l, r) -> l.beløp == r.beløp && l.fom == r.fom && l.tom == r.tom && l.betalendeEnhet == r.betalendeEnhet && l.fastsattDagsats == r.fastsattDagsats }
-    if (ingenEndring) conflict("periods allready exists", "/utbetalinger/perioder")
+    if (ingenEndring) conflict("periods allready exists", "opprett_en_utbetaling")
 }
 
 private fun Utbetaling.failOnÅrsskifte() {
     if (perioder.minBy { it.fom }.fom.year != perioder.maxBy { it.tom }.tom.year) {
-        badRequest("periode strekker seg over årsskifte", "/utbetalinger/perioder")
+        badRequest("periode strekker seg over årsskifte", "opprett_en_utbetaling")
     }
 }
 
 private fun Utbetaling.failOnDuplicatePerioder() {
     val dupFom = perioder.groupBy { it.fom }.any { (_, perioder) -> perioder.size != 1 }
-    if (dupFom) badRequest("kan ikke sende inn duplikate perioder", "/utbetalinger/perioder")
+    if (dupFom) badRequest("kan ikke sende inn duplikate perioder", "opprett_en_utbetaling#Duplikate%20perioder")
     val dupTom = perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }
-    if (dupTom) badRequest("kan ikke sende inn duplikate perioder", "/utbetalinger/perioder")
+    if (dupTom) badRequest("kan ikke sende inn duplikate perioder", "opprett_en_utbetaling#Duplikate%20perioder")
 }
 
 private fun Utbetaling.failOnTomBeforeFom() {
-    if (!perioder.all { it.fom <= it.tom }) badRequest("fom må være før eller lik tom", "/utbetalinger/perioder")
+    if (!perioder.all { it.fom <= it.tom }) badRequest("fom må være før eller lik tom", "opprett_en_utbetaling")
 }
 
 private fun Utbetaling.failOnInconsistentPeriodeType() {
@@ -90,7 +90,7 @@ private fun Utbetaling.failOnIllegalFutureUtbetaling() {
     val dayIsFuture = perioder.maxBy{ it.tom }.tom.isAfter(LocalDate.now()) 
     if (isDay && dayIsFuture) badRequest(
         "fremtidige utbetalinger er ikke støttet for periode dag/ukedag",
-        "/utbetalinger/perioder"
+        "opprett_en_utbetaling"
     )
 }
 
@@ -100,7 +100,7 @@ private fun Utbetaling.failOnTooManyPeriods() {
         val min = perioder.minBy { it.fom }.fom
         val max = perioder.maxBy { it.tom }.tom
         val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max)+1 > 92 
-        if (tooManyPeriods) badRequest("$periodetype støtter maks periode på 92 dager", "/utbetalinger/perioder")
+        if (tooManyPeriods) badRequest("$periodetype støtter maks periode på 92 dager", "opprett_en_utbetaling")
     }
 }
 
@@ -287,9 +287,9 @@ fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetaling
 private fun beløp(perioder: List<Utbetalingsperiode>, periodetype: Periodetype): UInt =
     when (periodetype) {
         Periodetype.DAG, Periodetype.UKEDAG, Periodetype.MND -> perioder.map { it.beløp }.toSet().singleOrNull() ?: 
-            badRequest("fant fler ulike beløp blant dagene", "/utbetalinger/perioder")
+            badRequest("fant fler ulike beløp blant dagene", "opprett_en_utbetaling")
         else -> perioder.singleOrNull()?.beløp ?: 
-            badRequest("forventet kun en periode, da sammenslåing av beløp ikke er støttet", "/utbetalinger/perioder")
+            badRequest("forventet kun en periode, da sammenslåing av beløp ikke er støttet", "opprett_en_utbetaling")
     }
 
 private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {

@@ -114,7 +114,7 @@ data class Utbetaling(
             badRequest(
                 msg = "can't change the flavour of perioder",
                 field = "perioder",
-                doc = "utbetalinger/perioder",
+                doc = "opprett_en_utbetaling",
             )
         }
         // TODO: valider ved delete at periodene i delete requesten er lik existing
@@ -136,7 +136,7 @@ data class Utbetaling(
             conflict(
                 msg = "periods allready exists",
                 field = "perioder",
-                doc = "utbetalinger/perioder",
+                doc = "opprett_en_utbetaling",
             )
         }
     }
@@ -371,7 +371,7 @@ private fun beløp(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): U
                     msg = "fant fler ulike beløp blant dagene",
                     field = "beløp",
                     doc =
-                        "utbetalinger/perioder"
+                        "opprett_en_utbetaling"
                 )
 
         else -> perioder.singleOrNull()?.beløp
