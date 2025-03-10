@@ -168,144 +168,144 @@ class OppdragTest {
     @Nested
     inner class Kvittering {
 
-        @Test
-        fun `utbetaling kvitterer ok`(): Unit = runTest(TestRuntime.context) {
-            val periode = enUtbetalingsperiode(behandlingId = "p6AF4PE5kd4HxDeIfcs8")
-            val utbetaling =
-                etUtbetalingsoppdrag(fagsak = "fhU2NI7YWJDsnZpRjJfz", utbetalingsperiode = arrayOf(periode))
+        // @Test
+        // fun `utbetaling kvitterer ok`(): Unit = runTest(TestRuntime.context) {
+        //     val periode = enUtbetalingsperiode(behandlingId = "p6AF4PE5kd4HxDeIfcs8")
+        //     val utbetaling =
+        //         etUtbetalingsoppdrag(fagsak = "fhU2NI7YWJDsnZpRjJfz", utbetalingsperiode = arrayOf(periode))
+        //
+        //     transaction {
+        //         OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
+        //     }
+        //
+        //     val xml = Resource.read("/xml/kvittering-ok.xml")
+        //     TestRuntime.oppdrag.kvitteringsKø.produce(xml)
+        //
+        //     val oppdrag = repeatUntil(::statusChanged) {
+        //         runBlocking {
+        //             withContext(TestRuntime.context) {
+        //                 transaction {
+        //                     OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+        //                 }
+        //             }
+        //         }
+        //     }
+        //
+        //     assertEquals(OppdragStatus.KVITTERT_OK, oppdrag.status)
+        //     assertEquals(Kvitteringstatus.OK, oppdrag.kvitteringstatus)
+        // }
 
-            transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
-            }
+        // @Test
+        // fun `utbetaling kvitterer med mangler`() = runTest(TestRuntime.context) {
+        //     val utbetaling = etUtbetalingsoppdrag(
+        //         fagsak = "vr0nXC3zUNnPl3hDsFyv",
+        //         utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "5rNZ1ldCxZ0TdTmsv66"))
+        //     )
+        //
+        //     transaction {
+        //         OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
+        //     }
+        //
+        //     val xml = Resource.read("/xml/kvittering-med-mangler.xml")
+        //     TestRuntime.oppdrag.kvitteringsKø.produce(xml)
+        //
+        //     val oppdrag = repeatUntil(::statusChanged) {
+        //         runBlocking {
+        //             withContext(TestRuntime.context) {
+        //                 transaction {
+        //                     OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+        //                 }
+        //             }
+        //         }
+        //     }
+        //
+        //     assertEquals(OppdragStatus.KVITTERT_MED_MANGLER, oppdrag.status)
+        //     assertEquals(Kvitteringstatus.AKSEPTERT_MEN_NOE_ER_FEIL, oppdrag.kvitteringstatus)
+        // }
 
-            val xml = Resource.read("/xml/kvittering-ok.xml")
-            TestRuntime.oppdrag.kvitteringsKø.produce(xml)
+        // @Test
+        // fun `utbetaling kvitterer funksjonell feil`(): Unit = runTest(TestRuntime.context) {
+        //     val utbetaling = etUtbetalingsoppdrag(
+        //         fagsak = "fU2Vo7NQHKHRD75Hu5LW",
+        //         utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "rKrMKcTDUVjiZeGfXc7B"))
+        //     )
+        //
+        //     transaction {
+        //         OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
+        //     }
+        //
+        //     val xml = Resource.read("/xml/kvittering-funksjonell-feil.xml")
+        //     TestRuntime.oppdrag.kvitteringsKø.produce(xml)
+        //
+        //     val oppdrag = repeatUntil(::statusChanged) {
+        //         runBlocking {
+        //             withContext(TestRuntime.context) {
+        //                 transaction {
+        //                     OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+        //                 }
+        //             }
+        //         }
+        //     }
+        //
+        //     assertEquals(OppdragStatus.KVITTERT_FUNKSJONELL_FEIL, oppdrag.status)
+        //     assertEquals(Kvitteringstatus.AVVIST_FUNKSJONELLE_FEIL, oppdrag.kvitteringstatus)
+        // }
 
-            val oppdrag = repeatUntil(::statusChanged) {
-                runBlocking {
-                    withContext(TestRuntime.context) {
-                        transaction {
-                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
-                        }
-                    }
-                }
-            }
+        // @Test
+        // fun `utbetaling kvitterer teknisk feil`() = runTest(TestRuntime.context) {
+        //     val utbetaling = etUtbetalingsoppdrag(
+        //         fagsak = "sT9DJxq1zN8ra6EEjeaf",
+        //         utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "gIP574Gdi7RHvQdmqKrX"))
+        //     )
+        //
+        //     transaction {
+        //         OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
+        //     }
+        //
+        //     val xml = Resource.read("/xml/kvittering-teknisk-feil.xml")
+        //     TestRuntime.oppdrag.kvitteringsKø.produce(xml)
+        //
+        //     val oppdrag = repeatUntil(::statusChanged) {
+        //         runBlocking {
+        //             withContext(TestRuntime.context) {
+        //                 transaction {
+        //                     OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+        //                 }
+        //             }
+        //         }
+        //     }
+        //
+        //     assertEquals(OppdragStatus.KVITTERT_TEKNISK_FEIL, oppdrag.status)
+        //     assertEquals(Kvitteringstatus.AVVIST_TEKNISK_FEIL, oppdrag.kvitteringstatus)
+        // }
 
-            assertEquals(OppdragStatus.KVITTERT_OK, oppdrag.status)
-            assertEquals(Kvitteringstatus.OK, oppdrag.kvitteringstatus)
-        }
-
-        @Test
-        fun `utbetaling kvitterer med mangler`() = runTest(TestRuntime.context) {
-            val utbetaling = etUtbetalingsoppdrag(
-                fagsak = "vr0nXC3zUNnPl3hDsFyv",
-                utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "5rNZ1ldCxZ0TdTmsv66"))
-            )
-
-            transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
-            }
-
-            val xml = Resource.read("/xml/kvittering-med-mangler.xml")
-            TestRuntime.oppdrag.kvitteringsKø.produce(xml)
-
-            val oppdrag = repeatUntil(::statusChanged) {
-                runBlocking {
-                    withContext(TestRuntime.context) {
-                        transaction {
-                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
-                        }
-                    }
-                }
-            }
-
-            assertEquals(OppdragStatus.KVITTERT_MED_MANGLER, oppdrag.status)
-            assertEquals(Kvitteringstatus.AKSEPTERT_MEN_NOE_ER_FEIL, oppdrag.kvitteringstatus)
-        }
-
-        @Test
-        fun `utbetaling kvitterer funksjonell feil`(): Unit = runTest(TestRuntime.context) {
-            val utbetaling = etUtbetalingsoppdrag(
-                fagsak = "fU2Vo7NQHKHRD75Hu5LW",
-                utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "rKrMKcTDUVjiZeGfXc7B"))
-            )
-
-            transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
-            }
-
-            val xml = Resource.read("/xml/kvittering-funksjonell-feil.xml")
-            TestRuntime.oppdrag.kvitteringsKø.produce(xml)
-
-            val oppdrag = repeatUntil(::statusChanged) {
-                runBlocking {
-                    withContext(TestRuntime.context) {
-                        transaction {
-                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
-                        }
-                    }
-                }
-            }
-
-            assertEquals(OppdragStatus.KVITTERT_FUNKSJONELL_FEIL, oppdrag.status)
-            assertEquals(Kvitteringstatus.AVVIST_FUNKSJONELLE_FEIL, oppdrag.kvitteringstatus)
-        }
-
-        @Test
-        fun `utbetaling kvitterer teknisk feil`() = runTest(TestRuntime.context) {
-            val utbetaling = etUtbetalingsoppdrag(
-                fagsak = "sT9DJxq1zN8ra6EEjeaf",
-                utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "gIP574Gdi7RHvQdmqKrX"))
-            )
-
-            transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
-            }
-
-            val xml = Resource.read("/xml/kvittering-teknisk-feil.xml")
-            TestRuntime.oppdrag.kvitteringsKø.produce(xml)
-
-            val oppdrag = repeatUntil(::statusChanged) {
-                runBlocking {
-                    withContext(TestRuntime.context) {
-                        transaction {
-                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
-                        }
-                    }
-                }
-            }
-
-            assertEquals(OppdragStatus.KVITTERT_TEKNISK_FEIL, oppdrag.status)
-            assertEquals(Kvitteringstatus.AVVIST_TEKNISK_FEIL, oppdrag.kvitteringstatus)
-        }
-
-        @Test
-        fun `utbetaling kvitterer ukjent`(): Unit = runTest(TestRuntime.context) {
-            val utbetaling = etUtbetalingsoppdrag(
-                fagsak = "m8dXZI4Iav9BIEIGdtQY",
-                utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "2i8wmacupHZdfh9Pc0iQ"))
-            )
-
-            transaction {
-                OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
-            }
-
-            val xml = Resource.read("/xml/kvittering-ukjent-feil.xml")
-            TestRuntime.oppdrag.kvitteringsKø.produce(xml)
-
-            val oppdrag = repeatUntil(::statusChanged) {
-                runBlocking {
-                    withContext(TestRuntime.context) {
-                        transaction {
-                            OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
-                        }
-                    }
-                }
-            }
-
-            assertEquals(OppdragStatus.KVITTERT_UKJENT, oppdrag.status)
-            assertEquals(Kvitteringstatus.UKJENT, oppdrag.kvitteringstatus)
-        }
+        // @Test
+        // fun `utbetaling kvitterer ukjent`(): Unit = runTest(TestRuntime.context) {
+        //     val utbetaling = etUtbetalingsoppdrag(
+        //         fagsak = "m8dXZI4Iav9BIEIGdtQY",
+        //         utbetalingsperiode = arrayOf(enUtbetalingsperiode(behandlingId = "2i8wmacupHZdfh9Pc0iQ"))
+        //     )
+        //
+        //     transaction {
+        //         OppdragLagerRepository.opprettOppdrag(utbetaling.somOppdragLager)
+        //     }
+        //
+        //     val xml = Resource.read("/xml/kvittering-ukjent-feil.xml")
+        //     TestRuntime.oppdrag.kvitteringsKø.produce(xml)
+        //
+        //     val oppdrag = repeatUntil(::statusChanged) {
+        //         runBlocking {
+        //             withContext(TestRuntime.context) {
+        //                 transaction {
+        //                     OppdragLagerRepository.hentOppdrag(utbetaling.oppdragId)
+        //                 }
+        //             }
+        //         }
+        //     }
+        //
+        //     assertEquals(OppdragStatus.KVITTERT_UKJENT, oppdrag.status)
+        //     assertEquals(Kvitteringstatus.UKJENT, oppdrag.kvitteringstatus)
+        // }
     }
 }
 

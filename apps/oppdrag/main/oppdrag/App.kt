@@ -1,6 +1,5 @@
 package oppdrag
 
-// imports
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -25,6 +24,7 @@ import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.ktor.*
 import libs.mq.MQ
+import libs.mq.DefaultMQ
 import libs.postgres.Jdbc
 import libs.postgres.JdbcConfig
 import libs.postgres.Migrator
@@ -64,7 +64,10 @@ fun Application.database(config: JdbcConfig) {
     }
 }
 
-fun Application.server(config: Config = Config()) {
+fun Application.server(
+    config: Config = Config(),
+    mq: MQ = DefaultMQ(config.mq),
+) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(MicrometerMetrics) {
@@ -101,7 +104,6 @@ fun Application.server(config: Config = Config()) {
         }
     }
 
-    val mq = MQ(config.mq)
     val oppdragConsumer = OppdragMQConsumer(config.oppdrag, mq)
     val oppdragService = OppdragService(config.oppdrag, mq)
     val utbetalingService = UtbetalingService(config.oppdrag, mq)
