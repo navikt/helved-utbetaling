@@ -2,7 +2,7 @@
 
 ## Status
 
-Utkast
+Akseptert
 
 ## Kontekst
 
@@ -10,17 +10,7 @@ Kjeding er tradisjonelt sett en sammenkobling av utbetalinger som blant annet gj
 
 Ved kjeding knytter man sammen utbetalingslinjer gjennom å referere til tidligere linjer. Da må man holde styr på hvilke linjer man har, og ved en endring må man passe på at alle linjer fortsatt er riktige. Ved feil risikerer man tilbakekreving. For å få til dette kreves kompleks kode. Dette gjøres i dag av [utbetalingsgeneratoren](https://github.com/navikt/utsjekk/blob/main/src/main/kotlin/no/nav/utsjekk/iverksetting/utbetalingsoppdrag/Utbetalingsgenerator.kt). Den sammenligner sannheten systemet kjenner fra før med det nye som sendes inn, og utleder basert på det hva som skal gjøres.
 
-
-Todo:
-Å gå vekk fra kjeding muliggjør nytt API-design
-Hvordan eksisterende kjeder migreres / håndteres
-Konsument må holde styr på egne perioder / utbetalinger (overlapp, unngå utilsikta doble utbetalinger)
-Korrigere / endre en ressurs om gangen i separate kall
-
-
 ## Alternativer vurdert
-
-< Valgfri seksjon - med liste med alternativer >
 
 1. Skrive om [Utbetalingsgenerator](https://github.com/navikt/utsjekk/blob/main/src/main/kotlin/no/nav/utsjekk/iverksetting/utbetalingsoppdrag/Utbetalingsgenerator.kt)
 2. Gå bort fra kjeding og kun sende en utbetalingslinje om gangen
@@ -29,11 +19,21 @@ Korrigere / endre en ressurs om gangen i separate kall
 
 ## Beslutning
 
-< Hvilke(n) endring(er) foreslås som svar på utfordringen? >
+* Alternativ 1 har risko for å ende opp like kompleks som dagens løsning.
+* Alternativ 2 kan føre til mange 0 utbetalinger. Ved korrigering får man veldig mange kall gjennom tjenestene våre, det fører også til merarbeid for ønonomi-medarbeider. Det vil føre til den enkleste koden. 
+* Alternativ 3 vil forenkle koden betraktelig og kan lage et sterkere typet grensesnitt, som man også ville fått i alternativ 2. Skjermer konsumentene fra økonomidomene.
+
+Vi går for alternativ 3 etter en vellykket POC. 
 
 ## Konsekvenser
+Pros:
+* Å gå vekk fra kjeding på tvers av utbetalinger muliggjør et enklere og mer intuitivt API-design
+* Koden blir forenklet og enklere å sette seg inn i for nye utviklere
+* Grensesnittet blir mer entydig og det blir mindre rom for feil
 
-< Hva blir situasjonen etter at denne beslutningen eventuelt er tatt? Hva blir enklere eller vanskeligere på bakgrunn av dette? (Både positive og negative konsekvenser beskrives.) >
+Cons:
+* Konsument må holde styr på egne perioder / utbetalinger (flere utbetalinger kan overlappe i tid)
+* Vi må migrere eksisterende data i prod
 
 ## Referanser:
 
