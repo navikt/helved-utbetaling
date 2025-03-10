@@ -4,7 +4,7 @@ import com.ibm.mq.jms.MQQueue
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.mq.MQ
-import libs.mq.MQConsumer
+import libs.mq.DefaultMQConsumer
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.utils.secureLog
@@ -23,10 +23,11 @@ import javax.jms.TextMessage
 class OppdragMQConsumer(
     config: OppdragConfig,
     mq: MQ,
-    private val mapper: XMLMapper<Oppdrag> = XMLMapper(),
-) : MQConsumer(mq, MQQueue(config.kvitteringsKø)) {
+): AutoCloseable {
+    private val mapper: XMLMapper<Oppdrag> = XMLMapper()
+    private val consumer = DefaultMQConsumer(mq, MQQueue(config.kvitteringsKø), ::onMessage) 
 
-    override fun onMessage(message: TextMessage) {
+    fun onMessage(message: TextMessage) {
         secureLog.info("Mottok melding på kvitteringskø: ${message.text}")
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
         val oppdragIdKvittering = kvittering.id
@@ -116,5 +117,13 @@ class OppdragMQConsumer(
         return xml
             .replace("<oppdrag xmlns=", "<ns2:oppdrag xmlns:ns2=", ignoreCase = true)
             .replace("</oppdrag>", "</ns2:oppdrag>", ignoreCase = true)
+    }
+
+    fun start() {
+        consumer.start()
+    }
+
+    override fun close() {
+        consumer.close()
     }
 }

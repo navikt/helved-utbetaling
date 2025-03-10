@@ -12,7 +12,7 @@ import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.PostgresContainer
-import libs.mq.MQContainer
+import libs.mq.MQ
 import libs.postgres.Jdbc
 import libs.postgres.Migrator
 import libs.postgres.concurrency.CoroutineDatasource
@@ -20,7 +20,7 @@ import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.utils.logger
 import oppdrag.fakes.AzureFake
-import oppdrag.fakes.OppdragFake
+import oppdrag.fakes.oppdragURFake
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository
 import java.io.File
 
@@ -29,9 +29,8 @@ val testLog = logger("test")
 object TestRuntime : AutoCloseable {
     val azure: AzureFake = AzureFake()
     val postgres: PostgresContainer = PostgresContainer("oppdrag")
-    val mq: MQContainer = MQContainer("oppdrag")
-    val config: Config = TestConfig.create(postgres.config, mq.config, azure.config)
-    val oppdrag = OppdragFake(config)
+    val config: Config = TestConfig.create(postgres.config, azure.config)
+    val mq: MQ = oppdragURFake()
     val datasource = Jdbc.initialize(config.postgres)
     val context = CoroutineDatasource(datasource)
     val ktor = testApplication.apply { runBlocking { start() }}
@@ -48,15 +47,11 @@ object TestRuntime : AutoCloseable {
                 }
             }
         }
-        oppdrag.sendKø.clearReceived()
-        oppdrag.avstemmingKø.clearReceived()
     }
 
     override fun close() {
         azure.close()
-        oppdrag.close()
         postgres.close()
-        mq.close()
         ktor.stop()
     }
 
@@ -75,14 +70,12 @@ fun NettyApplicationEngine.port(): Int = runBlocking {
 private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
-//            database(TestRuntime.config.postgres)
-
             runBlocking {
                 withContext(TestRuntime.context) {
                     Migrator(File("migrations")).migrate()
                 }
             }
-            server(TestRuntime.config)
+            server(TestRuntime.config, TestRuntime.mq)
         }
     }
 }

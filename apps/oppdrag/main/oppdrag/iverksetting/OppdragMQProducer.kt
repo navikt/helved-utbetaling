@@ -2,17 +2,19 @@ package oppdrag.iverksetting
 
 import com.ibm.mq.jms.MQQueue
 import libs.mq.MQ
-import libs.mq.MQProducer
+import libs.mq.DefaultMQProducer
 import libs.utils.secureLog
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
 import oppdrag.appLog
 
-class OppdragMQProducer(private val config: OppdragConfig, mq: MQ) {
-    private val oppdragQueue = MQQueue(config.sendKø)
+class OppdragMQProducer(
+    private val config: OppdragConfig,
+    mq: MQ,
+) {
     private val kvitteringQueue = MQQueue(config.kvitteringsKø)
-    private val producer = MQProducer(mq, oppdragQueue)
+    private val producer = DefaultMQProducer(mq, config.sendKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
     fun sendOppdrag(oppdrag: Oppdrag): String {

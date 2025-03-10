@@ -7,7 +7,6 @@ import libs.postgres.JdbcConfig
 object TestConfig {
     fun create(
         postgres: JdbcConfig,
-        mq: MQConfig,
         azureConfig: AzureConfig,
     ): Config = Config(
         avstemming = AvstemmingConfig(
@@ -21,6 +20,13 @@ object TestConfig {
         ),
         postgres = postgres,
         azure = azureConfig,
-        mq = mq
+        mq = MQConfig(
+            host = "og hark",
+            port = 99,
+            channel = "",
+            manager = "anders",
+            username = "",
+            password = "",
+        ),
     )
 }

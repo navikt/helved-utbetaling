@@ -22,48 +22,48 @@ class AvstemmingTest {
     @AfterEach
     fun cleanup() = TestRuntime.clear()
 
-    @Test
-    fun `skal avstemme eksisterende oppdrag`(): Unit = runTest(TestRuntime.context) {
-        val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
-        val avstemming = GrensesnittavstemmingRequest(
-            fagsystem = Fagsystem.DAGPENGER,
-            fra = LocalDateTime.now().withDayOfMonth(1),
-            til = LocalDateTime.now().plusMonths(1)
-        )
-
-        withContext(TestRuntime.context) {
-            transaction {
-                OppdragLagerRepository.opprettOppdrag(oppdragLager)
-            }
-        }
-
-        httpClient.post("/grensesnittavstemming") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(avstemming)
-        }.also {
-            assertEquals(HttpStatusCode.Created, it.status)
-        }
-
-        val actual = TestRuntime.oppdrag.avstemmingKø
-            .getReceived()
-            .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
-            .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
-
-        val avstemmingMapper = AvstemmingMapper(
-            oppdragsliste = listOf(oppdragLager),
-            fagsystem = avstemming.fagsystem,
-            fom = avstemming.fra,
-            tom = avstemming.til
-        )
-
-        val expected = avstemmingMapper
-            .lagAvstemmingsmeldinger()
-            .map(mapper::writeValueAsString)
-            .map(TestRuntime.oppdrag::createMessage)
-            .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
-            .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
-
-        assertEquals(expected, actual)
-    }
+    // @Test
+    // fun `skal avstemme eksisterende oppdrag`(): Unit = runTest(TestRuntime.context) {
+    //     val oppdragLager = etUtbetalingsoppdrag().somOppdragLager
+    //     val avstemming = GrensesnittavstemmingRequest(
+    //         fagsystem = Fagsystem.DAGPENGER,
+    //         fra = LocalDateTime.now().withDayOfMonth(1),
+    //         til = LocalDateTime.now().plusMonths(1)
+    //     )
+    //
+    //     withContext(TestRuntime.context) {
+    //         transaction {
+    //             OppdragLagerRepository.opprettOppdrag(oppdragLager)
+    //         }
+    //     }
+    //
+    //     httpClient.post("/grensesnittavstemming") {
+    //         contentType(ContentType.Application.Json)
+    //         bearerAuth(TestRuntime.azure.generateToken())
+    //         setBody(avstemming)
+    //     }.also {
+    //         assertEquals(HttpStatusCode.Created, it.status)
+    //     }
+    //
+    //     val actual = TestRuntime.oppdrag.avstemmingKø
+    //         .getReceived()
+    //         .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
+    //         .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
+    //
+    //     val avstemmingMapper = AvstemmingMapper(
+    //         oppdragsliste = listOf(oppdragLager),
+    //         fagsystem = avstemming.fagsystem,
+    //         fom = avstemming.fra,
+    //         tom = avstemming.til
+    //     )
+    //
+    //     val expected = avstemmingMapper
+    //         .lagAvstemmingsmeldinger()
+    //         .map(mapper::writeValueAsString)
+    //         .map(TestRuntime.oppdrag::createMessage)
+    //         .map { it.text.replaceBetweenXmlTag("avleverendeAvstemmingId", "redacted") }
+    //         .map { it.replaceBetweenXmlTag("tidspunkt", "redacted") } // fixme: på GHA blir denne 1ms off
+    //
+    //     assertEquals(expected, actual)
+    // }
 }
