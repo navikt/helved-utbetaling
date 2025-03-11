@@ -17,6 +17,7 @@ dependencies {
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:ws:$libVersion")
 
+    // TODO: ER det mulig å innkapsulere denne i libs?
     // vanilla producer
     implementation("org.apache.kafka:kafka-clients:3.9.0")
 

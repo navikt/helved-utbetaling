@@ -26,6 +26,7 @@ object TestTopics {
     val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
+    val simulering by lazy { TestRuntime.kafka.testTopic(Topics.simulering) }
 }
 
 object TestRuntime : AutoCloseable {

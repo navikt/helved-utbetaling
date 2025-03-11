@@ -1,8 +1,11 @@
 package abetal.consumers
 
 import abetal.*
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlin.test.assertEquals
 import models.*
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.*
 import org.junit.jupiter.api.Test
 
@@ -804,4 +807,63 @@ internal class AapTest {
                  assertEquals(100u, o.oppdrag110.oppdragsLinje150s[1].sats.toDouble().toUInt())
              }
      }
+
+    /**
+     * 1:   ╭────────────────╮╭──────────────╮
+     *      │      100,-     ││     200,-    │
+     *      ╰────────────────╯╰──────────────╯
+     * 2:   ╭────────────────╮╭──────────────╮╭──────────────╮
+     *      │      100,-     ││     200,-    ││     300,-    │
+     *      ╰────────────────╯╰──────────────╯╰──────────────╯
+     * Res:                                   ╭──────────────╮
+     *                                        │     300,-    │
+     *                                        ╰──────────────╯
+     */
+    @Test
+    fun `simuler legge til en ekstra periode`() {
+        val uid = randomUtbetalingId()
+        val sid = SakId("$nextInt")
+        TestTopics.utbetalinger.produce("${uid.id}") {
+            utbetaling(Action.CREATE, uid, sid) {
+                listOf(
+                    periode(1.jan, 3.jan, 100u),
+                )
+            }
+        }
+        TestTopics.utbetalinger.produce("${uid.id}") {
+            utbetaling(Action.UPDATE, uid, sid) {
+                listOf(
+                    periode(1.jan, 2.jan, 100u),
+                    periode(3.jan, 3.jan, 200u),
+                )
+            }
+        }
+
+        val bid = BehandlingId("$nextInt")
+        TestTopics.aap.produce("${uid.id}") {
+            Aap.utbetaling(Action.UPDATE, sid, bid, true) {
+                listOf(
+                    Aap.dag(1.jan, 100u),
+                    Aap.dag(2.jan, 100u),
+                    Aap.dag(3.jan, 200u),
+                    Aap.dag(6.jan, 300u),
+                )
+            }
+        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey("${uid.id}", 1)
+            .hasValue(StatusReply(Status.MOTTATT))
+
+        TestTopics.utbetalinger.assertThat().isEmpty()
+        TestTopics.oppdrag.assertThat().isEmpty()
+        TestTopics.simulering.assertThat()
+            .hasNumberOfRecordsForKey("${uid.id}", 1)
+            .withLastValue { o: SimulerBeregningRequest? ->
+                assertEquals("ENDR", o!!.oppdrag.kodeEndring)
+                assertEquals(6.jan, o.oppdrag.oppdragslinjes.last().datoVedtakFom.toLocalDate())
+                assertEquals(300u, o.oppdrag.oppdragslinjes.last().sats.toDouble().toUInt())
+            }
+    }
 }
+
+private fun String.toLocalDate() = LocalDate.parse(this, DateTimeFormatter.ofPattern("dd-MM-yyyy"))
