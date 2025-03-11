@@ -19,6 +19,7 @@ jobs:
           - helved.oppdrag.v1
           - helved.saker.v1
           - helved.simulering.v1
+          - helved.simulering-result.v1
           - helved.status.v1
           - helved.utbetalinger.v1
         env:
