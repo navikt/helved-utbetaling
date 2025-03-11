@@ -1,18 +1,30 @@
 package abetal
 
 import abetal.models.*
+import jakarta.xml.bind.JAXBContext
+import jakarta.xml.bind.JAXBElement
+import jakarta.xml.bind.Marshaller
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import models.*
 import libs.kafka.*
 import libs.kafka.stream.MappedStream
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.util.UUID
+import javax.xml.namespace.QName
+import javax.xml.stream.XMLInputFactory
+import javax.xml.transform.stream.StreamSource
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory
+import kotlin.reflect.KClass
+import org.apache.kafka.common.serialization.Deserializer
+import org.apache.kafka.common.serialization.Serializer
 
 object Topics {
     val aap = Topic("helved.aap-utbetalinger.v1", json<AapUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
-    val simulering = Topic("helved.simulering.v1", xml<SimulerBeregningRequest>())
+    val simulering = Topic("helved.simulering.v1", jaxb<SimulerBeregningRequest, ObjectFactory>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val saker = Topic("helved.saker.v1", jsonjson<SakKey, SakValue>())
 }
@@ -111,3 +123,48 @@ fun simuleringStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbe
 
 inline fun <reified K: Any, reified V: Any> jsonjson() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jackson<V>())
 
+
+inline fun <reified V: Any, reified O: Any> jaxb(): Serdes<String, V> {
+    return Serdes(StringSerde, JaxbSerde.serde<V, O>())
+}
+
+object JaxbSerde {
+    inline fun <reified V : Any, reified O: Any> serde(): StreamSerde<V> = object : StreamSerde<V> {
+        override fun serializer(): Serializer<V> = JaxbSerializer(V::class, O::class)
+        override fun deserializer(): Deserializer<V> = JaxbDeserializer(V::class, O::class)
+    }
+}
+
+class JaxbSerializer<T : Any, O: Any>(
+    private val kclass: KClass<T>,
+    objectFactory: KClass<O>,
+) : Serializer<T> {
+    private val ctx = JAXBContext.newInstance(kclass.java, objectFactory.java)
+    private val marshaller = ctx.createMarshaller().apply { setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true) }
+    override fun serialize(topic: String, data: T?): ByteArray? {
+        return data?.let {
+            val q = QName("ns3:simulerBeregningRequest")
+            val root = JAXBElement(q, kclass.java, data)
+            val outStream = ByteArrayOutputStream()
+            marshaller.marshal(root, outStream)
+            outStream.toByteArray()
+        }
+    }
+}
+
+class JaxbDeserializer<T : Any, O: Any>(
+    private val kclass: KClass<T>,
+    objectFactory: KClass<O>,
+) : Deserializer<T> {
+    private val ctx = JAXBContext.newInstance(kclass.java, objectFactory.java)
+    private val unmarshaller = ctx.createUnmarshaller()
+    private val inputFactory = XMLInputFactory.newInstance()
+    override fun deserialize(topic: String, data: ByteArray?): T? {
+        return data?.let {
+            val reader = inputFactory.createXMLStreamReader(StreamSource(ByteArrayInputStream(data)))
+            val jaxb = unmarshaller.unmarshal(reader, kclass.java)
+            reader.close()
+            return jaxb.value
+        }
+    }
+}

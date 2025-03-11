@@ -23,6 +23,10 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
 
+    // TODO: ER det mulig å innkapsulere denne i libs?
+    // vanilla producer
+    implementation("org.apache.kafka:kafka-clients:3.9.0")
+
     testImplementation(kotlin("test"))
     testImplementation("org.apache.kafka:kafka-streams:3.9.0") // intercept StreamsBuilder
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")

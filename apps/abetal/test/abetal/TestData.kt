@@ -23,10 +23,11 @@ object Aap {
         action: Action,
         sakId: SakId = SakId("$nextInt"),
         behId: BehandlingId = BehandlingId("$nextInt"),
+        simulate: Boolean = false,
         vedtatt: LocalDateTime = LocalDateTime.now(),
         perioder: () -> List<Utbetalingsperiode>,
     ) = AapUtbetaling(
-        simulate = false,
+        simulate = simulate,
         action = action,
         periodetype = Periodetype.UKEDAG,
         stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
