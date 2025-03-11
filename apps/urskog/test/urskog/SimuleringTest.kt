@@ -11,6 +11,7 @@ import no.nav.system.os.entiteter.typer.simpletypes.FradragTillegg
 import no.nav.system.os.entiteter.typer.simpletypes.KodeStatusLinje
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.*
 import org.junit.jupiter.api.Test
+import libs.utils.secureLog
 
 class SimuleringTest {
     private var seq: Int = 0
@@ -42,6 +43,8 @@ class SimuleringTest {
             .hasValueMatching(uid, 0) {
                 assertNotNull(it)
             }
+
+        secureLog.warn(TestRuntime.ws.received.first())
     }
 }
 
