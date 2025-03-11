@@ -18,7 +18,7 @@ data class Config(
         channel = env("MQ_CHANNEL"),
         manager = env("MQ_MANAGER"),
         username = "srvdp-oppdrag",
-        password = env("MQ_PASSWORD"),
+        password = env("MQ_PASSWORD"), // from secret utsjekk-oppdrag
     ),
     val proxy: ProxyConfig = ProxyConfig(),
     val azure: AzureConfig = AzureConfig(),
@@ -26,7 +26,7 @@ data class Config(
         host = URI("${proxy.host}/${env<String>("SIMULERING_PATH")}").toURL(),
         sts = StsConfig(
             host = URI("${proxy.host}/gandalf").toURL(),
-            user = "srv-simulering",
+            user = "srvdp-simulering",
             pass = env("servicebruker_passord"), // from secret utsjekk-oppdrag-simulering
         ),
     ),
