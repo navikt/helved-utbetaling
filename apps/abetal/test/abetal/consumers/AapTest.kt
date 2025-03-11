@@ -866,4 +866,4 @@ internal class AapTest {
     }
 }
 
-private fun String.toLocalDate() = LocalDate.parse(this, DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+private fun String.toLocalDate() = LocalDate.parse(this)
