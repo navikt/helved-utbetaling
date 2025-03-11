@@ -140,10 +140,17 @@ class JaxbSerializer<T : Any, O: Any>(
     objectFactory: KClass<O>,
 ) : Serializer<T> {
     private val ctx = JAXBContext.newInstance(kclass.java, objectFactory.java)
-    private val marshaller = ctx.createMarshaller().apply { setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true) }
+    private val marshaller = ctx.createMarshaller().apply { 
+        setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
+        setProperty(Marshaller.JAXB_FRAGMENT, true)
+    }
     override fun serialize(topic: String, data: T?): ByteArray? {
         return data?.let {
-            val q = QName("ns3:simulerBeregningRequest")
+            val q = QName(
+                "http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt",
+                "simulerBeregningRequest",
+                "ns3"
+            )
             val root = JAXBElement(q, kclass.java, data)
             val outStream = ByteArrayOutputStream()
             marshaller.marshal(root, outStream)
