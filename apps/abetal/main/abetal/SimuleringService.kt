@@ -12,7 +12,7 @@ import no.nav.system.os.entiteter.oppdragskjema.ObjectFactory as OppdragFactory
 
 private val objectFactory = ObjectFactory()
 
-private fun LocalDate.format() = format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+private fun LocalDate.format() = format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
 
 object SimuleringService {
 
@@ -33,6 +33,7 @@ object SimuleringService {
                 oppdragslinjes.add(oppdragslinje)
             }
         }
+
         return objectFactory.createSimulerBeregningRequest().apply {
             this.oppdrag = oppdrag
         }
