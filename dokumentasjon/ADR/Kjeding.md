@@ -6,9 +6,11 @@ Akseptert
 
 ## Kontekst
 
-Kjeding er tradisjonelt sett en sammenkobling av utbetalinger som blant annet gjør at flere kan korrigeres i én operasjon mot Oppdragssystemet (OS). Men det gjør også at utbetalinger av nyere dato enn den som endres, på samme kjede, må følge med på nytt for å bekrefte at de fortsatt er gyldige. Ellers vil de opphøres (“angres” og settes til null).
+Kjeding er en sammenkobling av utbetalingsperioder (oppdragslinjer i OS) som blant annet gjør at flere kan korrigeres i én operasjon mot Oppdragssystemet (OS). Men det gjør også at utbetalinger av nyere dato enn den som endres, på samme kjede, må følge med på nytt for å bekrefte at de fortsatt er gyldige. Ellers vil de opphøres (“angres” og settes til null).
 
 Ved kjeding knytter man sammen utbetalingslinjer gjennom å referere til tidligere linjer. Da må man holde styr på hvilke linjer man har, og ved en endring må man passe på at alle linjer fortsatt er riktige. Ved feil risikerer man tilbakekreving. For å få til dette kreves kompleks kode. Dette gjøres i dag av [utbetalingsgeneratoren](https://github.com/navikt/utsjekk/blob/main/src/main/kotlin/no/nav/utsjekk/iverksetting/utbetalingsoppdrag/Utbetalingsgenerator.kt). Den sammenligner sannheten systemet kjenner fra før med det nye som sendes inn, og utleder basert på det hva som skal gjøres.
+
+[Les mer om kjeding](https://github.com/navikt/helved-utbetaling/blob/main/dokumentasjon/kjeding.md) og hvordan det fungerer i dokumentasjonen.
 
 ## Alternativer vurdert
 
