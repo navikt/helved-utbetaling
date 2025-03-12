@@ -1,13 +1,11 @@
 package urskog
 
+import com.ibm.mq.jms.MQQueue
 import libs.kafka.SslConfig
 import libs.kafka.StreamsConfig
 import libs.mq.MQConfig
 import libs.auth.AzureConfig
 import libs.ws.SoapConfig
-import libs.ws.StsConfig
-import libs.utils.env
-import java.net.URI
 
 object TestConfig {
     fun create(
@@ -16,8 +14,8 @@ object TestConfig {
         simulering: SoapConfig,
     ): Config {
         val oppdrag = OppdragConfig(
-            kvitteringsKø = "DEV.QUEUE.2",
-            sendKø = "DEV.QUEUE.1"
+            kvitteringsKø = MQQueue("DEV.QUEUE.2"),
+            sendKø = MQQueue("DEV.QUEUE.1")
         )
         val kafka = StreamsConfig(
             "",

@@ -1,5 +1,6 @@
 package urskog
 
+import com.ibm.mq.jms.MQQueue
 import java.net.URI
 import java.net.URL
 import libs.auth.AzureConfig
@@ -32,11 +33,9 @@ data class Config(
     ),
 )
 
-typealias Queue = String
-
 data class OppdragConfig(
-    val kvitteringsKø: Queue = env("MQ_OPPDRAG_KVITTERING_QUEUE"),
-    val sendKø: Queue = env("MQ_OPPDRAG_QUEUE"),
+    val kvitteringsKø: MQQueue = MQQueue(env("MQ_OPPDRAG_KVITTERING_QUEUE")),
+    val sendKø: MQQueue = MQQueue(env("MQ_OPPDRAG_QUEUE")),
 )
 
 data class ProxyConfig(

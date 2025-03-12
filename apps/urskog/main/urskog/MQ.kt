@@ -1,13 +1,11 @@
 package urskog
 
-import com.ibm.mq.jms.MQQueue
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import javax.jms.TextMessage
-import libs.kafka.StateStore
 import libs.mq.*
 import libs.utils.secureLog
 import libs.xml.XMLMapper
@@ -20,7 +18,7 @@ class OppdragMQProducer(
     private val config: Config,
     mq: MQ,
 ) {
-    private val kvitteringQueue = MQQueue(config.oppdrag.kvitteringsKø)
+    private val kvitteringQueue = config.oppdrag.kvitteringsKø
     private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
@@ -46,7 +44,7 @@ class KvitteringMQConsumer(
     mq: MQ,
 ): AutoCloseable {
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
-    private val consumer = DefaultMQConsumer(mq, MQQueue(config.oppdrag.kvitteringsKø), ::onMessage)
+    private val consumer = DefaultMQConsumer(mq, config.oppdrag.kvitteringsKø, ::onMessage)
 
     fun onMessage(message: TextMessage) {
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
