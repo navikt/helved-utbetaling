@@ -1,6 +1,5 @@
 package oppdrag.grensesnittavstemming
 
-import com.ibm.mq.jms.MQQueue
 import libs.mq.MQ
 import libs.mq.DefaultMQProducer
 import libs.utils.secureLog
@@ -13,10 +12,8 @@ class AvstemmingMQProducer(
     mq: MQ,
     private val config: AvstemmingConfig,
 ) {
-    // private val queue = MQQueue(config.utKø).apply {
-    //     targetClient = 1 // Skru av JMS-headere, da OS ikke støtter disse for avstemming
-    // }
-    private val producer = DefaultMQProducer(mq, config.utKø) // FIXME: forventer at denne tryner i miljø
+
+    private val producer = DefaultMQProducer(mq, config.utKø)
     private val mapper: XMLMapper<Avstemmingsdata> = XMLMapper()
 
     fun sendGrensesnittAvstemming(avstemmingsdata: Avstemmingsdata) {

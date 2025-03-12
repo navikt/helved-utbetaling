@@ -1,6 +1,5 @@
 package oppdrag.iverksetting
 
-import com.ibm.mq.jms.MQQueue
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.mq.MQ
@@ -25,7 +24,7 @@ class OppdragMQConsumer(
     mq: MQ,
 ): AutoCloseable {
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
-    private val consumer = DefaultMQConsumer(mq, MQQueue(config.kvitteringsKø), ::onMessage) 
+    private val consumer = DefaultMQConsumer(mq, config.kvitteringsKø, ::onMessage)
 
     fun onMessage(message: TextMessage) {
         secureLog.info("Mottok melding på kvitteringskø: ${message.text}")

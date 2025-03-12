@@ -1,5 +1,6 @@
 package oppdrag
 
+import com.ibm.mq.jms.MQQueue
 import libs.auth.AzureConfig
 import libs.mq.MQConfig
 import libs.postgres.JdbcConfig
@@ -22,13 +23,13 @@ data class Config(
 
 data class AvstemmingConfig(
     val enabled: Boolean = env("AVSTEMMING_ENABLED"),
-    val utKø: Queue = env("MQ_AVSTEMMING_QUEUE"),
+    val utKø: MQQueue = MQQueue(env("MQ_AVSTEMMING_QUEUE")).apply {
+        targetClient = 1 // Skru av JMS-headere, da OS ikke støtter disse for avstemming
+    },
 )
 
 data class OppdragConfig(
     val enabled: Boolean = env("OPPDRAG_ENABLED"),
-    val kvitteringsKø: Queue = env("MQ_OPPDRAG_KVITTERING_QUEUE"),
-    val sendKø: Queue = env("MQ_OPPDRAG_QUEUE"),
+    val kvitteringsKø: MQQueue = MQQueue(env("MQ_OPPDRAG_KVITTERING_QUEUE")),
+    val sendKø: MQQueue = MQQueue(env("MQ_OPPDRAG_QUEUE")),
 )
-
-typealias Queue = String
