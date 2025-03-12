@@ -6,12 +6,15 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.test.assertNotNull
 import no.nav.system.os.entiteter.oppdragskjema.Enhet
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.ObjectFactory as RootFactory
 import no.nav.system.os.entiteter.oppdragskjema.ObjectFactory as OppdragFactory
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory
 import no.nav.system.os.entiteter.typer.simpletypes.FradragTillegg
 import no.nav.system.os.entiteter.typer.simpletypes.KodeStatusLinje
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.*
 import org.junit.jupiter.api.Test
 import libs.utils.secureLog
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.Oppdragslinje
 
 class SimuleringTest {
     private var seq: Int = 0
@@ -48,14 +51,16 @@ class SimuleringTest {
     }
 }
 
+private val rootFactory = RootFactory()
 private val objectFactory = ObjectFactory()
+private val oppdragFactory = OppdragFactory()
 
 private fun LocalDate.format() = format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
 
 private fun simulering(
     oppdragslinjer: List<Oppdragslinje>,
     kodeEndring: String = "NY", // NY/ENDR
-    fagområde: String = "AAP", 
+    fagområde: String = "AAP",
     fagsystemId: String = "1", // sakid
     oppdragGjelderId: String = "12345678910", // personident 
     saksbehId: String = "Z999999",
@@ -72,8 +77,10 @@ private fun simulering(
         this.enhets.addAll(enheter(enhet))
         oppdragslinjes.addAll(oppdragslinjer)
     }
-    return objectFactory.createSimulerBeregningRequest().apply {
-        this.oppdrag = oppdrag
+    return rootFactory.createSimulerBeregningRequest().apply {
+        request = objectFactory.createSimulerBeregningRequest().apply {
+            this.oppdrag = oppdrag
+        }
     }
 }
 
@@ -119,7 +126,6 @@ private fun oppdragslinje(
     }
 }
 
-private val oppdragFactory = OppdragFactory()
 
 private fun enheter(enhet: String? = null): List<Enhet> {
     val bos = oppdragFactory.createEnhet().apply {
