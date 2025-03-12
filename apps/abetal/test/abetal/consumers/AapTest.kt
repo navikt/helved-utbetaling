@@ -2,10 +2,9 @@ package abetal.consumers
 
 import abetal.*
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import kotlin.test.assertEquals
 import models.*
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.SimulerBeregningRequest
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.*
 import org.junit.jupiter.api.Test
 
@@ -859,9 +858,9 @@ internal class AapTest {
         TestTopics.simulering.assertThat()
             .hasNumberOfRecordsForKey("${uid.id}", 1)
             .withLastValue { o: SimulerBeregningRequest? ->
-                assertEquals("ENDR", o!!.oppdrag.kodeEndring)
-                assertEquals(6.jan, o.oppdrag.oppdragslinjes.last().datoVedtakFom.toLocalDate())
-                assertEquals(300u, o.oppdrag.oppdragslinjes.last().sats.toDouble().toUInt())
+                assertEquals("ENDR", o!!.request.oppdrag.kodeEndring)
+                assertEquals(6.jan, o.request.oppdrag.oppdragslinjes.last().datoVedtakFom.toLocalDate())
+                assertEquals(300u, o.request.oppdrag.oppdragslinjes.last().sats.toDouble().toUInt())
             }
     }
 }

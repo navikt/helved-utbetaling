@@ -4,13 +4,17 @@ import models.*
 import no.nav.system.os.entiteter.oppdragskjema.Enhet
 import no.nav.system.os.entiteter.typer.simpletypes.FradragTillegg
 import no.nav.system.os.entiteter.typer.simpletypes.KodeStatusLinje
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.*
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import no.nav.system.os.entiteter.oppdragskjema.ObjectFactory as OppdragFactory
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.ObjectFactory
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.Oppdragslinje
 
-private val objectFactory = ObjectFactory()
+private val rootFactory = ObjectFactory()
+private val objectFactory = no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory()
+private val oppdragFactory = OppdragFactory()
 
 private fun LocalDate.format() = format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
 
@@ -34,8 +38,10 @@ object SimuleringService {
             }
         }
 
-        return objectFactory.createSimulerBeregningRequest().apply {
-            this.oppdrag = oppdrag
+        return rootFactory.createSimulerBeregningRequest().apply {
+            request = objectFactory.createSimulerBeregningRequest().apply {
+                this.oppdrag = oppdrag
+            }
         }
     }
 
@@ -59,8 +65,10 @@ object SimuleringService {
             if (opphørsdato != null) oppdragslinjes.add(opphørslinje)
             oppdragslinjes.addAll(nyeLinjer(new, prev, opphørsdato))
         }
-        return objectFactory.createSimulerBeregningRequest().apply {
-            this.oppdrag = oppdrag
+        return rootFactory.createSimulerBeregningRequest().apply {
+            request = objectFactory.createSimulerBeregningRequest().apply {
+                this.oppdrag = oppdrag
+            }
         }
     }
 
@@ -81,13 +89,13 @@ object SimuleringService {
             val oppdragslinje = oppdragslinje(new, lastPeriode, prev.lastPeriodeId, null, opphør)
             oppdragslinjes.add(oppdragslinje)
         }
-        return objectFactory.createSimulerBeregningRequest().apply {
-            this.oppdrag = oppdrag
+        return rootFactory.createSimulerBeregningRequest().apply {
+            request = objectFactory.createSimulerBeregningRequest().apply {
+                this.oppdrag = oppdrag
+            }
         }
     }
 }
-
-private val oppdragFactory = OppdragFactory()
 
 private fun enheter(new: Utbetaling): List<Enhet> {
     val bos = oppdragFactory.createEnhet().apply {
