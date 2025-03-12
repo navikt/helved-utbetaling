@@ -4,17 +4,17 @@ import java.util.UUID
 import libs.kafka.*
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.SimulerBeregningRequest
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.SimulerBeregningResponse
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 import kotlinx.coroutines.runBlocking
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
-    val simulering = Topic("helved.simulering.v1", jaxb<SimulerBeregningRequest,no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory>())
-    val simuleringResult = Topic("helved.simulering-result.v1", jaxb<SimulerBeregningResponse,no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory>())
+    val simulering = Topic("helved.simulering.v1", jaxb<SimulerBeregningRequest>())
+    val simuleringResult = Topic("helved.simulering-result.v1", jaxb<SimulerBeregningResponse>())
     val kvittering = Topic("helved.kvittering.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
-    val kvitteringQueue = Topic<OppdragForeignKey, Oppdrag>("helved.kvittering-queue.v1", Serdes(JsonSerde.jackson(), XmlSerde.serde()))
+    val kvitteringQueue = Topic<OppdragForeignKey, Oppdrag>("helved.kvittering-queue.v1", Serdes(JsonSerde.jackson(), XmlSerde.xml()))
 }
 
 object Stores {
