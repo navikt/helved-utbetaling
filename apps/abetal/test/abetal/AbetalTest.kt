@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 import models.*
 import org.junit.jupiter.api.Test
 
-internal class AetalTest {
+internal class AbetalTest {
 
     @Test
     fun `lagrer ny sakId`() {
@@ -282,6 +282,23 @@ internal class AetalTest {
             .hasNumberOfRecordsForKey("${uid.id}", 1)
             .hasValueMatching("${uid.id}", 0) {
                 assertEquals("DAG støtter maks periode på 92 dager", it.error!!.msg)
+            }
+        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+    }
+
+    @Test
+    fun `error ved manglende perioder`() {
+        val uid = randomUtbetalingId()
+        TestTopics.aap.produce("${uid.id}") {
+                Aap.utbetaling(Action.CREATE) {
+                    listOf()
+                }
+        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey("${uid.id}", 1)
+            .hasValueMatching("${uid.id}", 0) {
+                assertEquals("perioder kan ikke være tom", it.error!!.msg)
             }
         TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
         TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")

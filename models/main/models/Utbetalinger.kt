@@ -32,6 +32,7 @@ data class Utbetaling(
     val perioder: List<Utbetalingsperiode>,
 ) {
     fun validate(prev: Utbetaling?) {
+        failOnEmptyPerioder()
         failOnÅrsskifte()
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
@@ -39,6 +40,15 @@ data class Utbetaling(
         failOnIllegalFutureUtbetaling()
         failOnTooManyPeriods()
         failOnDuplicate(prev)
+    }
+}
+
+private fun Utbetaling.failOnEmptyPerioder() {
+    if (perioder.isEmpty()) {
+        badRequest(
+            msg = "perioder kan ikke være tom",
+            doc = "opprett_en_utbetaling"
+        )
     }
 }
 
