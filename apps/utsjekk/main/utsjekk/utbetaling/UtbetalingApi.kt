@@ -35,6 +35,7 @@ data class UtbetalingApi(
     }
 
     fun validate() {
+        failOnEmptyPerioder()
         failOnÅrsskifte()
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
@@ -113,6 +114,16 @@ data class UtbetalingsperiodeApi(
                 }
             }
         }.flatten()
+    }
+}
+
+private fun UtbetalingApi.failOnEmptyPerioder() {
+    if (perioder.isEmpty()) {
+        badRequest(
+            msg = "perioder kan ikke være tom",
+            field = "perioder",
+            doc = "opprett_en_utbetaling"
+        )
     }
 }
 

@@ -631,4 +631,26 @@ class UtbetalingRoutingTest {
         }.body<Status>()
         assertEquals(Status.IKKE_PÅBEGYNT, status)
     }
+
+    @Test
+    fun `perioder can not be empty`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.mar,
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(),
+        )
+
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError.Response>()
+        assertEquals(error.msg, "perioder kan ikke være tom")
+        assertEquals(error.field, "perioder")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+    }
 }
