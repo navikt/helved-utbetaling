@@ -7,8 +7,8 @@ import utsjekk.utbetaling.Stønadstype
 import kotlin.math.abs
 
 object SimuleringMapper {
-    fun oppsummering(detaljer: client.SimuleringResponse) = SimuleringApi(
-        perioder = detaljer.perioder.map { periode ->
+    fun oppsummering(response: client.SimuleringResponse) = SimuleringApi(
+        perioder = response.perioder.map { periode ->
             Simuleringsperiode(
                 fom = periode.fom,
                 tom = periode.tom,

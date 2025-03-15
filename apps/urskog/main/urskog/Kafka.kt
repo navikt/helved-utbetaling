@@ -1,24 +1,25 @@
 package urskog
 
-import java.util.UUID
+import kotlinx.coroutines.runBlocking
 import libs.kafka.*
 import models.*
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
-import kotlinx.coroutines.runBlocking
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import java.util.*
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simulering = Topic("helved.simulering.v1", jaxb<SimulerBeregningRequest>())
-    val simuleringResult = Topic("helved.simulering-result.v1", jaxb<SimulerBeregningResponse>())
+    val aapSimulering = Topic("helved.aap-simulering.v1", json<Simulering>())
     val kvittering = Topic("helved.kvittering.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
-    val kvitteringQueue = Topic<OppdragForeignKey, Oppdrag>("helved.kvittering-queue.v1", Serdes(JsonSerde.jackson(), XmlSerde.xml()))
+    val kvitteringQueue =
+        Topic<OppdragForeignKey, Oppdrag>("helved.kvittering-queue.v1", Serdes(JsonSerde.jackson(), XmlSerde.xml()))
 }
 
 object Stores {
-    val keystore = Store<OppdragForeignKey, UtbetalingId>("fk-uid-store", Serdes(JsonSerde.jackson(), JsonSerde.jackson()))
+    val keystore =
+        Store<OppdragForeignKey, UtbetalingId>("fk-uid-store", Serdes(JsonSerde.jackson(), JsonSerde.jackson()))
 }
 
 object Tables {
@@ -38,8 +39,21 @@ fun createTopology(
         .produce(Topics.status)
 
     consume(Topics.simulering)
-        .map { sim -> runBlocking { simuleringService.simuler(sim) }}
-        .produce(Topics.simuleringResult)
+        .map { sim ->
+            Result.catch {
+                runBlocking {
+                    simuleringService.simuler(sim)
+                }
+            }
+        }
+        .branch({ it.isOk() }) {
+            map { it -> it.unwrap() }
+                .map(::toDomain)
+                .produce(Topics.aapSimulering)
+        }
+        .default {
+            map { it -> it.unwrapErr() }.produce(Topics.status)
+        }
 
     val kstore = oppdrag
         .mapKeyAndValue { uid, xml -> OppdragForeignKey.from(xml) to UtbetalingId(UUID.fromString(uid)) }
@@ -60,7 +74,10 @@ fun createTopology(
                     "04" -> StatusReply(Status.FEILET, ApiError(400, kvitt.mmel.beskrMelding))
                     "08" -> StatusReply(Status.FEILET, ApiError(400, kvitt.mmel.beskrMelding))
                     "12" -> StatusReply(Status.FEILET, ApiError(500, kvitt.mmel.beskrMelding))
-                    else -> StatusReply(Status.FEILET, ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute."))
+                    else -> StatusReply(
+                        Status.FEILET,
+                        ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute.")
+                    )
                 }
             }
         }

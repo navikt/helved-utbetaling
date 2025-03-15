@@ -1,0 +1,17 @@
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Body>
+        <SOAP-ENV:Fault xmlns="">
+            <faultcode>SOAP-ENV:Client</faultcode>
+            <faultstring>Malformed SOAP message</faultstring>
+            <detail>
+                <cics:FaultDetail xmlns:cics="http://www.ibm.com/software/htp/cics/fault">
+                    <cics:XMLSSParser>
+                        <cics:ParserResponse>XRC_NOT_WELL_FORMED</cics:ParserResponse>
+                        <cics:ParserReason>00012388</cics:ParserReason>
+                        <cics:ParserOffset>00000732</cics:ParserOffset>
+                    </cics:XMLSSParser>
+                </cics:FaultDetail>
+            </detail>
+        </SOAP-ENV:Fault>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

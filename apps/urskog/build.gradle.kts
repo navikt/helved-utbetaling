@@ -16,6 +16,7 @@ dependencies {
     implementation("no.nav.helved:mq:$libVersion")
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:ws:$libVersion")
+    implementation("no.nav.helved:xml:$libVersion") // temp, for å teste ut envelope + jaxb
 
     // TODO: ER det mulig å innkapsulere denne i libs?
     // vanilla producer
