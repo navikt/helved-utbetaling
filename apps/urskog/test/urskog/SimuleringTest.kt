@@ -1,20 +1,27 @@
 package urskog
 
+import libs.utils.Resource
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import libs.utils.secureLog
+import models.Fagsystem
+import models.Simulering
+import models.Simuleringsperiode
+import models.SimulertUtbetaling
+import models.StønadTypeAAP
 import no.nav.system.os.entiteter.oppdragskjema.Enhet
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.ObjectFactory as RootFactory
 import no.nav.system.os.entiteter.oppdragskjema.ObjectFactory as OppdragFactory
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory
 import no.nav.system.os.entiteter.typer.simpletypes.FradragTillegg
 import no.nav.system.os.entiteter.typer.simpletypes.KodeStatusLinje
-import org.junit.jupiter.api.Test
-import libs.utils.secureLog
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.ObjectFactory as RootFactory
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.Oppdragslinje
+import org.junit.jupiter.api.Test
 
 class SimuleringTest {
     private var seq: Int = 0
@@ -22,32 +29,48 @@ class SimuleringTest {
 
     @Test
     fun `send to mq`() {
+        TestRuntime.ws.respondWith = Resource.read("/simuler-ok.xml")
         val uid = UUID.randomUUID().toString()
 
         TestTopics.simulering.produce(uid) {
-            simulering(
-                fagsystemId = "$seq",
-                fagområde = "AAP",
-                oppdragslinjer = listOf(
-                    oppdragslinje(
-                        delytelsesId = "a",
-                        klassekode = "AAPUAA",
-                        datoVedtakFom = LocalDate.of(2025, 11, 3),
-                        datoVedtakTom = LocalDate.of(2025, 11, 7),
-                        typeSats = "DAG",
-                        sats = 700L,
-                    )
-                ),
-            )
+            simulering()
         }
 
-        TestTopics.simuleringResult.assertThat()
+        TestTopics.aapSimulering.assertThat()
             .hasNumberOfRecordsForKey(uid, 1)
             .hasValueMatching(uid, 0) {
-                assertNotNull(it)
+                val expected = Simulering(
+                    perioder = listOf(
+                        Simuleringsperiode(
+                            fom = LocalDate.of(2025, 1, 1),
+                            tom = LocalDate.of(2025, 1, 3),
+                            utbetalinger = listOf(
+                                SimulertUtbetaling(
+                                    fagsystem = Fagsystem.AAP,
+                                    sakId = "25",
+                                    utbetalesTil = "12345678910",
+                                    stønadstype = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                                    tidligereUtbetalt = 0,
+                                    nyttBeløp = 600,
+                                )
+                            )
+                        )
+                    )
+                )
+                assertEquals(expected, it)
             }
+    }
 
-        secureLog.warn(TestRuntime.ws.received.first())
+    @Test
+    fun `parse soap fault`() {
+        TestRuntime.ws.respondWith = Resource.read("/simuler-fault.xml")
+        val uid = UUID.randomUUID().toString()
+
+        TestTopics.simulering.produce(uid) {
+            simulering()
+        }
+
+        TestTopics.aapSimulering.assertThat().isEmptyForKey(uid)
     }
 }
 
@@ -58,7 +81,7 @@ private val oppdragFactory = OppdragFactory()
 private fun LocalDate.format() = format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
 
 private fun simulering(
-    oppdragslinjer: List<Oppdragslinje>,
+    oppdragslinjer: List<Oppdragslinje> = listOf(oppdragslinje()),
     kodeEndring: String = "NY", // NY/ENDR
     fagområde: String = "AAP",
     fagsystemId: String = "1", // sakid
@@ -85,11 +108,11 @@ private fun simulering(
 }
 
 private fun oppdragslinje(
-    delytelsesId: String,
-    sats: Long,
-    datoVedtakFom: LocalDate,
-    datoVedtakTom: LocalDate,
-    typeSats: String, // DAG/DAG7/MND/ENG
+    delytelsesId: String = "DEL 1",
+    sats: Long = 700,
+    datoVedtakFom: LocalDate = LocalDate.now(),
+    datoVedtakTom: LocalDate = LocalDate.now(),
+    typeSats: String = "DAG", // DAG/DAG7/MND/ENG
     refDelytelsesId: String? = null,
     kodeEndring: String = "NY", // NY/ENDR
     opphør: LocalDate? = null,

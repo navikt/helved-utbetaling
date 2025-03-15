@@ -83,7 +83,7 @@ class WSFake : Sts, Soap, AutoCloseable {
         )
     }
 
-    var respondWith: String = Resource.read("/simuler-body-response.xml")
+    var respondWith: String = Resource.read("/simuler-ok.xml")
     val received = mutableListOf<String>()
 
     override suspend fun samlToken(): SamlToken {

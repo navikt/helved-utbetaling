@@ -13,7 +13,7 @@ object TestTopics {
     val kvitteringQueue by lazy { TestRuntime.kafka.testTopic(Topics.kvitteringQueue) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
     val simulering by lazy { TestRuntime.kafka.testTopic(Topics.simulering) }
-    val simuleringResult by lazy { TestRuntime.kafka.testTopic(Topics.simuleringResult) }
+    val aapSimulering by lazy { TestRuntime.kafka.testTopic(Topics.aapSimulering) }
 }
 
 object TestRuntime : AutoCloseable {

@@ -1,0 +1,81 @@
+<simulerBeregningResponse
+        xmlns="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt">
+    <response xmlns="">
+        <simulering>
+            <gjelderId>10917097025</gjelderId>
+            <gjelderNavn>LØVETANN PARISK</gjelderNavn>
+            <datoBeregnet>2025-03-12</datoBeregnet>
+            <kodeFaggruppe>ARBYT</kodeFaggruppe>
+            <belop>0.00</belop>
+            <beregningsPeriode xmlns="http://nav.no/system/os/entiteter/beregningSkjema">
+                <periodeFom xmlns="">2025-01-01</periodeFom>
+                <periodeTom xmlns="">2025-01-03</periodeTom>
+                <beregningStoppnivaa>
+                    <kodeFagomraade xmlns="">AAP</kodeFagomraade>
+                    <stoppNivaaId xmlns="">24</stoppNivaaId>
+                    <behandlendeEnhet xmlns="">8020</behandlendeEnhet>
+                    <oppdragsId xmlns="">75140613</oppdragsId>
+                    <fagsystemId xmlns="">25</fagsystemId>
+                    <kid xmlns=""></kid>
+                    <utbetalesTilId xmlns="">12345678910</utbetalesTilId>
+                    <utbetalesTilNavn xmlns="">LØVETANN PARISK</utbetalesTilNavn>
+                    <bilagsType xmlns="">U</bilagsType>
+                    <forfall xmlns="">2025-03-12</forfall>
+                    <feilkonto xmlns="">false</feilkonto>
+                    <beregningStoppnivaaDetaljer>
+                        <faktiskFom xmlns="">2025-01-01</faktiskFom>
+                        <faktiskTom xmlns="">2025-01-03</faktiskTom>
+                        <kontoStreng xmlns="">0510000</kontoStreng>
+                        <behandlingskode xmlns="">0</behandlingskode>
+                        <belop xmlns="">-600.00</belop>
+                        <trekkVedtakId xmlns="">13445862</trekkVedtakId>
+                        <stonadId xmlns=""></stonadId>
+                        <korrigering xmlns=""></korrigering>
+                        <tilbakeforing xmlns="">false</tilbakeforing>
+                        <linjeId xmlns="">0</linjeId>
+                        <sats xmlns="">0.00</sats>
+                        <typeSats xmlns=""></typeSats>
+                        <antallSats xmlns="">3.00</antallSats>
+                        <saksbehId xmlns="">K231SKA6</saksbehId>
+                        <uforeGrad xmlns="">0</uforeGrad>
+                        <kravhaverId xmlns=""></kravhaverId>
+                        <delytelseId xmlns=""></delytelseId>
+                        <bostedsenhet xmlns="">8020</bostedsenhet>
+                        <skykldnerId xmlns=""></skykldnerId>
+                        <klassekode xmlns="">FSKTSKAT</klassekode>
+                        <klasseKodeBeskrivelse xmlns="">Forskuddskatt</klasseKodeBeskrivelse>
+                        <typeKlasse xmlns="">SKAT</typeKlasse>
+                        <typeKlasseBeskrivelse xmlns="">Klassetype for skatt</typeKlasseBeskrivelse>
+                        <refunderesOrgNr xmlns=""></refunderesOrgNr>
+                    </beregningStoppnivaaDetaljer>
+                    <beregningStoppnivaaDetaljer>
+                        <faktiskFom xmlns="">2025-01-01</faktiskFom>
+                        <faktiskTom xmlns="">2025-01-03</faktiskTom>
+                        <kontoStreng xmlns="">3411000</kontoStreng>
+                        <behandlingskode xmlns="">2</behandlingskode>
+                        <belop xmlns="">600.00</belop>
+                        <trekkVedtakId xmlns="">0</trekkVedtakId>
+                        <stonadId xmlns=""></stonadId>
+                        <korrigering xmlns=""></korrigering>
+                        <tilbakeforing xmlns="">false</tilbakeforing>
+                        <linjeId xmlns="">1</linjeId>
+                        <sats xmlns="">200.00</sats>
+                        <typeSats xmlns="">DAG</typeSats>
+                        <antallSats xmlns="">3.00</antallSats>
+                        <saksbehId xmlns="">Z999999</saksbehId>
+                        <uforeGrad xmlns="">0</uforeGrad>
+                        <kravhaverId xmlns=""></kravhaverId>
+                        <delytelseId xmlns="">gBgvomxSQ0Wfazyu2WEHGA==</delytelseId>
+                        <bostedsenhet xmlns="">8020</bostedsenhet>
+                        <skykldnerId xmlns=""></skykldnerId>
+                        <klassekode xmlns="">AAPUAA</klassekode>
+                        <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
+                        <typeKlasse xmlns="">YTEL</typeKlasse>
+                        <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
+                        <refunderesOrgNr xmlns=""></refunderesOrgNr>
+                    </beregningStoppnivaaDetaljer>
+                </beregningStoppnivaa>
+            </beregningsPeriode>
+        </simulering>
+    </response>
+</simulerBeregningResponse>
