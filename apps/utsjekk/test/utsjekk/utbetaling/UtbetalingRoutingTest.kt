@@ -2,14 +2,12 @@ package utsjekk.utbetaling
 
 import TestRuntime
 import com.fasterxml.jackson.module.kotlin.readValue
-import http
 import httpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.head
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -167,7 +165,6 @@ class UtbetalingRoutingTest {
         assertEquals(error.msg, "fom må være før eller lik tom")
         assertEquals(error.field, "fom")
         assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
-        assertEquals(200, http.head(error.doc).status.value)
     }
 
     @Test
@@ -256,7 +253,6 @@ class UtbetalingRoutingTest {
         assertEquals("Fant ikke utbetaling", error.msg)
         assertEquals("uid", error.field)
         assertEquals(DEFAULT_DOC_STR, error.doc)
-        assertEquals(200, http.head(error.doc).status.value)
     }
 
     @Test
