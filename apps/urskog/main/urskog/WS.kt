@@ -72,6 +72,7 @@ private fun resolveBehandlingFault(fault: Fault): Nothing {
     val errorMessage = feilUnderBehandling["errorMessage"] as? String ?: panic(fault)
     when {
         errorMessage.contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> notFound("SakId ikke funnet")
+        errorMessage.contains("DELYTELSE-ID/LINJE-ID ved endring finnes ikke") -> unprocessable("Referert utbetaling finnes ikke og kan ikke simuleres på. Mulig årsak er at det simuleres på en utbetaling som ikke er utbetalt enda, prøv igjen neste virkedag.")
         errorMessage.contains("Oppdraget finnes fra før") -> conflict("Utbetaling med SakId/BehandlingId finnes fra før")
         errorMessage.contains("Referert vedtak/linje ikke funnet") -> notFound("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
         errorMessage.contains("Navn på person ikke funnet i PDL") -> notFound("Navn på person ikke funnet i PDL")
