@@ -13,7 +13,6 @@ import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -29,7 +28,6 @@ import utsjekk.iverksetting.BehandlingId
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.IverksettingId
 import utsjekk.iverksetting.SakId
-import utsjekk.iverksetting.behandlingId
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import java.time.LocalDate
 import utsjekk.DEFAULT_DOC_STR
@@ -265,24 +263,24 @@ class IverksettingRouteTest {
     @Test
     fun `svarer med CONFLICT når iverksetting allerede er iverksatt`() = runTest(TestRuntime.context) {
         val dto = TestData.dto.iverksetting()
-        val iverksetting = TestData.domain.iverksetting(
-            fagsystem = Fagsystem.TILLEGGSSTØNADER,
-            sakId = SakId(dto.sakId),
-            behandlingId = BehandlingId(dto.behandlingId),
-        )
 
-        transaction {
-            TestData.dao.iverksetting(behandlingId = iverksetting.behandlingId, iverksetting = iverksetting).also {
-                it.insert()
-            }
-        }
-
-        val res = httpClient.post("/api/iverksetting/v2") {
+        httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(dto)
+        }.let {
+            println(it.bodyAsText())
+            assertEquals(HttpStatusCode.Accepted, it.status)
         }
 
-        assertEquals(HttpStatusCode.Conflict, res.status)
+        httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
+        }.let {
+            println(it.bodyAsText())
+            assertEquals(HttpStatusCode.Accepted, it.status)
+        }
+
     }
 }

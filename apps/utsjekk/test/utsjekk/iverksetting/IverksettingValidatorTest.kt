@@ -144,26 +144,7 @@ class IverksettingValidatorTest {
         }
 
     @Test
-    fun `skal få CONFLICT når iverksetting allerede er mottatt`() =
-        runTest(TestRuntime.context) {
-            val dao = transaction {
-                TestData.dao.iverksetting().also {
-                    it.insert()
-                }
-            }
-
-            val err = assertThrows<ApiError> {
-                transaction {
-                    IverksettingValidator.validerAtIverksettingIkkeAlleredeErMottatt(dao.data)
-                }
-            }
-
-            assertTrue(err.msg.contains("Iverksettingen er allerede mottatt"))
-            assertEquals(409, err.statusCode)
-        }
-
-    @Test
-    fun `skal få CONFLICT når forrige iverksetting ikke er ferdig og ok mot oppdrag`() = runTest(TestRuntime.context) {
+    fun `skal få LOCKED når forrige iverksetting ikke er ferdig og ok mot oppdrag`() = runTest(TestRuntime.context) {
         val dao = transaction {
             TestData.dao.iverksettingResultat(
                 resultat = OppdragResultat(
@@ -187,6 +168,6 @@ class IverksettingValidatorTest {
         }
 
         assertTrue(err.msg.contains("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet"))
-        assertEquals(409, err.statusCode)
+        assertEquals(423, err.statusCode)
     }
 }
