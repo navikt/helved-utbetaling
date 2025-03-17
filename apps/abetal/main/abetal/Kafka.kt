@@ -55,6 +55,7 @@ data class AapTuple(
 
 fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
     consume(Topics.aap)
+        .repartition(Topics.aap.serdes, 3)
         .map { key, aap -> AapTuple(key, aap) }
         .rekey { (_, aap) -> SakKey(aap.sakId, Fagsystem.from(aap.stønad)) }
         .leftJoin(jsonjson(), saker)

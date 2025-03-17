@@ -14,6 +14,7 @@ subgraph Topologi
 	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition([from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition])
 	helved.saker.v1([helved.saker.v1])
 	helved.aap-utbetalinger.v1([helved.aap-utbetalinger.v1])
+	from-helved.aap-utbetalinger.v1-repartition([from-helved.aap-utbetalinger.v1-repartition])
 
     %% JOINS
     from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1{left-join}
@@ -37,8 +38,8 @@ subgraph Topologi
     %% JOIN STREAMS
     from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1
 	helved.utbetalinger.v1-state-store --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1
-	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.status.v1
 	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.simulering.v1
+	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.status.v1
 	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.oppdrag.v1
 	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> helved.utbetalinger.v1
 	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1
@@ -63,7 +64,8 @@ subgraph Topologi
 	from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition --> |rekey| from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition
     
     %% BASIC STREAMS
-    helved.aap-utbetalinger.v1 --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition
+    helved.aap-utbetalinger.v1 --> from-helved.aap-utbetalinger.v1-repartition
+	from-helved.aap-utbetalinger.v1-repartition --> from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition
     
     %% CUSTOM PROCESS STREAMS
     
@@ -86,6 +88,7 @@ style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a
 style from-helved.aap-utbetalinger.v1-left-join-helved.saker.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.aap-utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style from-helved.aap-utbetalinger.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 
