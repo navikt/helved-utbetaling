@@ -4,6 +4,7 @@ import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.badRequest
 import utsjekk.conflict
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.locked
 
 object IverksettingValidator {
 
@@ -78,7 +79,7 @@ object IverksettingValidator {
         )
 
         if (!kvittertOk) {
-            conflict("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet")
+            locked("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet")
         }
     }
 

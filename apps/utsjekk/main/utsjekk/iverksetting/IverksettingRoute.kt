@@ -6,6 +6,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
+import utsjekk.ApiError
 import utsjekk.appLog
 import utsjekk.badRequest
 import utsjekk.client
@@ -27,8 +28,12 @@ fun Route.iverksetting(service: Iverksettinger) {
             val fagsystem = call.client().toFagsystem()
             val iverksetting = Iverksetting.from(dto, fagsystem)
 
-            service.valider(iverksetting)
-            service.iverksett(iverksetting)
+            try {
+                service.valider(iverksetting)
+                service.iverksett(iverksetting)
+            } catch (e: ApiError) {
+                if(e.statusCode != 409) throw e
+            }
 
             call.respond(HttpStatusCode.Accepted)
         }
