@@ -1,6 +1,6 @@
 package models
 
-const val DOC = "https://helved-docs.ekstern.dev.nav.no/v3/doc/"
+const val DOC = "https://helved-docs.ansatt.dev.nav.no/v3/doc/"
 
 data class ApiError(
     val statusCode: Int,
