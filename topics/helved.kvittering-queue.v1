@@ -8,7 +8,8 @@ metadata:
 spec:
   pool: {{kafkapool}}
   config:
-    cleanupPolicy: compact
+    cleanupPolicy: compact,delete
+    retentionHours: 168
     partitions: 3
   acl:
     - team: helved
