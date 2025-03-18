@@ -5,11 +5,17 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
+import kotlinx.coroutines.withContext
+import libs.postgres.Jdbc
+import libs.postgres.concurrency.transaction
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
+import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.ApiError
 import utsjekk.appLog
 import utsjekk.badRequest
 import utsjekk.client
+import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.notFound
 
 fun Route.iverksetting(service: Iverksettinger) {
@@ -46,6 +52,34 @@ fun Route.iverksetting(service: Iverksettinger) {
                 ?: notFound("status for sakId $sakId og behandlingId $behandlingId")
 
             call.respond(HttpStatusCode.OK, status)
+        }
+
+        put("/{sakId}/{behandlingId}/{fagsystem}/kvitter_ok") {
+            val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
+            val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
+            val fagsystem = call.parameters.getOrFail<String>("fagsystem").let { Fagsystem.valueOf(it) }
+            withContext(Jdbc.context) {
+                transaction {
+                    val resultat = IverksettingResultatDao.select(1) {
+                        this.iverksettingId = null
+                        this.behandlingId = behandlingId
+                        this.sakId = sakId
+                        this.fagsystem = fagsystem
+                    }.singleOrNull()
+
+                    if (resultat == null) {
+                        IverksettingResultatDao(
+                            iverksettingId = null,
+                            behandlingId = behandlingId,
+                            sakId = sakId,
+                            fagsystem = fagsystem,
+                            oppdragResultat = OppdragResultat(OppdragStatus.KVITTERT_OK)
+                        ).insert()
+                    }
+                }
+            }
+
+            call.respond(HttpStatusCode.OK, )
         }
 
         get("/{sakId}/{behandlingId}/{iverksettingId}/status") {
