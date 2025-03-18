@@ -13,6 +13,14 @@ enum class Fagsystem(val fagområde: String) {
             is StønadTypeTilleggsstønader -> TILLEGGSSTØNADER
             is StønadTypeAAP -> AAP
         }
+
+        fun from(kode: String) = when (kode) {
+            "DP" -> Fagsystem.DAGPENGER
+            "TILTPENG" -> Fagsystem.TILTAKSPENGER
+            "TILLST" -> Fagsystem.TILLEGGSSTØNADER
+            "AAP" -> Fagsystem.AAP
+            else -> error("fagområde $kode not implemented")
+        }
     }
 }
 
