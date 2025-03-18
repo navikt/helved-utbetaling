@@ -7,11 +7,21 @@ import kotlin.math.abs
 import no.nav.system.os.entiteter.beregningskjema.*;
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
-fun toDomain(jaxb: SimulerBeregningResponse): Simulering {
+fun into(jaxb: SimulerBeregningResponse): Simulering {
     return Simulering(
         perioder = jaxb.response.simulering.beregningsPeriodes.map(::into)
     )
 }
+
+fun intoV1(jaxb: SimulerBeregningResponse) = models.v1.Simulering(
+    oppsummeringer = listOf(),
+    detaljer = models.v1.SimuleringDetaljer(
+        gjelderId = "",
+        datoBeregnet = LocalDate.now(),
+        totalBeløp = 1,
+        perioder = listOf()
+    )
+)
 
 private fun into(periode: BeregningsPeriode): Simuleringsperiode {
     return Simuleringsperiode(

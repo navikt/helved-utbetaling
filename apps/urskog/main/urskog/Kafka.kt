@@ -9,12 +9,13 @@ import java.util.*
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
-    val simulering = Topic("helved.simulering.v1", jaxb<SimulerBeregningRequest>())
-    val aapSimulering = Topic("helved.aap-simulering.v1", json<Simulering>())
+    val simuleringer = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
+    val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
+    val dryrunTilleggsstønader = Topic("helved.dryrun-ts.v1", json<models.v1.Simulering>())
+    val dryrunTiltakspenger = Topic("helved.dryrun-tp.v1", json<models.v1.Simulering>())
     val kvittering = Topic("helved.kvittering.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
-    val kvitteringQueue =
-        Topic<OppdragForeignKey, Oppdrag>("helved.kvittering-queue.v1", Serdes(JsonSerde.jackson(), XmlSerde.xml()))
+    val kvitteringQueue = Topic<OppdragForeignKey, Oppdrag>("helved.kvittering-queue.v1", Serdes(JsonSerde.jackson(), XmlSerde.xml()))
 }
 
 object Stores {
@@ -38,7 +39,7 @@ fun createTopology(
         .map { _ -> StatusReply(status = Status.HOS_OPPDRAG) }
         .produce(Topics.status)
 
-    consume(Topics.simulering)
+    consume(Topics.simuleringer)
         .map { sim ->
             Result.catch {
                 runBlocking {
@@ -48,8 +49,21 @@ fun createTopology(
         }
         .branch({ it.isOk() }) {
             map { it -> it.unwrap() }
-                .map(::toDomain)
-                .produce(Topics.aapSimulering)
+                .branch({ it.response.simulering.beregningsPeriodes.first().beregningStoppnivaas.first().kodeFagomraade == "AAP" }) {
+                    map(::into).produce(Topics.dryrunAap)
+                }
+                .branch({ it.response.simulering.beregningsPeriodes.first().beregningStoppnivaas.first().kodeFagomraade == "TILLEGGSSTØNADER" }) {
+                    // TILLEGGSSTØNADER,
+                    // TILLEGGSSTØNADER_ARENA,
+                    // TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING,
+                    map(::intoV1).produce(Topics.dryrunTilleggsstønader)
+                }
+                .branch({ it.response.simulering.beregningsPeriodes.first().beregningStoppnivaas.first().kodeFagomraade == "TILTAKSPENGER" }) {
+                    // TILTAKSPENGER,
+                    // TILTAKSPENGER_ARENA,
+                    // TILTAKSPENGER_ARENA_MANUELL_POSTERING,
+                    map(::intoV1).produce(Topics.dryrunTiltakspenger)
+                }
         }
         .default {
             map { it -> it.unwrapErr() }.produce(Topics.status)
@@ -83,4 +97,6 @@ fun createTopology(
         }
         .produce(Topics.status)
 }
+
+
 
