@@ -12,8 +12,10 @@ object TestTopics {
     val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
     val kvitteringQueue by lazy { TestRuntime.kafka.testTopic(Topics.kvitteringQueue) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
-    val simulering by lazy { TestRuntime.kafka.testTopic(Topics.simulering) }
-    val aapSimulering by lazy { TestRuntime.kafka.testTopic(Topics.aapSimulering) }
+    val simuleringer by lazy { TestRuntime.kafka.testTopic(Topics.simuleringer) }
+    val dryrunAap by lazy { TestRuntime.kafka.testTopic(Topics.dryrunAap) }
+    val dryrunTilleggsstønader by lazy { TestRuntime.kafka.testTopic(Topics.dryrunTilleggsstønader) }
+    val dryrunTiltakspenger by lazy { TestRuntime.kafka.testTopic(Topics.dryrunTiltakspenger) }
 }
 
 object TestRuntime : AutoCloseable {

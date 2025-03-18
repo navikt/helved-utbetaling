@@ -32,11 +32,11 @@ class SimuleringTest {
         TestRuntime.ws.respondWith = Resource.read("/simuler-ok.xml")
         val uid = UUID.randomUUID().toString()
 
-        TestTopics.simulering.produce(uid) {
+        TestTopics.simuleringer.produce(uid) {
             simulering()
         }
 
-        TestTopics.aapSimulering.assertThat()
+        TestTopics.dryrunAap.assertThat()
             .hasNumberOfRecordsForKey(uid, 1)
             .hasValueMatching(uid, 0) {
                 val expected = Simulering(
@@ -66,11 +66,11 @@ class SimuleringTest {
         TestRuntime.ws.respondWith = Resource.read("/simuler-fault.xml")
         val uid = UUID.randomUUID().toString()
 
-        TestTopics.simulering.produce(uid) {
+        TestTopics.simuleringer.produce(uid) {
             simulering()
         }
 
-        TestTopics.aapSimulering.assertThat().isEmptyForKey(uid)
+        TestTopics.dryrunAap.assertThat().isEmptyForKey(uid)
     }
 }
 

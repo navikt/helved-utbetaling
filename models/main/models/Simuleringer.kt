@@ -21,3 +21,4 @@ data class SimulertUtbetaling(
     val nyttBeløp: Int,
 )
 
+
