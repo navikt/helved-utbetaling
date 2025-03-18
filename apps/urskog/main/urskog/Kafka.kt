@@ -43,26 +43,21 @@ fun createTopology(
         .map { sim ->
             Result.catch {
                 runBlocking {
-                    simuleringService.simuler(sim)
+                    val fagsystem = Fagsystem.from(sim.request.oppdrag.kodeFagomraade) // TODO: denne må brukes videre for å finne ut hvilket topic simulering skal sendes til
+                    simuleringService.simuler(sim) to fagsystem
                 }
             }
         }
         .branch({ it.isOk() }) {
             map { it -> it.unwrap() }
-                .branch({ it.response.simulering.beregningsPeriodes.first().beregningStoppnivaas.first().kodeFagomraade == "AAP" }) {
-                    map(::into).produce(Topics.dryrunAap)
+                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.AAP }) {
+                    map({(sim, _) -> sim}).map(::into).produce(Topics.dryrunAap)
                 }
-                .branch({ it.response.simulering.beregningsPeriodes.first().beregningStoppnivaas.first().kodeFagomraade == "TILLEGGSSTØNADER" }) {
-                    // TILLEGGSSTØNADER,
-                    // TILLEGGSSTØNADER_ARENA,
-                    // TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING,
-                    map(::intoV1).produce(Topics.dryrunTilleggsstønader)
+                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILLEGGSSTØNADER }) {
+                    map({(sim, _) -> sim}).map(::intoV1).produce(Topics.dryrunTilleggsstønader)
                 }
-                .branch({ it.response.simulering.beregningsPeriodes.first().beregningStoppnivaas.first().kodeFagomraade == "TILTAKSPENGER" }) {
-                    // TILTAKSPENGER,
-                    // TILTAKSPENGER_ARENA,
-                    // TILTAKSPENGER_ARENA_MANUELL_POSTERING,
-                    map(::intoV1).produce(Topics.dryrunTiltakspenger)
+                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILTAKSPENGER }) {
+                    map({(sim, _) -> sim}).map(::intoV1).produce(Topics.dryrunTiltakspenger)
                 }
         }
         .default {
