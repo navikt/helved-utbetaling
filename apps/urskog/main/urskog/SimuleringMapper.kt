@@ -13,16 +13,6 @@ fun into(jaxb: SimulerBeregningResponse): Simulering {
     )
 }
 
-fun intoV1(jaxb: SimulerBeregningResponse) = models.v1.Simulering(
-    oppsummeringer = listOf(),
-    detaljer = models.v1.SimuleringDetaljer(
-        gjelderId = "",
-        datoBeregnet = LocalDate.now(),
-        totalBeløp = 1,
-        perioder = listOf()
-    )
-)
-
 private fun into(periode: BeregningsPeriode): Simuleringsperiode {
     return Simuleringsperiode(
         fom = LocalDate.parse(periode.periodeFom),
