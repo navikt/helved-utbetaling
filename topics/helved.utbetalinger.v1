@@ -11,9 +11,6 @@ spec:
     cleanupPolicy: compact
     partitions: 3
   acl:
-    - team: helved
-      application: abetal
+    - application: abetal
       access: readwrite
-    - team: helved
-      application: urskog
-      access: readwrite
+

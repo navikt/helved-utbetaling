@@ -12,12 +12,11 @@ spec:
     retentionHours: 168
     partitions: 3
   acl:
-    - team: helved
-      application: abetal
-      access: readwrite
-    - team: helved
-      application: urskog
-      access: readwrite
-    - team: helved
-      application: helved-performance
+    - application: abetal
+      access: write
+    - application: urskog
+      access: write
+    - application: utsjekk
+      access: read
+    - application: helved-performance
       access: read

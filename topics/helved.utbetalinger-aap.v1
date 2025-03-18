@@ -1,19 +1,20 @@
 apiVersion: kafka.nais.io/v1
 kind: Topic
 metadata:
-  name: oppdrag.v1
+  name: utbetalinger-aap.v1
   namespace: helved
   labels:
     team: helved
 spec:
   pool: {{kafkapool}}
   config:
-    cleanupPolicy: compact
+    cleanupPolicy: compact,delete
+    retentionHours: 168
     partitions: 3
   acl:
     - application: abetal
-      access: write
-    - application: urskog
       access: read
     - application: utsjekk
+      access: write
+    - application: helved-performance
       access: write
