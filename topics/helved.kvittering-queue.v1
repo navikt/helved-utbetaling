@@ -12,5 +12,6 @@ spec:
     retentionHours: 168
     partitions: 3
   acl:
-    - application: urskog
+    - team: helved
+      application: urskog
       access: readwrite
