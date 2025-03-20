@@ -22,7 +22,7 @@ object OppdragService {
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = if(new.førsteUtbetalingPåSak) "NY" else "ENDR"
-            kodeFagomraade = Fagsystem.from(new.stønad).name
+            kodeFagomraade = Fagsystem.from(new.stønad).fagområde
             fagsystemId = new.sakId.id
             utbetFrekvens = "MND"
             oppdragGjelderId = new.personident.ident
@@ -31,7 +31,7 @@ object OppdragService {
             avstemming115 = objectFactory.createAvstemming115().apply {
                 val avstemmingstidspunkt = LocalDateTime.now().format()
                 nokkelAvstemming = avstemmingstidspunkt
-                kodeKomponent = Fagsystem.from(new.stønad).name
+                kodeKomponent = Fagsystem.from(new.stønad).fagområde
                 tidspktMelding = avstemmingstidspunkt
             }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
@@ -54,7 +54,7 @@ object OppdragService {
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = "ENDR"
-            kodeFagomraade = Fagsystem.from(new.stønad).name
+            kodeFagomraade = Fagsystem.from(new.stønad).fagområde
             fagsystemId = new.sakId.id
             utbetFrekvens = "MND"
             oppdragGjelderId = new.personident.ident
@@ -86,7 +86,7 @@ object OppdragService {
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = "ENDR"
-            kodeFagomraade = Fagsystem.from(new.stønad).name
+            kodeFagomraade = Fagsystem.from(new.stønad).fagområde
             fagsystemId = new.sakId.id
             utbetFrekvens = "MND"
             oppdragGjelderId = new.personident.ident
