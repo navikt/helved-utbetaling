@@ -6,6 +6,7 @@ import TestData.dto.api.simuleringResponse
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import utsjekk.simulering.TestCaser.etterbetaling
 import utsjekk.simulering.TestCaser.feilutbetaling
@@ -21,6 +22,21 @@ class SimuleringGeneratorTest {
     private val Int.apr: LocalDate get() = LocalDate.of(2024, 4, this)
     private val Int.may: LocalDate get() = LocalDate.of(2024, 5, this)
     private val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
+
+    @Disabled
+    @Test
+    fun `oppsummering som ikke tar høyde for feiljustering påfølgende måned - 20-03-2025`() {
+        val json = """
+            {"gjelderId":"13069432055","datoBeregnet":"2025-03-20","totalBelop":2335,"perioder":[{"fom":"2025-03-03","tom":"2025-03-03","utbetalinger":[{"fagområde":"TILLST","fagSystemId":"717","utbetalesTilId":"13069432055","forfall":"2025-03-20","feilkonto":false,"detaljer":[{"type":"YTEL","faktiskFom":"2025-03-03","faktiskTom":"2025-03-03","belop":1085,"sats":1085.0,"satstype":"DAG","klassekode":"TSTBASISP4-OP","trekkVedtakId":null,"refunderesOrgNr":null},{"type":"FEIL","faktiskFom":"2025-03-03","faktiskTom":"2025-03-03","belop":1024,"sats":0.0,"satstype":null,"klassekode":"KL_KODE_JUST_ARBYT","trekkVedtakId":null,"refunderesOrgNr":null},{"type":"YTEL","faktiskFom":"2025-03-03","faktiskTom":"2025-03-03","belop":-2109,"sats":2109.0,"satstype":"DAG","klassekode":"TSTBASISP4-OP","trekkVedtakId":null,"refunderesOrgNr":null}]}]},{"fom":"2025-04-01","tom":"2025-04-01","utbetalinger":[{"fagområde":"TILLST","fagSystemId":"717","utbetalesTilId":"13069432055","forfall":"2025-03-20","feilkonto":false,"detaljer":[{"type":"FEIL","faktiskFom":"2025-04-01","faktiskTom":"2025-04-01","belop":-1024,"sats":0.0,"satstype":null,"klassekode":"KL_KODE_JUST_ARBYT","trekkVedtakId":null,"refunderesOrgNr":null},{"type":"YTEL","faktiskFom":"2025-04-01","faktiskTom":"2025-04-01","belop":1137,"sats":1137.0,"satstype":"DAG","klassekode":"TSTBASISP4-OP","trekkVedtakId":null,"refunderesOrgNr":null}]}]},{"fom":"2025-05-01","tom":"2025-05-01","utbetalinger":[{"fagområde":"TILLST","fagSystemId":"717","utbetalesTilId":"13069432055","forfall":"2025-03-20","feilkonto":false,"detaljer":[{"type":"YTEL","faktiskFom":"2025-05-01","faktiskTom":"2025-05-01","belop":1137,"sats":1137.0,"satstype":"DAG","klassekode":"TSTBASISP4-OP","trekkVedtakId":null,"refunderesOrgNr":null}]}]},{"fom":"2025-06-02","tom":"2025-06-02","utbetalinger":[{"fagområde":"TILLST","fagSystemId":"717","utbetalesTilId":"13069432055","forfall":"2025-03-20","feilkonto":false,"detaljer":[{"type":"YTEL","faktiskFom":"2025-06-02","faktiskTom":"2025-06-02","belop":1085,"sats":1085.0,"satstype":"DAG","klassekode":"TSTBASISP4-OP","trekkVedtakId":null,"refunderesOrgNr":null}]}]}]}
+        """.trimIndent()
+        val deserialisert =
+            objectMapper.readValue(json, client.SimuleringResponse::class.java)
+        val detaljer = SimuleringDetaljer.from(deserialisert, Fagsystem.TILLEGGSSTØNADER)
+        val oppsummering = OppsummeringGenerator.lagOppsummering(detaljer)
+        /* TODO(): Fiks denne
+        *  Her forventer vi at bruker skal få en justering for april hvor ny utbetaling blir 1137 - 1024 = 113
+        */
+    }
 
     @Test
     fun `bugfiks 11-09-2024 - oppsummering av ny utbetaling`() {
