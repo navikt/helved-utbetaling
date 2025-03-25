@@ -26,7 +26,7 @@ dependencies {
 
     // https://github.com/Unleash/unleash-client-java/issues/275
     // 10.0.1 bruker glibc (ikke alpines musl)
-    implementation("io.getunleash:unleash-client-java:9.3.2") 
+    implementation("io.getunleash:unleash-client-java:10.2.1") 
 
     implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
