@@ -43,8 +43,11 @@ fun Application.abetal(
         registry = prometheus,
     )
 
+    val stateStore = kafka.getStore(Stores.utbetalinger)
+
     routing {
         probes(kafka, prometheus)
+        api(stateStore)
     }
 }
 

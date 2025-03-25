@@ -22,6 +22,10 @@ object Tables {
     val saker = Table(Topics.saker)
 }
 
+object Stores {
+    val utbetalinger = Store(Tables.utbetalinger)
+}
+
 fun createTopology(): Topology = topology {
     val utbetalinger = consume(Tables.utbetalinger)
     val saker = consume(Tables.saker)
