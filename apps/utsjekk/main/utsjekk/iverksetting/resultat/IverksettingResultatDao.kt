@@ -7,6 +7,7 @@ import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import utsjekk.appLog
 import utsjekk.iverksetting.*
+import utsjekk.utbetaling.UtbetalingId
 import java.sql.ResultSet
 import kotlin.coroutines.coroutineContext
 
@@ -18,10 +19,10 @@ data class IverksettingResultatDao(
     val tilkjentYtelseForUtbetaling: TilkjentYtelse? = null,
     val oppdragResultat: OppdragResultat? = null,
 ) {
-    suspend fun insert() {
+    suspend fun insert(uid: UtbetalingId) {
         val sql = """
-            INSERT INTO $TABLE_NAME (fagsystem, sakId, behandling_id, iverksetting_id, tilkjentytelseforutbetaling, oppdragresultat )
-            VALUES (?,?,?,?,to_json(?::json),to_json(?::json))
+            INSERT INTO $TABLE_NAME (fagsystem, sakId, behandling_id, iverksetting_id, tilkjentytelseforutbetaling, oppdragresultat, utbetaling_id)
+            VALUES (?,?,?,?,to_json(?::json),to_json(?::json), ?)
         """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, fagsystem.name)
@@ -30,7 +31,24 @@ data class IverksettingResultatDao(
             stmt.setString(4, iverksettingId?.id)
             stmt.setString(5, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
             stmt.setString(6, objectMapper.writeValueAsString(oppdragResultat))
+            stmt.setObject(7, uid.id)
 
+            appLog.debug(sql)
+            secureLog.debug(stmt.toString())
+            stmt.executeUpdate()
+        }
+    }
+
+    suspend fun update(uid: UtbetalingId) {
+        val sql = """
+                UPDATE $TABLE_NAME 
+                SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
+                WHERE utbetaling_id = ?
+            """.trimIndent()
+        coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
+            stmt.setString(2, objectMapper.writeValueAsString(oppdragResultat))
+            stmt.setObject(3, uid.id)
             appLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
@@ -107,6 +125,7 @@ data class IverksettingResultatDao(
                     where.iverksettingId?.let { append("iverksetting_id = ? AND ") }
                     where.tilkjentytelseforutbetaling?.let { append("tilkjentytelseforutbetaling = to_json(?::json) AND ") }
                     where.oppdragresultat?.let { append("oppdragresultat = to_json(?::json) AND ") }
+                    where.uid?.let { append("utbetaling_id = ? AND ") }
 
                     setLength(length - 4) // Remove dangling "AND "
                 }
@@ -124,6 +143,7 @@ data class IverksettingResultatDao(
                 where.iverksettingId?.let { stmt.setObject(position++, it.id) }
                 where.tilkjentytelseforutbetaling?.let { stmt.setString(position++, it.toJson()) }
                 where.oppdragresultat?.let { stmt.setString(position++, it.toJson()) }
+                where.uid?.let { stmt.setObject(position++, it.id) }
                 limit?.let { stmt.setInt(position++, it) }
 
                 appLog.debug(sql)
@@ -149,9 +169,10 @@ data class IverksettingResultatDao(
         var iverksettingId: IverksettingId? = null,
         var tilkjentytelseforutbetaling: TilkjentYtelse? = null,
         var oppdragresultat: OppdragResultat? = null,
+        var uid: UtbetalingId? = null,
     ) {
         fun any() = listOf(
-            fagsystem, sakId, behandlingId, iverksettingId, tilkjentytelseforutbetaling, oppdragresultat
+            fagsystem, sakId, behandlingId, iverksettingId, tilkjentytelseforutbetaling, oppdragresultat, uid
         ).any { it != null }
     }
 }

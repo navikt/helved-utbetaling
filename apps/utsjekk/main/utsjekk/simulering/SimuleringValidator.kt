@@ -5,12 +5,12 @@ import libs.postgres.Jdbc
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.badRequest
 import utsjekk.conflict
-import utsjekk.iverksetting.Iverksettinger
+import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.behandlingId
 import utsjekk.iverksetting.resultat.IverksettingResultater
 
-class SimuleringValidator(private val iverksettinger: Iverksettinger) {
+class SimuleringValidator(private val iverksettinger: IverksettingService) {
 
     suspend fun valider(simulering: Simulering) {
         withContext(Jdbc.context) {

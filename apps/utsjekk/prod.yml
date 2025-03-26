@@ -42,6 +42,7 @@ spec:
   leaderElection: true
   kafka:
     pool: nav-prod
+    streams: true
   envFrom:
     - secret: utsjekk-unleash-api-token
   env:

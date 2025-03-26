@@ -3,15 +3,15 @@ package utsjekk.utbetaling
 import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
-import libs.task.Tasks
 import libs.utils.Result
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import utsjekk.notFound
+import utsjekk.OppdragKafkaProducer
 import utsjekk.locked
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
+import utsjekk.notFound
+import utsjekk.utbetaling.abetal.OppdragService
 
-object UtbetalingService {
+class UtbetalingService(
+    private val oppdragProducer: OppdragKafkaProducer,
+) {
 
     /**
      * Legg til nytt utbetalingsoppdrag.
@@ -26,52 +26,12 @@ object UtbetalingService {
             }
         }
 
-        var forrigeId: PeriodeId? = null
-        val oppdrag = UtbetalingsoppdragDto(
-            uid = uid,
-            erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak,
-            fagsystem = FagsystemDto.from(utbetaling.stønad),
-            saksnummer = utbetaling.sakId.id,
-            aktør = utbetaling.personident.ident,
-            saksbehandlerId = utbetaling.saksbehandlerId.ident,
-            beslutterId = utbetaling.beslutterId.ident,
-            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-            brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
-            avvent = utbetaling.avvent?.let { avvent ->
-                AvventDto(
-                    fom = avvent.fom,
-                    tom = avvent.tom,
-                    overføres = avvent.overføres,
-                    årsak = avvent.årsak,
-                    feilregistrering = avvent.feilregistrering
-                )
-            },
-            utbetalingsperioder = utbetaling.perioder.mapIndexed { i, periode ->
-                val id = if(i == utbetaling.perioder.size - 1) utbetaling.lastPeriodeId else PeriodeId()
-
-                UtbetalingsperiodeDto(
-                    erEndringPåEksisterendePeriode = false,
-                    opphør = null,
-                    id = id.toString(),
-                    forrigePeriodeId = forrigeId?.toString().also { forrigeId = id},
-                    vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
-                    klassekode = klassekode(utbetaling.stønad),
-                    fom = periode.fom,
-                    tom = periode.tom,
-                    sats = periode.beløp,
-                    satstype = utbetaling.satstype,
-                    utbetalesTil = utbetaling.personident.ident,
-                    behandlingId = utbetaling.behandlingId.id,
-                    fastsattDagsats = periode.fastsattDagsats
-                )
-            }
-        )
+        // TODO: Avvent118
+        val oppdrag = OppdragService.opprett(utbetaling, erFørsteUtbetalingPåSak)
+        oppdragProducer.produce(uid, oppdrag)
 
         return withContext(Jdbc.context) {
             transaction {
-                Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
-                    objectMapper.writeValueAsString(it)
-                }
                 UtbetalingDao(utbetaling, Status.IKKE_PÅBEGYNT).insert(uid)
             }
         }
@@ -121,34 +81,13 @@ object UtbetalingService {
         existing.validateLockedFields(utbetaling)
         existing.validateMinimumChanges(utbetaling)
 
-        val oppdrag = UtbetalingsoppdragDto(
-            uid = uid,
-            erFørsteUtbetalingPåSak = false,
-            fagsystem = FagsystemDto.from(utbetaling.stønad),
-            saksnummer = utbetaling.sakId.id,
-            aktør = utbetaling.personident.ident,
-            saksbehandlerId = utbetaling.saksbehandlerId.ident,
-            beslutterId = utbetaling.beslutterId.ident,
-            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-            brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
-            avvent = utbetaling.avvent?.let { avvent ->
-                AvventDto(
-                    fom = avvent.fom,
-                    tom = avvent.tom,
-                    overføres = avvent.overføres,
-                    årsak = avvent.årsak,
-                    feilregistrering = avvent.feilregistrering
-                )
-            },
-            utbetalingsperioder = Utbetalingsperioder.utled(existing, utbetaling)
-        )
+        val oppdrag = OppdragService.update(utbetaling, existing)
+        oppdragProducer.produce(uid, oppdrag)
+
         return withContext(Jdbc.context) {
             transaction {
-                Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
-                    objectMapper.writeValueAsString(it)
-                }
-
-                val newLastPeriodeId = PeriodeId.decode(oppdrag.utbetalingsperioder.last().id)
+                // val newLastPeriodeId = PeriodeId.decode(oppdrag.utbetalingsperioder.last().id)
+                val newLastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId) // TODO: riktig?
                 UtbetalingDao(data = utbetaling.copy(lastPeriodeId = newLastPeriodeId)).insert(uid)
             }
         }
@@ -172,47 +111,11 @@ object UtbetalingService {
 
         existing.validateLockedFields(utbetaling)
 
-        val oppdrag = UtbetalingsoppdragDto(
-            uid = uid,
-            erFørsteUtbetalingPåSak = false,
-            fagsystem = FagsystemDto.from(utbetaling.stønad),
-            saksnummer = utbetaling.sakId.id,
-            aktør = utbetaling.personident.ident,
-            saksbehandlerId = utbetaling.saksbehandlerId.ident,
-            beslutterId = utbetaling.beslutterId.ident,
-            avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
-            brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
-            avvent = utbetaling.avvent?.let { avvent ->
-                AvventDto(
-                    fom = avvent.fom,
-                    tom = avvent.tom,
-                    overføres = avvent.overføres,
-                    årsak = avvent.årsak,
-                    feilregistrering = avvent.feilregistrering
-                )
-            },
-            utbetalingsperioder = listOf(utbetaling.perioder.maxBy { it.fom }.let { sistePeriode ->
-                UtbetalingsperiodeDto(
-                    erEndringPåEksisterendePeriode = true, // opphør er alltid en ENDR
-                    opphør = Opphør(utbetaling.perioder.minBy { it.fom }.fom),
-                    id = existing.lastPeriodeId.toString(), // endrer på eksisterende delytelseId
-                    vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
-                    klassekode = klassekode(utbetaling.stønad),
-                    fom = sistePeriode.fom,
-                    tom = sistePeriode.tom,
-                    sats = sistePeriode.beløp,
-                    satstype = utbetaling.satstype,
-                    utbetalesTil = utbetaling.personident.ident,
-                    behandlingId = utbetaling.behandlingId.id,
-                    fastsattDagsats = sistePeriode.fastsattDagsats,
-                )
-            })
-        )
+        val oppdrag = OppdragService.delete(utbetaling, existing)
+        oppdragProducer.produce(uid, oppdrag)
+
         return withContext(Jdbc.context) {
             transaction {
-                Tasks.create(libs.task.Kind.Utbetaling, oppdrag) {
-                    objectMapper.writeValueAsString(it)
-                }
                 UtbetalingDao.delete(uid)
             }
         }

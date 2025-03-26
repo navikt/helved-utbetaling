@@ -6,9 +6,11 @@ import libs.utils.secureLog
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import utsjekk.appLog
+import utsjekk.utbetaling.UtbetalingId
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
+import java.util.*
 import kotlin.coroutines.coroutineContext
 
 data class IverksettingDao(
@@ -16,15 +18,16 @@ data class IverksettingDao(
     val mottattTidspunkt: LocalDateTime,
 ) {
 
-    suspend fun insert() {
+    suspend fun insert(uid: UtbetalingId) {
         val sql = """
-            INSERT INTO $TABLE_NAME (behandling_id, data, mottatt_tidspunkt) 
-            VALUES (?, to_json(?::json), ?)
+            INSERT INTO $TABLE_NAME (behandling_id, data, mottatt_tidspunkt, utbetaling_id) 
+            VALUES (?, to_json(?::json), ?, ?)
         """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, data.behandlingId.id)
             stmt.setString(2, objectMapper.writeValueAsString(data))
             stmt.setTimestamp(3, Timestamp.valueOf(mottattTidspunkt))
+            stmt.setObject(4, uid.id)
 
             appLog.debug(sql)
             secureLog.debug(stmt.toString())
@@ -34,6 +37,42 @@ data class IverksettingDao(
 
     companion object {
         const val TABLE_NAME = "iverksetting"
+
+        suspend fun uid(where: Where.() -> Unit = { Where() }) : UtbetalingId? {
+            val where = Where().apply(where)
+
+            val sql = buildString {
+                append("SELECT utbetaling_id FROM $TABLE_NAME")
+
+                if (where.any()) {
+                    append(" WHERE ")
+                    where.behandlingId?.let { append("behandling_id = ? AND ") }
+                    where.sakId?.let { append("data -> 'fagsak' ->> 'fagsakId' = ? AND ") }
+                    where.iverksettingId?.let { append("data -> 'behandling' ->> 'iverksettingId' = ? AND ") }
+                    where.fagsystem?.let { append("data -> 'fagsak' ->> 'fagsystem' = ? AND ") }
+                    setLength(length - 4) // Remove dangling "AND "
+                }
+            }
+
+            // The posistion of the question marks in the sql must be relative to the position in the statement
+            var position = 1
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                where.behandlingId?.let { stmt.setString(position++, it.id) }
+                where.sakId?.let { stmt.setString(position++, it.id) }
+                where.iverksettingId?.let { stmt.setString(position++, it.id) }
+                where.fagsystem?.let { stmt.setString(position++, it.name) }
+
+                appLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().mapNotNull { rs ->
+                    rs.getString("utbetaling_id")?.let { UtbetalingId(UUID.fromString(it)) }
+                }.singleOrNull()
+            }
+        }
+
+        private fun <T : Any> ResultSet.mapNotNull(block: (ResultSet) -> T?): List<T> =
+            sequence { while (next()) yield(block(this@mapNotNull)) }.toList().filterNotNull()
 
         suspend fun select(
             limit: Int? = null,

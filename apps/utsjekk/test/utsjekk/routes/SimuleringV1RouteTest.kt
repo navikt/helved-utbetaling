@@ -32,6 +32,7 @@ import utsjekk.iverksetting.OppdragResultat
 import utsjekk.iverksetting.RandomOSURId
 import utsjekk.iverksetting.SakId
 import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.utbetaling.UtbetalingId
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -164,10 +165,10 @@ class SimuleringRouteTest {
                 )
 
             transaction {
-                IverksettingDao(iverksetting, LocalDateTime.now()).insert()
+                IverksettingDao(iverksetting, LocalDateTime.now()).insert(UtbetalingId(UUID.randomUUID()))
             }
 
-            IverksettingResultater.opprett(iverksetting, OppdragResultat(OppdragStatus.KVITTERT_OK))
+            IverksettingResultater.opprett(iverksetting, UtbetalingId(UUID.randomUUID()), OppdragResultat(OppdragStatus.KVITTERT_OK))
             IverksettingResultater.oppdater(iverksetting, iverksetting.vedtak.tilkjentYtelse)
 
             val res =

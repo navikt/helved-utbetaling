@@ -17,6 +17,8 @@ import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.*
 import utsjekk.task.Status
+import utsjekk.utbetaling.UtbetalingId
+import utsjekk.utbetaling.UtbetalingService
 import java.time.LocalDateTime
 import java.util.*
 import java.io.File
@@ -32,7 +34,6 @@ fun main() {
 
 fun Application.testApp() {
     val config = TestRuntime.config
-    val metrics = telemetry()
 
     runBlocking {
         Jdbc.initialize(config.jdbc)
@@ -46,9 +47,7 @@ fun Application.testApp() {
         }
         appLog.info("setup database")
     }
-    val iverksettinger = iverksetting(TestRuntime.unleash, TestRuntime.kafka)
-    scheduler(config, iverksettinger, metrics)
-    routes(config, iverksettinger, metrics)
+    utsjekk(TestRuntime.config, TestRuntime.kafka, TestRuntime.unleash)
     testRouting()
 }
 
@@ -66,8 +65,8 @@ fun Application.testRouting() {
                     for (i in 1..numberOfTasks) {
                         val iverksetting = TestData.domain.iverksetting()
 
-                        iverksetting.dao().insert()
-                        iverksetting.resultatDao().insert()
+                        iverksetting.dao().insert(UtbetalingId(UUID.randomUUID()))
+                        iverksetting.resultatDao().insert(UtbetalingId(UUID.randomUUID()))
 
                         enTask(payload = iverksetting).insert()
                     }

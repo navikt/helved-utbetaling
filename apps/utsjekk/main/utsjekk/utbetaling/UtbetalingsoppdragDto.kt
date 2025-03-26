@@ -1,12 +1,19 @@
 package utsjekk.utbetaling
 
-import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.util.*
+import java.math.BigDecimal
+import javax.xml.datatype.DatatypeFactory
+import javax.xml.datatype.XMLGregorianCalendar
+import no.trygdeetaten.skjema.oppdrag.*
+import utsjekk.badRequest
 
 enum class FagsystemDto(val kode: String) {
-    DAGPENGER("DP"), // TODO: trenger ikke koden i denne appen
+    DAGPENGER("DP"),
     TILTAKSPENGER("TILTPENG"),
     TILLEGGSSTØNADER("TILLST"),
     AAP("AAP");
@@ -40,7 +47,7 @@ data class UtbetalingsperiodeDto(
     val erEndringPåEksisterendePeriode: Boolean,
     val id: String,
     val vedtaksdato: LocalDate,
-    val klassekode: String, // TODO: trenger ikke klassekode i denne appen
+    val klassekode: String,
     val fom: LocalDate,
     val tom: LocalDate,
     val sats: UInt,
@@ -63,4 +70,3 @@ data class AvventDto(
 )
 
 data class Opphør(val fom: LocalDate)
-

@@ -7,6 +7,7 @@ object IverksettingResultater {
 
     suspend fun opprett(
         iverksetting: Iverksetting,
+        uid: utsjekk.utbetaling.UtbetalingId,
         resultat: OppdragResultat?,
     ): IverksettingResultatDao {
         return transaction {
@@ -17,7 +18,7 @@ object IverksettingResultater {
                 iverksettingId = iverksetting.iverksettingId,
                 oppdragResultat = resultat,
             ).also {
-                it.insert()
+                it.insert(uid)
             }
         }
     }
@@ -33,14 +34,6 @@ object IverksettingResultater {
     suspend fun oppdater(iverksetting: Iverksetting, resultat: OppdragResultat) {
         transaction {
             hent(iverksetting)
-                .copy(oppdragResultat = resultat)
-                .update()
-        }
-    }
-
-    suspend fun oppdater(utbetalingId: UtbetalingId, resultat: OppdragResultat) {
-        transaction {
-            hent(utbetalingId)
                 .copy(oppdragResultat = resultat)
                 .update()
         }

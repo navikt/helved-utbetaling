@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import utsjekk.ApiError
+import utsjekk.utbetaling.UtbetalingId
 import java.time.LocalDateTime
+import java.util.*
 
 class IverksettingValidatorTest {
 
@@ -20,7 +22,7 @@ class IverksettingValidatorTest {
         val now = LocalDateTime.now()
 
         transaction {
-            IverksettingDao(forrigeIverksetting, now).insert()
+            IverksettingDao(forrigeIverksetting, now).insert(UtbetalingId(UUID.randomUUID()))
         }
 
 
@@ -46,7 +48,7 @@ class IverksettingValidatorTest {
                 TestData.dao.iverksetting(
                     mottattTidspunkt = LocalDateTime.now().minusDays(2),
                     iverksetting = TestData.domain.iverksetting(sakId = SakId(RandomOSURId.generate())),
-                ).also { it.insert() }
+                ).also { it.insert(UtbetalingId(UUID.randomUUID())) }
             }
 
             val forrigeIverksetting = TestData.domain.iverksetting(
@@ -79,7 +81,7 @@ class IverksettingValidatorTest {
                         behandlingId = BehandlingId(RandomOSURId.generate()),
                         iverksettingId = IverksettingId(RandomOSURId.generate()),
                     ),
-                ).also { it.insert() }
+                ).also { it.insert(UtbetalingId(UUID.randomUUID())) }
             }
 
             val forrigeIverksetting = TestData.domain.iverksetting(
@@ -109,7 +111,7 @@ class IverksettingValidatorTest {
     fun `skal få BAD_REQUEST når forrige iverksetting ikke er satt og vi har mottatt iverksetting på saken før`() =
         runTest(TestRuntime.context) {
             val sisteMottattDao = transaction {
-                TestData.dao.iverksetting().also { it.insert() }
+                TestData.dao.iverksetting().also { it.insert(UtbetalingId(UUID.randomUUID())) }
             }
 
             val iverksetting = TestData.domain.iverksetting(
@@ -151,7 +153,7 @@ class IverksettingValidatorTest {
                     oppdragStatus = OppdragStatus.KVITTERT_MED_MANGLER,
                 )
             ).also {
-                it.insert()
+                it.insert(UtbetalingId(UUID.randomUUID()))
             }
         }
 

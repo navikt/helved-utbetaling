@@ -1,15 +1,15 @@
 package utsjekk
 
-import libs.auth.AzureConfig
-import libs.kafka.vanilla.KafkaConfig
-import libs.postgres.JdbcConfig
-import libs.utils.env
 import java.net.URI
 import java.net.URL
+import libs.auth.AzureConfig
+import libs.kafka.StreamsConfig
+import libs.postgres.JdbcConfig
+import libs.utils.env
 
 data class Config(
     val jdbc: JdbcConfig = JdbcConfig(),
-    val kafka: KafkaConfig = KafkaConfig(),
+    val kafka: StreamsConfig = StreamsConfig(),
     val azure: AzureConfig = AzureConfig(),
     val oppdrag: OppdragConfig = OppdragConfig(),
     val simulering: SimuleringConfig = SimuleringConfig(),
