@@ -11,7 +11,9 @@ import libs.ws.SoapConfig
 import libs.ws.StsConfig
 
 data class Config(
-    val kafka: StreamsConfig = StreamsConfig(),
+    val kafka: StreamsConfig = StreamsConfig(
+        applicationId = "${env<String>("KAFKA_STREAMS_APPLICATION_ID")}v1"
+    ),
     val oppdrag: OppdragConfig = OppdragConfig(),
     val mq: MQConfig = MQConfig(
         host = env("MQ_HOSTNAME"),
