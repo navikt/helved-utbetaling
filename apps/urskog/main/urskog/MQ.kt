@@ -88,7 +88,7 @@ data class OppdragForeignKey(
 ) {
     companion object {
         fun from(oppdrag: Oppdrag) = OppdragForeignKey(
-            fagsystem = Fagsystem.valueOf(oppdrag.oppdrag110.kodeFagomraade),
+            fagsystem = Fagsystem.fromFagområde(oppdrag.oppdrag110.kodeFagomraade),
             sakId = SakId(oppdrag.oppdrag110.fagsystemId), 
             behandlingId = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.let(::BehandlingId)
         )
