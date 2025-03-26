@@ -1,12 +1,14 @@
 package utsjekk.task
 
 import libs.task.TaskDao
-import utsjekk.avstemming.AvstemmingTaskStrategy
 import utsjekk.avstemming.erHelligdag
-import utsjekk.iverksetting.IverksettingTaskStrategy
-import utsjekk.status.StatusTaskStrategy
-import utsjekk.utbetaling.UtbetalingTaskStrategy
-import utsjekk.utbetaling.UtbetalingStatusTaskStrategy
+import no.nav.utsjekk.kontrakter.felles.objectMapper
+import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import com.fasterxml.jackson.module.kotlin.readValue
+// import utsjekk.iverksetting.IverksettingTaskStrategy
+// import utsjekk.status.StatusTaskStrategy
+// import utsjekk.utbetaling.UtbetalingTaskStrategy
+// import utsjekk.utbetaling.UtbetalingStatusTaskStrategy
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.math.min
@@ -75,9 +77,55 @@ T}
 enum class Kind(
     val metadataStrategy: MetadataStrategy,
 ) {
-    Avstemming(metadataStrategy = AvstemmingTaskStrategy::metadataStrategy),
-    Iverksetting(metadataStrategy = IverksettingTaskStrategy::metadataStrategy),
-    Utbetaling(metadataStrategy = UtbetalingTaskStrategy::metadataStrategy),
-    StatusUtbetaling(metadataStrategy = UtbetalingStatusTaskStrategy::metadataStrategy),
-    SjekkStatus(metadataStrategy = StatusTaskStrategy::metadataStrategy),
+    Avstemming(metadataStrategy = TaskMetadataStrategy::avstemming),
+    Iverksetting(metadataStrategy = TaskMetadataStrategy::iverksetting),
+    Utbetaling(metadataStrategy = TaskMetadataStrategy::utbetaling),
+    StatusUtbetaling(metadataStrategy = TaskMetadataStrategy::utbetalingStatus),
+    SjekkStatus(metadataStrategy = TaskMetadataStrategy::status),
 }
+
+private object TaskMetadataStrategy {
+    fun iverksetting(payload: String): Map<String, String> {
+        val iverksetting = objectMapper.readValue<utsjekk.iverksetting.Iverksetting>(payload)
+        return mapOf(
+            "sakId" to iverksetting.fagsak.fagsakId.id,
+            "behandlingId" to iverksetting.behandling.behandlingId.id,
+            "iverksettingId" to iverksetting.behandling.iverksettingId?.id.toString(),
+            "fagsystem" to iverksetting.fagsak.fagsystem.name,
+        )
+    }
+    fun avstemming(payload: String): Map<String, String> {
+        val grensesnittavstemming = objectMapper.readValue<GrensesnittavstemmingRequest>(payload)
+        return mapOf(
+            "fagsystem" to grensesnittavstemming.fagsystem.name,
+            "fra" to grensesnittavstemming.fra.toString(),
+            "til" to grensesnittavstemming.til.toString(),
+        )
+    }
+    fun utbetaling(payload: String): Map<String, String> {
+        val utbetaling = objectMapper.readValue<utsjekk.utbetaling.UtbetalingsoppdragDto>(payload)
+        return mapOf(
+            "sakId" to utbetaling.saksnummer,
+            "behandlingId" to utbetaling.utbetalingsperioder.maxBy { it.fom }.behandlingId,
+            "iverksettingId" to null.toString(),
+            "fagsystem" to utbetaling.fagsystem.name,
+        )
+    }
+    fun utbetalingStatus(payload: String): Map<String, String> {
+        val uid = objectMapper.readValue<utsjekk.utbetaling.UtbetalingId>(payload)
+        return mapOf(
+            "utbetalingId" to uid.id.toString(),
+        )
+    }
+    fun status(payload: String): Map<String, String> {
+        val oppdragIdDto = objectMapper.readValue<no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto>(payload)
+        return mapOf(
+            "sakId" to oppdragIdDto.sakId,
+            "behandlingId" to oppdragIdDto.behandlingId,
+            "iverksettingId" to oppdragIdDto.iverksettingId.toString(),
+            "fagsystem" to oppdragIdDto.fagsystem.name,
+        )
+    }
+}
+
+

@@ -1,24 +1,24 @@
 package utsjekk.iverksetting
 
 import kotlinx.coroutines.withContext
-import libs.kafka.vanilla.Kafka
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
-import libs.task.Tasks
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
-import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.FeatureToggles
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.iverksetting.abetal.OppdragService
 import utsjekk.unavailable
+import utsjekk.OppdragKafkaProducer
+import utsjekk.utbetaling.UtbetalingId
+import java.util.UUID
 import java.time.LocalDateTime
 
-class Iverksettinger(
+class IverksettingService(
     private val toggles: FeatureToggles,
-    private val statusProducer: Kafka<StatusEndretMelding>,
+    private val oppdragProducer: OppdragKafkaProducer,
 ) {
     suspend fun valider(iverksetting: Iverksetting) {
         withContext(Jdbc.context) {
@@ -40,39 +40,22 @@ class Iverksettinger(
         withContext(Jdbc.context) {
             transaction {
                 val now = LocalDateTime.now()
-
-                IverksettingDao(iverksetting, now).insert()
-
-                IverksettingResultater.opprett(iverksetting, resultat = null)
-
-                Tasks.create(libs.task.Kind.Iverksetting, iverksetting) {
-                    objectMapper.writeValueAsString(it)
+                val uid = UtbetalingId(UUID.randomUUID())
+                IverksettingDao(iverksetting, now).insert(uid)
+                IverksettingResultater.opprett(iverksetting, uid, resultat = null)
+                
+                when (val oppdrag = OppdragService.create(iverksetting)) {
+                    null -> {
+                        IverksettingResultater.oppdater(
+                            iverksetting = iverksetting,
+                            resultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING),
+                        )
+                    }
+                    else -> {
+                        oppdragProducer.produce(uid, oppdrag)
+                    }
                 }
             }
-        }
-    }
-
-    suspend fun publiserStatusmelding(iverksetting: Iverksetting) {
-        val status = utledStatus(
-            fagsystem = iverksetting.fagsak.fagsystem,
-            sakId = iverksetting.sakId,
-            behandlingId = iverksetting.behandlingId,
-            iverksettingId = iverksetting.iverksettingId,
-        )
-
-        if (status != null) {
-            val message = StatusEndretMelding(
-                sakId = iverksetting.sakId.id,
-                behandlingId = iverksetting.behandlingId.id,
-                iverksettingId = iverksetting.iverksettingId?.id,
-                fagsystem = iverksetting.fagsak.fagsystem,
-                status = status,
-            )
-
-            statusProducer.produce(
-                key = iverksetting.søker.personident,
-                value = message,
-            )
         }
     }
 

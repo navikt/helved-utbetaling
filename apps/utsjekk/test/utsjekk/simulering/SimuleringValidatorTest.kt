@@ -20,7 +20,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.utbetaling.UtbetalingId
 import java.time.LocalDateTime
+import java.util.*
 
 class SimuleringValidatorTest {
     @Test
@@ -34,10 +36,10 @@ class SimuleringValidatorTest {
                 forrigeIverksettingId = iverksetting1.iverksettingId,
             )
             transaction {
-                IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert()
-                IverksettingDao(iverksetting2, LocalDateTime.now()).insert()
+                IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert(UtbetalingId(UUID.randomUUID()))
+                IverksettingDao(iverksetting2, LocalDateTime.now()).insert(UtbetalingId(UUID.randomUUID()))
             }
-            IverksettingResultater.opprett(iverksetting1, OppdragResultat(OppdragStatus.KVITTERT_OK))
+            IverksettingResultater.opprett(iverksetting1,UtbetalingId(UUID.randomUUID()),  OppdragResultat(OppdragStatus.KVITTERT_OK))
             IverksettingResultater.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
 
             val res = httpClient.post("/api/simulering/v2") {
@@ -81,10 +83,10 @@ class SimuleringValidatorTest {
                 forrigeIverksettingId = IverksettingId("abc"),
             )
             transaction {
-                IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert()
-                IverksettingDao(iverksetting2, LocalDateTime.now()).insert()
+                IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert(UtbetalingId(UUID.randomUUID()))
+                IverksettingDao(iverksetting2, LocalDateTime.now()).insert(UtbetalingId(UUID.randomUUID()))
             }
-            IverksettingResultater.opprett(iverksetting1, OppdragResultat(OppdragStatus.KVITTERT_OK))
+            IverksettingResultater.opprett(iverksetting1, UtbetalingId(UUID.randomUUID()), OppdragResultat(OppdragStatus.KVITTERT_OK))
             IverksettingResultater.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
 
             val res = httpClient.post("/api/simulering/v2") {
@@ -128,10 +130,10 @@ class SimuleringValidatorTest {
                 forrigeIverksettingId = iverksetting1.iverksettingId,
             )
             transaction {
-                IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert()
-                IverksettingDao(iverksetting2, LocalDateTime.now()).insert()
+                IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert(UtbetalingId(UUID.randomUUID()))
+                IverksettingDao(iverksetting2, LocalDateTime.now()).insert(UtbetalingId(UUID.randomUUID()))
             }
-            IverksettingResultater.opprett(iverksetting1, OppdragResultat(OppdragStatus.KVITTERT_OK))
+            IverksettingResultater.opprett(iverksetting1, UtbetalingId(UUID.randomUUID()), OppdragResultat(OppdragStatus.KVITTERT_OK))
             IverksettingResultater.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
 
             val res = httpClient.post("/api/simulering/v2") {
@@ -174,8 +176,8 @@ class SimuleringValidatorTest {
             forrigeIverksettingId = iverksetting1.iverksettingId,
         )
         transaction {
-            IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert()
-            IverksettingDao(iverksetting2, LocalDateTime.now()).insert()
+            IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert(UtbetalingId(UUID.randomUUID()))
+            IverksettingDao(iverksetting2, LocalDateTime.now()).insert(UtbetalingId(UUID.randomUUID()))
         }
 
         val res = httpClient.post("/api/simulering/v2") {

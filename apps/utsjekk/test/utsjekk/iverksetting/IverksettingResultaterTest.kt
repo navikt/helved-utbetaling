@@ -11,13 +11,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.utbetaling.UtbetalingId
+import java.util.*
 
 class IverksettingResultaterTest {
 
     @Test
     fun `kan opprette tomt resultat`() = runTest(TestRuntime.context) {
         val iverksetting = TestData.domain.iverksetting()
-        IverksettingResultater.opprett(iverksetting, null)
+        IverksettingResultater.opprett(iverksetting, UtbetalingId(UUID.randomUUID()), null)
 
         val resultater = transaction {
             IverksettingResultatDao.select {
@@ -49,7 +51,7 @@ class IverksettingResultaterTest {
                 iverksettingId = iverksetting.iverksettingId,
                 tilkjentYtelseForUtbetaling = null,
                 oppdragResultat = OppdragResultat(OppdragStatus.KVITTERT_OK)
-            ).insert()
+            ).insert(UtbetalingId(UUID.randomUUID()))
         }
 
         val resultat = IverksettingResultater.hent(iverksetting)
@@ -80,7 +82,7 @@ class IverksettingResultaterTest {
                 iverksettingId = forrige.iverksettingId,
                 tilkjentYtelseForUtbetaling = null,
                 oppdragResultat = OppdragResultat(OppdragStatus.KVITTERT_OK)
-            ).insert()
+            ).insert(UtbetalingId(UUID.randomUUID()))
         }
 
         val resultat = IverksettingResultater.hentForrige(nyeste)
@@ -100,7 +102,7 @@ class IverksettingResultaterTest {
                 iverksettingId = iverksetting.iverksettingId,
                 tilkjentYtelseForUtbetaling = null,
                 oppdragResultat = null,
-            ).insert()
+            ).insert(UtbetalingId(UUID.randomUUID()))
         }
 
         assertNull(IverksettingResultater.hent(iverksetting).oppdragResultat)
@@ -123,7 +125,7 @@ class IverksettingResultaterTest {
                 iverksettingId = iverksetting.iverksettingId,
                 tilkjentYtelseForUtbetaling = null,
                 oppdragResultat = null,
-            ).insert()
+            ).insert(UtbetalingId(UUID.randomUUID()))
         }
 
         assertNull(IverksettingResultater.hent(iverksetting).tilkjentYtelseForUtbetaling)

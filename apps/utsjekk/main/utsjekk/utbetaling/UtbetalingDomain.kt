@@ -214,11 +214,11 @@ fun List<Utbetalingsperiode>.betalendeEnhet(): NavEnhet? {
     return sortedBy { it.tom }.find { it.betalendeEnhet != null }?.betalendeEnhet
 }
 
-enum class Satstype {
-    DAG,
-    VIRKEDAG, // TODO: rename, skal disse hete det samme som PeriodeType?
-    MND,
-    ENGANGS;
+enum class Satstype(val kode: String) {
+    DAG("DAG7"),
+    VIRKEDAG("DAG"), // TODO: rename, skal disse hete det samme som PeriodeType?
+    MND("MND"),
+    ENGANGS("ENG");
 
     companion object {
         fun from(type: PeriodeType) = when (type) {

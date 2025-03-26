@@ -8,15 +8,12 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.testing.*
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import libs.jdbc.PostgresContainer
+import libs.kafka.*
 import libs.postgres.Jdbc
-import libs.postgres.Migrator
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
@@ -26,7 +23,11 @@ import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.*
 import utsjekk.utbetaling.UtbetalingDao
-import java.io.File
+
+object TestTopics {
+    val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
+    val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
+}
 
 object TestRuntime : AutoCloseable {
     init {
@@ -42,7 +43,7 @@ object TestRuntime : AutoCloseable {
     val simulering = SimuleringFake()
     val unleash = UnleashFake()
     val elector = LeaderElectorFake()
-    val kafka: KafkaFake = KafkaFake()
+    val kafka = StreamsMock()
     val jdbc = Jdbc.initialize(postgres.config)
     val context = CoroutineDatasource(jdbc)
 
@@ -53,7 +54,7 @@ object TestRuntime : AutoCloseable {
             azure = azure.config,
             jdbc = postgres.config,
             unleash = UnleashFake.config,
-            kafka = kafka.config,
+            kafka = StreamsConfig("", "", SslConfig("", "", "")),
             electorUrl = elector.url
         )
     }
@@ -87,7 +88,7 @@ object TestRuntime : AutoCloseable {
         oppdrag.close()
         simulering.close()
         azure.close()
-        kafka.close()
+        // kafka.close()
     }
 }
 
@@ -99,16 +100,7 @@ val NettyApplicationEngine.port: Int
 private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
-            runBlocking {
-                withContext(TestRuntime.context) {
-                    Migrator(File("migrations")).migrate()
-                }
-            }
-            val config = TestRuntime.config
-            val metrics = telemetry()
-            val iverksettinger = iverksetting(TestRuntime.unleash, TestRuntime.kafka)
-            scheduler(config, iverksettinger, metrics)
-            routes(config, iverksettinger, metrics)
+            utsjekk(TestRuntime.config, TestRuntime.kafka, TestRuntime.unleash)
         }
     }
 }
@@ -136,6 +128,7 @@ fun <T> awaitDatabase(timeoutMs: Long = 3_000, query: suspend () -> T?): T? =
                 withContext(TestRuntime.context + Dispatchers.IO) {
                     while (true) transaction {
                         query()?.let { send(it) }
+                        delay(50)
                     }
                 }
             }.firstOrNull()

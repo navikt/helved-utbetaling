@@ -21,7 +21,10 @@ import utsjekk.utbetaling.simulering.SimuleringService
 import java.util.UUID
 
 // TODO: valider at stønad (enum) tilhører AZP (claims)
-fun Route.utbetalingRoute(simuleringService: SimuleringService) {
+fun Route.utbetalingRoute(
+    simuleringService: SimuleringService,
+    utbetalingService: UtbetalingService,
+) {
 
     route("/utbetalinger/{uid}") {
 
@@ -34,7 +37,7 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
             val domain = Utbetaling.from(dto)
 
-            UtbetalingService.create(uid, domain).onFailure {
+            utbetalingService.create(uid, domain).onFailure {
                 when (it) {
                     DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
                     DatabaseError.Unknown -> internalServerError("unknown database error")
@@ -50,7 +53,7 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
                 ?.let(::UtbetalingId)
                 ?: badRequest(msg = "missing path param", field = "uid")
 
-            val dto = UtbetalingService.read(uid)
+            val dto = utbetalingService.read(uid)
                 ?.let(UtbetalingApi::from)
                 ?: notFound(msg = "Fant ikke utbetaling", field = "uid")
 
@@ -63,7 +66,7 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
                 ?.let(::UtbetalingId)
                 ?: badRequest(msg = "missing path param", field = "uid")
 
-            val dto = UtbetalingService.status(uid)
+            val dto = utbetalingService.status(uid)
 
             call.respond(HttpStatusCode.OK, dto)
         }
@@ -75,10 +78,10 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
                 ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
-            val existing = UtbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
+            val existing = utbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
             val domain = Utbetaling.from(dto, existing.lastPeriodeId)
 
-            UtbetalingService.update(uid, domain).onFailure {
+            utbetalingService.update(uid, domain).onFailure {
                 when (it) {
                     DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
                     DatabaseError.Unknown -> internalServerError("unknown database error")
@@ -94,10 +97,10 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
                 ?: badRequest(msg = "missing path param", field = "uid")
 
             val dto = call.receive<UtbetalingApi>().also { it.validate() }
-            val existing = UtbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
+            val existing = utbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
             val domain = Utbetaling.from(dto, existing.lastPeriodeId)
 
-            UtbetalingService.delete(uid, domain).onFailure {
+            utbetalingService.delete(uid, domain).onFailure {
                 when (it) {
                     DatabaseError.Conflict -> conflict("utbetaling already exists", "uid")
                     DatabaseError.Unknown -> internalServerError("unknown database error")
@@ -129,7 +132,7 @@ fun Route.utbetalingRoute(simuleringService: SimuleringService) {
 
                 val dto = call.receive<UtbetalingApi>().also { it.validate() }
                 val token = call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing")
-                val existing = UtbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
+                val existing = utbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
                 val domain = Utbetaling.from(dto, existing.lastPeriodeId)
                 val response = simuleringService.simulerDelete(uid, domain, token)
                 call.respond(HttpStatusCode.OK, response)

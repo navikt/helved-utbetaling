@@ -16,6 +16,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import java.util.UUID
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
 import libs.task.Kind
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.ApiError
 import utsjekk.DEFAULT_DOC_STR
+import utsjekk.Topics
 import utsjekk.iverksetting.RandomOSURId
 
 class UtbetalingRoutingTest {
@@ -357,13 +359,11 @@ class UtbetalingRoutingTest {
             assertEquals(HttpStatusCode.Created, it.status)
         }
 
-        val oppdragDto = Tasks.forKind(Kind.Utbetaling)
-            .map { objectMapper.readValue<UtbetalingsoppdragDto>(it.payload) }
-            .filter { it.uid.id == uid2 }
-            .maxBy { it.utbetalingsperioder.maxBy { it.vedtaksdato }.vedtaksdato }
-
-        assertFalse(oppdragDto.erFørsteUtbetalingPåSak)
-        //assertEquals(2u, oppdragDto.utbetalingsperioder.last().id)
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        assertEquals(0, oppdragTopic.uncommittedRecords().size)
+        val actual = oppdragTopic.history().singleOrNull { it.key() == uid2.toString() }?.value()
+        assertNotNull(actual)
+        assertEquals("ENDR", actual.oppdrag110.kodeEndring)
     }
 
     @Test
