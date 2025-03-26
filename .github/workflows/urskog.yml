@@ -2,15 +2,15 @@ name: urskog
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches: [ main ]
-  #   paths:
-  #     - 'apps/urskog/**'
-  #     - '.github/workflows/urskog.yml'
-  #     - 'build.gradle.kts'
-  #     - 'Dockerfile.streams'
-  #     - 'models/**'
-  #     - 'topics/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/urskog/**'
+      - '.github/workflows/urskog.yml'
+      - 'build.gradle.kts'
+      - 'Dockerfile.streams'
+      - 'models/**'
+      - 'topics/**'
 
 jobs:
   build:
