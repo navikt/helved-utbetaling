@@ -14,6 +14,7 @@ object TestConfig {
         simulering: SoapConfig,
     ): Config {
         val oppdrag = OppdragConfig(
+            avstemmingKø = MQQueue("DEV.QUEUE.3"),
             kvitteringsKø = MQQueue("DEV.QUEUE.2"),
             sendKø = MQQueue("DEV.QUEUE.1")
         )

@@ -12,11 +12,11 @@ val kontraktVersion = "1.0_20241216161508_0b702d7"
 
 dependencies {
     implementation(project(":models"))
+    implementation(project(":libs:kafka"))
 
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:job:$libVersion")
-    implementation("no.nav.helved:kafka:$libVersion")
     implementation("no.nav.helved:xml:$libVersion")
     implementation("no.nav.helved:task:$libVersion")
 
@@ -44,11 +44,11 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
 
     testImplementation(kotlin("test"))
+    testImplementation(project(":libs:kafka-test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    testImplementation("no.nav.helved:kafka-test:$libVersion")
     testImplementation("no.nav.helved:auth-test:$libVersion")
     testImplementation("no.nav.helved:jdbc-test:$libVersion")
 }

@@ -36,6 +36,9 @@ data class Config(
 data class OppdragConfig(
     val kvitteringsKø: MQQueue = MQQueue(env("MQ_OPPDRAG_KVITTERING_QUEUE")),
     val sendKø: MQQueue = MQQueue(env("MQ_OPPDRAG_QUEUE")),
+    val avstemmingKø: MQQueue = MQQueue(env("MQ_AVSTEMMING_QUEUE")).apply {
+        targetClient = 1 // Skru av JMS-headere, da OS ikke støtter disse for avstemming
+    }
 )
 
 data class ProxyConfig(
