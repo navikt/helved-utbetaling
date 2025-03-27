@@ -37,6 +37,7 @@ fun Application.urskog(
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     val oppdragProducer = OppdragMQProducer(config, mq)
+    val avstemProducer = AvstemmingMQProducer(config, mq)
     val simuleringService = SimuleringService(config)
 
     install(MicrometerMetrics) {
@@ -45,13 +46,12 @@ fun Application.urskog(
     }
 
     kafka.connect(
-        topology = createTopology(oppdragProducer, simuleringService),
+        topology = createTopology(oppdragProducer, avstemProducer, simuleringService),
         config = config.kafka,
         registry = prometheus,
     )
 
     val kvitteringQueueProducer = kafka.createProducer(config.kafka, Topics.kvitteringQueue) 
-    // val keystore = kafka.getStore(Stores.keystore)  
     val kvitteringConsumer = KvitteringMQConsumer(config, kvitteringQueueProducer, mq)
 
     monitor.subscribe(ApplicationStopping) { 

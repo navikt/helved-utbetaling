@@ -11,10 +11,10 @@ val libVersion = "3.1.93"
 
 dependencies {
     implementation(project(":models"))
+    implementation(project(":libs:kafka"))
 
-    implementation("no.nav.helved:utils:$libVersion")
-    implementation("no.nav.helved:kafka:$libVersion")
     implementation("no.nav.helved:xml:$libVersion")
+    implementation("no.nav.helved:utils:$libVersion")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
@@ -30,5 +30,6 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("org.apache.kafka:kafka-streams:3.9.0") // intercept StreamsBuilder
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    testImplementation("no.nav.helved:kafka-test:$libVersion")
+    testImplementation(project(":libs:kafka-test"))
+    // testImplementation("no.nav.helved:kafka-test:$libVersion")
 }

@@ -9,3 +9,8 @@ include(
     "models",
 )
 
+include(
+    "libs:kafka",
+    "libs:kafka-test",
+)
+

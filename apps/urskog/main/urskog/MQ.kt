@@ -11,13 +11,11 @@ import libs.utils.secureLog
 import libs.xml.XMLMapper
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import org.apache.kafka.clients.producer.*
 import net.logstash.logback.argument.StructuredArguments.kv
 
-class OppdragMQProducer(
-    private val config: Config,
-    mq: MQ,
-) {
+class OppdragMQProducer(private val config: Config, mq: MQ) {
     private val kvitteringQueue = config.oppdrag.kvitteringsKø
     private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
@@ -34,6 +32,23 @@ class OppdragMQProducer(
         }.onFailure {
             appLog.error("Feilet sending av oppdrag $fk")
             secureLog.error("Feilet sending av oppdrag $fk", it)
+        }.getOrThrow()
+    }
+}
+
+class AvstemmingMQProducer(private val config: Config, mq: MQ) {
+    private val producer = DefaultMQProducer(mq, config.oppdrag.avstemmingKø)
+    private val mapper: XMLMapper<Avstemmingsdata> = XMLMapper()
+
+    fun send(avstem: Avstemmingsdata) {
+        val xml = mapper.writeValueAsString(avstem)
+
+        runCatching {
+            producer.produce(xml)
+            appLog.info("Sender grensesnittavstemming til oppdrag")
+        }.onFailure {
+            appLog.error("Feil ved grensesnittavstemming")
+            secureLog.error("Feil ved grensesnittavstemming", it)
         }.getOrThrow()
     }
 }

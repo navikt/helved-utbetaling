@@ -265,14 +265,6 @@ enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
     AAP_UNDER_ARBEIDSAVKLARING("AAPUAA"),
 }
 
-fun LocalDate.nesteUkedag(): LocalDate {
-    var nesteDag = this.plusDays(1)
-    while (nesteDag.dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)) {
-        nesteDag = nesteDag.plusDays(1)
-    }
-    return nesteDag
-}
-
 fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetalingsperiode> {
     return sortedBy { it.fom }
         .groupBy { listOf(it.beløp, it.betalendeEnhet, it.fastsattDagsats) }

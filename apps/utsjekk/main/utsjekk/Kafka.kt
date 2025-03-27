@@ -32,9 +32,9 @@ fun createTopology(): Topology = topology {
             val uid = UtbetalingId(UUID.fromString(uid))
             runBlocking {
                 withContext(Jdbc.context) {
-                    transaction {
+                    val uDao = transaction {
                         // TODO: er alltid de som er null irrelevante?
-                        UtbetalingDao.findOrNull(uid, history = true)?.let { dao ->
+                        UtbetalingDao.findOrNull(uid, history = true)?.also { dao ->
                             val status = when (status.status) {
                                 Status.OK -> utsjekk.utbetaling.Status.OK
                                 Status.FEILET -> utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG
@@ -45,10 +45,10 @@ fun createTopology(): Topology = topology {
                         }
                     }
 
-                    transaction {
+                    val iDao = transaction {
                         IverksettingResultatDao
                             .select(1) { this.uid = uid }
-                            .singleOrNull()?.let { dao ->
+                            .singleOrNull()?.also { dao ->
                                 val status = when (status.status) {
                                     Status.OK -> OppdragStatus.KVITTERT_OK
                                     Status.FEILET -> OppdragStatus.KVITTERT_FUNKSJONELL_FEIL
@@ -57,6 +57,10 @@ fun createTopology(): Topology = topology {
                                 }
                                 dao.copy(oppdragResultat = OppdragResultat(status)).update(uid)
                             }
+                    }
+
+                    if (uDao == null && iDao == null) {
+                        secureLog.warn("Både db-tabell utbetaling og iverksettingsresultat mangler rad med uid ${uid.id}. Status: $status")
                     }
                 }
             }
