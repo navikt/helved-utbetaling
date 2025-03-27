@@ -71,7 +71,7 @@ object OppdragService {
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
             val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.satstype)
-            val opphørslinje = oppdragsLinje150(new, false, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
+            val opphørslinje = oppdragsLinje150(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
             if (opphørsdato != null) oppdragsLinje150s.add(opphørslinje)
             oppdragsLinje150s.addAll(nyeLinjer(new, prev, opphørsdato, false))
         }
@@ -174,7 +174,7 @@ private fun nyeLinjer(
         .filter { if (opphørsdato != null) it.fom >= opphørsdato else true }
         .map { p ->
             val pid = PeriodeId()
-            oppdragsLinje150(new, erFørsteUtbetalingPåSak, p, pid, sistePeriodeId, null).also {
+            oppdragsLinje150(new, false, p, pid, sistePeriodeId, null).also {
                 sistePeriodeId = pid
             }
         }
@@ -182,7 +182,7 @@ private fun nyeLinjer(
 
 private fun oppdragsLinje150(
     utbetaling: Utbetaling,
-    førsteUtbetalingPåSak: Boolean,
+    erEndringPåEksisterendePeriode: Boolean,
     periode: Utbetalingsperiode,
     periodeId: PeriodeId,
     forrigePeriodeId: PeriodeId?,
@@ -192,7 +192,7 @@ private fun oppdragsLinje150(
         attestantId = utbetaling.beslutterId.ident
     }
     return objectFactory.createOppdragsLinje150().apply {
-        kodeEndringLinje = if (førsteUtbetalingPåSak) "NY" else "ENDR"
+        kodeEndringLinje = if (erEndringPåEksisterendePeriode) "ENDR" else "NY"
         opphør?.let {
             kodeStatusLinje = TkodeStatusLinje.OPPH
             datoStatusFom = it.toXMLDate()
