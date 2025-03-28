@@ -44,10 +44,10 @@ fun Application.abetal(
     )
 
     val stateStore = kafka.getStore(Stores.utbetalinger)
-    val aapStateStore = kafka.getStore(Stores.aap)
+
     routing {
         probes(kafka, prometheus)
-        api(aapStateStore)
+        api(stateStore)
     }
 }
 
