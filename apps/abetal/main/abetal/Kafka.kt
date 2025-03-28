@@ -20,10 +20,12 @@ object Topics {
 object Tables {
     val utbetalinger = Table(Topics.utbetalinger)
     val saker = Table(Topics.saker)
+    val aap = Table(Topics.aap)
 }
 
 object Stores {
     val utbetalinger = Store(Tables.utbetalinger)
+    val aap = Store(Tables.aap)
 }
 
 fun createTopology(): Topology = topology {

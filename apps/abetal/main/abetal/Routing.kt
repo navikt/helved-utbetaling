@@ -1,5 +1,6 @@
 package abetal
 
+import abetal.models.AapUtbetaling
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -28,7 +29,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     }
 }
 
-fun Routing.api(stateStore: StateStore<String, Utbetaling>) {
+fun Routing.api(stateStore: StateStore<String, AapUtbetaling>) {
     route("/api") {
 
         get("/v1/utbetalinger/{uid}"){
