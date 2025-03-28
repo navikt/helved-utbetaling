@@ -29,7 +29,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     }
 }
 
-fun Routing.api(stateStore: StateStore<String, AapUtbetaling>) {
+fun Routing.api(stateStore: StateStore<String, Utbetaling>) {
     route("/api") {
 
         get("/v1/utbetalinger/{uid}"){
