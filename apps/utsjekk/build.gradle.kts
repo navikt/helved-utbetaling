@@ -6,7 +6,7 @@ application {
     mainClass.set("utsjekk.AppKt")
 }
 
-val ktorVersion = "3.1.1"
+val ktorVersion = "3.1.2"
 val libVersion = "3.1.93"
 val kontraktVersion = "1.0_20241216161508_0b702d7"
 
