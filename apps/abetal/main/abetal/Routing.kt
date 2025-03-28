@@ -30,6 +30,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 
 fun Routing.api(stateStore: StateStore<String, Utbetaling>) {
     route("/api") {
+
         get("/v1/utbetalinger/{uid}"){
             when(val uid = call.parameters["uid"]) {
                 null -> call.respond(HttpStatusCode.BadRequest, "path param uid missing")
