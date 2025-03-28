@@ -38,7 +38,7 @@ object OppdragService {
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.perioder.mapIndexed { i, periode ->
                 val periodeId = if (i == new.perioder.size - 1) new.lastPeriodeId else PeriodeId()
-                val oppdragslinje = oppdragsLinje150(new, erførsteUtbetalingPåSak, periode, periodeId, forrigeId.also { forrigeId = periodeId }, null)
+                val oppdragslinje = oppdragsLinje150(new, false, periode, periodeId, forrigeId.also { forrigeId = periodeId }, null)
                 oppdragsLinje150s.add(oppdragslinje)
             }
         }
