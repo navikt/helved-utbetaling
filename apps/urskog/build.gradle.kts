@@ -6,7 +6,7 @@ application {
     mainClass.set("urskog.UrskogKt")
 }
 
-val ktorVersion = "3.1.1"
+val ktorVersion = "3.1.2"
 val libVersion = "3.1.93"
 
 dependencies {
