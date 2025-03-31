@@ -3,21 +3,18 @@ package utsjekk.iverksetting
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.KeyDeserializer
-import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import no.nav.utsjekk.kontrakter.felles.*
 import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.random.Random
-import utsjekk.badRequest
 
 @JvmInline
 value class SakId(val id: String)
@@ -40,7 +37,12 @@ data class Iverksetting(
         "fagsystem ${fagsak.fagsystem}, sak $sakId, behandling $behandlingId, iverksettingId ${behandling.iverksettingId}"
 }
 
-data class UtbetalingId(val fagsystem: Fagsystem, val sakId: SakId, val behandlingId: BehandlingId, val iverksettingId: IverksettingId?)
+data class UtbetalingId(
+    val fagsystem: Fagsystem,
+    val sakId: SakId,
+    val behandlingId: BehandlingId,
+    val iverksettingId: IverksettingId?
+)
 
 /**
  * @param andeler er alle andeler med nye periodeId/forrigePeriodeId for å kunne oppdatere lagrede andeler
@@ -247,7 +249,10 @@ data class StønadsdataTiltakspenger(
         }
 
     override fun tilKjedenøkkel(): Kjedenøkkel =
-        KjedenøkkelMeldeplikt(klassifiseringskode = this.tilKlassifiseringTiltakspenger(), meldekortId = this.meldekortId)
+        KjedenøkkelMeldeplikt(
+            klassifiseringskode = this.tilKlassifiseringTiltakspenger(),
+            meldekortId = this.meldekortId
+        )
 }
 
 data class StønadsdataTilleggsstønader(
@@ -262,6 +267,9 @@ data class StønadsdataTilleggsstønader(
             StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER -> "TSLMASISP2-OP"
             StønadTypeTilleggsstønader.LÆREMIDLER_AAP -> "TSLMASISP3-OP"
             StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE -> "TSLMASISP4-OP"
+            StønadTypeTilleggsstønader.BOUTGIFTER_AAP -> "TSBUASIA-OP"
+            StønadTypeTilleggsstønader.BOUTGIFTER_ENSLIG_FORSØRGER -> "TSBUAISP2-OP"
+            StønadTypeTilleggsstønader.BOUTGIFTER_ETTERLATTE -> "TSBUAISP3-O"
         }
 
     override fun tilKjedenøkkel(): Kjedenøkkel =
