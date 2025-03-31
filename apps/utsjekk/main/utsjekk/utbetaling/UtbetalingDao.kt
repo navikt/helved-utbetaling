@@ -74,12 +74,14 @@ data class UtbetalingDao(
     }
 
     suspend fun update(id: UtbetalingId): Result<Unit, DatabaseError> {
+        // inner most select is used to get the latest utbetaling for a given utbetaling_id
         val sql = """
             UPDATE $TABLE_NAME
             SET updated_at = ?, status = ?
             WHERE utbetaling_id = ? AND deleted_at IS NULL AND id IN (
                 SELECT id 
                 FROM $TABLE_NAME
+                WHERE utbetaling_id = ?
                 ORDER BY created_at DESC
                 LIMIT 1
             )
@@ -90,6 +92,7 @@ data class UtbetalingDao(
                 stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
                 stmt.setString(2, status.name)
                 stmt.setObject(3, id.id)
+                stmt.setObject(4, id.id)
 
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
