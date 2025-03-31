@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: abetal-alerts
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  groups:
+    - name: abetal-alerts
+      rules:
+        - alert: kafka - lag
+          expr: sum(kafka_consumer_records_lag{app="abetal", namespace="helved"}) by(topic) > 5
+          for: 10m
+          annotations:
+            summary: topic {{ labels.topic }} har uleste records.
+            action:  mest sansynlig en feil så vi ikke får lest neste record.
+            consequence: flaskehals/propp 
+          labels:
+            namespace: helved
+            severity: warning
+
