@@ -1,4 +1,4 @@
-package peisen
+package peisstchappern
 
 import libs.auth.AzureConfig
 import libs.kafka.StreamsConfig
