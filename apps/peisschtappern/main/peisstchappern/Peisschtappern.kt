@@ -30,10 +30,10 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(Netty, port = 8080, module = Application::peisen).start(wait = true)
+    embeddedServer(Netty, port = 8080, module = Application::peisschtappern).start(wait = true)
 }
 
-fun Application.peisen(
+fun Application.peisschtappern(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
 ) {

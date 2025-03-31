@@ -3,7 +3,7 @@ plugins {
 }
 
 application {
-    mainClass.set("peisen.PeisenKt")
+    mainClass.set("peisschtappern.PeisschtappernKt")
 }
 
 val ktorVersion = "3.1.2"
