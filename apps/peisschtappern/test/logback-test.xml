@@ -4,7 +4,7 @@
 
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%cyan(%d{HH:mm:ss.SSS}) %magenta([%thread]) %highlight(%-5level) %yellow(%logger{36}) %msg%n</pattern>
+            <pattern>%cyan(%d{HH:mm:ss.SSS}) %highlight(%-5level) %yellow(%logger{36}) %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -20,6 +20,6 @@
     <logger name="http"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="kafka"     level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="app"       level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="stdout"/></logger>
 
 </configuration>

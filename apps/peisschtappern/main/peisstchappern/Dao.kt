@@ -9,6 +9,10 @@ import libs.utils.secureLog
 
 private val daoLog = logger("dao")
 
+enum class Tables {
+    oppdrag
+}
+
 data class Dao(
     val version: String,
     val topic_name: String,
@@ -21,10 +25,10 @@ data class Dao(
     val system_time_ms: Long,
 ) {
     companion object {
-        suspend fun find(key: String, table: String, limit: Int = 1000): List<Dao> {
+        suspend fun find(key: String, table: Tables, limit: Int = 1000): List<Dao> {
             val sql = """
-                SELECT * FROM $table 
-                WHERE key = ? 
+                SELECT * FROM ${table.name} 
+                WHERE record_key = ? 
                 ORDER BY timestamp_ms DESC 
                 LIMIT $limit 
             """.trimIndent()
@@ -38,19 +42,19 @@ data class Dao(
         }
     }
 
-    suspend fun insert(table: String) {
+    suspend fun insert(table: Tables) {
         val sql = """
-            INSERT INTO $table (
+            INSERT INTO ${table.name} (
                 version,
                 topic_name,
-                key,
-                value,
-                partition,
-                offset,
+                record_key,
+                record_value,
+                record_partition,
+                record_offset,
                 timestamp_ms,
                 stream_time_ms,
-                system_time_ms,
-            )
+                system_time_ms
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """.trimIndent()
 
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
@@ -73,10 +77,10 @@ data class Dao(
 private fun from(rs: ResultSet) = Dao(
     version = rs.getString("version"),
     topic_name = rs.getString("topic_name"),
-    key = rs.getString("key"),
-    value = rs.getString("value"),
-    partition = rs.getInt("partition"),
-    offset = rs.getLong("offset"),
+    key = rs.getString("record_key"),
+    value = rs.getString("record_value"),
+    partition = rs.getInt("record_partition"),
+    offset = rs.getLong("record_offset"),
     timestamp_ms = rs.getLong("timestamp_ms"),
     stream_time_ms = rs.getLong("stream_time_ms"),
     system_time_ms = rs.getLong("system_time_ms"),

@@ -16,14 +16,19 @@ dependencies {
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:utils:$libVersion")
 
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.5")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
-    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
 
     testImplementation(kotlin("test"))
-    testImplementation("org.apache.kafka:kafka-streams:3.9.0") // intercept StreamsBuilder
+    testImplementation(project(":libs:kafka-test"))
+    testImplementation("no.nav.helved:auth-test:$libVersion")
+    testImplementation("no.nav.helved:jdbc-test:$libVersion")
+    testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }
