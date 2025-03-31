@@ -11,10 +11,10 @@ object Topics {
 }
 
 fun createTopology(): Topology = topology {
-    save(Topics.oppdrag, "oppdrag")
+    save(Topics.oppdrag, Tables.oppdrag)
 }
 
-private fun Topology.save(topic: Topic<String, ByteArray>, table_name: String) {
+private fun Topology.save(topic: Topic<String, ByteArray>, table: Tables) {
     consume(Topics.oppdrag) { key, value, metadata ->
         runBlocking {
             withContext(Jdbc.context) {
@@ -29,7 +29,7 @@ private fun Topology.save(topic: Topic<String, ByteArray>, table_name: String) {
                         timestamp_ms = metadata.timestamp,
                         stream_time_ms = metadata.streamTimeMs,
                         system_time_ms = metadata.systemTimeMs,
-                    ).insert(table_name)
+                    ).insert(table)
                 }
             }
         }

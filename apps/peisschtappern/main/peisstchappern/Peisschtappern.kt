@@ -50,9 +50,11 @@ fun Application.peisschtappern(
         meterBinders += LogbackMetrics()
     }
 
-    monitor.subscribe(ApplicationStopping) {
-        kafka.close()
-    }
+    kafka.connect(
+        topology = createTopology(),
+        config = config.kafka, 
+        registry = prometheus
+    )
 
     Jdbc.initialize(config.jdbc)
     runBlocking {
@@ -62,8 +64,14 @@ fun Application.peisschtappern(
     }
 
     routing {
+        probes(kafka, prometheus)
+
         authenticate(TokenProvider.AZURE) {
 
         }
+    }
+
+    monitor.subscribe(ApplicationStopping) {
+        kafka.close()
     }
 }

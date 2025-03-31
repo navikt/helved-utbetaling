@@ -19,14 +19,14 @@ spec:
     enabled: true
     path: /probes/metric
   replicas:
-    min: 2
-    max: 4
+    min: 1
+    max: 1
     cpuThresholdPercentage: 50
   resources:
     limits:
-      memory: 1024Mi
+      memory: 256Mi
     requests:
-      memory: 512Mi
+      memory: 256Mi
       cpu: 200m
   observability:
     autoInstrumentation:
@@ -37,17 +37,12 @@ spec:
         - id: loki
   secureLogs:
     enabled: true
-  leaderElection: true
   kafka:
     pool: nav-dev
     streams: true
   azure:
     application:
       enabled: true
-      claims:
-        extra:
-          - NAVident
-          - azp_name
   accessPolicy:
     inbound:
       rules:
