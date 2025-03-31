@@ -46,7 +46,7 @@ fun Application.urskog(
     }
 
     kafka.connect(
-        topology = createTopology(oppdragProducer, avstemProducer, simuleringService),
+        topology = createTopology(oppdragProducer, avstemProducer, simuleringService, prometheus),
         config = config.kafka,
         registry = prometheus,
     )

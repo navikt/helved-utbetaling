@@ -1,20 +1,22 @@
 package urskog
 
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Tag
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.*
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 import kotlinx.coroutines.runBlocking
 import libs.kafka.*
 import libs.kafka.processor.*
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.Mmel
-import java.util.*
-import java.time.LocalDateTime
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.streams.kstream.Named
 import org.apache.kafka.streams.state.ValueAndTimestamp
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
@@ -90,6 +92,7 @@ fun createTopology(
     oppdragProducer: OppdragMQProducer,
     avstemProducer: AvstemmingMQProducer,
     simuleringService: SimuleringService,
+    meters: MeterRegistry,
 ): Topology = topology {
     val oppdrag = consume(Topics.oppdrag)
     val kvitteringQueueKTable = consume(Tables.kvitteringQueue)
@@ -136,7 +139,15 @@ fun createTopology(
         .produce(Topics.kvittering)
 
     consume(Topics.kvittering)
-        .map { kvitt -> kvitt.mmel.into() }
+        .map { kvitt -> 
+            val fagsystem = Fagsystem.fromFagområde(kvitt.oppdrag110.kodeFagomraade.trimEnd()) 
+            val statusReply = kvitt.mmel.into()
+            meters.counter("kvitteringer", listOf(
+                Tag.of("status", statusReply.status.name),
+                Tag.of("fagsystem", fagsystem.name),
+            ))
+            statusReply
+        }
         .produce(Topics.status)
 }
 
