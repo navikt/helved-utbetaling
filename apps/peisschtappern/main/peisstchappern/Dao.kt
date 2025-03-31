@@ -1,4 +1,4 @@
-package peisstchappern.jdbc
+package peisstchappern
 
 import java.sql.ResultSet
 import kotlin.coroutines.coroutineContext
@@ -7,11 +7,9 @@ import libs.postgres.map
 import libs.utils.logger
 import libs.utils.secureLog
 
-private const val TABLE_NAME = "oppdrag"
-
 private val daoLog = logger("dao")
 
-data class OppdragDao(
+data class Dao(
     val version: String,
     val topic_name: String,
     val key: String,
@@ -23,9 +21,9 @@ data class OppdragDao(
     val system_time_ms: Long,
 ) {
     companion object {
-        suspend fun find(key: String, limit: Int = 1000): List<OppdragDao> {
+        suspend fun find(key: String, table: String, limit: Int = 1000): List<Dao> {
             val sql = """
-                SELECT * FROM $TABLE_NAME 
+                SELECT * FROM $table 
                 WHERE key = ? 
                 ORDER BY timestamp_ms DESC 
                 LIMIT $limit 
@@ -35,14 +33,14 @@ data class OppdragDao(
                 stmt.setString(1, key)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::oppdragDao)
+                stmt.executeQuery().map(::from)
             }
         }
     }
 
-    suspend fun insert() {
+    suspend fun insert(table: String) {
         val sql = """
-            INSERT INTO $TABLE_NAME (
+            INSERT INTO $table (
                 version,
                 topic_name,
                 key,
@@ -72,7 +70,7 @@ data class OppdragDao(
     }
 }
 
-private fun oppdragDao(rs: ResultSet) = OppdragDao(
+private fun from(rs: ResultSet) = Dao(
     version = rs.getString("version"),
     topic_name = rs.getString("topic_name"),
     key = rs.getString("key"),

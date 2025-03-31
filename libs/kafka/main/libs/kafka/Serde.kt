@@ -20,6 +20,7 @@ data class Serdes<K: Any, V>(
 interface StreamSerde<T> : Serde<T>
 
 fun string() = Serdes(StringSerde, StringSerde)
+fun bytes() = Serdes(StringSerde, ByteArraySerde)
 inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.jackson<V>())
 inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.xml<V>())
 inline fun <reified V: Any> jaxb() = Serdes(StringSerde, XmlSerde.jaxb<V>())
