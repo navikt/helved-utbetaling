@@ -45,6 +45,42 @@ data class Dao(
                 stmt.executeQuery().map(::from)
             }
         }
+
+        suspend fun find(tables: List<Tables>, limit: Int): List<Dao> {
+            return tables.flatMap {
+                val sql =
+                    """
+                        SELECT * FROM ${it.name} 
+                        ORDER BY timestamp_ms DESC 
+                        LIMIT ${limit / tables.size} 
+                    """.trimIndent()
+
+                coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                    daoLog.debug(sql)
+                    secureLog.debug(stmt.toString())
+                    stmt.executeQuery().map(::from)
+                }
+            }
+        }
+
+        suspend fun find(tables: List<Tables>, key: String, limit: Int): List<Dao> {
+            return tables.flatMap {
+                val sql = """
+                SELECT * FROM ${it.name} 
+                WHERE record_key = key 
+                ORDER BY timestamp_ms DESC 
+                LIMIT $limit 
+            """.trimIndent()
+
+                coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                    stmt.setString(1, key)
+                    daoLog.debug(sql)
+                    secureLog.debug(stmt.toString())
+                    stmt.executeQuery().map(::from)
+                }
+
+            }
+        }
     }
 
     suspend fun insert(table: Tables) {

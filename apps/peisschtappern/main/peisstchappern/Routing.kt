@@ -26,3 +26,26 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     }
 }
 
+fun Routing.api() {
+    get("/api") {
+        val topics = call.queryParameters["topics"]?.split(",")?.mapNotNull {
+            when (it) {
+                Topics.oppdrag.name -> Tables.oppdrag
+                Topics.aap.name -> Tables.aap
+                Topics.saker.name -> Tables.saker
+                Topics.utbetalinger.name -> Tables.utbetalinger
+                Topics.kvittering.name -> Tables.kvittering
+                Topics.simuleringer.name -> Tables.simuleringer
+                else -> null
+            }
+        } ?: Tables.entries
+
+        val limit = call.queryParameters["limit"]?.toInt() ?: 1000
+        val daos = when (val key = call.queryParameters["key"]) {
+            null -> Dao.find(topics, limit)
+            else -> Dao.find(topics, key, limit)
+        }
+
+        call.respond(daos)
+    }
+}
