@@ -4,14 +4,17 @@ import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import kotlinx.coroutines.withContext
 import libs.kafka.Streams
+import libs.postgres.Jdbc
+import libs.postgres.concurrency.transaction
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/probes") {
-        get("/metric") { 
+        get("/metric") {
             call.respond(meters.scrape())
         }
-        get("/ready") { 
+        get("/ready") {
             when (kafka.ready()) {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.Locked)
@@ -41,9 +44,13 @@ fun Routing.api() {
         } ?: Tables.entries
 
         val limit = call.queryParameters["limit"]?.toInt() ?: 1000
-        val daos = when (val key = call.queryParameters["key"]) {
-            null -> Dao.find(topics, limit)
-            else -> Dao.find(topics, key, limit)
+        val daos = withContext(Jdbc.context) {
+            transaction {
+                when (val key = call.queryParameters["key"]) {
+                    null -> Dao.find(topics, limit)
+                    else -> Dao.find(topics, key, limit)
+                }
+            }
         }
 
         call.respond(daos)
