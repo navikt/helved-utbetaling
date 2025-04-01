@@ -8,14 +8,16 @@ import libs.postgres.concurrency.transaction
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", bytes())
+    val kvittering = Topic("helved.kvittering.v1", bytes())
 }
 
 fun createTopology(): Topology = topology {
     save(Topics.oppdrag, Tables.oppdrag)
+    save(Topics.kvittering, Tables.kvittering)
 }
 
 private fun Topology.save(topic: Topic<String, ByteArray>, table: Tables) {
-    consume(Topics.oppdrag) { key, value, metadata ->
+    consume(topic) { key, value, metadata ->
         runBlocking {
             withContext(Jdbc.context) {
                 transaction {

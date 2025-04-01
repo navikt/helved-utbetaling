@@ -10,7 +10,8 @@ import libs.utils.secureLog
 private val daoLog = logger("dao")
 
 enum class Tables {
-    oppdrag
+    oppdrag,
+    kvittering
 }
 
 data class Dao(
