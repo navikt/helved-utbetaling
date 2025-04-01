@@ -11,7 +11,11 @@ private val daoLog = logger("dao")
 
 enum class Tables {
     oppdrag,
-    kvittering
+    kvittering,
+    simuleringer,
+    utbetalinger,
+    saker,
+    aap
 }
 
 data class Dao(

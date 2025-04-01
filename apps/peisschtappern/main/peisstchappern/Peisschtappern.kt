@@ -59,7 +59,7 @@ fun Application.peisschtappern(
     Jdbc.initialize(config.jdbc)
     runBlocking {
         withContext(Jdbc.context) {
-            Migrator(File("migrations")).migrate()
+            Migrator(config.jdbc.migrations).migrate()
         }
     }
 

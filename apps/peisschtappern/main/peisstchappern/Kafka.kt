@@ -9,11 +9,20 @@ import libs.postgres.concurrency.transaction
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", bytes())
     val kvittering = Topic("helved.kvittering.v1", bytes())
+    val simuleringer = Topic("helved.simuleringer.v1", bytes())
+    val utbetalinger = Topic("helved.utbetalinger.v1", bytes())
+    val saker = Topic("helved.saker.v1", bytes())
+    val aap = Topic("helved.utbetalinger-aap.v1", bytes())
 }
 
 fun createTopology(): Topology = topology {
     save(Topics.oppdrag, Tables.oppdrag)
     save(Topics.kvittering, Tables.kvittering)
+    save(Topics.simuleringer, Tables.simuleringer)
+    save(Topics.utbetalinger, Tables.utbetalinger)
+    save(Topics.saker, Tables.saker)
+    save(Topics.aap, Tables.aap)
+
 }
 
 private fun Topology.save(topic: Topic<String, ByteArray>, table: Tables) {
