@@ -72,6 +72,7 @@ class KafkaTest {
         assertNotNull(dao.stream_time_ms)
         assertNotNull(dao.system_time_ms)
     }
+
     @Test
     fun `save utbetalinger`() = runTest(TestRuntime.context) {
         TestTopics.utbetalinger.produce("123") {
@@ -115,6 +116,7 @@ class KafkaTest {
         assertNotNull(dao.stream_time_ms)
         assertNotNull(dao.system_time_ms)
     }
+
     @Test
     fun `save aap`() = runTest(TestRuntime.context) {
         TestTopics.aap.produce("123") {

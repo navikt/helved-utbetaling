@@ -52,7 +52,7 @@ data class Dao(
                     """
                         SELECT * FROM ${it.name} 
                         ORDER BY timestamp_ms DESC 
-                        LIMIT ${limit / tables.size} 
+                        LIMIT $limit 
                     """.trimIndent()
 
                 coroutineContext.connection.prepareStatement(sql).use { stmt ->
@@ -60,14 +60,14 @@ data class Dao(
                     secureLog.debug(stmt.toString())
                     stmt.executeQuery().map(::from)
                 }
-            }
+            }.sortedByDescending { it.timestamp_ms }.take(limit)
         }
 
         suspend fun find(tables: List<Tables>, key: String, limit: Int): List<Dao> {
             return tables.flatMap {
                 val sql = """
                 SELECT * FROM ${it.name} 
-                WHERE record_key = key 
+                WHERE record_key = ? 
                 ORDER BY timestamp_ms DESC 
                 LIMIT $limit 
             """.trimIndent()
