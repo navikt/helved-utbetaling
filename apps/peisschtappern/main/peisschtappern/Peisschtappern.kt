@@ -62,18 +62,18 @@ fun Application.peisschtappern(
         meterBinders += LogbackMetrics()
     }
 
-    kafka.connect(
-        topology = createTopology(),
-        config = config.kafka,
-        registry = prometheus
-    )
-
     Jdbc.initialize(config.jdbc)
     runBlocking {
         withContext(Jdbc.context) {
             Migrator(config.jdbc.migrations).migrate()
         }
     }
+
+    kafka.connect(
+        topology = createTopology(),
+        config = config.kafka,
+        registry = prometheus
+    )
 
     routing {
         probes(kafka, prometheus)
