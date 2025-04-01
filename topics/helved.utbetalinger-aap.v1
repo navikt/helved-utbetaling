@@ -21,3 +21,6 @@ spec:
     - team: helved
       application: helved-performance
       access: write
+    - team: helved
+      application: peisschtappern
+      access: read

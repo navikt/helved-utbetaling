@@ -14,3 +14,6 @@ spec:
     - team: helved
       application: abetal
       access: readwrite
+    - team: helved
+      application: peisschtappern
+      access: read

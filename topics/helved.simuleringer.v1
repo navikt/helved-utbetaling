@@ -21,3 +21,6 @@ spec:
     - team: helved
       application: utsjekk
       access: write
+    - team: helved
+      application: peisschtappern
+      access: read
