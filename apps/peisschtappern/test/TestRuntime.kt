@@ -22,6 +22,7 @@ import libs.postgres.concurrency.transaction
 
 object TestTopics {
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
+    val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
 }
 
 private val testLog = logger("test")
