@@ -9,6 +9,7 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.testing.*
+import java.io.File
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -23,6 +24,10 @@ import libs.postgres.concurrency.transaction
 object TestTopics {
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
     val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
+    val simuleringer by lazy { TestRuntime.kafka.testTopic(Topics.simuleringer) }
+    val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
+    val saker by lazy { TestRuntime.kafka.testTopic(Topics.saker) }
+    val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
 }
 
 private val testLog = logger("test")
@@ -44,7 +49,7 @@ object TestRuntime : AutoCloseable {
     val config by lazy {
         Config(
             azure = azure.config,
-            jdbc = postgres.config,
+            jdbc = postgres.config.copy(migrations = listOf(File("test/premigrations"), File("migrations"))),
             kafka = StreamsConfig("", "", SslConfig("", "", "")),
         )
     }
