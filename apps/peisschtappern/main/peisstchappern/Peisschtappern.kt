@@ -20,7 +20,6 @@ import libs.kafka.Streams
 import libs.postgres.Jdbc
 import libs.postgres.Migrator
 import libs.utils.*
-import java.io.File
 
 val appLog = logger("app")
 
@@ -52,7 +51,7 @@ fun Application.peisschtappern(
 
     kafka.connect(
         topology = createTopology(),
-        config = config.kafka, 
+        config = config.kafka,
         registry = prometheus
     )
 
@@ -67,7 +66,7 @@ fun Application.peisschtappern(
         probes(kafka, prometheus)
 
         authenticate(TokenProvider.AZURE) {
-
+            api()
         }
     }
 
