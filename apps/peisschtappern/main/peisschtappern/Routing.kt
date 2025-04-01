@@ -1,4 +1,4 @@
-package peisstchappern
+package peisschtappern
 
 import io.ktor.http.*
 import io.ktor.server.response.*

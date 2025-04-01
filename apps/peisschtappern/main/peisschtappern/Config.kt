@@ -1,4 +1,4 @@
-package peisstchappern
+package peisschtappern
 
 import java.io.File
 import libs.auth.AzureConfig

@@ -1,4 +1,4 @@
-package peisstchappern
+package peisschtappern
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
