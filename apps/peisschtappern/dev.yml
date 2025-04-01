@@ -8,11 +8,11 @@ metadata:
 spec:
   image: {{ image }}
   liveness:
-    path: /probes/health
+    path: /probes/live
     initialDelay: 30
     failureThreshold: 10
   readiness:
-    path: /probes/health
+    path: /probes/ready
     initialDelay: 30
     failureThreshold: 10
   prometheus:
