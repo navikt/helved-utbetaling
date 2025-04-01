@@ -70,6 +70,8 @@ spec:
           namespace: tpts
         - application: tilleggsstonader-sak
           namespace: tilleggsstonader
+        - application: utbetal
+          namespace: aap
     outbound:
       rules:
         - application: utsjekk-oppdrag
