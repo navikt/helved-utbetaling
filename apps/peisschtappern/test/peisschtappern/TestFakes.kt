@@ -1,4 +1,4 @@
-package peisstchappern
+package peisschtappern
 
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
