@@ -8,7 +8,7 @@ import libs.utils.env
 
 data class Config(
     val jdbc: JdbcConfig = JdbcConfig(
-        url = env("DB_URL"), // databaser provisjonert etter juni 2024 må bruke denne
+        url = env("DB_JDBC_URL"), // databaser provisjonert etter juni 2024 må bruke denne
         migrations = listOf(File("migrations")),
     ),
     val kafka: StreamsConfig = StreamsConfig(),
