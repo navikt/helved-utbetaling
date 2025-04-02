@@ -8,6 +8,8 @@ import kotlinx.coroutines.withContext
 import libs.kafka.Streams
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
+import java.time.Instant
+import java.time.ZoneId
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/probes") {
@@ -33,6 +35,7 @@ fun Routing.api() {
     get("/api") {
         val topics = call.queryParameters["topics"]?.split(",")?.mapNotNull {
             when (it) {
+                Topics.avstemming.name -> Tables.avstemming
                 Topics.oppdrag.name -> Tables.oppdrag
                 Topics.aap.name -> Tables.aap
                 Topics.saker.name -> Tables.saker
@@ -54,5 +57,19 @@ fun Routing.api() {
         }
 
         call.respond(daos)
+    }
+
+    get("/api/last_avstemming") {
+        withContext(Jdbc.context) {
+            transaction {
+                when (val dao = Dao.lastTombstone(Tables.avstemming)) {
+                    null -> call.respond(HttpStatusCode.NotFound)
+                    else -> {
+                        val lastAvstemming = Instant.ofEpochMilli(dao.timestamp_ms).atZone(ZoneId.systemDefault()).toLocalDate()
+                        call.respond(HttpStatusCode.OK, lastAvstemming)
+                    }
+                }
+            }
+        }
     }
 }
