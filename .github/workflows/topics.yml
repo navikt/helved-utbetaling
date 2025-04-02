@@ -18,6 +18,7 @@ jobs:
           - helved.dryrun-ts.v1
           - helved.kvittering-queue.v1
           - helved.kvittering.v1
+          - helved.avstemming.v1
           - helved.oppdrag.v1
           - helved.saker.v1
           - helved.simuleringer.v1
