@@ -22,6 +22,7 @@ import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 
 object TestTopics {
+    val avstemming by lazy { TestRuntime.kafka.testTopic(Topics.avstemming) }
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
     val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
     val simuleringer by lazy { TestRuntime.kafka.testTopic(Topics.simuleringer) }

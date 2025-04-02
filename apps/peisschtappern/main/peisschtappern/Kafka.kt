@@ -7,6 +7,7 @@ import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 
 object Topics {
+    val avstemming = Topic("helved.avstemming.v1", bytes())
     val oppdrag = Topic("helved.oppdrag.v1", bytes())
     val kvittering = Topic("helved.kvittering.v1", bytes())
     val simuleringer = Topic("helved.simuleringer.v1", bytes())
@@ -16,6 +17,7 @@ object Topics {
 }
 
 fun createTopology(): Topology = topology {
+    save(Topics.avstemming, Tables.avstemming)
     save(Topics.oppdrag, Tables.oppdrag)
     save(Topics.kvittering, Tables.kvittering)
     save(Topics.simuleringer, Tables.simuleringer)

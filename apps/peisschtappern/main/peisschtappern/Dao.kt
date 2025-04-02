@@ -10,6 +10,7 @@ import libs.utils.secureLog
 private val daoLog = logger("dao")
 
 enum class Tables {
+    avstemming,
     oppdrag,
     kvittering,
     simuleringer,
@@ -61,6 +62,22 @@ data class Dao(
                     stmt.executeQuery().map(::from)
                 }
             }.sortedByDescending { it.timestamp_ms }.take(limit)
+        }
+
+        suspend fun lastTombstone(table: Tables): Dao? {
+            val sql =
+                """
+                    SELECT * FROM ${table.name} 
+                    WHERE record_value is NULL
+                    ORDER BY timestamp_ms DESC 
+                    LIMIT 1
+                """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from).singleOrNull()
+            }
         }
 
         suspend fun find(tables: List<Tables>, key: String, limit: Int): List<Dao> {
