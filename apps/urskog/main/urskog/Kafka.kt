@@ -145,7 +145,7 @@ fun createTopology(
             meters.counter("kvitteringer", listOf(
                 Tag.of("status", statusReply.status.name),
                 Tag.of("fagsystem", fagsystem.name),
-            ))
+            )).increment()
             statusReply
         }
         .produce(Topics.status)
