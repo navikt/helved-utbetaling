@@ -1,51 +1,58 @@
-package peisschtappern
+package vedskiva
 
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import libs.kafka.*
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.transaction
+import models.Avstemming
+import models.Oppdragsdata
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 object Topics {
     val avstemming = Topic("helved.avstemming.v1", bytes())
-    val oppdrag = Topic("helved.oppdrag.v1", bytes())
-    val kvittering = Topic("helved.kvittering.v1", bytes())
-    val simuleringer = Topic("helved.simuleringer.v1", bytes())
-    val utbetalinger = Topic("helved.utbetalinger.v1", bytes())
-    val saker = Topic("helved.saker.v1", bytes())
-    val aap = Topic("helved.utbetalinger-aap.v1", bytes())
 }
 
-fun createTopology(): Topology = topology {
-    save(Topics.avstemming, Tables.avstemming)
-    save(Topics.oppdrag, Tables.oppdrag)
-    save(Topics.kvittering, Tables.kvittering)
-    save(Topics.simuleringer, Tables.simuleringer)
-    save(Topics.utbetalinger, Tables.utbetalinger)
-    save(Topics.saker, Tables.saker)
-    save(Topics.aap, Tables.aap)
+fun Topology.avstemming() {
 
 }
 
-private fun Topology.save(topic: Topic<String, ByteArray>, table: Tables) {
-    consume(topic) { key, value, metadata ->
-        runBlocking {
-            withContext(Jdbc.context) {
-                transaction {
-                    Dao(
-                        version = topic.name.substringAfterLast("."),
-                        topic_name = topic.name,
-                        key = key,
-                        value = value?.decodeToString(),
-                        partition = metadata.partition,
-                        offset = metadata.offset,
-                        timestamp_ms = metadata.timestamp,
-                        stream_time_ms = metadata.streamTimeMs,
-                        system_time_ms = metadata.systemTimeMs,
-                    ).insert(table)
-                }
-            }
+
+private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+
+class AvstemmingScheduler(
+    table: GlobalTable<String, Oppdragsdata>,
+    private val mq: AvstemmingMQProducer,
+    private val peisschtappern: PeisschtappernClient,
+    private val config: AvstemmingConfig,
+): GlobalStateScheduleProcessor<String, Oppdragsdata>(
+    "${table.store.name}-scheduler",
+    store = table.store,
+    interval = 1.toDuration(DurationUnit.MINUTES)
+) {
+    override fun schedule(wallClockTime: Long, store: StateStore<String, Oppdragsdata>) {
+        val now = LocalDateTime.now()
+        if (now.hour != config.scheduleHour && now.minute != config.scheduleMinute) return
+        val today = now.toLocalDate()
+        val lastAvstemmingDate = runBlocking { peisschtappern.lastAvstemming() }
+
+        store.filter(limit = Int.MAX_VALUE) {
+            val avstemmingsdag = it.value.avstemmingsdag
+            (avstemmingsdag == today || avstemmingsdag.isBefore(today))
+        }.groupBy { (_, value) ->
+            value.fagsystem
+        }.forEach { (fagsystem, oppdragsdata) ->
+            val avstemming = Avstemming(
+                fom = lastAvstemmingDate ?: today.minusDays(2), // riktig?
+                tom = today.minusDays(1), // riktig?
+                oppdragsdata = oppdragsdata.map { (_, value) -> value },
+            )
+            val messages = AvstemmingService.create(avstemming)
+            val avstemmingId = messages.first().aksjon.avleverendeAvstemmingId
+            messages.forEach { message -> mq.send(message) }
+            urskog.appLog.info("Fullført grensesnittavstemming for ${fagsystem.name} id: $avstemmingId")
+            oppdragsdata.forEach { (key, _) -> store.delete(key) }
+//            oppdragsdata.forEach { (key, _) -> TODO ("tombstone avstemming for key hvis lastAvstemmingDate skal hentes fra peisschtappern") // avstemmingProducer.tombstone(key) }
         }
     }
 }
-

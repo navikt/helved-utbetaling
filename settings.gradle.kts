@@ -11,6 +11,7 @@ include(
     "apps:simulering",
     "apps:urskog",
     "apps:utsjekk",
+    "apps:vedskiva",
 )
 
 include(
