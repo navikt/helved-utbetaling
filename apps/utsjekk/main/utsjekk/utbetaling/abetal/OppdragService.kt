@@ -30,7 +30,7 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().format()
+                val avstemmingstidspunkt = LocalDateTime.now().format() // TODO: sett til neste virkedag
                 nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = FagsystemDto.from(new.stønad).kode
                 tidspktMelding = avstemmingstidspunkt
