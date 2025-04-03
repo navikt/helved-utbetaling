@@ -1,19 +1,21 @@
 package models
 
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 data class Avstemming(
-    val fagsystem: Fagsystem,
-    val fom: LocalDateTime,
-    val tom: LocalDateTime,
+    val fom: LocalDate,
+    val tom: LocalDate,
     val oppdragsdata: List<Oppdragsdata>
-)
+) {
+    val fagsystem get() = oppdragsdata.first().fagsystem
+}
 
 data class Oppdragsdata(
+    val fagsystem: Fagsystem,
     val status: StatusReply,
     val personident: Personident,
     val sakId: SakId,
-    val avstemmingtidspunkt: LocalDateTime,
+    val avstemmingsdag: LocalDate,
     val totalBeløpAllePerioder: UInt,
     val kvittering: Kvittering,
 )

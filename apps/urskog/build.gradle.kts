@@ -12,6 +12,7 @@ val libVersion = "3.1.93"
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
+    implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:mq:$libVersion")
     implementation("no.nav.helved:ws:$libVersion")

@@ -2,21 +2,15 @@ package urskog
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 import kotlinx.coroutines.runBlocking
 import libs.kafka.*
-import libs.kafka.processor.*
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import org.apache.kafka.streams.kstream.Named
-import org.apache.kafka.streams.state.ValueAndTimestamp
+import java.util.*
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
@@ -27,128 +21,97 @@ object Topics {
     val kvittering = Topic("helved.kvittering.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val kvitteringQueue = Topic<OppdragForeignKey, Oppdrag>("helved.kvittering-queue.v1", Serdes(JsonSerde.jackson(), XmlSerde.xml()))
+    val avstemming = Topic("helved.avstemming.v1", json<Oppdragsdata>())
 }
 
 object Stores {
-    val keystore =
-        Store<OppdragForeignKey, UtbetalingId>("fk-uid-store", Serdes(JsonSerde.jackson(), JsonSerde.jackson()))
+    val keystore = Store<OppdragForeignKey, UtbetalingId>("fk-uid-store", Serdes(JsonSerde.jackson(), JsonSerde.jackson()))
 }
 
 object Tables {
     val kvitteringQueue = Table(Topics.kvitteringQueue)
 }
 
-class AvstemmingScheduler(
-    ktable: KTable<OppdragForeignKey, Oppdrag>,
-    private val mq: AvstemmingMQProducer,
-): StateScheduleProcessor<OppdragForeignKey, Oppdrag>(
-    "avstemming-${ktable.table.stateStoreName}-scheduler",
-    table = ktable,
-    interval = 1.toDuration(DurationUnit.HOURS)
-) {
-    override fun schedule(wallClockTime: Long, store: StateStore<OppdragForeignKey, ValueAndTimestamp<Oppdrag>>) {
-        // TODO: is it only possible to grensesnittavstemme once per day?
-        if (true) return 
-
-        store.filter(limit = 10_000) {
-            val avstemmingTidspunkt = LocalDateTime.parse(it.value.value().oppdrag110.avstemming115.nokkelAvstemming)
-            avstemmingTidspunkt.isAfter(LocalDate.now().atStartOfDay()) && avstemmingTidspunkt.isBefore(LocalDate.now().nesteVirkedag().atStartOfDay())
-        }.groupBy {
-            it.value().oppdrag110.kodeFagomraade.trimEnd()
-        }.mapValues { (_, oppdrags) ->
-            oppdrags.map {
-                val oppdrag = it.value().oppdrag110
-                val mmel = it.value().mmel
-                Oppdragsdata(
-                    status = mmel.into(), 
-                    personident = Personident(oppdrag.oppdragGjelderId.trimEnd()),
-                    sakId = SakId(oppdrag.fagsystemId.trimEnd()),
-                    avstemmingtidspunkt = LocalDateTime.parse(oppdrag.avstemming115.nokkelAvstemming.trimEnd(), DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")),
-                    totalBeløpAllePerioder = oppdrag.oppdragsLinje150s.sumOf { it.sats.toLong().toUInt() },
-                    kvittering = Kvittering(
-                        kode = mmel.kodeMelding.trimEnd(),
-                        alvorlighetsgrad = mmel.alvorlighetsgrad.trimEnd(),
-                        melding = mmel.beskrMelding.trimEnd(),
-                    )
-                )
+fun Topology.simulering(simuleringService: SimuleringService) {
+    consume(Topics.simuleringer)
+        .map { sim ->
+            Result.catch {
+                runBlocking {
+                    val fagsystem = Fagsystem.from(sim.request.oppdrag.kodeFagomraade)
+                    simuleringService.simuler(sim) to fagsystem
+                }
             }
-        }.forEach { (fagsystem, oppdragsdata) ->
-            val avstemming = Avstemming(
-                fagsystem = Fagsystem.fromFagområde(fagsystem),
-                fom = LocalDate.now().atStartOfDay(), // TODO: forrige virkedag
-                tom = LocalDate.now().nesteVirkedag().atStartOfDay(),
-                oppdragsdata = oppdragsdata,
-            )
-            val messages = AvstemmingService.create(avstemming)
-            val avstemmingId = messages.first().aksjon.avleverendeAvstemmingId
-            messages.forEach { message -> mq.send(message) }
-            appLog.info("Fullført grensesnittavstemming for id: $avstemmingId")
         }
-
-    }
+        .branch({ result -> result.isOk() }) {
+            map { result -> result.unwrap() }
+                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.AAP }) {
+                    map { (sim, _) -> sim }.map(::into).produce(Topics.dryrunAap)
+                }
+                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILLEGGSSTØNADER }) {
+                    map{(sim, _) -> sim}.map(::intoV1).produce(Topics.dryrunTilleggsstønader)
+                }
+                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILTAKSPENGER }) {
+                    map{(sim, _) -> sim}.map(::intoV1).produce(Topics.dryrunTiltakspenger)
+                }
+        }
+        .default {
+            map { result -> result.unwrapErr() }.produce(Topics.status)
+        }
 }
 
-fun createTopology(
-    oppdragProducer: OppdragMQProducer,
-    avstemProducer: AvstemmingMQProducer,
-    simuleringService: SimuleringService,
-    meters: MeterRegistry,
-): Topology = topology {
-    val oppdrag = consume(Topics.oppdrag)
+fun Topology.oppdrag(oppdragProducer: OppdragMQProducer) {
     val kvitteringQueueKTable = consume(Tables.kvitteringQueue)
-    val avstemmingScheduler = AvstemmingScheduler(kvitteringQueueKTable, avstemProducer)
-    kvitteringQueueKTable.schedule(avstemmingScheduler)
+    val oppdrag = consume(Topics.oppdrag)
+
+    val kstore = oppdrag
+        .mapKeyAndValue { uid, xml -> OppdragForeignKey.from(xml) to UtbetalingId(UUID.fromString(uid)) }
+        .materialize(Stores.keystore)
 
     oppdrag
         .map { xml -> oppdragProducer.send(xml) }
         .map { _ -> StatusReply(status = Status.HOS_OPPDRAG) }
         .produce(Topics.status)
 
-    consume(Topics.simuleringer)
-        .map { sim ->
-            Result.catch {
-                runBlocking {
-                    val fagsystem = Fagsystem.from(sim.request.oppdrag.kodeFagomraade) // TODO: denne må brukes videre for å finne ut hvilket topic simulering skal sendes til
-                    simuleringService.simuler(sim) to fagsystem
-                }
-            }
-        }
-        .branch({ it.isOk() }) {
-            map { it -> it.unwrap() }
-                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.AAP }) {
-                    map({(sim, _) -> sim}).map(::into).produce(Topics.dryrunAap)
-                }
-                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILLEGGSSTØNADER }) {
-                    map({(sim, _) -> sim}).map(::intoV1).produce(Topics.dryrunTilleggsstønader)
-                }
-                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILTAKSPENGER }) {
-                    map({(sim, _) -> sim}).map(::intoV1).produce(Topics.dryrunTiltakspenger)
-                }
-        }
-        .default {
-            map { it -> it.unwrapErr() }.produce(Topics.status)
-        }
-
-    val kstore = oppdrag
-        .mapKeyAndValue { uid, xml -> OppdragForeignKey.from(xml) to UtbetalingId(UUID.fromString(uid)) }
-        .materialize(Stores.keystore)
-
     kstore.join(kvitteringQueueKTable)
         .filter { (_, kvitt) -> kvitt != null }
         .mapKeyAndValue { _, (uid, kvitt) -> uid.id.toString() to kvitt!! }
         .produce(Topics.kvittering)
+}
 
-    consume(Topics.kvittering)
-        .map { kvitt -> 
-            val fagsystem = Fagsystem.fromFagområde(kvitt.oppdrag110.kodeFagomraade.trimEnd()) 
+fun Topology.kvittering(meters: MeterRegistry) {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+
+    val kvitteringer = consume(Topics.kvittering)
+
+    kvitteringer
+        .map { kvitt ->
+            val fagsystem = Fagsystem.fromFagområde(kvitt.oppdrag110.kodeFagomraade.trimEnd())
             val statusReply = kvitt.mmel.into()
-            meters.counter("kvitteringer", listOf(
-                Tag.of("status", statusReply.status.name),
-                Tag.of("fagsystem", fagsystem.name),
-            )).increment()
+                meters.counter("kvitteringer", listOf(
+                    Tag.of("status", statusReply.status.name),
+                    Tag.of("fagsystem", fagsystem.name),
+                )).increment()
             statusReply
         }
         .produce(Topics.status)
+
+    kvitteringer
+        .map { kvitt ->
+            Oppdragsdata(
+                fagsystem = Fagsystem.fromFagområde(kvitt.oppdrag110.kodeFagomraade.trimEnd()),
+                status = kvitt.mmel.into(),
+                personident = Personident(kvitt.oppdrag110.oppdragGjelderId.trimEnd()),
+                sakId = SakId(kvitt.oppdrag110.fagsystemId.trimEnd()),
+                avstemmingsdag = LocalDateTime.parse(kvitt.oppdrag110.avstemming115.nokkelAvstemming.trimEnd(), formatter).toLocalDate(),
+                totalBeløpAllePerioder = kvitt.oppdrag110.oppdragsLinje150s.sumOf { it.sats.toLong().toUInt() },
+                kvittering = Kvittering(
+                    kode = kvitt.mmel.kodeMelding.trimEnd(), // todo finnes disse til en hver tid?
+                    alvorlighetsgrad = kvitt.mmel.alvorlighetsgrad.trimEnd(),
+                    melding = kvitt.mmel.beskrMelding.trimEnd(), // todo finnes disse til en hver tid?
+                )
+            )
+        }
+        .produce(Topics.avstemming)
 }
 
 private fun Mmel?.into(): StatusReply = when (this) {

@@ -8,6 +8,7 @@ import libs.kafka.StreamsMock
 import libs.mq.MQ
 
 object TestTopics {
+    val avstemming by lazy { TestRuntime.kafka.testTopic(Topics.avstemming) }
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
     val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
     val kvitteringQueue by lazy { TestRuntime.kafka.testTopic(Topics.kvitteringQueue) }
@@ -26,10 +27,11 @@ object TestRuntime : AutoCloseable {
         })
     }
 
-    val kafka = StreamsMock()
+    val kafka: StreamsMock = StreamsMock()
     val mq: MQ = oppdragURFake()
     val ws: WSFake = WSFake()
-    val config: Config = TestConfig.create(ws.proxyConfig, ws.azureConfig, ws.simuleringConfig)
+    val fakes: HttpFakes = HttpFakes()
+    val config: Config = TestConfig.create(fakes.proxyConfig, fakes.azureConfig, fakes.simuleringConfig)
     val ktor = testApplication.apply { runBlocking { start() }}
 
     override fun close() {

@@ -22,6 +22,7 @@ object TestData {
         fagsystemId: String = "1", // sakid
         oppdragGjelderId: String = "12345678910", // personident 
         saksbehId: String = "Z999999",
+        avstemmingstidspunkt: LocalDateTime = LocalDateTime.now(),
         enhet: String? = null, // betalende enhet (lokalkontor)
     ): Oppdrag {
         return objectFactory.createOppdrag().apply {
@@ -35,7 +36,7 @@ object TestData {
                 this.datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
                 this.saksbehId = saksbehId
                 this.avstemming115 = objectFactory.createAvstemming115().apply {
-                    val avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(timeFormatter)
+                    val avstemmingstidspunkt = avstemmingstidspunkt.truncatedTo(ChronoUnit.HOURS).format(timeFormatter)
                     nokkelAvstemming = avstemmingstidspunkt
                     kodeKomponent = fagområde
                     tidspktMelding = avstemmingstidspunkt
