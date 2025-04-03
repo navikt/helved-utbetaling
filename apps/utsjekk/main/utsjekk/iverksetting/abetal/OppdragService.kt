@@ -151,7 +151,7 @@ private fun oppdrag(utbetalingsoppdrag: Utbetalingsoppdrag): Oppdrag {
         datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
         saksbehId = utbetalingsoppdrag.saksbehandlerId
         avstemming115 = objectFactory.createAvstemming115().apply {
-            nokkelAvstemming = utbetalingsoppdrag.avstemmingstidspunkt.format()
+            nokkelAvstemming = utbetalingsoppdrag.avstemmingstidspunkt.format() // TODO: sett til neste virkedag
             kodeKomponent = utbetalingsoppdrag.fagsystem.kode
             tidspktMelding = utbetalingsoppdrag.avstemmingstidspunkt.format()
         }
