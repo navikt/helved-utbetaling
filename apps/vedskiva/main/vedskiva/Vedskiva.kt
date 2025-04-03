@@ -1,0 +1,4 @@
+package vedskiva
+
+class Vedskiva {
+}

@@ -44,6 +44,8 @@ class UrskogTest {
             oppdrag.apply {
                 mmel = Mmel().apply {
                     alvorlighetsgrad = "00" // 00/04/08/12
+                    kodeMelding = "" // FIXME: er disse alltid satt i miljø?
+                    beskrMelding = "" // FIXME: er disse alltid satt i miljø?
                 }
             }
         }

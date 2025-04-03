@@ -31,7 +31,6 @@ object TestConfig {
             username = "",
             password = "",
         )
-
         return Config(
             kafka = kafka,
             oppdrag = oppdrag,

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.*
-import io.ktor.http.content.*
 import io.ktor.serialization.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -38,6 +37,8 @@ fun oppdragURFake(): MQ {
             val oppdrag = mapper.readValue(it.text).apply {
                 mmel = Mmel().apply {
                     alvorlighetsgrad = "00" // 00/04/08/12
+                    // kodeMelding = ""
+                    // beskrMelding = ""
                 }
             }
             mq.textMessage(mapper.writeValueAsString(oppdrag))
@@ -53,7 +54,26 @@ fun MQ.textMessage(xml: String): TextMessage {
     }
 }
 
-class WSFake : Sts, Soap, AutoCloseable {
+class WSFake: Sts, Soap {
+    var respondWith: String = Resource.read("/simuler-ok.xml")
+    val received = mutableListOf<String>()
+
+    override suspend fun samlToken(): SamlToken {
+        return SamlToken("token", LocalDateTime.now())
+    }
+
+    override suspend fun call(action: String, body: String): String {
+        return SoapXml.envelope(
+            action = action,
+            messageId = UUID.randomUUID(),
+            serviceUrl = "http://localhost:8083".let(::URI).toURL(),
+            assertion = "token",
+            body = respondWith
+        )
+    }
+}
+
+class HttpFakes: AutoCloseable {
     private val ktor = embeddedServer(Netty, port = 0, module = Application::fakes).apply { start() }
     override fun close() = ktor.stop()
 
@@ -80,23 +100,6 @@ class WSFake : Sts, Soap, AutoCloseable {
                 user = "",
                 pass = "",
             )
-        )
-    }
-
-    var respondWith: String = Resource.read("/simuler-ok.xml")
-    val received = mutableListOf<String>()
-
-    override suspend fun samlToken(): SamlToken {
-        return SamlToken("token", LocalDateTime.now())
-    }
-
-    override suspend fun call(action: String, body: String): String {
-        return SoapXml.envelope(
-            action = action,
-            messageId = UUID.randomUUID(),
-            serviceUrl = "http://localhost:8083".let(::URI).toURL(),
-            assertion = "token",
-            body = respondWith
         )
     }
 }

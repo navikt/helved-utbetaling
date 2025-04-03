@@ -46,6 +46,7 @@ class AvstemmingMQProducer(private val config: Config, mq: MQ) {
         runCatching {
             producer.produce(xml)
             appLog.info("Sender grensesnittavstemming til oppdrag")
+            secureLog.trace("Sender grensesnittavstemming til oppdrag $xml")
         }.onFailure {
             appLog.error("Feil ved grensesnittavstemming")
             secureLog.error("Feil ved grensesnittavstemming", it)
