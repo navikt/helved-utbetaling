@@ -25,7 +25,7 @@ dependencies {
     // TODO: encapsulate in libs:kafka
     // import org.apache.kafka.streams.kstream.Named
     // import org.apache.kafka.streams.state.ValueAndTimestamp
-    implementation("org.apache.kafka:kafka-streams:3.9.0")
+    implementation("org.apache.kafka:kafka-streams:4.0.0")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
