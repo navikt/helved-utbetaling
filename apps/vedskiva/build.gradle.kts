@@ -13,6 +13,8 @@ dependencies {
     implementation(project(":libs:kafka"))
     implementation(project(":models"))
 
+    implementation("org.apache.kafka:kafka-clients:3.9.0")
+
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:xml:$libVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")

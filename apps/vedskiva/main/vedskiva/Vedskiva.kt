@@ -1,46 +1,42 @@
 package vedskiva
 
+import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.micrometer.core.instrument.binder.logging.LogbackMetrics
-import io.micrometer.prometheusmetrics.PrometheusConfig
-import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import libs.kafka.KafkaStreams
-import libs.kafka.Streams
-import libs.utils.*
+import libs.utils.logger
+import libs.utils.secureLog
+import models.erHelligdag
+import java.time.LocalDate
 
 val appLog = logger("app")
 
-fun main() {
+fun main(args: Array<String>) {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
         appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
-
-    embeddedServer(Netty, port = 8080, module = Application::vedskiva).start(wait = true)
+    embeddedServer(Netty, port = 8080) { vedskiva(lastAvstemmingsdag = LocalDate.now().minusDays(1)) }.start(wait = true)
 }
 
 fun Application.vedskiva(
     config: Config = Config(),
-    kafka: Streams = KafkaStreams(),
+    kafka: Kafka = Kafka(),
+    lastAvstemmingsdag: LocalDate
 ) {
-    val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-
-    install(MicrometerMetrics) {
-        registry = prometheus
-        meterBinders += LogbackMetrics()
+    if (!LocalDate.now().erHelligdag()) {
+        OppdragsdataConsumer(config.kafka, kafka).use {
+            it.consumeFromBeginning(lastAvstemmingsdag)
+        }
     }
-
-
 
     routing {
-        probes(kafka, prometheus)
-    }
-
-    monitor.subscribe(ApplicationStopping) {
-        kafka.close()
+        route("/probes") {
+            get("/health") {
+                call.respond(HttpStatusCode.OK)
+            }
+        }
     }
 }
