@@ -14,7 +14,6 @@ import libs.kafka.processor.StateProcessor.Companion.addProcessor
 import libs.kafka.produceWithLogging
 import org.apache.kafka.streams.kstream.*
 
-@Suppress("UNCHECKED_CAST")
 class ConsumedStream<K: Any, V : Any> internal constructor(
     private val stream: KStream<K, V>,
     private val namedSupplier: () -> String,

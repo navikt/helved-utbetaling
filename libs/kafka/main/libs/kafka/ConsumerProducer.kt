@@ -10,9 +10,9 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import java.util.*
 
 interface ProducerFactory {
-    fun <K: Any, V : Any> createProducer(
+    fun <K: Any, V> createProducer(
         streamsConfig: StreamsConfig,
-        topic: Topic<K, V>,
+        topic: Topic<K, V & Any>,
     ): Producer<K, V> {
         val producerConfig = ProducerFactoryConfig(
             streamsConfig = streamsConfig,
@@ -27,9 +27,9 @@ interface ProducerFactory {
 }
 
 interface ConsumerFactory {
-    fun <K: Any, V : Any> createConsumer(
+    fun <K: Any, V> createConsumer(
         streamsConfig: StreamsConfig,
-        topic: Topic<K, V>,
+        topic: Topic<K, V & Any>,
         maxEstimatedProcessingTimeMs: Long, // e.g. 4_000
         groupIdSuffix: Int = 1, // used to "reset" the consumer by registering a new
         offsetResetPolicy: OffsetResetPolicy = OffsetResetPolicy.earliest

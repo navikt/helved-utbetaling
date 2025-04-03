@@ -23,7 +23,7 @@ internal class StateScheduleProcessorTest {
             val notLols = store.filter(2) {
                 it.value.value() != "lol"
             }.map {
-                it.value()
+                it.second.value()
             }
             result.addAll(notLols)
         }
