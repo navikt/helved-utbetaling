@@ -5,8 +5,9 @@ import io.micrometer.core.instrument.binder.kafka.KafkaTestMetrics
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
-//import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.streams.TopologyTestDriver
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
 
 class StreamsMock : Streams {
     private lateinit var internalStreams: TopologyTestDriver
@@ -41,6 +42,10 @@ class StreamsMock : Streams {
         internalStreams.getKeyValueStore(store.name)
     )
 
+    fun advanceWallClockTime(duration: Duration) {
+        internalStreams.advanceWallClockTime(duration.toJavaDuration())
+    }
+
     fun <K: Any, V : Any> testTopic(topic: Topic<K, V>): TestTopic<K, V> =
         TestTopic(
             input = internalStreams.createInputTopic(
@@ -58,23 +63,23 @@ class StreamsMock : Streams {
     private val producers = mutableMapOf<Topic<*, *>, MockProducer<*, *>>()
 
     @Suppress("UNCHECKED_CAST")
-    override fun <K: Any, V : Any> createProducer(
+    override fun <K: Any, V> createProducer(
         streamsConfig: StreamsConfig,
-        topic: Topic<K, V>,
-    ): MockProducer<K, V> {
+        topic: Topic<K, V & Any>,
+    ): MockProducer<K, V & Any> {
         return producers.getOrPut(topic) {
             MockProducer(topic, testTopic(topic))
-        } as MockProducer<K, V>
+        } as MockProducer<K, V & Any>
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <K: Any, V : Any> getProducer(topic: Topic<K, V>): MockProducer<K, V> {
-        return producers[topic] as MockProducer<K, V>
+    fun <K: Any, V> getProducer(topic: Topic<K, V & Any>): MockProducer<K, V & Any> {
+        return producers[topic] as MockProducer<K, V & Any>
     }
 
-    override fun <K: Any, V : Any> createConsumer(
+    override fun <K: Any, V> createConsumer(
         streamsConfig: StreamsConfig,
-        topic: Topic<K, V>,
+        topic: Topic<K, V & Any>,
         maxEstimatedProcessingTimeMs: Long,
         groupIdSuffix: Int,
         offsetResetPolicy: OffsetResetPolicy

@@ -34,7 +34,7 @@ class KafkaStreams : Streams {
     ) {
         topology.registerInternalTopology(this)
 
-        internalStreams = org.apache.kafka.streams.KafkaStreams(internalTopology, config.streamsProperties())
+        internalStreams = KafkaStreams(internalTopology, config.streamsProperties())
         KafkaStreamsMetrics(internalStreams).bindTo(registry)
         internalStreams.setUncaughtExceptionHandler(UncaughtHandler())
         internalStreams.setStateListener { state, _ -> if (state == RUNNING) initiallyStarted = true }

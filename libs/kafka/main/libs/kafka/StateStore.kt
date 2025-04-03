@@ -29,14 +29,13 @@ class StateStore<K : Any, V>(private val internalStateStore: ReadOnlyKeyValueSto
     fun getOrNull(key: K): V? = internalStateStore.get(key)
 
     fun iterator(): Iterator<KeyValue<K, V>> = internalStateStore.all().iterator()
-
-    fun filter(limit: Int = 1000, filter: (KeyValue<K, V>) -> Boolean): List<V> {
-        val seq = sequence<V> {
+    fun filter(limit: Int = 1000, filter: (KeyValue<K, V>) -> Boolean): List<Pair<K, V>> {
+        val seq = sequence<Pair<K, V>> {
             val iter = internalStateStore.all()
             for(i in 0 until limit) {
                 if (!iter.hasNext()) break
                 val next = iter.next()
-                if (filter(next)) yield(next.value)
+                if (filter(next)) yield(next.key to next.value)
             }
             iter.close()
         }
