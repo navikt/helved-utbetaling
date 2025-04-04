@@ -21,7 +21,7 @@ data class Oppdragsdata(
 )
 
 data class Kvittering(
-    val kode: String,
+    val kode: String?,
     val alvorlighetsgrad: String, 
-    val melding: String,
+    val melding: String?,
 )
