@@ -105,9 +105,9 @@ fun Topology.kvittering(meters: MeterRegistry) {
                 avstemmingsdag = LocalDateTime.parse(kvitt.oppdrag110.avstemming115.nokkelAvstemming.trimEnd(), formatter).toLocalDate(),
                 totalBeløpAllePerioder = kvitt.oppdrag110.oppdragsLinje150s.sumOf { it.sats.toLong().toUInt() },
                 kvittering = Kvittering(
-                    kode = kvitt.mmel.kodeMelding.trimEnd(), // todo finnes disse til en hver tid?
+                    kode = kvitt.mmel.kodeMelding?.trimEnd(), // todo finnes disse til en hver tid?
                     alvorlighetsgrad = kvitt.mmel.alvorlighetsgrad.trimEnd(),
-                    melding = kvitt.mmel.beskrMelding.trimEnd(), // todo finnes disse til en hver tid?
+                    melding = kvitt.mmel.beskrMelding?.trimEnd(), // todo finnes disse til en hver tid?
                 )
             )
         }
