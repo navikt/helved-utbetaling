@@ -10,6 +10,12 @@ fun LocalDate.nesteVirkedag(): LocalDate {
     return nesteDag
 }
 
+fun LocalDate.forrigeVirkedag(): LocalDate {
+    var forrigeVirkedag = this.minusDays(1)
+    while (forrigeVirkedag.erHelligdag()) forrigeVirkedag = forrigeVirkedag.minusDays(1)
+    return forrigeVirkedag 
+}
+
 fun LocalDate.nesteUkedag(): LocalDate {
     var nesteDag = this.plusDays(1)
     while (nesteDag.erHelg()) nesteDag = nesteDag.plusDays(1)

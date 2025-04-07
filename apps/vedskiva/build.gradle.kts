@@ -12,6 +12,7 @@ val libVersion = "3.1.93"
 dependencies {
     implementation(project(":libs:kafka"))
     implementation(project(":models"))
+    implementation("no.nav.helved:jdbc:$libVersion")
 
     implementation("org.apache.kafka:kafka-clients:3.9.0")
 
@@ -23,8 +24,4 @@ dependencies {
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.5")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
-
-    testImplementation(kotlin("test"))
-    testImplementation(project(":libs:kafka-test"))
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }
