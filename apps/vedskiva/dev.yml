@@ -20,5 +20,13 @@ spec:
         tier: db-f1-micro
         databases:
           - name: vedskiva
-
-
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: loki
+  kafka:
+    pool: nav-dev
+    streams: true
