@@ -1,23 +1,26 @@
 package vedskiva
 
+import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalDateTime
+import libs.postgres.concurrency.transaction
 import libs.kafka.*
+import libs.postgres.Jdbc
 import libs.utils.secureLog
 import models.Avstemming
 import models.Oppdragsdata
+import models.forrigeVirkedag
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.TopicPartition
-import java.time.Duration
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 object Topics {
     val avstemming = Topic("helved.avstemming.v1", xml<Avstemmingsdata>())
     val oppdragsdata = Topic("helved.oppdragsdata.v1", json<Oppdragsdata>())
 }
 
-class Kafka : ConsumerFactory, ProducerFactory
+open class Kafka : ConsumerFactory, ProducerFactory
 
 class OppdragsdataConsumer(
     config: StreamsConfig,
@@ -27,13 +30,11 @@ class OppdragsdataConsumer(
     private val producer = kafka.createProducer(config, Topics.oppdragsdata)
     private val avstemmingProducer = kafka.createProducer(config, Topics.avstemming)
 
-    fun consumeFromBeginning(
-        lastAvstemmingsdag: LocalDate,
-    ) {
+    suspend fun consumeFromBeginning() {
         val partitions = listOf(
+            TopicPartition(Topics.oppdragsdata.name, 0),
             TopicPartition(Topics.oppdragsdata.name, 1),
             TopicPartition(Topics.oppdragsdata.name, 2),
-            TopicPartition(Topics.oppdragsdata.name, 3),
         )
         consumer.assign(partitions)
         consumer.seekToBeginning(partitions)
@@ -45,15 +46,20 @@ class OppdragsdataConsumer(
         val now = LocalDateTime.now()
         val today = now.toLocalDate()
 
+        val last: Scheduled? = transaction {
+            Scheduled.lastOrNull()
+        } 
+
+        if (today == last?.created_at) return // already done
+
+        val avstemFom = last?.avstemt_tom?.plusDays(1) ?: LocalDate.now().forrigeVirkedag() 
+        val avstemTom = today.minusDays(1)
+
         records
             .filter { it.value().avstemmingsdag == today || it.value().avstemmingsdag.isBefore(today) }
             .groupBy { it.value().fagsystem }
             .forEach { (fagsystem, oppdragsdatas) ->
-                val avstemming = Avstemming(
-                    fom = lastAvstemmingsdag,
-                    tom = today.minusDays(1),
-                    oppdragsdata = oppdragsdatas.map { it.value() },
-                )
+                val avstemming = Avstemming(avstemFom, avstemTom, oppdragsdatas.map { it.value() })
                 val messages = AvstemmingService.create(avstemming)
                 val avstemmingId = messages.first().aksjon.avleverendeAvstemmingId
                 messages.forEach { message ->
@@ -64,6 +70,10 @@ class OppdragsdataConsumer(
                     producer.send(Topics.oppdragsdata, it.key(), null, it.partition())
                 }
             }
+
+        transaction {
+            Scheduled(LocalDate.now(), avstemFom, avstemTom).insert()
+        }
     }
 
     override fun close() {
@@ -84,3 +94,4 @@ fun <K, V> Producer<K, V>.send(topic: Topic<K & Any, V & Any>, key: K, value: V?
         }
     }.get()
 }
+
