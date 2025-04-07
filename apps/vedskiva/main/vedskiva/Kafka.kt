@@ -31,18 +31,6 @@ class OppdragsdataConsumer(
     private val avstemmingProducer = kafka.createProducer(config, Topics.avstemming)
 
     suspend fun consumeFromBeginning() {
-        val partitions = listOf(
-            TopicPartition(Topics.oppdragsdata.name, 0),
-            TopicPartition(Topics.oppdragsdata.name, 1),
-            TopicPartition(Topics.oppdragsdata.name, 2),
-        )
-        consumer.assign(partitions)
-        consumer.seekToBeginning(partitions)
-
-        // TODO: denne kan mangle data hvis den ikke rekker alt på 1 min
-        val records = consumer.poll(Duration.ofMinutes(1))
-        if (records.isEmpty) return
-
         val now = LocalDateTime.now()
         val today = now.toLocalDate()
 
@@ -51,6 +39,16 @@ class OppdragsdataConsumer(
         } 
 
         if (today == last?.created_at) return // already done
+
+        val partitions = listOf(
+            TopicPartition(Topics.oppdragsdata.name, 0),
+            TopicPartition(Topics.oppdragsdata.name, 1),
+            TopicPartition(Topics.oppdragsdata.name, 2),
+        )
+        consumer.assign(partitions)
+        consumer.seekToBeginning(partitions)
+        val records = consumer.poll(Duration.ofMinutes(1))
+        if (records.isEmpty) return
 
         val avstemFom = last?.avstemt_tom?.plusDays(1) ?: LocalDate.now().forrigeVirkedag() 
         val avstemTom = today.minusDays(1)
