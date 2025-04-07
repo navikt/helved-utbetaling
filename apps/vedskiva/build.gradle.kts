@@ -18,11 +18,6 @@ dependencies {
 
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:xml:$libVersion")
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.14.5")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
     testImplementation(kotlin("test"))
 }
