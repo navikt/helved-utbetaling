@@ -101,18 +101,21 @@ data class OppdragForeignKey(
     val fagsystem: Fagsystem,
     val sakId: SakId,
     val behandlingId: BehandlingId? = null,
+    val lastPeriodeId: PeriodeId? = null,
 ) {
     companion object {
         fun from(oppdrag: Oppdrag) = OppdragForeignKey(
             fagsystem = Fagsystem.fromFagområde(oppdrag.oppdrag110.kodeFagomraade),
             sakId = SakId(oppdrag.oppdrag110.fagsystemId), 
-            behandlingId = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.let(::BehandlingId)
+            behandlingId = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId),
+            lastPeriodeId = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.delytelseId?.trimEnd()?.let(PeriodeId::decode),
         )
 
         fun from(utbetaling: Utbetaling) = OppdragForeignKey(
             fagsystem = Fagsystem.from(utbetaling.stønad),
             sakId = utbetaling.sakId,
             behandlingId = utbetaling.behandlingId,
+            lastPeriodeId = utbetaling.lastPeriodeId,
         )
     }
 
