@@ -21,7 +21,7 @@ class UrskogTest {
             oppdragslinjer = listOf(
                 TestData.oppdragslinje(
                     henvisning = "$seq",
-                    delytelsesId = "a",
+                    delytelsesId = PeriodeId().toString(),
                     klassekode = "AAPUAA",
                     datoVedtakFom = LocalDate.of(2025, 11, 3),
                     datoVedtakTom = LocalDate.of(2025, 11, 7),
