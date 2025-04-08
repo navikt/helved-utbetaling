@@ -13,7 +13,10 @@ spec:
   acl:
     - team: helved
       application: urskog
-      access: readwrite
+      access: read
     - team: helved
       application: peisschtappern
       access: read
+    - team: helved
+      application: vedskiva
+      access: write
