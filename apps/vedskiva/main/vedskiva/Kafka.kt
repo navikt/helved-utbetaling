@@ -26,7 +26,7 @@ class OppdragsdataConsumer(
     config: StreamsConfig,
     kafka: Kafka,
 ): AutoCloseable {
-    private val consumer = kafka.createConsumer(config, Topics.oppdragsdata, 120_000)
+    private val consumer = kafka.createConsumer(config, Topics.oppdragsdata, 30_000)
     private val producer = kafka.createProducer(config, Topics.oppdragsdata)
     private val avstemmingProducer = kafka.createProducer(config, Topics.avstemming)
 

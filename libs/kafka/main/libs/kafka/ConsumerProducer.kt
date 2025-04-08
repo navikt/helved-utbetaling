@@ -55,7 +55,7 @@ enum class OffsetResetPolicy {
     latest
 }
 
-private const val TWO_MIN_MS: Long = 120_000
+private const val TWO_MIN_MS: Int = 120_000
 
 private class ConsumerFactoryConfig(
     private val streamsConfig: StreamsConfig,
