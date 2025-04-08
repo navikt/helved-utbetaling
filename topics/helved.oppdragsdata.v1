@@ -1,7 +1,7 @@
 apiVersion: kafka.nais.io/v1
 kind: Topic
 metadata:
-  name: avstemming.v1
+  name: oppdragsdata.v1
   namespace: helved
   labels:
     team: helved
@@ -13,10 +13,10 @@ spec:
   acl:
     - team: helved
       application: urskog
-      access: read
+      access: write
     - team: helved
       application: peisschtappern
       access: read
     - team: helved
       application: vedskiva
-      access: write
+      access: readwrite
