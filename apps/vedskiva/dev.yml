@@ -20,6 +20,7 @@ spec:
         tier: db-f1-micro
         databases:
           - name: vedskiva
+            envVarPrefix: DB
   observability:
     autoInstrumentation:
       enabled: true
