@@ -80,7 +80,7 @@ class StreamsMock : Streams {
     override fun <K: Any, V> createConsumer(
         streamsConfig: StreamsConfig,
         topic: Topic<K, V & Any>,
-        maxEstimatedProcessingTimeMs: Long,
+        maxEstimatedProcessingTimeMs: Int,
         groupIdSuffix: Int,
         offsetResetPolicy: OffsetResetPolicy
     ): Consumer<K, V> {

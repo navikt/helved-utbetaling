@@ -11,6 +11,7 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.util.*
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
@@ -21,7 +22,8 @@ object Topics {
     val kvittering = Topic("helved.kvittering.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val kvitteringQueue = Topic<OppdragForeignKey, Oppdrag>("helved.kvittering-queue.v1", Serdes(JsonSerde.jackson(), XmlSerde.xml()))
-    val avstemming = Topic("helved.avstemming.v1", json<Oppdragsdata>())
+    val oppdragsdata = Topic("helved.oppdragsdata.v1", json<Oppdragsdata>())
+    val avstemming = Topic("helved.avstemming.v1", xml<Avstemmingsdata>())
 }
 
 object Stores {
@@ -111,7 +113,13 @@ fun Topology.kvittering(meters: MeterRegistry) {
                 )
             )
         }
-        .produce(Topics.avstemming)
+        .produce(Topics.oppdragsdata)
+}
+
+fun Topology.avstemming(avstemProducer: AvstemmingMQProducer) {
+    consume(Topics.avstemming).forEach { _, v ->
+        avstemProducer.send(v)
+    }
 }
 
 private fun Mmel?.into(): StatusReply = when (this) {
