@@ -41,6 +41,7 @@ fun Routing.api() {
                 Topics.saker.name -> Tables.saker
                 Topics.utbetalinger.name -> Tables.utbetalinger
                 Topics.kvittering.name -> Tables.kvittering
+                Topics.kvitteringQueue.name -> Tables.kvittering_queue
                 Topics.simuleringer.name -> Tables.simuleringer
                 else -> null
             }
