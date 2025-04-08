@@ -30,7 +30,7 @@ interface ConsumerFactory {
     fun <K: Any, V> createConsumer(
         streamsConfig: StreamsConfig,
         topic: Topic<K, V & Any>,
-        maxEstimatedProcessingTimeMs: Long, // e.g. 4_000
+        maxEstimatedProcessingTimeMs: Int, // e.g. 4_000
         groupIdSuffix: Int = 1, // used to "reset" the consumer by registering a new
         offsetResetPolicy: OffsetResetPolicy = OffsetResetPolicy.earliest
     ): Consumer<K, V> {
@@ -61,7 +61,7 @@ private class ConsumerFactoryConfig(
     private val streamsConfig: StreamsConfig,
     private val clientId: String,
     private val groupId: String,
-    private val maxEstimatedProcessingTimeMs: Long,
+    private val maxEstimatedProcessingTimeMs: Int,
     private val autoOffset: OffsetResetPolicy,
 ) {
 
