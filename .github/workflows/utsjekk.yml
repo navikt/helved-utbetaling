@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'apps/utsjekk/**'
+      - 'libs/kafka/**'
       - '.github/workflows/utsjekk.yml'
       - 'build.gradle.kts'
       - 'Dockerfile'
