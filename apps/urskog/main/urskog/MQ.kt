@@ -136,7 +136,6 @@ private fun Oppdrag110.lastPeriodeId(): PeriodeId? {
     return try {
         lastDelytelsesId?.let(PeriodeId::decode)
     } catch (e: Exception) {
-        secureLog.error("Failed to PeriodeId::decode $lastDelytelsesId", e)
         null
     }
 }
