@@ -15,3 +15,6 @@ spec:
     - team: helved
       application: urskog
       access: readwrite
+    - team: helved
+      application: peisschtappern
+      access: read

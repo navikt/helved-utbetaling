@@ -52,6 +52,28 @@ class KafkaTest {
     }
 
     @Test
+    fun `save kvittering-queue`() = runTest(TestRuntime.context) {
+        TestTopics.kvitteringQueue.produce("123") {
+            "test save kvittering_queue".toByteArray()
+        }
+
+        val dao = awaitDatabase(100) {
+            Dao.find("123", Tables.kvittering_queue).singleOrNull()
+        }
+
+        assertNotNull(dao)
+        assertEquals("v1", dao.version)
+        assertEquals(Topics.kvitteringQueue.name, dao.topic_name)
+        assertEquals("123", dao.key)
+        assertEquals("test save kvittering_queue", dao.value)
+        assertEquals(0, dao.partition)
+        assertEquals(0, dao.offset)
+        assertNotNull(dao.timestamp_ms)
+        assertNotNull(dao.stream_time_ms)
+        assertNotNull(dao.system_time_ms)
+    }
+
+    @Test
     fun `save simuleringer`() = runTest(TestRuntime.context) {
         TestTopics.simuleringer.produce("123") {
             "test save simuleringer".toByteArray()
