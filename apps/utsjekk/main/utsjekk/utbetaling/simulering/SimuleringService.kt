@@ -5,10 +5,6 @@ import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
-import utsjekk.simulering.SimuleringDetaljer
-import utsjekk.simulering.api
-import utsjekk.simulering.from
-import utsjekk.simulering.oppsummering.OppsummeringGenerator
 import utsjekk.notFound
 import utsjekk.utbetaling.FagsystemDto
 import utsjekk.utbetaling.Opphør
@@ -46,7 +42,7 @@ class SimuleringService(private val client: SimuleringClient) {
         uid: UtbetalingId,
         new: Utbetaling,
         oboToken: String,
-    ): api.SimuleringRespons {
+    ): SimuleringApi {
         val existing = withContext(Jdbc.context) {
             transaction {
                 UtbetalingDao.findOrNull(uid)?.data ?: notFound("utbetaling $uid")
@@ -81,8 +77,7 @@ class SimuleringService(private val client: SimuleringClient) {
             })
         )
         val simulering = client.simuler(oppdrag, oboToken)
-        val detaljer = SimuleringDetaljer.from(simulering, Fagsystem.valueOf(oppdrag.fagsystem.name))
-        return OppsummeringGenerator.lagOppsummering(detaljer)
+        return SimuleringMapper.oppsummering(simulering)
     }
 
     /** Lager utbetalingsoppdrag for endringer */
