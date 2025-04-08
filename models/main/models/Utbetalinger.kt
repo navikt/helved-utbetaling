@@ -137,7 +137,7 @@ value class PeriodeId (private val id: UUID) {
                 // ^ les neste 64 og lag en long
                 return PeriodeId(UUID(byteBuffer.long, byteBuffer.long))
             } catch (e: Throwable) {
-                secureLog.warn("Klarte ikke dekomprimere UUID: $this")
+                secureLog.warn("Klarte ikke dekomprimere UUID: $encoded")
                 throw e
             }
         }
