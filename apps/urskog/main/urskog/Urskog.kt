@@ -37,6 +37,7 @@ fun Application.urskog(
 
     val oppdragProducer = OppdragMQProducer(config, mq)
     val simuleringService = SimuleringService(config)
+    val avstemProducer = AvstemmingMQProducer(config, mq)
 
     kafka.connect(
         config = config.kafka,
