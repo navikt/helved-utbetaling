@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'apps/vedskiva/**'
+      - 'libs/kafka/**'
       - '.github/workflows/vedskiva.yml'
       - 'build.gradle.kts'
       - 'Dockerfile'

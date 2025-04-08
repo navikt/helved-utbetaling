@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'apps/abetal/**'
+      - 'libs/kafka/**'
       - '.github/workflows/abetal.yml'
       - 'build.gradle.kts'
       - 'Dockerfile.streams'

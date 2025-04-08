@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'apps/urskog/**'
+      - 'libs/kafka/**'
       - '.github/workflows/urskog.yml'
       - 'build.gradle.kts'
       - 'Dockerfile.streams'
