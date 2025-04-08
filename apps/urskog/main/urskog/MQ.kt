@@ -11,6 +11,7 @@ import libs.utils.secureLog
 import libs.xml.XMLMapper
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import no.trygdeetaten.skjema.oppdrag.Oppdrag110
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import org.apache.kafka.clients.producer.*
 import net.logstash.logback.argument.StructuredArguments.kv
@@ -108,7 +109,7 @@ data class OppdragForeignKey(
             fagsystem = Fagsystem.fromFagområde(oppdrag.oppdrag110.kodeFagomraade),
             sakId = SakId(oppdrag.oppdrag110.fagsystemId), 
             behandlingId = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId),
-            lastPeriodeId = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.delytelseId?.trimEnd()?.let(PeriodeId::decode),
+            lastPeriodeId = oppdrag.oppdrag110.lastPeriodeId()
         )
 
         fun from(utbetaling: Utbetaling) = OppdragForeignKey(
@@ -127,6 +128,16 @@ data class OppdragForeignKey(
 
     fun toJson(): String {
         return jackson.writeValueAsString(this)
+    }
+}
+
+private fun Oppdrag110.lastPeriodeId(): PeriodeId? {
+    val lastDelytelsesId = oppdragsLinje150s?.lastOrNull()?.delytelseId?.trimEnd()
+    return try {
+        lastDelytelsesId?.let(PeriodeId::decode)
+    } catch (e: Exception) {
+        secureLog.error("Failed to PeriodeId::decode $lastDelytelsesId", e)
+        null
     }
 }
 
