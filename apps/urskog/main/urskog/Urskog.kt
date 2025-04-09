@@ -44,13 +44,12 @@ fun Application.urskog(
         registry = prometheus,
         topology = topology {
             simulering(simuleringService)
-            oppdrag(oppdragProducer)
-            kvittering(prometheus)
+            oppdrag(oppdragProducer, prometheus)
+            avstemming(avstemProducer)
         }
     )
 
-    val kvitteringQueueProducer = kafka.createProducer(config.kafka, Topics.kvitteringQueue)
-    val kvitteringConsumer = KvitteringMQConsumer(config, kvitteringQueueProducer, mq)
+    val kvitteringConsumer = KvitteringMQConsumer(config, mq, kafka)
 
     monitor.subscribe(ApplicationStarted) {
         kvitteringConsumer.start()
@@ -59,7 +58,6 @@ fun Application.urskog(
     monitor.subscribe(ApplicationStopping) { 
         kafka.close()
         kvitteringConsumer.close()
-        kvitteringQueueProducer.close() // necessary?
     }
 
     routing {
