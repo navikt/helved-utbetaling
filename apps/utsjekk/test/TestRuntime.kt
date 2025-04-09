@@ -41,8 +41,6 @@ object TestRuntime : AutoCloseable {
     val azure = AzureFake()
     val oppdrag = OppdragFake()
     val simulering = SimuleringFake()
-    val unleash = UnleashFake()
-    val elector = LeaderElectorFake()
     val kafka = StreamsMock()
     val jdbc = Jdbc.initialize(postgres.config)
     val context = CoroutineDatasource(jdbc)
@@ -53,9 +51,7 @@ object TestRuntime : AutoCloseable {
             simulering = simulering.config,
             azure = azure.config,
             jdbc = postgres.config,
-            unleash = UnleashFake.config,
             kafka = StreamsConfig("", "", SslConfig("", "", "")),
-            electorUrl = elector.url
         )
     }
 
@@ -100,7 +96,7 @@ val NettyApplicationEngine.port: Int
 private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
-            utsjekk(TestRuntime.config, TestRuntime.kafka, TestRuntime.unleash)
+            utsjekk(TestRuntime.config, TestRuntime.kafka)
         }
     }
 }

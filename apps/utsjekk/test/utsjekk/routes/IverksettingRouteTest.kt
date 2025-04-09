@@ -35,10 +35,6 @@ import java.time.LocalDate
 import utsjekk.DEFAULT_DOC_STR
 
 class IverksettingRouteTest {
-    @BeforeEach
-    fun reset() {
-        TestRuntime.unleash.reset()
-    }
 
     @Test
     fun `start iverksetting av vedtak uten utbetaling`() = runTest(TestRuntime.context) {
@@ -75,25 +71,6 @@ class IverksettingRouteTest {
 
             assertEquals(IverksettStatus.OK_UTEN_UTBETALING, status)
         }
-    }
-
-    @Test
-    fun `iverksetter ikke når kill switch for ytelsen er skrudd på`() = runTest(TestRuntime.context) {
-        TestRuntime.unleash.disable(Fagsystem.TILLEGGSSTØNADER)
-
-        val dto = TestData.dto.iverksetting()
-
-        val res = httpClient.post("/api/iverksetting/v2") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(dto)
-        }
-
-        assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
-        assertEquals(
-            """{"msg":"Iverksetting er skrudd av for fagsystem TILLEGGSSTØNADER","field":null,"doc":"$DEFAULT_DOC_STR"}""",
-            res.bodyAsText()
-        )
     }
 
     @Test

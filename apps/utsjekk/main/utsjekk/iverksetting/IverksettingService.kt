@@ -6,7 +6,6 @@ import libs.postgres.concurrency.transaction
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import utsjekk.FeatureToggles
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.abetal.OppdragService
@@ -17,7 +16,6 @@ import java.util.UUID
 import java.time.LocalDateTime
 
 class IverksettingService(
-    private val toggles: FeatureToggles,
     private val oppdragProducer: OppdragKafkaProducer,
 ) {
     suspend fun valider(iverksetting: Iverksetting) {
@@ -32,11 +30,6 @@ class IverksettingService(
     }
 
     suspend fun iverksett(iverksetting: Iverksetting) {
-        val fagsystem = iverksetting.fagsak.fagsystem
-        if (toggles.isDisabled(fagsystem)) {
-            unavailable("Iverksetting er skrudd av for fagsystem $fagsystem")
-        }
-
         withContext(Jdbc.context) {
             transaction {
                 val now = LocalDateTime.now()

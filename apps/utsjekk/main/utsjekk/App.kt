@@ -57,7 +57,6 @@ fun main() {
 fun Application.utsjekk(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    unleash: FeatureToggles = UnleashFeatureToggles(config.unleash)
 ) {
     val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
@@ -86,7 +85,7 @@ fun Application.utsjekk(
     }
 
     val utbetalingService = UtbetalingService(oppdragProducer)
-    val iverksettingService = IverksettingService(unleash, oppdragProducer)
+    val iverksettingService = IverksettingService(oppdragProducer)
 
     install(ContentNegotiation) {
         jackson {
