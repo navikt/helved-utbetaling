@@ -101,7 +101,6 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
     oppdragTopic.map { o ->
         Oppdragsdata(
             fagsystem = Fagsystem.fromFagområde(o.oppdrag110.kodeFagomraade.trimEnd()),
-            status = o.mmel?.let { it.into() },
             personident = Personident(o.oppdrag110.oppdragGjelderId.trimEnd()),
             sakId = SakId(o.oppdrag110.fagsystemId.trimEnd()),
             avstemmingsdag = LocalDateTime.parse(o.oppdrag110.avstemming115.nokkelAvstemming.trimEnd(), formatter).toLocalDate(),
