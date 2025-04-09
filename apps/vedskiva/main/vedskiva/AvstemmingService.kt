@@ -66,16 +66,17 @@ object AvstemmingService {
     }
 
     private fun detaljdata(data: Oppdragsdata): Detaljdata? = Detaljdata().apply {
-        val type = data.status.into() ?: return null
+        val type = detaljType(data.kvittering) ?: return null
         return Detaljdata().apply {
             detaljType = type
             offnr = data.personident.ident
             avleverendeTransaksjonNokkel = data.sakId.id
             tidspunkt = data.avstemmingsdag.atTime(8, 0).format()
             if (type in listOf(DetaljType.AVVI, DetaljType.VARS)) {
-                meldingKode = data.kvittering.kode
-                alvorlighetsgrad = data.kvittering.alvorlighetsgrad
-                tekstMelding = data.kvittering.melding
+                val kvittering = data.kvittering ?: return null
+                meldingKode = kvittering.kode
+                alvorlighetsgrad = kvittering.alvorlighetsgrad
+                tekstMelding = kvittering.melding
             }
         }
     }
@@ -95,35 +96,37 @@ object AvstemmingService {
     }
 
     private fun grunnlagsdata(datas: List<Oppdragsdata>) = Grunnlagsdata().apply {
-        val godkjente = datas.filter { it.status.status == Status.OK && it.status.error == null }
+        val godkjente = datas.filter { it.kvittering?.alvorlighetsgrad == "00" }
         godkjentAntall = godkjente.size
         godkjentBelop = BigDecimal.valueOf(godkjente.sumOf{ it.totalBeløpAllePerioder }.toLong())
         godkjentFortegn = if(godkjentBelop.toLong() >= 0) Fortegn.T else Fortegn.F
 
-        val varsel = datas.filter { it.status.status == Status.OK && it.status.error != null }
+        val varsel = datas.filter { it.kvittering?.alvorlighetsgrad == "04" }
         varselAntall = varsel.size
         varselBelop = BigDecimal.valueOf(varsel.sumOf{ it.totalBeløpAllePerioder }.toLong())
         varselFortegn = if(varselBelop.toLong() >= 0) Fortegn.T else Fortegn.F
 
-        val mangler = datas.filter { it.status.status == Status.HOS_OPPDRAG }
+        val mangler = datas.filter { it.kvittering == null }
         manglerAntall = mangler.size
         manglerBelop = BigDecimal.valueOf(mangler.sumOf { it.totalBeløpAllePerioder }.toLong())
         manglerFortegn = if(manglerBelop.toLong() >= 0) Fortegn.T else Fortegn.F
 
-        val avvist = datas.filter { it.status.status == Status.FEILET }
+        val avvist = datas.filter { it.kvittering?.alvorlighetsgrad in listOf("08", "12") }
         avvistAntall = avvist.size
         avvistBelop = BigDecimal.valueOf(avvist.sumOf { it.totalBeløpAllePerioder }.toLong())
         avvistFortegn = if(avvistBelop.toLong() >= 0) Fortegn.T else Fortegn.F
     }
 
-    private fun StatusReply.into(): DetaljType? {
-        return when(this.status) {
-            Status.MOTTATT -> null
-            Status.OK -> if (this.error != null) DetaljType.VARS else null
-            Status.HOS_OPPDRAG -> DetaljType.MANG
-            Status.FEILET -> DetaljType.AVVI
+    private fun detaljType(kvittering: Kvittering?): DetaljType? {
+        return when(kvittering?.alvorlighetsgrad) {
+            "00" -> null
+            "04" -> DetaljType.VARS
+            "08" -> DetaljType.AVVI
+            "12" -> DetaljType.AVVI
+            else -> DetaljType.MANG
         }
     }
 }
 
 private fun LocalDateTime.format() = format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH"))
+
