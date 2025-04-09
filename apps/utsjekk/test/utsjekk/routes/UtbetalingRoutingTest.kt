@@ -1,33 +1,19 @@
 package utsjekk.utbetaling
 
 import TestRuntime
-import com.fasterxml.jackson.module.kotlin.readValue
 import httpClient
 import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.post
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
-import java.util.UUID
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
+import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
-import libs.task.Kind
-import libs.task.Tasks
-import no.nav.utsjekk.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import utsjekk.ApiError
-import utsjekk.DEFAULT_DOC_STR
-import utsjekk.Topics
+import utsjekk.*
 import utsjekk.iverksetting.RandomOSURId
+import java.util.UUID
+import kotlin.test.assertNotNull
 
 class UtbetalingRoutingTest {
 
@@ -48,6 +34,83 @@ class UtbetalingRoutingTest {
 
         assertEquals(HttpStatusCode.Created, res.status)
         assertEquals("/utbetalinger/$uid", res.headers["location"])
+    }
+
+    @Test
+    fun `cannot create the same Utbetaling twice`() = runTest {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.Created, it.status)
+            assertEquals("/utbetalinger/$uid", it.headers["location"])
+        }
+
+
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.Conflict, it.status)
+        }
+    }
+
+    @Test
+    fun `can recreate the same Utbetaling after deletion`() = runTest {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.Created, it.status)
+            assertEquals("/utbetalinger/$uid", it.headers["location"])
+        }
+
+        // Oppdater status på utbetaling sånn at vi kan slette den
+        withContext(TestRuntime.context) {
+            transaction {
+                val utbetalingId = UtbetalingId(uid)
+                UtbetalingDao
+                    .findOrNull(utbetalingId)!!
+                    .copy(status = Status.OK)
+                    .update(utbetalingId)
+            }
+        }
+
+        httpClient.delete("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.Created, it.status)
+            assertEquals("/utbetalinger/$uid", it.headers["location"])
+        }
     }
 
     @Test
@@ -127,7 +190,11 @@ class UtbetalingRoutingTest {
             vedtakstidspunkt = 1.mar,
             periodeType = PeriodeType.EN_GANG,
             perioder = listOf(
-                UtbetalingsperiodeApi(15.des, 15.jan, 30_000u), // <-- must be two requests: [15.12 - 31.12] and [1.1 - 15.1]
+                UtbetalingsperiodeApi(
+                    15.des,
+                    15.jan,
+                    30_000u
+                ), // <-- must be two requests: [15.12 - 31.12] and [1.1 - 15.1]
             ),
         )
 
@@ -275,9 +342,9 @@ class UtbetalingRoutingTest {
         }
         transaction {
             UtbetalingDao
-            .findOrNull(UtbetalingId(uid))!!
-            .copy(status = Status.OK)
-            .update(UtbetalingId(uid))
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
         }
 
         val updatedUtbetaling = utbetaling.copy(
@@ -387,9 +454,9 @@ class UtbetalingRoutingTest {
 
         transaction {
             UtbetalingDao
-            .findOrNull(UtbetalingId(uid))!!
-            .copy(status = Status.OK)
-            .update(UtbetalingId(uid))
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
         }
 
         val putDto = postDto.copy(vedtakstidspunkt = 1.mar.atStartOfDay())
@@ -420,9 +487,9 @@ class UtbetalingRoutingTest {
         }
         transaction {
             UtbetalingDao
-            .findOrNull(UtbetalingId(uid))!!
-            .copy(status = Status.OK)
-            .update(UtbetalingId(uid))
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
         }
 
         val updatedUtbetaling = utbetaling.copy(
@@ -458,9 +525,9 @@ class UtbetalingRoutingTest {
         }
         transaction {
             UtbetalingDao
-            .findOrNull(UtbetalingId(uid))!!
-            .copy(status = Status.OK)
-            .update(UtbetalingId(uid))
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
         }
 
         val updatedUtbetaling = utbetaling.copy(
@@ -496,9 +563,9 @@ class UtbetalingRoutingTest {
         }
         transaction {
             UtbetalingDao
-            .findOrNull(UtbetalingId(uid))!!
-            .copy(status = Status.OK)
-            .update(UtbetalingId(uid))
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
         }
 
         val updatedUtbetaling = utbetaling.copy(
@@ -534,9 +601,9 @@ class UtbetalingRoutingTest {
         }
         transaction {
             UtbetalingDao
-            .findOrNull(UtbetalingId(uid))!!
-            .copy(status = Status.OK)
-            .update(UtbetalingId(uid))
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
         }
 
         val updatedUtbetaling = utbetaling.copy(
@@ -578,9 +645,9 @@ class UtbetalingRoutingTest {
 
         transaction {
             UtbetalingDao
-            .findOrNull(UtbetalingId(uid))!!
-            .copy(status = Status.OK)
-            .update(UtbetalingId(uid))
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
         }
 
         httpClient.delete("/utbetalinger/$uid") {
