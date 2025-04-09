@@ -3,10 +3,9 @@ package utsjekk.utbetaling
 import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
+import libs.utils.Err
 import libs.utils.Result
-import utsjekk.OppdragKafkaProducer
-import utsjekk.locked
-import utsjekk.notFound
+import utsjekk.*
 import utsjekk.utbetaling.abetal.OppdragService
 
 class UtbetalingService(
@@ -18,6 +17,16 @@ class UtbetalingService(
      */
     suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
         // TODO: finnes det noe fra før dersom det er sendt inn 1 periode som senere har blitt slettet/annulert/opphørt?
+        val finnesFraFør = withContext(Jdbc.context) {
+            transaction {
+                UtbetalingDao.findOrNull(uid) != null
+            }
+        }
+
+        if (finnesFraFør) {
+            return Err(DatabaseError.Conflict)
+        }
+
         val erFørsteUtbetalingPåSak = withContext(Jdbc.context) {
             transaction {
                 UtbetalingDao.find(utbetaling.sakId, history = true)
@@ -72,8 +81,8 @@ class UtbetalingService(
             }
         }
 
-        if(dao.status != Status.OK) {
-            locked("utbetalingen har et pågående oppdrag, vent til dette er ferdig") 
+        if (dao.status != Status.OK) {
+            locked("utbetalingen har et pågående oppdrag, vent til dette er ferdig")
         }
 
         val existing = dao.data
@@ -87,7 +96,8 @@ class UtbetalingService(
         return withContext(Jdbc.context) {
             transaction {
                 // val newLastPeriodeId = PeriodeId.decode(oppdrag.utbetalingsperioder.last().id)
-                val newLastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId) // TODO: riktig?
+                val newLastPeriodeId =
+                    PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId) // TODO: riktig?
                 UtbetalingDao(data = utbetaling.copy(lastPeriodeId = newLastPeriodeId)).insert(uid)
             }
         }
@@ -103,8 +113,8 @@ class UtbetalingService(
             }
         }
 
-        if(dao.status != Status.OK) {
-            locked("utbetalingen har et pågående oppdrag, vent til dette er ferdig") 
+        if (dao.status != Status.OK) {
+            locked("utbetalingen har et pågående oppdrag, vent til dette er ferdig")
         }
 
         val existing = dao.data
