@@ -82,7 +82,7 @@ class OppdragsdataConsumer(
 }
 
 fun <K, V> Producer<K, V>.send(topic: Topic<K & Any, V & Any>, key: K, value: V?, partition: Int = 0) {
-    val record = ProducerRecord<K, V>(Topics.oppdragsdata.name, partition, key, value)
+    val record = ProducerRecord<K, V>(topic.name, partition, key, value)
     this.send(record) { metadata, err ->
         if (err != null) {
             appLog.error("Failed to produce record on ${topic.name} ($metadata)")
