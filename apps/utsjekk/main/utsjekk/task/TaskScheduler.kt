@@ -16,7 +16,6 @@ import libs.task.Status.IN_PROGRESS
 import libs.task.TaskDao
 import libs.task.Tasks
 import libs.utils.secureLog
-import utsjekk.LeaderElector
 import utsjekk.appLog
 import java.time.LocalDateTime
 

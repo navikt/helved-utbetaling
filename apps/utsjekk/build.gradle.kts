@@ -27,10 +27,6 @@ dependencies {
     implementation("org.apache.kafka:kafka-clients:3.9.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.20")
 
-    // https://github.com/Unleash/unleash-client-java/issues/275
-    // 10.0.1 bruker glibc (ikke alpines musl)
-    implementation("io.getunleash:unleash-client-java:9.3.2") 
-
     implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")

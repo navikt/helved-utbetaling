@@ -39,12 +39,9 @@ spec:
         - id: loki
   secureLogs:
     enabled: true
-  leaderElection: true
   kafka:
     pool: nav-prod
     streams: true
-  envFrom:
-    - secret: utsjekk-unleash-api-token
   env:
     - name: OPPDRAG_SCOPE
       value: api://prod-gcp.helved.utsjekk-oppdrag/.default
@@ -71,12 +68,12 @@ spec:
           namespace: tpts
         - application: tilleggsstonader-sak
           namespace: tilleggsstonader
+        - application: utbetal
+          namespace: aap
     outbound:
       rules:
         - application: utsjekk-oppdrag
         - application: utsjekk-simulering
-      external:
-        - host: helved-unleash-api.nav.cloud.nais.io
   gcp:
     sqlInstances:
       - type: "POSTGRES_15" #WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade

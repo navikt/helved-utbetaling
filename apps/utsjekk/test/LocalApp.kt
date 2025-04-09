@@ -47,7 +47,7 @@ fun Application.testApp() {
         }
         appLog.info("setup database")
     }
-    utsjekk(TestRuntime.config, TestRuntime.kafka, TestRuntime.unleash)
+    utsjekk(TestRuntime.config, TestRuntime.kafka)
     testRouting()
 }
 
