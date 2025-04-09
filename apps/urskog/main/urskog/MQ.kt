@@ -7,6 +7,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import javax.jms.TextMessage
 import libs.mq.*
+import libs.kafka.Streams
 import libs.utils.secureLog
 import libs.xml.XMLMapper
 import models.*
@@ -57,9 +58,10 @@ class AvstemmingMQProducer(private val config: Config, mq: MQ) {
 
 class KvitteringMQConsumer(
     private val config: Config,
-    private val kvitteringQueueProducer: Producer<OppdragForeignKey, Oppdrag>,
     mq: MQ,
+    kafka: Streams,
 ): AutoCloseable {
+    private val kvitteringProducer = kafka.createProducer(config.kafka, Topics.kvittering)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
     private val consumer = DefaultMQConsumer(mq, config.oppdrag.kvitteringsKø, ::onMessage)
 
@@ -67,13 +69,13 @@ class KvitteringMQConsumer(
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
         val fk = OppdragForeignKey.from(kvittering)
         appLog.info("Mottok kvittering $fk")
-        val record = ProducerRecord(Topics.kvitteringQueue.name, fk, kvittering)
-        kvitteringQueueProducer.send(record) { md, err ->
+        val record = ProducerRecord(Topics.kvittering.name, fk, kvittering)
+        kvitteringProducer.send(record) { md, err ->
             when (err) {
                 null -> secureLog.trace(
-                    "produce ${Topics.kvitteringQueue.name}",
+                    "produce ${Topics.kvittering.name}",
                     kv("key", fk.toJson()),
-                    kv("topic", Topics.kvitteringQueue.name),
+                    kv("topic", Topics.kvittering.name),
                     kv("partition", md.partition()),
                     kv("offset", md.offset()),
                 ) 

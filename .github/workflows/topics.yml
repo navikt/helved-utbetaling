@@ -16,7 +16,6 @@ jobs:
           - helved.dryrun-aap.v1
           - helved.dryrun-tp.v1
           - helved.dryrun-ts.v1
-          - helved.kvittering-queue.v1
           - helved.kvittering.v1
           - helved.avstemming.v1
           - helved.oppdragsdata.v1

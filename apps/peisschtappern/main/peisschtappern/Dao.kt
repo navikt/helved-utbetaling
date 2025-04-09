@@ -13,7 +13,6 @@ enum class Tables {
     avstemming,
     oppdrag,
     kvittering,
-    kvittering_queue,
     simuleringer,
     utbetalinger,
     saker,

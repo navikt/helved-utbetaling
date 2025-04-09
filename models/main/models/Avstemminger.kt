@@ -12,12 +12,12 @@ data class Avstemming(
 
 data class Oppdragsdata(
     val fagsystem: Fagsystem,
-    val status: StatusReply,
+    val status: StatusReply?,
     val personident: Personident,
     val sakId: SakId,
     val avstemmingsdag: LocalDate,
     val totalBeløpAllePerioder: UInt,
-    val kvittering: Kvittering,
+    val kvittering: Kvittering?,
 )
 
 data class Kvittering(

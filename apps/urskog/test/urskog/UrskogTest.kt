@@ -34,23 +34,24 @@ class UrskogTest {
             oppdrag
         }
 
-        val kvitteringQueueTopic = TestRuntime.kafka.getProducer(Topics.kvitteringQueue)
-        assertEquals(1, kvitteringQueueTopic.history().size)
-        assertEquals(0, kvitteringQueueTopic.uncommittedRecords().size)
+        val kvitteringTopic = TestRuntime.kafka.getProducer(Topics.kvittering)
+        assertEquals(1, kvitteringTopic.history().size)
+        assertEquals(0, kvitteringTopic.uncommittedRecords().size)
 
         // because streams and vanilla kafka producer is not connected by TestTopologyDriver,
         // we will manually add a kvittering to see the rest of the stream
-        TestTopics.kvitteringQueue.produce(OppdragForeignKey.from(oppdrag)) {
+        TestTopics.kvittering.produce(OppdragForeignKey.from(oppdrag)) {
             oppdrag.apply {
                 mmel = Mmel().apply {
                     alvorlighetsgrad = "00" // 00/04/08/12
-                    kodeMelding = "" // FIXME: er disse alltid satt i miljø?
-                    beskrMelding = "" // FIXME: er disse alltid satt i miljø?
+                    // kodeMelding = "" // FIXME: disse er bare satt ved 04 eller 12
+                    // beskrMelding = "" // FIXME: disse er bare satt ved 04 eller 12
                 }
             }
         }
+        testLog.info("test complete")
 
-        TestTopics.kvittering.assertThat()
+        TestTopics.oppdrag.assertThat()
             .hasNumberOfRecordsForKey(uid, 1)
             .hasValueMatching(uid, 0) {
                 assertEquals("00", it.mmel.alvorlighetsgrad)

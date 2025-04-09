@@ -6,12 +6,12 @@ import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import libs.kafka.StreamsMock
 import libs.mq.MQ
+import libs.utils.logger
 
 object TestTopics {
     val avstemming by lazy { TestRuntime.kafka.testTopic(Topics.avstemming) }
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
     val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
-    val kvitteringQueue by lazy { TestRuntime.kafka.testTopic(Topics.kvitteringQueue) }
     val status by lazy { TestRuntime.kafka.testTopic(Topics.status) }
     val simuleringer by lazy { TestRuntime.kafka.testTopic(Topics.simuleringer) }
     val dryrunAap by lazy { TestRuntime.kafka.testTopic(Topics.dryrunAap) }
@@ -19,10 +19,12 @@ object TestTopics {
     val dryrunTiltakspenger by lazy { TestRuntime.kafka.testTopic(Topics.dryrunTiltakspenger) }
 }
 
+val testLog = logger("test")
+
 object TestRuntime : AutoCloseable {
     init {
         Runtime.getRuntime().addShutdownHook(Thread {
-            appLog.info("Shutting down TestRunner")
+            testLog.info("Shutting down TestRunner")
             close()
         })
     }
