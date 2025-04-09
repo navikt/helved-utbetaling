@@ -16,7 +16,7 @@ spec:
       access: write
     - team: helved
       application: urskog
-      access: read
+      access: readwrite
     - team: helved
       application: utsjekk
       access: write
