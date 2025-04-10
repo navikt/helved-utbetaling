@@ -13,6 +13,8 @@ class VedskivaTest {
     @Test
     fun `avstem for AAP`() = runTest(TestRuntime.context) {
 
+        database(TestRuntime.config)
+
         val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
         val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
