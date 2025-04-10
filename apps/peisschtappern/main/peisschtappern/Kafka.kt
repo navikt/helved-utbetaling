@@ -24,17 +24,16 @@ object Topics {
 fun createTopology(): Topology = topology {
     save(Topics.avstemming, Tables.avstemming)
     save(Topics.oppdrag, Tables.oppdrag)
-    save(Topics.oppdragsdata, Tables.oppdragsdata)
-    save(Topics.dryrunAap, Tables.dryrun_aap)
-    save(Topics.dryrunTp, Tables.dryrun_tp)
-    save(Topics.dryrunTs, Tables.dryrun_ts)
-    save(Topics.dryrunDp, Tables.dryrun_dp)
     save(Topics.kvittering, Tables.kvittering)
     save(Topics.simuleringer, Tables.simuleringer)
     save(Topics.utbetalinger, Tables.utbetalinger)
     save(Topics.saker, Tables.saker)
     save(Topics.aap, Tables.aap)
-
+    save(Topics.oppdragsdata, Tables.oppdragsdata)
+    save(Topics.dryrunAap, Tables.dryrun_aap)
+    save(Topics.dryrunTp, Tables.dryrun_tp)
+    save(Topics.dryrunTs, Tables.dryrun_ts)
+    save(Topics.dryrunDp, Tables.dryrun_dp)
 }
 
 private fun Topology.save(topic: Topic<String, ByteArray>, table: Tables) {
