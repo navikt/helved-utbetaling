@@ -28,7 +28,7 @@ dependencies {
     implementation("org.apache.kafka:kafka-clients:3.9.0")
 
     testImplementation(kotlin("test"))
-    testImplementation("org.apache.kafka:kafka-streams:3.9.0") // intercept StreamsBuilder
+    testImplementation("org.apache.kafka:kafka-streams:4.0.0") // intercept StreamsBuilder
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation(project(":libs:kafka-test"))
     // testImplementation("no.nav.helved:kafka-test:$libVersion")
