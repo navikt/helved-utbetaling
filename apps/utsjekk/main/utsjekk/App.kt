@@ -70,7 +70,7 @@ fun Application.utsjekk(
         metrics,
     )
 
-    val oppdragProducer = OppdragKafkaProducer(config.kafka, kafka)
+    val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
 
     monitor.subscribe(ApplicationStopping) {
         kafka.close()

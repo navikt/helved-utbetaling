@@ -12,7 +12,7 @@ import org.apache.kafka.streams.state.*
 
 private fun <K: Any, V : Any> nameSupplierFrom(topic: Topic<K, V>): () -> String = { "from-${topic.name}" }
 
-interface Streams : ProducerFactory, ConsumerFactory, AutoCloseable {
+interface Streams : AutoCloseable, KafkaFactory {
     fun connect(topology: Topology, config: StreamsConfig, registry: MeterRegistry)
     fun ready(): Boolean
     fun live(): Boolean

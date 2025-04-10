@@ -36,7 +36,7 @@ class UrskogTest {
 
         val kvitteringTopic = TestRuntime.kafka.getProducer(Topics.kvittering)
         assertEquals(1, kvitteringTopic.history().size)
-        assertEquals(0, kvitteringTopic.uncommittedRecords().size)
+        assertEquals(0, kvitteringTopic.uncommitted().size)
 
         // because streams and vanilla kafka producer is not connected by TestTopologyDriver,
         // we will manually add a kvittering to see the rest of the stream

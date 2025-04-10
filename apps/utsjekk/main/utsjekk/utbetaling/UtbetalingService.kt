@@ -5,11 +5,13 @@ import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.utils.Err
 import libs.utils.Result
+import libs.kafka.KafkaProducer
 import utsjekk.*
 import utsjekk.utbetaling.abetal.OppdragService
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class UtbetalingService(
-    private val oppdragProducer: OppdragKafkaProducer,
+    private val oppdragProducer: KafkaProducer<String, Oppdrag> ,
 ) {
 
     /**
@@ -37,7 +39,7 @@ class UtbetalingService(
 
         // TODO: Avvent118
         val oppdrag = OppdragService.opprett(utbetaling, erFørsteUtbetalingPåSak)
-        oppdragProducer.produce(uid, oppdrag)
+        oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
 
         return withContext(Jdbc.context) {
             transaction {
@@ -91,7 +93,7 @@ class UtbetalingService(
         existing.validateMinimumChanges(utbetaling)
 
         val oppdrag = OppdragService.update(utbetaling, existing)
-        oppdragProducer.produce(uid, oppdrag)
+        oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
 
         return withContext(Jdbc.context) {
             transaction {
@@ -122,7 +124,7 @@ class UtbetalingService(
         existing.validateLockedFields(utbetaling)
 
         val oppdrag = OppdragService.delete(utbetaling, existing)
-        oppdragProducer.produce(uid, oppdrag)
+        oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
 
         return withContext(Jdbc.context) {
             transaction {

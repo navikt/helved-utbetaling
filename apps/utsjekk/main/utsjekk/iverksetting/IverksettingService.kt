@@ -3,20 +3,22 @@ package utsjekk.iverksetting
 import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
+import libs.kafka.KafkaProducer
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.abetal.OppdragService
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import utsjekk.unavailable
-import utsjekk.OppdragKafkaProducer
+import utsjekk.partition
 import utsjekk.utbetaling.UtbetalingId
 import java.util.UUID
 import java.time.LocalDateTime
 
 class IverksettingService(
-    private val oppdragProducer: OppdragKafkaProducer,
+    private val oppdragProducer: KafkaProducer<String, Oppdrag>,
 ) {
     suspend fun valider(iverksetting: Iverksetting) {
         withContext(Jdbc.context) {
@@ -45,7 +47,7 @@ class IverksettingService(
                         )
                     }
                     else -> {
-                        oppdragProducer.produce(uid, oppdrag)
+                        oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
                     }
                 }
             }

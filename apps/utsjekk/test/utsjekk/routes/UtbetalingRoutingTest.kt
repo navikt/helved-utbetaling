@@ -427,8 +427,8 @@ class UtbetalingRoutingTest {
         }
 
         val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
-        assertEquals(0, oppdragTopic.uncommittedRecords().size)
-        val actual = oppdragTopic.history().singleOrNull { it.key() == uid2.toString() }?.value()
+        assertEquals(0, oppdragTopic.uncommitted().size)
+        val actual = oppdragTopic.history().singleOrNull { (key, _) -> key == uid2.toString() }?.second
         assertNotNull(actual)
         assertEquals("ENDR", actual.oppdrag110.kodeEndring)
     }

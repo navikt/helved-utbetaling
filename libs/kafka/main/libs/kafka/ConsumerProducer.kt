@@ -3,50 +3,110 @@ package libs.kafka
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.consumer.KafkaConsumer as InternalKafkaConsumer
+import org.apache.kafka.clients.producer.KafkaProducer as InternalKafkaProducer
 import org.apache.kafka.clients.producer.Producer
+import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.common.TopicPartition
 import java.util.*
+import libs.utils.*
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
+import net.logstash.logback.argument.StructuredArguments.kv
 
-interface ProducerFactory {
+open class KafkaProducer<K: Any, V>(
+    private val topic: Topic<K, V & Any>,
+    private val producer: Producer<K, V>,
+): AutoCloseable {
+
+    fun send(key: K, value: V) {
+        send(ProducerRecord<K, V>(topic.name, key, value))
+    }
+
+    fun send(key: K, value: V?, partition: Int) {
+        send(ProducerRecord<K, V>(topic.name, partition, key, value))
+    }
+
+    private fun send(record: ProducerRecord<K, V>) {
+        producer.send(record) { md, err ->
+            when (err) {
+                null -> secureLog.trace(
+                    "produce ${topic.name}",
+                    kv("key", record.key()),
+                    kv("topic", topic.name),
+                    kv("partition", md.partition()),
+                    kv("offset", md.offset()),
+                ) 
+                else -> secureLog.error("Failed to produce record for ${record.key()} on ${topic.name}", err)
+            }
+        }.get()
+    }
+
+    override fun close() = producer.close()
+} 
+
+open class KafkaConsumer<K: Any, V>(
+    private val topic: Topic<K, V & Any>,
+    private val consumer: Consumer<K, V>,
+): AutoCloseable {
+
+    fun seekToBeginning(vararg partition: Int) {
+        val partitions = partition.toList().map { TopicPartition(topic.name, it) }
+        consumer.assign(partitions)
+        consumer.seekToBeginning(partitions)
+    }
+
+    fun poll(timeout: Duration): List<Record<K, V>> {
+        return consumer.poll(timeout.toJavaDuration()).map { Record(it.key(), it.value(), it.partition()) }
+    }
+
+    override fun close() = consumer.close()
+}
+
+data class Record<K: Any, V>(
+    val key: K,
+    val value: V,
+    val partition: Int
+)
+
+interface KafkaFactory {
     fun <K: Any, V> createProducer(
-        streamsConfig: StreamsConfig,
+        config: StreamsConfig,
         topic: Topic<K, V & Any>,
-    ): Producer<K, V> {
-        val producerConfig = ProducerFactoryConfig(
-            streamsConfig = streamsConfig,
-            clientId = "${streamsConfig.applicationId}-producer-${topic.name}",
+    ): KafkaProducer<K, V> {
+        val config = ProducerFactoryConfig(
+            streamsConfig = config,
+            clientId = "${config.applicationId}-producer-${topic.name}",
         )
-        return KafkaProducer(
-            producerConfig.toProperties(),
+        val internal =  InternalKafkaProducer(
+            config.toProperties(),
             topic.serdes.key.serializer(),
             topic.serdes.value.serializer(),
         )
+        return KafkaProducer(topic, internal)
     }
-}
 
-interface ConsumerFactory {
     fun <K: Any, V> createConsumer(
-        streamsConfig: StreamsConfig,
+        config: StreamsConfig,
         topic: Topic<K, V & Any>,
-        maxEstimatedProcessingTimeMs: Int, // e.g. 4_000
-        groupIdSuffix: Int = 1, // used to "reset" the consumer by registering a new
-        offsetResetPolicy: OffsetResetPolicy = OffsetResetPolicy.earliest
-    ): Consumer<K, V> {
-        val consumerConfig = ConsumerFactoryConfig(
-            streamsConfig = streamsConfig,
-            clientId = "${streamsConfig.applicationId}-consumer-${topic.name}",
-            groupId = "${streamsConfig.applicationId}-${topic.name}-$groupIdSuffix",
-            maxEstimatedProcessingTimeMs,
-            offsetResetPolicy
+        resetPolicy: OffsetResetPolicy = OffsetResetPolicy.earliest,  
+        maxProcessingTimeMs: Int = 4_000,
+        groupId: Int = 1,
+    ): KafkaConsumer<K, V> {
+        val config = ConsumerFactoryConfig(
+            streamsConfig = config,
+            clientId = "${config.applicationId}-consumer-${topic.name}",
+            groupId = "${config.applicationId}-${topic.name}-$groupId",
+            maxProcessingTimeMs,
+            resetPolicy
         )
-
-        return KafkaConsumer(
-            consumerConfig.toProperties(),
+        val internal = InternalKafkaConsumer(
+            config.toProperties(),
             topic.serdes.key.deserializer(),
             topic.serdes.value.deserializer()
         )
+        return KafkaConsumer(topic, internal)
     }
 }
 
