@@ -27,13 +27,13 @@ class OppdragsdataConsumer(
     config: StreamsConfig,
     kafka: Kafka,
 ): AutoCloseable {
-    private val consumer = kafka.createConsumer(config, Topics.oppdragsdata, maxProcessingTimeMs = 30_000)
-    private val producer = kafka.createProducer(config, Topics.oppdragsdata)
+    private val oppdragsdataConsumer = kafka.createConsumer(config, Topics.oppdragsdata, maxProcessingTimeMs = 30_000)
+    private val oppdragsdataProducer = kafka.createProducer(config, Topics.oppdragsdata)
     private val avstemmingProducer = kafka.createProducer(config, Topics.avstemming)
 
+    @Suppress("UNCHECKED_CAST")
     suspend fun consumeFromBeginning() {
-        val now = LocalDateTime.now()
-        val today = now.toLocalDate()
+        val today = LocalDate.now()
 
         val last: Scheduled? = transaction {
             Scheduled.lastOrNull()
@@ -41,14 +41,16 @@ class OppdragsdataConsumer(
 
         if (today == last?.created_at) return // already done
 
-        consumer.seekToBeginning(0, 1, 2)
-        val records = consumer.poll(1.minutes)
-        if (records.isEmpty()) return
+        oppdragsdataConsumer.seekToBeginning(0, 1, 2)
+        val records = oppdragsdataConsumer.poll(1.minutes)
+        if (records.isEmpty()) return // TODO: skal vi avstemme selv om det ikke er noe å avstemme?
 
         val avstemFom = last?.avstemt_tom?.plusDays(1) ?: LocalDate.now().forrigeVirkedag() 
         val avstemTom = today.minusDays(1)
 
         records
+            .filter { record -> record.value != null } 
+            .map { record -> record as Record<String, Oppdragsdata> }
             .filter { record  -> record.value.avstemmingsdag == today || record.value.avstemmingsdag.isBefore(today) }
             .groupBy { record -> record.value.fagsystem }
             .forEach { (fagsystem, oppdragsdatas) ->
@@ -60,9 +62,9 @@ class OppdragsdataConsumer(
                 }
                 appLog.info("Fullført grensesnittavstemming for ${fagsystem.name} id: $avstemmingId")
                 oppdragsdatas.forEach { record ->
-                    producer.send(record.key, null, record.partition)
+                    oppdragsdataProducer.send(record.key, null, record.partition)
                 }
-            }
+            } // TODO: merge med tom liste av avstemminger (START/SLUTT melding)
 
         transaction {
             Scheduled(LocalDate.now(), avstemFom, avstemTom).insert()
@@ -70,8 +72,8 @@ class OppdragsdataConsumer(
     }
 
     override fun close() {
-        consumer.close()
-        producer.close()
+        oppdragsdataConsumer.close()
+        oppdragsdataProducer.close()
         avstemmingProducer.close()
     }
 }
