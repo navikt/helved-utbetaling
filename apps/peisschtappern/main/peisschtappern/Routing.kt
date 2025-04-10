@@ -37,6 +37,11 @@ fun Routing.api() {
             when (it) {
                 Topics.avstemming.name -> Tables.avstemming
                 Topics.oppdrag.name -> Tables.oppdrag
+                Topics.oppdragsdata.name -> Tables.oppdragsdata
+                Topics.dryrunAap.name -> Tables.dryrun_aap
+                Topics.dryrunTp.name -> Tables.dryrun_tp
+                Topics.dryrunTs.name -> Tables.dryrun_ts
+                Topics.dryrunDp.name -> Tables.dryrun_dp
                 Topics.aap.name -> Tables.aap
                 Topics.saker.name -> Tables.saker
                 Topics.utbetalinger.name -> Tables.utbetalinger

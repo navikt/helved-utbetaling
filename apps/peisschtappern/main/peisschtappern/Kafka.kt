@@ -9,6 +9,11 @@ import libs.postgres.concurrency.transaction
 object Topics {
     val avstemming = Topic("helved.avstemming.v1", bytes())
     val oppdrag = Topic("helved.oppdrag.v1", bytes())
+    val oppdragsdata = Topic("helved.oppdragsdata.v1", bytes())
+    val dryrunAap = Topic("helved.dryrun-aap.v1", bytes())
+    val dryrunTp = Topic("helved.dryrun-tp.v1", bytes())
+    val dryrunTs = Topic("helved.dryrun-ts.v1", bytes())
+    val dryrunDp = Topic("helved.dryrun-dp.v1", bytes())
     val kvittering = Topic("helved.kvittering.v1", bytes())
     val simuleringer = Topic("helved.simuleringer.v1", bytes())
     val utbetalinger = Topic("helved.utbetalinger.v1", bytes())
@@ -19,6 +24,11 @@ object Topics {
 fun createTopology(): Topology = topology {
     save(Topics.avstemming, Tables.avstemming)
     save(Topics.oppdrag, Tables.oppdrag)
+    save(Topics.oppdragsdata, Tables.oppdragsdata)
+    save(Topics.dryrunAap, Tables.dryrun_aap)
+    save(Topics.dryrunTp, Tables.dryrun_tp)
+    save(Topics.dryrunTs, Tables.dryrun_ts)
+    save(Topics.dryrunDp, Tables.dryrun_dp)
     save(Topics.kvittering, Tables.kvittering)
     save(Topics.simuleringer, Tables.simuleringer)
     save(Topics.utbetalinger, Tables.utbetalinger)
