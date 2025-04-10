@@ -43,7 +43,7 @@ class OppdragsdataConsumer(
 
         oppdragsdataConsumer.seekToBeginning(0, 1, 2)
         val records = oppdragsdataConsumer.poll(1.minutes)
-        if (records.isEmpty()) return // TODO: skal vi avstemme selv om det ikke er noe å avstemme?
+        if (records.isEmpty()) return
 
         val avstemFom = last?.avstemt_tom?.plusDays(1) ?: LocalDate.now().forrigeVirkedag() 
         val avstemTom = today.minusDays(1)
@@ -64,7 +64,7 @@ class OppdragsdataConsumer(
                 oppdragsdatas.forEach { record ->
                     oppdragsdataProducer.send(record.key, null, record.partition)
                 }
-            } // TODO: merge med tom liste av avstemminger (START/SLUTT melding)
+            }
 
         transaction {
             Scheduled(LocalDate.now(), avstemFom, avstemTom).insert()
