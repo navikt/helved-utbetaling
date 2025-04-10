@@ -7,6 +7,7 @@ import libs.postgres.Jdbc
 import libs.postgres.Migrator
 import libs.utils.logger
 import libs.utils.secureLog
+import libs.kafka.KafkaFactory
 import models.erHelligdag
 
 val appLog = logger("app")
@@ -17,13 +18,25 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    val config: Config = Config()
-    val kafka: Kafka = Kafka()
+    database()
+    vedskiva()
+}
+
+fun database(config: Config = Config()) {
     Jdbc.initialize(config.jdbc)
     runBlocking {
         withContext(Jdbc.context) {
             Migrator(config.jdbc.migrations).migrate()
+        }
+    }
+}
 
+fun vedskiva(
+    config: Config = Config(),
+    kafka: KafkaFactory = Kafka(),
+) {
+    runBlocking {
+        withContext(Jdbc.context) {
             if (!LocalDate.now().erHelligdag()) {
                 OppdragsdataConsumer(config.kafka, kafka).use {
                     it.consumeFromBeginning()
