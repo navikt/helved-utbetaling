@@ -2,9 +2,6 @@ package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.kafka.KafkaTestMetrics
-import org.apache.kafka.clients.consumer.Consumer
-import org.apache.kafka.clients.consumer.MockConsumer
-import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.streams.TopologyTestDriver
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
@@ -12,7 +9,6 @@ import kotlin.time.toJavaDuration
 class StreamsMock : Streams {
     private lateinit var internalStreams: TopologyTestDriver
     private lateinit var internalTopology: org.apache.kafka.streams.Topology
-
 
     override fun connect(topology: Topology, config: StreamsConfig, registry: MeterRegistry) {
         topology.registerInternalTopology(this)
@@ -60,32 +56,31 @@ class StreamsMock : Streams {
             )
         )
 
-    private val producers = mutableMapOf<Topic<*, *>, MockProducer<*, *>>()
+    private val producers = mutableMapOf<Topic<*, *>, KafkaProducer<*, *>>()
 
     @Suppress("UNCHECKED_CAST")
     override fun <K: Any, V> createProducer(
-        streamsConfig: StreamsConfig,
+        config: StreamsConfig,
         topic: Topic<K, V & Any>,
-    ): MockProducer<K, V & Any> {
-        return producers.getOrPut(topic) {
-            MockProducer(topic, testTopic(topic))
-        } as MockProducer<K, V & Any>
+    ): KafkaProducer <K, V> {
+        return producers.getOrPut(topic) { 
+            KafkaProducerFake(topic) 
+        } as KafkaProducerFake<K, V>
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <K: Any, V> getProducer(topic: Topic<K, V & Any>): MockProducer<K, V & Any> {
-        return producers[topic] as MockProducer<K, V & Any>
+    fun <K: Any, V> getProducer(topic: Topic<K, V & Any>): KafkaProducerFake<K, V> {
+        return producers[topic] as KafkaProducerFake<K, V>
     }
 
     override fun <K: Any, V> createConsumer(
-        streamsConfig: StreamsConfig,
+        config: StreamsConfig,
         topic: Topic<K, V & Any>,
-        maxEstimatedProcessingTimeMs: Int,
-        groupIdSuffix: Int,
-        offsetResetPolicy: OffsetResetPolicy
-    ): Consumer<K, V> {
-        val resetPolicy = enumValueOf<OffsetResetStrategy>(offsetResetPolicy.name.uppercase())
-        return MockConsumer(resetPolicy)
+        resetPolicy: OffsetResetPolicy,  
+        maxProcessingTimeMs: Int,
+        groupId: Int,
+    ): KafkaConsumer<K, V> {
+        return KafkaConsumerFake(topic, resetPolicy)
     }
 
     override fun close() {

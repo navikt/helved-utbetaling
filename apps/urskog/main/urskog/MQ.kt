@@ -14,7 +14,6 @@ import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag110
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
-import org.apache.kafka.clients.producer.*
 import net.logstash.logback.argument.StructuredArguments.kv
 
 class OppdragMQProducer(private val config: Config, mq: MQ) {
@@ -56,11 +55,7 @@ class AvstemmingMQProducer(private val config: Config, mq: MQ) {
     }
 }
 
-class KvitteringMQConsumer(
-    private val config: Config,
-    mq: MQ,
-    kafka: Streams,
-): AutoCloseable {
+class KvitteringMQConsumer(private val config: Config, mq: MQ, kafka: Streams): AutoCloseable {
     private val kvitteringProducer = kafka.createProducer(config.kafka, Topics.kvittering)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
     private val consumer = DefaultMQConsumer(mq, config.oppdrag.kvitteringsKø, ::onMessage)
@@ -69,19 +64,7 @@ class KvitteringMQConsumer(
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
         val fk = OppdragForeignKey.from(kvittering)
         appLog.info("Mottok kvittering $fk")
-        val record = ProducerRecord(Topics.kvittering.name, fk, kvittering)
-        kvitteringProducer.send(record) { md, err ->
-            when (err) {
-                null -> secureLog.trace(
-                    "produce ${Topics.kvittering.name}",
-                    kv("key", fk.toJson()),
-                    kv("topic", Topics.kvittering.name),
-                    kv("partition", md.partition()),
-                    kv("offset", md.offset()),
-                ) 
-                else -> secureLog.error("Failed to produce record for ${fk.toJson()}")
-            }
-        }
+        kvitteringProducer.send(fk, kvittering)
     }
 
 

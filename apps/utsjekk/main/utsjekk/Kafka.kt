@@ -11,8 +11,6 @@ import models.*
 import models.StatusReply
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import org.apache.kafka.clients.producer.Producer
-import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.utils.Utils
 import utsjekk.iverksetting.OppdragResultat
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
@@ -67,29 +65,9 @@ fun createTopology(): Topology = topology {
         }
 }
 
-class OppdragKafkaProducer(config: StreamsConfig, kafka: Streams) : AutoCloseable {
-    val producer: Producer<String, Oppdrag> = kafka.createProducer(config, Topics.oppdrag)
-
-    fun produce(key: UtbetalingId, value: Oppdrag) {
-        val key = key.id.toString()
-        val record = ProducerRecord(Topics.oppdrag.name, partition(key), key, value)
-        producer.send(record) { metadata, err ->
-            if (err != null) {
-                appLog.error("Klarte ikke sende oppdrag til ${Topics.oppdrag.name} ($metadata)")
-                secureLog.error("Klarte ikke sende oppdrag til ${Topics.oppdrag.name} ($metadata)", err)
-            } else {
-                secureLog.trace("Oppdrag produsert for {} til {} ({})", key, { Topics.oppdrag.name }, metadata)
-            }
-        }.get()
-    }
-
-    override fun close() {
-        producer.close()
-    }
-
-    private fun partition(key: String): Int {
-        val bytes = key.toByteArray()
-        val hash = Utils.murmur2(bytes)
-        return Utils.toPositive(hash) % Topics.NUM_PARTITIONS
-    }
+fun partition(key: String): Int {
+    val bytes = key.toByteArray()
+    val hash = Utils.murmur2(bytes)
+    return Utils.toPositive(hash) % Topics.NUM_PARTITIONS
 }
+

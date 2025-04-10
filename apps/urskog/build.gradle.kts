@@ -16,16 +16,7 @@ dependencies {
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:mq:$libVersion")
     implementation("no.nav.helved:ws:$libVersion")
-    implementation("no.nav.helved:xml:$libVersion") // temp, for å teste ut envelope + jaxb
-
-    // TODO: encapsulate in libs:kafka
-    // vanilla producer
-    implementation("org.apache.kafka:kafka-clients:3.9.0")
-
-    // TODO: encapsulate in libs:kafka
-    // import org.apache.kafka.streams.kstream.Named
-    // import org.apache.kafka.streams.state.ValueAndTimestamp
-    implementation("org.apache.kafka:kafka-streams:3.9.0")
+    implementation("no.nav.helved:xml:$libVersion")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")

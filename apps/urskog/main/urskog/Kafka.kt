@@ -6,8 +6,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.runBlocking
 import libs.kafka.*
-import libs.kafka.stream.BranchedKStream
-import libs.kafka.stream.ConsumedStream
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Mmel
