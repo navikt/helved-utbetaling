@@ -11,7 +11,7 @@ import models.Avstemming
 import models.Oppdragsdata
 import models.forrigeVirkedag
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.TopicPartition
@@ -25,7 +25,7 @@ open class Kafka : KafkaFactory
 
 class OppdragsdataConsumer(
     config: StreamsConfig,
-    kafka: Kafka,
+    kafka: KafkaFactory,
 ): AutoCloseable {
     private val oppdragsdataConsumer = kafka.createConsumer(config, Topics.oppdragsdata, maxProcessingTimeMs = 30_000)
     private val oppdragsdataProducer = kafka.createProducer(config, Topics.oppdragsdata)
@@ -42,28 +42,52 @@ class OppdragsdataConsumer(
         if (today == last?.created_at) return // already done
 
         oppdragsdataConsumer.seekToBeginning(0, 1, 2)
-        val records = oppdragsdataConsumer.poll(1.minutes)
+
+        val records = mutableMapOf<String, Record<String, Oppdragsdata>>()
+        var keepPolling = true
+
+        while (keepPolling) {
+            val polledRecords = oppdragsdataConsumer.poll(1.seconds)
+
+            if (polledRecords.isEmpty()) {
+                keepPolling = false
+                continue
+            }
+
+            polledRecords
+                .filter { record ->  
+                    when (record.value) {
+                        null -> true
+                        else -> record.value!!.avstemmingsdag == today || record.value!!.avstemmingsdag.isBefore(today)
+                    }
+                }
+                .forEach { record -> 
+                    when (record.value) {
+                        null -> records.remove(record.key) 
+                        else -> records[record.key] = record as Record<String, Oppdragsdata>
+                    }
+                }
+
+            keepPolling = polledRecords.any { record ->
+                val avstemmingsdag = requireNotNull(record.value).avstemmingsdag
+                avstemmingsdag == today || avstemmingsdag.isBefore(today) 
+            }
+        }
+
         if (records.isEmpty()) return
 
         val avstemFom = last?.avstemt_tom?.plusDays(1) ?: LocalDate.now().forrigeVirkedag() 
         val avstemTom = today.minusDays(1)
 
-        records
-            .filter { record -> record.value != null } 
-            .map { record -> record as Record<String, Oppdragsdata> }
-            .filter { record  -> record.value.avstemmingsdag == today || record.value.avstemmingsdag.isBefore(today) }
+        records.values
             .groupBy { record -> record.value.fagsystem }
             .forEach { (fagsystem, oppdragsdatas) ->
                 val avstemming = Avstemming(avstemFom, avstemTom, oppdragsdatas.map { record -> record.value })
                 val messages = AvstemmingService.create(avstemming)
                 val avstemmingId = messages.first().aksjon.avleverendeAvstemmingId
-                messages.forEach { message ->
-                    avstemmingProducer.send(avstemmingId, message, 0)
-                }
+                messages.forEach { message -> avstemmingProducer.send(avstemmingId, message, 0) }
+                oppdragsdatas.forEach { record -> oppdragsdataProducer.send(record.key, null, record.partition) }
                 appLog.info("Fullført grensesnittavstemming for ${fagsystem.name} id: $avstemmingId")
-                oppdragsdatas.forEach { record ->
-                    oppdragsdataProducer.send(record.key, null, record.partition)
-                }
             }
 
         transaction {
