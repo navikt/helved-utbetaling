@@ -59,15 +59,19 @@ class OppdragsdataConsumer(
 
             polledRecords
                 .filter { record ->  
-                    when (record.value) {
-                        null -> true
-                        else -> record.value!!.avstemmingsdag == today || record.value!!.avstemmingsdag.isBefore(today)
+                    if (record.value == null) {
+                        true // ta med tombstones slik at vi kan rydde i mutableMapOf<String, Record<String, Oppdragsdata>>()
+                    } else {
+                        val oppdragsdata = requireNotNull(record.value) { "tombstones skal allerede ha blitt vurdert på dette stedet" }
+                        oppdragsdata.avstemmingsdag == today || oppdragsdata.avstemmingsdag.isBefore(today)
                     }
                 }
                 .forEach { record -> 
-                    when (record.value) {
-                        null -> records.remove(record.key) 
-                        else -> records[record.key] = record as Record<String, Oppdragsdata>
+                    if (record.value == null) {
+                        records.remove(record.key)
+                    } else {
+                        // TODO: undersøk hva som skjer når en key holder på både en "CREATE" og en "UPDATE", er det siste som gjelder, eller må man se på begge for å regne ut riktig totalBeløp osv?
+                        records[record.key] = record as Record<String, Oppdragsdata>
                     }
                 }
 

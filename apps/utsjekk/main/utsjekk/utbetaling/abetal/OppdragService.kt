@@ -8,6 +8,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import models.nesteUkedag
+import models.nesteVirkedag
 import java.util.*
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
@@ -30,10 +31,9 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().format() // TODO: sett til neste virkedag
-                nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = FagsystemDto.from(new.stønad).kode
-                tidspktMelding = avstemmingstidspunkt
+                nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
+                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.perioder.mapIndexed { i, periode ->
@@ -62,10 +62,9 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().format()
-                nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = FagsystemDto.from(new.stønad).name
-                tidspktMelding = avstemmingstidspunkt
+                nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
+                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
@@ -94,10 +93,9 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().format()
-                nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = FagsystemDto.from(new.stønad).kode
-                tidspktMelding = avstemmingstidspunkt
+                nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
+                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }
