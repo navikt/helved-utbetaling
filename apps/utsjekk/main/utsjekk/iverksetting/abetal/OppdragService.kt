@@ -1,7 +1,17 @@
 package utsjekk.iverksetting.abetal
 
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.*
+import javax.xml.datatype.DatatypeFactory
+import javax.xml.datatype.XMLGregorianCalendar
 import kotlinx.coroutines.runBlocking
 import libs.postgres.concurrency.transaction
+import models.PeriodeId
+import models.nesteVirkedag
 import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
 import no.nav.utsjekk.kontrakter.felles.Satstype
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
@@ -13,14 +23,6 @@ import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
-import java.util.*
-import javax.xml.datatype.DatatypeFactory
-import javax.xml.datatype.XMLGregorianCalendar
 
 private val objectFactory = ObjectFactory()
 private fun LocalDateTime.format() = truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
@@ -151,9 +153,9 @@ private fun oppdrag(utbetalingsoppdrag: Utbetalingsoppdrag): Oppdrag {
         datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
         saksbehId = utbetalingsoppdrag.saksbehandlerId
         avstemming115 = objectFactory.createAvstemming115().apply {
-            nokkelAvstemming = utbetalingsoppdrag.avstemmingstidspunkt.format() // TODO: sett til neste virkedag
             kodeKomponent = utbetalingsoppdrag.fagsystem.kode
-            tidspktMelding = utbetalingsoppdrag.avstemmingstidspunkt.format()
+            nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
+            tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
         }
         oppdragsEnhet120(utbetalingsoppdrag).map { oppdragsEnhet120s.add(it) }
         utbetalingsoppdrag.utbetalingsperiode.map { periode ->

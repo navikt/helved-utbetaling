@@ -101,7 +101,7 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
             fagsystem = Fagsystem.fromFagområde(o.oppdrag110.kodeFagomraade.trimEnd()),
             personident = Personident(o.oppdrag110.oppdragGjelderId.trimEnd()),
             sakId = SakId(o.oppdrag110.fagsystemId.trimEnd()),
-            avstemmingsdag = LocalDateTime.parse(o.oppdrag110.avstemming115.nokkelAvstemming.trimEnd(), formatter).toLocalDate(),
+            avstemmingsdag = LocalDateTime.parse(o.oppdrag110.avstemming115.tidspktMelding.trimEnd(), formatter).toLocalDate(),
             totalBeløpAllePerioder = o.oppdrag110.oppdragsLinje150s.sumOf { it.sats.toLong().toUInt() },
             kvittering = if (o.mmel == null) null else Kvittering(
                 kode = o.mmel.kodeMelding?.trimEnd(), // disse finnes bare ved varsel og avvist

@@ -29,10 +29,9 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().format()
-                nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = Fagsystem.from(new.stønad).fagområde
-                tidspktMelding = avstemmingstidspunkt
+                nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
+                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.perioder.mapIndexed { i, periode ->
@@ -61,10 +60,9 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().format()
-                nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = Fagsystem.from(new.stønad).name
-                tidspktMelding = avstemmingstidspunkt
+                nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
+                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
@@ -93,10 +91,9 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                val avstemmingstidspunkt = LocalDateTime.now().format()
-                nokkelAvstemming = avstemmingstidspunkt
                 kodeKomponent = Fagsystem.from(new.stønad).name
-                tidspktMelding = avstemmingstidspunkt
+                nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
+                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }
