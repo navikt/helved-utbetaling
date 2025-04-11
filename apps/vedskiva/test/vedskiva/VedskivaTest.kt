@@ -4,17 +4,25 @@ import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runTest
+import libs.postgres.concurrency.transaction
+import libs.postgres.Jdbc
 import models.*
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
+import org.junit.jupiter.api.BeforeEach
 
 class VedskivaTest {
 
+    @BeforeEach
+    fun reset() {
+        database(TestRuntime.config)
+        TestRuntime.reset()
+    }
+
     @Test
     fun `avstem for AAP`() = runTest(TestRuntime.context) {
-
-        database(TestRuntime.config)
-
         val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
         val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
@@ -64,6 +72,47 @@ class VedskivaTest {
             testLog.debug(Topics.avstemming.serdes.value.serializer().serialize(Topics.avstemming.name, value).decodeToString())
         }
     }
+
+    @Test
+    fun `has already avstemt idempotency`() = runTest(TestRuntime.context) {
+        runBlocking {
+            withContext(Jdbc.context) {
+                transaction {
+                    Scheduled(LocalDate.now(), LocalDate.now(), LocalDate.now()).insert()
+                }
+            }
+        }
+
+        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        oppConsumer.assign(0, 1, 2)
+        val okFremtid = oppdragsdata(avstemmingsdag = LocalDate.now().plusDays(1), totalBeløpAllePerioder = 10000u)
+        oppConsumer.populate("1", okFremtid, 0, 0L)
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(0, oppProducer.history().size)
+        assertEquals(0, avsProducer.history().size)
+    }
+
+    @Test
+    fun `will skip avstemming when no scheduled oppdragsdatas are found`() = runTest(TestRuntime.context) {
+        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        oppConsumer.assign(0, 1, 2)
+        val okFremtid = oppdragsdata(avstemmingsdag = LocalDate.now().plusDays(1), totalBeløpAllePerioder = 10000u)
+        oppConsumer.populate("1", okFremtid, 0, 0L)
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(0, oppProducer.history().size)
+        assertEquals(0, avsProducer.history().size)
+    }
+
 }
 
 private fun oppdragsdata(

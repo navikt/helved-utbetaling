@@ -35,6 +35,11 @@ object TestRuntime: AutoCloseable {
         postgres.close()
     }
 
+    fun reset() {
+        truncate()
+        kafka.reset()
+    }
+
     private fun truncate() {
         runBlocking {
             withContext(Jdbc.context) {
@@ -51,6 +56,11 @@ object TestRuntime: AutoCloseable {
 class KafkaFactoryFake: KafkaFactory {
     private val producers = mutableMapOf<String, KafkaProducer<*, * >>()
     private val consumers = mutableMapOf<String, KafkaConsumer<*, * >>()
+
+    internal fun reset() {
+        producers.clear()
+        consumers.clear()
+    }
 
     override fun <K: Any, V> createProducer(
         config: StreamsConfig,

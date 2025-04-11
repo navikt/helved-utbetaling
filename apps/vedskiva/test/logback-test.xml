@@ -16,6 +16,7 @@
         <appender-ref ref="stdout"/>
     </root>
 
+    <logger name="test"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="kafka"     level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="app"       level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="stdout"/></logger>

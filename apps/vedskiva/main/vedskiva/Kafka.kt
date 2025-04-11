@@ -39,7 +39,10 @@ class OppdragsdataConsumer(
             Scheduled.lastOrNull()
         } 
 
-        if (today == last?.created_at) return // already done
+        if (today == last?.created_at) {
+            appLog.info("Already avstemt today")
+            return // already done
+        }
 
         oppdragsdataConsumer.seekToBeginning(0, 1, 2)
 
@@ -74,7 +77,10 @@ class OppdragsdataConsumer(
             }
         }
 
-        if (records.isEmpty()) return
+        if (records.isEmpty()) {
+            appLog.info("No records was found for avstemming.")
+            return
+        }
 
         val avstemFom = last?.avstemt_tom?.plusDays(1) ?: LocalDate.now().forrigeVirkedag() 
         val avstemTom = today.minusDays(1)
