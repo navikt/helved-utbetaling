@@ -250,6 +250,7 @@ class VedskivaTest {
     @Test
     // TODO: hva skjer hvis vi opphører en utbetaling samme dag som vi opprettet den
     // TODO: hva skjer hvis vi opphører en utbetaling midt i en utbetaling fra samme dag, skal beløpet halveres?
+    // TODO: hva skjer med use-casene over dersom vi endrer en utbetaling for en annen avstemmingdag som treffer samme scheduled? Skal vi gruppere på avstemmingsdag? 
     fun `can reduce oppdragsdata with latest`() = runTest(TestRuntime.context) {
         val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
         val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
