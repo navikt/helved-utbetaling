@@ -14,6 +14,7 @@ data class Oppdragsdata(
     val fagsystem: Fagsystem,
     val personident: Personident,
     val sakId: SakId,
+    val lastDelytelseId: String,
     val avstemmingsdag: LocalDate,
     val totalBeløpAllePerioder: UInt,
     val kvittering: Kvittering?,
