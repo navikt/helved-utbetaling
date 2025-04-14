@@ -1,14 +1,15 @@
-package vedskiva 
+package vedskiva
 
 import java.time.LocalDate
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runTest
-import libs.postgres.concurrency.transaction
+import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
+import libs.postgres.concurrency.transaction
 import models.*
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
 import org.junit.jupiter.api.BeforeEach
@@ -22,7 +23,7 @@ class VedskivaTest {
     }
 
     @Test
-    fun `avstem for AAP`() = runTest(TestRuntime.context) {
+    fun `can avstemme AAP`() = runTest(TestRuntime.context) {
         val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
         val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
@@ -74,7 +75,7 @@ class VedskivaTest {
     }
 
     @Test
-    fun `has already avstemt idempotency`() = runTest(TestRuntime.context) {
+    fun `has idempotent scheduler`() = runTest(TestRuntime.context) {
         runBlocking {
             withContext(Jdbc.context) {
                 transaction {
@@ -98,7 +99,7 @@ class VedskivaTest {
     }
 
     @Test
-    fun `will skip avstemming when no scheduled oppdragsdatas are found`() = runTest(TestRuntime.context) {
+    fun `can skip avstemming without scheduled oppdragsdatas`() = runTest(TestRuntime.context) {
         val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
         val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
@@ -113,12 +114,158 @@ class VedskivaTest {
         assertEquals(0, avsProducer.history().size)
     }
 
+    @Test
+    fun `can filter tombstoned oppdragsdata`() = runTest(TestRuntime.context) {
+        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+        oppConsumer.assign(0, 1, 2)
+        val ok = oppdragsdata(totalBeløpAllePerioder = 100u)
+
+        oppConsumer.populate("7", ok,   0, 2L)
+        oppConsumer.populate("7", null, 0, 3L)
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(0, oppProducer.history().size)
+        assertEquals(0, avsProducer.history().size)
+    }
+
+    @Test
+    fun `can deduplicate`() = runTest(TestRuntime.context) {
+        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+        oppConsumer.assign(0, 1, 2)
+        val ok = oppdragsdata(totalBeløpAllePerioder = 100u)
+
+        oppConsumer.populate("1", ok, 0, 2L)
+        oppConsumer.populate("1", ok, 0, 3L)
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(1, oppProducer.history().size)
+        assertEquals(3, avsProducer.history().size)
+        val data = avsProducer.history()[1].second
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(100, data.total.totalBelop.toInt())
+        assertEquals(1, data.grunnlag.godkjentAntall)
+        assertEquals(100, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+    }
+
+    @Test
+    fun `can read records after tombstones`() = runTest(TestRuntime.context) {
+        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+        oppConsumer.assign(0, 1, 2)
+        val okGammel = oppdragsdata(totalBeløpAllePerioder = 300u)
+        val okNy = oppdragsdata(totalBeløpAllePerioder = 40u)
+
+        oppConsumer.populate("7", okGammel, 0, 2L)
+        oppConsumer.populate("7", null,     0, 3L)
+        oppConsumer.populate("7", okNy,     0, 4L)
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(1, oppProducer.history().size)
+        assertEquals(3, avsProducer.history().size)
+        val data = avsProducer.history()[1].second
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(40, data.total.totalBelop.toInt())
+        assertEquals(1, data.grunnlag.godkjentAntall)
+        assertEquals(40, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+    }
+
+    @Test
+    fun `oppdragsdata with kvittering takes precedence`() = runTest(TestRuntime.context) {
+        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+        oppConsumer.assign(0, 1, 2)
+        val okMedKvitt = oppdragsdata(totalBeløpAllePerioder = 50u)
+        val okUtenKvitt = okMedKvitt.copy(kvittering = null)
+
+        oppConsumer.populate("8", okUtenKvitt, 0, 1L)
+        oppConsumer.populate("8", okMedKvitt,  0, 2L)
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(1, oppProducer.history().size)
+        assertEquals(3, avsProducer.history().size)
+        val data = avsProducer.history()[1].second
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(50, data.total.totalBelop.toInt())
+        assertEquals(1, data.grunnlag.godkjentAntall)
+        assertEquals(50, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+    }
+
+    @Test
+    fun `can accumulate oppdragsdata for same key`() = runTest(TestRuntime.context) {
+        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+        oppConsumer.assign(0, 1, 2)
+        val okA = oppdragsdata(totalBeløpAllePerioder = 333u)
+        val okB = oppdragsdata(totalBeløpAllePerioder = 666u)
+
+        oppConsumer.populate("7", okA, 0, 2L)
+        oppConsumer.populate("7", okB, 0, 3L)
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(1, oppProducer.history().size)
+        assertEquals(3, avsProducer.history().size)
+        val data = avsProducer.history()[1].second
+        assertEquals(2, data.total.totalAntall)
+        assertEquals(999, data.total.totalBelop.toInt())
+        assertEquals(2, data.grunnlag.godkjentAntall)
+        assertEquals(999, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+    }
+
+    @Test
+    // TODO: hva skjer hvis vi opphører en utbetaling samme dag som vi opprettet den
+    // TODO: hva skjer hvis vi opphører en utbetaling midt i en utbetaling fra samme dag, skal beløpet halveres?
+    fun `can reduce oppdragsdata with latest`() = runTest(TestRuntime.context) {
+        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+        oppConsumer.assign(0, 1, 2)
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+    }
+
 }
 
 private fun oppdragsdata(
     fagsystem: Fagsystem = Fagsystem.AAP,
     personident: Personident = Personident("12345678910"),
     sakId: SakId = SakId("1"),
+    lastDelytelseId: String = UUID.randomUUID().toString(), 
     avstemmingsdag: LocalDate = LocalDate.now(),
     totalBeløpAllePerioder: UInt = 100u,
     kvittering: Kvittering? = Kvittering(null, "00", null), 
@@ -126,6 +273,7 @@ private fun oppdragsdata(
     fagsystem,
     personident,
     sakId,
+    lastDelytelseId,
     avstemmingsdag,
     totalBeløpAllePerioder,
     kvittering, 

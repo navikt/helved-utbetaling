@@ -46,7 +46,7 @@ class OppdragsdataConsumer(
 
         oppdragsdataConsumer.seekToBeginning(0, 1, 2)
 
-        val records = mutableMapOf<String, Record<String, Oppdragsdata>>()
+        val records = mutableMapOf<String, Set<Record<String, Oppdragsdata>>>()
         var keepPolling = true
 
         while (keepPolling) {
@@ -70,8 +70,9 @@ class OppdragsdataConsumer(
                     if (record.value == null) {
                         records.remove(record.key)
                     } else {
-                        // TODO: undersøk hva som skjer når en key holder på både en "CREATE" og en "UPDATE", er det siste som gjelder, eller må man se på begge for å regne ut riktig totalBeløp osv?
-                        records[record.key] = record as Record<String, Oppdragsdata>
+                        val record = record as Record<String, Oppdragsdata>
+                        records.removeUkvittert(record)
+                        records.accumulateAndDeduplicate(record)
                     }
                 }
 
@@ -90,13 +91,17 @@ class OppdragsdataConsumer(
         val avstemTom = today.minusDays(1)
 
         records.values
-            .groupBy { record -> record.value.fagsystem }
+            .filterNot { it.isEmpty() }
+            .groupBy { record -> record.first().value.fagsystem }
             .forEach { (fagsystem, oppdragsdatas) ->
-                val avstemming = Avstemming(avstemFom, avstemTom, oppdragsdatas.map { record -> record.value })
+                val avstemming = Avstemming(avstemFom, avstemTom, oppdragsdatas.flatMap { records -> records.map{ record -> record.value }})
                 val messages = AvstemmingService.create(avstemming)
                 val avstemmingId = messages.first().aksjon.avleverendeAvstemmingId
                 messages.forEach { message -> avstemmingProducer.send(avstemmingId, message, 0) }
-                oppdragsdatas.forEach { record -> oppdragsdataProducer.send(record.key, null, record.partition) }
+                oppdragsdatas.forEach { record ->
+                    // all records within this loop has the same key and partition
+                    oppdragsdataProducer.send(record.first().key, null, record.first().partition)
+                }
                 appLog.info("Fullført grensesnittavstemming for ${fagsystem.name} id: $avstemmingId")
             }
 
@@ -110,5 +115,27 @@ class OppdragsdataConsumer(
         oppdragsdataProducer.close()
         avstemmingProducer.close()
     }
+}
+
+// add updated oppdragsdata if not identical to previous
+fun MutableMap<String, Set<Record<String, Oppdragsdata>>>.accumulateAndDeduplicate(record: Record<String, Oppdragsdata>) {
+    val recordsForKey = getOrDefault(record.key, emptySet())
+    this[record.key] = recordsForKey + record
+    appLog.info("accumulate ${record.key}: ${this[record.key]!!.size}")
+}
+
+// replace record that is updated with a kvittering
+fun MutableMap<String, Set<Record<String, Oppdragsdata>>>.removeUkvittert(record: Record<String, Oppdragsdata>) {
+    val recordsForKey = getOrDefault(record.key, emptySet())
+
+    val associatedRecordWithoutKvittering = recordsForKey.find { r ->
+        r.value.lastDelytelseId == record.value.lastDelytelseId && r.value.kvittering == null
+    }
+
+    if (associatedRecordWithoutKvittering != null) {
+        this[record.key] = recordsForKey - associatedRecordWithoutKvittering 
+        appLog.info("replace ${record.key} with kvittert: ${this[record.key]!!.size}")
+    } 
+
 }
 
