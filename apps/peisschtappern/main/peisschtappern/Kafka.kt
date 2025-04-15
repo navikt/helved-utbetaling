@@ -9,16 +9,16 @@ import libs.postgres.concurrency.transaction
 object Topics {
     val avstemming = Topic("helved.avstemming.v1", bytes())
     val oppdrag = Topic("helved.oppdrag.v1", bytes())
-    val oppdragsdata = Topic("helved.oppdragsdata.v1", bytes())
-    val dryrunAap = Topic("helved.dryrun-aap.v1", bytes())
-    val dryrunTp = Topic("helved.dryrun-tp.v1", bytes())
-    val dryrunTs = Topic("helved.dryrun-ts.v1", bytes())
-    val dryrunDp = Topic("helved.dryrun-dp.v1", bytes())
     val kvittering = Topic("helved.kvittering.v1", bytes())
     val simuleringer = Topic("helved.simuleringer.v1", bytes())
     val utbetalinger = Topic("helved.utbetalinger.v1", bytes())
     val saker = Topic("helved.saker.v1", bytes())
     val aap = Topic("helved.utbetalinger-aap.v1", bytes())
+    val oppdragsdata = Topic("helved.oppdragsdata.v1", bytes())
+    val dryrunAap = Topic("helved.dryrun-aap.v1", bytes())
+    val dryrunTp = Topic("helved.dryrun-tp.v1", bytes())
+    val dryrunTs = Topic("helved.dryrun-ts.v1", bytes())
+    val dryrunDp = Topic("helved.dryrun-dp.v1", bytes())
 }
 
 fun createTopology(): Topology = topology {
