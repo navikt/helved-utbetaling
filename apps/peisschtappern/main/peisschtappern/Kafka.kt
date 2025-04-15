@@ -2,6 +2,7 @@ package peisschtappern
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import libs.kafka.*
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
@@ -30,7 +31,7 @@ fun createTopology(): Topology = topology {
 private fun Topology.save(topic: Topic<String, ByteArray>, table: Table) {
     consume(topic) { key, value, metadata ->
         runBlocking {
-            withContext(Jdbc.context) {
+            withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
                     Dao(
                         version = topic.name.substringAfterLast("."),
