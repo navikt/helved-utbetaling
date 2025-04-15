@@ -38,7 +38,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 fun Routing.api() {
     get("/api") {
         val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
-        val limit = call.queryParameters["limit"]?.toInt() ?: 1000
+        val limit = call.queryParameters["limit"]?.toInt() ?: 100
         val daos = withContext(Jdbc.context) {
             transaction {
                 coroutineScope {
