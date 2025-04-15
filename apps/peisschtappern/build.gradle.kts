@@ -16,6 +16,8 @@ dependencies {
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:utils:$libVersion")
 
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.15.0-alpha")
+
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")

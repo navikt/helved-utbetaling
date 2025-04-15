@@ -2,7 +2,13 @@
 <configuration>
 
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        <encoder>
+            <pattern>%cyan(%d{HH:mm:ss.SSS}) %highlight(%-5level) %yellow(%logger{36}) traceId: %X{trace_id} spanId: %X{span_id} %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="otel" class="io.opentelemetry.instrumentation.logback.v1_0.OpenTelemetryAppender">
+        <appender-ref ref="stdout" />
     </appender>
 
     <appender name="secureLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -22,11 +28,11 @@
         <appender-ref ref="stdout"/>
     </root>
 
-    <logger name="app"       level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="auth"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="http"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="jdbc"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="task"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="app"       level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="auth"      level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="http"      level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="jdbc"      level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="kafka"     level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="secureLog"/></logger>
 
 </configuration>
