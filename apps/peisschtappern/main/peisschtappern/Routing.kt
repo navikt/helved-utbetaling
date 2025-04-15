@@ -70,16 +70,16 @@ sealed class Channel(
 ) {
     data object Avstemming:   Channel(Topics.avstemming,   Table.avstemming,   0)
     data object Oppdrag:      Channel(Topics.oppdrag,      Table.oppdrag,      1)
-    data object Oppdragsdata: Channel(Topics.oppdragsdata, Table.oppdragsdata, 2)
-    data object DryrunAap:    Channel(Topics.dryrunAap,    Table.dryrun_aap,   3)
-    data object DryrunTp:     Channel(Topics.dryrunTp,     Table.dryrun_tp,    4)
-    data object DryrunTs:     Channel(Topics.dryrunTs,     Table.dryrun_ts,    5)
-    data object DryrunDp:     Channel(Topics.dryrunDp,     Table.dryrun_dp,    6)
-    data object Aap:          Channel(Topics.aap,          Table.aap,          7)
-    data object Saker:        Channel(Topics.saker,        Table.saker,        8)
-    data object Utbetalinger: Channel(Topics.utbetalinger, Table.utbetalinger, 9)
-    data object Kvittering:   Channel(Topics.kvittering,   Table.kvittering,   10)
-    data object Simuleringer: Channel(Topics.simuleringer, Table.simuleringer, 11)
+    data object Kvittering:   Channel(Topics.kvittering,   Table.kvittering,   2)
+    data object Simuleringer: Channel(Topics.simuleringer, Table.simuleringer, 3)
+    data object Utbetalinger: Channel(Topics.utbetalinger, Table.utbetalinger, 4)
+    data object Saker:        Channel(Topics.saker,        Table.saker,        5)
+    data object Aap:          Channel(Topics.aap,          Table.aap,          6)
+    data object Oppdragsdata: Channel(Topics.oppdragsdata, Table.oppdragsdata, 7)
+    data object DryrunAap:    Channel(Topics.dryrunAap,    Table.dryrun_aap,   8)
+    data object DryrunTp:     Channel(Topics.dryrunTp,     Table.dryrun_tp,    9)
+    data object DryrunTs:     Channel(Topics.dryrunTs,     Table.dryrun_ts,    10)
+    data object DryrunDp:     Channel(Topics.dryrunDp,     Table.dryrun_dp,    11)
 
     companion object {
         fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel } 

@@ -5,7 +5,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import libs.postgres.concurrency.transaction
 import libs.kafka.*
-import libs.postgres.Jdbc
 import libs.utils.secureLog
 import models.Avstemming
 import models.Oppdragsdata

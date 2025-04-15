@@ -19,16 +19,16 @@ class KafkaTest {
             when (it) {
                Channel.Avstemming -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Oppdrag -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Kvittering -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Simuleringer -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Utbetalinger -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Saker -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Aap -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Oppdragsdata -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunAap -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunTp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunTs -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunDp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
-               Channel.Aap -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
-               Channel.Saker -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
-               Channel.Utbetalinger -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
-               Channel.Kvittering -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
-               Channel.Simuleringer -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
             }
         }
     }
