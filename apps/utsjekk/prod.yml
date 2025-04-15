@@ -37,6 +37,7 @@ spec:
     logging:
       destinations:
         - id: loki
+        - id: elastic
   secureLogs:
     enabled: true
   kafka:

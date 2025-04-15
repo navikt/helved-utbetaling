@@ -54,6 +54,7 @@ spec:
     logging:
       destinations:
         - id: loki
+        - id: elastic
   envFrom:
     - secret: utsjekk-oppdrag-simulering
   env:
