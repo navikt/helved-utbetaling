@@ -9,7 +9,7 @@ import libs.utils.secureLog
 
 private val daoLog = logger("dao")
 
-enum class Tables {
+enum class Table {
     avstemming,
     oppdrag,
     oppdragsdata,
@@ -36,7 +36,7 @@ data class Dao(
     val system_time_ms: Long,
 ) {
     companion object {
-        suspend fun find(key: String, table: Tables, limit: Int = 1000): List<Dao> {
+        suspend fun find(key: String, table: Table, limit: Int = 1000): List<Dao> {
             val sql = """
                 SELECT * FROM ${table.name} 
                 WHERE record_key = ? 
@@ -52,24 +52,22 @@ data class Dao(
             }
         }
 
-        suspend fun find(tables: List<Tables>, limit: Int): List<Dao> {
-            return tables.flatMap {
-                val sql =
-                    """
-                        SELECT * FROM ${it.name} 
-                        ORDER BY timestamp_ms DESC 
-                        LIMIT $limit 
-                    """.trimIndent()
+        suspend fun find(table: Table, limit: Int): List<Dao> {
+            val sql =
+                """
+                    SELECT * FROM ${table.name} 
+                    ORDER BY timestamp_ms DESC 
+                    LIMIT $limit 
+                """.trimIndent()
 
-                coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                    daoLog.debug(sql)
-                    secureLog.debug(stmt.toString())
-                    stmt.executeQuery().map(::from)
-                }
-            }.sortedByDescending { it.timestamp_ms }.take(limit)
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
         }
 
-        suspend fun lastTombstone(table: Tables): Dao? {
+        suspend fun lastTombstone(table: Table): Dao? {
             val sql =
                 """
                     SELECT * FROM ${table.name} 
@@ -85,27 +83,24 @@ data class Dao(
             }
         }
 
-        suspend fun find(tables: List<Tables>, key: String, limit: Int): List<Dao> {
-            return tables.flatMap {
-                val sql = """
-                SELECT * FROM ${it.name} 
+        suspend fun find(table: Table, key: String, limit: Int): List<Dao> {
+            val sql = """
+                SELECT * FROM ${table.name} 
                 WHERE record_key = ? 
                 ORDER BY timestamp_ms DESC 
                 LIMIT $limit 
             """.trimIndent()
 
-                coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                    stmt.setString(1, key)
-                    daoLog.debug(sql)
-                    secureLog.debug(stmt.toString())
-                    stmt.executeQuery().map(::from)
-                }
-
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, key)
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
             }
         }
     }
 
-    suspend fun insert(table: Tables) {
+    suspend fun insert(table: Table) {
         val sql = """
             INSERT INTO ${table.name} (
                 version,

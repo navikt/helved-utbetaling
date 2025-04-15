@@ -21,21 +21,6 @@ import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 
-object TestTopics {
-    val avstemming by lazy { TestRuntime.kafka.testTopic(Topics.avstemming) }
-    val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
-    val oppdragsdata by lazy { TestRuntime.kafka.testTopic(Topics.oppdragsdata) }
-    val kvittering by lazy { TestRuntime.kafka.testTopic(Topics.kvittering) }
-    val simuleringer by lazy { TestRuntime.kafka.testTopic(Topics.simuleringer) }
-    val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
-    val saker by lazy { TestRuntime.kafka.testTopic(Topics.saker) }
-    val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
-    val dryrunAap by lazy { TestRuntime.kafka.testTopic(Topics.dryrunAap) }
-    val dryrunTs by lazy { TestRuntime.kafka.testTopic(Topics.dryrunTs) }
-    val dryrunTp by lazy { TestRuntime.kafka.testTopic(Topics.dryrunTp) }
-    val dryrunDp by lazy { TestRuntime.kafka.testTopic(Topics.dryrunDp) }
-}
-
 private val testLog = logger("test")
 
 object TestRuntime : AutoCloseable {
@@ -64,7 +49,7 @@ object TestRuntime : AutoCloseable {
         runBlocking {
             withContext(Jdbc.context) {
                 transaction {
-                    Tables.values().forEach {
+                    Table.values().forEach {
                         coroutineContext.connection.prepareStatement("TRUNCATE TABLE ${it.name} CASCADE").execute()
                         testLog.info("table '$it' truncated.") 
                     }
@@ -77,7 +62,7 @@ object TestRuntime : AutoCloseable {
         runBlocking {
             withContext(Jdbc.context) {
                 transaction {
-                    Tables.values().forEach {
+                    Table.values().forEach {
                         coroutineContext.connection.prepareStatement("DROP TABLE ${it.name} CASCADE").execute()
                         testLog.info("table '$it' dropped.") 
                     }
