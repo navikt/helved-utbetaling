@@ -8,6 +8,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Dispatchers
 import libs.kafka.Streams
 import libs.kafka.Topic
 import libs.postgres.Jdbc
@@ -39,7 +40,7 @@ fun Routing.api() {
     get("/api") {
         val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
         val limit = call.queryParameters["limit"]?.toInt() ?: 100
-        val daos = withContext(Jdbc.context) {
+        val daos = withContext(Jdbc.context + Dispatchers.IO) {
             transaction {
                 coroutineScope {
                     val deferred = channels.map { channel ->
