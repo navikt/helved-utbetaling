@@ -9,6 +9,9 @@ import libs.kafka.Streams
 import libs.kafka.Topic
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/probes") {
@@ -37,10 +40,10 @@ fun Routing.api() {
         val key = call.queryParameters["key"]
         val value = call.queryParameters["value"]
         val fom = call.queryParameters["fom"]
-            ?.runCatching { this.toLong() }
+            ?.runCatching { Instant.parse(this).toEpochMilli() }
             ?.getOrNull()
         val tom = call.queryParameters["tom"]
-            ?.runCatching { this.toLong() }
+            ?.runCatching { Instant.parse(this).toEpochMilli() }
             ?.getOrNull()
 
         val daos = withContext(Jdbc.context + Dispatchers.IO) {

@@ -78,8 +78,8 @@ class ApiTest {
         save(Channel.Utbetalinger, key = key, timestamp = now.toEpochMilli())
         save(Channel.Simuleringer, key = key, timestamp = later.toEpochMilli())
 
-        val fom = now.minusSeconds(5L).toEpochMilli()
-        val tom = now.plusSeconds(5L).toEpochMilli()
+        val fom = now.minusSeconds(5L).toString()
+        val tom = now.plusSeconds(5L).toString()
 
         val result = httpClient.get("/api?fom=$fom&tom=$tom&key=$key") {
             accept(ContentType.Application.Json)
