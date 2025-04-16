@@ -22,7 +22,6 @@ class ApiTest {
         }.body<List<Dao>>()
 
         assertEquals(2, result.size)
-        assertTrue(result.map { it.topic_name }.containsAll(listOf(Topics.utbetalinger.name, Topics.simuleringer.name)))
     }
 
     @Test
@@ -68,10 +67,33 @@ class ApiTest {
         assertTrue(result.first().value!!.contains(sakId))
     }
 
+    @Test
+    fun `can query for fom-tom`() = runTest(TestRuntime.context) {
+        val before = Instant.now().minusSeconds(10L)
+        val now = Instant.now()
+        val later = Instant.now().plusSeconds(10L)
+        val key = UUID.randomUUID().toString()
+
+        save(Channel.Aap, key = key, timestamp = before.toEpochMilli())
+        save(Channel.Utbetalinger, key = key, timestamp = now.toEpochMilli())
+        save(Channel.Simuleringer, key = key, timestamp = later.toEpochMilli())
+
+        val fom = now.minusSeconds(5L).toEpochMilli()
+        val tom = now.plusSeconds(5L).toEpochMilli()
+
+        val result = httpClient.get("/api?fom=$fom&tom=$tom&key=$key") {
+            accept(ContentType.Application.Json)
+        }.body<List<Dao>>()
+
+        assertEquals(1, result.size)
+        assertEquals(Topics.utbetalinger.name, result[0].topic_name)
+    }
+
     private suspend fun save(
         channel: Channel,
         key: String = UUID.randomUUID().toString(),
-        value: String = UUID.randomUUID().toString()
+        value: String = UUID.randomUUID().toString(),
+        timestamp: Long = Instant.now().toEpochMilli(),
     ) {
         val dao = Dao(
             topic_name = channel.topic.name,
@@ -80,9 +102,9 @@ class ApiTest {
             value = value,
             partition = 0,
             offset = 1,
-            timestamp_ms = Instant.now().toEpochMilli(),
-            stream_time_ms = Instant.now().toEpochMilli(),
-            system_time_ms = Instant.now().toEpochMilli()
+            timestamp_ms = timestamp,
+            stream_time_ms = timestamp,
+            system_time_ms = timestamp
         )
 
         transaction {
