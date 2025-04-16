@@ -1,14 +1,12 @@
 package peisschtappern
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertEquals
 import kotlinx.coroutines.test.runTest
+import libs.kafka.TestTopic
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
-import libs.kafka.*
 
 class KafkaTest {
-
     data class TestCase(
         val channel: Channel,
         val testTopic: TestTopic<String, ByteArray>,
@@ -35,7 +33,7 @@ class KafkaTest {
 
     @Test
     fun `consume and save daos`() = runTest(TestRuntime.context) {
-        testCases.forEach { case -> 
+        testCases.forEach { case ->
             case.testTopic.produce("123") {
                 "content for ${case.channel.table.name}".toByteArray()
             }

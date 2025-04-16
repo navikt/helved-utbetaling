@@ -4,17 +4,13 @@ import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
+import kotlinx.coroutines.test.runTest
+import libs.postgres.concurrency.transaction
 import java.time.Instant
 import java.util.UUID
-import kotlinx.coroutines.test.runTest
-import libs.kafka.Topic
-import libs.postgres.concurrency.transaction
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class ApiTest {
-
     @Test
     fun `can query with limit`() = runTest(TestRuntime.context) {
         save(Channel.Aap)
@@ -57,15 +53,31 @@ class ApiTest {
         assertTrue(result.map { it.topic_name }.containsAll(listOf(Topics.aap.name, Topics.simuleringer.name)))
     }
 
+    @Test
+    fun `can query for value`() = runTest(TestRuntime.context) {
+        val sakId = "BFH123DN"
+        save(Channel.Aap, value = "{\"sakId\":\"$sakId\"}")
+        save(Channel.Utbetalinger)
+        save(Channel.Simuleringer)
+
+        val result = httpClient.get("/api?value=$sakId") {
+            accept(ContentType.Application.Json)
+        }.body<List<Dao>>()
+
+        assertEquals(1, result.size)
+        assertTrue(result.first().value!!.contains(sakId))
+    }
+
     private suspend fun save(
         channel: Channel,
         key: String = UUID.randomUUID().toString(),
+        value: String = UUID.randomUUID().toString()
     ) {
         val dao = Dao(
             topic_name = channel.topic.name,
             version = "v1",
             key = key,
-            value = UUID.randomUUID().toString(),
+            value = value,
             partition = 0,
             offset = 1,
             timestamp_ms = Instant.now().toEpochMilli(),
@@ -76,6 +88,6 @@ class ApiTest {
         transaction {
             dao.insert(channel.table)
         }
-    } 
+    }
 }
 
