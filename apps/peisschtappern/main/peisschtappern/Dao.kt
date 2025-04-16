@@ -1,11 +1,11 @@
 package peisschtappern
 
-import java.sql.ResultSet
-import kotlin.coroutines.coroutineContext
 import libs.postgres.concurrency.connection
 import libs.postgres.map
 import libs.utils.logger
 import libs.utils.secureLog
+import java.sql.ResultSet
+import kotlin.coroutines.coroutineContext
 
 private val daoLog = logger("dao")
 
@@ -52,47 +52,22 @@ data class Dao(
             }
         }
 
-        suspend fun find(table: Table, limit: Int): List<Dao> {
-            val sql =
-                """
-                    SELECT * FROM ${table.name} 
-                    ORDER BY timestamp_ms DESC 
-                    LIMIT $limit 
-                """.trimIndent()
+        suspend fun find(table: Table, limit: Int, key: String? = null, value: String? = null): List<Dao> {
+            val whereClause = if (key != null || value != null) {
+                val keyQuery = if (key != null) " record_key = '$key' AND" else ""
+                val valueQuery = if (value != null) " record_value like '%$value%' AND" else ""
+                val query = "WHERE$keyQuery$valueQuery"
+                query.removeSuffix(" AND")
+            } else ""
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
-            }
-        }
-
-        suspend fun lastTombstone(table: Table): Dao? {
-            val sql =
-                """
-                    SELECT * FROM ${table.name} 
-                    WHERE record_value is NULL
-                    ORDER BY timestamp_ms DESC 
-                    LIMIT 1
-                """.trimIndent()
-
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from).singleOrNull()
-            }
-        }
-
-        suspend fun find(table: Table, key: String, limit: Int): List<Dao> {
             val sql = """
                 SELECT * FROM ${table.name} 
-                WHERE record_key = ? 
+                $whereClause
                 ORDER BY timestamp_ms DESC 
                 LIMIT $limit 
             """.trimIndent()
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, key)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)

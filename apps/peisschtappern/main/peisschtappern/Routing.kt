@@ -1,7 +1,7 @@
 package peisschtappern
 
-import io.ktor.http.*
-import io.ktor.server.response.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.async
@@ -13,8 +13,6 @@ import libs.kafka.Streams
 import libs.kafka.Topic
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
-import java.time.Instant
-import java.time.ZoneId
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/probes") {
@@ -40,15 +38,15 @@ fun Routing.api() {
     get("/api") {
         val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
         val limit = call.queryParameters["limit"]?.toInt() ?: 100
+        val key = call.queryParameters["key"]
+        val value = call.queryParameters["value"]
+
         val daos = withContext(Jdbc.context + Dispatchers.IO) {
             transaction {
                 coroutineScope {
                     val deferred = channels.map { channel ->
                         async {
-                            when (val key = call.queryParameters["key"]) {
-                                null -> Dao.find(channel.table, limit)
-                                else -> Dao.find(channel.table, key, limit)
-                            }
+                            Dao.find(channel.table, limit, key, value)
                         }
                     }
 
@@ -83,7 +81,7 @@ sealed class Channel(
     data object DryrunDp:     Channel(Topics.dryrunDp,     Table.dryrun_dp,    11)
 
     companion object {
-        fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel } 
+        fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel }
         fun findOrNull(topicName: String): Channel? = all().firstOrNull { it.topic.name == topicName }
     }
 }
