@@ -46,13 +46,13 @@ class OppdragsdataConsumer(
         oppdragsdataConsumer.seekToBeginning(0, 1, 2)
 
         val records = mutableMapOf<String, Set<Record<String, Oppdragsdata>>>()
-        var keepPolling = true
+        var keepPolling = 0
 
-        while (keepPolling) {
-            val polledRecords = oppdragsdataConsumer.poll(1.seconds)
+        while (keepPolling < 3) {
+            val polledRecords = oppdragsdataConsumer.poll(5.seconds)
 
             if (polledRecords.isEmpty()) {
-                keepPolling = false
+                keepPolling++
                 continue
             }
 
@@ -75,9 +75,11 @@ class OppdragsdataConsumer(
                     }
                 }
 
-            keepPolling = polledRecords.any { record ->
+            if (polledRecords.any { record ->
                 val avstemmingsdag = requireNotNull(record.value).avstemmingsdag
                 avstemmingsdag == today || avstemmingsdag.isBefore(today) 
+            }) {
+                keepPolling++
             }
         }
 
