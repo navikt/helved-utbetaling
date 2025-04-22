@@ -1,16 +1,13 @@
 package libs.kafka
 
+import libs.utils.secureLog
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.streams.errors.*
-import org.slf4j.LoggerFactory
-import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse as StreamHandler
-import org.apache.kafka.streams.errors.ProcessingExceptionHandler.ProcessingHandlerResponse as ProcessingHandler;
 import org.apache.kafka.streams.errors.DeserializationExceptionHandler.DeserializationHandlerResponse as ConsumeHandler;
+import org.apache.kafka.streams.errors.ProcessingExceptionHandler.ProcessingHandlerResponse as ProcessingHandler;
 import org.apache.kafka.streams.errors.ProductionExceptionHandler.ProductionExceptionHandlerResponse as ProduceHandler; 
-
-
-private val secureLog = LoggerFactory.getLogger("secureLog")
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse as StreamHandler
 
 class ReplaceThread(message: Any) : RuntimeException(message.toString())
 
@@ -23,16 +20,17 @@ class ConsumeAgainHandler : DeserializationExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
     override fun handle(context: ErrorHandlerContext, record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception): ConsumeHandler {
-        secureLog.warn(
-            """
+        val msg = """
                Exception deserializing record. Retrying...
                Topic: ${record.topic()}
                Partition: ${record.partition()}
                Offset: ${record.offset()}
                TaskId: ${context.taskId()}
-            """.trimIndent(),
-            exception
-        )
+        """.trimIndent()
+
+        kafkaLog.warn(msg)
+        secureLog.warn(msg, exception)
+
         return ConsumeHandler.FAIL
     }
 }
@@ -40,16 +38,17 @@ class ConsumeNextHandler : DeserializationExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
     override fun handle( context: ErrorHandlerContext, record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception): ConsumeHandler {
-        secureLog.warn(
-            """
+        val msg = """
                Exception deserializing record. Reading next record...
                Topic: ${record.topic()}
                Partition: ${record.partition()}
                Offset: ${record.offset()}
                TaskId: ${context.taskId()}
-            """.trimIndent(),
-            exception
-        )
+        """.trimIndent()
+
+        kafkaLog.warn(msg)
+        secureLog.warn(msg, exception)
+
         return ConsumeHandler.CONTINUE
     }
 }
@@ -62,6 +61,7 @@ class ProcessAgainHandler: ProcessingExceptionHandler {
         r: org.apache.kafka.streams.processor.api.Record<*, *>, 
         e: java.lang.Exception,
     ): ProcessingHandler {
+        kafkaLog.error("Feil ved prosessering av record, logger og leser neste record")
         secureLog.error("Feil ved prosessering av record, logger og leser neste record", e)
         return ProcessingHandler.FAIL
     }
@@ -74,6 +74,7 @@ class ProcessNextHandler: ProcessingExceptionHandler {
         r: org.apache.kafka.streams.processor.api.Record<*, *>, 
         e: java.lang.Exception,
     ): ProcessingHandler {
+        kafkaLog.error("Feil ved prosessering av record, logger og leser neste record")
         secureLog.error("Feil ved prosessering av record, logger og leser neste record", e)
         return ProcessingHandler.CONTINUE
     }
@@ -110,6 +111,7 @@ class ProduceAgainHandler : ProductionExceptionHandler {
         r: ProducerRecord<ByteArray, ByteArray>?,
         e: java.lang.Exception?
     ): ProduceHandler {
+        kafkaLog.error("Feil i streams, logger og leser neste record")
         secureLog.error("Feil i streams, logger og leser neste record", e)
         return ProduceHandler.FAIL
     }
@@ -123,6 +125,7 @@ class ProduceNextHandler : ProductionExceptionHandler {
         r: ProducerRecord<ByteArray, ByteArray>?,
         e: java.lang.Exception?
     ): ProduceHandler {
+        kafkaLog.error("Feil i streams, logger og leser neste record")
         secureLog.error("Feil i streams, logger og leser neste record", e)
         return ProduceHandler.CONTINUE
     }
