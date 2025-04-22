@@ -13,13 +13,13 @@ class ProbesTest {
 
     @Test
     fun health() = runTest {
-        val res = httpClient.get("/probes/health")
+        val res = httpClient.get("/actuator/health")
         assertEquals(HttpStatusCode.OK, res.status)
     }
 
     @Test
     fun meter() = runTest {
-        val res = httpClient.get("/probes/metric")
+        val res = httpClient.get("/actuator/metric")
         assertEquals(HttpStatusCode.OK, res.status)
 
         val body = res.bodyAsText()

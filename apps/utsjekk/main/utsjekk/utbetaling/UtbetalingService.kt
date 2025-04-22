@@ -65,7 +65,7 @@ class UtbetalingService(
     suspend fun status(uid: UtbetalingId): Status {
         return withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.findOrNull(uid)?.status ?: notFound("status for utbetaling", "uid")
+                UtbetalingDao.findOrNull(uid, history = true)?.status ?: notFound("status for utbetaling", "uid")
             }
         }
     }
