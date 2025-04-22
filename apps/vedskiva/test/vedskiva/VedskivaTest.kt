@@ -248,6 +248,42 @@ class VedskivaTest {
     }
 
     @Test
+    fun `test case AAP`() = runTest(TestRuntime.context) {
+        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+        oppConsumer.assign(0, 1, 2)
+
+        val oppdragsdata = oppdragsdata(
+            Fagsystem.AAP,
+            Personident("23519035766"),
+            SakId("4Mi993K"),
+            "lZGWmiVzR0q4W52S++5nPQ==",
+            LocalDate.of(2025, 4, 22),
+            974u,
+            Kvittering(null, "00", null)
+
+        )
+        oppConsumer.populate("7", oppdragsdata, 0, 2L)
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(1, oppProducer.history().size)
+        assertEquals(3, avsProducer.history().size)
+        val data = avsProducer.history()[1].second
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(974, data.total.totalBelop.toInt())
+        assertEquals(1, data.grunnlag.godkjentAntall)
+        assertEquals(974, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+    }
+
+    @Test
     // TODO: hva skjer hvis vi opphører en utbetaling samme dag som vi opprettet den
     // TODO: hva skjer hvis vi opphører en utbetaling midt i en utbetaling fra samme dag, skal beløpet halveres?
     // TODO: hva skjer med use-casene over dersom vi endrer en utbetaling for en annen avstemmingdag som treffer samme scheduled? Skal vi gruppere på avstemmingsdag? 
