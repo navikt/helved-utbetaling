@@ -128,7 +128,8 @@ class UtbetalingService(
 
         return withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.delete(uid)
+                val newLastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
+                dao.copy(data = existing.copy(lastPeriodeId = newLastPeriodeId)).delete(uid)
             }
         }
     }

@@ -103,6 +103,31 @@ data class UtbetalingDao(
             .mapErr { DatabaseError.Unknown }
     }
 
+    /**
+     * Vi ønsker å markerer utbetalingen (inkl all historikk) som deleted 
+     * slik at det gjenspeiler opphøret hos PO Utbetaling.
+     */
+    suspend fun delete(id: UtbetalingId): Result<Unit, DatabaseError> {
+        val sql = """
+            UPDATE $TABLE_NAME
+            SET deleted_at = ?
+            WHERE utbetaling_id = ?
+        """.trimIndent()
+
+        return tryResult {
+            coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
+                stmt.setObject(2, id.id)
+
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeUpdate()
+            }
+        }
+            .map { Unit }
+            .mapErr { DatabaseError.Unknown }
+    }
+
     companion object {
         const val TABLE_NAME = "utbetaling"
 
@@ -140,31 +165,6 @@ data class UtbetalingDao(
                     .map(::from)
                     .filter { it.deleted_at == null || history }
             }
-        }
-
-        /**
-         * Vi ønsker å markerer utbetalingen (inkl all historikk) som deleted 
-         * slik at det gjenspeiler opphøret hos PO Utbetaling.
-         */
-        suspend fun delete(id: UtbetalingId): Result<Unit, DatabaseError> {
-            val sql = """
-                UPDATE $TABLE_NAME
-                SET deleted_at = ?
-                WHERE utbetaling_id = ?
-            """.trimIndent()
-
-            return tryResult {
-                coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                    stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
-                    stmt.setObject(2, id.id)
-
-                    daoLog.debug(sql)
-                    secureLog.debug(stmt.toString())
-                    stmt.executeUpdate()
-                }
-            }
-                .map { Unit }
-                .mapErr { DatabaseError.Unknown }
         }
 
         fun from(rs: ResultSet) = UtbetalingDao(

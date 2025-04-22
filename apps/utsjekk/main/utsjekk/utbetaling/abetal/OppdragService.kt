@@ -100,7 +100,7 @@ object OppdragService {
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }
             val opphør = new.perioder.minBy { it.fom }.fom
-            val oppdragslinje = oppdragsLinje150(new, false, sistePeriode, prev.lastPeriodeId, null, opphør)
+            val oppdragslinje = oppdragsLinje150(new, false, sistePeriode, PeriodeId(), null, opphør)
             oppdragsLinje150s.add(oppdragslinje)
         }
         return objectFactory.createOppdrag().apply {

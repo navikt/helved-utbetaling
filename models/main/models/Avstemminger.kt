@@ -16,7 +16,7 @@ data class Oppdragsdata(
     val sakId: SakId,
     val lastDelytelseId: String?, // før 14.apr 2025 fantes ikke denne
     val avstemmingsdag: LocalDate,
-    val totalBeløpAllePerioder: UInt,
+    val totalBeløpAllePerioder: UInt, // TODO: må vi støtte negative tall?
     val kvittering: Kvittering?,
 )
 
