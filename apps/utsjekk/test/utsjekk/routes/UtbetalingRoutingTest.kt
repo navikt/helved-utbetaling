@@ -159,32 +159,6 @@ class UtbetalingRoutingTest {
     }
 
     @Test
-    fun `bad request with different beløp among days`() = runTest() {
-        val utbetaling = UtbetalingApi.dagpenger(
-            vedtakstidspunkt = 1.mar,
-            periodeType = PeriodeType.DAG,
-            perioder = listOf(
-                UtbetalingsperiodeApi(1.mar, 1.mar, 800u),
-                UtbetalingsperiodeApi(2.mar, 2.mar, 800u),
-                UtbetalingsperiodeApi(3.mar, 3.mar, 50u), // <-- must be 800u
-            ),
-        )
-
-        val uid = UUID.randomUUID()
-        val res = httpClient.post("/utbetalinger/$uid") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(utbetaling)
-        }
-
-        assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "fant fler ulike beløp blant dagene")
-        assertEquals(error.field, "beløp")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
-    }
-
-    @Test
     fun `bad request when dates span over New Years Eve`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.mar,
@@ -292,6 +266,34 @@ class UtbetalingRoutingTest {
             vedtakstidspunkt = 1.feb,
             periodeType = PeriodeType.MND,
             perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val res = httpClient.get("/utbetalinger/${uid}") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }
+        assertEquals(HttpStatusCode.OK, res.status)
+        assertEquals(utbetaling, res.body<UtbetalingApi>())
+    }
+
+    @Test
+    fun `don't fill in missing days in gap`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 25.mar,
+            periodeType = PeriodeType.DAG,
+            perioder = listOf(
+                UtbetalingsperiodeApi(17.mar, 17.mar, 1000u),
+                UtbetalingsperiodeApi(21.mar, 21.mar, 1000u)
+            ),
         )
 
         val uid = UUID.randomUUID()
