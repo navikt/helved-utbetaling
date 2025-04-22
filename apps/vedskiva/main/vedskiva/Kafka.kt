@@ -62,7 +62,9 @@ class OppdragsdataConsumer(
                         true // ta med tombstones slik at vi kan rydde i mutableMapOf<String, Record<String, Oppdragsdata>>()
                     } else {
                         val oppdragsdata = requireNotNull(record.value) { "tombstones skal allerede ha blitt vurdert på dette stedet" }
-                        oppdragsdata.avstemmingsdag == today || oppdragsdata.avstemmingsdag.isBefore(today)
+                        val harDelytelseId = oppdragsdata.lastDelytelseId != null // finnes ikke på gamle records i starten av topic 
+                        harDelytelseId && oppdragsdata.avstemmingsdag == today || oppdragsdata.avstemmingsdag.isBefore(today)
+                        
                     }
                 }
                 .forEach { record -> 
