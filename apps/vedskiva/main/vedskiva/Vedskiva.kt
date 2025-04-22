@@ -41,6 +41,8 @@ fun vedskiva(
                 OppdragsdataConsumer(config.kafka, kafka).use {
                     it.consumeFromBeginning()
                 }
+            } else {
+                appLog.info("Avstemmer ikke i helg eller på helligdag")
             }
         }
     }
