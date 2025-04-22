@@ -4,6 +4,8 @@ import libs.utils.logger
 import net.logstash.logback.argument.StructuredArgument
 import org.apache.kafka.streams.KeyValue
 
+val kafkaLog = logger("kafka")
+
 data class StreamsPair<L, R>(
     val left: L,
     val right: R,
