@@ -26,10 +26,8 @@ class UtbetalingDaoTest {
             UtbetalingDao(data, Status.OK).insert(uid)
         }
         transaction {
-            assertNotNull(UtbetalingDao.findOrNull(uid))
-        }
-        transaction {
-            UtbetalingDao.delete(uid)
+            val dao = assertNotNull(UtbetalingDao.findOrNull(uid))
+            dao.delete(uid)
         }
         transaction {
             assertNull(UtbetalingDao.findOrNull(uid))
@@ -56,9 +54,7 @@ class UtbetalingDaoTest {
         transaction {
             val utbet = requireNotNull(UtbetalingDao.findOrNull(uid))
             assertNotEquals(utbet.created_at, utbet.updated_at)
-        }
-        transaction {
-            UtbetalingDao.delete(uid)
+            utbet.delete(uid)
         }
         transaction {
             assertNull(UtbetalingDao.findOrNull(uid))
