@@ -7,7 +7,7 @@ import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 
 fun Routing.probes(meters: PrometheusMeterRegistry) {
-    route("/probes") {
+    route("/actuator") {
         get("/metric") { call.respond(meters.scrape()) }
         get("/health") { call.respond(HttpStatusCode.OK) }
     }

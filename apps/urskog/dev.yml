@@ -25,12 +25,12 @@ spec:
     application:
       enabled: true
   liveness:
-    path: /probes/live
+    path: /actuator/live
   readiness:
-    path: /probes/ready
+    path: /actuator/ready
   prometheus:
     enabled: true
-    path: /probes/metric
+    path: /actuator/metric
   replicas:
     min: 1
     max: 1
