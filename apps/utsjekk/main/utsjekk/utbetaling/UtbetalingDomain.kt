@@ -60,7 +60,7 @@ data class Utbetaling(
     val avvent: Avvent?,
 ) {
     companion object {
-        fun from(dto: UtbetalingApi, lastPeriodeId: PeriodeId): Utbetaling =
+        fun from(dto: UtbetalingApi, lastPeriodeId: PeriodeId = PeriodeId()): Utbetaling =
             Utbetaling(
                 sakId = SakId(dto.sakId),
                 behandlingId = BehandlingId(dto.behandlingId),
@@ -85,23 +85,6 @@ data class Utbetaling(
                             .map { Utbetalingsperiode.from(it, Satstype.from(dto.periodeType)) }
                     }.flatten()
             )
-
-        fun from(dto: UtbetalingApi): Utbetaling {
-            val satstype = Satstype.from(dto.periodeType)
-            return Utbetaling(
-                sakId = SakId(dto.sakId),
-                behandlingId = BehandlingId(dto.behandlingId),
-                lastPeriodeId = PeriodeId(),
-                personident = Personident(dto.personident),
-                vedtakstidspunkt = dto.vedtakstidspunkt,
-                stønad = dto.stønad,
-                beslutterId = Navident(dto.beslutterId),
-                saksbehandlerId = Navident(dto.saksbehandlerId),
-                satstype = satstype,
-                perioder = listOf(Utbetalingsperiode.from(dto.perioder.sortedBy { it.fom }, satstype)),
-                avvent = dto.avvent,
-            )
-        }
     }
 
     fun validateLockedFields(other: Utbetaling) {
@@ -199,14 +182,6 @@ data class Utbetalingsperiode(
                 fastsattDagsats = perioder.last().fastsattDagsats, // baserer oss på lastest news
             )
         }
-
-        fun from(periode: UtbetalingsperiodeApi) = Utbetalingsperiode(
-            fom = periode.fom,
-            tom = periode.tom,
-            beløp = periode.beløp,
-            betalendeEnhet = periode.betalendeEnhet?.let(::NavEnhet), // TODO: her kan det henne perioder får ulike enheter
-            fastsattDagsats = periode.fastsattDagsats,
-        )
     }
 }
 
@@ -222,17 +197,13 @@ enum class Satstype(val kode: String) {
 
     companion object {
         fun from(type: PeriodeType) = when (type) {
-            PeriodeType.UKEDAG -> Satstype.VIRKEDAG
-            PeriodeType.DAG -> Satstype.DAG
-            PeriodeType.MND -> Satstype.MND
-            PeriodeType.EN_GANG -> Satstype.ENGANGS
+            PeriodeType.UKEDAG -> VIRKEDAG
+            PeriodeType.DAG -> DAG
+            PeriodeType.MND -> MND
+            PeriodeType.EN_GANG -> ENGANGS
         }
     }
 }
-
-data class UtbetalingStatus(
-    val status: Status,
-)
 
 enum class Status {
     SENDT_TIL_OPPDRAG,

@@ -84,32 +84,6 @@ class SimuleringRoutingTest {
     }
 
     @Test
-    fun `bad request with different beløp among days`() = runTest() {
-        val utbetaling = UtbetalingApi.dagpenger(
-            vedtakstidspunkt = 1.mar,
-            periodeType = PeriodeType.DAG,
-            perioder = listOf(
-                UtbetalingsperiodeApi(1.mar, 1.mar, 800u),
-                UtbetalingsperiodeApi(2.mar, 2.mar, 800u),
-                UtbetalingsperiodeApi(3.mar, 3.mar, 50u), // <-- must be 800u
-            ),
-        )
-
-        val uid = UUID.randomUUID()
-        val res = httpClient.post("/utbetalinger/$uid/simuler") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(utbetaling)
-        }
-
-        assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "fant fler ulike beløp blant dagene")
-        assertEquals(error.field, "beløp")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
-    }
-
-    @Test
     fun `bad request when dates span over New Years Eve`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.mar,
