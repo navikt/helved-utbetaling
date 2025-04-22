@@ -262,6 +262,9 @@ data class StønadsdataTilleggsstønader(
             StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER -> "TSLMASISP2-OP"
             StønadTypeTilleggsstønader.LÆREMIDLER_AAP -> "TSLMASISP3-OP"
             StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE -> "TSLMASISP4-OP"
+            StønadTypeTilleggsstønader.BOUTGIFTER_AAP -> "TSBUASIA-OP"
+            StønadTypeTilleggsstønader.BOUTGIFTER_ENSLIG_FORSØRGER -> "TSBUAISP2-OP"
+            StønadTypeTilleggsstønader.BOUTGIFTER_ETTERLATTE -> "TSBUAISP3-O"
         }
 
     override fun tilKjedenøkkel(): Kjedenøkkel =
