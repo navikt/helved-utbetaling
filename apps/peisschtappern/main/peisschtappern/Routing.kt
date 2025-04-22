@@ -14,7 +14,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
-    route("/probes") {
+    route("/actuator") {
         get("/metric") {
             call.respond(meters.scrape())
         }

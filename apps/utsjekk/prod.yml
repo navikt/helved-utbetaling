@@ -10,16 +10,16 @@ spec:
   ingresses:
       - https://utsjekk.intern.nav.no
   liveness:
-    path: /probes/health
+    path: /actuator/health
     initialDelay: 30
     failureThreshold: 10
   readiness:
-    path: /probes/health
+    path: /actuator/health
     initialDelay: 30
     failureThreshold: 10
   prometheus:
     enabled: true
-    path: /probes/metric
+    path: /actuator/metric
   replicas:
     min: 2
     max: 4

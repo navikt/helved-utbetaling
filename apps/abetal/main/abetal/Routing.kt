@@ -10,7 +10,7 @@ import libs.kafka.Streams
 import models.Utbetaling
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
-    route("/probes") {
+    route("/actuator") {
         get("/metric") { 
             call.respond(meters.scrape())
         }
