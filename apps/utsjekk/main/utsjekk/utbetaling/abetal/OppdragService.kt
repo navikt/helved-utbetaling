@@ -35,6 +35,7 @@ object OppdragService {
                 nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
+            new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.perioder.mapIndexed { i, periode ->
                 val periodeId = if (i == new.perioder.size - 1) new.lastPeriodeId else PeriodeId()
@@ -66,6 +67,7 @@ object OppdragService {
                 nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
+            new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
@@ -98,6 +100,7 @@ object OppdragService {
                 nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
+            new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }
             val opphør = new.perioder.minBy { it.fom }.fom
@@ -218,6 +221,16 @@ private fun oppdragsLinje150(
                 vedtakssats = BigDecimal.valueOf(fastsattDagsats.toLong())
             }
         }
+    }
+}
+
+private fun avvent118(avvent: Avvent): Avvent118 {
+    return objectFactory.createAvvent118().apply {
+        datoAvventFom = avvent.fom.toXMLDate()
+        datoAvventTom = avvent.tom.toXMLDate()
+        datoOverfores = avvent.overføres.toXMLDate()
+        avvent.årsak?.let { årsak -> kodeArsak = årsak.kode }
+        feilreg = if (avvent.feilregistrering) "J" else "N"
     }
 }
 
