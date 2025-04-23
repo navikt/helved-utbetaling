@@ -44,10 +44,9 @@ data class UtbetalingApi(
         failOnIllegalFutureUtbetaling()
         failOnTooLongPeriods()
         failOnZeroBeløp()
-        // validate beløp
-        // validate fom/tom
+        failOnTooLongSakId()
+        failOnTooLongBehandlingId()
         // validate stønadstype opp mot e.g. fastsattDagsats
-        // validate sakId ikke er for lang
     }
 }
 
@@ -211,9 +210,9 @@ private fun UtbetalingApi.failOnTooLongPeriods() {
     if (periodeType in listOf(PeriodeType.DAG, PeriodeType.UKEDAG)) {
         val min = perioder.minBy { it.fom }.fom
         val max = perioder.maxBy { it.tom }.tom
-        if (ChronoUnit.DAYS.between(min, max)+1 >= 92) {
+        if (ChronoUnit.DAYS.between(min, max)+1 >= 1000) {
             badRequest(
-                msg = "$periodeType støtter maks periode på 92 dager",
+                msg = "$periodeType støtter maks periode på 1000 dager",
                 field = "perioder",
                 doc = "opprett_en_utbetaling"
             )
@@ -231,3 +230,22 @@ private fun UtbetalingApi.failOnZeroBeløp() {
     }
 }
 
+private fun UtbetalingApi.failOnTooLongSakId() {
+    if (sakId.length > 30) {
+        badRequest(
+            msg = "sakId kan være maks 30 tegn langt",
+            field = "sakId",
+            doc = "opprett_en_utbetaling"
+        )
+    }
+}
+
+private fun UtbetalingApi.failOnTooLongBehandlingId() {
+    if (behandlingId.length > 30) {
+        badRequest(
+            msg = "behandlingId kan være maks 30 tegn langt",
+            field = "behandlingId",
+            doc = "opprett_en_utbetaling"
+        )
+    }
+}

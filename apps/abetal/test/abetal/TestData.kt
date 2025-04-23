@@ -25,11 +25,12 @@ object Aap {
         behId: BehandlingId = BehandlingId("$nextInt"),
         simulate: Boolean = false,
         vedtatt: LocalDateTime = LocalDateTime.now(),
+        periodetype: Periodetype = Periodetype.UKEDAG,
         perioder: () -> List<Utbetalingsperiode>,
     ) = AapUtbetaling(
         simulate = simulate,
         action = action,
-        periodetype = Periodetype.UKEDAG,
+        periodetype = periodetype,
         stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
         sakId = sakId,
         behandlingId = behId,
