@@ -100,8 +100,16 @@ data class Utbetaling(
                 doc = "opprett_en_utbetaling",
             )
         }
-        // TODO: valider ved delete at periodene i delete requesten er lik existing
-        // validateDiff(perioder, other.perioder)
+    }
+
+    fun validateEqualityOnDelete(other: Utbetaling) {
+        if (perioder != other.perioder) {
+            badRequest(
+                msg = "periodene i utbetalingen samsvarer ikke med det som er lagret hos utsjekk.",
+                field = "utbetaling",
+                doc = "opphor_en_utbetaling",
+            )
+        }
     }
 
     fun validateMinimumChanges(other: Utbetaling) {
