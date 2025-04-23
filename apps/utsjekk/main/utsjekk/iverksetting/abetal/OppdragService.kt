@@ -154,8 +154,8 @@ private fun oppdrag(utbetalingsoppdrag: Utbetalingsoppdrag): Oppdrag {
         saksbehId = utbetalingsoppdrag.saksbehandlerId
         avstemming115 = objectFactory.createAvstemming115().apply {
             kodeKomponent = utbetalingsoppdrag.fagsystem.kode
-            nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
-            tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
+            nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
+            tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
         }
         oppdragsEnhet120(utbetalingsoppdrag).map { oppdragsEnhet120s.add(it) }
         utbetalingsoppdrag.utbetalingsperiode.map { periode ->

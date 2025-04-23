@@ -30,8 +30,8 @@ object OppdragService {
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
                 kodeKomponent = Fagsystem.from(new.stønad).fagområde
-                nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
+                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
+                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
             }
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
@@ -62,8 +62,8 @@ object OppdragService {
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
                 kodeKomponent = Fagsystem.from(new.stønad).fagområde
-                nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
+                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
+                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
             }
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
@@ -94,8 +94,8 @@ object OppdragService {
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
                 kodeKomponent = Fagsystem.from(new.stønad).fagområde
-                nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
+                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
+                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
             }
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
