@@ -43,12 +43,12 @@ object Aap {
     fun dag(
         dato: LocalDate,
         beløp: UInt = 123u,
-        fastsattDagsats: UInt? = beløp,
+        vedtakssats: UInt? = beløp,
     ) = Utbetalingsperiode(
         fom = dato,
         tom = dato,
         beløp = beløp,
-        fastsattDagsats = fastsattDagsats,
+        vedtakssats = vedtakssats,
     )
 }
 fun utbetaling(
@@ -86,13 +86,13 @@ fun periode(
     fom: LocalDate,
     tom: LocalDate,
     beløp: UInt = 123u,
-    fastsattDagsats: UInt? = beløp,
+    vedtakssats: UInt? = beløp,
     betalendeEnhet: NavEnhet? = null,
 ) = Utbetalingsperiode(
     fom = fom,
     tom = tom,
     beløp = beløp,
-    fastsattDagsats = fastsattDagsats,
+    vedtakssats = vedtakssats,
     betalendeEnhet = betalendeEnhet,
 )
 
