@@ -208,9 +208,9 @@ private fun oppdragsLinje150(
         utbetalesTilId = utbetaling.personident.ident
         henvisning = utbetaling.behandlingId.id
         attestant180s.add(attestant)
-        periode.fastsattDagsats?.let { fastsattDagsats ->
+        periode.vedtakssats?.let { sats ->
             vedtakssats157 = objectFactory.createVedtakssats157().apply {
-                vedtakssats = BigDecimal.valueOf(fastsattDagsats.toLong())
+                vedtakssats = BigDecimal.valueOf(sats.toLong())
             }
         }
     }

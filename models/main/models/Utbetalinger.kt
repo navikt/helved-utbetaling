@@ -61,7 +61,7 @@ fun Utbetaling.validateLockedFields(other: Utbetaling) {
 
 fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
     if (perioder.size != other.perioder.size) return
-    val ingenEndring = perioder.zip(other.perioder).all { (l, r) -> l.beløp == r.beløp && l.fom == r.fom && l.tom == r.tom && l.betalendeEnhet == r.betalendeEnhet && l.fastsattDagsats == r.fastsattDagsats }
+    val ingenEndring = perioder.zip(other.perioder).all { (l, r) -> l.beløp == r.beløp && l.fom == r.fom && l.tom == r.tom && l.betalendeEnhet == r.betalendeEnhet && l.vedtakssats == r.vedtakssats }
     if (ingenEndring) conflict("periods allready exists", "opprett_en_utbetaling")
 }
 
@@ -166,7 +166,7 @@ data class Utbetalingsperiode(
     val tom: LocalDate,
     val beløp: UInt,
     val betalendeEnhet: NavEnhet? = null,
-    val fastsattDagsats: UInt? = null,
+    val vedtakssats: UInt? = null,
 ) 
 
 fun List<Utbetalingsperiode>.betalendeEnhet(): NavEnhet? {
@@ -267,7 +267,7 @@ enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
 
 fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetalingsperiode> {
     return sortedBy { it.fom }
-        .groupBy { listOf(it.beløp, it.betalendeEnhet, it.fastsattDagsats) }
+        .groupBy { listOf(it.beløp, it.betalendeEnhet, it.vedtakssats) }
         .map { (_, perioder) ->
             perioder.splitWhen { a, b ->
                 when (periodetype) {
@@ -280,7 +280,7 @@ fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetaling
                     tom = it.last().tom,
                     beløp = beløp(it, periodetype),
                     betalendeEnhet = it.last().betalendeEnhet,
-                    fastsattDagsats = it.last().fastsattDagsats,
+                    vedtakssats = it.last().vedtakssats,
                 )
             }
         }.flatten()
