@@ -89,59 +89,39 @@ internal class AbetalTest {
             }
     }
 
-    // @Test
-    // fun `is idempotent`() {
-    //     val uid = UtbetalingId(UUID.randomUUID())
-    //     val aapUtbet = AapUtbetaling(
-    //         action = Action.CREATE,
-    //         data = TestData.utbetaling(
-    //             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-    //             periodetype = Periodetype.DAG,
-    //             perioder = listOf(
-    //                 TestData.dag(1.jan),
-    //                 TestData.dag(2.jan),
-    //             )
-    //         )
-    //     )
-    //     TestTopics.aap.produce("${uid.id}") {
-    //         aapUtbet
-    //     }
-    //     TestTopics.aap.produce("${uid.id}") {
-    //         aapUtbet
-    //     }
-    //
-    //     TestTopics.status.assertThat()
-    //         .hasNumberOfRecordsForKey(uid.id.toString(), 2)
-    //         .hasValueEquals(uid.id.toString(), 0) {
-    //             StatusReply(
-    //                 sakId = SakId("1"),
-    //                 status = Status.MOTTATT, 
-    //                 error = null,
-    //             )
-    //         }
-    //         .hasValueEquals(uid.id.toString(), 1) {
-    //             StatusReply(
-    //                 sakId = SakId("1"),
-    //                 status = Status.FEILET, 
-    //                 error = ApiError(
-    //                     statusCode = 409, 
-    //                     msg = "Denne meldingen har du allerede sendt inn",
-    //                     field = null,
-    //                     doc = null,
-    //                 )
-    //             )
-    //         }
-    //
-    //     TestTopics.utbetalinger.assertThat()
-    //         .hasValuesForPredicate(uid.id.toString(), 1) {
-    //             it.perioder.size == 2
-    //         }
-    //
-    //     TestTopics.oppdrag.assertThat()
-    //         .hasValuesForPredicate(uid.id.toString(), 1) {
-    //             it.oppdrag110.kodeEndring == "NY"
-    //         }
-    // }
+    @Test
+    fun `is idempotent`() {
+        val uid = randomUtbetalingId()
+        val utbet = Aap.utbetaling(Action.CREATE) {
+            listOf(
+                Aap.dag(1.jan),
+                Aap.dag(3.jan),
+            )
+        }
+        TestTopics.aap.produce("${uid.id}") { utbet }
+        TestTopics.aap.produce("${uid.id}") { utbet }
+
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
+            .hasValueEquals(uid.id.toString(), 0) {
+                StatusReply(Status.MOTTATT, null)
+            }
+        TestTopics.utbetalinger.assertThat()
+            .hasNumberOfRecordsForKey("${uid.id}", 1)
+            .hasValueMatching("${uid.id}", 0) {
+                assertEquals(2, it.perioder.size)
+            }
+        TestTopics.oppdrag.assertThat()
+            .hasValuesForPredicate(uid.id.toString(), 1) {
+                it.oppdrag110.kodeEndring == "NY"
+            }
+        TestTopics.saker.assertThat()
+            .hasNumberOfRecords(1)
+            .hasNumberOfRecordsForKey(SakKey(utbet.sakId, Fagsystem.AAP), 1)
+            .hasLastValue(SakKey(utbet.sakId, Fagsystem.AAP)) {
+                assertEquals(1, uids.size)
+            }
+    }
 
     @Test
     fun `error ved årsskifte`() {

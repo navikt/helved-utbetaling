@@ -45,6 +45,23 @@ data class Utbetaling(
         failOnTooLongSakId()
         failOnTooLongBehandlingId()
     }
+
+    fun isDuplicate(other: Utbetaling?): Boolean {
+        if (other == null) return false
+
+        return uid == other.uid 
+            && action == other.action 
+            && sakId == other.sakId 
+            && behandlingId == other.behandlingId 
+            && personident == other.personident
+            && vedtakstidspunkt == other.vedtakstidspunkt
+            && stønad == other.stønad
+            && beslutterId == other.beslutterId
+            && saksbehandlerId == other.saksbehandlerId
+            && periodetype == other.periodetype
+            && avvent == other.avvent
+            && perioder == other.perioder
+    }
 }
 
 

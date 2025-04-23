@@ -35,9 +35,6 @@ internal class AapTest {
                 )
             }
         }
-        // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-        //     SakIdWrapper("${sid.id}", setOf(uid))
-        // }
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.UPDATE, sid) {
                 listOf(
