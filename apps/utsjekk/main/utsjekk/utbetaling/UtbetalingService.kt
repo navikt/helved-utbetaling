@@ -122,6 +122,7 @@ class UtbetalingService(
         val existing = dao.data
 
         existing.validateLockedFields(utbetaling)
+        existing.validateEqualityOnDelete(utbetaling)
 
         val oppdrag = OppdragService.delete(utbetaling, existing)
         oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))

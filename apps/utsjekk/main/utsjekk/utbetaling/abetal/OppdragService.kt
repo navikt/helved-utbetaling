@@ -82,6 +82,7 @@ object OppdragService {
     // før denne kalles, join prev med status for å sjekke om den er locket (status != OK)
     fun delete(new: Utbetaling, prev: Utbetaling): Oppdrag {
         prev.validateLockedFields(new)
+        prev.validateEqualityOnDelete(new)
 
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"

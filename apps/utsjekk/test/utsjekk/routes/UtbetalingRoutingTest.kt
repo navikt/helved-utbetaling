@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test
 import utsjekk.*
 import utsjekk.iverksetting.RandomOSURId
 import java.util.UUID
+import java.time.LocalDateTime
 import kotlin.test.assertNotNull
 
 class UtbetalingRoutingTest {
@@ -670,6 +671,98 @@ class UtbetalingRoutingTest {
             assertEquals(DEFAULT_DOC_STR, error.doc)
         }
     }
+
+    @Test
+    fun `can delete with new behandling vedtakstidspunkt beslutter saksbehandler`() = runTest(TestRuntime.context) {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
+        }
+
+        httpClient.delete("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling.copy(
+                behandlingId = utbetaling.behandlingId + "ny",
+                vedtakstidspunkt = LocalDateTime.now().plusDays(1),
+                beslutterId = "X654321",
+                saksbehandlerId = "Y654321",
+            ))
+        }.also {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+        httpClient.get("/utbetalinger/${uid}") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.also {
+            assertEquals(HttpStatusCode.NotFound, it.status)
+            val error = it.body<ApiError.Response>()
+            assertEquals("Fant ikke utbetaling", error.msg)
+            assertEquals("uid", error.field)
+            assertEquals(DEFAULT_DOC_STR, error.doc)
+        }
+    }
+
+    @Test
+    fun `cannot delete if periode is changed`() = runTest(TestRuntime.context) {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
+        }
+
+        httpClient.delete("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling.copy(
+                perioder = utbetaling.perioder + UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u) 
+            ))
+        }.also {
+            assertEquals(HttpStatusCode.BadRequest, it.status)
+            val error = it.body<ApiError.Response>()
+            assertEquals("periodene i utbetalingen samsvarer ikke med det som er lagret hos utsjekk.", error.msg)
+            assertEquals("utbetaling", error.field)
+            assertEquals("${DEFAULT_DOC_STR}opphor_en_utbetaling", error.doc)
+        }
+        httpClient.get("/utbetalinger/${uid}") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }
+    }
+    
 
     @Test
     fun `can get UtbetalingStatus`() = runTest() {
