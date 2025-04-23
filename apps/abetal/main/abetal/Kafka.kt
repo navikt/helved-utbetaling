@@ -71,7 +71,11 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
 }
 
 fun oppdragStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
-    branched.map { (new, prev) ->
+    branched.filter { (new, prev) -> 
+        val distinct = !new.isDuplicate(prev)
+        if (!distinct) appLog.info("Duplicate message found for ${new.uid.id}")
+        distinct
+    }.map { (new, prev) ->
         Result.catch {
             new.validate(prev)
             val new = new.copy(perioder = new.perioder.aggreger(new.periodetype))
