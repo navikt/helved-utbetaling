@@ -16,6 +16,7 @@ data class AapUtbetaling(
     val beslutterId: Navident,
     val saksbehandlerId: Navident,
     val periodetype: Periodetype,
+    val avvent: Avvent?,
     val perioder: List<Utbetalingsperiode>,
 )
 
@@ -34,6 +35,7 @@ fun toDomain(tuple: AapTuple, sakValue: SakValue?): Utbetaling {
         beslutterId = tuple.aap.beslutterId,
         saksbehandlerId = tuple.aap.saksbehandlerId,
         periodetype = tuple.aap.periodetype,
+        avvent = tuple.aap.avvent,
         perioder = tuple.aap.perioder,
     )
 }

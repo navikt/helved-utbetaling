@@ -29,6 +29,7 @@ data class Utbetaling(
     val beslutterId: Navident,
     val saksbehandlerId: Navident,
     val periodetype: Periodetype,
+    val avvent: Avvent?,
     val perioder: List<Utbetalingsperiode>,
 ) {
     fun validate(prev: Utbetaling?) {
@@ -45,6 +46,20 @@ data class Utbetaling(
         failOnTooLongBehandlingId()
     }
 }
+
+
+enum class Årsak(val kode: String) {
+    AVVENT_AVREGNING("AVAV"),
+    AVVENT_REFUSJONSKRAV("AVRK"),
+}
+
+data class Avvent(
+    val fom: LocalDate,
+    val tom: LocalDate,
+    val overføres: LocalDate,
+    val årsak: Årsak? = null,
+    val feilregistrering: Boolean = false,
+)
 
 private fun Utbetaling.failOnEmptyPerioder() {
     if (perioder.isEmpty()) {

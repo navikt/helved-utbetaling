@@ -11,15 +11,6 @@ import java.util.*
 import java.time.LocalDate
 import java.time.DayOfWeek
 
-fun LocalDate.nesteVirkedag(): LocalDate {
-    var nesteDag = this.plusDays(1)
-
-    while (nesteDag.dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)) {
-        nesteDag = nesteDag.plusDays(1)
-    }
-    return nesteDag
-}
-
 object TestTopics {
     val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
     val saker by lazy { TestRuntime.kafka.testTopic(Topics.saker) }
