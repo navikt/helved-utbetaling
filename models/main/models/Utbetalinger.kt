@@ -40,6 +40,9 @@ data class Utbetaling(
         failOnIllegalFutureUtbetaling()
         failOnTooManyPeriods()
         failOnDuplicate(prev)
+        failOnZeroBeløp()
+        failOnTooLongSakId()
+        failOnTooLongBehandlingId()
     }
 }
 
@@ -66,8 +69,15 @@ fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
 }
 
 private fun Utbetaling.failOnÅrsskifte() {
+    if (periodetype != Periodetype.EN_GANG) return
     if (perioder.minBy { it.fom }.fom.year != perioder.maxBy { it.tom }.tom.year) {
         badRequest("periode strekker seg over årsskifte", "opprett_en_utbetaling")
+    }
+}
+
+private fun Utbetaling.failOnZeroBeløp() {
+    if (perioder.any { it.beløp == 0u }) {
+        badRequest("beløp kan ikke være 0", "opprett_en_utbetaling")
     }
 }
 
@@ -109,8 +119,8 @@ private fun Utbetaling.failOnTooManyPeriods() {
     if (periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG)) {
         val min = perioder.minBy { it.fom }.fom
         val max = perioder.maxBy { it.tom }.tom
-        val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max)+1 > 92 
-        if (tooManyPeriods) badRequest("$periodetype støtter maks periode på 92 dager", "opprett_en_utbetaling")
+        val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max)+1 > 1000 
+        if (tooManyPeriods) badRequest("$periodetype støtter maks periode på 1000 dager", "opprett_en_utbetaling")
     }
 }
 
@@ -119,6 +129,18 @@ private fun Utbetaling.failOnDuplicate(prev: Utbetaling?) {
         if (this.copy(førsteUtbetalingPåSak = prev.førsteUtbetalingPåSak) == prev){
             conflict("Denne meldingen har du allerede sendt inn")
         } 
+    }
+}
+
+private fun Utbetaling.failOnTooLongSakId() {
+    if (sakId.id.length > 30) {
+        badRequest("sakId kan være maks 30 tegn langt", "opprett_en_utbetaling")
+    }
+}
+
+private fun Utbetaling.failOnTooLongBehandlingId() {
+    if (behandlingId.id.length > 30) {
+        badRequest("behandlingId kan være maks 30 tegn langt", "opprett_en_utbetaling")
     }
 }
 

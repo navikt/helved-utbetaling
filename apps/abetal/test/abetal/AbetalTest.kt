@@ -147,7 +147,7 @@ internal class AbetalTest {
     fun `error ved årsskifte`() {
         val uid = randomUtbetalingId()
         TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE) {
+            Aap.utbetaling(Action.CREATE, periodetype = Periodetype.EN_GANG) {
                 listOf(
                     Aap.dag(31.des),
                     Aap.dag(1.jan),
@@ -159,6 +159,46 @@ internal class AbetalTest {
             .hasValueMatching("${uid.id}", 0) {
                 assertEquals(Status.FEILET, it.status)
                 assertEquals("periode strekker seg over årsskifte", it.error!!.msg)
+            }
+        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+    }
+
+    @Test
+    fun `error ved for lang sakId`() {
+        val uid = randomUtbetalingId()
+        TestTopics.aap.produce("${uid.id}") {
+            Aap.utbetaling(Action.CREATE, sakId = SakId("123456789123456789123456789123456789")) {
+                listOf(
+                    Aap.dag(31.des),
+                )
+            }
+        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey("${uid.id}", 1)
+            .hasValueMatching("${uid.id}", 0) {
+                assertEquals(Status.FEILET, it.status)
+                assertEquals("sakId kan være maks 30 tegn langt", it.error!!.msg)
+            }
+        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+    }
+
+    @Test
+    fun `error ved for lang behandlingId`() {
+        val uid = randomUtbetalingId()
+        TestTopics.aap.produce("${uid.id}") {
+            Aap.utbetaling(Action.CREATE, behId = BehandlingId("123456789123456789123456789123456789")) {
+                listOf(
+                    Aap.dag(31.des),
+                )
+            }
+        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey("${uid.id}", 1)
+            .hasValueMatching("${uid.id}", 0) {
+                assertEquals(Status.FEILET, it.status)
+                assertEquals("behandlingId kan være maks 30 tegn langt", it.error!!.msg)
             }
         TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
         TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
@@ -273,7 +313,7 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE, sid) {
-                (1L..93L).map {
+                (1L..1001L).map {
                     Aap.dag(1.jan.minusDays(it))
                 }
             }.copy(periodetype = Periodetype.DAG)
@@ -281,7 +321,7 @@ internal class AbetalTest {
         TestTopics.status.assertThat()
             .hasNumberOfRecordsForKey("${uid.id}", 1)
             .hasValueMatching("${uid.id}", 0) {
-                assertEquals("DAG støtter maks periode på 92 dager", it.error!!.msg)
+                assertEquals("DAG støtter maks periode på 1000 dager", it.error!!.msg)
             }
         TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
         TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")

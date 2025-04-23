@@ -344,6 +344,52 @@ class UtbetalingRoutingTest {
     }
 
     @Test
+    fun `bad request when sakId is over 30 chars`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            sakId = SakId("123456789123456789123456789123456789"),
+            vedtakstidspunkt = 10.des,
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(UtbetalingsperiodeApi(10.des, 10.des, 100u)),
+        )
+
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError.Response>()
+        assertEquals(error.msg, "sakId kan være maks 30 tegn langt")
+        assertEquals(error.field, "sakId")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+    }
+
+    @Test
+    fun `bad request when behandlingId is over 30 chars`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            behandlingId = BehandlingId("123456789123456789123456789123456789"),
+            vedtakstidspunkt = 10.des,
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(UtbetalingsperiodeApi(10.des, 10.des, 100u)),
+        )
+
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError.Response>()
+        assertEquals(error.msg, "behandlingId kan være maks 30 tegn langt")
+        assertEquals(error.field, "behandlingId")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+    }
+
+    @Test
     fun `can get Utbetaling`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
