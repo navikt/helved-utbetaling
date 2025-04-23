@@ -43,6 +43,7 @@ data class UtbetalingApi(
         failOnInconsistentPeriodeType()
         failOnIllegalFutureUtbetaling()
         failOnTooLongPeriods()
+        failOnZeroBeløp()
         // validate beløp
         // validate fom/tom
         // validate stønadstype opp mot e.g. fastsattDagsats
@@ -216,6 +217,16 @@ private fun UtbetalingApi.failOnTooLongPeriods() {
                 doc = "opprett_en_utbetaling"
             )
         }
+    }
+}
+
+private fun UtbetalingApi.failOnZeroBeløp() {
+    if (perioder.any { it.beløp == 0u }) {
+        badRequest(
+            msg = "beløp kan ikke være 0",
+            field = "beløp",
+            doc = "opprett_en_utbetaling"
+        )
     }
 }
 

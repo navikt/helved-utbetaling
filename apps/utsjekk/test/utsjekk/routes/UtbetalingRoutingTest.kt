@@ -262,6 +262,28 @@ class UtbetalingRoutingTest {
     }
 
     @Test
+    fun `bad request when beløp is 0`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 10.des,
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(UtbetalingsperiodeApi(10.des, 10.des, 0u)),
+        )
+
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError.Response>()
+        assertEquals(error.msg, "beløp kan ikke være 0")
+        assertEquals(error.field, "beløp")
+        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+    }
+
+    @Test
     fun `can get Utbetaling`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
