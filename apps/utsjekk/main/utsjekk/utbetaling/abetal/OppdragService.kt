@@ -63,7 +63,7 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = FagsystemDto.from(new.stønad).name
+                kodeKomponent = FagsystemDto.from(new.stønad).kode
                 nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
@@ -74,7 +74,7 @@ object OppdragService {
             val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.satstype)
             val opphørslinje = oppdragsLinje150(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
             if (opphørsdato != null) oppdragsLinje150s.add(opphørslinje)
-            oppdragsLinje150s.addAll(nyeLinjer(new, prev, opphørsdato, false))
+            oppdragsLinje150s.addAll(nyeLinjer(new, prev, opphørsdato))
         }
         return objectFactory.createOppdrag().apply {
             this.oppdrag110 = oppdrag110
@@ -145,7 +145,6 @@ private fun nyeLinjer(
     new: Utbetaling,
     prev: Utbetaling,
     opphørsdato: LocalDate?,
-    erFørsteUtbetalingPåSak: Boolean,
 ): List<OppdragsLinje150> {
     var førsteEndringIdx = prev.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
 
@@ -199,7 +198,7 @@ private fun oppdragsLinje150(
             kodeStatusLinje = TkodeStatusLinje.OPPH
             datoStatusFom = it.toXMLDate()
         }
-        forrigePeriodeId?.let { // TODO: må vi sjekke at denne er ENDR?
+        forrigePeriodeId?.let {
             refDelytelseId = forrigePeriodeId.toString()
             refFagsystemId = utbetaling.sakId.id
         }

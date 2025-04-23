@@ -33,10 +33,11 @@ object OppdragService {
                 nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
+            new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.perioder.mapIndexed { i, periode ->
                 val periodeId = if (i == new.perioder.size - 1) new.lastPeriodeId else PeriodeId()
-                val oppdragslinje = oppdragsLinje150(new, periode, periodeId, forrigeId.also { forrigeId = periodeId }, null)
+                val oppdragslinje = oppdragsLinje150(new, false, periode, periodeId, forrigeId.also { forrigeId = periodeId }, null)
                 oppdragsLinje150s.add(oppdragslinje)
             }
         }
@@ -60,15 +61,16 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = Fagsystem.from(new.stønad).name
+                kodeKomponent = Fagsystem.from(new.stønad).fagområde
                 nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
+            new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
             val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.periodetype)
-            val opphørslinje = oppdragsLinje150(new, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
+            val opphørslinje = oppdragsLinje150(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
             if (opphørsdato != null) oppdragsLinje150s.add(opphørslinje)
             oppdragsLinje150s.addAll(nyeLinjer(new, prev, opphørsdato))
         }
@@ -91,14 +93,15 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = Fagsystem.from(new.stønad).name
+                kodeKomponent = Fagsystem.from(new.stønad).fagområde
                 nokkelAvstemming = PeriodeId().toString() // bruker periode id sin unike kompakte uuid
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format() 
             }
+            new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }
             val opphør = new.perioder.minBy { it.fom }.fom
-            val oppdragslinje = oppdragsLinje150(new, sistePeriode, prev.lastPeriodeId, null, opphør)
+            val oppdragslinje = oppdragsLinje150(new, false, sistePeriode, PeriodeId(), prev.lastPeriodeId, opphør)
             oppdragsLinje150s.add(oppdragslinje)
         }
         return objectFactory.createOppdrag().apply {
@@ -169,7 +172,7 @@ private fun nyeLinjer(
         .filter { if (opphørsdato != null) it.fom >= opphørsdato else true }
         .map { p ->
             val pid = PeriodeId()
-            oppdragsLinje150(new, p, pid, sistePeriodeId, null).also {
+            oppdragsLinje150(new, false, p, pid, sistePeriodeId, null).also {
                 sistePeriodeId = pid
             }
         }
@@ -177,6 +180,7 @@ private fun nyeLinjer(
 
 private fun oppdragsLinje150(
     utbetaling: Utbetaling,
+    erEndringPåEksisterendePeriode: Boolean,
     periode: Utbetalingsperiode,
     periodeId: PeriodeId,
     forrigePeriodeId: PeriodeId?,
@@ -186,12 +190,12 @@ private fun oppdragsLinje150(
         attestantId = utbetaling.beslutterId.ident
     }
     return objectFactory.createOppdragsLinje150().apply {
-        kodeEndringLinje = if (utbetaling.førsteUtbetalingPåSak) "NY" else "ENDR"
+        kodeEndringLinje = if (erEndringPåEksisterendePeriode) "ENDR" else "NY"
         opphør?.let {
             kodeStatusLinje = TkodeStatusLinje.OPPH
             datoStatusFom = it.toXMLDate()
         }
-        forrigePeriodeId?.let { // TODO: må vi sjekke at denne er ENDR?
+        forrigePeriodeId?.let {
             refDelytelseId = forrigePeriodeId.toString()
             refFagsystemId = utbetaling.sakId.id
         }
@@ -213,6 +217,16 @@ private fun oppdragsLinje150(
                 vedtakssats = BigDecimal.valueOf(sats.toLong())
             }
         }
+    }
+}
+
+private fun avvent118(avvent: Avvent): Avvent118 {
+    return objectFactory.createAvvent118().apply {
+        datoAvventFom = avvent.fom.toXMLDate()
+        datoAvventTom = avvent.tom.toXMLDate()
+        datoOverfores = avvent.overføres.toXMLDate()
+        avvent.årsak?.let { årsak -> kodeArsak = årsak.kode }
+        feilreg = if (avvent.feilregistrering) "J" else "N"
     }
 }
 

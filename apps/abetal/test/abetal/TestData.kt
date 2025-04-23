@@ -26,6 +26,7 @@ object Aap {
         simulate: Boolean = false,
         vedtatt: LocalDateTime = LocalDateTime.now(),
         periodetype: Periodetype = Periodetype.UKEDAG,
+        avvent: Avvent? = null,
         perioder: () -> List<Utbetalingsperiode>,
     ) = AapUtbetaling(
         simulate = simulate,
@@ -38,6 +39,7 @@ object Aap {
         vedtakstidspunkt = vedtatt,
         beslutterId = Navident(""),
         saksbehandlerId = Navident(""),
+        avvent = avvent,
         perioder = perioder()
     )
 
@@ -65,6 +67,7 @@ fun utbetaling(
     vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
     beslutterId: Navident = Navident(""),
     saksbehandlerId: Navident = Navident(""),
+    avvent: Avvent? = null,
     perioder: () -> List<Utbetalingsperiode>,
 ) = Utbetaling(
     simulate = false,
@@ -80,6 +83,7 @@ fun utbetaling(
     vedtakstidspunkt = vedtakstidspunkt,
     beslutterId = beslutterId,
     saksbehandlerId = saksbehandlerId,
+    avvent = avvent,
     perioder = perioder(),
 )
 

@@ -863,6 +863,45 @@ internal class AapTest {
                 assertEquals(300u, o.request.oppdrag.oppdragslinjes.last().sats.toDouble().toUInt())
             }
     }
+
+    @Test
+    fun `avvent i 5 dager`() {
+        val uid = randomUtbetalingId()
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val avvent = Avvent(
+            fom = LocalDate.now(), 
+            tom = LocalDate.now().plusDays(5),
+            overføres = LocalDate.now().plusDays(5).nesteVirkedag(), 
+        )
+
+        TestTopics.aap.produce("${uid.id}") {
+            Aap.utbetaling(Action.CREATE, sid, avvent = avvent) {
+                listOf(
+                    Aap.dag(1.jan, 200u),
+                    Aap.dag(2.jan, 200u)
+                )
+            }
+        }
+        TestTopics.status.assertThat()
+            .hasNumberOfRecordsForKey("${uid.id}", 1)
+            .hasValue(StatusReply(Status.MOTTATT))
+        TestTopics.utbetalinger.assertThat()
+            .hasNumberOfRecordsForKey("${uid.id}", 1)
+            .hasLastValue("${uid.id}") {
+                utbetaling(Action.UPDATE, uid, sid, bid) {
+                    listOf(
+                        periode(1.jan, 2.jan, 200u)
+                    )
+                }
+            }
+        TestTopics.oppdrag.assertThat()
+            .hasNumberOfRecordsForKey("${uid.id}", 1)
+            .withLastValue {
+                assertEquals(LocalDate.now(), it!!.oppdrag110.avvent118.datoAvventFom.toLocalDate())
+                assertEquals(LocalDate.now().plusDays(5), it!!.oppdrag110.avvent118.datoAvventTom.toLocalDate())
+            }
+    }
 }
 
 private fun String.toLocalDate() = LocalDate.parse(this)
