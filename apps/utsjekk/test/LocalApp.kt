@@ -18,7 +18,6 @@ import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.*
 import utsjekk.task.Status
 import utsjekk.utbetaling.UtbetalingId
-import utsjekk.utbetaling.UtbetalingService
 import java.time.LocalDateTime
 import java.util.*
 import java.io.File
