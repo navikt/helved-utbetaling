@@ -160,6 +160,66 @@ class UtbetalingRoutingTest {
     }
 
     @Test
+    fun `periodetype UKEDAG can span over New Years Eve`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.mar,
+            periodeType = PeriodeType.UKEDAG,
+            perioder = listOf(
+                UtbetalingsperiodeApi(31.des, 31.des, 500u),
+                UtbetalingsperiodeApi(1.jan, 1.jan, 500u),
+            ),
+        )
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+        assertEquals(HttpStatusCode.Created, res.status)
+        assertEquals("/utbetalinger/$uid", res.headers["location"])
+    }
+
+    @Test
+    fun `periodetype DAG can span over New Years Eve`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.mar,
+            periodeType = PeriodeType.DAG,
+            perioder = listOf(
+                UtbetalingsperiodeApi(31.des, 31.des, 500u),
+                UtbetalingsperiodeApi(1.jan, 1.jan, 500u),
+            ),
+        )
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+        assertEquals(HttpStatusCode.Created, res.status)
+        assertEquals("/utbetalinger/$uid", res.headers["location"])
+    }
+
+    @Test
+    fun `periodetype MND can span over New Years Eve`() = runTest() {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.mar,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
+                UtbetalingsperiodeApi(1.des, 31.des, 15_000u),
+                UtbetalingsperiodeApi(1.jan, 31.jan, 16_000u),
+            ),
+        )
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+        assertEquals(HttpStatusCode.Created, res.status)
+        assertEquals("/utbetalinger/$uid", res.headers["location"])
+    }
+
+    @Test
     fun `bad request when dates span over New Years Eve`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.mar,
