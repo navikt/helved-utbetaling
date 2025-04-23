@@ -129,6 +129,7 @@ private fun UtbetalingApi.failOnEmptyPerioder() {
 }
 
 private fun UtbetalingApi.failOnÅrsskifte() {
+    if (periodeType != PeriodeType.EN_GANG) return
     if (perioder.minBy { it.fom }.fom.year != perioder.maxBy { it.tom }.tom.year) {
         badRequest(
             msg = "periode strekker seg over årsskifte",
