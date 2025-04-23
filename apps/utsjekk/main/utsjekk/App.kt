@@ -28,7 +28,6 @@ import libs.auth.configure
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.postgres.Jdbc
-import libs.postgres.JdbcConfig
 import libs.postgres.Migrator
 import libs.utils.logger
 import libs.utils.secureLog
@@ -156,11 +155,6 @@ fun Application.utsjekk(
         probes(metrics)
     }
 }
-
-fun ApplicationCall.navident(): String =
-    principal<JWTPrincipal>()
-        ?.getClaim("NAVident", String::class)
-        ?: forbidden("missing JWT claim", "NAVident", "kom_i_gang")
 
 fun ApplicationCall.client(): Client =
     principal<JWTPrincipal>()
