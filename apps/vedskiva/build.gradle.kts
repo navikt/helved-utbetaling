@@ -14,7 +14,7 @@ dependencies {
     implementation(project(":models"))
     implementation("no.nav.helved:jdbc:$libVersion")
 
-    implementation("org.apache.kafka:kafka-clients:3.9.0")
+    implementation("org.apache.kafka:kafka-clients:4.0.0")
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.15.0-alpha")
 
     implementation("no.nav.helved:utils:$libVersion")

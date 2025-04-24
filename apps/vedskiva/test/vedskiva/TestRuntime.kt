@@ -72,7 +72,7 @@ class KafkaFactoryFake: KafkaFactory {
     override fun <K: Any, V> createConsumer(
         config: StreamsConfig,
         topic: Topic<K, V & Any>,
-        resetPolicy: OffsetResetPolicy ,  
+        resetPolicy: OffsetResetPolicy,  
         maxProcessingTimeMs: Int,
         groupId: Int,
     ): KafkaConsumerFake<K, V> {
