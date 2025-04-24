@@ -19,6 +19,7 @@ dependencies {
     implementation("no.nav.helved:xml:$libVersion")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.15.0-alpha")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
 
     implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
     implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
