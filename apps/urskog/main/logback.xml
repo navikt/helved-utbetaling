@@ -32,15 +32,16 @@
     </appender>
 
     <root level="INFO">
-        <appender-ref ref="stdout"/>
+        <appender-ref ref="json"/>
     </root>
 
     <logger name="app"       level="INFO"  additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="auth"      level="INFO"  additivity="false"><appender-ref ref="json"/></logger>
     <logger name="http"      level="INFO"  additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="jdbc"      level="INFO"  additivity="false"><appender-ref ref="json"/></logger>
     <logger name="kafka"     level="INFO"  additivity="false"><appender-ref ref="json"/></logger>
     <logger name="mq"        level="INFO"  additivity="false"><appender-ref ref="json"/></logger>
     <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="secureLog"/></logger>
 
     <logger name="org.apache.kafka.streams.processor.internals.StreamThread" level="WARN"  additivity="false"><appender-ref ref="json"/></logger>
-
 </configuration>
