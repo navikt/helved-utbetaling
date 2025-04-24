@@ -15,7 +15,7 @@
     </appender>
 
     <appender name="otel" class="io.opentelemetry.instrumentation.logback.v1_0.OpenTelemetryAppender">
-        <appender-ref ref="stdout" />
+        <appender-ref ref="json" />
     </appender>
 
     <appender name="secureLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
