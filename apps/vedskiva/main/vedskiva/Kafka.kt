@@ -78,8 +78,10 @@ class OppdragsdataConsumer(
                 }
 
             if (polledRecords.any { record ->
-                val avstemmingsdag = requireNotNull(record.value).avstemmingsdag
-                avstemmingsdag == today || avstemmingsdag.isBefore(today) 
+                record.value?.let { 
+                    val avstemmingsdag = it.avstemmingsdag
+                    avstemmingsdag == today || avstemmingsdag.isBefore(today) 
+                } ?: true
             }) {
                 keepPolling++
             }
