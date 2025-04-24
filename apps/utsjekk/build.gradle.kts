@@ -26,7 +26,7 @@ dependencies {
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.15.0-alpha")
 
-    implementation("org.apache.kafka:kafka-clients:3.9.0")
+    implementation("org.apache.kafka:kafka-clients:4.0.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.20")
 
     implementation("io.ktor:ktor-server-double-receive:$ktorVersion")

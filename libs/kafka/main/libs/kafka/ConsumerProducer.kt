@@ -90,7 +90,7 @@ interface KafkaFactory {
     fun <K: Any, V> createConsumer(
         config: StreamsConfig,
         topic: Topic<K, V & Any>,
-        resetPolicy: OffsetResetPolicy = OffsetResetPolicy.earliest,  
+        resetPolicy: OffsetResetPolicy = OffsetResetPolicy.earliest, 
         maxProcessingTimeMs: Int = 4_000,
         groupId: Int = 1,
     ): KafkaConsumer<K, V> {
