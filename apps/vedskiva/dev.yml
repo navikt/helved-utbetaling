@@ -33,3 +33,10 @@ spec:
   kafka:
     pool: nav-dev
     streams: true
+  accessPolicy:
+    outbound:
+      rules:
+        - application: peisschtappern
+  env:
+    - name: PEISSCHTAPPERN_SCOPE
+      value: api://dev-gcp.helved.peisschtappern/.default
