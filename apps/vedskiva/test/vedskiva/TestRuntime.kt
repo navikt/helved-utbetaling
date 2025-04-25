@@ -1,12 +1,21 @@
 package vedskiva
 
+import io.ktor.client.*
+import io.ktor.serialization.jackson.*
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import java.io.File
+import java.net.URI
+import kotlinx.coroutines.*
 import libs.jdbc.PostgresContainer
+import libs.kafka.*
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.*
-import kotlinx.coroutines.*
 import libs.utils.logger
-import java.io.File
-import libs.kafka.*
 
 val testLog = logger("test")
 
@@ -19,6 +28,8 @@ object TestRuntime: AutoCloseable {
     }
 
     private val postgres = PostgresContainer("vedskiva")
+    val azure = AzureFake()
+    val peisschtappern = PeisschtappernFake()
     val kafka = KafkaFactoryFake()
     val jdbc = Jdbc.initialize(postgres.config)
     val context = CoroutineDatasource(jdbc)
@@ -27,6 +38,8 @@ object TestRuntime: AutoCloseable {
         Config(
             kafka = StreamsConfig("", "", SslConfig("", "", "")),
             jdbc = postgres.config.copy(migrations = listOf(File("test/migrations"), File("migrations"))),
+            azure = azure.config,
+            peisschtappern.config,
         )
     }
 
@@ -50,6 +63,66 @@ object TestRuntime: AutoCloseable {
             }
         }
     }
+}
+
+val http: HttpClient by lazy {
+    HttpClient()
+}
+
+class AzureFake: AutoCloseable {
+    companion object {
+        fun azure(app: Application) {
+            app.install(ContentNegotiation) { jackson() }
+            app.routing {
+                get("/jwks") {
+                    call.respondText(libs.auth.TEST_JWKS)
+                }
+
+                post("/token") {
+                    call.respond(libs.auth.AzureToken(3600, "token"))
+                }
+            }
+        }
+    }
+    private val server = embeddedServer(Netty, port = 0) { AzureFake.azure(this) }.apply { start() }
+
+    val config by lazy {
+        libs.auth.AzureConfig(
+            tokenEndpoint = "http://localhost:${server.engine.port}/token".let(::URI).toURL(),
+            jwks = "http://localhost:${server.engine.port}/jwks".let(::URI).toURL(),
+            issuer = "test",
+            clientId = "hei",
+            clientSecret = "på deg"
+        )
+    }
+
+    private val jwksGenerator = libs.auth.JwkGenerator(config.issuer, config.clientId)
+
+    fun generateToken() = jwksGenerator.generate()
+
+    override fun close() = server.stop(0, 0)
+}
+
+class PeisschtappernFake: AutoCloseable {
+    companion object {
+        val response = mutableListOf<Dao>()
+        fun server(app: Application) {
+            app.install(ContentNegotiation) { jackson() }
+            app.routing {
+                get("/api") {
+                    call.respond(response)
+                }
+            }
+        }
+    }
+    private val server = embeddedServer(Netty, port = 0) { PeisschtappernFake.server(this) }.apply { start() }
+    val config by lazy {
+        PeisschtappernConfig(
+            host = "http://localhost:${server.engine.port}".let(::URI).toURL(),
+            scope = "test"
+        )
+    }
+    override fun close() = server.stop(0, 0)
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -79,3 +152,8 @@ class KafkaFactoryFake: KafkaFactory {
         return consumers.getOrPut(topic.name) { KafkaConsumerFake(topic) } as KafkaConsumerFake<K, V>
     }
 }
+
+val NettyApplicationEngine.port: Int
+    get() = runBlocking {
+        resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
+    }
