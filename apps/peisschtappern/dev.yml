@@ -43,7 +43,7 @@ spec:
     inbound:
       rules:
         - application: helved-peisen
-        - application: peisschtappern
+        - application: vedskiva
   gcp:
     sqlInstances:
       - type: "POSTGRES_15" # WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade

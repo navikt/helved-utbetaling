@@ -13,6 +13,8 @@ dependencies {
     implementation(project(":libs:kafka"))
     implementation(project(":models"))
     implementation("no.nav.helved:jdbc:$libVersion")
+    implementation("no.nav.helved:auth:$libVersion")
+
 
     implementation("org.apache.kafka:kafka-clients:4.0.0")
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.15.0-alpha")
