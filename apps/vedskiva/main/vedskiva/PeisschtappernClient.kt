@@ -17,7 +17,7 @@ class PeisschtappernClient(
     private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
-    suspend fun oppdragsData(fom: LocalDate, tom: LocalDate): List<Dao> {
+    suspend fun oppdragsdata(fom: LocalDate, tom: LocalDate): List<Dao> {
         val response = client.get("${config.peisschtappern.host}/api") {
             bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
             contentType(ContentType.Application.Json)
