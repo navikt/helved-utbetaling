@@ -21,6 +21,7 @@ data class AapUtbetaling(
 )
 
 fun toDomain(tuple: AapTuple, sakValue: SakValue?): Utbetaling {
+    // TODO: ha med fagsystem?
     return Utbetaling(
         simulate = tuple.aap.simulate,
         uid = UtbetalingId(UUID.fromString(tuple.uid)),
