@@ -25,7 +25,7 @@ dependencies {
     implementation("no.nav.utsjekk.kontrakter:felles:$kontraktVersion")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.15.0-alpha")
-    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.1")
 
     implementation("org.apache.kafka:kafka-clients:4.0.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.20")

@@ -24,7 +24,7 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.5")
-    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.1")
 
     testImplementation(project(":libs:kafka-test"))
     testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
