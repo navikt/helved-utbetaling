@@ -28,7 +28,7 @@ dependencies {
     testImplementation("no.nav.helved:jdbc-test:$libVersion")
     testImplementation("no.nav.helved:auth-test:$libVersion")
     testImplementation(project(":libs:kafka-test"))
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
     testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
 }
