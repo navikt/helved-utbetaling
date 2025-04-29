@@ -8,9 +8,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import io.ktor.http.parameters
-import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -27,13 +26,15 @@ class PeisschtappernClient(
             contentType(ContentType.Application.Json)
             parameter("topics", "helved.oppdrag.v1")
             parameter("limit", 10000)
-            parameter("fom", fom)
-            parameter("tom", tom)
+            parameter("fom", formatter.format(fom))
+            parameter("tom", formatter.format(tom))
         }
         return response.body()
     }
 
 }
+
+private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
 private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 
