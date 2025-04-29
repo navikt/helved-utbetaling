@@ -1,7 +1,19 @@
 package vedskiva
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import java.time.Instant
+import java.util.GregorianCalendar
 import java.util.UUID
+import javax.xml.datatype.DatatypeFactory
+import javax.xml.datatype.XMLGregorianCalendar
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -12,6 +24,7 @@ import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import models.*
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
+import no.trygdeetaten.skjema.oppdrag.*
 import org.junit.jupiter.api.BeforeEach
 
 class VedskivaTest {
@@ -23,129 +36,24 @@ class VedskivaTest {
     }
 
     @Test
-    fun `can avstemme AAP`() = runTest(TestRuntime.context) {
-        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+    fun `can avstemme 00 (OK)`() = runTest(TestRuntime.context) {
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
 
-        oppConsumer.assign(0, 1, 2)
-
-        val funkFeil = oppdragsdata(kvittering = Kvittering("hei", "08", "ho"), totalBeløpAllePerioder = 1u) 
-        val ingenKvitt = oppdragsdata(kvittering = null, totalBeløpAllePerioder = 1000u)
-        val okVarsel = oppdragsdata(kvittering = Kvittering("beskjed", "04", "yo"), totalBeløpAllePerioder = 10u)
-        val okFremtid = oppdragsdata(avstemmingsdag = LocalDate.now().plusDays(1), totalBeløpAllePerioder = 10000u)
-        val ok = oppdragsdata(totalBeløpAllePerioder = 100u)
-        val tekFeil = oppdragsdata(kvittering = Kvittering("wopsie", "12", "deisy"), totalBeløpAllePerioder = 3u)
-
-        oppConsumer.populate("5", ok,         0, 0L)
-        oppConsumer.populate("6", tekFeil,    0, 1L)
-        oppConsumer.populate("7", ok,         0, 2L)
-        oppConsumer.populate("7", null,       0, 3L)
-        oppConsumer.populate("1", funkFeil,   1, 0L)
-        oppConsumer.populate("2", ingenKvitt, 1, 1L)
-        oppConsumer.populate("3", okVarsel,   2, 0L)
-        oppConsumer.populate("4", okFremtid,  2, 1L)
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 0,
+                key = "abc",
+                beløper = listOf(100),
+            )
+        )
 
         vedskiva(TestRuntime.config, TestRuntime.kafka)
-
-        assertEquals(5, oppProducer.history().size)
-        oppProducer.history().forEach { (_, value) -> assertNull(value) }
 
         assertEquals(3, avsProducer.history().size)
-        assertEquals(AksjonType.START, avsProducer.history().first().second.aksjon.aksjonType)
-        assertEquals(AksjonType.AVSL, avsProducer.history().last().second.aksjon.aksjonType)
-
-        val data = avsProducer.history()[1].second
-        assertEquals(AksjonType.DATA, data.aksjon.aksjonType)
-        assertEquals(5, data.total.totalAntall)
-        assertEquals(1114, data.total.totalBelop.toInt())
-        assertEquals(1, data.grunnlag.godkjentAntall)
-        assertEquals(100, data.grunnlag.godkjentBelop.toInt())
-        assertEquals(1, data.grunnlag.varselAntall)
-        assertEquals(10, data.grunnlag.varselBelop.toInt())
-        assertEquals(2, data.grunnlag.avvistAntall)
-        assertEquals(4, data.grunnlag.avvistBelop.toInt())
-        assertEquals(1, data.grunnlag.manglerAntall)
-        assertEquals(1000, data.grunnlag.manglerBelop.toInt())
-
-        // console out avstemming XML
-        avsProducer.history().forEach { (_, value) ->
-            testLog.debug(Topics.avstemming.serdes.value.serializer().serialize(Topics.avstemming.name, value).decodeToString())
-        }
-    }
-
-    @Test
-    fun `has idempotent scheduler`() = runTest(TestRuntime.context) {
-        runBlocking {
-            withContext(Jdbc.context) {
-                transaction {
-                    Scheduled(LocalDate.now(), LocalDate.now(), LocalDate.now()).insert()
-                }
-            }
-        }
-
-        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
-        oppConsumer.assign(0, 1, 2)
-        val okFremtid = oppdragsdata(avstemmingsdag = LocalDate.now().plusDays(1), totalBeløpAllePerioder = 10000u)
-        oppConsumer.populate("1", okFremtid, 0, 0L)
-
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
-
-        assertEquals(0, oppProducer.history().size)
-        assertEquals(0, avsProducer.history().size)
-    }
-
-    @Test
-    fun `can skip avstemming without scheduled oppdragsdatas`() = runTest(TestRuntime.context) {
-        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
-        oppConsumer.assign(0, 1, 2)
-        val okFremtid = oppdragsdata(avstemmingsdag = LocalDate.now().plusDays(1), totalBeløpAllePerioder = 10000u)
-        oppConsumer.populate("1", okFremtid, 0, 0L)
-
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
-
-        assertEquals(0, oppProducer.history().size)
-        assertEquals(0, avsProducer.history().size)
-    }
-
-    @Test
-    fun `can filter tombstoned oppdragsdata`() = runTest(TestRuntime.context) {
-        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-        oppConsumer.assign(0, 1, 2)
-        val ok = oppdragsdata(totalBeløpAllePerioder = 100u)
-
-        oppConsumer.populate("7", ok,   0, 2L)
-        oppConsumer.populate("7", null, 0, 3L)
-
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
-
-        assertEquals(0, oppProducer.history().size)
-        assertEquals(0, avsProducer.history().size)
-    }
-
-    @Test
-    fun `can deduplicate`() = runTest(TestRuntime.context) {
-        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-        oppConsumer.assign(0, 1, 2)
-        val ok = oppdragsdata(totalBeløpAllePerioder = 100u)
-
-        oppConsumer.populate("1", ok, 0, 2L)
-        oppConsumer.populate("1", ok, 0, 3L)
-
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
-
-        assertEquals(1, oppProducer.history().size)
-        assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
         val data = avsProducer.history()[1].second
         assertEquals(1, data.total.totalAntall)
         assertEquals(100, data.total.totalBelop.toInt())
@@ -157,54 +65,268 @@ class VedskivaTest {
         assertEquals(0, data.grunnlag.avvistBelop.toInt())
         assertEquals(0, data.grunnlag.manglerAntall)
         assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
     }
 
     @Test
-    fun `can read records after tombstones`() = runTest(TestRuntime.context) {
-        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+    fun `can avstemme 04 (Varsel)`() = runTest(TestRuntime.context) {
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-        oppConsumer.assign(0, 1, 2)
-        val okGammel = oppdragsdata(totalBeløpAllePerioder = 300u)
-        val okNy = oppdragsdata(totalBeløpAllePerioder = 40u)
 
-        oppConsumer.populate("7", okGammel, 0, 2L)
-        oppConsumer.populate("7", null,     0, 3L)
-        oppConsumer.populate("7", okNy,     0, 4L)
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("04"),
+                partition = 0,
+                offset = 0,
+                key = "abc",
+                beløper = listOf(10),
+            )
+        )
 
         vedskiva(TestRuntime.config, TestRuntime.kafka)
 
-        assertEquals(1, oppProducer.history().size)
         assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
         val data = avsProducer.history()[1].second
         assertEquals(1, data.total.totalAntall)
-        assertEquals(40, data.total.totalBelop.toInt())
+        assertEquals(10, data.total.totalBelop.toInt())
+        assertEquals(0, data.grunnlag.godkjentAntall)
+        assertEquals(0, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(1, data.grunnlag.varselAntall)
+        assertEquals(10, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+    }
+
+    @Test
+    fun `can avstemme 08 (Funksjonell Feil)`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("08", "funksjonell", "feil"),
+                partition = 0,
+                offset = 0,
+                key = "abc",
+                beløper = listOf(1),
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
+        val data = avsProducer.history()[1].second
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(1, data.total.totalBelop.toInt())
+        assertEquals(0, data.grunnlag.godkjentAntall)
+        assertEquals(0, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(1, data.grunnlag.avvistAntall)
+        assertEquals(1, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+    }
+
+    @Test
+    fun `can avstemme 12 (Teknisk Feil)`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("12", "teknisk", "feil"),
+                partition = 0,
+                offset = 0,
+                key = "abc",
+                beløper = listOf(3),
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
+        val data = avsProducer.history()[1].second
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(3, data.total.totalBelop.toInt())
+        assertEquals(0, data.grunnlag.godkjentAntall)
+        assertEquals(0, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(1, data.grunnlag.avvistAntall)
+        assertEquals(3, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+    }
+
+    @Test
+    fun `can avstemme    (no kvittering)`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = null,
+                partition = 0,
+                offset = 0,
+                key = "abc",
+                beløper = listOf(1000),
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
+        val data = avsProducer.history()[1].second
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(1000, data.total.totalBelop.toInt())
+        assertEquals(0, data.grunnlag.godkjentAntall)
+        assertEquals(0, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(1, data.grunnlag.manglerAntall)
+        assertEquals(1000, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+    }
+    
+    @Test
+    fun `can skip without avstemminger for today`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 1,
+                offset = 6,
+                key = "avstemmes in 1 day",
+                beløper = listOf(400),
+                avstemmingdag = LocalDate.now().plusDays(1),
+            )
+        )
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 2,
+                key = "avstemt 1 day ago",
+                beløper = listOf(500),
+                avstemmingdag = LocalDate.now().minusDays(1),
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(0, avsProducer.history().size)
+    }
+
+    @Test
+    fun `can filter tombstoned oppdragsdata`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 1,
+                key = "to be tombstoned",
+                beløper = listOf(100),
+            )
+        )
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 2,
+                key = "to be tombstoned",
+                beløper = null, // tombstone
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(0, avsProducer.history().size)
+    }
+
+    @Test
+    fun `can deduplicate`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        val dao = dao(
+            kvittering = mmel("00"),
+            partition = 0,
+            offset = 0,
+            key = "abc",
+            beløper = listOf(100),
+        )
+        PeisschtappernFake.response.add(dao)
+        PeisschtappernFake.response.add(dao)
+        PeisschtappernFake.response.add(dao.copy(offset = 1))
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
+        val data = avsProducer.history()[1].second
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(100, data.total.totalBelop.toInt())
         assertEquals(1, data.grunnlag.godkjentAntall)
-        assertEquals(40, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(100, data.grunnlag.godkjentBelop.toInt())
         assertEquals(0, data.grunnlag.varselAntall)
         assertEquals(0, data.grunnlag.varselBelop.toInt())
         assertEquals(0, data.grunnlag.avvistAntall)
         assertEquals(0, data.grunnlag.avvistBelop.toInt())
         assertEquals(0, data.grunnlag.manglerAntall)
         assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
     }
 
     @Test
-    fun `oppdragsdata with kvittering takes precedence`() = runTest(TestRuntime.context) {
-        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+    fun `can read records after tombstones`() = runTest(TestRuntime.context) {
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-        oppConsumer.assign(0, 1, 2)
-        val okMedKvitt = oppdragsdata(totalBeløpAllePerioder = 50u)
-        val okUtenKvitt = okMedKvitt.copy(kvittering = null)
 
-        oppConsumer.populate("8", okUtenKvitt, 0, 1L)
-        oppConsumer.populate("8", okMedKvitt,  0, 2L)
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 1,
+                key = "to be replaced",
+                beløper = null, // tombstone
+            )
+        )
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 2,
+                key = "to be replaced",
+                beløper = listOf(50),
+            )
+        )
 
         vedskiva(TestRuntime.config, TestRuntime.kafka)
 
-        assertEquals(1, oppProducer.history().size)
         assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
         val data = avsProducer.history()[1].second
         assertEquals(1, data.total.totalAntall)
         assertEquals(50, data.total.totalBelop.toInt())
@@ -216,24 +338,38 @@ class VedskivaTest {
         assertEquals(0, data.grunnlag.avvistBelop.toInt())
         assertEquals(0, data.grunnlag.manglerAntall)
         assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
     }
 
     @Test
-    fun `can accumulate oppdragsdata for same key`() = runTest(TestRuntime.context) {
-        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+    fun `can accumulate oppdrag with same key`() = runTest(TestRuntime.context) {
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-        oppConsumer.assign(0, 1, 2)
-        val okA = oppdragsdata(totalBeløpAllePerioder = 333u)
-        val okB = oppdragsdata(totalBeløpAllePerioder = 666u)
 
-        oppConsumer.populate("7", okA, 0, 2L)
-        oppConsumer.populate("7", okB, 0, 3L)
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 1,
+                key = "to be accumulated",
+                beløper = listOf(333),
+            )
+        )
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 2,
+                key = "to be accumulated",
+                beløper = listOf(666),
+            )
+        )
 
         vedskiva(TestRuntime.config, TestRuntime.kafka)
 
-        assertEquals(1, oppProducer.history().size)
         assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
         val data = avsProducer.history()[1].second
         assertEquals(2, data.total.totalAntall)
         assertEquals(999, data.total.totalBelop.toInt())
@@ -245,60 +381,485 @@ class VedskivaTest {
         assertEquals(0, data.grunnlag.avvistBelop.toInt())
         assertEquals(0, data.grunnlag.manglerAntall)
         assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
     }
 
     @Test
-    fun `test case AAP`() = runTest(TestRuntime.context) {
-        val oppConsumer = TestRuntime.kafka.createConsumer(TestRuntime.config.kafka, Topics.oppdragsdata)
-        val oppProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.oppdragsdata)
+    fun `can summarize total beløp per oppdrag`() = runTest(TestRuntime.context) {
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-        oppConsumer.assign(0, 1, 2)
 
-        val oppdragsdata = oppdragsdata(
-            Fagsystem.AAP,
-            Personident("23519035766"),
-            SakId("4Mi993K"),
-            "lZGWmiVzR0q4W52S++5nPQ==",
-            LocalDate.of(2025, 4, 22),
-            974u,
-            Kvittering(null, "00", null)
-
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 0,
+                key = "abc",
+                beløper = listOf(100, 200, 300),
+            )
         )
-        oppConsumer.populate("7", oppdragsdata, 0, 2L)
 
         vedskiva(TestRuntime.config, TestRuntime.kafka)
 
-        assertEquals(1, oppProducer.history().size)
         assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
         val data = avsProducer.history()[1].second
         assertEquals(1, data.total.totalAntall)
-        assertEquals(974, data.total.totalBelop.toInt())
+        assertEquals(600, data.total.totalBelop.toInt())
         assertEquals(1, data.grunnlag.godkjentAntall)
-        assertEquals(974, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(600, data.grunnlag.godkjentBelop.toInt())
         assertEquals(0, data.grunnlag.varselAntall)
         assertEquals(0, data.grunnlag.varselBelop.toInt())
         assertEquals(0, data.grunnlag.avvistAntall)
         assertEquals(0, data.grunnlag.avvistBelop.toInt())
         assertEquals(0, data.grunnlag.manglerAntall)
         assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+    }
+
+    @Test
+    fun `can accumulate opphør (UPDATE)`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            Dao(
+                version = "v1",
+                topic_name = "helved.oppdrag.v1",
+                partition = 0,
+                offset = 0,
+                key = "opphør",
+                value = xmlMapper.writeValueAsString(
+                    oppdrag(
+                        mmel = mmel("00"),
+                        satser = listOf(200),
+                        kodeEndring = "NY",
+                        avstemmingstidspunkt = LocalDate.now().atStartOfDay(),
+                        oppdragslinjer = listOf(
+                            oppdragslinje(
+                                kodeEndring = "NY",
+                                delytelsesId = "1",
+                                sats = 200,
+                                datoVedtakFom = LocalDate.of(2025, 11, 3),
+                                datoVedtakTom = LocalDate.of(2025, 11, 7),
+                                typeSats = "DAG",
+                                henvisning = UUID.randomUUID().toString().drop(10),
+                            )
+                        )
+                    )
+                ), 
+                timestamp_ms = Instant.now().toEpochMilli(),
+                stream_time_ms = Instant.now().toEpochMilli(),
+                system_time_ms = Instant.now().toEpochMilli(),
+            )
+        )
+        PeisschtappernFake.response.add(
+            Dao(
+                version = "v1",
+                topic_name = "helved.oppdrag.v1",
+                partition = 0,
+                offset = 1,
+                key = "opphør",
+                value = xmlMapper.writeValueAsString(
+                    oppdrag(
+                        mmel = mmel("00"),
+                        satser = listOf(200),
+                        kodeEndring = "ENDR",
+                        avstemmingstidspunkt = LocalDate.now().atStartOfDay(),
+                        oppdragslinjer = listOf(
+                            oppdragslinje(
+                                kodeEndring = "OPPH",
+                                delytelsesId = "1",
+                                sats = 200,
+                                datoVedtakFom = LocalDate.of(2025, 11, 3),
+                                datoVedtakTom = LocalDate.of(2025, 11, 7),
+                                typeSats = "DAG",
+                                henvisning = UUID.randomUUID().toString().drop(10),
+                            )
+                        )
+                    )
+                ), 
+                timestamp_ms = Instant.now().toEpochMilli(),
+                stream_time_ms = Instant.now().toEpochMilli(),
+                system_time_ms = Instant.now().toEpochMilli(),
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
+        val data = avsProducer.history()[1].second
+        assertEquals(2, data.total.totalAntall)
+        assertEquals(400, data.total.totalBelop.toInt())
+        assertEquals(2, data.grunnlag.godkjentAntall)
+        assertEquals(400, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+    }
+
+    @Test
+    fun `can accumulate opphør (DELETE)`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            Dao(
+                version = "v1",
+                topic_name = "helved.oppdrag.v1",
+                partition = 0,
+                offset = 0,
+                key = "opphør",
+                value = xmlMapper.writeValueAsString(
+                    oppdrag(
+                        mmel = mmel("00"),
+                        satser = listOf(200),
+                        kodeEndring = "NY",
+                        avstemmingstidspunkt = LocalDate.now().atStartOfDay(),
+                        oppdragslinjer = listOf(
+                            oppdragslinje(
+                                kodeEndring = "NY",
+                                delytelsesId = "1",
+                                sats = 200,
+                                datoVedtakFom = LocalDate.of(2025, 11, 3),
+                                datoVedtakTom = LocalDate.of(2025, 11, 7),
+                                typeSats = "DAG",
+                                henvisning = UUID.randomUUID().toString().drop(10),
+                            )
+                        )
+                    )
+                ), 
+                timestamp_ms = Instant.now().toEpochMilli(),
+                stream_time_ms = Instant.now().toEpochMilli(),
+                system_time_ms = Instant.now().toEpochMilli(),
+            )
+        )
+        PeisschtappernFake.response.add(
+            Dao(
+                version = "v1",
+                topic_name = "helved.oppdrag.v1",
+                partition = 0,
+                offset = 1,
+                key = "opphør",
+                value = xmlMapper.writeValueAsString(
+                    oppdrag(
+                        mmel = mmel("00"),
+                        satser = listOf(200),
+                        kodeEndring = "NY",
+                        avstemmingstidspunkt = LocalDate.now().atStartOfDay(),
+                        oppdragslinjer = listOf(
+                            oppdragslinje(
+                                kodeEndring = "OPPH",
+                                delytelsesId = "1",
+                                sats = 200,
+                                datoVedtakFom = LocalDate.of(2025, 11, 3),
+                                datoVedtakTom = LocalDate.of(2025, 11, 7),
+                                typeSats = "DAG",
+                                henvisning = UUID.randomUUID().toString().drop(10),
+                            )
+                        )
+                    )
+                ), 
+                timestamp_ms = Instant.now().toEpochMilli(),
+                stream_time_ms = Instant.now().toEpochMilli(),
+                system_time_ms = Instant.now().toEpochMilli(),
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
+        val data = avsProducer.history()[1].second
+        assertEquals(2, data.total.totalAntall)
+        assertEquals(400, data.total.totalBelop.toInt())
+        assertEquals(2, data.grunnlag.godkjentAntall)
+        assertEquals(400, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+    }
+
+    @Test
+    fun `will take precedence on kvitterte oppdrag`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = null,
+                partition = 0,
+                offset = 1,
+                key = "to be kvittert",
+                beløper = listOf(333),
+            )
+        )
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 2,
+                key = "to be kvittert",
+                beløper = listOf(333),
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(3, avsProducer.history().size)
+        val start = avsProducer.history()[0].second
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
+        val data = avsProducer.history()[1].second
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(333, data.total.totalBelop.toInt())
+        assertEquals(1, data.grunnlag.godkjentAntall)
+        assertEquals(333, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = avsProducer.history()[2].second
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+    }
+
+    @Test
+    fun `will skip future avstemminger`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 2,
+                offset = 6,
+                key = "avstemmes in 1 day",
+                beløper = listOf(400),
+                avstemmingdag = LocalDate.now().plusDays(1),
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(0, avsProducer.history().size)
+    }
+
+    @Test
+    fun `will skip previous avstemminger`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 1,
+                offset = 2,
+                key = "avstemt 3 days ago",
+                beløper = listOf(4000),
+                avstemmingdag = LocalDate.now().minusDays(3),
+            )
+        )
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(0, avsProducer.history().size)
+    }
+
+    @Test
+    fun `has idempotent scheduler`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 0,
+                key = "abc",
+                beløper = listOf(100),
+            )
+        )
+
+        runBlocking {
+            withContext(Jdbc.context) {
+                transaction {
+                    Scheduled(LocalDate.now(), LocalDate.now(), LocalDate.now()).insert()
+                }
+            }
+        }
+
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(0, avsProducer.history().size)
     }
 }
 
-private fun oppdragsdata(
-    fagsystem: Fagsystem = Fagsystem.AAP,
-    personident: Personident = Personident("12345678910"),
-    sakId: SakId = SakId("1"),
-    lastDelytelseId: String = UUID.randomUUID().toString(), 
-    avstemmingsdag: LocalDate = LocalDate.now(),
-    totalBeløpAllePerioder: UInt = 100u,
-    kvittering: Kvittering? = Kvittering(null, "00", null), 
-) = Oppdragsdata(
-    fagsystem,
-    personident,
-    sakId,
-    lastDelytelseId,
-    avstemmingsdag,
-    totalBeløpAllePerioder,
-    kvittering, 
+private val xmlMapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
+private val objectFactory = ObjectFactory()
+private fun LocalDateTime.format() = truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+private fun LocalDate.toXMLDate(): XMLGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
+
+private fun dao(
+    kvittering: Mmel? = mmel(),
+    partition: Int = 0,
+    offset: Int = 0,
+    key: String = UUID.randomUUID().toString(),
+    beløper: List<Int>? = null,
+    avstemmingdag: LocalDate = LocalDate.now(),
+): Dao = Dao(
+    version = "v1",
+    topic_name = "helved.oppdrag.v1",
+    key = key,
+    value = beløper?.let{ 
+        xmlMapper.writeValueAsString(
+            oppdrag(
+                mmel = kvittering,
+                satser = it,
+                avstemmingstidspunkt = avstemmingdag.atStartOfDay(),
+            )
+        ) 
+    },
+    partition = partition,
+    offset = offset.toLong(),
+    timestamp_ms = Instant.now().toEpochMilli(),
+    stream_time_ms = Instant.now().toEpochMilli(),
+    system_time_ms = Instant.now().toEpochMilli(),
 )
+
+private fun mmel(
+    alvorlighetsgrad: String = "00", // 00/04/08/12
+    kodeMelding: String? = null,
+    beskrMelding: String? = null,
+): Mmel = Mmel().apply {
+    this.alvorlighetsgrad = alvorlighetsgrad
+    this.kodeMelding = kodeMelding 
+    this.beskrMelding = beskrMelding 
+}
+
+private fun oppdrag(
+    satser: List<Int>,
+    oppdragslinjer: List<OppdragsLinje150> = satser.mapIndexed { idx, sats ->
+        oppdragslinje(
+            delytelsesId = "$idx",                              // periodeId
+            sats = sats.toLong(),                               // beløp
+            datoVedtakFom = LocalDate.of(2025, 11, 3),          // fom
+            datoVedtakTom = LocalDate.of(2025, 11, 7),          // tom
+            typeSats = "DAG",                                   // periodetype
+            henvisning = UUID.randomUUID().toString().drop(10), // behandlingId
+        )
+    },
+    kodeEndring: String = "NY",                                 // NY/ENDR
+    fagområde: String = "AAP",
+    fagsystemId: String = "1",                                  // sakid
+    oppdragGjelderId: String = "12345678910",                   // personident 
+    saksbehId: String = "Z999999",
+    avstemmingstidspunkt: LocalDateTime = LocalDateTime.now(),
+    enhet: String? = null,
+    mmel: Mmel? = mmel(),
+) = objectFactory.createOppdrag().apply {
+    this.mmel = mmel
+    this.oppdrag110 = objectFactory.createOppdrag110().apply {
+        this.kodeAksjon = "1"
+        this.kodeEndring = kodeEndring
+        this.kodeFagomraade = fagområde
+        this.fagsystemId = fagsystemId
+        this.utbetFrekvens = "MND"
+        this.oppdragGjelderId = oppdragGjelderId
+        this.datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
+        this.saksbehId = saksbehId
+        this.avstemming115 = objectFactory.createAvstemming115().apply {
+            kodeKomponent = fagområde
+            nokkelAvstemming = avstemmingstidspunkt.format()
+            tidspktMelding = avstemmingstidspunkt.format()
+        }
+        enhet?.let {
+            listOf(
+                objectFactory.createOppdragsEnhet120().apply {
+                    this.enhet = enhet
+                    this.typeEnhet = "BOS"
+                    this.datoEnhetFom = LocalDate.of(1970, 1, 1).toXMLDate()
+                },
+                objectFactory.createOppdragsEnhet120().apply {
+                    this.enhet = "8020"
+                    this.typeEnhet = "BEH"
+                    this.datoEnhetFom = LocalDate.of(1900, 1, 1).toXMLDate()
+                },
+            )
+        } ?: listOf(
+            objectFactory.createOppdragsEnhet120().apply {
+                this.enhet = "8020"
+                this.typeEnhet = "BOS"
+                this.datoEnhetFom = LocalDate.of(1900, 1, 1).toXMLDate()
+            },
+        ).forEach(oppdragsEnhet120s::add)
+        oppdragsLinje150s.addAll(oppdragslinjer)
+    }
+}
+
+private fun oppdragslinje(
+    delytelsesId: String,
+    sats: Long,
+    datoVedtakFom: LocalDate,
+    datoVedtakTom: LocalDate,
+    typeSats: String,                       // DAG/DAG7/MND/ENG
+    henvisning: String,                     // behandlingId
+    refDelytelsesId: String? = null,        // lastPeriodeId
+    kodeEndring: String = "NY",             // NY/ENDR
+    opphør: LocalDate? = null,
+    fagsystemId: String = "1",              // sakId
+    vedtakId: LocalDate = LocalDate.now(),  // vedtakstidspunkt
+    klassekode: String = "AAPUAA",
+    saksbehId: String = "Z999999",          // saksbehandler
+    beslutterId: String = "Z999999",        // beslutter
+    utbetalesTilId: String = "12345678910", // personident
+    vedtakssats: Long? = null,              // fastsattDagsats
+): OppdragsLinje150 {
+    val attestant = objectFactory.createAttestant180().apply {
+        attestantId = beslutterId
+    }
+
+    return objectFactory.createOppdragsLinje150().apply {
+        kodeEndringLinje = kodeEndring
+        opphør?.let {
+            kodeStatusLinje = TkodeStatusLinje.OPPH
+            datoStatusFom = opphør.toXMLDate()
+        }
+        if (kodeEndring == "ENDR") {
+            refDelytelsesId?.let {
+                refDelytelseId = refDelytelsesId
+                refFagsystemId = fagsystemId
+            }
+        }
+        this.vedtakId = vedtakId.toString()
+        this.delytelseId = delytelsesId
+        this.kodeKlassifik = klassekode
+        this.datoVedtakFom = datoVedtakFom.toXMLDate()
+        this.datoVedtakTom = datoVedtakTom.toXMLDate()
+        this.sats = BigDecimal.valueOf(sats)
+        this.fradragTillegg = TfradragTillegg.T
+        this.typeSats = typeSats
+        this.brukKjoreplan = "N"
+        this.saksbehId = saksbehId
+        this.utbetalesTilId = utbetalesTilId
+        this.henvisning = henvisning
+        attestant180s.add(attestant)
+
+        vedtakssats?.let {
+            vedtakssats157 = objectFactory.createVedtakssats157().apply {
+                this.vedtakssats = BigDecimal.valueOf(vedtakssats)
+            }
+        }
+    }
+}
+
 

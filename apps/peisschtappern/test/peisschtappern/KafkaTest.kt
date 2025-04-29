@@ -22,7 +22,6 @@ class KafkaTest {
                Channel.Utbetalinger -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Saker -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Aap -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
-               Channel.Oppdragsdata -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunAap -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunTp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunTs -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))

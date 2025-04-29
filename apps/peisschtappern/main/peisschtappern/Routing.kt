@@ -79,7 +79,6 @@ sealed class Channel(
     data object Utbetalinger : Channel(Topics.utbetalinger, Table.utbetalinger, 4)
     data object Saker : Channel(Topics.saker, Table.saker, 5)
     data object Aap : Channel(Topics.aap, Table.aap, 6)
-    data object Oppdragsdata : Channel(Topics.oppdragsdata, Table.oppdragsdata, 7)
     data object DryrunAap : Channel(Topics.dryrunAap, Table.dryrun_aap, 8)
     data object DryrunTp : Channel(Topics.dryrunTp, Table.dryrun_tp, 9)
     data object DryrunTs : Channel(Topics.dryrunTs, Table.dryrun_ts, 10)

@@ -33,6 +33,9 @@ spec:
   kafka:
     pool: nav-dev
     streams: true
+  azure:
+    application:
+      enabled: true
   accessPolicy:
     outbound:
       rules:

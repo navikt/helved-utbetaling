@@ -14,14 +14,14 @@ data class Oppdragsdata(
     val fagsystem: Fagsystem,
     val personident: Personident,
     val sakId: SakId,
-    val lastDelytelseId: String?, // før 14.apr 2025 fantes ikke denne
+    val lastDelytelseId: String,
     val avstemmingsdag: LocalDate,
-    val totalBeløpAllePerioder: UInt, // TODO: må vi støtte negative tall?
+    val totalBeløpAllePerioder: UInt,
     val kvittering: Kvittering?,
 )
 
 data class Kvittering(
-    val kode: String?,
     val alvorlighetsgrad: String, 
+    val kode: String?,
     val melding: String?,
 )
