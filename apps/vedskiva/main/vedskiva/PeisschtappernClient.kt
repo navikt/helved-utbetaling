@@ -8,20 +8,24 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.parameters
 import java.time.LocalDate
+import java.time.LocalDateTime
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class PeisschtappernClient(
     private val config: Config,
     private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
-    suspend fun oppdragsdata(fom: LocalDate, tom: LocalDate): List<Dao> {
+
+    suspend fun oppdrag(fom: LocalDateTime, tom: LocalDateTime): List<Dao> {
         val response = client.get("${config.peisschtappern.host}/api") {
             bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
             contentType(ContentType.Application.Json)
-            parameter("topics", "helved.oppdragsdata.v1")
+            parameter("topics", "helved.oppdrag.v1")
             parameter("limit", 10000)
             parameter("fom", fom)
             parameter("tom", tom)
@@ -30,6 +34,8 @@ class PeisschtappernClient(
     }
 
 }
+
+private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 
 data class Dao(
     val version: String,
@@ -41,4 +47,6 @@ data class Dao(
     val timestamp_ms: Long,
     val stream_time_ms: Long,
     val system_time_ms: Long,
-)
+) {
+    val oppdrag: Oppdrag? get() = value?.let { mapper.readValue(it) }
+}

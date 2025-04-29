@@ -16,6 +16,9 @@ import libs.kafka.*
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.*
 import libs.utils.logger
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.SerializationFeature
 
 val testLog = logger("test")
 
@@ -51,6 +54,7 @@ object TestRuntime: AutoCloseable {
     fun reset() {
         truncate()
         kafka.reset()
+        PeisschtappernFake.response.clear()
     }
 
     private fun truncate() {
@@ -107,7 +111,13 @@ class PeisschtappernFake: AutoCloseable {
     companion object {
         val response = mutableListOf<Dao>()
         fun server(app: Application) {
-            app.install(ContentNegotiation) { jackson() }
+            app.install(ContentNegotiation) { 
+                jackson {
+                    registerModule(JavaTimeModule())
+                    disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                }
+            }
             app.routing {
                 get("/api") {
                     call.respond(response)

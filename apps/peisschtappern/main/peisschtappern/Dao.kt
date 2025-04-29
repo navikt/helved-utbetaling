@@ -12,7 +12,6 @@ private val daoLog = logger("dao")
 enum class Table {
     avstemming,
     oppdrag,
-    oppdragsdata,
     dryrun_aap,
     dryrun_tp,
     dryrun_ts,

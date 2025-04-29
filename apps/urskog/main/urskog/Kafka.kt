@@ -21,7 +21,6 @@ object Topics {
     val dryrunTiltakspenger = Topic("helved.dryrun-tp.v1", json<models.v1.Simulering>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val kvittering = Topic<OppdragForeignKey, Oppdrag>("helved.kvittering.v1", Serdes(JsonSerde.jackson(), XmlSerde.xml()))
-    val oppdragsdata = Topic("helved.oppdragsdata.v1", json<Oppdragsdata>())
     val avstemming = Topic("helved.avstemming.v1", xml<Avstemmingsdata>())
 }
 
@@ -95,23 +94,6 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
             }
             .produce(Topics.status)
         }
-
-    oppdragTopic.map { o ->
-        Oppdragsdata(
-            fagsystem = Fagsystem.fromFagområde(o.oppdrag110.kodeFagomraade.trimEnd()),
-            personident = Personident(o.oppdrag110.oppdragGjelderId.trimEnd()),
-            sakId = SakId(o.oppdrag110.fagsystemId.trimEnd()),
-            lastDelytelseId = o.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
-            avstemmingsdag = LocalDateTime.parse(o.oppdrag110.avstemming115.tidspktMelding.trimEnd(), formatter).toLocalDate(),
-            totalBeløpAllePerioder = o.oppdrag110.oppdragsLinje150s.sumOf { it.sats.toLong().toUInt() },
-            kvittering = if (o.mmel == null) null else Kvittering(
-                kode = o.mmel.kodeMelding?.trimEnd(), // disse finnes bare ved varsel og avvist
-                alvorlighetsgrad = o.mmel.alvorlighetsgrad.trimEnd(),
-                melding = o.mmel.beskrMelding?.trimEnd(), // disse finnes bare ved varsel og avvist
-            )
-        )
-    }
-    .produce(Topics.oppdragsdata)
 }
 
 fun Topology.avstemming(avstemProducer: AvstemmingMQProducer) {

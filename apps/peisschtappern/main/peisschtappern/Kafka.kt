@@ -15,7 +15,6 @@ object Topics {
     val utbetalinger = Topic("helved.utbetalinger.v1", bytes())
     val saker = Topic("helved.saker.v1", bytes())
     val aap = Topic("helved.utbetalinger-aap.v1", bytes())
-    val oppdragsdata = Topic("helved.oppdragsdata.v1", bytes())
     val dryrunAap = Topic("helved.dryrun-aap.v1", bytes())
     val dryrunTp = Topic("helved.dryrun-tp.v1", bytes())
     val dryrunTs = Topic("helved.dryrun-ts.v1", bytes())
