@@ -4,15 +4,12 @@ import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import io.micrometer.core.instrument.MeterRegistry
 import java.util.*
 import libs.kafka.Streams
 
-fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
+fun Routing.probes(kafka: Streams) {
     route("/actuator") {
-        get("/metric") { 
-            call.respond(meters.scrape())
-        }
         get("/ready") { 
             when (kafka.ready()) {
                 true -> call.respond(HttpStatusCode.OK)

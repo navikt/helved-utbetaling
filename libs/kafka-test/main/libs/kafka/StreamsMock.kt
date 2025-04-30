@@ -1,7 +1,7 @@
 package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.kafka.KafkaTestMetrics
+// import io.micrometer.core.instrument.binder.kafka.KafkaTestMetrics
 import org.apache.kafka.streams.TopologyTestDriver
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
@@ -20,7 +20,7 @@ class StreamsMock : Streams {
 //            }
 
         internalStreams = TopologyTestDriver(internalTopology, testProperties)
-        KafkaTestMetrics(registry, internalStreams::metrics)
+        // KafkaTestMetrics(registry, internalStreams::metrics)
     }
 
     override fun ready(): Boolean = true
