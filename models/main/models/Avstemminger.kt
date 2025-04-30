@@ -16,6 +16,7 @@ data class Oppdragsdata(
     val sakId: SakId,
     val lastDelytelseId: String,
     val avstemmingsdag: LocalDate,
+    val innsendt: LocalDate,
     val totalBeløpAllePerioder: UInt,
     val kvittering: Kvittering?,
 )

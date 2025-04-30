@@ -71,7 +71,7 @@ object AvstemmingService {
             detaljType = type
             offnr = data.personident.ident
             avleverendeTransaksjonNokkel = data.sakId.id
-            tidspunkt = data.avstemmingsdag.atTime(8, 0).format()
+            tidspunkt = data.innsendt.atStartOfDay().format()
             if (type in listOf(DetaljType.AVVI, DetaljType.VARS)) {
                 val kvittering = data.kvittering ?: return null
                 meldingKode = kvittering.kode
