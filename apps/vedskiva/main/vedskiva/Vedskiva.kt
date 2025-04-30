@@ -95,6 +95,7 @@ fun vedskiva(
                             sakId = SakId(oppdrag.oppdrag110.fagsystemId.trimEnd()),
                             lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
                             avstemmingsdag = LocalDateTime.parse(oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd(), formatter).toLocalDate(),
+                            innsendt = oppdrag.oppdrag110.oppdragsLinje150s.first().vedtakId.trimEnd().toLocalDate(),
                             totalBeløpAllePerioder = oppdrag.oppdrag110.oppdragsLinje150s.sumOf {it.sats.toLong().toUInt() },
                             kvittering = oppdrag.mmel?.let { mmel ->
                                 Kvittering(
@@ -123,6 +124,7 @@ fun vedskiva(
 }
 
 private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+private fun String.toLocalDate(): LocalDate = LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
 /**
  * Alle oppdrag skal få en kvittering og de som har kvittering har presedens over de som er ukvitterte
