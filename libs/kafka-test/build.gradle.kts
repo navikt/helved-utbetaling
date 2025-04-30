@@ -1,4 +1,4 @@
-val libVersion = "3.1.93"
+val libVersion = "3.1.97"
 
 dependencies {
     implementation(project(":libs:kafka"))
