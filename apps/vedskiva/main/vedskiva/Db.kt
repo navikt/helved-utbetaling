@@ -19,7 +19,7 @@ data class Scheduled(
         suspend fun lastOrNull(): Scheduled? {
             val sql = "SELECT * FROM  $TABLE_NAME ORDER BY created_at DESC LIMIT 1"
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                daoLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from).singleOrNull()
             }
@@ -32,7 +32,7 @@ data class Scheduled(
             stmt.setObject(1, created_at)
             stmt.setObject(2, avstemt_fom)
             stmt.setObject(3, avstemt_tom)
-            daoLog.debug(sql)
+            jdbcLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
         }
@@ -45,5 +45,5 @@ private fun from(r: ResultSet) = Scheduled(
     avstemt_tom = r.getDate("avstemt_tom").toLocalDate(),
 )
 
-private val daoLog = logger("dao")
+private val jdbcLog = logger("jdbc")
 
