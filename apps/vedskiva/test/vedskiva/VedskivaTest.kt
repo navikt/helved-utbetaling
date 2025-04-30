@@ -677,6 +677,31 @@ class VedskivaTest {
     }
 
     @Test
+    fun `will save scheduled`() = runTest(TestRuntime.context) {
+        TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming).use { avsProducer ->
+            PeisschtappernFake.response.add(
+                dao(
+                    kvittering = mmel("00"),
+                    partition = 0,
+                    offset = 0,
+                    key = "abc",
+                    beløper = listOf(100),
+                )
+            )
+
+            vedskiva(TestRuntime.config, TestRuntime.kafka)
+            assertEquals(3, avsProducer.history().size)
+        }
+
+        TestRuntime.kafka.reset()
+
+        TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming).use { avsProducer ->
+            vedskiva(TestRuntime.config, TestRuntime.kafka)
+            assertEquals(0, avsProducer.history().size)
+        }
+    }
+
+    @Test
     fun `has idempotent scheduler`() = runTest(TestRuntime.context) {
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
 

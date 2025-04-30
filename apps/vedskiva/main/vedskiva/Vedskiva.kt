@@ -51,16 +51,19 @@ fun vedskiva(
                val last: Scheduled? = transaction {
                    Scheduled.lastOrNull()
                } 
+               appLog.info("last scheduled: $last")
                if (today == last?.created_at) {
                    appLog.info("Already avstemt today")
                    return@withContext
                }
 
                val oppdragDaos = mutableMapOf<String, Set<Dao>>()
+               val avstemFom = (last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()).atStartOfDay() 
+               val avstemTom = today.atStartOfDay().minusNanos(1)
 
                peisschtappern.oppdrag(
-                   fom = (last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()).atStartOfDay(), 
-                   tom = today.atStartOfDay().minusNanos(1),
+                   fom = avstemFom, 
+                   tom = avstemTom,
                ).filter { dao -> 
                    val avstemmingdag = dao.oppdrag?.let { oppdrag -> 
                        val tidspktMelding = oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd() 
@@ -108,6 +111,10 @@ fun vedskiva(
                        messages.forEach { msg -> avstemmingProducer.send(id, msg, 0) }
                        appLog.info("Fullført grensesnittavstemming for $fagområde id: $id")
                    }
+
+               transaction {
+                   Scheduled(LocalDate.now(), avstemFom.toLocalDate(), avstemTom.toLocalDate()).insert()
+               }
             } else {
                 appLog.info("Avstemmer ikke i helg eller på helligdag")
             }
