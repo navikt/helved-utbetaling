@@ -30,12 +30,12 @@ class KafkaStreams : Streams {
     override fun connect(
         topology: Topology,
         config: StreamsConfig,
-        registry: MeterRegistry,
+        registry: MeterRegistry, // TODO: remove
     ) {
         topology.registerInternalTopology(this)
 
         internalStreams = KafkaStreams(internalTopology, config.streamsProperties())
-        KafkaStreamsMetrics(internalStreams).bindTo(registry)
+        // KafkaStreamsMetrics(internalStreams).bindTo(registry)
         internalStreams.setUncaughtExceptionHandler(UncaughtHandler())
         internalStreams.setStateListener { state, _ -> if (state == RUNNING) initiallyStarted = true }
         internalStreams.setGlobalStateRestoreListener(RestoreListener())
