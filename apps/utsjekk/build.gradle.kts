@@ -8,7 +8,7 @@ application {
 
 val ktorVersion = "3.1.2"
 val libVersion = "3.1.97"
-val kontraktVersion = "1.0_20250331111546_5f5a1ac"
+val kontraktVersion = "1.0_20250424200149_61b3f1c"
 
 dependencies {
     implementation(project(":models"))
