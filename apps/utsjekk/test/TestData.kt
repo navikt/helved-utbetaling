@@ -1,12 +1,18 @@
 import no.nav.utsjekk.kontrakter.felles.*
+import no.nav.utsjekk.kontrakter.felles.Personident
+import no.nav.utsjekk.kontrakter.felles.Satstype
+import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
+import no.nav.utsjekk.kontrakter.felles.StønadTypeTilleggsstønader
 import no.nav.utsjekk.kontrakter.iverksett.*
 import no.nav.utsjekk.kontrakter.oppdrag.*
+import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
 import utsjekk.iverksetting.*
+import utsjekk.iverksetting.BehandlingId
+import utsjekk.iverksetting.Periode
+import utsjekk.iverksetting.SakId
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.simulering.Fagområde
-import utsjekk.simulering.Postering
-import utsjekk.simulering.PosteringType
-import utsjekk.simulering.SimuleringDetaljer
+import utsjekk.simulering.*
+import utsjekk.utbetaling.*
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -120,7 +126,12 @@ object TestData {
             ferietillegg: Ferietillegg? = null,
             meldekortId: String = "M1",
             fastsattDagsats: UInt = 1000u,
-        ) = StønadsdataDagpengerDto(stønadstype = type, ferietillegg = ferietillegg, meldekortId = meldekortId, fastsattDagsats = fastsattDagsats)
+        ) = StønadsdataDagpengerDto(
+            stønadstype = type,
+            ferietillegg = ferietillegg,
+            meldekortId = meldekortId,
+            fastsattDagsats = fastsattDagsats
+        )
 
         fun tilleggstønad(
             type: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_AAP,
@@ -270,28 +281,56 @@ object TestData {
     }
 
     object domain {
-
-        fun tidligereIverksetting(
-            andelsdatoer: List<AndelPeriode> = emptyList()
-        ): Iverksetting {
-            val iverksetting = iverksetting(andelsdatoer = andelsdatoer)
-            val andelerTilkjentYtelse =
-                iverksetting.vedtak.tilkjentYtelse.andelerTilkjentYtelse.mapIndexed { idx, andel ->
-                    andel.copy(
-                        periodeId = idx.toLong(),
-                        forrigePeriodeId = if (idx > 0) idx - 1L else null
-                    )
-                }
-
-            val sisteAndel = andelerTilkjentYtelse.maxBy { andel -> andel.periodeId!! }
-            val sisteAndelPerKjede = mapOf(sisteAndel.stønadsdata.tilKjedenøkkel() to sisteAndel)
-
-            val tilkjentYtelse = iverksetting.vedtak.tilkjentYtelse.copy(
-                andelerTilkjentYtelse = andelerTilkjentYtelse,
-                sisteAndelPerKjede = sisteAndelPerKjede,
+        fun utbetalingV2(
+            sakId: utsjekk.utbetaling.SakId = utsjekk.utbetaling.SakId("1"),
+            behandlingId: utsjekk.utbetaling.BehandlingId = utsjekk.utbetaling.BehandlingId("1"),
+            personident: utsjekk.utbetaling.Personident = utsjekk.utbetaling.Personident("02439107599"),
+            vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
+            beslutterId: Navident = Navident("AB12345"),
+            saksbehandlerId: Navident = Navident("CD23456"),
+            kjeder: Map<String, UtbetalingV2.Utbetalingsperioder> = emptyMap(),
+            avvent: Avvent? = null,
+        ): UtbetalingV2 {
+            return UtbetalingV2(
+                sakId = sakId,
+                behandlingId = behandlingId,
+                personident = personident,
+                vedtakstidspunkt = vedtakstidspunkt,
+                beslutterId = beslutterId,
+                saksbehandlerId = saksbehandlerId,
+                kjeder = kjeder,
+                avvent = avvent,
             )
-            val vedtak = iverksetting.vedtak.copy(tilkjentYtelse = tilkjentYtelse)
-            return iverksetting.copy(vedtak = vedtak)
+        }
+
+        fun utbetalingsperioder(
+            satstype: utsjekk.utbetaling.Satstype,
+            stønad: Stønadstype,
+            perioder: List<UtbetalingV2.Utbetalingsperiode> = emptyList(),
+            lastPeriodeId: String? = null,
+        ): UtbetalingV2.Utbetalingsperioder {
+            return UtbetalingV2.Utbetalingsperioder(
+                satstype = satstype,
+                stønad = stønad,
+                perioder = perioder,
+                lastPeriodeId = lastPeriodeId
+            )
+        }
+
+        fun utbetalingsperiode(
+            fom: LocalDate,
+            tom: LocalDate,
+            beløp: UInt,
+            betalendeEnhet: NavEnhet? = null,
+            vedtakssats: UInt? = null,
+        ): UtbetalingV2.Utbetalingsperiode {
+            return UtbetalingV2.Utbetalingsperiode(
+                fom = fom,
+                tom = tom,
+                beløp = beløp,
+                betalendeEnhet = betalendeEnhet,
+                vedtakssats = vedtakssats,
+            )
         }
 
         fun iverksetting(

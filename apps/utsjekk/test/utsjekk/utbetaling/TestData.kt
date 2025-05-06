@@ -13,6 +13,9 @@ val Int.mar: LocalDate get() = LocalDate.of(2024, 3, this)
 val Int.aug: LocalDate get() = LocalDate.of(2024, 8, this)
 val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
 
+fun Int.jan(day: Int): LocalDate = LocalDate.of(this, 1, day)
+fun Int.nov(day: Int): LocalDate = LocalDate.of(this, 11, day)
+
 fun Personident.Companion.random(): Personident {
     return Personident(no.nav.utsjekk.kontrakter.felles.Personident.random().verdi)
 }
