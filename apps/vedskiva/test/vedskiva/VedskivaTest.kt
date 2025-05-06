@@ -70,6 +70,51 @@ class VedskivaTest {
     }
 
     @Test
+    fun `test with dev data from may 5th`() = runTest(TestRuntime.context) {
+        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
+
+        runBlocking {
+            withContext(Jdbc.context) {
+                transaction {
+                    Scheduled(LocalDate.now().minusDays(1), LocalDate.now().minusDays(2), LocalDate.now().minusDays(2)).insert()
+                }
+            }
+        }
+        vedskiva(TestRuntime.config, TestRuntime.kafka)
+
+        assertEquals(6, avsProducer.history().size)
+
+        assertEquals(AksjonType.START, avsProducer.history()[0].second.aksjon.aksjonType)
+        val aap = avsProducer.history()[1].second
+
+        assertEquals(7, aap.total.totalAntall)
+        assertEquals(5455, aap.total.totalBelop.toInt())
+        assertEquals(7, aap.grunnlag.godkjentAntall)
+        assertEquals(5455, aap.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, aap.grunnlag.varselAntall)
+        assertEquals(0, aap.grunnlag.varselBelop.toInt())
+        assertEquals(0, aap.grunnlag.avvistAntall)
+        assertEquals(0, aap.grunnlag.avvistBelop.toInt())
+        assertEquals(0, aap.grunnlag.manglerAntall)
+        assertEquals(0, aap.grunnlag.manglerBelop.toInt())
+        assertEquals(AksjonType.AVSL, avsProducer.history()[2].second.aksjon.aksjonType)
+
+        assertEquals(AksjonType.START, avsProducer.history()[3].second.aksjon.aksjonType)
+        val tilt = avsProducer.history()[4].second
+        assertEquals(4, tilt.total.totalAntall)
+        assertEquals(2280, tilt.total.totalBelop.toInt())
+        assertEquals(4, tilt.grunnlag.godkjentAntall)
+        assertEquals(2280, tilt.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, tilt.grunnlag.varselAntall)
+        assertEquals(0, tilt.grunnlag.varselBelop.toInt())
+        assertEquals(0, tilt.grunnlag.avvistAntall)
+        assertEquals(0, tilt.grunnlag.avvistBelop.toInt())
+        assertEquals(0, tilt.grunnlag.manglerAntall)
+        assertEquals(0, tilt.grunnlag.manglerBelop.toInt())
+        assertEquals(AksjonType.AVSL, avsProducer.history()[5].second.aksjon.aksjonType)
+    }
+
+    @Test
     fun `can avstemme 04 (Varsel)`() = runTest(TestRuntime.context) {
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
 
@@ -237,34 +282,6 @@ class VedskivaTest {
     }
 
     @Test
-    fun `can filter tombstoned oppdragsdata`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
-        PeisschtappernFake.response.add(
-            dao(
-                kvittering = mmel("00"),
-                partition = 0,
-                offset = 1,
-                key = "to be tombstoned",
-                beløper = listOf(100),
-            )
-        )
-        PeisschtappernFake.response.add(
-            dao(
-                kvittering = mmel("00"),
-                partition = 0,
-                offset = 2,
-                key = "to be tombstoned",
-                beløper = null, // tombstone
-            )
-        )
-
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
-
-        assertEquals(0, avsProducer.history().size)
-    }
-
-    @Test
     fun `can deduplicate`() = runTest(TestRuntime.context) {
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
 
@@ -289,49 +306,6 @@ class VedskivaTest {
         assertEquals(100, data.total.totalBelop.toInt())
         assertEquals(1, data.grunnlag.godkjentAntall)
         assertEquals(100, data.grunnlag.godkjentBelop.toInt())
-        assertEquals(0, data.grunnlag.varselAntall)
-        assertEquals(0, data.grunnlag.varselBelop.toInt())
-        assertEquals(0, data.grunnlag.avvistAntall)
-        assertEquals(0, data.grunnlag.avvistBelop.toInt())
-        assertEquals(0, data.grunnlag.manglerAntall)
-        assertEquals(0, data.grunnlag.manglerBelop.toInt())
-        val end = avsProducer.history()[2].second
-        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
-    }
-
-    @Test
-    fun `can read records after tombstones`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
-        PeisschtappernFake.response.add(
-            dao(
-                kvittering = mmel("00"),
-                partition = 0,
-                offset = 1,
-                key = "to be replaced",
-                beløper = null, // tombstone
-            )
-        )
-        PeisschtappernFake.response.add(
-            dao(
-                kvittering = mmel("00"),
-                partition = 0,
-                offset = 2,
-                key = "to be replaced",
-                beløper = listOf(50),
-            )
-        )
-
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
-
-        assertEquals(3, avsProducer.history().size)
-        val start = avsProducer.history()[0].second
-        assertEquals(AksjonType.START, start.aksjon.aksjonType)
-        val data = avsProducer.history()[1].second
-        assertEquals(1, data.total.totalAntall)
-        assertEquals(50, data.total.totalBelop.toInt())
-        assertEquals(1, data.grunnlag.godkjentAntall)
-        assertEquals(50, data.grunnlag.godkjentBelop.toInt())
         assertEquals(0, data.grunnlag.varselAntall)
         assertEquals(0, data.grunnlag.varselBelop.toInt())
         assertEquals(0, data.grunnlag.avvistAntall)

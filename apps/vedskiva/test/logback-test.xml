@@ -19,6 +19,6 @@
     <logger name="kafka"     level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="mq"        level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="test"      level="DEBUG" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="secureLog" level="WARN" additivity="false"><appender-ref ref="stdout"/></logger>
 
 </configuration>

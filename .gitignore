@@ -24,3 +24,5 @@ src/generated
 
 # MQ
 mqjms.log*
+
+.http

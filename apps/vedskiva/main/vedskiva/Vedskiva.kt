@@ -64,23 +64,28 @@ fun vedskiva(
                peisschtappern.oppdrag(
                    fom = avstemFom, 
                    tom = avstemTom,
-               ).filter { dao -> 
+               ).also {
+                   appLog.info("Fetched ${it.size} oppdrag between $avstemFom - $avstemTom from peisschtappern")
+               }.filter { dao -> 
                    val avstemmingdag = dao.oppdrag?.let { oppdrag -> 
                        val tidspktMelding = oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd() 
                        LocalDateTime.parse(tidspktMelding, formatter).toLocalDate() 
                    } 
                    val keep = avstemmingdag in listOf(today, null)
-                   if (!keep) appLog.error("fant oppdrag som ikke skulle avstemmes i dag, key:${dao.key} p:${dao.partition} o:${dao.offset}")
+                   if (!keep) appLog.warn("Filter oppdrag not suited for todays avstemming k:${dao.key} p:${dao.partition} o:${dao.offset}")
                    keep
+               }.also {
+                   appLog.info("Keeping ${it.size} of the fetched ones")
                }.forEach { dao ->
-                   when (dao.value) {
-                       null -> oppdragDaos.remove(dao.key)
-                       else -> {
-                           oppdragDaos.reduce(dao)
-                           oppdragDaos.deduplicate(dao)
-                       }
+                   if (dao.value == null) {
+                       appLog.error("Found tombstone key:${dao.key} p:${dao.partition} o:${dao.offset}. Tombstones are not necessary on topics with retention.")
+                   } else {
+                       oppdragDaos.accAndDedup(dao)
                    }
                } 
+
+               oppdragDaos.reduce()
+
                val fom = last?.avstemt_tom?.plusDays(1) ?: LocalDate.now().forrigeVirkedag()
                val tom = today.minusDays(1)
 
@@ -88,6 +93,9 @@ fun vedskiva(
                    .filterNot { it.isEmpty() } 
                    .groupBy { requireNotNull(it.first().oppdrag).oppdrag110.kodeFagomraade.trimEnd() }
                    .forEach { (fagområde, daos) -> 
+                       appLog.info("create oppdragsdatas for $fagområde")
+                       daos.flatten().forEach { appLog.info("oppdragsdata k:${it.key} p:${it.partition} o:${it.offset}") }
+
                        val oppdragsdatas = daos.flatten().mapNotNull { it.oppdrag }.map { oppdrag ->
                            Oppdragsdata(
                             fagsystem = Fagsystem.fromFagområde(fagområde),
@@ -110,14 +118,14 @@ fun vedskiva(
                        val messages = AvstemmingService.create(avstemming)
                        val id = messages.first().aksjon.avleverendeAvstemmingId
                        messages.forEach { msg -> avstemmingProducer.send(id, msg, 0) }
-                       appLog.info("Fullført grensesnittavstemming for $fagområde id: $id")
+                       appLog.info("Avstemming for $fagområde completed with avstemmingId: $id")
                    }
 
                transaction {
                    Scheduled(LocalDate.now(), avstemFom.toLocalDate(), avstemTom.toLocalDate()).insert()
                }
             } else {
-                appLog.info("Avstemmer ikke i helg eller på helligdag")
+                appLog.info("Today is a holiday or weekend, no avstemming")
             }
         }
     }
@@ -126,33 +134,44 @@ fun vedskiva(
 private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
 private fun String.toLocalDate(): LocalDate = LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
-/**
- * Alle oppdrag skal få en kvittering og de som har kvittering har presedens over de som er ukvitterte
- */
-private fun MutableMap<String, Set<Dao>>.reduce(dao: Dao) {
+private fun MutableMap<String, Set<Dao>>.accAndDedup(dao: Dao) {
     val daosForKey = getOrDefault(dao.key, emptySet())
-    val associatedDaoWithoutKvittering = daosForKey.find { d -> 
-        val currentLastId = d.oppdrag?.oppdrag110?.oppdragsLinje150s?.last()?.delytelseId?.trimEnd()
-        val nextLastId = dao.oppdrag?.oppdrag110?.oppdragsLinje150s?.first()?.delytelseId?.trimEnd()
-        val currentFirstId = d.oppdrag?.oppdrag110?.oppdragsLinje150s?.last()?.delytelseId?.trimEnd()
-        val nextFirstId = dao.oppdrag?.oppdrag110?.oppdragsLinje150s?.first()?.delytelseId?.trimEnd()
-        currentLastId == nextLastId && currentFirstId == nextFirstId && d.oppdrag?.mmel == null
-    }
-    if (associatedDaoWithoutKvittering != null) {
-        this[dao.key] = daosForKey - associatedDaoWithoutKvittering
+    if (daosForKey.none { it.value == dao.value }) {
+        this[dao.key] = daosForKey + dao
     }
 }
 
 /**
- * For å være idempotent må vi skrelle vekk duplikater
+ * Alle oppdrag skal få en kvittering og de som har kvittering har presedens over de som er ukvitterte
  */
-private fun MutableMap<String, Set<Dao>>.deduplicate(dao: Dao) {
-    val daosForKey = getOrDefault(dao.key, emptySet())
+private fun MutableMap<String, Set<Dao>>.reduce() {
+    val obsoleteDaos = mutableListOf<Dao>()
+    entries.forEach { (_, daos) ->
+        daos.filter { dao -> 
+            dao.oppdrag?.mmel == null 
+        }.forEach { dao -> 
+            if (daos.findCorrelated(dao) != null) {
+                obsoleteDaos.add(dao)
+            } else {
+                appLog.warn("Found oppdrag uten kvittering key:${dao.key} p:${dao.partition} o:${dao.offset}")
+            }
+        }
+    }
+    obsoleteDaos.forEach { dao -> 
+        appLog.info("Found oppdrag with kvittering, removing ukvittert key:${dao.key} p:${dao.partition} o:${dao.offset}")
+        this[dao.key] = this[dao.key]!! - dao
+    }
+}
 
-    if (daosForKey.none { it.value == dao.value }) {
-        this[dao.key] = daosForKey + dao
-    } else {
-        appLog.warn("Found duplicate key:${dao.key} topic:${dao.topic_name} partition:${dao.partition}")
+private fun Set<Dao>.findCorrelated(dao: Dao): Dao? {
+    val firstDelytelseId = dao.oppdrag?.oppdrag110?.oppdragsLinje150s?.first()?.delytelseId?.trimEnd()
+    val lastDelytelseId = dao.oppdrag?.oppdrag110?.oppdragsLinje150s?.last()?.delytelseId?.trimEnd()
+    val mmel = dao.oppdrag?.mmel
+
+    return this.singleOrNull {
+        firstDelytelseId == it.oppdrag?.oppdrag110?.oppdragsLinje150s?.first()?.delytelseId?.trimEnd() &&
+        lastDelytelseId == it.oppdrag?.oppdrag110?.oppdragsLinje150s?.last()?.delytelseId?.trimEnd() && 
+        mmel != it.oppdrag?.mmel
     }
 }
 

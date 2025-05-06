@@ -1,6 +1,7 @@
 package vedskiva
 
 import io.ktor.client.*
+import io.ktor.http.ContentType
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -120,7 +121,11 @@ class PeisschtappernFake: AutoCloseable {
             }
             app.routing {
                 get("/api") {
-                    call.respond(response)
+                    if (response.isNotEmpty()) {
+                        call.respond(response)
+                    } else {
+                        call.respondText(libs.utils.Resource.read("/may_5th.json"), ContentType.Application.Json)
+                    }
                 }
             }
         }
