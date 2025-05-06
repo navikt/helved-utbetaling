@@ -89,10 +89,10 @@ object AvstemmingService {
     }
 
     private fun periodedata(datas: List<Oppdragsdata>) = Periodedata().apply {
-        val sortedTimes = datas.map{ it.avstemmingsdag.atTime(8, 0) }.sorted()
+        val sortedTimes = datas.map{ it.avstemmingsdag }.sorted()
         val formatter = DateTimeFormatter.ofPattern("yyyyMMddHH")
-        datoAvstemtFom = sortedTimes.first().format(formatter)
-        datoAvstemtTom = sortedTimes.last().format(formatter)
+        datoAvstemtFom = sortedTimes.first().atTime(0, 0).format(formatter)
+        datoAvstemtTom = sortedTimes.last().atTime(23, 59).format(formatter)
     }
 
     private fun grunnlagsdata(datas: List<Oppdragsdata>) = Grunnlagsdata().apply {
