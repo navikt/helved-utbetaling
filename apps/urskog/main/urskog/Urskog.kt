@@ -6,9 +6,8 @@ import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
-import io.micrometer.core.instrument.Clock
-import io.micrometer.registry.otlp.OtlpConfig
-import io.micrometer.registry.otlp.OtlpMeterRegistry
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import libs.kafka.*
 import libs.utils.*
 import libs.mq.MQ
@@ -30,9 +29,9 @@ fun Application.urskog(
     kafka: Streams = KafkaStreams(),
     mq: MQ = DefaultMQ(config.mq),
 ) {
-    val otlp = OtlpMeterRegistry(OtlpConfig.DEFAULT, Clock.SYSTEM)
+    val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
-        registry = otlp
+        registry = prometheus
         meterBinders += LogbackMetrics()
     }
 
@@ -42,10 +41,10 @@ fun Application.urskog(
 
     kafka.connect(
         config = config.kafka,
-        registry = otlp,
+        registry = prometheus,
         topology = topology {
             simulering(simuleringService)
-            oppdrag(oppdragProducer, otlp)
+            oppdrag(oppdragProducer, prometheus)
             avstemming(avstemProducer)
         }
     )
@@ -62,7 +61,7 @@ fun Application.urskog(
     }
 
     routing {
-        probes(kafka)
+        probes(kafka, prometheus)
     }
 }
 
