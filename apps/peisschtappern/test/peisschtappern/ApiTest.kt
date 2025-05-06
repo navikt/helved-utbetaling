@@ -111,7 +111,7 @@ class ApiTest {
             kodeMelding = "Test"
         )
 
-        httpClient.post("/kvittering") {
+        httpClient.post("/manuell-kvittering") {
             contentType(ContentType.Application.Json)
             setBody(kvitteringRequest)
         }.let {
