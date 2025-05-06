@@ -28,6 +28,8 @@ spec:
     path: /actuator/live
   readiness:
     path: /actuator/ready
+  prometheus:
+    path: /actuator/metric
   replicas:
     min: 1
     max: 1
