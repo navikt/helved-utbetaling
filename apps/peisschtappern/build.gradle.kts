@@ -11,10 +11,13 @@ val libVersion = "3.1.97"
 
 dependencies {
     implementation(project(":libs:kafka"))
+    implementation("no.nav.helved:xml:$libVersion")
 
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:utils:$libVersion")
+
+    implementation("org.apache.kafka:kafka-clients:4.0.0")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.15.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")

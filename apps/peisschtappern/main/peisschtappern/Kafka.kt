@@ -1,11 +1,13 @@
 package peisschtappern
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
 import libs.kafka.*
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
+
 
 object Topics {
     val avstemming = Topic("helved.avstemming.v1", bytes())
@@ -20,6 +22,8 @@ object Topics {
     val dryrunTs = Topic("helved.dryrun-ts.v1", bytes())
     val dryrunDp = Topic("helved.dryrun-dp.v1", bytes())
 }
+
+val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
 
 fun createTopology(): Topology = topology {
     Channel.all()
@@ -48,4 +52,6 @@ private fun Topology.save(topic: Topic<String, ByteArray>, table: Table) {
         }
     }
 }
+
+class DefaultKafkaFactory : KafkaFactory {}
 

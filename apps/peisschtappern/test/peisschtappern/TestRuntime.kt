@@ -34,6 +34,7 @@ object TestRuntime : AutoCloseable {
     private val postgres = PostgresContainer("peisschtappern")
     val azure = AzureFake()
     val kafka = StreamsMock()
+    val vanillaKafka = KafkaFactoryFake()
     val jdbc = Jdbc.initialize(postgres.config)
     val context = CoroutineDatasource(jdbc)
 
@@ -51,7 +52,7 @@ object TestRuntime : AutoCloseable {
                 transaction {
                     Table.values().forEach {
                         coroutineContext.connection.prepareStatement("TRUNCATE TABLE ${it.name} CASCADE").execute()
-                        testLog.info("table '$it' truncated.") 
+                        testLog.info("table '$it' truncated.")
                     }
                 }
             }
@@ -64,10 +65,10 @@ object TestRuntime : AutoCloseable {
                 transaction {
                     Table.values().forEach {
                         coroutineContext.connection.prepareStatement("DROP TABLE ${it.name} CASCADE").execute()
-                        testLog.info("table '$it' dropped.") 
+                        testLog.info("table '$it' dropped.")
                     }
                     coroutineContext.connection.prepareStatement("DROP TABLE migrations CASCADE").execute()
-                    testLog.info("table 'migration' dropped.") 
+                    testLog.info("table 'migration' dropped.")
                 }
             }
         }
@@ -82,6 +83,10 @@ object TestRuntime : AutoCloseable {
         ktor.stop()
         azure.close()
     }
+
+    fun reset() {
+        vanillaKafka.reset()
+    }
 }
 
 val NettyApplicationEngine.port: Int
@@ -92,7 +97,7 @@ val NettyApplicationEngine.port: Int
 private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
-            peisschtappern(TestRuntime.config, TestRuntime.kafka)
+            peisschtappern(TestRuntime.config, TestRuntime.kafka, TestRuntime.vanillaKafka)
         }
     }
 }
@@ -122,3 +127,31 @@ fun <T> awaitDatabase(timeoutMs: Long = 3_000, query: suspend () -> T?): T? =
             }.firstOrNull()
         }
     }
+
+@Suppress("UNCHECKED_CAST")
+class KafkaFactoryFake : KafkaFactory {
+    private val producers = mutableMapOf<String, KafkaProducer<*, *>>()
+    private val consumers = mutableMapOf<String, KafkaConsumer<*, *>>()
+
+    internal fun reset() {
+        producers.clear()
+        consumers.clear()
+    }
+
+    override fun <K : Any, V> createProducer(
+        config: StreamsConfig,
+        topic: Topic<K, V & Any>,
+    ): KafkaProducerFake<K, V> {
+        return producers.getOrPut(topic.name) { KafkaProducerFake(topic) } as KafkaProducerFake<K, V>
+    }
+
+    override fun <K : Any, V> createConsumer(
+        config: StreamsConfig,
+        topic: Topic<K, V & Any>,
+        resetPolicy: OffsetResetPolicy,
+        maxProcessingTimeMs: Int,
+        groupId: Int,
+    ): KafkaConsumerFake<K, V> {
+        return consumers.getOrPut(topic.name) { KafkaConsumerFake(topic) } as KafkaConsumerFake<K, V>
+    }
+}

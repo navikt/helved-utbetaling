@@ -1,5 +1,6 @@
 package peisschtappern
 
+import ManuellKvitteringService
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -20,6 +21,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
+import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.postgres.Jdbc
@@ -40,6 +42,7 @@ fun main() {
 fun Application.peisschtappern(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
+    kafkaFactory: KafkaFactory = DefaultKafkaFactory()
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
@@ -75,15 +78,19 @@ fun Application.peisschtappern(
         registry = prometheus
     )
 
+    val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, oppdrag)
+    val manuellKvitteringService = ManuellKvitteringService(oppdragsdataProducer)
+
     routing {
         probes(kafka, prometheus)
 
         authenticate(TokenProvider.AZURE) {
-            api()
+            api(manuellKvitteringService)
         }
     }
 
     monitor.subscribe(ApplicationStopping) {
         kafka.close()
+        oppdragsdataProducer.close()
     }
 }
