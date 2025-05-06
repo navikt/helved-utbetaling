@@ -1,6 +1,8 @@
 package peisschtappern
 
+import ManuellKvitteringService
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -10,8 +12,7 @@ import libs.kafka.Topic
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import libs.utils.secureLog
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/actuator") {
@@ -33,7 +34,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     }
 }
 
-fun Routing.api() {
+fun Routing.api(manuellKvitteringService: ManuellKvitteringService) {
     get("/api") {
         val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
         val limit = call.queryParameters["limit"]?.toInt() ?: 100
@@ -65,7 +66,33 @@ fun Routing.api() {
 
         call.respond(daos)
     }
+
+    post("/manuell-kvittering") {
+        val request = call.receive<KvitteringRequest>()
+
+        try {
+            manuellKvitteringService.addKvitteringManuelt(
+                oppdragXml = request.oppdragXml,
+                messageKey = request.messageKey,
+                alvorlighetsgrad = request.alvorlighetsgrad,
+                beskrMelding = request.beskrMelding,
+                kodeMelding = request.kodeMelding
+            )
+            call.respond(HttpStatusCode.OK, "Oppdrag med manuell kvittering sent til ${oppdrag.name}")
+        } catch (e: Exception) {
+            secureLog.error("Legge til kvittering manuelt feilet: ${e.message}")
+            call.respond(HttpStatusCode.BadRequest, "Legge til kvittering manuelt feilet: ${e.message}")
+        }
+    }
 }
+
+data class KvitteringRequest(
+    val messageKey: String,
+    val oppdragXml: String,
+    val alvorlighetsgrad: String,
+    val beskrMelding: String?,
+    val kodeMelding: String?,
+)
 
 sealed class Channel(
     val topic: Topic<String, ByteArray>,

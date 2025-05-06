@@ -3,11 +3,17 @@ package peisschtappern
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
 import java.time.Instant
 import java.util.UUID
+import libs.xml.XMLMapper
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import kotlin.test.*
 
 class ApiTest {
@@ -87,6 +93,39 @@ class ApiTest {
 
         assertEquals(1, result.size)
         assertEquals(Topics.utbetalinger.name, result[0].topic_name)
+    }
+
+    @Test
+    fun `test kvittering endpoint overwrites oppdrag with manual kvittering`() = runTest(TestRuntime.context) {
+        val xmlMapper = XMLMapper<Oppdrag>()
+        val initialOppdrag = xmlMapper.readValue(TestData.oppdragXml)
+
+        val oppdragProducer = TestRuntime.vanillaKafka.createProducer(TestRuntime.config.kafka, oppdrag)
+        oppdragProducer.send("202503271001", initialOppdrag)
+
+        val kvitteringRequest = KvitteringRequest(
+            oppdragXml = TestData.oppdragXml,
+            messageKey = "202503271001",
+            alvorlighetsgrad = "00",
+            beskrMelding = "Test",
+            kodeMelding = "Test"
+        )
+
+        httpClient.post("/kvittering") {
+            contentType(ContentType.Application.Json)
+            setBody(kvitteringRequest)
+        }.let {
+            assertEquals(HttpStatusCode.OK, it.status)
+        }
+
+        assertEquals(2, oppdragProducer.history().size)
+
+        val updatedMessage = oppdragProducer.history().last().second
+
+        assertNotNull(updatedMessage.mmel)
+        assertEquals("00", updatedMessage.mmel.alvorlighetsgrad)
+        assertEquals("Test", updatedMessage.mmel.beskrMelding)
+        assertEquals("Test", updatedMessage.mmel.kodeMelding)
     }
 
     private suspend fun save(
