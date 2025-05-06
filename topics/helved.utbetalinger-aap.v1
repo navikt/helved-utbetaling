@@ -9,7 +9,7 @@ spec:
   pool: {{kafkapool}}
   config:
     cleanupPolicy: compact,delete
-    retentionHours: 168
+    retentionHours: 336
     partitions: 3
   acl:
     - team: helved
