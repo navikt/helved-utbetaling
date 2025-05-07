@@ -86,7 +86,7 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
             filter { o -> o.mmel != null }.map { kvitt ->
                 val fagsystem = Fagsystem.fromFagområde(kvitt.oppdrag110.kodeFagomraade.trimEnd())
                 val statusReply = kvitt.mmel.into()
-                    meters.counter("kvitteringer", listOf(
+                    meters.counter("helved_kvitteringer", listOf(
                         Tag.of("status", statusReply.status.name),
                         Tag.of("fagsystem", fagsystem.name),
                     )).increment()
