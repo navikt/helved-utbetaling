@@ -13,8 +13,6 @@ import libs.utils.*
 import libs.mq.MQ
 import libs.mq.DefaultMQ
 
-val appLog = logger("app")
-
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
         appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")

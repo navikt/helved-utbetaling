@@ -1,22 +1,19 @@
 package vedskiva
 
+import io.ktor.client.HttpClient
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import libs.kafka.KafkaFactory
 import libs.postgres.Jdbc
 import libs.postgres.Migrator
 import libs.postgres.concurrency.transaction
-import libs.utils.logger
-import libs.utils.secureLog
-import libs.kafka.KafkaFactory
+import libs.utils.*
 import models.*
-import io.ktor.client.HttpClient
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
-
-val appLog = logger("app")
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -40,14 +37,14 @@ fun database(config: Config = Config()) {
 fun vedskiva(
     config: Config = Config(),
     kafka: KafkaFactory = Kafka(),
+    today: LocalDate = LocalDate.now(),
 ) {
     val peisschtappern = PeisschtappernClient(config)
     val avstemmingProducer = kafka.createProducer(config.kafka, Topics.avstemming)
 
     runBlocking {
         withContext(Jdbc.context) {
-            if (!LocalDate.now().erHelligdag()) {
-               val today = LocalDate.now()
+            if (!today.erHelligdag()) {
                val last: Scheduled? = transaction {
                    Scheduled.lastOrNull()
                } 
@@ -86,15 +83,15 @@ fun vedskiva(
 
                oppdragDaos.reduce()
 
-               val fom = last?.avstemt_tom?.plusDays(1) ?: LocalDate.now().forrigeVirkedag()
+               val fom = last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()
                val tom = today.minusDays(1)
 
                oppdragDaos.values
                    .filterNot { it.isEmpty() } 
                    .groupBy { requireNotNull(it.first().oppdrag).oppdrag110.kodeFagomraade.trimEnd() }
                    .forEach { (fagområde, daos) -> 
-                       appLog.info("create oppdragsdatas for $fagområde")
-                       daos.flatten().forEach { appLog.info("oppdragsdata k:${it.key} p:${it.partition} o:${it.offset}") }
+                       appLog.debug("create oppdragsdatas for $fagområde")
+                       daos.flatten().forEach { appLog.debug("oppdragsdata k:${it.key} p:${it.partition} o:${it.offset}") }
 
                        val oppdragsdatas = daos.flatten().mapNotNull { it.oppdrag }.map { oppdrag ->
                            Oppdragsdata(
@@ -122,7 +119,7 @@ fun vedskiva(
                    }
 
                transaction {
-                   Scheduled(LocalDate.now(), avstemFom.toLocalDate(), avstemTom.toLocalDate()).insert()
+                   Scheduled(today, avstemFom.toLocalDate(), avstemTom.toLocalDate()).insert()
                }
             } else {
                 appLog.info("Today is a holiday or weekend, no avstemming")
@@ -158,7 +155,7 @@ private fun MutableMap<String, Set<Dao>>.reduce() {
         }
     }
     obsoleteDaos.forEach { dao -> 
-        appLog.info("Found oppdrag with kvittering, removing ukvittert key:${dao.key} p:${dao.partition} o:${dao.offset}")
+        appLog.debug("Found oppdrag with kvittering, removing ukvittert key:${dao.key} p:${dao.partition} o:${dao.offset}")
         this[dao.key] = this[dao.key]!! - dao
     }
 }

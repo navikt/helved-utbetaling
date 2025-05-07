@@ -1,13 +1,14 @@
 package utsjekk.utbetaling
 
 import com.fasterxml.jackson.annotation.JsonCreator
-import utsjekk.*
-import utsjekk.avstemming.nesteUkedag
 import java.nio.ByteBuffer
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.Base64
 import java.util.UUID
+import libs.utils.*
+import utsjekk.*
+import utsjekk.avstemming.nesteUkedag
 
 @JvmInline
 value class SakId(val id: String)

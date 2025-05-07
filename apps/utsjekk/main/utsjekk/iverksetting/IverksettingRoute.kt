@@ -5,9 +5,9 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
+import libs.utils.*
 import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
 import utsjekk.ApiError
-import utsjekk.appLog
 import utsjekk.badRequest
 import utsjekk.client
 import utsjekk.notFound

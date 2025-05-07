@@ -11,8 +11,6 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import libs.kafka.*
 import libs.utils.*
 
-val appLog = logger("app")
-
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
         appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")

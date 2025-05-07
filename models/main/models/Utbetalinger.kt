@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.time.*
 import kotlin.getOrThrow
 import libs.utils.secureLog
+import libs.utils.appLog
 
 @JvmInline value class SakId(val id: String)
 @JvmInline value class BehandlingId(val id: String)
@@ -191,6 +192,7 @@ value class PeriodeId (private val id: UUID) {
                 // ^ les neste 64 og lag en long
                 return PeriodeId(UUID(byteBuffer.long, byteBuffer.long))
             } catch (e: Throwable) {
+                appLog.warn("Klarte ikke dekomprimere UUID: $encoded")
                 secureLog.warn("Klarte ikke dekomprimere UUID: $encoded")
                 throw e
             }

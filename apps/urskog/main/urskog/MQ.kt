@@ -1,20 +1,21 @@
 package urskog
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import javax.jms.TextMessage
-import libs.mq.*
 import libs.kafka.Streams
+import libs.mq.*
+import libs.utils.*
 import libs.utils.secureLog
 import libs.xml.XMLMapper
 import models.*
+import net.logstash.logback.argument.StructuredArguments.kv
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag110
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
-import net.logstash.logback.argument.StructuredArguments.kv
 
 class OppdragMQProducer(private val config: Config, mq: MQ) {
     private val kvitteringQueue = config.oppdrag.kvitteringsKø

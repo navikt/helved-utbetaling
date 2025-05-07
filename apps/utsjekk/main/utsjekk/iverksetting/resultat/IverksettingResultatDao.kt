@@ -1,15 +1,14 @@
 package utsjekk.iverksetting.resultat
 
-import libs.postgres.concurrency.connection
-import libs.postgres.map
-import libs.utils.secureLog
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import utsjekk.appLog
-import utsjekk.iverksetting.*
-import utsjekk.utbetaling.UtbetalingId
 import java.sql.ResultSet
 import kotlin.coroutines.coroutineContext
+import libs.postgres.concurrency.connection
+import libs.postgres.map
+import libs.utils.*
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.objectMapper
+import utsjekk.iverksetting.*
+import utsjekk.utbetaling.UtbetalingId
 
 data class IverksettingResultatDao(
     val fagsystem: Fagsystem,

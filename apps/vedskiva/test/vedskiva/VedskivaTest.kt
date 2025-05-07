@@ -76,11 +76,11 @@ class VedskivaTest {
         runBlocking {
             withContext(Jdbc.context) {
                 transaction {
-                    Scheduled(LocalDate.now().minusDays(1), LocalDate.now().minusDays(2), LocalDate.now().minusDays(2)).insert()
+                    Scheduled(LocalDate.of(2025, 5, 5), LocalDate.of(2025, 5, 4), LocalDate.of(2025, 5, 4)).insert()
                 }
             }
         }
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        vedskiva(TestRuntime.config, TestRuntime.kafka, today = LocalDate.of(2025, 5, 6))
 
         assertEquals(6, avsProducer.history().size)
 
