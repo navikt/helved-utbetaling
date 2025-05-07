@@ -13,7 +13,6 @@ import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.doublereceive.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -91,14 +90,6 @@ fun Application.utsjekk(
     install(Authentication) {
         jwt(TokenProvider.AZURE) {
             configure(config.azure)
-        }
-    }
-    install(DoubleReceive)
-    install(CallLog) {
-        exclude { call -> call.request.path().startsWith("/actuator") }
-        log { call ->
-            appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms")
-            secureLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms ${call.bodyAsText()}")
         }
     }
     install(StatusPages) {
