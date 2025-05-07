@@ -28,7 +28,7 @@ class SimuleringTest {
         TestRuntime().use { runtime ->
             testApplication {
                 application {
-                    app(config = runtime.config)
+                    simulering(config = runtime.config)
                 }
 
                 val http = createClient {

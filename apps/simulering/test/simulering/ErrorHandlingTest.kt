@@ -18,7 +18,7 @@ class ErrorHandlingTest {
         TestRuntime().use { runtime ->
             testApplication {
                 application {
-                    app(config = runtime.config)
+                    simulering(config = runtime.config)
                 }
 
                 val http = createClient {
@@ -52,7 +52,7 @@ class ErrorHandlingTest {
         TestRuntime().use { runtime ->
             testApplication {
                 application {
-                    app(config = runtime.config)
+                    simulering(config = runtime.config)
                 }
 
                 val http = createClient {

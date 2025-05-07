@@ -19,20 +19,17 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import libs.ktor.*
-import libs.utils.logger
-import libs.utils.secureLog
+import libs.utils.*
 import org.slf4j.event.Level
 import simulering.routing.actuators
 import simulering.routing.simulering
 
-val appLog = logger("app")
-
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e -> appLog.error("Uhåndtert feil", e) }
-    embeddedServer(Netty, port = 8080, module = Application::app).start(wait = true)
+    embeddedServer(Netty, port = 8080, module = Application::simulering).start(wait = true)
 }
 
-fun Application.app(config: Config = Config()) {
+fun Application.simulering(config: Config = Config()) {
 
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 

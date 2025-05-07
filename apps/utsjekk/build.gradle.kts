@@ -3,11 +3,11 @@ plugins {
 }
 
 application {
-    mainClass.set("utsjekk.AppKt")
+    mainClass.set("utsjekk.UtsjekkKt")
 }
 
 val ktorVersion = "3.1.2"
-val libVersion = "3.1.97"
+val libVersion = "3.1.98"
 val kontraktVersion = "1.0_20250424200149_61b3f1c"
 
 dependencies {

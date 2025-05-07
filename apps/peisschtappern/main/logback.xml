@@ -35,8 +35,7 @@
     <logger name="jdbc"      level="TRACE" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="kafka"     level="TRACE" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="mq"        level="TRACE" additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="ws"        level="TRACE" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="secureLog"/></logger>
-
-    <logger name="org.apache.kafka.streams.processor.internals.StreamThread" level="WARN"  additivity="false"><appender-ref ref="json"/></logger>
 </configuration>
 

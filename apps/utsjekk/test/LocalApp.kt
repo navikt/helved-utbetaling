@@ -4,23 +4,23 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.runBlocking
-import libs.auth.AzureToken
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.transaction
-import libs.postgres.Migrator
-import libs.task.TaskDao
-import libs.utils.secureLog
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import utsjekk.iverksetting.*
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.*
-import utsjekk.task.Status
-import utsjekk.utbetaling.UtbetalingId
+import java.io.File
 import java.time.LocalDateTime
 import java.util.*
-import java.io.File
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import libs.auth.AzureToken
+import libs.postgres.Jdbc
+import libs.postgres.Migrator
+import libs.postgres.concurrency.transaction
+import libs.task.TaskDao
+import libs.utils.*
+import no.nav.utsjekk.kontrakter.felles.objectMapper
+import utsjekk.*
+import utsjekk.iverksetting.*
+import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.task.Status
+import utsjekk.utbetaling.UtbetalingId
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->

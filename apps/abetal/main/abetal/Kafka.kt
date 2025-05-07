@@ -1,12 +1,13 @@
 package abetal
 
 import abetal.models.*
-import models.*
+import java.util.UUID
 import libs.kafka.*
 import libs.kafka.stream.MappedStream
+import libs.utils.appLog
+import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import java.util.UUID
 
 object Topics {
     val aap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())

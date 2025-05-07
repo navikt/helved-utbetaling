@@ -19,9 +19,10 @@ import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.TaskHistoryDao
+import libs.utils.*
+import utsjekk.*
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.*
 import utsjekk.utbetaling.UtbetalingDao
 
 object TestTopics {

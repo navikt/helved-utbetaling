@@ -10,6 +10,7 @@ import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 import kotlinx.coroutines.runBlocking
 import libs.postgres.concurrency.transaction
+import libs.utils.*
 import models.PeriodeId
 import models.nesteVirkedag
 import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
@@ -18,7 +19,6 @@ import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
 import no.trygdeetaten.skjema.oppdrag.*
-import utsjekk.appLog
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater

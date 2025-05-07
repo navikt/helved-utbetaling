@@ -13,15 +13,15 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.plugins.logging.*
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
-import libs.utils.secureLog
+import libs.utils.*
 import libs.ws.*
 import simulering.models.rest.rest
 import simulering.models.soap.soap
 import simulering.models.soap.soap.SimulerBeregningRequest
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 private object SimulerAction {
     private const val HOST = "http://nav.no"

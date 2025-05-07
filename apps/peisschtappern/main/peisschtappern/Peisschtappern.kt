@@ -28,8 +28,6 @@ import libs.postgres.Jdbc
 import libs.postgres.Migrator
 import libs.utils.*
 
-val appLog = logger("app")
-
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
         appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")

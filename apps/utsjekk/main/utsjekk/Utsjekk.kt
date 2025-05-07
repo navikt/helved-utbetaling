@@ -21,29 +21,24 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.auth.TokenProvider
-import libs.auth.configure
+import libs.auth.*
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
-import libs.postgres.Jdbc
-import libs.postgres.Migrator
-import libs.utils.logger
-import libs.utils.secureLog
+import libs.postgres.*
+import libs.utils.*
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
-import utsjekk.iverksetting.iverksetting
 import utsjekk.iverksetting.IverksettingService
+import utsjekk.iverksetting.iverksetting
 import utsjekk.simulering.SimuleringValidator
 import utsjekk.simulering.simulering
 import utsjekk.task.tasks
 import utsjekk.utbetaling.UtbetalingService
 import utsjekk.utbetaling.simulering.SimuleringService
 import utsjekk.utbetaling.utbetalingRoute
-import java.io.File
-
-val appLog = logger("app")
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
