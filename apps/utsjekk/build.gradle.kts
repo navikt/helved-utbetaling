@@ -30,7 +30,6 @@ dependencies {
     implementation("org.apache.kafka:kafka-clients:4.0.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.20")
 
-    implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
