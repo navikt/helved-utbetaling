@@ -7,11 +7,10 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
-import libs.utils.secureLog
+import libs.utils.*
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
 import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import oppdrag.appLog
 import oppdrag.iverksetting.OppdragAlleredeSendtException
 import oppdrag.iverksetting.OppdragService
 import oppdrag.iverksetting.domene.OppdragMapper
@@ -32,6 +31,7 @@ fun Route.iverksettingRoutes(
                 when (it) {
                     is OppdragAlleredeSendtException -> oppdragAlleredeSendt(utbetalingsoppdrag)
                     else -> {
+                        appLog.error("Klarte ikke sende oppdrag for saksnr ${utbetalingsoppdrag.saksnummer}")
                         secureLog.error("Klarte ikke sende oppdrag for saksnr ${utbetalingsoppdrag.saksnummer}", it)
                         klarteIkkeSendeOppdrag(utbetalingsoppdrag)
                     }

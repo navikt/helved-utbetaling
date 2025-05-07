@@ -193,7 +193,7 @@ value class PeriodeId (private val id: UUID) {
                 return PeriodeId(UUID(byteBuffer.long, byteBuffer.long))
             } catch (e: Throwable) {
                 appLog.warn("Klarte ikke dekomprimere UUID: $encoded")
-                secureLog.warn("Klarte ikke dekomprimere UUID: $encoded")
+                secureLog.warn("Klarte ikke dekomprimere UUID: $encoded", e)
                 throw e
             }
         }

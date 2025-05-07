@@ -2,16 +2,14 @@ package oppdrag.iverksetting
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.mq.MQ
-import libs.mq.DefaultMQConsumer
+import libs.mq.*
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
-import libs.utils.secureLog
+import libs.utils.*
 import libs.xml.XMLMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
-import oppdrag.appLog
 import oppdrag.utbetaling.*
 import oppdrag.iverksetting.domene.kvitteringstatus
 import oppdrag.iverksetting.domene.status
@@ -27,13 +25,14 @@ class OppdragMQConsumer(
     private val consumer = DefaultMQConsumer(mq, config.kvitteringsKø, ::onMessage)
 
     fun onMessage(message: TextMessage) {
+        mqLog.info("Mottok melding på kvitteringskø")
         secureLog.info("Mottok melding på kvitteringskø: ${message.text}")
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
         val oppdragIdKvittering = kvittering.id
 
-        appLog.debug("Henter oppdrag {} fra databasen", oppdragIdKvittering)
+        mqLog.debug("Henter oppdrag {} fra databasen", oppdragIdKvittering)
 
-        appLog.info(
+        mqLog.info(
             """
             Mottatt melding på kvitteringskø for 
                 Fagsak: $oppdragIdKvittering 
@@ -63,7 +62,7 @@ class OppdragMQConsumer(
             }
 
         if (førsteOppdragUtenKvittering == null && førsteUtbetalingsoppdragUtenKvittering == null) {
-            appLog.warn("Oppdraget tilknyttet mottatt kvittering har uventet status i databasen. Oppdraget er: $oppdragIdKvittering")
+            mqLog.warn("Oppdraget tilknyttet mottatt kvittering har uventet status i databasen. Oppdraget er: $oppdragIdKvittering")
             return
         }
 

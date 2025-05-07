@@ -30,9 +30,9 @@ class OppdragMQProducer(private val config: Config, mq: MQ) {
             producer.produce(oppdragXml) {
                 jmsReplyTo = kvitteringQueue
             }
-            appLog.info("Sender oppdrag $fk")
+            mqLog.info("Sender oppdrag $fk")
         }.onFailure {
-            appLog.error("Feilet sending av oppdrag $fk")
+            mqLog.error("Feilet sending av oppdrag $fk")
             secureLog.error("Feilet sending av oppdrag $fk", it)
         }.getOrThrow()
     }
@@ -47,10 +47,10 @@ class AvstemmingMQProducer(private val config: Config, mq: MQ) {
 
         runCatching {
             producer.produce(xml)
-            appLog.info("Sender grensesnittavstemming til oppdrag")
+            mqLog.info("Sender grensesnittavstemming til oppdrag")
             secureLog.trace("Sender grensesnittavstemming til oppdrag $xml")
         }.onFailure {
-            appLog.error("Feil ved grensesnittavstemming")
+            mqLog.error("Feil ved grensesnittavstemming")
             secureLog.error("Feil ved grensesnittavstemming", it)
         }.getOrThrow()
     }
@@ -64,7 +64,7 @@ class KvitteringMQConsumer(private val config: Config, mq: MQ, kafka: Streams): 
     fun onMessage(message: TextMessage) {
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
         val fk = OppdragForeignKey.from(kvittering)
-        appLog.info("Mottok kvittering $fk")
+        mqLog.info("Mottok kvittering $fk")
         kvitteringProducer.send(fk, kvittering)
     }
 

@@ -93,6 +93,7 @@ class UncaughtHandler: StreamsUncaughtExceptionHandler {
     override fun handle(exception: Throwable): StreamHandler = logAndShutdownClient(exception)
 
     private fun logAndShutdownClient(err: Throwable): StreamHandler {
+        kafkaLog.error("Uventet feil, logger og avslutter client")
         secureLog.error("Uventet feil, logger og avslutter client", err)
         return StreamHandler.SHUTDOWN_CLIENT
     }

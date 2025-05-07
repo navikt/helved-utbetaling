@@ -1,16 +1,16 @@
 package utsjekk.iverksetting
 
-import libs.postgres.concurrency.connection
-import libs.postgres.map
-import libs.utils.*
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import utsjekk.utbetaling.UtbetalingId
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.coroutines.coroutineContext
+import libs.postgres.*
+import libs.postgres.concurrency.connection
+import libs.utils.*
+import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import no.nav.utsjekk.kontrakter.felles.objectMapper
+import utsjekk.utbetaling.UtbetalingId
 
 data class IverksettingDao(
     val data: Iverksetting,
@@ -28,7 +28,7 @@ data class IverksettingDao(
             stmt.setTimestamp(3, Timestamp.valueOf(mottattTidspunkt))
             stmt.setObject(4, uid.id)
 
-            appLog.debug(sql)
+            jdbcLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
         }
@@ -62,7 +62,7 @@ data class IverksettingDao(
                 where.iverksettingId?.let { stmt.setString(position++, it.id) }
                 where.fagsystem?.let { stmt.setString(position++, it.name) }
 
-                appLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().mapNotNull { rs ->
                     rs.getString("utbetaling_id")?.let { UtbetalingId(UUID.fromString(it)) }
@@ -106,7 +106,7 @@ data class IverksettingDao(
                 where.fagsystem?.let { stmt.setString(position++, it.name) }
                 limit?.let { stmt.setInt(position++, it) }
 
-                appLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
             }

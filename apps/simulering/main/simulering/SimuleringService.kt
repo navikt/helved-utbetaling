@@ -52,11 +52,12 @@ class SimuleringService(private val config: Config) {
 
     fun json(xml: String): soap.Beregning {
         try {
-            secureLog.info("Forsøker å deserialisere simulering")
+            wsLog.debug("Forsøker å deserialisere simulering")
             val wrapper = simulerBeregningResponse(xml)
             return wrapper.response.simulering
         } catch (e: Throwable) {
-            secureLog.info("Feilet deserialisering av simulering", e)
+            wsLog.error("Feilet deserialisering av simulering", e)
+            secureLog.error("Feilet deserialisering av simulering", e)
             fault(xml)
         }
     }
@@ -65,7 +66,7 @@ class SimuleringService(private val config: Config) {
         runCatching {
             tryInto<soap.SimuleringResponse>(xml).simulerBeregningResponse
         }.getOrElse {
-            appLog.error("Feilet deserialisering av SOAP-melding: ${it.message}")
+            wsLog.error("Feilet deserialisering av SOAP-melding")
             secureLog.error("Feilet deserialisering av SOAP-melding: ${it.message}", it)
             throw it
         }
@@ -73,11 +74,11 @@ class SimuleringService(private val config: Config) {
     // denne kaster exception oppover i call-stacken
     private fun fault(xml: String): Nothing {
         try {
-            secureLog.info("Forsøker å deserialisere fault")
+            wsLog.debug("Forsøker å deserialisere fault")
             val fault = tryInto<SoapFault>(xml).fault
             logAndThrow(fault)
         } catch (e: Throwable) {
-            appLog.error("Feilet deserialisering av fault")
+            wsLog.error("Feilet deserialisering av fault")
             secureLog.error("Feilet deserialisering av fault", e)
             throw e
         }
@@ -89,7 +90,8 @@ class SimuleringService(private val config: Config) {
     }
 
     private fun logAndThrow(fault: Fault): Nothing {
-        secureLog.info("Håndterer soap fault {}", fault)
+        wsLog.debug("Håndterer soap fault")
+        secureLog.debug("Håndterer soap fault {}", fault)
 
         with(fault.faultstring) {
             when {
