@@ -70,7 +70,7 @@ jobs:
         env:
           PRINT_PAYLOAD: true
           CLUSTER: dev-gcp
-          RESOURCE: apps/${{ github.workflow }}/dev.yml
+          RESOURCE: apps/${{ github.workflow }}/dev.yml,apps/${{ github.workflow }}/alert.yml
           VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
 
   # deploy-prod:
@@ -93,5 +93,5 @@ jobs:
   #       env:
   #         PRINT_PAYLOAD: true
   #         CLUSTER: prod-gcp
-  #         RESOURCE: apps/${{ github.workflow }}/prod.yml
+  #         RESOURCE: apps/${{ github.workflow }}/prod.yml,apps/${{ github.workflow }}/alert.yml
   #         VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
