@@ -24,7 +24,7 @@ import utsjekk.utbetaling.UtbetalingId
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")
+        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 

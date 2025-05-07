@@ -58,7 +58,7 @@ fun createTopology(): Topology = topology {
                     }
 
                     if (uDao == null && iDao == null) {
-                        secureLog.warn("Både db-tabell utbetaling og iverksettingsresultat mangler rad med uid ${uid.id}. Status: $status")
+                        appLog.warn("Både db-tabell utbetaling og iverksettingsresultat mangler rad med uid ${uid.id}. Status: $status")
                     }
                 }
             }

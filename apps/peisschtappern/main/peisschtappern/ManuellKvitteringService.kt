@@ -1,3 +1,5 @@
+package peisschtappern
+
 import libs.kafka.KafkaProducer
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Mmel

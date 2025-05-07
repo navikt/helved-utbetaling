@@ -31,14 +31,11 @@ open class KafkaProducer<K: Any, V>(
     private fun send(record: ProducerRecord<K, V>) {
         producer.send(record) { md, err ->
             when (err) {
-                null -> secureLog.trace(
-                    "produce ${topic.name}",
-                    kv("key", record.key()),
-                    kv("topic", topic.name),
-                    kv("partition", md.partition()),
-                    kv("offset", md.offset()),
-                ) 
-                else -> secureLog.error("Failed to produce record for ${record.key()} on ${topic.name}", err)
+                null -> kafkaLog.trace("produce ${topic.name}", kv("key", record.key()), kv("topic", topic.name), kv("partition", md.partition()), kv("offset", md.offset())) 
+                else -> {
+                    kafkaLog.error("Failed to produce record for ${record.key()} on ${topic.name}")
+                    secureLog.error("Failed to produce record for ${record.key()} on ${topic.name}", err)
+                }
             }
         }.get()
     }

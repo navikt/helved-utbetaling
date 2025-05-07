@@ -1,6 +1,5 @@
 package peisschtappern
 
-import ManuellKvitteringService
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -30,7 +29,7 @@ import libs.utils.*
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")
+        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 

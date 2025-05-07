@@ -1,6 +1,5 @@
 package peisschtappern
 
-import ManuellKvitteringService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -12,7 +11,7 @@ import libs.kafka.Topic
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import java.time.Instant
-import libs.utils.secureLog
+import libs.utils.*
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/actuator") {
@@ -78,10 +77,12 @@ fun Routing.api(manuellKvitteringService: ManuellKvitteringService) {
                 beskrMelding = request.beskrMelding,
                 kodeMelding = request.kodeMelding
             )
-            call.respond(HttpStatusCode.OK, "Oppdrag med manuell kvittering sent til ${oppdrag.name}")
+            call.respond(HttpStatusCode.OK, "Created kvittering for uid:${request.messageKey} on ${oppdrag.name}")
         } catch (e: Exception) {
-            secureLog.error("Legge til kvittering manuelt feilet: ${e.message}")
-            call.respond(HttpStatusCode.BadRequest, "Legge til kvittering manuelt feilet: ${e.message}")
+            val msg = "Failed to create kvittering for uid:${request.messageKey}"
+            appLog.error(msg)
+            secureLog.error(msg, e)
+            call.respond(HttpStatusCode.BadRequest, msg)
         }
     }
 }

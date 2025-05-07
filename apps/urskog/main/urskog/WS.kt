@@ -62,6 +62,7 @@ private fun String.intoFault(): Nothing {
 }
 
 private fun panic(any: Any): Nothing {
+    wsLog.error("ukjent soap feil {}", any)
     secureLog.error("ukjent soap feil {}", any)
     internalServerError("ukjent soap feil")
 }

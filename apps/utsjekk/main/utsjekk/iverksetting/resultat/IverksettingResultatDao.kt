@@ -2,8 +2,8 @@ package utsjekk.iverksetting.resultat
 
 import java.sql.ResultSet
 import kotlin.coroutines.coroutineContext
+import libs.postgres.*
 import libs.postgres.concurrency.connection
-import libs.postgres.map
 import libs.utils.*
 import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.felles.objectMapper
@@ -32,7 +32,7 @@ data class IverksettingResultatDao(
             stmt.setString(6, objectMapper.writeValueAsString(oppdragResultat))
             stmt.setObject(7, uid.id)
 
-            appLog.debug(sql)
+            jdbcLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
         }
@@ -48,7 +48,8 @@ data class IverksettingResultatDao(
             stmt.setString(1, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
             stmt.setString(2, objectMapper.writeValueAsString(oppdragResultat))
             stmt.setObject(3, uid.id)
-            appLog.debug(sql)
+
+            jdbcLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
         }
@@ -72,7 +73,7 @@ data class IverksettingResultatDao(
                 stmt.setString(5, fagsystem.name)
                 stmt.setString(6, requireNotNull(iverksettingId).id)
 
-                appLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeUpdate()
             }
@@ -92,7 +93,7 @@ data class IverksettingResultatDao(
                 stmt.setString(4, sakId.id)
                 stmt.setString(5, fagsystem.name)
 
-                appLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeUpdate()
             }
@@ -145,7 +146,7 @@ data class IverksettingResultatDao(
                 where.uid?.let { stmt.setObject(position++, it.id) }
                 limit?.let { stmt.setInt(position++, it) }
 
-                appLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
             }

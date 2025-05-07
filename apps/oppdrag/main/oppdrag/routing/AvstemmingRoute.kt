@@ -30,8 +30,8 @@ fun Route.avstemmingRoutes(
                 }.onSuccess {
                     call.respond(HttpStatusCode.Created)
                 }.onFailure {
-                    appLog.error("Feil ved grensesnittavstemming")
-                    secureLog.error("Feil ved grensesnittavstemming", it)
+                    appLog.error("Grensesnittavstemming feilet")
+                    secureLog.error("Grensesnittavstemming feilet", it)
                     call.respond(HttpStatusCode.InternalServerError, "Grensesnittavstemming feilet")
                 }
             }

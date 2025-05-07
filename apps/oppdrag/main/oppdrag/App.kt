@@ -41,7 +41,7 @@ val appLog = logger("app")
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")
+        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
@@ -88,12 +88,7 @@ fun Application.server(
         exclude { call -> call.request.path().startsWith("/actuator") }
         log { call ->
             appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms")
-            secureLog.info(
-                """
-                ${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms
-                ${call.bodyAsText()}
-                """.trimIndent()
-            )
+            secureLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms ${call.bodyAsText()}")
         }
     }
 

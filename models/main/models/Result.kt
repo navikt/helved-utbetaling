@@ -1,6 +1,7 @@
 package models
 
 import libs.utils.secureLog
+import libs.utils.appLog
 
 sealed interface Result<out V, out E> {
     data class Ok<V>(val value: V) : Result<V, Nothing>
@@ -13,8 +14,10 @@ sealed interface Result<out V, out E> {
             } catch(e: ApiError) {
                 Err(StatusReply(status = Status.FEILET, error = e))
             } catch (e: Throwable) {
-                secureLog.error("Unknown server error", e)
-                val error = ApiError(500, "Unknown server error", DOC)
+                val msg = "Result.catch failed with an unknown throwable"
+                appLog.error(msg)
+                secureLog.error(msg, e)
+                val error = ApiError(500, msg, DOC)
                 Err(StatusReply(status = Status.FEILET, error = error))
             }
         }

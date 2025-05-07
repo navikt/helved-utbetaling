@@ -1,9 +1,8 @@
 package oppdrag.utbetaling
 
 import libs.postgres.concurrency.connection
-import libs.postgres.map
-import libs.utils.secureLog
-import libs.utils.logger
+import libs.postgres.*
+import libs.utils.*
 import no.nav.utsjekk.kontrakter.felles.objectMapper
 import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
 import java.sql.ResultSet
@@ -14,9 +13,6 @@ import java.util.UUID
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import kotlin.coroutines.coroutineContext
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-
-private val daoLog = logger("dao")
-
 
 data class UtbetalingDao(
     val id: UUID = UUID.randomUUID(),
@@ -64,7 +60,7 @@ data class UtbetalingDao(
             stmt.setString(11, objectMapper.writeValueAsString(data))
             stmt.setString(12, objectMapper.writeValueAsString(kvittering))
 
-            daoLog.debug(sql)
+            jdbcLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
         }
@@ -87,7 +83,7 @@ data class UtbetalingDao(
             stmt.setString(3, status.name)
             stmt.setObject(4, id)
 
-            daoLog.debug(sql)
+            jdbcLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
         }
@@ -105,7 +101,7 @@ data class UtbetalingDao(
             return coroutineContext.connection.prepareStatement(sql).use { stmt -> 
                 stmt.setObject(1, id.id)
 
-                daoLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from).maxByOrNull { it.created_at }
             }
@@ -125,7 +121,7 @@ data class UtbetalingDao(
                 stmt.setString(2, id.behandlingId)
                 stmt.setString(3, id.fagsystem.name)
 
-                daoLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
             }
@@ -141,7 +137,7 @@ data class UtbetalingDao(
             coroutineContext.connection.prepareStatement(sql).use { stmt -> 
                 stmt.setObject(1, id)
 
-                daoLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeUpdate()
             }

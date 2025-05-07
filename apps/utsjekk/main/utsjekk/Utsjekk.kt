@@ -42,7 +42,7 @@ import utsjekk.utbetaling.utbetalingRoute
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}, se secureLog")
+        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
     embeddedServer(Netty, port = 8080, module = Application::utsjekk).start(wait = true)
@@ -98,37 +98,26 @@ fun Application.utsjekk(
         exclude { call -> call.request.path().startsWith("/actuator") }
         log { call ->
             appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms")
-            secureLog.info(
-                """
-                ${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms
-                ${call.bodyAsText()}
-                """.trimIndent(),
-            )
+            secureLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms ${call.bodyAsText()}")
         }
     }
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             when (cause) {
-                is ApiError -> {
-                    call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse)
-                }
-
+                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse)
                 is BadRequestException -> {
-                    val res = ApiError.Response(
-                        msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l.",
-                        field = null,
-                        doc = DEFAULT_DOC_STR,
-                    )
+                    val msg =  "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
+                    appLog.debug(msg) // client error
+                    secureLog.debug(msg, cause) // client error
+                    val res = ApiError.Response(msg = msg, field = null, doc = DEFAULT_DOC_STR)
                     call.respond(HttpStatusCode.BadRequest, res)
                 }
 
                 else -> {
-                    secureLog.error("Intern feil", cause)
-                    val res = ApiError.Response(
-                        msg = "Intern feil, årsaken logges av sikkerhetsmessig grunn i secureLog.", 
-                        field = null,
-                        doc = ""
-                    )
+                    val msg = "Intern feil, årsaken logges av sikkerhetsmessig grunn i secureLog."
+                    appLog.error(msg)
+                    secureLog.error(msg, cause)
+                    val res = ApiError.Response(msg = msg, field = null, doc = "")
                     call.respond(HttpStatusCode.InternalServerError, res)
                 }
             }

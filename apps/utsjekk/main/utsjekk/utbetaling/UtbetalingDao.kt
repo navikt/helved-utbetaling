@@ -1,22 +1,17 @@
 package utsjekk.utbetaling
 
-import libs.postgres.concurrency.connection
-import libs.postgres.map
-import libs.utils.Result
-import libs.utils.logger
-import libs.utils.map
-import libs.utils.mapErr
-import utsjekk.utbetaling.*
-import libs.utils.secureLog
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import org.intellij.lang.annotations.Language
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.coroutines.coroutineContext
-
-private val daoLog = logger("dao")
+import libs.postgres.*
+import libs.postgres.concurrency.connection
+import libs.utils.*
+import libs.utils.secureLog
+import no.nav.utsjekk.kontrakter.felles.objectMapper
+import org.intellij.lang.annotations.Language
+import utsjekk.utbetaling.*
 
 enum class DatabaseError {
     Conflict,
@@ -64,7 +59,7 @@ data class UtbetalingDao(
                 stmt.setString(9, objectMapper.writeValueAsString(data))
                 stmt.setString(10, status.name)
 
-                daoLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeUpdate()
             }
@@ -94,7 +89,7 @@ data class UtbetalingDao(
                 stmt.setObject(3, id.id)
                 stmt.setObject(4, id.id)
 
-                daoLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeUpdate()
             }
@@ -119,7 +114,7 @@ data class UtbetalingDao(
                 stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
                 stmt.setObject(2, id.id)
 
-                daoLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeUpdate()
             }
@@ -142,7 +137,7 @@ data class UtbetalingDao(
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, id.id)
 
-                daoLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery()
                     .map(::from)
@@ -159,7 +154,7 @@ data class UtbetalingDao(
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, sakId.id)
-                daoLog.debug(sql)
+                jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery()
                     .map(::from)

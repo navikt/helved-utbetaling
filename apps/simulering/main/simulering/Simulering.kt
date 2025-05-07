@@ -51,12 +51,7 @@ fun Application.simulering(config: Config = Config()) {
         exclude { call -> call.request.path().startsWith("/actuator") }
         log { call ->
             appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms")
-            secureLog.info(
-                """
-                ${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms
-                ${call.bodyAsText()}
-                """.trimIndent()
-            )
+            secureLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()} in ${call.processingTimeMs()}ms ${call.bodyAsText()}")
         }
     }
 
