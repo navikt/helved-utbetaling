@@ -17,7 +17,8 @@ import libs.utils.appLog
 @JvmInline value class UtbetalingId(val id: UUID)
 
 data class Utbetaling(
-    val simulate: Boolean, // todo: bytt til dryrun
+    val dryrun: Boolean,
+    val fagsystem: Fagsystem,
     val uid: UtbetalingId,
     val action: Action,
     val førsteUtbetalingPåSak: Boolean,

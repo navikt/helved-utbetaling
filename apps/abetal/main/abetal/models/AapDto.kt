@@ -1,12 +1,12 @@
 package abetal.models
 
-import models.*
+import abetal.*
 import java.time.LocalDateTime
 import java.util.UUID
-import abetal.AapTuple
+import models.*
 
 data class AapUtbetaling(
-    val simulate: Boolean,
+    val dryrun: Boolean,
     val action: Action,
     val sakId: SakId,
     val behandlingId: BehandlingId,
@@ -21,9 +21,9 @@ data class AapUtbetaling(
 )
 
 fun toDomain(tuple: AapTuple, sakValue: SakValue?): Utbetaling {
-    // TODO: ha med fagsystem?
     return Utbetaling(
-        simulate = tuple.aap.simulate,
+        dryrun = tuple.aap.dryrun,
+        fagsystem = Fagsystem.AAP,
         uid = UtbetalingId(UUID.fromString(tuple.uid)),
         action = tuple.aap.action,
         førsteUtbetalingPåSak = sakValue?.uids?.isEmpty() ?: true,
@@ -41,6 +41,5 @@ fun toDomain(tuple: AapTuple, sakValue: SakValue?): Utbetaling {
     )
 }
 
-data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
-data class SakValue(val uids: Set<UtbetalingId>)
+data class AapTuple(val uid: String, val aap: AapUtbetaling)
 

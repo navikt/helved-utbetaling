@@ -11,6 +11,7 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 object Topics {
     val aap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
+    val dp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simulering = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
@@ -31,13 +32,13 @@ fun createTopology(): Topology = topology {
     val utbetalinger = consume(Tables.utbetalinger)
     val saker = consume(Tables.saker)
     aapStream(utbetalinger, saker)
+    dpStream(utbetalinger, saker)
     utbetalingToSak(utbetalinger, saker)
 }
 
-data class UtbetalingTuple(
-    val uid: UUID,
-    val utbetaling: Utbetaling,
-)
+data class UtbetalingTuple(val uid: UUID, val utbetaling: Utbetaling)
+data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
+data class SakValue(val uids: Set<UtbetalingId>)
 
 fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
     utbetalinger
@@ -53,11 +54,6 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakK
         .produce(Topics.saker)
 }
 
-data class AapTuple(
-    val uid: String,
-    val aap: AapUtbetaling,
-)
-
 fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
     consume(Topics.aap)
         .repartition(Topics.aap.serdes, 3)
@@ -67,7 +63,20 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
         .map(::toDomain)
         .rekey { utbetaling -> utbetaling.uid.id.toString() }
         .leftJoin(json(), utbetalinger)
-        .branch({ (new, _) -> new.simulate }, ::simuleringStream)
+        .branch({ (new, _) -> new.dryrun }, ::dryrunStream)
+        .default(::oppdragStream)
+}
+
+fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
+    consume(Topics.dp)
+        .repartition(Topics.dp.serdes, 3)
+        .map { key, dp -> DpTuple(key, dp) }
+        .rekey { (_, dp) -> SakKey(SakId(dp.fagsakId), Fagsystem.from(dp.stønad)) }
+        .leftJoin(jsonjson(), saker)
+        .map(::toDomain)
+        .rekey { utbetaling -> utbetaling.uid.id.toString() }
+        .leftJoin(json(), utbetalinger)
+        .branch({ (new, _) -> new.dryrun }, ::dryrunStream)
         .default(::oppdragStream)
 }
 
@@ -93,13 +102,13 @@ fun oppdragStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetal
         val result = this.map { it -> it.unwrap() }
         result.map { (utbetaling, _) -> utbetaling }.produce(Topics.utbetalinger)
         result.map { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
-        result.map { (_, _) -> StatusReply() }.produce(Topics.status)
+        result.map { (_, _) -> StatusReply(Status.MOTTATT) }.produce(Topics.status)
     }.default {
         map { it -> it.unwrapErr() }.produce(Topics.status)
     }
 }
 
-fun simuleringStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
+fun dryrunStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
     branched.map { (new, prev) ->
         Result.catch {
             new.validate(prev)
@@ -112,7 +121,7 @@ fun simuleringStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbe
         }
     }.branch( { it.isOk() }) {
         val result = this.map { it -> it.unwrap() }
-        result.map { _ -> StatusReply() }.produce(Topics.status)
+        result.map { _ -> StatusReply(Status.MOTTATT) }.produce(Topics.status)
         result.produce(Topics.simulering)
     }.default {
         map { it -> it.unwrapErr() }.produce(Topics.status)

@@ -14,6 +14,7 @@ import org.apache.kafka.streams.state.BuiltInDslStoreSuppliers
 
 object TestTopics {
     val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
+    val dp by lazy { TestRuntime.kafka.testTopic(Topics.dp) }
     val saker by lazy { TestRuntime.kafka.testTopic(Topics.saker) }
     val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
     val oppdrag by lazy { TestRuntime.kafka.testTopic(Topics.oppdrag) }
