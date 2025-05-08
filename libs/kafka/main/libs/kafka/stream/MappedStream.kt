@@ -49,6 +49,11 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(flattenedStream, namedSupplier)
     }
 
+    fun <K2: Any, U : Any> flatMapKeyAndValue(mapper: (K, V) -> Iterable<KeyValue<K2, U>>): MappedStream<K2, U> {
+        val fusedStream = stream.flatMap { key, value -> mapper(key, value).map { it.toInternalKeyValue() } }
+        return MappedStream(fusedStream, namedSupplier)
+    }
+
     fun <K2: Any> rekey(mapper: (V) -> K2): MappedStream<K2, V> {
         val rekeyedStream = stream.selectKey { _, value -> mapper(value) }
         return MappedStream(rekeyedStream, namedSupplier)
