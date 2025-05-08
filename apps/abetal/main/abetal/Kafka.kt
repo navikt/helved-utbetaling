@@ -46,7 +46,8 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakK
         .map { key, utbetaling -> UtbetalingTuple(UUID.fromString(key), utbetaling) }
         .rekey { (_, utbetaling) -> SakKey(utbetaling.sakId, Fagsystem.from(utbetaling.stønad)) }
         .leftJoin(jsonjson(), saker)
-        .map { (uid, _), prevSak -> when (prevSak) {
+        .map { (uid, _), prevSak ->
+            when (prevSak) {
                 null -> SakValue(setOf(UtbetalingId(uid)))
                 else -> SakValue(prevSak.uids + UtbetalingId(uid))
             }
@@ -68,20 +69,41 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
 }
 
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
-    consume(Topics.dp)
+    val utbetalingMedSak = consume(Topics.dp)
         .repartition(Topics.dp.serdes, 3)
         .map { key, dp -> DpTuple(key, dp) }
         .rekey { (_, dp) -> SakKey(SakId(dp.fagsakId), Fagsystem.from(dp.stønad)) }
         .leftJoin(jsonjson(), saker)
-        .map(::toDomain)
-        .rekey { utbetaling -> utbetaling.uid.id.toString() }
+        .map { key, dpTuple, saker ->
+            val utbetalingerPerMeldekort =
+                dpTuple.dp.utbetalinger.groupBy { it.meldeperiode }.map { (meldeperiode, utbetalinger) ->
+                    meldeperiode to dpTuple.dp.copy(utbetalinger = utbetalinger)
+                }
+            UtbetalingWrapper(dpTuple.uid, key, saker, utbetalingerPerMeldekort.toMap())
+        }
+    utbetalingMedSak
+        .flatMapKeyAndValue { _, value ->
+            value.utbetalinger.map { (meldeperiode, u) ->
+
+                val utbetaling = toDomain(DpTuple(value.key, u), value.sak, meldeperiode)
+                KeyValue(uuid(utbetaling.fagsystem, meldeperiode).toString(), utbetaling)
+            }
+        }
         .leftJoin(json(), utbetalinger)
         .branch({ (new, _) -> new.dryrun }, ::dryrunStream)
         .default(::oppdragStream)
 }
 
+data class UtbetalingWrapper(
+    val key: String,
+    val sakKey: SakKey,
+    val sak: SakValue?,
+    val utbetalinger: Map<String, DpUtbetaling>
+)
+
+
 fun oppdragStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
-    branched.filter { (new, prev) -> 
+    branched.filter { (new, prev) ->
         val distinct = !new.isDuplicate(prev)
         if (!distinct) appLog.info("Duplicate message found for ${new.uid.id}")
         distinct
@@ -119,7 +141,7 @@ fun dryrunStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetali
                 Action.DELETE -> SimuleringService.delete(new, prev ?: notFound("previous utbetaling"))
             }
         }
-    }.branch( { it.isOk() }) {
+    }.branch({ it.isOk() }) {
         val result = this.map { it -> it.unwrap() }
         result.map { _ -> StatusReply(Status.MOTTATT) }.produce(Topics.status)
         result.produce(Topics.simulering)
@@ -128,4 +150,4 @@ fun dryrunStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetali
     }
 }
 
-inline fun <reified K: Any, reified V: Any> jsonjson() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jackson<V>())
+inline fun <reified K : Any, reified V : Any> jsonjson() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jackson<V>())

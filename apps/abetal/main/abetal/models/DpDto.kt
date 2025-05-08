@@ -1,6 +1,8 @@
 package abetal.models
 
 import abetal.*
+import java.nio.ByteBuffer
+import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -39,11 +41,11 @@ data class DpUtbetalingsperiode(
     )
 }
 
-fun toDomain(tuple: DpTuple, sakValue: SakValue?): Utbetaling {
+fun toDomain(tuple: DpTuple, sakValue: SakValue?, meldeperiode: String): Utbetaling {
     return Utbetaling(
         dryrun = tuple.dp.dryrun,
         fagsystem = Fagsystem.DAGPENGER,
-        uid = UtbetalingId(UUID.fromString(tuple.uid)),
+        uid = UtbetalingId(uuid(Fagsystem.DAGPENGER, meldeperiode)),
         action = Action.CREATE, // TODO: utled
         førsteUtbetalingPåSak = sakValue?.uids?.isEmpty() ?: true,
         sakId = SakId(tuple.dp.fagsakId),
@@ -61,3 +63,17 @@ fun toDomain(tuple: DpTuple, sakValue: SakValue?): Utbetaling {
 }
 
 data class DpTuple(val uid: String, val dp: DpUtbetaling)
+
+fun uuid(fagsystem: Fagsystem, meldeperiode: String): UUID {
+    val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
+    buffer.putLong((fagsystem.name + meldeperiode).hashCode().toLong())
+
+    val digest = MessageDigest.getInstance("SHA-256")
+    val hash = digest.digest(buffer.array())
+
+    val bb = ByteBuffer.wrap(hash)
+    val mostSigBits = bb.long
+    val leastSigBits = bb.long
+
+    return UUID(mostSigBits, leastSigBits)
+}

@@ -17,11 +17,11 @@ class TopicAssertion<K: Any, V : Any> private constructor(topic: TestOutputTopic
     private val actuals: List<KeyValue<K, V>> = topic.readKeyValuesToList()
     private fun valuesForKey(key: K) = actuals.filter { it.key == key }.map { it.value }
 
-    fun hasValueEquals(key: K, index: Int = 0, value: () -> V) = this.also {
+    fun hasValueEquals(key: K, index: Int = 0, value: (V) -> V) = this.also {
         val values = valuesForKey(key)
         assertTrue("No values found for key: $key") { values.isNotEmpty() }
         val actual = values.getOrNull(index) ?: fail("No value for key $key on index $index/${values.size - 1} found.")
-        assertEquals(value(), actual)
+        assertEquals(value(actual), actual)
     }
 
     fun hasLastValue(key: K, value: V.() -> Unit) = this.also {
