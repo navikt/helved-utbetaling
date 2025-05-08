@@ -1,7 +1,7 @@
 package models
 
 data class StatusReply(
-    val status: Status = Status.MOTTATT, 
+    val status: Status, 
     val error: ApiError? = null,
 )
 

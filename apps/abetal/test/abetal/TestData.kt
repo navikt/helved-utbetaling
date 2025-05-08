@@ -3,6 +3,7 @@ package abetal
 import abetal.models.*
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.xml.datatype.XMLGregorianCalendar
 import models.*
@@ -23,13 +24,13 @@ object Aap {
         action: Action,
         sakId: SakId = SakId("$nextInt"),
         behId: BehandlingId = BehandlingId("$nextInt"),
-        simulate: Boolean = false,
+        dryrun: Boolean = false,
         vedtatt: LocalDateTime = LocalDateTime.now(),
         periodetype: Periodetype = Periodetype.UKEDAG,
         avvent: Avvent? = null,
         perioder: () -> List<Utbetalingsperiode>,
     ) = AapUtbetaling(
-        simulate = simulate,
+        dryrun = dryrun,
         action = action,
         periodetype = periodetype,
         stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
@@ -54,6 +55,53 @@ object Aap {
         vedtakssats = vedtakssats,
     )
 }
+
+object Dp {
+    fun utbetaling(
+        fagsakId: String = "$nextInt",
+        behandlingId: String = "$nextInt",
+        dryrun: Boolean = false,
+        ident: String = "12345678910",
+        vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
+        virkningsdato: LocalDate = LocalDate.now(),
+        behandletHendelse: Hendelse = Hendelse(id = "$nextInt"),
+        stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+        utbetalinger: () -> List<DpUtbetalingsperiode>,
+    ): DpUtbetaling = DpUtbetaling(
+        dryrun = dryrun,
+        behandlingId = behandlingId,
+        fagsakId = fagsakId,
+        ident = ident,
+        vedtakstidspunkt = vedtakstidspunkt,
+        virkningsdato = virkningsdato,
+        behandletHendelse = behandletHendelse,
+        stønad = stønad,
+        utbetalinger = utbetalinger(),
+    ) 
+
+    fun meldekort(
+        meldeperiode: String,
+        fom: LocalDate,
+        tom: LocalDate,
+        sats: UInt,
+        utbetaling: UInt,
+    ): List<DpUtbetalingsperiode> = buildList<DpUtbetalingsperiode> {
+        for(i in 0 .. ChronoUnit.DAYS.between(fom, tom) + 1) {
+            val dato = fom.plusDays(i)
+            if (!dato.erHelg()) {
+                add(
+                    DpUtbetalingsperiode(
+                        meldeperiode = meldeperiode,
+                        dato = dato,
+                        sats = sats,
+                        utbetaling = utbetaling
+                    )
+                )
+            }
+        }
+    }
+}
+
 fun utbetaling(
     action: Action,
     uid: UtbetalingId,
@@ -68,9 +116,10 @@ fun utbetaling(
     beslutterId: Navident = Navident(""),
     saksbehandlerId: Navident = Navident(""),
     avvent: Avvent? = null,
+    fagsystem: Fagsystem = Fagsystem.AAP,
     perioder: () -> List<Utbetalingsperiode>,
 ) = Utbetaling(
-    simulate = false,
+    dryrun = false,
     uid = uid,
     action = action,
     førsteUtbetalingPåSak = førsteUtbetalingPåSak,
@@ -84,6 +133,7 @@ fun utbetaling(
     beslutterId = beslutterId,
     saksbehandlerId = saksbehandlerId,
     avvent = avvent,
+    fagsystem = fagsystem,
     perioder = perioder(),
 )
 
