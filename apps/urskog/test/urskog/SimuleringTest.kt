@@ -37,8 +37,8 @@ class SimuleringTest {
         }
 
         TestTopics.dryrunAap.assertThat()
-            .hasNumberOfRecordsForKey(uid, 1)
-            .hasValueMatching(uid, 0) {
+            .has(uid)
+            .with(uid, 0) {
                 val expected = Simulering(
                     perioder = listOf(
                         Simuleringsperiode(
@@ -70,7 +70,7 @@ class SimuleringTest {
             simulering()
         }
 
-        TestTopics.dryrunAap.assertThat().isEmptyForKey(uid)
+        TestTopics.dryrunAap.assertThat().hasNot(uid)
     }
 }
 

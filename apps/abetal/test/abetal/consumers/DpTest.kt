@@ -19,7 +19,7 @@ internal class DpTest {
         val uuid = "ac563362-78d2-6295-63f8-05f7cacfc1eb"
 
         TestTopics.dp.produce("${uid.id}") {
-            Dp.utbetaling(sid) {
+            Dp.utbetaling(sid, bid) {
                 Dp.meldekort(
                     meldeperiode = "132460781",
                     fom = LocalDate.of(2021, 6, 7),
@@ -30,31 +30,34 @@ internal class DpTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey(uuid, 1)
-            .hasValue(StatusReply(Status.MOTTATT))
+            .has(uuid)
+            .has(uuid, StatusReply(Status.MOTTATT))
 
         TestTopics.utbetalinger.assertThat()
-            .hasNumberOfRecordsForKey(uuid, 1)
-            .hasLastValue(uuid) {
-                utbetaling(Action.CREATE, uid, SakId(sid), BehandlingId(bid)) {
+            .has(uuid)
+            .with(uuid) {
+                val expected = utbetaling(
+                    Action.CREATE,
+                    UtbetalingId(UUID.fromString(uuid)),
+                    SakId(sid), BehandlingId(bid),
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
                     listOf(
-                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 7), 553u),
-                        periode(LocalDate.of(2021, 6, 8), LocalDate.of(2021, 6, 8), 553u),
-                        periode(LocalDate.of(2021, 6, 9), LocalDate.of(2021, 6, 9), 553u),
-                        periode(LocalDate.of(2021, 6, 10), LocalDate.of(2021, 6, 10), 553u),
-                        periode(LocalDate.of(2021, 6, 11), LocalDate.of(2021, 6, 11), 553u),
-                        periode(LocalDate.of(2021, 6, 14), LocalDate.of(2021, 6, 14), 553u),
-                        periode(LocalDate.of(2021, 6, 15), LocalDate.of(2021, 6, 15), 553u),
-                        periode(LocalDate.of(2021, 6, 16), LocalDate.of(2021, 6, 16), 553u),
-                        periode(LocalDate.of(2021, 6, 17), LocalDate.of(2021, 6, 17), 553u),
-                        periode(LocalDate.of(2021, 6, 18), LocalDate.of(2021, 6, 18), 553u),
+                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 21), 553u, 1077u),
                     )
                 }
+                assertEquals(expected, it)
             }
         TestTopics.oppdrag.assertThat()
-            .hasNumberOfRecordsForKey(uuid, 1)
-            .withLastValue {
-                assertEquals("NY", it!!.oppdrag110.kodeEndring)
+            .has(uuid)
+            .with(uuid) {
+                assertEquals("NY", it.oppdrag110.kodeEndring)
             }
 
     }
@@ -75,30 +78,25 @@ internal class DpTest {
                     tom = LocalDate.of(2021, 6, 20),
                     sats = 1077u,
                     utbetaling = 553u,
-                ) +
-                        Dp.meldekort(
-                            meldeperiode = "232460781",
-                            fom = LocalDate.of(2021, 7, 7),
-                            tom = LocalDate.of(2021, 7, 20),
-                            sats = 2377u,
-                            utbetaling = 779u,
-                        )
+                ) + Dp.meldekort(
+                        meldeperiode = "232460781",
+                        fom = LocalDate.of(2021, 7, 7),
+                        tom = LocalDate.of(2021, 7, 20),
+                        sats = 2377u,
+                        utbetaling = 779u,
+                    )
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey(meldekort1, 1)
-            .hasValueEquals(meldekort1, 0) {
-                StatusReply(Status.MOTTATT)
-            }
-            .hasNumberOfRecordsForKey(meldekort2, 1)
-            .hasValueEquals(meldekort2, 0) {
-                StatusReply(Status.MOTTATT)
-            }
+            .has(meldekort1)
+            .has(meldekort1, StatusReply(Status.MOTTATT))
+            .has(meldekort2)
+            .has(meldekort2, StatusReply(Status.MOTTATT))
 
         TestTopics.utbetalinger.assertThat()
-            .hasNumberOfRecordsForKey(meldekort1, 1)
-            .hasValueEquals(meldekort1) {
-                utbetaling(
+            .has(meldekort1)
+            .with(meldekort1) {
+                val expected = utbetaling(
                     Action.CREATE,
                     UtbetalingId(UUID.fromString(meldekort1)),
                     SakId(sid), BehandlingId(bid),
@@ -114,11 +112,11 @@ internal class DpTest {
                         periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 21), 553u, 1077u),
                     )
                 }
+                assertEquals(expected, it)
             }
-
-            .hasNumberOfRecordsForKey(meldekort2, 1)
-            .hasValueEquals(meldekort2) {
-                utbetaling(
+            .has(meldekort2)
+            .with(meldekort2) {
+                val expected = utbetaling(
                     Action.CREATE,
                     UtbetalingId(UUID.fromString(meldekort2)),
                     SakId(sid), BehandlingId(bid),
@@ -134,15 +132,16 @@ internal class DpTest {
                         periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 21), 779u, 2377u),
                     )
                 }
+                assertEquals(expected, it)
             }
         TestTopics.oppdrag.assertThat()
-            .hasNumberOfRecordsForKey(meldekort1, 1)
-            .withLastValue {
-                assertEquals("NY", it!!.oppdrag110.kodeEndring)
+            .has(meldekort1)
+            .with(meldekort1) {
+                assertEquals("NY", it.oppdrag110.kodeEndring)
             }
-            .hasNumberOfRecordsForKey(meldekort2, 1)
-            .withLastValue {
-                assertEquals("NY", it!!.oppdrag110.kodeEndring)
+            .has(meldekort2)
+            .with(meldekort2) {
+                assertEquals("NY", it.oppdrag110.kodeEndring)
             }
     }
 

@@ -210,8 +210,8 @@ package "Sub-topology: 1" {
 	agent "KSTREAM-MAPVALUES-0000000059" <<Processor>> as KSTREAM_MAPVALUES_0000000059
 	agent "consume-helved.saker.v1" <<Source>> as consume_helved_saker_v1
 	agent "consume-helved.utbetalinger.v1-state-store-left-join-helved.saker.v1" <<Processor>> as consume_helved_utbetalinger_v1_state_store_left_join_helved_saker_v1
+	agent "KSTREAM-FLATMAP-0000000060" <<Processor>> as KSTREAM_FLATMAP_0000000060
 	agent "KSTREAM-KEY-SELECT-0000000016" <<Processor>> as KSTREAM_KEY_SELECT_0000000016
-	agent "KSTREAM-KEY-SELECT-0000000060" <<Processor>> as KSTREAM_KEY_SELECT_0000000060
 	agent "KSTREAM-MAPVALUES-0000000100" <<Processor>> as KSTREAM_MAPVALUES_0000000100
 	agent "stateless-operation-log-consume-helved.saker.v1" <<Processor>> as stateless_operation_log_consume_helved_saker_v1
 	agent "from-helved.utbetalinger-aap.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition-filter" <<Processor>> as from_helved_utbetalinger_aap_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_repartition_filter
@@ -239,11 +239,11 @@ package "Sub-topology: 1" {
 	from_helved_utbetalinger_aap_v1_left_join_helved_saker_v1 --> KSTREAM_MAPVALUES_0000000015
 	from_helved_utbetalinger_dp_v1_left_join_helved_saker_v1 --> KSTREAM_MAPVALUES_0000000059
 	KSTREAM_MAPVALUES_0000000015 --> KSTREAM_KEY_SELECT_0000000016
-	KSTREAM_MAPVALUES_0000000059 --> KSTREAM_KEY_SELECT_0000000060
+	KSTREAM_MAPVALUES_0000000059 --> KSTREAM_FLATMAP_0000000060
 	consume_helved_saker_v1 --> stateless_operation_log_consume_helved_saker_v1
 	consume_helved_utbetalinger_v1_state_store_left_join_helved_saker_v1 --> KSTREAM_MAPVALUES_0000000100
+	KSTREAM_FLATMAP_0000000060 --> from_helved_utbetalinger_dp_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_repartition_filter
 	KSTREAM_KEY_SELECT_0000000016 --> from_helved_utbetalinger_aap_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_repartition_filter
-	KSTREAM_KEY_SELECT_0000000060 --> from_helved_utbetalinger_dp_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_repartition_filter
 	KSTREAM_MAPVALUES_0000000100 --> stateless_operation_log_produced_helved_saker_v1_consume_helved_utbetalinger_v1_state_store_left_join_helved_saker_v1
 	stateless_operation_log_consume_helved_saker_v1 --> stateless_operation_log_produced_helved_saker_v1
 	from_helved_utbetalinger_aap_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_repartition_filter --> from_helved_utbetalinger_aap_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_repartition_sink

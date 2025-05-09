@@ -52,17 +52,17 @@ class UrskogTest {
         testLog.info("test complete")
 
         TestTopics.oppdrag.assertThat()
-            .hasNumberOfRecordsForKey(uid, 1)
-            .hasValueMatching(uid, 0) {
+            .has(uid)
+            .with(uid, 0) {
                 assertEquals("00", it.mmel.alvorlighetsgrad)
             }
 
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey(uid, 2)
-            .hasValueMatching(uid, 0) {
+            .has(uid, size = 2)
+            .with(uid, index = 0) {
                 assertEquals(Status.HOS_OPPDRAG, it.status)
             }
-            .hasValueMatching(uid, 1) {
+            .with(uid, index = 1) {
                 assertEquals(Status.OK, it.status)
             }
     }

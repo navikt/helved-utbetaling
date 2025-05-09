@@ -8,7 +8,6 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.trygdeetaten.skjema.oppdrag.*
 import org.junit.jupiter.api.Test
 
-// TODO: assert hele oppdrag XMLene for å verifisere at alle felter blir satt som forventet.
 internal class AapTest {
 
     /** Scenario 4 Endre beløp på en utbetaling
@@ -44,11 +43,10 @@ internal class AapTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValue(StatusReply(Status.MOTTATT))
+            .has("${uid.id}", StatusReply(Status.MOTTATT))
         TestTopics.utbetalinger.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasLastValue("${uid.id}") {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 utbetaling(Action.UPDATE, uid, sid, bid) {
                     listOf(
                         periode(1.jan, 2.jan, 200u)
@@ -56,9 +54,9 @@ internal class AapTest {
                 }
             }
         TestTopics.oppdrag.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .withLastValue {
-                assertEquals("ENDR", it!!.oppdrag110.kodeEndring)
+            .has("${uid.id}")
+            .with("${uid.id}") {
+                assertEquals("ENDR", it.oppdrag110.kodeEndring)
             }
 
     }
@@ -89,9 +87,6 @@ internal class AapTest {
                 )
             }
         }
-        // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-        //     SakIdWrapper(sid.id, setOf(uid))
-        // }
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.UPDATE, sid) {
                 listOf(
@@ -101,11 +96,11 @@ internal class AapTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValue(StatusReply(Status.MOTTATT))
+            .has("${uid.id}")
+            .has("${uid.id}", StatusReply(Status.MOTTATT))
         TestTopics.utbetalinger.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasLastValue("${uid.id}") {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 utbetaling(Action.UPDATE, uid, sid, bid) {
                     listOf(
                         periode(2.jan, 3.jan, 100u),
@@ -113,8 +108,8 @@ internal class AapTest {
                 }
             }
         TestTopics.oppdrag.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .withLastValue { o: Oppdrag? ->
+            .has("${uid.id}")
+            .with("${uid.id}") { o: Oppdrag? ->
                 assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                 assertEquals(TkodeStatusLinje.OPPH, o.oppdrag110.oppdragsLinje150s.first().kodeStatusLinje)
                 assertEquals(1.jan, o.oppdrag110.oppdragsLinje150s.first().datoStatusFom.toLocalDate())
@@ -152,9 +147,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          val bid = BehandlingId("$nextInt")
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
@@ -167,11 +159,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(1.jan, 2.jan, 100u),
@@ -181,8 +173,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(6.jan, o.oppdrag110.oppdragsLinje150s.last().datoVedtakFom.toLocalDate())
                  assertEquals(300u, o.oppdrag110.oppdragsLinje150s.last().sats.toDouble().toUInt())
@@ -212,9 +204,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
                  listOf(
@@ -224,11 +213,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(1.jan, 2.jan, 100u),
@@ -236,8 +225,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(TkodeStatusLinje.OPPH, o.oppdrag110.oppdragsLinje150s.first().kodeStatusLinje)
                  assertEquals(3.jan, o.oppdrag110.oppdragsLinje150s.first().datoStatusFom.toLocalDate())
@@ -275,9 +264,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
                  listOf(
@@ -289,11 +275,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(1.jan, 3.jan, 100u),
@@ -301,8 +287,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(TkodeStatusLinje.OPPH, o.oppdrag110.oppdragsLinje150s.first().kodeStatusLinje)
                  assertEquals(4.jan, o.oppdrag110.oppdragsLinje150s.first().datoStatusFom.toLocalDate())
@@ -343,9 +329,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
                  listOf(
@@ -364,11 +347,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(1.jan, 3.jan, 100u),
@@ -377,8 +360,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(2, o.oppdrag110.oppdragsLinje150s.size)
                  assertEquals(TkodeStatusLinje.OPPH, o.oppdrag110.oppdragsLinje150s.first().kodeStatusLinje)
@@ -424,9 +407,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
                  listOf(
@@ -447,11 +427,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(1.jan, 3.jan, 100u),
@@ -461,8 +441,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(3, o.oppdrag110.oppdragsLinje150s.size)
 
@@ -503,9 +483,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
                  listOf(
@@ -517,11 +494,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(1.jan, 6.jan, 100u)
@@ -529,8 +506,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(1, o.oppdrag110.oppdragsLinje150s.size)
                  assertEquals(1.jan, o.oppdrag110.oppdragsLinje150s[0].datoVedtakFom.toLocalDate())
@@ -563,9 +540,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
                  listOf(
@@ -579,11 +553,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(1.jan, 3.jan, 200u),
@@ -592,8 +566,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(2, o.oppdrag110.oppdragsLinje150s.size)
                  assertEquals(1.jan, o.oppdrag110.oppdragsLinje150s[0].datoVedtakFom.toLocalDate())
@@ -629,9 +603,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
                  listOf(
@@ -647,11 +618,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(1.jan, 6.jan, 100u),
@@ -660,8 +631,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(1, o.oppdrag110.oppdragsLinje150s.size)
                  assertEquals(7.jan, o.oppdrag110.oppdragsLinje150s[0].datoVedtakFom.toLocalDate())
@@ -694,9 +665,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
                  listOf(
@@ -710,11 +678,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(2.jan, 3.jan, 100u),
@@ -724,8 +692,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(2, o.oppdrag110.oppdragsLinje150s.size)
                  assertEquals(6.jan, o.oppdrag110.oppdragsLinje150s[0].datoVedtakFom.toLocalDate())
@@ -763,9 +731,6 @@ internal class AapTest {
                  )
              }
          }
-         // TestTopics.saker.produce("${Fagsystem.AAP}-${sid.id}") {
-         //     SakIdWrapper(sid.id, setOf(uid))
-         // }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
                  listOf(
@@ -777,11 +742,11 @@ internal class AapTest {
              }
          }
          TestTopics.status.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasValue(StatusReply(Status.MOTTATT))
+             .has("${uid.id}")
+             .has("${uid.id}", StatusReply(Status.MOTTATT))
          TestTopics.utbetalinger.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .hasLastValue("${uid.id}") {
+             .has("${uid.id}")
+             .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
                      listOf(
                          periode(2.jan, 3.jan, 100u),
@@ -790,8 +755,8 @@ internal class AapTest {
                  }
              }
          TestTopics.oppdrag.assertThat()
-             .hasNumberOfRecordsForKey("${uid.id}", 1)
-             .withLastValue { o: Oppdrag? ->
+             .has("${uid.id}")
+             .with("${uid.id}") { o: Oppdrag? ->
                  assertEquals("ENDR", o!!.oppdrag110.kodeEndring)
                  assertEquals(2, o.oppdrag110.oppdragsLinje150s.size)
 
@@ -847,14 +812,14 @@ internal class AapTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValue(StatusReply(Status.MOTTATT))
+            .has("${uid.id}")
+            .has("${uid.id}", StatusReply(Status.MOTTATT))
 
         TestTopics.utbetalinger.assertThat().isEmpty()
         TestTopics.oppdrag.assertThat().isEmpty()
         TestTopics.simulering.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .withLastValue { o: SimulerBeregningRequest? ->
+            .has("${uid.id}")
+            .with("${uid.id}") { o: SimulerBeregningRequest? ->
                 assertEquals("ENDR", o!!.request.oppdrag.kodeEndring)
                 assertEquals(6.jan, o.request.oppdrag.oppdragslinjes.last().datoVedtakFom.toLocalDate())
                 assertEquals(300u, o.request.oppdrag.oppdragslinjes.last().sats.toDouble().toUInt())
@@ -881,11 +846,11 @@ internal class AapTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValue(StatusReply(Status.MOTTATT))
+            .has("${uid.id}")
+            .has("${uid.id}", StatusReply(Status.MOTTATT))
         TestTopics.utbetalinger.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasLastValue("${uid.id}") {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 utbetaling(Action.UPDATE, uid, sid, bid) {
                     listOf(
                         periode(1.jan, 2.jan, 200u)
@@ -893,10 +858,10 @@ internal class AapTest {
                 }
             }
         TestTopics.oppdrag.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .withLastValue {
-                assertEquals(LocalDate.now(), it!!.oppdrag110.avvent118.datoAvventFom.toLocalDate())
-                assertEquals(LocalDate.now().plusDays(5), it!!.oppdrag110.avvent118.datoAvventTom.toLocalDate())
+            .has("${uid.id}")
+            .with("${uid.id}") {
+                assertEquals(LocalDate.now(), it.oppdrag110.avvent118.datoAvventFom.toLocalDate())
+                assertEquals(LocalDate.now().plusDays(5), it.oppdrag110.avvent118.datoAvventTom.toLocalDate())
             }
     }
 }
