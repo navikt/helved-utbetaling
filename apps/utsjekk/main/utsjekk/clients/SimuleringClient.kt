@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.postgres.Jdbc
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
 import utsjekk.*
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.lagAndelData

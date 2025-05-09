@@ -6,8 +6,8 @@ import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.*
 import libs.utils.Resource
 import libs.xml.XMLMapper
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.oppdrag.*
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.oppdrag.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import oppdrag.TestRuntime
 import oppdrag.etUtbetalingsoppdrag

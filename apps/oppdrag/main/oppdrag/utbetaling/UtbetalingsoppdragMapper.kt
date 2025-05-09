@@ -1,7 +1,7 @@
 package oppdrag.utbetaling
 
 import UUIDEncoder.encode
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.ObjectFactory
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag110

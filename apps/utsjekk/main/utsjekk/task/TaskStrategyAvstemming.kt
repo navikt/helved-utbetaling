@@ -7,9 +7,9 @@ import libs.task.Kind
 import libs.task.Status
 import libs.task.TaskDao
 import libs.task.Tasks
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.objectMapper
+import models.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import utsjekk.avstemming.nesteVirkedag
 //import utsjekk.clients.Oppdrag
 import java.time.LocalDate

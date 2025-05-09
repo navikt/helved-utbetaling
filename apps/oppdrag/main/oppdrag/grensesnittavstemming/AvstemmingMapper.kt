@@ -1,7 +1,7 @@
 package oppdrag.grensesnittavstemming
 
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.oppdrag.OppdragStatus
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.*
 import oppdrag.iverksetting.tilstand.OppdragLager
 import java.math.BigDecimal

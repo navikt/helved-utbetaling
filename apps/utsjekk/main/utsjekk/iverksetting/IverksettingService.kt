@@ -4,9 +4,9 @@ import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.kafka.KafkaProducer
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.iverksett.IverksettStatus
+import models.kontrakter.oppdrag.OppdragStatus
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.abetal.OppdragService

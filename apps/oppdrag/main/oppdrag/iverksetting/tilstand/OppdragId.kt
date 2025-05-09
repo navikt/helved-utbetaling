@@ -1,7 +1,7 @@
 package oppdrag.iverksetting.tilstand
 
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.tilFagsystem
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.tilFagsystem
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 data class OppdragId(

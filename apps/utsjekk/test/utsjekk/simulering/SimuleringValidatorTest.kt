@@ -12,9 +12,9 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
-import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
-import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDagpengerDto
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.felles.StønadTypeDagpenger
+import models.kontrakter.iverksett.StønadsdataDagpengerDto
+import models.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

@@ -8,8 +8,8 @@ import kotlin.coroutines.coroutineContext
 import libs.postgres.*
 import libs.postgres.concurrency.connection
 import libs.utils.*
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.objectMapper
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.objectMapper
 import utsjekk.utbetaling.UtbetalingId
 
 data class IverksettingDao(

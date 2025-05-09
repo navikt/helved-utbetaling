@@ -1,11 +1,11 @@
 package utsjekk.iverksetting
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.Personident
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import no.nav.utsjekk.kontrakter.iverksett.*
+import models.kontrakter.felles.BrukersNavKontor
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.Personident
+import models.kontrakter.felles.objectMapper
+import models.kontrakter.iverksett.*
 
 fun Iverksetting.Companion.from(dto: IverksettV2Dto, fagsystem: Fagsystem): Iverksetting {
     return Iverksetting(

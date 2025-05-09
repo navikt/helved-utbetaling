@@ -1,10 +1,10 @@
 package utsjekk.simulering
 
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.Personident
-import no.nav.utsjekk.kontrakter.felles.Satstype
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.Personident
+import models.kontrakter.felles.Satstype
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.oppdrag.Utbetalingsperiode
 import utsjekk.iverksetting.*
 import java.time.LocalDate
 

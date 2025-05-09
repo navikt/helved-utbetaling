@@ -9,7 +9,7 @@ import kotlinx.coroutines.test.runTest
 import libs.task.Kind
 import libs.task.Status
 import libs.task.Tasks
-import no.nav.utsjekk.kontrakter.felles.objectMapper
+import models.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

@@ -1,7 +1,7 @@
 package utsjekk.iverksetting
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import no.nav.utsjekk.kontrakter.felles.objectMapper
+import models.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets

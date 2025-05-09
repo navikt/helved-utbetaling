@@ -13,11 +13,11 @@ import libs.postgres.concurrency.transaction
 import libs.utils.*
 import models.PeriodeId
 import models.nesteVirkedag
-import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
-import no.nav.utsjekk.kontrakter.felles.Satstype
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.felles.BrukersNavKontor
+import models.kontrakter.felles.Satstype
+import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.oppdrag.Utbetalingsperiode
 import no.trygdeetaten.skjema.oppdrag.*
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultatDao

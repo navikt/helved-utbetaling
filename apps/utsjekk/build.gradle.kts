@@ -6,9 +6,8 @@ application {
     mainClass.set("utsjekk.UtsjekkKt")
 }
 
-val ktorVersion = "3.1.2"
+val ktorVersion = "3.1.3"
 val libVersion = "3.1.98"
-val kontraktVersion = "1.0_20250424200149_61b3f1c"
 
 dependencies {
     implementation(project(":models"))
@@ -20,15 +19,10 @@ dependencies {
     implementation("no.nav.helved:xml:$libVersion")
     implementation("no.nav.helved:task:$libVersion")
 
-    implementation("no.nav.utsjekk.kontrakter:oppdrag:$kontraktVersion")
-    implementation("no.nav.utsjekk.kontrakter:iverksett:$kontraktVersion")
-    implementation("no.nav.utsjekk.kontrakter:felles:$kontraktVersion")
-
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.15.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
 
     implementation("org.apache.kafka:kafka-clients:4.0.0")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.20")
 
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
@@ -39,14 +33,14 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("no.nav.helved:auth-test:$libVersion")
     testImplementation("no.nav.helved:jdbc-test:$libVersion")
 }
+

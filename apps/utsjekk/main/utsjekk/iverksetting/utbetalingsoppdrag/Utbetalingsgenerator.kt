@@ -1,7 +1,7 @@
 package utsjekk.iverksetting.utbetalingsoppdrag
 
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.oppdrag.Utbetalingsperiode
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.utbetalingsoppdrag.AndelValidator.validerAndeler
 import utsjekk.iverksetting.utbetalingsoppdrag.BeståendeAndelerBeregner.finnBeståendeAndeler

@@ -5,8 +5,8 @@ import libs.mq.MQ
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.utils.secureLog
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
+import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.OppdragStatusDto
 import oppdrag.OppdragConfig
 import oppdrag.appLog
 import oppdrag.iverksetting.OppdragMQProducer

@@ -6,8 +6,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
 import libs.xml.XMLMapper
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import oppdrag.*
 import oppdrag.iverksetting.tilstand.OppdragLagerRepository

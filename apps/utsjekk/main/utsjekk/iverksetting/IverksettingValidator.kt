@@ -1,6 +1,6 @@
 package utsjekk.iverksetting
 
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.OppdragStatus
 import utsjekk.badRequest
 import utsjekk.conflict
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
