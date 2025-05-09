@@ -1,6 +1,6 @@
 package utsjekk.iverksetting.utbetalingsoppdrag
 
-import no.nav.utsjekk.kontrakter.felles.Satstype
+import models.kontrakter.felles.Satstype
 import utsjekk.iverksetting.AndelData
 import utsjekk.badRequest
 import java.time.LocalDate

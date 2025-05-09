@@ -8,7 +8,7 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.utils.secureLog
-import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import models.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import oppdrag.appLog
 import oppdrag.grensesnittavstemming.GrensesnittavstemmingService
 

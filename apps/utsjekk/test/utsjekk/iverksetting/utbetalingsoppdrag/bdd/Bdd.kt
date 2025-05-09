@@ -1,12 +1,12 @@
 package utsjekk.iverksetting.utbetalingsoppdrag.bdd
 
 import AndelId
-import no.nav.utsjekk.kontrakter.felles.BrukersNavKontor
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
-import no.nav.utsjekk.kontrakter.felles.StønadTypeTiltakspenger
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.felles.BrukersNavKontor
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.StønadTypeDagpenger
+import models.kontrakter.felles.StønadTypeTiltakspenger
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.oppdrag.Utbetalingsperiode
 import org.junit.jupiter.api.Assertions.assertEquals
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator

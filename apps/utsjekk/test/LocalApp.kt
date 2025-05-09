@@ -15,7 +15,7 @@ import libs.postgres.Migrator
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.utils.*
-import no.nav.utsjekk.kontrakter.felles.objectMapper
+import models.kontrakter.felles.objectMapper
 import utsjekk.*
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultatDao

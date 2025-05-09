@@ -9,7 +9,7 @@ import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import models.*
 import models.StatusReply
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.common.utils.Utils
 import utsjekk.iverksetting.OppdragResultat

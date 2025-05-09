@@ -6,7 +6,7 @@ import TestData.dto.client.postering
 import TestData.dto.client.simuleringResponse
 import TestData.dto.client.simulertPeriode
 import TestData.dto.client.utbetaling
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.Fagsystem
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.RandomOSURId

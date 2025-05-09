@@ -11,7 +11,7 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
 import libs.utils.Resource
 import libs.ws.SoapException
-import no.nav.utsjekk.kontrakter.felles.Personident
+import models.kontrakter.felles.Personident
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

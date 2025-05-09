@@ -9,7 +9,7 @@ import libs.postgres.*
 import libs.postgres.concurrency.connection
 import libs.utils.*
 import libs.utils.secureLog
-import no.nav.utsjekk.kontrakter.felles.objectMapper
+import models.kontrakter.felles.objectMapper
 import org.intellij.lang.annotations.Language
 import utsjekk.utbetaling.*
 

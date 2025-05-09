@@ -3,8 +3,8 @@ package utsjekk.simulering
 import TestData.domain.simuleringDetaljer
 import TestData.dto.api.oppsummeringForPeriode
 import TestData.dto.api.simuleringResponse
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.objectMapper
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test

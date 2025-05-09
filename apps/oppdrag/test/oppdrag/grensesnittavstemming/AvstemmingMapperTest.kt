@@ -2,9 +2,9 @@ package oppdrag.grensesnittavstemming
 
 import libs.utils.Resource
 import libs.xml.XMLMapper
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.etUtbetalingsoppdrag

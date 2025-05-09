@@ -4,7 +4,7 @@ import TestData
 import TestRuntime
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test

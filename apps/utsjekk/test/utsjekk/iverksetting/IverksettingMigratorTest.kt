@@ -1,6 +1,6 @@
 package utsjekk.iverksetting
 
-import no.nav.utsjekk.kontrakter.felles.objectMapper
+import models.kontrakter.felles.objectMapper
 import org.intellij.lang.annotations.Language
 import utsjekk.utbetaling.UtbetalingV2
 import kotlin.test.Test

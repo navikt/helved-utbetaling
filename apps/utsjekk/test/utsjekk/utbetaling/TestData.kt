@@ -17,7 +17,7 @@ fun Int.jan(day: Int): LocalDate = LocalDate.of(this, 1, day)
 fun Int.nov(day: Int): LocalDate = LocalDate.of(this, 11, day)
 
 fun Personident.Companion.random(): Personident {
-    return Personident(no.nav.utsjekk.kontrakter.felles.Personident.random().verdi)
+    return Personident(models.kontrakter.felles.Personident.random().verdi)
 }
 
 fun UtbetalingId.Companion.random() = UtbetalingId(UUID.randomUUID())

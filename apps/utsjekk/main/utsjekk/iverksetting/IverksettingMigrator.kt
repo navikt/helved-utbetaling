@@ -1,6 +1,6 @@
 package utsjekk.iverksetting
 
-import no.nav.utsjekk.kontrakter.felles.Satstype
+import models.kontrakter.felles.Satstype
 import utsjekk.utbetaling.*
 
 // Forslag til hvordan vi kan migrere iverksettinger til et utbetalingsformat som ligner på det vi har i dag.

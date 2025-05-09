@@ -1,7 +1,7 @@
 package utsjekk.iverksetting.utbetalingsoppdrag
 
-import no.nav.utsjekk.kontrakter.oppdrag.Opphør
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.oppdrag.Opphør
+import models.kontrakter.oppdrag.Utbetalingsperiode
 import utsjekk.iverksetting.AndelData
 import utsjekk.iverksetting.Behandlingsinformasjon
 import utsjekk.iverksetting.StønadsdataAAP

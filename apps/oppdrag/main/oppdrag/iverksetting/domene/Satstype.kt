@@ -1,6 +1,6 @@
 package oppdrag.iverksetting.domene
 
-import no.nav.utsjekk.kontrakter.felles.Satstype
+import models.kontrakter.felles.Satstype
 
 fun Satstype.tilOppdragskode(): String =
     when (this) {

@@ -7,7 +7,7 @@ import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.utils.*
 import libs.xml.XMLMapper
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import oppdrag.OppdragConfig
 import oppdrag.utbetaling.*

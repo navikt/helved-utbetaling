@@ -1,8 +1,8 @@
 package oppdrag.iverksetting.domene
 
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.oppdrag.Utbetalingsperiode
 import no.trygdeetaten.skjema.oppdrag.ObjectFactory
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag110

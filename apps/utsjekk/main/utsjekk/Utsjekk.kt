@@ -28,7 +28,7 @@ import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.postgres.*
 import libs.utils.*
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
 import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.iverksetting

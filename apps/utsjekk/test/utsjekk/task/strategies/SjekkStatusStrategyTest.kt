@@ -9,10 +9,10 @@ import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.Tasks
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import no.nav.utsjekk.kontrakter.iverksett.IverksettStatus
-import no.nav.utsjekk.kontrakter.iverksett.StatusEndretMelding
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.felles.objectMapper
+import models.kontrakter.iverksett.IverksettStatus
+import models.kontrakter.iverksett.StatusEndretMelding
+import models.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull

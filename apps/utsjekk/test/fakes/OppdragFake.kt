@@ -13,8 +13,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.CompletableDeferred
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.oppdrag.*
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.oppdrag.*
 import port
 import utsjekk.OppdragConfig
 import java.net.URI

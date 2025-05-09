@@ -1,11 +1,11 @@
 package oppdrag.iverksetting.domene
 
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
-import no.nav.utsjekk.kontrakter.felles.Satstype
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.Opphør
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.Satstype
+import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.Opphør
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.oppdrag.Utbetalingsperiode
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag110

@@ -8,9 +8,9 @@ import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import libs.utils.*
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.oppdrag.OppdragIdDto
+import models.kontrakter.oppdrag.OppdragStatusDto
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
 import oppdrag.iverksetting.OppdragAlleredeSendtException
 import oppdrag.iverksetting.OppdragService
 import oppdrag.iverksetting.domene.OppdragMapper

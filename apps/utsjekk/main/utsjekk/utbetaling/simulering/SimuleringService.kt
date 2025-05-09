@@ -3,7 +3,7 @@ package utsjekk.utbetaling.simulering
 import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
-import no.nav.utsjekk.kontrakter.felles.Fagsystem
+import models.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
 import utsjekk.notFound
 import utsjekk.utbetaling.FagsystemDto

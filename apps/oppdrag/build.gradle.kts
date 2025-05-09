@@ -7,15 +7,13 @@ application {
 }
 
 val ktorVersion = "3.1.2"
-val libVersion = "3.1.98"
+val libVersion = "3.1.103"
 
 dependencies {
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:ktor:$libVersion")
     implementation("no.nav.helved:mq:$libVersion")
-
-    implementation("no.nav.utsjekk.kontrakter:oppdrag:1.0_20241213145703_7ff5f9c")
 
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")

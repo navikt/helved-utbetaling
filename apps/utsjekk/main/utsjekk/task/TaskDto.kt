@@ -2,8 +2,8 @@ package utsjekk.task
 
 import libs.task.TaskDao
 import utsjekk.avstemming.erHelligdag
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import no.nav.utsjekk.kontrakter.oppdrag.GrensesnittavstemmingRequest
+import models.kontrakter.felles.objectMapper
+import models.kontrakter.oppdrag.GrensesnittavstemmingRequest
 import com.fasterxml.jackson.module.kotlin.readValue
 // import utsjekk.iverksetting.IverksettingTaskStrategy
 // import utsjekk.status.StatusTaskStrategy
@@ -118,7 +118,7 @@ private object TaskMetadataStrategy {
         )
     }
     fun status(payload: String): Map<String, String> {
-        val oppdragIdDto = objectMapper.readValue<no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto>(payload)
+        val oppdragIdDto = objectMapper.readValue<models.kontrakter.oppdrag.OppdragIdDto>(payload)
         return mapOf(
             "sakId" to oppdragIdDto.sakId,
             "behandlingId" to oppdragIdDto.behandlingId,

@@ -6,10 +6,10 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import no.nav.utsjekk.kontrakter.felles.*
-import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.felles.*
+import models.kontrakter.iverksett.Ferietillegg
+import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.Utbetalingsoppdrag
 import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime

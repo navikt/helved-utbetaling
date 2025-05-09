@@ -10,9 +10,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import libs.postgres.concurrency.transaction
 import libs.utils.Resource
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragIdDto
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatusDto
+import models.kontrakter.oppdrag.OppdragIdDto
+import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.oppdrag.OppdragStatusDto
 import oppdrag.*
 import oppdrag.iverksetting.domene.Kvitteringstatus
 import oppdrag.iverksetting.tilstand.OppdragId

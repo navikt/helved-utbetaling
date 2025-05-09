@@ -1,12 +1,12 @@
 package utsjekk.iverksetting
 
-import no.nav.utsjekk.kontrakter.felles.GyldigBehandlingId
-import no.nav.utsjekk.kontrakter.felles.GyldigSakId
-import no.nav.utsjekk.kontrakter.felles.Satstype
-import no.nav.utsjekk.kontrakter.felles.StønadTypeDagpenger
-import no.nav.utsjekk.kontrakter.iverksett.Ferietillegg
-import no.nav.utsjekk.kontrakter.iverksett.IverksettV2Dto
-import no.nav.utsjekk.kontrakter.iverksett.StønadsdataDagpengerDto
+import models.kontrakter.felles.GyldigBehandlingId
+import models.kontrakter.felles.GyldigSakId
+import models.kontrakter.felles.Satstype
+import models.kontrakter.felles.StønadTypeDagpenger
+import models.kontrakter.iverksett.Ferietillegg
+import models.kontrakter.iverksett.IverksettV2Dto
+import models.kontrakter.iverksett.StønadsdataDagpengerDto
 import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.YearMonth

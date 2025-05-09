@@ -3,8 +3,8 @@ package oppdrag.utbetaling
 import libs.postgres.concurrency.connection
 import libs.postgres.*
 import libs.utils.*
-import no.nav.utsjekk.kontrakter.felles.objectMapper
-import no.nav.utsjekk.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.felles.objectMapper
+import models.kontrakter.oppdrag.OppdragStatus
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
