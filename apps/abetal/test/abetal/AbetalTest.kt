@@ -21,8 +21,8 @@ internal class AbetalTest {
             }
         }
         TestTopics.saker.assertThat()
-            .hasNumberOfRecordsForKey(SakKey(sid, Fagsystem.AAP), 1)
-            .hasValueMatching(SakKey(sid, Fagsystem.AAP), 0) {
+            .has(SakKey(sid, Fagsystem.AAP))
+            .with(SakKey(sid, Fagsystem.AAP)) {
                 assertEquals(uid, it.uids.single())
             }
     }
@@ -49,21 +49,24 @@ internal class AbetalTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecords(2)
-            .hasNumberOfRecordsForKey("${uid1.id}", 1)
-            .hasNumberOfRecordsForKey("${uid2.id}", 1)
-            .hasValueMatching("${uid1.id}", 0) {
+            .hasTotal(2)
+            .has("${uid1.id}")
+            .has("${uid2.id}")
+            .with("${uid1.id}") {
                 assertEquals(null, it.error)
             }
-            .hasValueMatching("${uid2.id}", 0) {
+            .with("${uid2.id}") {
                 assertEquals(null, it.error)
             }
 
         TestTopics.saker.assertThat()
-            .hasNumberOfRecords(2)
-            .hasNumberOfRecordsForKey(SakKey(sid, Fagsystem.AAP), 2)
-            .hasLastValue(SakKey(sid, Fagsystem.AAP)) {
-                assertEquals(2, uids.size)
+            .hasTotal(2)
+            .has(SakKey(sid, Fagsystem.AAP), 2)
+            .with(SakKey(sid, Fagsystem.AAP), index = 0) {
+                assertEquals(1, it.uids.size)
+            }
+            .with(SakKey(sid, Fagsystem.AAP), index = 1) {
+                assertEquals(2, it.uids.size)
             }
     }
 
@@ -81,10 +84,10 @@ internal class AbetalTest {
         TestTopics.aap.produce("${uid2.id}") { utbet }
 
         TestTopics.oppdrag.assertThat()
-            .hasValueMatching("${uid1.id}", 0) {
+            .with("${uid1.id}") {
                 assertEquals("NY", it.oppdrag110.kodeEndring)
             }
-            .hasValueMatching("${uid2.id}", 0) {
+            .with("${uid2.id}") {
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
             }
     }
@@ -102,24 +105,21 @@ internal class AbetalTest {
         TestTopics.aap.produce("${uid.id}") { utbet }
 
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey(uid.id.toString(), 1)
-            .hasValueEquals(uid.id.toString(), 0) {
-                StatusReply(Status.MOTTATT, null)
-            }
+            .has(uid.id.toString(), StatusReply(Status.MOTTATT, null)) 
         TestTopics.utbetalinger.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValueMatching("${uid.id}", 0) {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 assertEquals(2, it.perioder.size)
             }
         TestTopics.oppdrag.assertThat()
-            .hasValuesForPredicate(uid.id.toString(), 1) {
+            .with(uid.id.toString()) {
                 it.oppdrag110.kodeEndring == "NY"
             }
         TestTopics.saker.assertThat()
-            .hasNumberOfRecords(1)
-            .hasNumberOfRecordsForKey(SakKey(utbet.sakId, Fagsystem.AAP), 1)
-            .hasLastValue(SakKey(utbet.sakId, Fagsystem.AAP)) {
-                assertEquals(1, uids.size)
+            .hasTotal(1)
+            .has(SakKey(utbet.sakId, Fagsystem.AAP))
+            .with(SakKey(utbet.sakId, Fagsystem.AAP)) {
+                assertEquals(1, it.uids.size)
             }
     }
 
@@ -135,13 +135,13 @@ internal class AbetalTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValueMatching("${uid.id}", 0) {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 assertEquals(Status.FEILET, it.status)
                 assertEquals("periode strekker seg over årsskifte", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
-        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
+        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
 
     @Test
@@ -155,13 +155,13 @@ internal class AbetalTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValueMatching("${uid.id}", 0) {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 assertEquals(Status.FEILET, it.status)
                 assertEquals("sakId kan være maks 30 tegn langt", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
-        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
+        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
 
     @Test
@@ -175,13 +175,13 @@ internal class AbetalTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValueMatching("${uid.id}", 0) {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 assertEquals(Status.FEILET, it.status)
                 assertEquals("behandlingId kan være maks 30 tegn langt", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
-        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
+        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
 
     @Test
@@ -196,10 +196,10 @@ internal class AbetalTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasNumberOfRecords(1)
-            .withLastValue {
-                assertEquals("kan ikke sende inn duplikate perioder", it!!.error!!.msg)
+            .hasTotal(1)
+            .has("${uid.id}", 1)
+            .with("${uid.id}") {
+                assertEquals("kan ikke sende inn duplikate perioder", it.error!!.msg)
             }
         TestTopics.utbetalinger.assertThat().isEmpty()
         TestTopics.oppdrag.assertThat().isEmpty()
@@ -217,10 +217,10 @@ internal class AbetalTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasNumberOfRecords(1)
-            .withLastValue {
-                assertEquals("kan ikke sende inn duplikate perioder", it!!.error!!.msg)
+            .hasTotal(1)
+            .has("${uid.id}")
+            .with("${uid.id}") {
+                assertEquals("kan ikke sende inn duplikate perioder", it.error!!.msg)
             }
         TestTopics.utbetalinger.assertThat().isEmpty()
         TestTopics.oppdrag.assertThat().isEmpty()
@@ -237,12 +237,12 @@ internal class AbetalTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValueMatching("${uid.id}", 0) {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 assertEquals("fom må være før eller lik tom", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
-        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
+        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
 
     @Test
@@ -257,15 +257,13 @@ internal class AbetalTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasNumberOfRecords(1)
-            .hasValueMatching("${uid.id}", 0) {
+            .hasTotal(1)
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 assertEquals("inkonsistens blant datoene i periodene", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat()
-            .isEmptyForKey("${uid.id}")
-        TestTopics.oppdrag.assertThat()
-            .isEmptyForKey("${uid.id}")
+        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
+        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
 
     @Test
@@ -279,12 +277,12 @@ internal class AbetalTest {
             }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValueMatching("${uid.id}", 0) {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 assertEquals("fremtidige utbetalinger er ikke støttet for periode dag/ukedag", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
-        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
+        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
 
     @Test
@@ -299,12 +297,12 @@ internal class AbetalTest {
             }.copy(periodetype = Periodetype.DAG)
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValueMatching("${uid.id}", 0) {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 assertEquals("DAG støtter maks periode på 1000 dager", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
-        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
+        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
 
     @Test
@@ -316,11 +314,11 @@ internal class AbetalTest {
                 }
         }
         TestTopics.status.assertThat()
-            .hasNumberOfRecordsForKey("${uid.id}", 1)
-            .hasValueMatching("${uid.id}", 0) {
+            .has("${uid.id}")
+            .with("${uid.id}") {
                 assertEquals("perioder kan ikke være tom", it.error!!.msg)
             }
-        TestTopics.utbetalinger.assertThat().isEmptyForKey("${uid.id}")
-        TestTopics.oppdrag.assertThat().isEmptyForKey("${uid.id}")
+        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
+        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
 }

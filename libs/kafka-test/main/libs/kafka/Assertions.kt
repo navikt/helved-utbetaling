@@ -17,60 +17,32 @@ class TopicAssertion<K: Any, V : Any> private constructor(topic: TestOutputTopic
     private val actuals: List<KeyValue<K, V>> = topic.readKeyValuesToList()
     private fun valuesForKey(key: K) = actuals.filter { it.key == key }.map { it.value }
 
-    fun hasValueEquals(key: K, index: Int = 0, value: (V) -> V) = this.also {
-        val values = valuesForKey(key)
-        assertTrue("No values found for key: $key") { values.isNotEmpty() }
-        val actual = values.getOrNull(index) ?: fail("No value for key $key on index $index/${values.size - 1} found.")
-        assertEquals(value(actual), actual)
+    fun hasTotal(size: Int) = this.also {
+        assertEquals(size, actuals.size)
     }
 
-    fun hasLastValue(key: K, value: V.() -> Unit) = this.also {
-        val last = valuesForKey(key).last()
-        value(last)
+    fun has(key: K, size: Int = 1) = this.also {
+        assertEquals(size, actuals.filter { it.key == key }.size)
     }
 
-    fun hasNumberOfRecords(amount: Int) = this.also {
-        assertEquals(amount, actuals.size)
+    fun has(key: K, value: V, index: Int = 0) = this.also {
+        assertEquals(value, valuesForKey(key).getOrNull(index))
     }
 
-    fun hasNumberOfRecordsForKey(key: K, amount: Int) = this.also {
-        assertEquals(amount, actuals.filter { it.key == key }.size)
+    fun with(key: K, index: Int = 0, value: (V) -> Unit) = this.also {
+        val actual = valuesForKey(key).getOrNull(index) ?: fail("no record found for key $key")
+        value(actual)
     }
 
-    fun hasKey(key: K) = this.also {
-        assertEquals(key, actuals.firstOrNull { it.key == key }?.key)
-    }
-
-    fun hasValue(value: V) = this.also {
-        assertEquals(value, actuals.firstOrNull()?.value)
+    fun hasNot(key: K) = this.also {
+        assertFalse(actuals.any { it.key == key })
     }
 
     fun isEmpty() = this.also {
         assertTrue(actuals.isEmpty())
     }
 
-    fun isEmptyForKey(key: K) = this.also {
-        assertFalse(actuals.any { it.key == key })
-    }
-
-    fun hasValueMatching(key: K, index: Int = 0, assertions: (value: V) -> Unit) = this.also {
-        val values = valuesForKey(key)
-        assertTrue("No values found for key: $key") { values.isNotEmpty() }
-        val value = values.getOrNull(index) ?: fail("No value for key $key on index $index/${values.size - 1} found.")
-        assertions(value)
-    }
-
-    fun withLastValue(assertions: (value: V?) -> Unit) = this.also {
-        val value = actuals.last().value ?: fail("No records found.")
-        assertions(value)
-    }
-
-    fun hasValuesForPredicate(key: K, numberOfValues: Int = 1, predicate: (value: V) -> Boolean) = this.also {
-        val values = valuesForKey(key).filter(predicate)
-        assertEquals(numberOfValues, values.size, "Should only be $numberOfValues values matching predicate")
-    }
-
-    fun containsTombstone(key: K) = this.also {
+    fun hasTombstone(key: K) = this.also {
         assertTrue(valuesForKey(key).contains(null))
     }
 }
