@@ -10,6 +10,8 @@ val ktorVersion = "3.1.2"
 val libVersion = "3.1.103"
 
 dependencies {
+    implementation(project(":models"))
+
     implementation("no.nav.helved:auth:$libVersion")
     implementation("no.nav.helved:jdbc:$libVersion")
     implementation("no.nav.helved:ktor:$libVersion")
