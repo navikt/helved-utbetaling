@@ -21,6 +21,8 @@ spec:
       external:
         - host: helved-ws-proxy.prod-fss-pub.nais.io
       rules:
+        - application: logging
+          namespace: nais-system
         - application: helved-ws-proxy
           cluster: prod-fss
   resources:
@@ -38,8 +40,6 @@ spec:
       claims:
         groups:
           - id: "c1e9edec-0c10-4df2-8c74-324ab9922220" # Saksbehandler Tilleggsstønader
-  secureLogs:
-    enabled: true
   liveness:
     path: /actuator/live
   readiness:

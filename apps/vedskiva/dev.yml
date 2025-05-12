@@ -13,8 +13,6 @@ spec:
     requests:
       cpu: 200m
       memory: 256Mi
-  secureLogs:
-    enabled: true
   gcp:
     sqlInstances:
       - type: POSTGRES_17
@@ -39,6 +37,8 @@ spec:
   accessPolicy:
     outbound:
       rules:
+        - application: logging
+          namespace: nais-system
         - application: peisschtappern
   env:
     - name: PEISSCHTAPPERN_SCOPE

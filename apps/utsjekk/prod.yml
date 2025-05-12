@@ -38,8 +38,6 @@ spec:
       destinations:
         - id: loki
         - id: elastic
-  secureLogs:
-    enabled: true
   kafka:
     pool: nav-prod
     streams: true
@@ -73,6 +71,8 @@ spec:
           namespace: aap
     outbound:
       rules:
+        - application: logging
+          namespace: nais-system
         - application: utsjekk-oppdrag
         - application: utsjekk-simulering
   gcp:
