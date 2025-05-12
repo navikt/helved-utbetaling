@@ -26,9 +26,17 @@ class SimuleringClient(
     private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
-    suspend fun simuler(utbetaling: UtbetalingsoppdragDto, oboToken: String): client.SimuleringResponse {
+    suspend fun simuler(
+        utbetaling: UtbetalingsoppdragDto,
+        token: TokenType,
+    ): client.SimuleringResponse {
+        val azureToken = when(token) {
+            is TokenType.Obo -> azure.getOnBehalfOfToken(token.jwt, config.simulering.scope)
+            is TokenType.Client -> azure.getClientCredentialsToken(config.simulering.scope)
+        }
+
         val response = client.post("${config.simulering.host}/simuler") {
-            bearerAuth(azure.getOnBehalfOfToken(oboToken, config.simulering.scope).access_token)
+            bearerAuth(azureToken.access_token)
             contentType(ContentType.Application.Json)
             setBody(utbetaling)
         }
@@ -46,15 +54,20 @@ class SimuleringClient(
 
     suspend fun hentSimuleringsresultatMedOppsummering(
         simulering: Simulering,
-        oboToken: String,
+        token: TokenType,
     ): api.SimuleringRespons? {
         val utbetalingsoppdrag = hentUtbetalingsoppdrag(simulering)
         if (utbetalingsoppdrag.utbetalingsperiode.isEmpty()) return null
 
         val request = utsjekk.simulering.client.SimuleringRequest.from(utbetalingsoppdrag)
 
+        val azureToken = when(token) {
+            is TokenType.Obo -> azure.getOnBehalfOfToken(token.jwt, config.simulering.scope)
+            is TokenType.Client -> azure.getClientCredentialsToken(config.simulering.scope)
+        }
+
         val response = client.post("${config.simulering.host}/simulering") {
-            bearerAuth(azure.getOnBehalfOfToken(oboToken, config.simulering.scope).access_token)
+            bearerAuth(azureToken.access_token)
             contentType(ContentType.Application.Json)
             setBody(request)
         }

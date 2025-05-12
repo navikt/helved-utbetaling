@@ -5,8 +5,10 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import utsjekk.client
+import utsjekk.hasClaim
 import utsjekk.clients.SimuleringClient
 import utsjekk.unauthorized
+import utsjekk.TokenType
 
 fun Route.simulering(validator: SimuleringValidator, client: SimuleringClient) {
 
@@ -16,7 +18,15 @@ fun Route.simulering(validator: SimuleringValidator, client: SimuleringClient) {
             val dto = call.receive<api.SimuleringRequest>()
             val simulering = Simulering.from(dto, fagsystem)
             validator.valider(simulering)
-            val token = call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing")
+
+            val token = if (call.hasClaim("NAVident")) {
+                TokenType.Obo(call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing"))
+            } else if (call.hasClaim("azp_name")) {
+                TokenType.Client(call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing"))
+            } else {
+                unauthorized("missing required claim", "azp_name or NAVident", "kom_i_gang")
+            }
+
             when (val res = client.hentSimuleringsresultatMedOppsummering(simulering, token)) {
                 null -> call.respond(HttpStatusCode.NoContent)
                 else -> call.respond(res)
