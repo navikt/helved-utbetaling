@@ -33,8 +33,6 @@ spec:
       destinations:
         - id: loki
         - id: elastic
-  secureLogs:
-    enabled: true
   kafka:
     pool: nav-dev
     streams: true
@@ -46,6 +44,10 @@ spec:
       rules:
         - application: helved-peisen
         - application: vedskiva
+    outbound:
+      rules:
+        - application: logging
+          namespace: nais-system
   gcp:
     sqlInstances:
       - type: "POSTGRES_15" # WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade

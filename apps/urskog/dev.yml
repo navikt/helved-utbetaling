@@ -19,6 +19,8 @@ spec:
           ports:
             - port: 1413
       rules:
+        - application: logging
+          namespace: nais-system
         - application: helved-ws-proxy
           cluster: dev-fss
   azure:
@@ -47,8 +49,6 @@ spec:
       destinations:
         - id: loki
         - id: elastic
-  secureLogs:
-    enabled: true
   kafka:
     pool: nav-dev
     streams: true
