@@ -11,6 +11,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
+import io.ktor.server.routing.RoutingCall
 import libs.utils.onFailure
 import utsjekk.badRequest
 import utsjekk.conflict
@@ -18,6 +19,8 @@ import utsjekk.internalServerError
 import utsjekk.notFound
 import utsjekk.unauthorized
 import utsjekk.utbetaling.simulering.SimuleringService
+import utsjekk.hasClaim
+import utsjekk.TokenType
 import java.util.UUID
 
 // TODO: valider at stønad (enum) tilhører AZP (claims)
@@ -118,7 +121,7 @@ fun Route.utbetalingRoute(
 
                 val dto = call.receive<UtbetalingApi>().also { it.validate() }
                 val domain = Utbetaling.from(dto)
-                val token = call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing")
+                val token = call.getTokenType() ?: unauthorized("missing required claim", "azp_name or NAVident", "kom_i_gang")
 
                 val response = simuleringService.simuler(uid, domain, token)
 
@@ -131,7 +134,7 @@ fun Route.utbetalingRoute(
                     ?: badRequest(msg = "missing path param", field = "uid")
 
                 val dto = call.receive<UtbetalingApi>().also { it.validate() }
-                val token = call.request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing")
+                val token = call.getTokenType() ?: unauthorized("missing required claim", "azp_name or NAVident", "kom_i_gang")
                 val existing = utbetalingService.lastOrNull(uid) ?: notFound("utbetaling $uid")
                 val domain = Utbetaling.from(dto, existing.lastPeriodeId)
                 val response = simuleringService.simulerDelete(uid, domain, token)
@@ -139,6 +142,16 @@ fun Route.utbetalingRoute(
             }
         }
 
+    }
+}
+
+fun RoutingCall.getTokenType(): TokenType? {
+    return if(hasClaim("NAVident")) {
+        TokenType.Obo(request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing"))
+    } else if (hasClaim("azp_name")) {
+        TokenType.Client(request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing"))
+    } else {
+        unauthorized("missing required claim", "azp_name or NAVident", "kom_i_gang")
     }
 }
 

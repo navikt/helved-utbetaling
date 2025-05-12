@@ -17,11 +17,16 @@ import utsjekk.utbetaling.UtbetalingsperiodeDto
 import utsjekk.utbetaling.Utbetalingsperioder
 import utsjekk.utbetaling.betalendeEnhet
 import utsjekk.utbetaling.klassekode
+import utsjekk.TokenType
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 class SimuleringService(private val client: SimuleringClient) {
-    suspend fun simuler(uid: UtbetalingId, utbetaling: Utbetaling, oboToken: String): SimuleringApi {
+    suspend fun simuler(
+        uid: UtbetalingId,
+        utbetaling: Utbetaling,
+        token: TokenType,
+    ): SimuleringApi {
         val dao = withContext(Jdbc.context) {
             transaction {
                 UtbetalingDao.findOrNull(uid)
@@ -34,14 +39,14 @@ class SimuleringService(private val client: SimuleringClient) {
             utbetalingsoppdrag(uid, utbetaling)
         }
 
-        val simulering = client.simuler(oppdrag, oboToken)
+        val simulering = client.simuler(oppdrag, token)
         return SimuleringMapper.oppsummering(simulering)
     }
 
     suspend fun simulerDelete(
         uid: UtbetalingId,
         new: Utbetaling,
-        oboToken: String,
+        token: TokenType,
     ): SimuleringApi {
         val existing = withContext(Jdbc.context) {
             transaction {
@@ -76,7 +81,7 @@ class SimuleringService(private val client: SimuleringClient) {
                 )
             })
         )
-        val simulering = client.simuler(oppdrag, oboToken)
+        val simulering = client.simuler(oppdrag, token)
         return SimuleringMapper.oppsummering(simulering)
     }
 

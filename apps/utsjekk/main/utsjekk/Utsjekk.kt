@@ -139,6 +139,14 @@ fun ApplicationCall.client(): Client =
         ?.let(::Client)
         ?: forbidden("missing JWT claim", "azp_name", "kom_i_gang")
 
+fun ApplicationCall.hasClaim(claim: String): Boolean = 
+    principal<JWTPrincipal>()?.getClaim(claim, String::class) != null
+
+sealed class TokenType(open val jwt: String) {
+    data class Obo(override val jwt: String): TokenType(jwt)
+    data class Client(override val jwt: String): TokenType(jwt)
+}
+
 @JvmInline
 value class Client(
     private val name: String,
