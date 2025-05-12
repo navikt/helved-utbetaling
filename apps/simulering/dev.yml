@@ -45,8 +45,8 @@ spec:
   readiness:
     path: /actuator/ready
   prometheus:
-    enabled: true
     path: /actuator/metrics
+    enabled: true
   observability:
     autoInstrumentation:
       enabled: true
