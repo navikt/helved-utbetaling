@@ -31,12 +31,12 @@ object AvstemmingService {
             this.underkomponentKode = avstemming.fagsystem.fagområde
             this.nokkelFom = avstemming.fom.atStartOfDay().format()
             this.nokkelTom = avstemming.tom.atStartOfDay().format()
-            this.avleverendeAvstemmingId = avstemmingId()
+            this.avleverendeAvstemmingId = avstemming.id
             this.brukerId = avstemming.fagsystem.fagområde
         }
     }
 
-    private fun avstemmingId(): String {
+    fun genererId(): AvstemmingId {
         val uuid = UUID.randomUUID()
         val byteBuffer = ByteBuffer.wrap(ByteArray(16)).apply {
             putLong(uuid.mostSignificantBits)
