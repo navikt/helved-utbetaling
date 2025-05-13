@@ -1,9 +1,9 @@
 package vedskiva
 
-import io.ktor.client.HttpClient
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.kafka.KafkaFactory
@@ -12,8 +12,6 @@ import libs.postgres.Migrator
 import libs.postgres.concurrency.transaction
 import libs.utils.*
 import models.*
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -92,6 +90,7 @@ fun vedskiva(
                    .forEach { (fagområde, daos) -> 
                        appLog.debug("create oppdragsdatas for $fagområde")
                        daos.flatten().forEach { appLog.debug("oppdragsdata k:${it.key} p:${it.partition} o:${it.offset}") }
+                       val avstemmingId = AvstemmingService.genererId()
 
                        val oppdragsdatas = daos.flatten().mapNotNull { it.oppdrag }.map { oppdrag ->
                            Oppdragsdata(
@@ -111,11 +110,10 @@ fun vedskiva(
                             },
                            )
                        }
-                       val avstemming = Avstemming(fom, tom, oppdragsdatas)
+                       val avstemming = Avstemming(avstemmingId, fom, tom, oppdragsdatas)
                        val messages = AvstemmingService.create(avstemming)
-                       val id = messages.first().aksjon.avleverendeAvstemmingId
-                       messages.forEach { msg -> avstemmingProducer.send(id, msg, 0) }
-                       appLog.info("Avstemming for $fagområde completed with avstemmingId: $id")
+                       messages.forEach { msg -> avstemmingProducer.send(UUID.randomUUID().toString(), msg, 0) }
+                       appLog.info("Avstemming for $fagområde completed with avstemmingId: $avstemmingId")
                    }
 
                transaction {

@@ -2,7 +2,10 @@ package models
 
 import java.time.LocalDate
 
+typealias AvstemmingId = String
+
 data class Avstemming(
+    val id: AvstemmingId,
     val fom: LocalDate,
     val tom: LocalDate,
     val oppdragsdata: List<Oppdragsdata>
