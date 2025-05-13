@@ -5,19 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Tag
 import javax.jms.TextMessage
 import libs.kafka.Streams
 import libs.mq.*
-import libs.utils.*
 import libs.utils.secureLog
 import libs.xml.XMLMapper
 import models.*
-import net.logstash.logback.argument.StructuredArguments.kv
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.Oppdrag110
 
-class OppdragMQProducer(private val config: Config, mq: MQ) {
+class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: MeterRegistry) {
     private val kvitteringQueue = config.oppdrag.kvitteringsKø
     private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
@@ -30,8 +30,16 @@ class OppdragMQProducer(private val config: Config, mq: MQ) {
             producer.produce(oppdragXml) {
                 jmsReplyTo = kvitteringQueue
             }
+            meters.counter("helved_oppdrag_mq", listOf(
+                Tag.of("status", "Sendt"),
+                Tag.of("fagsystem", fk.fagsystem.name),
+            )).increment()
             mqLog.info("Sender oppdrag $fk")
         }.onFailure {
+            meters.counter("helved_oppdrag_mq", listOf(
+                Tag.of("status", "Feilet"),
+                Tag.of("fagsystem", fk.fagsystem.name),
+            )).increment()
             mqLog.error("Feilet sending av oppdrag $fk")
             secureLog.error("Feilet sending av oppdrag $fk", it)
         }.getOrThrow()
