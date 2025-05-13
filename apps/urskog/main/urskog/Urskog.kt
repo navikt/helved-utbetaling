@@ -33,7 +33,7 @@ fun Application.urskog(
         meterBinders += LogbackMetrics()
     }
 
-    val oppdragProducer = OppdragMQProducer(config, mq)
+    val oppdragProducer = OppdragMQProducer(config, mq, prometheus)
     val simuleringService = SimuleringService(config)
     val avstemProducer = AvstemmingMQProducer(config, mq)
 
