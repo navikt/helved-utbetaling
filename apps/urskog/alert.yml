@@ -42,3 +42,14 @@ spec:
             namespace: helved
             severity: warning
 
+    - name: kvittering
+      rules:
+        - alert: mangler kvittering
+          expr: sum(helved_oppdrag_mq_total{status="Sendt"}) - sum(helved_kvitteringer_total) != 0 and (hour() >= 6 and hour() < 22) and (day_of_week() >= 1 and day_of_week() <= 5) and is_helligdag == 0
+          for: 10m
+          annotations:
+            summary: mangler kvittering for oppdrag
+            action: sjekk peisen
+          labels:
+            namespace: helved
+            severity: warning
