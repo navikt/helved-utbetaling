@@ -20,11 +20,11 @@ import models.kontrakter.felles.Fagsystem
 import models.kontrakter.felles.Satstype
 import models.kontrakter.felles.objectMapper
 import models.kontrakter.iverksett.IverksettStatus
+import models.kontrakter.iverksett.IverksettV2Dto
 import models.kontrakter.oppdrag.OppdragIdDto
 import models.kontrakter.oppdrag.OppdragStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.BehandlingId
 import utsjekk.iverksetting.IverksettingDao
@@ -252,7 +252,95 @@ class IverksettingRouteTest {
             setBody(dto)
         }.let {
             println(it.bodyAsText())
+            assertEquals(HttpStatusCode.Conflict, it.status)
+        }
+    }
+
+    @Test
+    fun `BUG 13-5-25 - svarer med CONFLICT når iverksetting allerede er iverksatt`() = runTest(TestRuntime.context) {
+        val dto = objectMapper.readValue<IverksettV2Dto>("""
+            {
+              "sakId": "202504111001",
+              "behandlingId": "P3HJYPY2NJH60KK",
+              "iverksettingId": null,
+              "personident": {
+                "verdi": "16439543861"
+              },
+              "vedtak": {
+                "vedtakstidspunkt": "2025-04-11T10:56:41.707921",
+                "saksbehandlerId": "Z990123",
+                "beslutterId": "Z994127",
+                "utbetalinger": [
+                  {
+                    "beløp": 298,
+                    "satstype": "DAGLIG_INKL_HELG",
+                    "fraOgMedDato": "2025-01-27",
+                    "tilOgMedDato": "2025-01-31",
+                    "stønadsdata": {
+                      "stønadstype": "ARBEIDSFORBEREDENDE_TRENING",
+                      "barnetillegg": false,
+                      "brukersNavKontor": "0321",
+                      "meldekortId": "2025-01-27/2025-02-09"
+                    }
+                  },
+                  {
+                    "beløp": 224,
+                    "satstype": "DAGLIG_INKL_HELG",
+                    "fraOgMedDato": "2025-02-03",
+                    "tilOgMedDato": "2025-02-07",
+                    "stønadsdata": {
+                      "stønadstype": "ARBEIDSFORBEREDENDE_TRENING",
+                      "barnetillegg": false,
+                      "brukersNavKontor": "0321",
+                      "meldekortId": "2025-01-27/2025-02-09"
+                    }
+                  },
+                  {
+                    "beløp": 110,
+                    "satstype": "DAGLIG_INKL_HELG",
+                    "fraOgMedDato": "2025-01-27",
+                    "tilOgMedDato": "2025-01-31",
+                    "stønadsdata": {
+                      "stønadstype": "ARBEIDSFORBEREDENDE_TRENING",
+                      "barnetillegg": true,
+                      "brukersNavKontor": "0321",
+                      "meldekortId": "2025-01-27/2025-02-09"
+                    }
+                  },
+                  {
+                    "beløp": 82,
+                    "satstype": "DAGLIG_INKL_HELG",
+                    "fraOgMedDato": "2025-02-03",
+                    "tilOgMedDato": "2025-02-07",
+                    "stønadsdata": {
+                      "stønadstype": "ARBEIDSFORBEREDENDE_TRENING",
+                      "barnetillegg": true,
+                      "brukersNavKontor": "0321",
+                      "meldekortId": "2025-01-27/2025-02-09"
+                    }
+                  }
+                ]
+              },
+              "forrigeIverksetting": null
+            }
+        """.trimIndent())
+
+        httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
+        }.let {
+            println(it.bodyAsText())
             assertEquals(HttpStatusCode.Accepted, it.status)
+        }
+
+        httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
+        }.let {
+            println(it.bodyAsText())
+            assertEquals(HttpStatusCode.Conflict, it.status)
         }
     }
 }
