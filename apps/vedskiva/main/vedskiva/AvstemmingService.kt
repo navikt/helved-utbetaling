@@ -59,7 +59,7 @@ object AvstemmingService {
             }
         avstemmingsdatas.first().apply {
             total = totaldata(avstemming.oppdragsdata)
-            periode = periodedata(avstemming.oppdragsdata)
+            periode = periodedata(avstemming)
             grunnlag = grunnlagsdata(avstemming.oppdragsdata)
         }
         return avstemmingsdatas
@@ -88,11 +88,10 @@ object AvstemmingService {
         fortegn = if (totalbeløp >= 0) Fortegn.T else Fortegn.F
     }
 
-    private fun periodedata(datas: List<Oppdragsdata>) = Periodedata().apply {
-        val sortedTimes = datas.map{ it.avstemmingsdag }.sorted()
+    private fun periodedata(avstemming: Avstemming) = Periodedata().apply {
         val formatter = DateTimeFormatter.ofPattern("yyyyMMddHH")
-        datoAvstemtFom = sortedTimes.first().atTime(0, 0).format(formatter)
-        datoAvstemtTom = sortedTimes.last().atTime(23, 59).format(formatter)
+        datoAvstemtFom = avstemming.fom.atTime(0, 0).format(formatter)
+        datoAvstemtTom = avstemming.tom.atTime(23, 59).format(formatter)
     }
 
     private fun grunnlagsdata(datas: List<Oppdragsdata>) = Grunnlagsdata().apply {
