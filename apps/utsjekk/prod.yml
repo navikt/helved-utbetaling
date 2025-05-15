@@ -46,6 +46,8 @@ spec:
       value: api://prod-gcp.helved.utsjekk-oppdrag/.default
     - name: SIMULERING_SCOPE
       value: api://prod-gcp.helved.utsjekk-simulering/.default
+    - name: ENV
+      value: prod
   azure:
     application:
       enabled: true
