@@ -83,8 +83,8 @@ fun vedskiva(
 
                oppdragDaos.reduce()
 
-               val fom = last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()
-               val tom = today.minusDays(1)
+               // val fom = last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()
+               // val tom = today.minusDays(1)
 
                oppdragDaos.values
                    .filterNot { it.isEmpty() } 
@@ -111,7 +111,7 @@ fun vedskiva(
                             },
                            )
                        }
-                       val avstemming = Avstemming(fom, tom, oppdragsdatas)
+                       val avstemming = Avstemming(avstemFom.toLocalDate(), avstemTom.toLocalDate(), oppdragsdatas)
                        val messages = AvstemmingService.create(avstemming)
                        val id = messages.first().aksjon.avleverendeAvstemmingId
                        messages.forEach { msg -> avstemmingProducer.send(id, msg, 0) }
