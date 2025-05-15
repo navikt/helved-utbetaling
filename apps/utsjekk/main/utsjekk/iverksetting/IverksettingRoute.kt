@@ -1,15 +1,13 @@
 package utsjekk.iverksetting
 
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
 import io.ktor.server.routing.*
-import io.ktor.server.util.*
-import libs.utils.*
+import io.ktor.server.util.getOrFail
+import libs.utils.appLog
 import models.kontrakter.iverksett.IverksettV2Dto
-import utsjekk.badRequest
-import utsjekk.client
-import utsjekk.notFound
+import utsjekk.*
 
 fun Route.iverksetting(iverksettingService: IverksettingService) {
     route("/api/iverksetting") {
@@ -24,7 +22,7 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
 
             dto.validate()
 
-            val fagsystem = call.client().toFagsystem()
+            val fagsystem = call.fagsystem()
             val iverksetting = Iverksetting.from(dto, fagsystem)
 
             iverksettingService.valider(iverksetting)
@@ -36,7 +34,7 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
         get("/{sakId}/{behandlingId}/status") {
             val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
             val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
-            val fagsystem = call.client().toFagsystem()
+            val fagsystem = call.fagsystem()
             val status = iverksettingService.utledStatus(fagsystem, sakId, behandlingId, null)
                 ?: notFound("status for sakId $sakId og behandlingId $behandlingId")
 
@@ -75,7 +73,7 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
             val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
             val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
             val iverksettingId = call.parameters.getOrFail<String>("iverksettingId").let(::IverksettingId)
-            val fagsystem = call.client().toFagsystem()
+            val fagsystem = call.fagsystem()
             val status = iverksettingService.utledStatus(fagsystem, sakId, behandlingId, iverksettingId)
                 ?: notFound("status for sakId $sakId, behandlingId $behandlingId og iverksettingId $iverksettingId")
 
