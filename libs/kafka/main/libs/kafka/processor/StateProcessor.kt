@@ -1,5 +1,6 @@
 package libs.kafka.processor
 
+import libs.kafka.StateStoreName
 import libs.kafka.KTable
 import libs.kafka.KeyValue
 import libs.kafka.processor.ProcessorMetadata
@@ -21,7 +22,7 @@ internal interface KStateProcessor<K: Any, V, U, R> {
 
 abstract class StateProcessor<K: Any, V : Any, U, R>(
     private val named: String,
-    private val table: KTable<K, V>,
+    private val storeName: StateStoreName,
 ) : KStateProcessor<K, V, U, R> {
     internal companion object {
         internal fun <K: Any, V : Any, U, R> KStream<K, U>.addProcessor(
@@ -29,7 +30,7 @@ abstract class StateProcessor<K: Any, V : Any, U, R>(
         ): KStream<K, R> = processValues(
             { processor.run(StateProcessor<K, V, U, R>::InternalProcessor) },
             Named.`as`("stateful-operation-${processor.named}"),
-            processor.table.table.stateStoreName,
+            processor.storeName,
         )
     }
 
@@ -39,7 +40,7 @@ abstract class StateProcessor<K: Any, V : Any, U, R>(
 
         override fun init(context: FixedKeyProcessorContext<K, R>) {
             this.context = context
-            this.store = context.getStateStore(table.table.stateStoreName)
+            this.store = context.getStateStore(storeName)
         }
 
         override fun process(record: FixedKeyRecord<K, U>) {

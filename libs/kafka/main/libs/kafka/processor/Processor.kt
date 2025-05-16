@@ -31,7 +31,7 @@ abstract class Processor<K: Any, V, U>(private val named: String) : KProcessor<K
             }
 
             val metadata = ProcessorMetadata(
-                topic = recordMeta.topic(),
+                topic = recordMeta.topic() ?: "no topic",
                 partition = recordMeta.partition(),
                 offset = recordMeta.offset(),
                 timestamp = record.timestamp(),

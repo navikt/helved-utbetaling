@@ -2,6 +2,7 @@ package libs.kafka
 
 import org.apache.kafka.streams.TestInputTopic
 import org.apache.kafka.streams.TestOutputTopic
+import java.time.Instant
 
 data class TestTopic<K: Any, V: Any>(
     private val input: TestInputTopic<K, V>,
@@ -10,6 +11,11 @@ data class TestTopic<K: Any, V: Any>(
     fun produce(key: K, value: () -> V) = this.also {
         input.pipeInput(key, value())
     }
+
+    fun produce(key: K, advanceClockMs: Long, value: () -> V) = this.also {
+        input.pipeInput(key, value(), Instant.now().plusMillis(advanceClockMs))
+    }
+
 
     fun tombstone(key: K) = input.pipeInput(key, null)
 
