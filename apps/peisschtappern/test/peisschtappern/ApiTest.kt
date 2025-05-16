@@ -75,9 +75,10 @@ class ApiTest {
 
     @Test
     fun `can query for multiple values`() = runTest(TestRuntime.context) {
-        val sakId = "BFH123DN"
-        val behandlingId = "AB12345"
-        save(Channel.Aap, value = "{\"sakId\":\"$sakId\",\"behandlingId\":\"$behandlingId\"}")
+        val sakId = "AB12345"
+        val behandlingId = "BC23456"
+        save(Channel.Aap, value = "{\"sakId\":\"$sakId\"}")
+        save(Channel.Aap, value = "{\"behandlingId\":\"$behandlingId\"}")
         save(Channel.Utbetalinger)
         save(Channel.Simuleringer)
 
@@ -85,9 +86,9 @@ class ApiTest {
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
 
-        assertEquals(1, result.size)
-        assertTrue(result.first().value!!.contains(sakId))
-        assertTrue(result.first().value!!.contains(behandlingId))
+        assertEquals(2, result.size)
+        assertNotNull(result.find { it.value!!.contains(sakId) })
+        assertNotNull(result.find { it.value!!.contains(behandlingId) })
     }
 
     @Test
