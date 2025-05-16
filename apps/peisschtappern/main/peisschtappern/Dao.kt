@@ -55,13 +55,13 @@ data class Dao(
             table: Table,
             limit: Int,
             key: String? = null,
-            value: String? = null,
+            value: List<String>? = null,
             fom: Long? = null,
             tom: Long? = null,
         ): List<Dao> {
             val whereClause = if (key != null || value != null || fom != null || tom != null) {
                 val keyQuery = if (key != null) " record_key = '$key' AND" else ""
-                val valueQuery = if (value != null) " record_value like '%$value%' AND" else ""
+                val valueQuery = value?.joinToString(" AND") { " record_value like '%$it%'" } ?: ""
                 val fomQuery = if (fom != null) " timestamp_ms > $fom AND" else ""
                 val tomQuery = if (tom != null) " timestamp_ms < $tom AND" else ""
                 val query = "WHERE$keyQuery$valueQuery$fomQuery$tomQuery"
