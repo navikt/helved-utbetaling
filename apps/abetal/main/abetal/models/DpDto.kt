@@ -41,32 +41,68 @@ data class DpUtbetalingsperiode(
     )
 }
 
-fun toDomain(tuple: DpTuple, sakValue: SakValue?, meldeperiode: String): Utbetaling {
+fun dpUId(sakId: String, meldeperiode: String): UtbetalingId {
+    return UtbetalingId(uuid(SakId(sakId), Fagsystem.DAGPENGER, meldeperiode))
+}
+
+fun toDomain(
+    key: String,
+    value: DpUtbetaling,
+    sakValue: SakValue?,
+    uid: UtbetalingId,
+): Utbetaling {
     return Utbetaling(
-        dryrun = tuple.dp.dryrun,
+        dryrun = value.dryrun,
+        originalKey = key,
         fagsystem = Fagsystem.DAGPENGER,
-        uid = UtbetalingId(uuid(Fagsystem.DAGPENGER, meldeperiode)),
+        uid = uid,
         action = Action.CREATE, // TODO: utled
-        førsteUtbetalingPåSak = sakValue?.uids?.isEmpty() ?: true,
-        sakId = SakId(tuple.dp.fagsakId),
-        behandlingId = BehandlingId(tuple.dp.behandlingId),
+        førsteUtbetalingPåSak = sakValue == null,
+        utbetalingerPåSak = sakValue?.uids ?: emptySet(),
+        sakId = SakId(value.fagsakId),
+        behandlingId = BehandlingId(value.behandlingId),
         lastPeriodeId = PeriodeId(),
-        personident = Personident(tuple.dp.ident),
-        vedtakstidspunkt = tuple.dp.vedtakstidspunkt,
-        stønad = tuple.dp.stønad,
+        personident = Personident(value.ident),
+        vedtakstidspunkt = value.vedtakstidspunkt,
+        stønad = value.stønad,
         beslutterId = Navident("dagpenger"), // FIXME: navnet på systemet
         saksbehandlerId = Navident("dagpenger"), // FIXME: navnet på systemet
         periodetype = Periodetype.UKEDAG,
         avvent = null,
-        perioder = tuple.dp.utbetalinger.map { it.into() },
+        perioder = value.utbetalinger.map { it.into() },
     )
 }
 
-data class DpTuple(val uid: String, val dp: DpUtbetaling)
+fun fakeDelete(
+    originalKey: String,
+    sakId: SakId,
+    uid: UtbetalingId,
+) = Utbetaling(
+    dryrun = false,
+    originalKey = originalKey,
+    fagsystem = Fagsystem.DAGPENGER,
+    uid = uid,
+    action = Action.DELETE,
+    førsteUtbetalingPåSak = false,
+    utbetalingerPåSak = emptySet(),
+    sakId = sakId,
+    behandlingId = BehandlingId(""),
+    lastPeriodeId = PeriodeId(),
+    personident = Personident(""),
+    vedtakstidspunkt = LocalDateTime.now(),
+    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+    beslutterId = Navident("dagpenger"), 
+    saksbehandlerId = Navident("dagpenger"),
+    periodetype = Periodetype.UKEDAG,
+    avvent = null,
+    perioder = emptyList(),
+)
 
-fun uuid(fagsystem: Fagsystem, meldeperiode: String): UUID {
+data class DpTuple(val key: String, val value: DpUtbetaling)
+
+fun uuid(sakId: SakId, fagsystem: Fagsystem, meldeperiode: String): UUID {
     val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
-    buffer.putLong((fagsystem.name + meldeperiode).hashCode().toLong())
+    buffer.putLong((fagsystem.name + sakId.id + meldeperiode).hashCode().toLong())
 
     val digest = MessageDigest.getInstance("SHA-256")
     val hash = digest.digest(buffer.array())
@@ -77,3 +113,4 @@ fun uuid(fagsystem: Fagsystem, meldeperiode: String): UUID {
 
     return UUID(mostSigBits, leastSigBits)
 }
+

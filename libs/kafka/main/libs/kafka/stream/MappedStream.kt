@@ -1,13 +1,20 @@
 package libs.kafka.stream
 
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
 import libs.kafka.*
-import libs.kafka.processor.Processor
-import libs.kafka.processor.Processor.Companion.addProcessor
-import libs.kafka.processor.StateProcessor
-import libs.kafka.processor.StateProcessor.Companion.addProcessor
+import libs.kafka.processor.*
 import libs.kafka.processor.LogProduceStateStoreProcessor
+import libs.kafka.processor.Processor.Companion.addProcessor
+import libs.kafka.processor.StateProcessor.Companion.addProcessor
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Named
+import org.apache.kafka.streams.kstream.SessionWindows
+import org.apache.kafka.streams.kstream.Grouped
+import org.apache.kafka.streams.kstream.SessionWindowedKStream
+import org.apache.kafka.streams.kstream.EmitStrategy
+import org.apache.kafka.streams.kstream.internals.emitstrategy.WindowCloseStrategy
+import org.apache.kafka.streams.kstream.Windowed
 
 class MappedStream<K: Any, V : Any> internal constructor(
     private val stream: KStream<K, V>,
@@ -93,6 +100,32 @@ class MappedStream<K: Any, V : Any> internal constructor(
     fun <TABLE : Any, U : Any> stateProcessor(processor: StateProcessor<K, TABLE, V, U>): MappedStream<K, U> {
         val processedStream = stream.addProcessor(processor)
         return MappedStream(processedStream, namedSupplier)
+    }
+
+    /**
+     * Creates a new window after [inactivityGap] duration.
+     *  |||||||||
+     *               ||||||||
+     *                           |||||||||||||
+     */
+    fun sessionWindow(
+        serdes: Serdes<K, V>, 
+        inactivityGap: Duration,
+    ): SessionWindowedStream<K, V> {
+        val window = SessionWindows.ofInactivityGapWithNoGrace(inactivityGap.toJavaDuration())
+        val groupSerde = Grouped.with(serdes.key, serdes.value)
+        val windowedStream: SessionWindowedKStream<K, V> = stream.groupByKey(groupSerde).windowedBy(window)
+        return SessionWindowedStream(serdes, windowedStream, {"${namedSupplier()}-session-window"})
+    }
+
+    fun onEach(onEach: (key: K, value: V, metadata: ProcessorMetadata) -> Unit): MappedStream<K, V> {
+        val peeked = stream
+            .addProcessor(MetadataProcessor("${namedSupplier()}-onEach"))
+            .mapValues { _, (kv, metadata) -> 
+                onEach(kv.key, kv.value, metadata)
+                kv.value
+            }
+        return MappedStream(peeked, namedSupplier)
     }
 
     fun forEach(mapper: (K, V) -> Unit) {

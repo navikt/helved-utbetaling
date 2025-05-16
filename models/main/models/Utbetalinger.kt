@@ -18,10 +18,12 @@ import libs.utils.appLog
 
 data class Utbetaling(
     val dryrun: Boolean,
+    val originalKey: String,
     val fagsystem: Fagsystem,
     val uid: UtbetalingId,
     val action: Action,
     val førsteUtbetalingPåSak: Boolean,
+    val utbetalingerPåSak: Set<UtbetalingId>,
     val sakId: SakId,
     val behandlingId: BehandlingId,
     val lastPeriodeId: PeriodeId,

@@ -12,14 +12,14 @@ internal class LogConsumeTopicProcessor<K: Any, V>(
 ) : Processor<K, V, V>("log-consume-${topic.name}$namedSuffix") {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         kafkaLog.trace(
-            "consume ${metadata.topic}",
+            "consume ${keyValue.key} on ${metadata.topic}",
             kv("key", keyValue.key),
             kv("topic", metadata.topic),
             kv("partition", metadata.partition),
             kv("offset", metadata.offset),
         )
         secureLog.trace(
-            "consume ${metadata.topic} ${keyValue.value}",
+            "consume ${keyValue.key} on ${metadata.topic} with ${keyValue.value}",
             kv("key", keyValue.key),
             kv("topic", metadata.topic),
             kv("partition", metadata.partition),
@@ -34,13 +34,13 @@ internal class LogProduceStateStoreProcessor<K: Any, V>(
 ): Processor<K, V, V>("log-produced-$name") {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         kafkaLog.trace(
-            "materialize $name",
+            "materialize ${keyValue.key} on $name",
             kv("key", keyValue.key),
             kv("store", name),
             kv("partition", metadata.partition),
         )
         secureLog.trace(
-            "materialize $name ${keyValue.value}",
+            "materialize ${keyValue.key} on $name with ${keyValue.value}",
             kv("key", keyValue.key),
             kv("store", name),
             kv("partition", metadata.partition),
@@ -54,14 +54,14 @@ internal class LogProduceTableProcessor<K: Any, V>(
 ) : Processor<K, V, V>("log-produced-${table.sourceTopicName}") {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         kafkaLog.trace(
-            "materialize ${table.sourceTopicName}",
+            "materialize ${keyValue.key} on ${table.sourceTopicName}",
             kv("key", keyValue.key),
             kv("table", table.sourceTopicName),
             kv("store", table.stateStoreName),
             kv("partition", metadata.partition),
         )
         secureLog.trace(
-            "materialize ${table.sourceTopicName} ${keyValue.value}",
+            "materialize ${keyValue.key} on ${table.sourceTopicName} with ${keyValue.value}",
             kv("key", keyValue.key),
             kv("table", table.sourceTopicName),
             kv("store", table.stateStoreName),
@@ -77,14 +77,14 @@ internal class LogProduceTopicProcessor<K: Any, V> internal constructor(
 ) : Processor<K, V, V>(named) {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         kafkaLog.trace(
-            "produce ${topic.name}",
+            "produce ${keyValue.key} on ${topic.name}",
             kv("key", keyValue.key),
             kv("source_topic", metadata.topic),
             kv("topic", topic.name),
             kv("partition", metadata.partition),
         )
         secureLog.trace(
-            "produce ${topic.name} ${keyValue.value}",
+            "produce ${keyValue.key} on ${topic.name} with ${keyValue.value}",
             kv("key", keyValue.key),
             kv("source_topic", metadata.topic),
             kv("topic", topic.name),
