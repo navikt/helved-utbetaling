@@ -23,7 +23,7 @@ internal class AbetalTest {
         TestTopics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.AAP))
             .with(SakKey(sid, Fagsystem.AAP)) {
-                assertEquals(uid, it.uids.single())
+                assertEquals(uid, it.single())
             }
     }
 
@@ -63,10 +63,10 @@ internal class AbetalTest {
             .hasTotal(2)
             .has(SakKey(sid, Fagsystem.AAP), 2)
             .with(SakKey(sid, Fagsystem.AAP), index = 0) {
-                assertEquals(1, it.uids.size)
+                assertEquals(1, it.size)
             }
             .with(SakKey(sid, Fagsystem.AAP), index = 1) {
-                assertEquals(2, it.uids.size)
+                assertEquals(2, it.size)
             }
     }
 
@@ -119,7 +119,7 @@ internal class AbetalTest {
             .hasTotal(1)
             .has(SakKey(utbet.sakId, Fagsystem.AAP))
             .with(SakKey(utbet.sakId, Fagsystem.AAP)) {
-                assertEquals(1, it.uids.size)
+                assertEquals(1, it.size)
             }
     }
 

@@ -1,12 +1,12 @@
 package abetal
 
-import libs.utils.appLog
+import libs.utils.secureLog
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 object AggregateOppdragService {
     fun utled(aggregate: List<UtbetalingLeftJoin>): OppdragAggregate {
-        appLog.info("aggregate: $aggregate")
+        secureLog.trace("aggregate: $aggregate")
         val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> = aggregate.map { (new, prev) ->
             when {
                 new.action == Action.DELETE -> {

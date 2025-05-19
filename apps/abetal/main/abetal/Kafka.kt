@@ -30,7 +30,7 @@ object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simulering = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
     val status = Topic("helved.status.v1", json<StatusReply>())
-    val saker = Topic("helved.saker.v1", jsonjson<SakKey, SakValue>())
+    val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, UtbetalingId>())
 }
 
 object Tables {
@@ -44,44 +44,35 @@ object Stores {
 
 fun createTopology(): Topology = topology {
     val utbetalinger = consume(Tables.utbetalinger)
-    val saker = consume(Tables.saker)
+    val saker = utbetalingToSak(utbetalinger)
     aapStream(utbetalinger, saker)
     dpStream(utbetalinger, saker)
-    utbetalingToSak(utbetalinger, saker)
 }
 
-data class UtbetalingTuple(val uid: UUID, val utbetaling: Utbetaling)
 data class UtbetalingLeftJoin(val left: Utbetaling, val right: Utbetaling?)
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
-data class SakValue(val uids: Set<UtbetalingId>)
 data class OppdragAggregate(val utbetalinger: List<Utbetaling>, val oppdrag: Oppdrag)
-data class UtbetalingWrapper(
-    val originalKey: String,
-    val sak: Pair<SakKey, SakValue?>,
-    val utbetalinger: Map<UtbetalingId, DpUtbetaling?>
-) {
-    init {
-        appLog.info("created UtbetalingWrapper with originalKey: $originalKey\n$utbetalinger")
-    }
-}
 
-fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
-    utbetalinger
+fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Set<UtbetalingId>> {
+    val ktable = utbetalinger
         .toStream()
-        .map { key, utbetaling -> UtbetalingTuple(UUID.fromString(key), utbetaling) }
-        .rekey { (_, utbetaling) -> SakKey(utbetaling.sakId, Fagsystem.from(utbetaling.stønad)) }
-        .leftJoin(jsonjson(), saker)
-        .map { (uid, utbet), prevSak ->
-            when {
-                prevSak == null -> SakValue(setOf(UtbetalingId(uid))) 
-                utbet.action == Action.DELETE -> SakValue(prevSak.uids - UtbetalingId(uid)) 
-                else -> SakValue(prevSak.uids + UtbetalingId(uid))
+        .rekey { _, utbetaling -> SakKey(utbetaling.sakId, Fagsystem.from(utbetaling.stønad)) }
+        .groupByKey(jsonjson())
+        .aggregate(Tables.saker) { _, utbetaling, uids -> 
+            when(utbetaling.action) {
+                Action.DELETE -> uids - utbetaling.uid
+                else -> uids + utbetaling.uid
             }
-        }
+        } 
+
+    ktable
+        .toStream()
         .produce(Topics.saker)
+
+    return ktable
 }
 
-fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
+fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     consume(Topics.aap)
         .repartition(Topics.aap.serdes, 3)
         .map { key, aap -> AapTuple(key, aap) }
@@ -94,39 +85,33 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
         .default(::oppdragStream)
 }
 
-fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
-    val utbetalingMedSak = consume(Topics.dp)
+fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
+    consume(Topics.dp)
         .repartition(Topics.dp.serdes, 3)
         .map { key, dp -> DpTuple(key, dp) }
         .rekey { (_, dp) -> SakKey(SakId(dp.fagsakId), Fagsystem.from(dp.stønad)) }
         .leftJoin(jsonjson(), saker)
-        .map { sakKey, (originalKey, dpUtbetaling), sakValue -> // key, (left), right
+        .flatMapKeyValue { sakKey, (dpKey, dpUtbetaling), uids -> 
             val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling 
                 .utbetalinger
                 .groupBy { it.meldeperiode }
                 .map { (meldeperiode, utbetalinger) -> dpUId(dpUtbetaling.fagsakId, meldeperiode) to dpUtbetaling.copy(utbetalinger = utbetalinger) }
                 .toMutableList()
-            if (sakValue != null) {
-                val missingMeldeperioder = utbetalingerPerMeldekort
-                    .map { it.first }
-                    .filter { it !in sakValue.uids}
-                    .map { it to null }
+
+            if (uids != null) {
+                val dpUids = utbetalingerPerMeldekort.map { (dpUid, _) -> dpUid }
+                val missingMeldeperioder = uids.filter { it !in dpUids }.map { it to null }
                 utbetalingerPerMeldekort.addAll(missingMeldeperioder)
             }
-            UtbetalingWrapper(originalKey, sakKey to sakValue, utbetalingerPerMeldekort.toMap())
-        }
-    utbetalingMedSak
-        .flatMapKeyAndValue { _, wrapper ->
-            wrapper.utbetalinger.map { (uid, originalValue) ->
-                val utbetaling = when (originalValue) {
-                    null -> fakeDelete(wrapper.originalKey, wrapper.sak.first.sakId, uid).also {
-                        appLog.info("creating a fake delete to force-trigger a join with existing utbetaling")
-                    }
-                    else -> toDomain(wrapper.originalKey, originalValue, wrapper.sak.second, uid)
+
+           utbetalingerPerMeldekort.map { (uid, dpUtbetaling) -> 
+                val utbetaling = when (dpUtbetaling) {
+                    null -> fakeDelete(dpKey, sakKey.sakId, uid).also { appLog.info("creating a fake delete to force-trigger a join with existing utbetaling") }
+                    else -> toDomain(dpKey, dpUtbetaling, uids, uid)
                 }
                 appLog.info("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
                 KeyValue(utbetaling.uid.id.toString(), utbetaling)
-            }
+           }
         }
         .leftJoin(json(), utbetalinger)
         .branch({ (new, _) -> new.dryrun }, ::dryrunStream)
@@ -142,16 +127,9 @@ private val suppressProcessorSupplier = SuppressProcessorSupplier(
 
 fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
     branched
-        .filter { (new, prev) -> 
-            if (prev != null) appLog.info("joined with match") else appLog.info("joined without match")
-            !new.isDuplicate(prev).also { if (it) appLog.info("Duplicate message found for ${new.uid.id}") }
-        }
-        .rekey { _, (new, prev) -> 
-            appLog.info("rekey back to original: ${new.originalKey} \n Left: $new Right: $prev")
-            new.originalKey
-        }
+        .filter { (new, prev) -> !new.isDuplicate(prev).also { if (it) appLog.info("Duplicate message found for ${new.uid.id}") } }
+        .rekey { _, (new, _) -> new.originalKey }
         .map { _, streamsPair -> listOf(UtbetalingLeftJoin(streamsPair.left, streamsPair.right)) }
-        .onEach { k, v, meta -> appLog.info("Processing record key:$k \n$v \n$meta") }
         .sessionWindow(jsonList(), 1.seconds)
         .reduce(suppressProcessorSupplier, "dp-diff-window-agg-session-store") { acc, next -> acc + next }
         .map { aggregate  -> 

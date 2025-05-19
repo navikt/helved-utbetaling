@@ -30,10 +30,10 @@ inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.xml<V>())
 inline fun <reified V: Any> jaxb() = Serdes(StringSerde, XmlSerde.jaxb<V>())
 inline fun <reified K : Any, reified V : Any> jsonjson() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jackson<V>())
 inline fun <reified K : Any, reified V : Any> jsonjsonList() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jacksonList<V>())
+inline fun <reified K : Any, reified V : Any> jsonjsonSet() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jacksonSet<V>())
 inline fun <reified V : Any> windowedjsonList() = Serdes(WindowedStringSerde, JsonSerde.jacksonList<V>())
 
 object WindowedStringSerde: StreamSerde<Windowed<String>> {
-    // private val internalSerde: Serde<Windowed<String>> = WindowedSerdes.SessionWindowedSerde<String>()
     private val internalSerde: Serde<Windowed<String>> = WindowedSerdes.sessionWindowedSerdeFrom(String::class.java)
     override fun serializer(): Serializer<Windowed<String>> = internalSerde.serializer()
     override fun deserializer(): Deserializer<Windowed<String>> = internalSerde.deserializer()
@@ -59,6 +59,10 @@ object JsonSerde {
     inline fun <reified V: Any> jacksonList(): StreamSerde<List<V>> = object: StreamSerde<List<V>> {
         override fun serializer(): Serializer<List<V>> = JacksonSerializer()
         override fun deserializer(): Deserializer<List<V>> = JacksonListDeserializer(V::class)
+    }
+    inline fun <reified V: Any> jacksonSet(): StreamSerde<Set<V>> = object: StreamSerde<Set<V>> {
+        override fun serializer(): Serializer<Set<V>> = JacksonSerializer()
+        override fun deserializer(): Deserializer<Set<V>> = JacksonSetDeserializer(V::class)
     }
 
     internal val jackson: ObjectMapper = jacksonObjectMapper().apply {
@@ -87,6 +91,14 @@ class JacksonDeserializer<T : Any>(private val kclass: KClass<T>) : Deserializer
 class JacksonListDeserializer<T: Any>(private val klass: KClass<T>): Deserializer<List<T>> {
     private val type: JavaType = JsonSerde.jackson.typeFactory.constructCollectionType(List::class.java, klass.java)
     override fun deserialize(topic: String, data: ByteArray?): List<T>? {
+        if (data == null) return null
+        return JsonSerde.jackson.readValue(data, type)
+    }
+}
+
+class JacksonSetDeserializer<T: Any>(private val klass: KClass<T>): Deserializer<Set<T>> {
+    private val type: JavaType = JsonSerde.jackson.typeFactory.constructCollectionType(Set::class.java, klass.java)
+    override fun deserialize(topic: String, data: ByteArray?): Set<T>? {
         if (data == null) return null
         return JsonSerde.jackson.readValue(data, type)
     }

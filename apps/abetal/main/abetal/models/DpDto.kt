@@ -48,7 +48,7 @@ fun dpUId(sakId: String, meldeperiode: String): UtbetalingId {
 fun toDomain(
     key: String,
     value: DpUtbetaling,
-    sakValue: SakValue?,
+    uidsPåSak: Set<UtbetalingId>?,
     uid: UtbetalingId,
 ): Utbetaling {
     return Utbetaling(
@@ -56,9 +56,9 @@ fun toDomain(
         originalKey = key,
         fagsystem = Fagsystem.DAGPENGER,
         uid = uid,
-        action = Action.CREATE, // TODO: utled
-        førsteUtbetalingPåSak = sakValue == null,
-        utbetalingerPåSak = sakValue?.uids ?: emptySet(),
+        action = Action.CREATE,
+        førsteUtbetalingPåSak = uidsPåSak == null,
+        utbetalingerPåSak = uidsPåSak ?: emptySet(), // hvis lista null er det første utbetaling, hvis lista er tom har det være en delete der før
         sakId = SakId(value.fagsakId),
         behandlingId = BehandlingId(value.behandlingId),
         lastPeriodeId = PeriodeId(),
