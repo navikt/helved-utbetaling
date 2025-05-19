@@ -110,7 +110,7 @@ fun vedskiva(
                             },
                            )
                        }
-                       val avstemming = Avstemming(avstemFom.toLocalDate(), avstemTom.toLocalDate(), oppdragsdatas)
+                       val avstemming = Avstemming(avstemmingId, avstemFom.toLocalDate(), avstemTom.toLocalDate(), oppdragsdatas)
                        val messages = AvstemmingService.create(avstemming)
                        messages.forEach { msg -> avstemmingProducer.send(UUID.randomUUID().toString(), msg, 0) }
                        appLog.info("Avstemming for $fagområde completed with avstemmingId: $avstemmingId")
