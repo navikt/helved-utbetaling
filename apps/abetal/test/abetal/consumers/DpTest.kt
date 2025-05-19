@@ -42,8 +42,8 @@ internal class DpTest {
             .has(originalKey, StatusReply(Status.MOTTATT))
 
         TestTopics.utbetalinger.assertThat()
-            .has(uid.id.toString())
-            .with(uid.id.toString()) {
+            .has(uid.toString())
+            .with(uid.toString()) {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid,
