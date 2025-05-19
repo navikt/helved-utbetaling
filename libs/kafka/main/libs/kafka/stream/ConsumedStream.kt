@@ -78,6 +78,11 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return MappedStream(fusedStream, namedSupplier)
     }
 
+    fun groupByKey(serdes: Serdes<K, V>): GroupedStream<K, V> {
+        val grouped = stream.groupByKey(Grouped.with(serdes.key, serdes.value))
+        return GroupedStream(grouped, { "${namedSupplier()}-groupByKey" })
+    }
+
     /**
      * Window will change when something exceeds the window frame or when something new comes in.
      * @param windowSize the size of the window

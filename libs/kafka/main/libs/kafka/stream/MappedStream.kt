@@ -102,6 +102,11 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(processedStream, namedSupplier)
     }
 
+    fun groupByKey(serdes: Serdes<K, V>): GroupedStream<K, V> {
+        val grouped = stream.groupByKey(Grouped.with(serdes.key, serdes.value))
+        return GroupedStream(grouped, { "${namedSupplier()}-groupByKey" })
+    }
+
     /**
      * Creates a new window after [inactivityGap] duration.
      *  |||||||||
