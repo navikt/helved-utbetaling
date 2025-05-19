@@ -25,7 +25,7 @@ object Topics {
 }
 
 object Stores {
-    val keystore = Store<OppdragForeignKey, UtbetalingId>("fk-uid-store", Serdes(JsonSerde.jackson(), JsonSerde.jackson()))
+    val keystore = Store<OppdragForeignKey, String>("fk-uid-store", jsonString())
 }
 
 object Tables {
@@ -67,12 +67,12 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
 
     val kstore = oppdragTopic
         .filter { oppdrag -> oppdrag.mmel == null }
-        .mapKeyAndValue { uid, xml -> OppdragForeignKey.from(xml) to UtbetalingId(UUID.fromString(uid)) }
+        .mapKeyAndValue { uid, xml -> OppdragForeignKey.from(xml) to uid }
         .materialize(Stores.keystore)
 
     kstore.join(kvitteringKTable)
         .filter { (_, kvitt) -> kvitt?.mmel != null }
-        .mapKeyAndValue { _, (uid, kvitt) -> uid.id.toString() to kvitt!! }
+        .mapKeyAndValue { _, (uid, kvitt) -> uid to kvitt!! }
         .produce(Topics.oppdrag)
 
     oppdragTopic

@@ -9,12 +9,12 @@ import kotlin.getOrThrow
 import libs.utils.secureLog
 import libs.utils.appLog
 
-@JvmInline value class SakId(val id: String)
-@JvmInline value class BehandlingId(val id: String)
-@JvmInline value class NavEnhet(val enhet: String)
-@JvmInline value class Personident(val ident: String)
-@JvmInline value class Navident(val ident: String)
-@JvmInline value class UtbetalingId(val id: UUID)
+@JvmInline value class SakId(val id: String) { override fun toString(): String = id }
+@JvmInline value class BehandlingId(val id: String) { override fun toString(): String = id }
+@JvmInline value class NavEnhet(val enhet: String) { override fun toString(): String = enhet }
+@JvmInline value class Personident(val ident: String) { override fun toString(): String = ident }
+@JvmInline value class Navident(val ident: String) { override fun toString(): String = ident }
+@JvmInline value class UtbetalingId(val id: UUID) { override fun toString(): String = id.toString() }
 
 data class Utbetaling(
     val dryrun: Boolean,
