@@ -98,9 +98,12 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
                 .map { (meldeperiode, utbetalinger) -> dpUId(dpUtbetaling.fagsakId, meldeperiode) to dpUtbetaling.copy(utbetalinger = utbetalinger) }
                 .toMutableList()
 
+            // utbetalingerPerMeldekort.forEach { (k, v) -> appLog.info("utbetalingerPerMeldekort: $k = $v") } 
+
             if (uids != null) {
                 val dpUids = utbetalingerPerMeldekort.map { (dpUid, _) -> dpUid }
                 val missingMeldeperioder = uids.filter { it !in dpUids }.map { it to null }
+                // appLog.info("missingMeldeperioder: $missingMeldeperioder")
                 utbetalingerPerMeldekort.addAll(missingMeldeperioder)
             }
 
@@ -127,7 +130,16 @@ private val suppressProcessorSupplier = SuppressProcessorSupplier(
 
 fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
     branched
-        .filter { (new, prev) -> !new.isDuplicate(prev).also { if (it) appLog.info("Duplicate message found for ${new.uid.id}") } }
+        .filter { (new, prev) -> 
+            !new.isDuplicate(prev).also { 
+                if (it) {
+                    appLog.info("Duplicate message found for ${new.uid.id}")
+                } else {
+                    appLog.info("New : $new")
+                    appLog.info("Prev: $prev")
+                }
+            }
+        }
         .rekey { _, (new, _) -> new.originalKey }
         .map { _, streamsPair -> listOf(UtbetalingLeftJoin(streamsPair.left, streamsPair.right)) }
         .sessionWindow(jsonList(), 1.seconds)

@@ -12,6 +12,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Duration.Companion.milliseconds
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
+import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
 
 internal class DpTest {
 
@@ -59,17 +60,7 @@ internal class DpTest {
                     personident = Personident("12345678910")
                 ) {
                     listOf(
-                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 7), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 8), LocalDate.of(2021, 6, 8), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 9), LocalDate.of(2021, 6, 9), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 10), LocalDate.of(2021, 6, 10), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 11), LocalDate.of(2021, 6, 11), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 14), LocalDate.of(2021, 6, 14), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 15), LocalDate.of(2021, 6, 15), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 16), LocalDate.of(2021, 6, 16), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 17), LocalDate.of(2021, 6, 17), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 18), LocalDate.of(2021, 6, 18), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 21), LocalDate.of(2021, 6, 21), 553u, 1077u),
+                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u),
                     )
                 }
                 assertEquals(expected, it)
@@ -85,7 +76,7 @@ internal class DpTest {
                 assertEquals("MND", it.oppdrag110.utbetFrekvens)
                 assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
                 assertEquals("dagpenger", it.oppdrag110.saksbehId)
-                assertEquals(11, it.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
                 assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
                 it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
                     assertEquals("NY", a.kodeEndringLinje)
@@ -154,17 +145,7 @@ internal class DpTest {
                     personident = Personident("12345678910")
                 ) {
                     listOf(
-                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 7), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 8), LocalDate.of(2021, 6, 8), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 9), LocalDate.of(2021, 6, 9), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 10), LocalDate.of(2021, 6, 10), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 11), LocalDate.of(2021, 6, 11), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 14), LocalDate.of(2021, 6, 14), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 15), LocalDate.of(2021, 6, 15), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 16), LocalDate.of(2021, 6, 16), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 17), LocalDate.of(2021, 6, 17), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 18), LocalDate.of(2021, 6, 18), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 21), LocalDate.of(2021, 6, 21), 553u, 1077u), // skal 21 være med?
+                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u),
                     )
                 }
                 assertEquals(expected, it)
@@ -186,17 +167,7 @@ internal class DpTest {
                     personident = Personident("12345678910")
                 ) {
                     listOf(
-                        periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 7), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 8), LocalDate.of(2021, 7, 8), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 9), LocalDate.of(2021, 7, 9), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 12), LocalDate.of(2021, 7, 12), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 13), LocalDate.of(2021, 7, 13), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 14), LocalDate.of(2021, 7, 14), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 15), LocalDate.of(2021, 7, 15), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 16), LocalDate.of(2021, 7, 16), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 19), LocalDate.of(2021, 7, 19), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 20), LocalDate.of(2021, 7, 20), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 21), LocalDate.of(2021, 7, 21), 779u, 2377u), // skal 21 være med?
+                        periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u), // TODO: skal 21 være med?
                     )
                 }
                 assertEquals(expected, it)
@@ -211,25 +182,20 @@ internal class DpTest {
                 assertEquals("MND", it.oppdrag110.utbetFrekvens)
                 assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
                 assertEquals("dagpenger", it.oppdrag110.saksbehId)
-                assertEquals(22, it.oppdrag110.oppdragsLinje150s.size)
-                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.take(11).windowed(2, 1) { (a, b) -> 
-                    assertEquals("NY", a.kodeEndringLinje)
-                    assertEquals(bid.id, a.henvisning)
-                    assertEquals("DPORAS", a.kodeKlassifik)
-                    assertEquals(553, a.sats.toLong())
-                    assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(a.delytelseId, b.refDelytelseId)
-                }
-                assertNull(it.oppdrag110.oppdragsLinje150s[11].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.takeLast(11).windowed(2, 1) { (a, b) -> 
-                    assertEquals("NY", a.kodeEndringLinje)
-                    assertEquals(bid.id, a.henvisning)
-                    assertEquals("DPORAS", a.kodeKlassifik)
-                    assertEquals(779, a.sats.toLong())
-                    assertEquals(2377, a.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(a.delytelseId, b.refDelytelseId)
-                }
+                assertEquals(2, it.oppdrag110.oppdragsLinje150s.size)
+                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
+                assertNull(førsteLinje.refDelytelseId)
+                assertEquals("NY", førsteLinje.kodeEndringLinje)
+                assertEquals(bid.id, førsteLinje.henvisning)
+                assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+                assertEquals(553, førsteLinje.sats.toLong())
+                assertEquals(1077, førsteLinje.vedtakssats157.vedtakssats.toLong())
+                val andreLinje = it.oppdrag110.oppdragsLinje150s[1]
+                assertEquals("NY", andreLinje.kodeEndringLinje)
+                assertEquals(bid.id, andreLinje.henvisning)
+                assertEquals("DPORAS", andreLinje.kodeKlassifik)
+                assertEquals(779, andreLinje.sats.toLong())
+                assertEquals(2377, andreLinje.vedtakssats157.vedtakssats.toLong())
             }
         TestTopics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
@@ -301,17 +267,7 @@ internal class DpTest {
                     personident = Personident("12345678910")
                 ) {
                     listOf(
-                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 7), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 8), LocalDate.of(2021, 6, 8), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 9), LocalDate.of(2021, 6, 9), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 10), LocalDate.of(2021, 6, 10), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 11), LocalDate.of(2021, 6, 11), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 14), LocalDate.of(2021, 6, 14), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 15), LocalDate.of(2021, 6, 15), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 16), LocalDate.of(2021, 6, 16), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 17), LocalDate.of(2021, 6, 17), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 18), LocalDate.of(2021, 6, 18), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 21), LocalDate.of(2021, 6, 21), 553u, 1077u), // skal 21 være med?
+                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u),
                     )
                 }
                 assertEquals(expected, it)
@@ -333,17 +289,7 @@ internal class DpTest {
                     personident = Personident("12345678910")
                 ) {
                     listOf(
-                        periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 7), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 8), LocalDate.of(2021, 7, 8), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 9), LocalDate.of(2021, 7, 9), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 12), LocalDate.of(2021, 7, 12), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 13), LocalDate.of(2021, 7, 13), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 14), LocalDate.of(2021, 7, 14), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 15), LocalDate.of(2021, 7, 15), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 16), LocalDate.of(2021, 7, 16), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 19), LocalDate.of(2021, 7, 19), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 20), LocalDate.of(2021, 7, 20), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 21), LocalDate.of(2021, 7, 21), 779u, 2377u), // skal 21 være med?
+                        periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u),
                     )
                 }
                 assertEquals(expected, it)
@@ -365,16 +311,7 @@ internal class DpTest {
                     personident = Personident("12345678910")
                 ) {
                     listOf(
-                        periode(LocalDate.of(2021, 8, 9), LocalDate.of(2021, 8, 9), 3000u, 3133u),
-                        periode(LocalDate.of(2021, 8, 10), LocalDate.of(2021, 8, 10), 3000u, 3133u),
-                        periode(LocalDate.of(2021, 8, 11), LocalDate.of(2021, 8, 11), 3000u, 3133u),
-                        periode(LocalDate.of(2021, 8, 12), LocalDate.of(2021, 8, 12), 3000u, 3133u),
-                        periode(LocalDate.of(2021, 8, 13), LocalDate.of(2021, 8, 13), 3000u, 3133u),
-                        periode(LocalDate.of(2021, 8, 16), LocalDate.of(2021, 8, 16), 3000u, 3133u),
-                        periode(LocalDate.of(2021, 8, 17), LocalDate.of(2021, 8, 17), 3000u, 3133u),
-                        periode(LocalDate.of(2021, 8, 18), LocalDate.of(2021, 8, 18), 3000u, 3133u),
-                        periode(LocalDate.of(2021, 8, 19), LocalDate.of(2021, 8, 19), 3000u, 3133u),
-                        periode(LocalDate.of(2021, 8, 20), LocalDate.of(2021, 8, 20), 3000u, 3133u),
+                        periode(LocalDate.of(2021, 8, 9), LocalDate.of(2021, 8, 20), 3000u, 3133u),
                     )
                 }
                 assertEquals(expected, it)
@@ -389,34 +326,31 @@ internal class DpTest {
                 assertEquals("MND", it.oppdrag110.utbetFrekvens)
                 assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
                 assertEquals("dagpenger", it.oppdrag110.saksbehId)
-                assertEquals(32, it.oppdrag110.oppdragsLinje150s.size)
-                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.take(11).windowed(2, 1) { (a, b) -> 
-                    assertEquals("NY", a.kodeEndringLinje)
-                    assertEquals(bid.id, a.henvisning)
-                    assertEquals("DPORAS", a.kodeKlassifik)
-                    assertEquals(553, a.sats.toLong())
-                    assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(a.delytelseId, b.refDelytelseId)
-                }
-                assertNull(it.oppdrag110.oppdragsLinje150s[11].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.drop(11).take(11).windowed(2, 1) { (a, b) -> 
-                    assertEquals("NY", a.kodeEndringLinje)
-                    assertEquals(bid.id, a.henvisning)
-                    assertEquals("DPORAS", a.kodeKlassifik)
-                    assertEquals(779, a.sats.toLong())
-                    assertEquals(2377, a.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(a.delytelseId, b.refDelytelseId)
-                }
-                assertNull(it.oppdrag110.oppdragsLinje150s[22].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.takeLast(10).windowed(2, 1) { (a, b) -> 
-                    assertEquals("NY", a.kodeEndringLinje)
-                    assertEquals(bid.id, a.henvisning)
-                    assertEquals("DPORAS", a.kodeKlassifik)
-                    assertEquals(3000, a.sats.toLong())
-                    assertEquals(3133, a.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(a.delytelseId, b.refDelytelseId)
-                }
+                assertEquals(3, it.oppdrag110.oppdragsLinje150s.size)
+
+                val linje1 = it.oppdrag110.oppdragsLinje150s[0]
+                assertNull(linje1.refDelytelseId)
+                assertEquals("NY", linje1.kodeEndringLinje)
+                assertEquals(bid.id, linje1.henvisning)
+                assertEquals("DPORAS", linje1.kodeKlassifik)
+                assertEquals(553, linje1.sats.toLong())
+                assertEquals(1077, linje1.vedtakssats157.vedtakssats.toLong())
+
+                val linje2 = it.oppdrag110.oppdragsLinje150s[1]
+                assertNull(linje2.refDelytelseId)
+                assertEquals("NY", linje2.kodeEndringLinje)
+                assertEquals(bid.id, linje2.henvisning)
+                assertEquals("DPORAS", linje2.kodeKlassifik)
+                assertEquals(779, linje2.sats.toLong())
+                assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
+
+                val linje3 = it.oppdrag110.oppdragsLinje150s[2]
+                assertNull(linje3.refDelytelseId)
+                assertEquals("NY", linje3.kodeEndringLinje)
+                assertEquals(bid.id, linje3.henvisning)
+                assertEquals("DPORAS", linje3.kodeKlassifik)
+                assertEquals(3000, linje3.sats.toLong())
+                assertEquals(3133, linje3.vedtakssats157.vedtakssats.toLong())
             }
         TestTopics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 3)
@@ -482,17 +416,7 @@ internal class DpTest {
                     personident = Personident("12345678910")
                 ) {
                     listOf(
-                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 7), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 8), LocalDate.of(2021, 6, 8), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 9), LocalDate.of(2021, 6, 9), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 10), LocalDate.of(2021, 6, 10), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 11), LocalDate.of(2021, 6, 11), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 14), LocalDate.of(2021, 6, 14), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 15), LocalDate.of(2021, 6, 15), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 16), LocalDate.of(2021, 6, 16), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 17), LocalDate.of(2021, 6, 17), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 18), LocalDate.of(2021, 6, 18), 553u, 1077u),
-                        periode(LocalDate.of(2021, 6, 21), LocalDate.of(2021, 6, 21), 553u, 1077u), // skal 21 være med?
+                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u),
                     )
                 }
                 assertEquals(expected, it)
@@ -514,17 +438,7 @@ internal class DpTest {
                     personident = Personident("12345678910")
                 ) {
                     listOf(
-                        periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 7), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 8), LocalDate.of(2021, 7, 8), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 9), LocalDate.of(2021, 7, 9), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 12), LocalDate.of(2021, 7, 12), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 13), LocalDate.of(2021, 7, 13), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 14), LocalDate.of(2021, 7, 14), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 15), LocalDate.of(2021, 7, 15), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 16), LocalDate.of(2021, 7, 16), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 19), LocalDate.of(2021, 7, 19), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 20), LocalDate.of(2021, 7, 20), 779u, 2377u),
-                        periode(LocalDate.of(2021, 7, 21), LocalDate.of(2021, 7, 21), 779u, 2377u), // skal 21 være med?
+                        periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u),
                     )
                 }
                 assertEquals(expected, it)
@@ -539,23 +453,141 @@ internal class DpTest {
                 assertEquals("MND", it.oppdrag110.utbetFrekvens)
                 assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
                 assertEquals("dagpenger", it.oppdrag110.saksbehId)
-                assertEquals(22, it.oppdrag110.oppdragsLinje150s.size)
-                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.take(11).windowed(2, 1) { (a, b) -> 
-                    assertEquals("NY", a.kodeEndringLinje)
-                    assertEquals(bid.id, a.henvisning)
-                    assertEquals("DPORAS", a.kodeKlassifik)
-                    assertEquals(553, a.sats.toLong())
-                    assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(a.delytelseId, b.refDelytelseId)
+                assertEquals(2, it.oppdrag110.oppdragsLinje150s.size)
+
+                val linje1 = it.oppdrag110.oppdragsLinje150s[0]
+                assertNull(linje1.refDelytelseId)
+                assertEquals("NY", linje1.kodeEndringLinje)
+                assertEquals(bid.id, linje1.henvisning)
+                assertEquals("DPORAS", linje1.kodeKlassifik)
+                assertEquals(553, linje1.sats.toLong())
+                assertEquals(1077, linje1.vedtakssats157.vedtakssats.toLong())
+
+                val linje2 = it.oppdrag110.oppdragsLinje150s[1]
+                assertNull(linje2.refDelytelseId)
+                assertEquals("NY", linje2.kodeEndringLinje)
+                assertEquals(bid.id, linje2.henvisning)
+                assertEquals("DPORAS", linje2.kodeKlassifik)
+                assertEquals(779, linje2.sats.toLong())
+                assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
+            }
+
+        TestTopics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
+    }
+
+    @Test
+    fun `nytt meldekort på eksisterende sak`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val originalKey1 = UUID.randomUUID().toString()
+        val originalKey2 = UUID.randomUUID().toString()
+        val meldeperiode1 = "132460781"
+        val meldeperiode2 = "232460781"
+        val uid1 = dpUId(sid.id, meldeperiode1)
+        val uid2 = dpUId(sid.id, meldeperiode2)
+
+        TestTopics.utbetalinger.produce("${uid1.id}") {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid1,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = originalKey1,
+                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                personident = Personident("12345678910"), 
+                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                beslutterId = Navident("dagpenger"),
+                saksbehandlerId = Navident("dagpenger"),
+                fagsystem = Fagsystem.DAGPENGER,
+            ) {
+                listOf(
+                    periode(2.jun, 13.jun, 100u)
+                )
+            }
+        }
+
+        TestTopics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid1)
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.dp.produce(originalKey2) {
+            Dp.utbetaling(
+                fagsakId = sid.id,
+                behandlingId = bid.id,
+                vedtakstidspunkt = 14.jun.atStartOfDay(),  
+            ) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode1,
+                    fom = 1.jun, 
+                    tom = 14.jun,
+                    sats = 100u,
+                    utbetaling = 100u,
+                ) +
+                Dp.meldekort(
+                    meldeperiode = meldeperiode2,
+                    fom = 15.jun,
+                    tom = 28.jun,
+                    sats = 200u,
+                    utbetaling = 200u,
+                )
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.status.assertThat()
+            .has(originalKey2)
+            .has(originalKey2, StatusReply(Status.MOTTATT))
+
+        TestTopics.utbetalinger.assertThat()
+            .has(uid2.toString())
+            .with(uid2.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid2,
+                    sakId = sid, 
+                    behandlingId = bid,
+                    originalKey = originalKey2,
+                    førsteUtbetalingPåSak = false,
+                    utbetalingerPåSak = setOf(uid1),
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    listOf(
+                        periode(16.jun, 27.jun, 200u, 200u),
+                    )
                 }
-                assertNull(it.oppdrag110.oppdragsLinje150s[11].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.takeLast(11).windowed(2, 1) { (a, b) -> 
-                    assertEquals("NY", a.kodeEndringLinje)
+                assertEquals(expected, it)
+            }
+
+        TestTopics.oppdrag.assertThat()
+            .has(originalKey2)
+            .with(originalKey2) {
+                assertEquals("1", it.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", it.oppdrag110.kodeEndring)
+                assertEquals("DP", it.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, it.oppdrag110.fagsystemId)
+                assertEquals("MND", it.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", it.oppdrag110.saksbehId)
+                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
+                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
+                    assertEquals("ENDR", a.kodeEndringLinje)
                     assertEquals(bid.id, a.henvisning)
                     assertEquals("DPORAS", a.kodeKlassifik)
-                    assertEquals(779, a.sats.toLong())
-                    assertEquals(2377, a.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(200, a.sats.toLong())
+                    assertEquals(200, a.vedtakssats157.vedtakssats.toLong())
                     assertEquals(a.delytelseId, b.refDelytelseId)
                 }
             }

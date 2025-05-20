@@ -16,9 +16,9 @@
     <logger name="auth"      level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="jdbc"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="http"      level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="kafka"     level="TRACE"  additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="kafka"     level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="mq"        level="INFO"  additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="test"      level="DEBUG" additivity="false"><appender-ref ref="stdout"/></logger>
-    <logger name="secureLog" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="stdout"/></logger>
 
 </configuration>
