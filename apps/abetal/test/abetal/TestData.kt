@@ -8,6 +8,7 @@ import java.util.UUID
 import javax.xml.datatype.XMLGregorianCalendar
 import models.*
 
+val Int.jun: LocalDate get() = LocalDate.of(2025, 6, this)
 val Int.jan: LocalDate get() = LocalDate.of(2025, 1, this)
 val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
 
@@ -85,18 +86,16 @@ object Dp {
         tom: LocalDate,
         sats: UInt,
         utbetaling: UInt,
-    ): List<DpUtbetalingsperiode> = buildList<DpUtbetalingsperiode> {
-        for(i in 0 .. ChronoUnit.DAYS.between(fom, tom) + 1) {
-            val dato = fom.plusDays(i)
-            if (!dato.erHelg()) {
-                add(
-                    DpUtbetalingsperiode(
-                        meldeperiode = meldeperiode,
-                        dato = dato,
-                        sats = sats,
-                        utbetaling = utbetaling
-                    )
-                )
+    ): List<DpUtbetalingsperiode> {
+        // if (!expand) {
+        //     return listOf(DpUtbetalingsperiode(meldeperiode, fom, sats, utbetaling))
+        // }
+        return buildList<DpUtbetalingsperiode> {
+            for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
+                val dato = fom.plusDays(i)
+                if (!dato.erHelg()) {
+                    add(DpUtbetalingsperiode(meldeperiode, dato, sats, utbetaling))
+                }
             }
         }
     }

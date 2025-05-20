@@ -69,8 +69,39 @@ fun toDomain(
         saksbehandlerId = Navident("dagpenger"), // FIXME: navnet på systemet
         periodetype = Periodetype.UKEDAG,
         avvent = null,
-        perioder = value.utbetalinger.map { it.into() },
+        perioder = perioder(value.utbetalinger), //.map { it.into() },
     )
+}
+
+// FIXME: ikke testa enda
+private fun perioder(perioder: List<DpUtbetalingsperiode>): List<Utbetalingsperiode> {
+    return perioder.sortedBy { it.dato }
+        .groupBy { listOf(it.utbetaling, it.sats) }
+        .map { (_, p) -> 
+            p.splitWhen { a, b -> a.dato.nesteUkedag() != b.dato }.map { 
+                Utbetalingsperiode(
+                    fom = it.first().dato,
+                    tom = it.last().dato,
+                    beløp = it.first().utbetaling,
+                    betalendeEnhet = null,
+                    vedtakssats = it.first().sats,
+                )
+            }
+        }.flatten()
+}
+
+private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
+    if (this.isEmpty()) return emptyList()
+
+    return this.drop(1).fold(mutableListOf(mutableListOf(this.first()))) { acc, item ->
+        val lastSublist = acc.last()
+        if (predicate(lastSublist.last(), item)) {
+            acc.add(mutableListOf(item))
+        } else {
+            lastSublist.add(item)
+        }
+        acc
+    }.map { it.toList() }
 }
 
 fun fakeDelete(
