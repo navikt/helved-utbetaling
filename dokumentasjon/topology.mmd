@@ -37,6 +37,7 @@ subgraph Topologi
 	consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store[(consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store)]
 	suppress-via-branch-default-from-helved.utbetalinger-dp.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate[(suppress-via-branch-default-from-helved.utbetalinger-dp.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate)]
 	dp-diff-window-agg-session-store[(dp-diff-window-agg-session-store)]
+	helved.saker.v1-state-store[(helved.saker.v1-state-store)]
     
     %% DATABASES
     
@@ -76,6 +77,7 @@ subgraph Topologi
 
     %% TABLE STREAMS
     helved.utbetalinger.v1 --> helved.utbetalinger.v1-state-store
+	helved.saker.v1 --> helved.saker.v1-state-store
 
     %% JOB STREAMS
     
@@ -130,4 +132,5 @@ style helved.utbetalinger.v1-state-store fill:#78369f, stroke:#2a204a, stroke-wi
 style consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style suppress-via-branch-default-from-helved.utbetalinger-dp.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style dp-diff-window-agg-session-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.saker.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 
