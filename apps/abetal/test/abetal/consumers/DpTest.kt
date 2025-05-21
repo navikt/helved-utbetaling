@@ -7,6 +7,7 @@ import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import models.*
+import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import kotlin.time.Duration.Companion.milliseconds
 import org.junit.jupiter.api.Test
 
@@ -709,6 +710,115 @@ internal class DpTest {
         TestTopics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
+    }
+
+    @Test
+    fun `opphør på meldekort`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val originalKey1 = UUID.randomUUID().toString()
+        val meldeperiode1 = "132460781"
+        val uid1 = dpUId(sid.id, meldeperiode1)
+        val periodeId = PeriodeId()
+
+        TestTopics.utbetalinger.produce("${uid1.id}") {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid1,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = originalKey1,
+                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                lastPeriodeId = periodeId,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                beslutterId = Navident("dagpenger"),
+                saksbehandlerId = Navident("dagpenger"),
+                fagsystem = Fagsystem.DAGPENGER,
+            ) {
+                listOf(
+                    periode(2.jun, 13.jun, 100u)
+                )
+            }
+        }
+
+        TestTopics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid1)
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.dp.produce(originalKey1) {
+            Dp.utbetaling(
+                fagsakId = sid.id,
+                behandlingId = bid.id,
+                vedtakstidspunkt = 14.jun.atStartOfDay(),
+            ) {
+                emptyList()
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.status.assertThat()
+            .has(originalKey1)
+            .has(originalKey1, StatusReply(Status.MOTTATT))
+
+        TestTopics.utbetalinger.assertThat()
+            .has(uid1.toString())
+            .with(uid1.toString()) {
+                val expected = utbetaling(
+                    action = Action.DELETE,
+                    uid = uid1,
+                    sakId = sid,
+                    behandlingId = bid,
+                    originalKey = originalKey1,
+                    førsteUtbetalingPåSak = true,
+                    utbetalingerPåSak = setOf(),
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = 14.jun.atStartOfDay(),
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    listOf(
+                        periode(2.jun, 13.jun, 100u, 100u)
+                    )
+                }
+                assertEquals(expected, it)
+            }
+
+        TestTopics.oppdrag.assertThat()
+            .has(originalKey1)
+            .with(originalKey1) {
+                assertEquals("1", it.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", it.oppdrag110.kodeEndring)
+                assertEquals("DP", it.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, it.oppdrag110.fagsystemId)
+                assertEquals("MND", it.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", it.oppdrag110.saksbehId)
+                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+
+                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
+                assertEquals(TkodeStatusLinje.OPPH, førsteLinje.kodeStatusLinje)
+                assertEquals(2.jun, førsteLinje.datoStatusFom.toLocalDate())
+                assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
+                assertEquals("NY", førsteLinje.kodeEndringLinje)
+                assertEquals(bid.id, førsteLinje.henvisning)
+                assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+                assertEquals(100, førsteLinje.sats.toLong())
+                assertEquals(100, førsteLinje.vedtakssats157.vedtakssats.toLong())
+            }
+
+        TestTopics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(), index = 1)
+
     }
 
 }

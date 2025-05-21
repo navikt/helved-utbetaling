@@ -13,7 +13,7 @@ object AggregateOppdragService {
                     val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                     val oppdrag = OppdragService.delete(prev, prev) // new is a fakeDelete
                     val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                    val utbetaling = prev.copy(lastPeriodeId = lastPeriodeId)
+                    val utbetaling = prev.copy(action = Action.DELETE, lastPeriodeId = lastPeriodeId)
                     utbetaling to oppdrag
                 }
                 prev == null -> {
