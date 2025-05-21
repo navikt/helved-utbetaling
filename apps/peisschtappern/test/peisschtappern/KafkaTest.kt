@@ -9,7 +9,7 @@ import kotlin.test.assertNotNull
 class KafkaTest {
     data class TestCase(
         val channel: Channel,
-        val testTopic: TestTopic<String, ByteArray>,
+        val testTopic: TestTopic.InputOutput<String, ByteArray>,
     )
 
     private val testCases: List<TestCase> by lazy {
