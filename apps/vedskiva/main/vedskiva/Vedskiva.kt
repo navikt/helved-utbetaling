@@ -98,7 +98,6 @@ fun vedskiva(
                             personident = Personident(oppdrag.oppdrag110.oppdragGjelderId.trimEnd()),
                             sakId = SakId(oppdrag.oppdrag110.fagsystemId.trimEnd()),
                             lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
-                            avstemmingsdag = LocalDateTime.parse(oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd(), formatter).toLocalDate(),
                             innsendt = oppdrag.oppdrag110.oppdragsLinje150s.first().vedtakId.trimEnd().toLocalDate(),
                             totalBeløpAllePerioder = oppdrag.oppdrag110.oppdragsLinje150s.sumOf {it.sats.toLong().toUInt() },
                             kvittering = oppdrag.mmel?.let { mmel ->
