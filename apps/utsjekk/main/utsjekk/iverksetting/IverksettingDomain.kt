@@ -110,7 +110,6 @@ data class Behandlingsdetaljer(
 
 val Iverksetting.sakId get() = this.fagsak.fagsakId
 val Iverksetting.personident get() = this.søker.personident
-
 val Iverksetting.behandlingId get() = this.behandling.behandlingId
 val Iverksetting.iverksettingId get() = this.behandling.iverksettingId
 

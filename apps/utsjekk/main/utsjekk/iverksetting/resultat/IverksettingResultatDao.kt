@@ -28,8 +28,15 @@ data class IverksettingResultatDao(
             stmt.setString(2, sakId.id)
             stmt.setString(3, behandlingId.id)
             stmt.setString(4, iverksettingId?.id)
-            stmt.setString(5, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
-            stmt.setString(6, objectMapper.writeValueAsString(oppdragResultat))
+
+            tilkjentYtelseForUtbetaling?.let { 
+                stmt.setString(5, objectMapper.writeValueAsString(it)) 
+            } ?: stmt.setNull(5, java.sql.Types.OTHER)
+
+            oppdragResultat?.let { 
+                stmt.setString(6, objectMapper.writeValueAsString(it))
+            } ?: stmt.setNull(6, java.sql.Types.OTHER)
+
             stmt.setObject(7, uid.id)
 
             jdbcLog.debug(sql)
@@ -45,8 +52,14 @@ data class IverksettingResultatDao(
                 WHERE utbetaling_id = ?
             """.trimIndent()
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
-            stmt.setString(2, objectMapper.writeValueAsString(oppdragResultat))
+            tilkjentYtelseForUtbetaling?.let { 
+                stmt.setString(1, objectMapper.writeValueAsString(it)) 
+            } ?: stmt.setNull(1, java.sql.Types.OTHER)
+
+            oppdragResultat?.let { 
+                stmt.setString(2, objectMapper.writeValueAsString(it))
+            } ?: stmt.setNull(2, java.sql.Types.OTHER)
+
             stmt.setObject(3, uid.id)
 
             jdbcLog.debug(sql)
@@ -66,8 +79,14 @@ data class IverksettingResultatDao(
             """.trimIndent()
 
             coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
-                stmt.setString(2, objectMapper.writeValueAsString(oppdragResultat))
+                tilkjentYtelseForUtbetaling?.let { 
+                    stmt.setString(1, objectMapper.writeValueAsString(it)) 
+                } ?: stmt.setNull(1, java.sql.Types.OTHER)
+
+                oppdragResultat?.let { 
+                    stmt.setString(2, objectMapper.writeValueAsString(it))
+                } ?: stmt.setNull(2, java.sql.Types.OTHER)
+
                 stmt.setString(3, behandlingId.id)
                 stmt.setString(4, sakId.id)
                 stmt.setString(5, fagsystem.name)
@@ -87,8 +106,14 @@ data class IverksettingResultatDao(
             """.trimIndent()
 
             coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, objectMapper.writeValueAsString(tilkjentYtelseForUtbetaling))
-                stmt.setString(2, objectMapper.writeValueAsString(oppdragResultat))
+                tilkjentYtelseForUtbetaling?.let { 
+                    stmt.setString(1, objectMapper.writeValueAsString(it)) 
+                } ?: stmt.setNull(1, java.sql.Types.OTHER)
+
+                oppdragResultat?.let { 
+                    stmt.setString(2, objectMapper.writeValueAsString(it))
+                } ?: stmt.setNull(2, java.sql.Types.OTHER)
+
                 stmt.setString(3, behandlingId.id)
                 stmt.setString(4, sakId.id)
                 stmt.setString(5, fagsystem.name)
@@ -157,8 +182,8 @@ data class IverksettingResultatDao(
             sakId = SakId(rs.getString("sakId")),
             behandlingId = BehandlingId(rs.getString("behandling_id")),
             iverksettingId = rs.getString("iverksetting_id")?.let(::IverksettingId),
-            tilkjentYtelseForUtbetaling = rs.getString("tilkjentytelseforutbetaling")?.let(TilkjentYtelse::from),
-            oppdragResultat = rs.getString("oppdragresultat")?.let(OppdragResultat::from),
+            tilkjentYtelseForUtbetaling = rs.getString("tilkjentytelseforutbetaling")?.let{ TilkjentYtelse.from(it) },
+            oppdragResultat = rs.getString("oppdragresultat")?.let{ OppdragResultat.from(it) },
         )
     }
 

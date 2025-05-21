@@ -318,4 +318,16 @@ package "Sub-topology: 6" {
 	stateless_operation_log_produced_helved_status_v1_via_branch_default_via_branch_default_from_helved_utbetalinger_dp_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_session_window_reduced --> produced_helved_status_v1_via_branch_default_via_branch_default_from_helved_utbetalinger_dp_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_session_window_reduced
 	stateless_operation_log_produced_helved_utbetalinger_v1_via_branch_1_via_branch_default_from_helved_utbetalinger_dp_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_session_window_reduced --> produced_helved_utbetalinger_v1_via_branch_1_via_branch_default_from_helved_utbetalinger_dp_v1_left_join_helved_saker_v1_left_join_helved_utbetalinger_v1_session_window_reduced
 }
+package "Sub-topology: 7" {
+	database "helved.saker.v1-state-store" <<State Store>> as helved_saker_v1_state_store
+	agent "consume-helved.saker.v1" <<Source>> as consume_helved_saker_v1
+	agent "stateless-operation-log-consume-helved.saker.v1" <<Processor>> as stateless_operation_log_consume_helved_saker_v1
+	agent "stateless-operation-log-produced-helved.saker.v1" <<Processor>> as stateless_operation_log_produced_helved_saker_v1
+	agent "helved.saker.v1-to-table" <<Processor>> as helved_saker_v1_to_table
+	helved_saker_v1 --> consume_helved_saker_v1
+	helved_saker_v1_state_store -- helved_saker_v1_to_table
+	consume_helved_saker_v1 --> stateless_operation_log_consume_helved_saker_v1
+	stateless_operation_log_consume_helved_saker_v1 --> stateless_operation_log_produced_helved_saker_v1
+	stateless_operation_log_produced_helved_saker_v1 --> helved_saker_v1_to_table
+}
 @enduml
