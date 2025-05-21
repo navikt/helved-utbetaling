@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.Base64
 import java.math.BigDecimal
+import java.time.LocalTime
 import models.*
 import kotlin.collections.chunked
 
@@ -30,7 +31,7 @@ object AvstemmingService {
             this.mottakendeKomponentKode = "OS"
             this.underkomponentKode = avstemming.fagsystem.fagområde
             this.nokkelFom = avstemming.fom.atStartOfDay().format()
-            this.nokkelTom = avstemming.tom.atStartOfDay().format()
+            this.nokkelTom = avstemming.tom.atTime(LocalTime.MAX).format()
             this.avleverendeAvstemmingId = avstemming.id
             this.brukerId = avstemming.fagsystem.fagområde
         }
@@ -127,5 +128,4 @@ object AvstemmingService {
     }
 }
 
-private fun LocalDateTime.format() = format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH"))
-
+private fun LocalDateTime.format() = format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
