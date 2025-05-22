@@ -98,12 +98,9 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
                 .map { (meldeperiode, utbetalinger) -> dpUId(dpUtbetaling.fagsakId, meldeperiode) to dpUtbetaling.copy(utbetalinger = utbetalinger) }
                 .toMutableList()
 
-            // utbetalingerPerMeldekort.forEach { (k, v) -> appLog.info("utbetalingerPerMeldekort: $k = $v") } 
-
             if (uids != null) {
                 val dpUids = utbetalingerPerMeldekort.map { (dpUid, _) -> dpUid }
                 val missingMeldeperioder = uids.filter { it !in dpUids }.map { it to null }
-                // appLog.info("missingMeldeperioder: $missingMeldeperioder")
                 utbetalingerPerMeldekort.addAll(missingMeldeperioder)
             }
 

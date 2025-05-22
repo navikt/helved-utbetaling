@@ -84,12 +84,11 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
         }
         .branch( { o -> o.mmel != null}) {
             filter { o -> o.mmel != null }.map { kvitt ->
-                val fagsystem = Fagsystem.fromFagområde(kvitt.oppdrag110.kodeFagomraade.trimEnd())
                 val statusReply = kvitt.mmel.into()
-                    meters.counter("helved_kvitteringer", listOf(
-                        Tag.of("status", statusReply.status.name),
-                        Tag.of("fagsystem", fagsystem.name),
-                    )).increment()
+                val tag_fagsystem = Tag.of("fagsystem", Fagsystem.fromFagområde(kvitt.oppdrag110.kodeFagomraade.trimEnd()).name) 
+                val tag_status = Tag.of("status", statusReply.status.name) 
+                meters.counter("helved_kvitteringer", listOf(tag_fagsystem, tag_status)).increment()
+                meters.counter("helved_utbetalt_beløp", listOf(tag_fagsystem)).increment(kvitt.oppdrag110.oppdragsLinje150s.sumOf{ it.sats.toDouble() })
                 statusReply
             }
             .produce(Topics.status)
