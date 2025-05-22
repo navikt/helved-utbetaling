@@ -20,7 +20,8 @@ enum class Table {
     simuleringer,
     utbetalinger,
     saker,
-    aap
+    aap,
+    status,
 }
 
 data class Dao(

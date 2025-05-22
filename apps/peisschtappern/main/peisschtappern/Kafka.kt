@@ -21,6 +21,7 @@ object Topics {
     val dryrunTp = Topic("helved.dryrun-tp.v1", bytes())
     val dryrunTs = Topic("helved.dryrun-ts.v1", bytes())
     val dryrunDp = Topic("helved.dryrun-dp.v1", bytes())
+    val status = Topic("helved.status.v1", bytes())
 }
 
 val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())

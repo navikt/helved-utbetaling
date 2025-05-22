@@ -26,6 +26,7 @@ class KafkaTest {
                Channel.DryrunTp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunTs -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunDp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Status -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
             }
         }
     }
