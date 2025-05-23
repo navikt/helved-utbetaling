@@ -29,17 +29,13 @@ internal class AapTest {
         val bid = BehandlingId("$nextInt")
         TestTopics.utbetalinger.produce("${uid.id}") {
             utbetaling(Action.CREATE, uid, sid, bid) {
-                listOf(
-                    periode(1.jan, 2.jan, 100u)
-                )
+                periode(1.jan, 2.jan, 100u)
             }
         }
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.UPDATE, sid) {
-                listOf(
-                    Aap.dag(1.jan, 200u),
-                    Aap.dag(2.jan, 200u)
-                )
+                Aap.dag(1.jan, 200u)+
+                Aap.dag(2.jan, 200u)
             }
         }
         TestTopics.status.assertThat()
@@ -48,9 +44,7 @@ internal class AapTest {
             .has("${uid.id}")
             .with("${uid.id}") {
                 utbetaling(Action.UPDATE, uid, sid, bid) {
-                    listOf(
-                        periode(1.jan, 2.jan, 200u)
-                    )
+                    periode(1.jan, 2.jan, 200u)
                 }
             }
         TestTopics.oppdrag.assertThat()
@@ -82,17 +76,13 @@ internal class AapTest {
         val bid = BehandlingId("$nextInt")
         TestTopics.utbetalinger.produce("${uid.id}") {
             utbetaling(Action.CREATE, uid, sid, bid) {
-                listOf(
-                    periode(1.jan, 3.jan, 100u),
-                )
+                periode(1.jan, 3.jan, 100u)
             }
         }
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.UPDATE, sid) {
-                listOf(
-                    Aap.dag(2.jan, 100u),
-                    Aap.dag(3.jan, 100u)
-                )
+                Aap.dag(2.jan, 100u)+
+                Aap.dag(3.jan, 100u)
             }
         }
         TestTopics.status.assertThat()
@@ -102,9 +92,7 @@ internal class AapTest {
             .has("${uid.id}")
             .with("${uid.id}") {
                 utbetaling(Action.UPDATE, uid, sid, bid) {
-                    listOf(
-                        periode(2.jan, 3.jan, 100u),
-                    )
+                    periode(2.jan, 3.jan, 100u)
                 }
             }
         TestTopics.oppdrag.assertThat()
@@ -134,28 +122,22 @@ internal class AapTest {
          val sid = SakId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid) {
-                 listOf(
-                     periode(1.jan, 3.jan, 100u),
-                 )
+                 periode(1.jan, 3.jan, 100u)
              }
          }
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.UPDATE, uid, sid) {
-                 listOf(
-                     periode(1.jan, 2.jan, 100u),
-                     periode(3.jan, 3.jan, 200u),
-                 )
+                 periode(1.jan, 2.jan, 100u)+
+                 periode(3.jan, 3.jan, 200u)
              }
          }
          val bid = BehandlingId("$nextInt")
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
-                 listOf(
-                     Aap.dag(1.jan, 100u),
-                     Aap.dag(2.jan, 100u),
-                     Aap.dag(3.jan, 200u),
-                     Aap.dag(6.jan, 300u),
-                 )
+                 Aap.dag(1.jan, 100u)+
+                 Aap.dag(2.jan, 100u)+
+                 Aap.dag(3.jan, 200u)+
+                 Aap.dag(6.jan, 300u)
              }
          }
          TestTopics.status.assertThat()
@@ -165,11 +147,9 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(1.jan, 2.jan, 100u),
-                         periode(3.jan, 3.jan, 200u),
-                         periode(6.jan, 6.jan, 300u),
-                     )
+                     periode(1.jan, 2.jan, 100u)+
+                     periode(3.jan, 3.jan, 200u)+
+                     periode(6.jan, 6.jan, 300u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -199,17 +179,13 @@ internal class AapTest {
          val bid = BehandlingId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid, bid) {
-                 listOf(
-                     periode(1.jan, 3.jan, 100u),
-                 )
+                 periode(1.jan, 3.jan, 100u)
              }
          }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
-                 listOf(
-                     Aap.dag(1.jan, 100u),
-                     Aap.dag(2.jan, 100u),
-                 )
+                 Aap.dag(1.jan, 100u)+
+                 Aap.dag(2.jan, 100u)
              }
          }
          TestTopics.status.assertThat()
@@ -219,9 +195,7 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(1.jan, 2.jan, 100u),
-                     )
+                     periode(1.jan, 2.jan, 100u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -251,27 +225,21 @@ internal class AapTest {
          val bid = BehandlingId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid) {
-                 listOf(
-                     periode(1.jan, 10.jan, 100u),
-                 )
+                 periode(1.jan, 10.jan, 100u)
              }
          }
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.UPDATE, uid, sid) {
-                 listOf(
-                     periode(1.jan, 3.jan, 100u), // 4-5 er helgedag og har blitt filtrert ut
-                     periode(6.jan, 10.jan, 200u),
-                 )
+                 periode(1.jan, 3.jan, 100u)+ // 4-5 er helgedag og har blitt filtrert ut
+                 periode(6.jan, 10.jan, 200u)
              }
          }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
-                 listOf(
-                     Aap.dag(1.jan, 100u),
-                     Aap.dag(2.jan, 100u),
-                     Aap.dag(3.jan, 100u),
-                     // 4 og 5 er helg
-                 )
+                 Aap.dag(1.jan, 100u)+
+                 Aap.dag(2.jan, 100u)+
+                 Aap.dag(3.jan, 100u)
+                 // 4 og 5 er helg
              }
          }
          TestTopics.status.assertThat()
@@ -281,9 +249,7 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(1.jan, 3.jan, 100u),
-                     )
+                     periode(1.jan, 3.jan, 100u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -316,34 +282,28 @@ internal class AapTest {
          val bid = BehandlingId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid) {
-                 listOf(
-                     periode(1.jan, 20.jan, 100u),
-                 )
+                 periode(1.jan, 20.jan, 100u)
              }
          }
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.UPDATE, uid, sid) {
-                 listOf(
-                     periode(1.jan, 10.jan, 100u),
-                     periode(13.jan, 20.jan, 200u), // 11 og 12 er helg
-                 )
+                 periode(1.jan, 10.jan, 100u)+
+                 periode(13.jan, 20.jan, 200u) // 11 og 12 er helg
              }
          }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
-                 listOf(
-                     Aap.dag(1.jan, 100u),
-                     Aap.dag(2.jan, 100u),
-                     Aap.dag(3.jan, 100u),
-                     // 4 og 5 er helg
-                     Aap.dag(13.jan, 200u),
-                     Aap.dag(14.jan, 200u),
-                     Aap.dag(15.jan, 200u),
-                     Aap.dag(16.jan, 200u),
-                     Aap.dag(17.jan, 200u),
-                     // 18 og 19 er helg
-                     Aap.dag(20.jan, 200u),
-                 )
+                 Aap.dag(1.jan, 100u)+
+                 Aap.dag(2.jan, 100u)+
+                 Aap.dag(3.jan, 100u)+
+                 // 4 og 5 er helg
+                 Aap.dag(13.jan, 200u)+
+                 Aap.dag(14.jan, 200u)+
+                 Aap.dag(15.jan, 200u)+
+                 Aap.dag(16.jan, 200u)+
+                 Aap.dag(17.jan, 200u)+
+                 // 18 og 19 er helg
+                 Aap.dag(20.jan, 200u)
              }
          }
          TestTopics.status.assertThat()
@@ -353,10 +313,8 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(1.jan, 3.jan, 100u),
-                         periode(13.jan, 20.jan, 200u),
-                     )
+                     periode(1.jan, 3.jan, 100u)+
+                     periode(13.jan, 20.jan, 200u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -393,37 +351,31 @@ internal class AapTest {
          val bid = BehandlingId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid) {
-                 listOf(
-                     periode(1.jan, 20.jan, 100u),
-                 )
+                 periode(1.jan, 20.jan, 100u)
              }
          }
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.UPDATE, uid, sid) {
-                 listOf(
-                     periode(1.jan, 3.jan, 100u),
-                     periode(6.jan, 14.jan, 200u), // 11 og 12 er helg
-                     periode(15.jan, 20.jan, 100u),
-                 )
+                 periode(1.jan, 3.jan, 100u)+
+                 periode(6.jan, 14.jan, 200u)+ // 11 og 12 er helg
+                 periode(15.jan, 20.jan, 100u)
              }
          }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
-                 listOf(
-                     Aap.dag(1.jan, 100u),
-                     Aap.dag(2.jan, 100u),
-                     Aap.dag(3.jan, 100u),
-                     // 4 og 5 er helg
-                     Aap.dag(10.jan, 200u),
-                     // 11 og 12 er helg
-                     Aap.dag(13.jan, 200u),
-                     Aap.dag(14.jan, 200u),
-                     Aap.dag(15.jan, 100u),
-                     Aap.dag(16.jan, 100u),
-                     Aap.dag(17.jan, 100u),
-                     // 18 og 19 er helg
-                     Aap.dag(20.jan, 100u),
-                 )
+                 Aap.dag(1.jan, 100u)+
+                 Aap.dag(2.jan, 100u)+
+                 Aap.dag(3.jan, 100u)+
+                 // 4 og 5 er helg
+                 Aap.dag(10.jan, 200u)+
+                 // 11 og 12 er helg
+                 Aap.dag(13.jan, 200u)+
+                 Aap.dag(14.jan, 200u)+
+                 Aap.dag(15.jan, 100u)+
+                 Aap.dag(16.jan, 100u)+
+                 Aap.dag(17.jan, 100u)+
+                 // 18 og 19 er helg
+                 Aap.dag(20.jan, 100u)
              }
          }
          TestTopics.status.assertThat()
@@ -433,11 +385,9 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(1.jan, 3.jan, 100u),
-                         periode(10.jan, 14.jan, 200u),
-                         periode(15.jan, 20.jan, 100u),
-                     )
+                     periode(1.jan, 3.jan, 100u)+
+                     periode(10.jan, 14.jan, 200u)+
+                     periode(15.jan, 20.jan, 100u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -478,19 +428,15 @@ internal class AapTest {
          val bid = BehandlingId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid, bid) {
-                 listOf(
-                     periode(1.jan, 3.jan, 100u)
-                 )
+                 periode(1.jan, 3.jan, 100u)
              }
          }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
-                 listOf(
-                     Aap.dag(1.jan, 100u),
-                     Aap.dag(2.jan, 100u),
-                     Aap.dag(3.jan, 100u),
-                     Aap.dag(6.jan, 100u),
-                 )
+                 Aap.dag(1.jan, 100u)+
+                 Aap.dag(2.jan, 100u)+
+                 Aap.dag(3.jan, 100u)+
+                 Aap.dag(6.jan, 100u)
              }
          }
          TestTopics.status.assertThat()
@@ -500,9 +446,7 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(1.jan, 6.jan, 100u)
-                     )
+                     periode(1.jan, 6.jan, 100u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -535,21 +479,17 @@ internal class AapTest {
          val bid = BehandlingId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid) {
-                 listOf(
-                     periode(1.jan, 8.jan, 100u)
-                 )
+                 periode(1.jan, 8.jan, 100u)
              }
          }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid, bid) {
-                 listOf(
-                     Aap.dag(1.jan, 200u),
-                     Aap.dag(2.jan, 200u),
-                     Aap.dag(3.jan, 200u),
-                     Aap.dag(6.jan, 100u),
-                     Aap.dag(7.jan, 100u),
-                     Aap.dag(8.jan, 100u),
-                 )
+                 Aap.dag(1.jan, 200u)+
+                 Aap.dag(2.jan, 200u)+
+                 Aap.dag(3.jan, 200u)+
+                 Aap.dag(6.jan, 100u)+
+                 Aap.dag(7.jan, 100u)+
+                 Aap.dag(8.jan, 100u)
              }
          }
          TestTopics.status.assertThat()
@@ -559,10 +499,8 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(1.jan, 3.jan, 200u),
-                         periode(6.jan, 8.jan, 100u),
-                     )
+                     periode(1.jan, 3.jan, 200u)+
+                     periode(6.jan, 8.jan, 100u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -598,23 +536,19 @@ internal class AapTest {
          val bid = BehandlingId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid, bid) {
-                 listOf(
-                     periode(1.jan, 10.jan, 100u)
-                 )
+                 periode(1.jan, 10.jan, 100u)
              }
          }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
-                 listOf(
-                     Aap.dag(1.jan, 100u),
-                     Aap.dag(2.jan, 100u),
-                     Aap.dag(3.jan, 100u),
-                     Aap.dag(6.jan, 100u),
-                     Aap.dag(7.jan, 200u),
-                     Aap.dag(8.jan, 200u),
-                     Aap.dag(9.jan, 200u),
-                     Aap.dag(10.jan, 200u),
-                 )
+                 Aap.dag(1.jan, 100u)+
+                 Aap.dag(2.jan, 100u)+
+                 Aap.dag(3.jan, 100u)+
+                 Aap.dag(6.jan, 100u)+
+                 Aap.dag(7.jan, 200u)+
+                 Aap.dag(8.jan, 200u)+
+                 Aap.dag(9.jan, 200u)+
+                 Aap.dag(10.jan, 200u)
              }
          }
          TestTopics.status.assertThat()
@@ -624,10 +558,8 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(1.jan, 6.jan, 100u),
-                         periode(7.jan, 10.jan, 200u),
-                     )
+                     periode(1.jan, 6.jan, 100u)+
+                     periode(7.jan, 10.jan, 200u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -660,21 +592,17 @@ internal class AapTest {
          val bid = BehandlingId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid, bid) {
-                 listOf(
-                     periode(2.jan, 9.jan, 100u)
-                 )
+                 periode(2.jan, 9.jan, 100u)
              }
          }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
-                 listOf(
-                     Aap.dag(2.jan, 100u),
-                     Aap.dag(3.jan, 100u),
-                     Aap.dag(6.jan, 200u),
-                     Aap.dag(7.jan, 200u),
-                     Aap.dag(8.jan, 100u),
-                     Aap.dag(9.jan, 100u),
-                 )
+                 Aap.dag(2.jan, 100u)+
+                 Aap.dag(3.jan, 100u)+
+                 Aap.dag(6.jan, 200u)+
+                 Aap.dag(7.jan, 200u)+
+                 Aap.dag(8.jan, 100u)+
+                 Aap.dag(9.jan, 100u)
              }
          }
          TestTopics.status.assertThat()
@@ -684,11 +612,9 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(2.jan, 3.jan, 100u),
-                         periode(6.jan, 7.jan, 200u),
-                         periode(8.jan, 9.jan, 100u),
-                     )
+                     periode(2.jan, 3.jan, 100u)+
+                     periode(6.jan, 7.jan, 200u)+
+                     periode(8.jan, 9.jan, 100u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -726,19 +652,15 @@ internal class AapTest {
          val bid = BehandlingId("$nextInt")
          TestTopics.utbetalinger.produce("${uid.id}") {
              utbetaling(Action.CREATE, uid, sid, bid) {
-                 listOf(
-                     periode(2.jan, 9.jan, 100u)
-                 )
+                 periode(2.jan, 9.jan, 100u)
              }
          }
          TestTopics.aap.produce("${uid.id}") {
              Aap.utbetaling(Action.UPDATE, sid) {
-                 listOf(
-                     Aap.dag(2.jan, 100u),
-                     Aap.dag(3.jan, 100u),
-                     Aap.dag(8.jan, 100u),
-                     Aap.dag(9.jan, 100u),
-                 )
+                 Aap.dag(2.jan, 100u)+
+                 Aap.dag(3.jan, 100u)+
+                 Aap.dag(8.jan, 100u)+
+                 Aap.dag(9.jan, 100u)
              }
          }
          TestTopics.status.assertThat()
@@ -748,10 +670,8 @@ internal class AapTest {
              .has("${uid.id}")
              .with("${uid.id}") {
                  utbetaling(Action.UPDATE, uid, sid, bid) {
-                     listOf(
-                         periode(2.jan, 3.jan, 100u),
-                         periode(8.jan, 9.jan, 100u),
-                     )
+                     periode(2.jan, 3.jan, 100u)+
+                     periode(8.jan, 9.jan, 100u)
                  }
              }
          TestTopics.oppdrag.assertThat()
@@ -786,29 +706,23 @@ internal class AapTest {
         val sid = SakId("$nextInt")
         TestTopics.utbetalinger.produce("${uid.id}") {
             utbetaling(Action.CREATE, uid, sid) {
-                listOf(
-                    periode(1.jan, 3.jan, 100u),
-                )
+                periode(1.jan, 3.jan, 100u)
             }
         }
         TestTopics.utbetalinger.produce("${uid.id}") {
             utbetaling(Action.UPDATE, uid, sid) {
-                listOf(
-                    periode(1.jan, 2.jan, 100u),
-                    periode(3.jan, 3.jan, 200u),
-                )
+                periode(1.jan, 2.jan, 100u)+
+                periode(3.jan, 3.jan, 200u)
             }
         }
 
         val bid = BehandlingId("$nextInt")
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.UPDATE, sid, bid, true) {
-                listOf(
-                    Aap.dag(1.jan, 100u),
-                    Aap.dag(2.jan, 100u),
-                    Aap.dag(3.jan, 200u),
-                    Aap.dag(6.jan, 300u),
-                )
+                Aap.dag(1.jan, 100u)+
+                Aap.dag(2.jan, 100u)+
+                Aap.dag(3.jan, 200u)+
+                Aap.dag(6.jan, 300u)
             }
         }
         TestTopics.status.assertThat()
@@ -839,10 +753,8 @@ internal class AapTest {
 
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE, sid, avvent = avvent) {
-                listOf(
-                    Aap.dag(1.jan, 200u),
-                    Aap.dag(2.jan, 200u)
-                )
+                Aap.dag(1.jan, 200u)+
+                Aap.dag(2.jan, 200u)
             }
         }
         TestTopics.status.assertThat()
@@ -852,9 +764,7 @@ internal class AapTest {
             .has("${uid.id}")
             .with("${uid.id}") {
                 utbetaling(Action.UPDATE, uid, sid, bid) {
-                    listOf(
-                        periode(1.jan, 2.jan, 200u)
-                    )
+                    periode(1.jan, 2.jan, 200u)
                 }
             }
         TestTopics.oppdrag.assertThat()

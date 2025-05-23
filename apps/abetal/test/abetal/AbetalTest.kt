@@ -14,10 +14,8 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE, sid) {
-                listOf(
-                    Aap.dag(1.jan),
-                    Aap.dag(2.jan),
-                )
+                Aap.dag(1.jan) +
+                Aap.dag(2.jan)
             }
         }
         TestTopics.saker.assertThat()
@@ -34,18 +32,14 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         TestTopics.aap.produce("${uid1.id}") {
             Aap.utbetaling(Action.CREATE, sid) {
-                listOf(
-                    Aap.dag(1.jan),
-                    Aap.dag(2.jan),
-                )
+                Aap.dag(1.jan) +
+                Aap.dag(2.jan)
             }
         }
         TestTopics.aap.produce("${uid2.id}") {
             Aap.utbetaling(Action.CREATE, sid) {
-                listOf(
-                    Aap.dag(3.jan),
-                    Aap.dag(6.jan),
-                )
+                Aap.dag(3.jan) +
+                Aap.dag(6.jan)
             }
         }
         TestTopics.status.assertThat()
@@ -75,10 +69,8 @@ internal class AbetalTest {
         val uid1 = randomUtbetalingId()
         val uid2 = randomUtbetalingId()
         val utbet = Aap.utbetaling(Action.CREATE) {
-            listOf(
-                Aap.dag(1.jan),
-                Aap.dag(2.jan),
-            )
+            Aap.dag(1.jan) +
+            Aap.dag(2.jan)
         }
         TestTopics.aap.produce("${uid1.id}") { utbet }
         TestTopics.aap.produce("${uid2.id}") { utbet }
@@ -96,10 +88,8 @@ internal class AbetalTest {
     fun `is idempotent`() {
         val uid = randomUtbetalingId()
         val utbet = Aap.utbetaling(Action.CREATE) {
-            listOf(
-                Aap.dag(1.jan),
-                Aap.dag(3.jan),
-            )
+            Aap.dag(1.jan) + 
+            Aap.dag(3.jan)
         }
         TestTopics.aap.produce("${uid.id}") { utbet }
         TestTopics.aap.produce("${uid.id}") { utbet }
@@ -128,10 +118,8 @@ internal class AbetalTest {
         val uid = randomUtbetalingId()
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE, periodetype = Periodetype.EN_GANG) {
-                listOf(
-                    Aap.dag(31.des),
-                    Aap.dag(1.jan),
-                )
+                Aap.dag(31.des) +
+                Aap.dag(1.jan)
             }
         }
         TestTopics.status.assertThat()
@@ -149,9 +137,7 @@ internal class AbetalTest {
         val uid = randomUtbetalingId()
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE, sakId = SakId("123456789123456789123456789123456789")) {
-                listOf(
-                    Aap.dag(31.des),
-                )
+                Aap.dag(31.des)
             }
         }
         TestTopics.status.assertThat()
@@ -169,9 +155,7 @@ internal class AbetalTest {
         val uid = randomUtbetalingId()
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE, behId = BehandlingId("123456789123456789123456789123456789")) {
-                listOf(
-                    Aap.dag(31.des),
-                )
+                Aap.dag(31.des)
             }
         }
         TestTopics.status.assertThat()
@@ -189,10 +173,8 @@ internal class AbetalTest {
         val uid = randomUtbetalingId()
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE) {
-                listOf(
-                    periode(fom = 1.jan, tom = 2.jan),
-                    periode(fom = 1.jan, tom = 3.jan),
-                )
+                periode(fom = 1.jan, tom = 2.jan) +
+                periode(fom = 1.jan, tom = 3.jan)
             }
         }
         TestTopics.status.assertThat()
@@ -210,10 +192,8 @@ internal class AbetalTest {
         val uid = randomUtbetalingId()
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE) {
-                listOf(
-                    periode(fom = 1.jan, tom = 2.jan),
-                    periode(fom = 2.jan, tom = 2.jan),
-                )
+                periode(fom = 1.jan, tom = 2.jan) +
+                periode(fom = 2.jan, tom = 2.jan)
             }
         }
         TestTopics.status.assertThat()
@@ -231,9 +211,7 @@ internal class AbetalTest {
         val uid = randomUtbetalingId()
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE) {
-                listOf(
-                    periode(fom = 2.jan, tom = 1.jan),
-                )
+                periode(fom = 2.jan, tom = 1.jan)
             }
         }
         TestTopics.status.assertThat()
@@ -250,10 +228,8 @@ internal class AbetalTest {
         val uid = randomUtbetalingId()
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE) {
-                listOf(
-                    Aap.dag(2.jan),
-                    periode(fom = 1.jan, tom = 31.jan),
-                )
+                Aap.dag(2.jan) +
+                periode(fom = 1.jan, tom = 31.jan)
             }
         }
         TestTopics.status.assertThat()
@@ -271,9 +247,7 @@ internal class AbetalTest {
         val uid = randomUtbetalingId()
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE) {
-                listOf(
-                    Aap.dag(LocalDate.now().nesteVirkedag()),
-                )
+                Aap.dag(LocalDate.now().nesteVirkedag())
             }
         }
         TestTopics.status.assertThat()
@@ -291,8 +265,8 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         TestTopics.aap.produce("${uid.id}") {
             Aap.utbetaling(Action.CREATE, sid) {
-                (1L..1001L).map {
-                    Aap.dag(1.jan.minusDays(it))
+                (1L..1001L).fold(emptyList()) { acc, next ->
+                    acc + Aap.dag(1.jan.minusDays(next))
                 }
             }.copy(periodetype = Periodetype.DAG)
         }
