@@ -5,10 +5,6 @@ Komplette eksempler på disse meldingene finnes lenger ned på denne siden.
 
 Vi kan se resultatet av en avstemming i økonomiportalen i Q1, så fremt den sendes på riktig måte på riktig format. 
 
-### TODO
-- Hva er gjør `<tidspktMelding>2025-05-21-14.00.00.000000</tidspktMelding>` i oppdrag-XML og er formatet viktig også her?
-
-
 ## Likt format på nøkler i oppdrag-XML og avstemming-XML
 Når avstemmingen kjøres i OS kjøres det en SQL basert på `nokkelFom` og `nokkelTom` som finnes i avstemmingsXML-en. For at denne SQL-en skal gi resultat, 
 så må formatet på disse nøklene være lik som `nokkelAvstemming` fra oppdragXML-en.
@@ -35,8 +31,11 @@ I oppdragXML for et av oppdragene som avstemmes:
 Det viktige er at formatet på nøklene er likt på tvers. Et enklere format med kun dato vil også fungere. 
 Så vi kunne altså like godt bare sagt `2025-05-21` for `nokkelFom` og `nokkelTom` i avstemming-XML og på `nokkelAvstemming` i oppdrag-XML.
 
+### TODO
+- Hva er gjør `<tidspktMelding>2025-05-21-14.00.00.000000</tidspktMelding>` i oppdrag-XML og er formatet viktig også her?
+
 ## Avstemmingsmeldingene
-En grensesnittavstemming gjøres daglig (på virkedager når Oppdragsystemet er åpent) og per fagområde / ytelse. Vi avstemmer AAP, Dagpenger, Tiltakspenger og Tilleggsstønader
+En grensesnittavstemming gjøres daglig (på virkedager når Oppdragsystemet er åpent) per fagområde / ytelse. Vi avstemmer AAP, Dagpenger, Tiltakspenger og Tilleggsstønader
 hver for seg i egne meldinger mot OS.
 
 En grensesnittavstemming gjelder altså bare ett fagområde / ytelse og består av tre deler:
