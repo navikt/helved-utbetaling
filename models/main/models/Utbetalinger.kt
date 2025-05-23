@@ -185,7 +185,7 @@ value class PeriodeId (private val id: UUID) {
     constructor() : this(UUID.randomUUID())
 
     init { 
-        toString() // ikke bruk en periodeId som ikke lar seg sendes over SOAP
+        toString() // verifiser at encoding blir under 30 tegn
     }
     companion object {
         fun decode(encoded: String): PeriodeId {

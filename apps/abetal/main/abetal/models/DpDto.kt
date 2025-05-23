@@ -5,7 +5,9 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
+import libs.kafka.*
+import libs.utils.appLog
 import models.*
 
 data class DpUtbetaling(
@@ -43,6 +45,30 @@ data class DpUtbetalingsperiode(
 
 fun dpUId(sakId: String, meldeperiode: String): UtbetalingId {
     return UtbetalingId(uuid(SakId(sakId), Fagsystem.DAGPENGER, meldeperiode))
+}
+
+fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
+    val (dpKey, dpUtbetaling) = tuple
+    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling 
+        .utbetalinger
+        .groupBy { it.meldeperiode }
+        .map { (meldeperiode, utbetalinger) -> dpUId(dpUtbetaling.fagsakId, meldeperiode) to dpUtbetaling.copy(utbetalinger = utbetalinger) }
+        .toMutableList()
+
+    if (uids != null) {
+        val dpUids = utbetalingerPerMeldekort.map { (dpUid, _) -> dpUid }
+        val missingMeldeperioder = uids.filter { it !in dpUids }.map { it to null }
+        utbetalingerPerMeldekort.addAll(missingMeldeperioder)
+    }
+
+   return utbetalingerPerMeldekort.map { (uid, dpUtbetaling) -> 
+        val utbetaling = when (dpUtbetaling) {
+            null -> fakeDelete(dpKey, sakKey.sakId, uid).also { appLog.info("creating a fake delete to force-trigger a join with existing utbetaling") }
+            else -> toDomain(dpKey, dpUtbetaling, uids, uid)
+        }
+        appLog.info("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
+        KeyValue(utbetaling.uid.id.toString(), utbetaling)
+   }
 }
 
 fun toDomain(
