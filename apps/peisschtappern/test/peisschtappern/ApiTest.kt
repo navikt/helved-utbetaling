@@ -74,6 +74,24 @@ class ApiTest {
     }
 
     @Test
+    fun `can query for multiple values`() = runTest(TestRuntime.context) {
+        val sakId = "AB12345"
+        val behandlingId = "BC23456"
+        save(Channel.Aap, value = "{\"sakId\":\"$sakId\"}")
+        save(Channel.Aap, value = "{\"behandlingId\":\"$behandlingId\"}")
+        save(Channel.Utbetalinger)
+        save(Channel.Simuleringer)
+
+        val result = httpClient.get("/api?value=$sakId,$behandlingId") {
+            accept(ContentType.Application.Json)
+        }.body<List<Dao>>()
+
+        assertEquals(2, result.size)
+        assertNotNull(result.find { it.value!!.contains(sakId) })
+        assertNotNull(result.find { it.value!!.contains(behandlingId) })
+    }
+
+    @Test
     fun `can query for fom-tom`() = runTest(TestRuntime.context) {
         val before = Instant.now().minusSeconds(10L)
         val now = Instant.now()

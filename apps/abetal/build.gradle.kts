@@ -6,8 +6,8 @@ application {
     mainClass.set("abetal.AbetalKt")
 }
 
-val ktorVersion = "3.1.2"
-val libVersion = "3.1.103"
+val ktorVersion = "3.1.3"
+val libVersion = "3.1.119"
 
 dependencies {
     implementation(project(":models"))
@@ -18,6 +18,7 @@ dependencies {
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.15.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
+    implementation("org.apache.kafka:kafka-streams:4.0.0")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
@@ -31,7 +32,7 @@ dependencies {
     implementation("org.apache.kafka:kafka-clients:4.0.0")
 
     testImplementation(kotlin("test"))
-    testImplementation("org.apache.kafka:kafka-streams:4.0.0") // intercept StreamsBuilder
+    // testImplementation("org.apache.kafka:kafka-streams:4.0.0") // intercept StreamsBuilder
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation(project(":libs:kafka-test"))
 }

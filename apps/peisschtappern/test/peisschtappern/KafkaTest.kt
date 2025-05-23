@@ -9,7 +9,7 @@ import kotlin.test.assertNotNull
 class KafkaTest {
     data class TestCase(
         val channel: Channel,
-        val testTopic: TestTopic<String, ByteArray>,
+        val testTopic: TestTopic.InputOutput<String, ByteArray>,
     )
 
     private val testCases: List<TestCase> by lazy {
@@ -26,6 +26,7 @@ class KafkaTest {
                Channel.DryrunTp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunTs -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.DryrunDp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Status -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
             }
         }
     }

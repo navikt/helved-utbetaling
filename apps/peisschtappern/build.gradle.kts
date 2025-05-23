@@ -6,8 +6,8 @@ application {
     mainClass.set("peisschtappern.PeisschtappernKt")
 }
 
-val ktorVersion = "3.1.2"
-val libVersion = "3.1.98"
+val ktorVersion = "3.1.3"
+val libVersion = "3.1.119"
 
 dependencies {
     implementation(project(":libs:kafka"))

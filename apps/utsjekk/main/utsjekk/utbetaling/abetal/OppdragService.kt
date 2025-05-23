@@ -33,8 +33,8 @@ object OppdragService {
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
                 kodeKomponent = FagsystemDto.from(new.stønad).kode
-                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
+                nokkelAvstemming = LocalDateTime.now().format()
+                tidspktMelding = LocalDateTime.now().format()
             }
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))

@@ -6,8 +6,8 @@ application {
     mainClass.set("vedskiva.VedskivaKt")
 }
 
-val ktorVersion = "3.1.2"
-val libVersion = "3.1.103"
+val ktorVersion = "3.1.3"
+val libVersion = "3.1.119"
 
 dependencies {
     implementation(project(":libs:kafka"))

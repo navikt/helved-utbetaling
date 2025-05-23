@@ -24,7 +24,6 @@ import models.kontrakter.oppdrag.OppdragIdDto
 import models.kontrakter.oppdrag.OppdragStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.BehandlingId
 import utsjekk.iverksetting.IverksettingDao
@@ -174,7 +173,7 @@ class IverksettingRouteTest {
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
         assertEquals(
-            """{"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","field":null,"doc":"${DEFAULT_DOC_STR}"}""",
+            """{"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","field":null,"doc":"$DEFAULT_DOC_STR"}""",
             res.bodyAsText()
         )
     }
@@ -252,7 +251,37 @@ class IverksettingRouteTest {
             setBody(dto)
         }.let {
             println(it.bodyAsText())
+            assertEquals(HttpStatusCode.Conflict, it.status)
+        }
+    }
+
+    @Test
+    fun `setter fagsystem eksplisitt med header`() = runTest(TestRuntime.context) {
+        val dto = TestData.dto.iverksetting()
+
+        httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
+            header("fagsystem", "AAP")
+        }.let {
+            println(it.bodyAsText())
             assertEquals(HttpStatusCode.Accepted, it.status)
         }
+
+        val notFound = httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }
+
+        assertEquals(HttpStatusCode.NotFound, notFound.status)
+
+        val status = httpClient.get("/api/iverksetting/${dto.sakId}/${dto.behandlingId}/status") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+            header("fagsystem", "AAP")
+        }.body<IverksettStatus>()
+
+        assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
     }
 }

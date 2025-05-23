@@ -38,7 +38,7 @@ fun Routing.api(manuellKvitteringService: ManuellKvitteringService) {
         val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
         val limit = call.queryParameters["limit"]?.toInt() ?: 100
         val key = call.queryParameters["key"]
-        val value = call.queryParameters["value"]
+        val value = call.queryParameters["value"]?.split(",")
         val fom = call.queryParameters["fom"]
             ?.runCatching { Instant.parse(this).toEpochMilli() }
             ?.getOrNull()
@@ -111,6 +111,7 @@ sealed class Channel(
     data object DryrunTp : Channel(Topics.dryrunTp, Table.dryrun_tp, 9)
     data object DryrunTs : Channel(Topics.dryrunTs, Table.dryrun_ts, 10)
     data object DryrunDp : Channel(Topics.dryrunDp, Table.dryrun_dp, 11)
+    data object Status : Channel(Topics.status, Table.status, 12)
 
     companion object {
         fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel }

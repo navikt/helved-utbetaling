@@ -81,8 +81,8 @@ fun vedskiva(
 
                oppdragDaos.reduce()
 
-               val fom = last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()
-               val tom = today.minusDays(1)
+               // val fom = last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()
+               // val tom = today.minusDays(1)
 
                oppdragDaos.values
                    .filterNot { it.isEmpty() } 
@@ -98,7 +98,6 @@ fun vedskiva(
                             personident = Personident(oppdrag.oppdrag110.oppdragGjelderId.trimEnd()),
                             sakId = SakId(oppdrag.oppdrag110.fagsystemId.trimEnd()),
                             lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
-                            avstemmingsdag = LocalDateTime.parse(oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd(), formatter).toLocalDate(),
                             innsendt = oppdrag.oppdrag110.oppdragsLinje150s.first().vedtakId.trimEnd().toLocalDate(),
                             totalBeløpAllePerioder = oppdrag.oppdrag110.oppdragsLinje150s.sumOf {it.sats.toLong().toUInt() },
                             kvittering = oppdrag.mmel?.let { mmel ->
@@ -110,7 +109,7 @@ fun vedskiva(
                             },
                            )
                        }
-                       val avstemming = Avstemming(avstemmingId, fom, tom, oppdragsdatas)
+                       val avstemming = Avstemming(avstemmingId, avstemFom.toLocalDate(), avstemTom.toLocalDate(), oppdragsdatas)
                        val messages = AvstemmingService.create(avstemming)
                        messages.forEach { msg -> avstemmingProducer.send(UUID.randomUUID().toString(), msg, 0) }
                        appLog.info("Avstemming for $fagområde completed with avstemmingId: $avstemmingId")
