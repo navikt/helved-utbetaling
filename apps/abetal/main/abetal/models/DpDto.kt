@@ -12,34 +12,27 @@ import models.*
 
 data class DpUtbetaling(
     val dryrun: Boolean = false,
+
+    val sakId: String,
     val behandlingId: String,
-    val fagsakId: String,
     val ident: String,
-    val vedtakstidspunkt: LocalDateTime,
-    val virkningsdato: LocalDate,
-    val behandletHendelse: Hendelse,
-    val utbetalinger: List<DpUtbetalingsperiode>,
-    val stønad: StønadTypeDagpenger,
+    val utbetalinger: List<DpUtbetalingsdag>,
+
+    val vedtakstidspunkt: LocalDateTime = LocalDateTime.now(), // TODO: denne skal ikke ha default-verdi
+    val stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR, // TODO: denne skal ikke ha default-verdi
 )
 
-data class Hendelse(
-    val datatype: String = "Long",
-    val id: String, 
-    val type: String = "Meldekort",
-)
-
-data class DpUtbetalingsperiode(
+data class DpUtbetalingsdag(
     val meldeperiode: String,
     val dato: LocalDate,
     val sats: UInt,
-    val utbetaling: UInt,
+    val utbetaltBeløp: UInt,
 ) {
     fun into(): Utbetalingsperiode = Utbetalingsperiode(
         fom = dato,
         tom = dato,
-        beløp = utbetaling,
+        beløp = utbetaltBeløp,
         vedtakssats = sats,
-        betalendeEnhet = null,
     )
 }
 
@@ -52,7 +45,7 @@ fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?
     val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling 
         .utbetalinger
         .groupBy { it.meldeperiode }
-        .map { (meldeperiode, utbetalinger) -> dpUId(dpUtbetaling.fagsakId, meldeperiode) to dpUtbetaling.copy(utbetalinger = utbetalinger) }
+        .map { (meldeperiode, utbetalinger) -> dpUId(dpUtbetaling.sakId, meldeperiode) to dpUtbetaling.copy(utbetalinger = utbetalinger) }
         .toMutableList()
 
     if (uids != null) {
@@ -85,31 +78,29 @@ fun toDomain(
         action = Action.CREATE,
         førsteUtbetalingPåSak = uidsPåSak == null,
         utbetalingerPåSak = uidsPåSak ?: emptySet(), // hvis lista null er det første utbetaling, hvis lista er tom har det være en delete der før
-        sakId = SakId(value.fagsakId),
+        sakId = SakId(value.sakId),
         behandlingId = BehandlingId(value.behandlingId),
         lastPeriodeId = PeriodeId(),
         personident = Personident(value.ident),
         vedtakstidspunkt = value.vedtakstidspunkt,
         stønad = value.stønad,
-        beslutterId = Navident("dagpenger"), // FIXME: navnet på systemet
-        saksbehandlerId = Navident("dagpenger"), // FIXME: navnet på systemet
+        beslutterId = Navident("dagpenger"),
+        saksbehandlerId = Navident("dagpenger"),
         periodetype = Periodetype.UKEDAG,
         avvent = null,
         perioder = perioder(value.utbetalinger), //.map { it.into() },
     )
 }
 
-// FIXME: ikke testa enda
-private fun perioder(perioder: List<DpUtbetalingsperiode>): List<Utbetalingsperiode> {
+private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode> {
     return perioder.sortedBy { it.dato }
-        .groupBy { listOf(it.utbetaling, it.sats) }
+        .groupBy { listOf(it.utbetaltBeløp, it.sats) }
         .map { (_, p) -> 
             p.splitWhen { a, b -> a.dato.nesteUkedag() != b.dato }.map { 
                 Utbetalingsperiode(
                     fom = it.first().dato,
                     tom = it.last().dato,
-                    beløp = it.first().utbetaling,
-                    betalendeEnhet = null,
+                    beløp = it.first().utbetaltBeløp,
                     vedtakssats = it.first().sats,
                 )
             }

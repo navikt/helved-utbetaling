@@ -28,7 +28,7 @@ internal class DpTest {
                     fom = LocalDate.of(2021, 6, 7),
                     tom = LocalDate.of(2021, 6, 20),
                     sats = 1077u,
-                    utbetaling = 553u,
+                    utbetaltBeløp = 553u,
                 )
             }
         }
@@ -107,13 +107,13 @@ internal class DpTest {
                     fom = LocalDate.of(2021, 6, 7),
                     tom = LocalDate.of(2021, 6, 20),
                     sats = 1077u,
-                    utbetaling = 553u,
+                    utbetaltBeløp = 553u,
                 ) + Dp.meldekort(
                     meldeperiode = meldeperiode2,
                     fom = LocalDate.of(2021, 7, 7),
                     tom = LocalDate.of(2021, 7, 20),
                     sats = 2377u,
-                    utbetaling = 779u,
+                    utbetaltBeløp = 779u,
                 )
             }
         }
@@ -228,19 +228,19 @@ internal class DpTest {
                     fom = LocalDate.of(2021, 6, 7),
                     tom = LocalDate.of(2021, 6, 20),
                     sats = 1077u,
-                    utbetaling = 553u,
+                    utbetaltBeløp = 553u,
                 ) + Dp.meldekort(
                     meldeperiode = meldeperiode2,
                     fom = LocalDate.of(2021, 7, 7),
                     tom = LocalDate.of(2021, 7, 20),
                     sats = 2377u,
-                    utbetaling = 779u,
+                    utbetaltBeløp = 779u,
                 ) + Dp.meldekort(
                     meldeperiode = meldeperiode3,
                     fom = LocalDate.of(2021, 8, 7),
                     tom = LocalDate.of(2021, 8, 20),
                     sats = 3133u,
-                    utbetaling = 3000u,
+                    utbetaltBeløp = 3000u,
                 )
             }
         }
@@ -378,7 +378,7 @@ internal class DpTest {
                     fom = LocalDate.of(2021, 6, 7),
                     tom = LocalDate.of(2021, 6, 20),
                     sats = 1077u,
-                    utbetaling = 553u,
+                    utbetaltBeløp = 553u,
                 )
             }
         }
@@ -389,7 +389,7 @@ internal class DpTest {
                     fom = LocalDate.of(2021, 7, 7),
                     tom = LocalDate.of(2021, 7, 20),
                     sats = 2377u,
-                    utbetaling = 779u,
+                    utbetaltBeløp = 779u,
                 )
             }
         }
@@ -519,7 +519,7 @@ internal class DpTest {
 
         TestTopics.dp.produce(originalKey2) {
             Dp.utbetaling(
-                fagsakId = sid.id,
+                sakId = sid.id,
                 behandlingId = bid.id,
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
             ) {
@@ -528,14 +528,14 @@ internal class DpTest {
                     fom = 1.jun,
                     tom = 14.jun,
                     sats = 100u,
-                    utbetaling = 100u,
+                    utbetaltBeløp = 100u,
                 ) +
                         Dp.meldekort(
                             meldeperiode = meldeperiode2,
                             fom = 15.jun,
                             tom = 28.jun,
                             sats = 200u,
-                            utbetaling = 200u,
+                            utbetaltBeløp = 200u,
                         )
             }
         }
@@ -639,7 +639,7 @@ internal class DpTest {
 
         TestTopics.dp.produce(originalKey2) {
             Dp.utbetaling(
-                fagsakId = sid.id,
+                sakId = sid.id,
                 behandlingId = bid.id,
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
             ) {
@@ -648,7 +648,7 @@ internal class DpTest {
                     fom = 1.jun,
                     tom = 14.jun,
                     sats = 100u,
-                    utbetaling = 80u,
+                    utbetaltBeløp = 80u,
                 )
             }
         }
@@ -750,7 +750,7 @@ internal class DpTest {
 
         TestTopics.dp.produce(originalKey1) {
             Dp.utbetaling(
-                fagsakId = sid.id,
+                sakId = sid.id,
                 behandlingId = bid.id,
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
             ) {
