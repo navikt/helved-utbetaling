@@ -20,13 +20,15 @@ data class AapUtbetaling(
     val perioder: List<Utbetalingsperiode>,
 )
 
-fun toDomain(tuple: AapTuple, sakValue: SakValue?): Utbetaling {
+fun toDomain(tuple: AapTuple, uids: Set<UtbetalingId>?): Utbetaling {
     return Utbetaling(
         dryrun = tuple.aap.dryrun,
+        originalKey = tuple.uid,
         fagsystem = Fagsystem.AAP,
         uid = UtbetalingId(UUID.fromString(tuple.uid)),
         action = tuple.aap.action,
-        førsteUtbetalingPåSak = sakValue?.uids?.isEmpty() ?: true,
+        førsteUtbetalingPåSak = uids?.isEmpty() ?: true,
+        utbetalingerPåSak = uids ?: emptySet(), 
         sakId = tuple.aap.sakId,
         behandlingId = tuple.aap.behandlingId,
         lastPeriodeId = PeriodeId(),

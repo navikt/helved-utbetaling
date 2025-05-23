@@ -21,7 +21,7 @@ class JoinedStream<K: Any, L : Any, R> internal constructor(
         return MappedStream(mappedStream, namedSupplier)
     }
 
-    fun <LR : Any> map(mapper: (key: K, L, R) -> LR): MappedStream<K, LR> {
+    fun <LR : Any> map(mapper: (K, L, R) -> LR): MappedStream<K, LR> {
         val mappedStream = stream.mapValues { key, (left, right) -> mapper(key, left, right) }
         return MappedStream(mappedStream, namedSupplier)
     }
@@ -36,7 +36,7 @@ class JoinedStream<K: Any, L : Any, R> internal constructor(
         return MappedStream(mappedStream, namedSupplier)
     }
 
-    fun <K2: Any, LR : Any> flatMapKeyValue(mapper: (K, L, R) -> Iterable<KeyValue<K2, LR>>): MappedStream<K2, LR> {
+    fun <K2: Any, U : Any> flatMapKeyValue(mapper: (K, L, R) -> Iterable<KeyValue<K2, U>>): MappedStream<K2, U> {
         val stream = stream.flatMap { key, (left, right) -> mapper(key, left, right).map { it.toInternalKeyValue() } }
         return MappedStream(stream, namedSupplier)
     }

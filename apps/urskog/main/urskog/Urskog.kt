@@ -8,10 +8,12 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.time.LocalDate
 import libs.kafka.*
 import libs.utils.*
 import libs.mq.MQ
 import libs.mq.DefaultMQ
+import models.erHelligdag
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -46,6 +48,9 @@ fun Application.urskog(
             avstemming(avstemProducer)
         }
     )
+
+    // Ønsker ikke alarm for manglende kvittering på helligdager
+    prometheus.gauge("is_helligdag", if (LocalDate.now().erHelligdag()) 1 else 0)
 
     val kvitteringConsumer = KvitteringMQConsumer(config, mq, kafka)
 

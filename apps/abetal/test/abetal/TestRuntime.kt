@@ -31,6 +31,9 @@ object TestRuntime : AutoCloseable {
     }
 
     val kafka = StreamsMock()
+    val topology = kafka.append(createTopology()) {
+        consume(Tables.saker)
+    }
 
     val config by lazy {
         Config(
@@ -52,7 +55,7 @@ object TestRuntime : AutoCloseable {
 private val testApplication: TestApplication by lazy {
     TestApplication {
         application {
-            abetal(TestRuntime.config, TestRuntime.kafka)
+            abetal(TestRuntime.config, TestRuntime.kafka, TestRuntime.topology)
         }
     }
 }

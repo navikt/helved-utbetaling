@@ -41,32 +41,99 @@ data class DpUtbetalingsperiode(
     )
 }
 
-fun toDomain(tuple: DpTuple, sakValue: SakValue?, meldeperiode: String): Utbetaling {
+fun dpUId(sakId: String, meldeperiode: String): UtbetalingId {
+    return UtbetalingId(uuid(SakId(sakId), Fagsystem.DAGPENGER, meldeperiode))
+}
+
+fun toDomain(
+    key: String,
+    value: DpUtbetaling,
+    uidsPåSak: Set<UtbetalingId>?,
+    uid: UtbetalingId,
+): Utbetaling {
     return Utbetaling(
-        dryrun = tuple.dp.dryrun,
+        dryrun = value.dryrun,
+        originalKey = key,
         fagsystem = Fagsystem.DAGPENGER,
-        uid = UtbetalingId(uuid(Fagsystem.DAGPENGER, meldeperiode)),
-        action = Action.CREATE, // TODO: utled
-        førsteUtbetalingPåSak = sakValue?.uids?.isEmpty() ?: true,
-        sakId = SakId(tuple.dp.fagsakId),
-        behandlingId = BehandlingId(tuple.dp.behandlingId),
+        uid = uid,
+        action = Action.CREATE,
+        førsteUtbetalingPåSak = uidsPåSak == null,
+        utbetalingerPåSak = uidsPåSak ?: emptySet(), // hvis lista null er det første utbetaling, hvis lista er tom har det være en delete der før
+        sakId = SakId(value.fagsakId),
+        behandlingId = BehandlingId(value.behandlingId),
         lastPeriodeId = PeriodeId(),
-        personident = Personident(tuple.dp.ident),
-        vedtakstidspunkt = tuple.dp.vedtakstidspunkt,
-        stønad = tuple.dp.stønad,
+        personident = Personident(value.ident),
+        vedtakstidspunkt = value.vedtakstidspunkt,
+        stønad = value.stønad,
         beslutterId = Navident("dagpenger"), // FIXME: navnet på systemet
         saksbehandlerId = Navident("dagpenger"), // FIXME: navnet på systemet
         periodetype = Periodetype.UKEDAG,
         avvent = null,
-        perioder = tuple.dp.utbetalinger.map { it.into() },
+        perioder = perioder(value.utbetalinger), //.map { it.into() },
     )
 }
 
-data class DpTuple(val uid: String, val dp: DpUtbetaling)
+// FIXME: ikke testa enda
+private fun perioder(perioder: List<DpUtbetalingsperiode>): List<Utbetalingsperiode> {
+    return perioder.sortedBy { it.dato }
+        .groupBy { listOf(it.utbetaling, it.sats) }
+        .map { (_, p) -> 
+            p.splitWhen { a, b -> a.dato.nesteUkedag() != b.dato }.map { 
+                Utbetalingsperiode(
+                    fom = it.first().dato,
+                    tom = it.last().dato,
+                    beløp = it.first().utbetaling,
+                    betalendeEnhet = null,
+                    vedtakssats = it.first().sats,
+                )
+            }
+        }.flatten()
+}
 
-fun uuid(fagsystem: Fagsystem, meldeperiode: String): UUID {
+private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
+    if (this.isEmpty()) return emptyList()
+
+    return this.drop(1).fold(mutableListOf(mutableListOf(this.first()))) { acc, item ->
+        val lastSublist = acc.last()
+        if (predicate(lastSublist.last(), item)) {
+            acc.add(mutableListOf(item))
+        } else {
+            lastSublist.add(item)
+        }
+        acc
+    }.map { it.toList() }
+}
+
+fun fakeDelete(
+    originalKey: String,
+    sakId: SakId,
+    uid: UtbetalingId,
+) = Utbetaling(
+    dryrun = false,
+    originalKey = originalKey,
+    fagsystem = Fagsystem.DAGPENGER,
+    uid = uid,
+    action = Action.DELETE,
+    førsteUtbetalingPåSak = false,
+    utbetalingerPåSak = emptySet(),
+    sakId = sakId,
+    behandlingId = BehandlingId(""),
+    lastPeriodeId = PeriodeId(),
+    personident = Personident(""),
+    vedtakstidspunkt = LocalDateTime.now(),
+    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+    beslutterId = Navident("dagpenger"), 
+    saksbehandlerId = Navident("dagpenger"),
+    periodetype = Periodetype.UKEDAG,
+    avvent = null,
+    perioder = emptyList(),
+)
+
+data class DpTuple(val key: String, val value: DpUtbetaling)
+
+fun uuid(sakId: SakId, fagsystem: Fagsystem, meldeperiode: String): UUID {
     val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
-    buffer.putLong((fagsystem.name + meldeperiode).hashCode().toLong())
+    buffer.putLong((fagsystem.name + sakId.id + meldeperiode).hashCode().toLong())
 
     val digest = MessageDigest.getInstance("SHA-256")
     val hash = digest.digest(buffer.array())
@@ -77,3 +144,4 @@ fun uuid(fagsystem: Fagsystem, meldeperiode: String): UUID {
 
     return UUID(mostSigBits, leastSigBits)
 }
+

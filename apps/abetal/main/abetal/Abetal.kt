@@ -23,6 +23,7 @@ fun main() {
 fun Application.abetal(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
+    topology: Topology = createTopology(),
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
@@ -35,11 +36,7 @@ fun Application.abetal(
         kafka.close()
     }
 
-    kafka.connect(
-        topology = createTopology(),
-        config = config.kafka,
-        registry = prometheus,
-    )
+    kafka.connect(topology, config.kafka, prometheus)
 
     val stateStore = kafka.getStore(Stores.utbetalinger)
 

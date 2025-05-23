@@ -2,12 +2,26 @@ package abetal
 
 import abetal.models.*
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration
 import libs.kafka.*
 import libs.kafka.stream.MappedStream
+import kotlin.time.toJavaDuration
+import org.apache.kafka.streams.processor.api.Processor
+import org.apache.kafka.streams.processor.api.ProcessorContext
+import org.apache.kafka.streams.processor.api.ProcessorSupplier
+import org.apache.kafka.streams.processor.PunctuationType
 import libs.utils.appLog
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import org.apache.kafka.streams.kstream.Windowed
+import org.apache.kafka.streams.kstream.WindowedSerdes
+import org.apache.kafka.streams.state.TimestampedKeyValueStore
+import org.apache.kafka.streams.state.ValueAndTimestamp
+import org.apache.kafka.streams.state.SessionStore
+import org.apache.kafka.streams.state.StoreBuilder
 
 object Topics {
     val aap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
@@ -16,7 +30,7 @@ object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simulering = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
     val status = Topic("helved.status.v1", json<StatusReply>())
-    val saker = Topic("helved.saker.v1", jsonjson<SakKey, SakValue>())
+    val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, UtbetalingId>())
 }
 
 object Tables {
@@ -30,32 +44,35 @@ object Stores {
 
 fun createTopology(): Topology = topology {
     val utbetalinger = consume(Tables.utbetalinger)
-    val saker = consume(Tables.saker)
+    val saker = utbetalingToSak(utbetalinger)
     aapStream(utbetalinger, saker)
     dpStream(utbetalinger, saker)
-    utbetalingToSak(utbetalinger, saker)
 }
 
-data class UtbetalingTuple(val uid: UUID, val utbetaling: Utbetaling)
+data class UtbetalingLeftJoin(val left: Utbetaling, val right: Utbetaling?)
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
-data class SakValue(val uids: Set<UtbetalingId>)
+data class OppdragAggregate(val utbetalinger: List<Utbetaling>, val oppdrag: Oppdrag)
 
-fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
-    utbetalinger
+fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Set<UtbetalingId>> {
+    val ktable = utbetalinger
         .toStream()
-        .map { key, utbetaling -> UtbetalingTuple(UUID.fromString(key), utbetaling) }
-        .rekey { (_, utbetaling) -> SakKey(utbetaling.sakId, Fagsystem.from(utbetaling.stønad)) }
-        .leftJoin(jsonjson(), saker)
-        .map { (uid, _), prevSak ->
-            when (prevSak) {
-                null -> SakValue(setOf(UtbetalingId(uid)))
-                else -> SakValue(prevSak.uids + UtbetalingId(uid))
+        .rekey { _, utbetaling -> SakKey(utbetaling.sakId, Fagsystem.from(utbetaling.stønad)) }
+        .groupByKey(jsonjson())
+        .aggregate(Tables.saker) { _, utbetaling, uids -> 
+            when(utbetaling.action) {
+                Action.DELETE -> uids - utbetaling.uid
+                else -> uids + utbetaling.uid
             }
-        }
+        } 
+
+    ktable
+        .toStream()
         .produce(Topics.saker)
+
+    return ktable
 }
 
-fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
+fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     consume(Topics.aap)
         .repartition(Topics.aap.serdes, 3)
         .map { key, aap -> AapTuple(key, aap) }
@@ -68,39 +85,79 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
         .default(::oppdragStream)
 }
 
-fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, SakValue>) {
-    val utbetalingMedSak = consume(Topics.dp)
+fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
+    consume(Topics.dp)
         .repartition(Topics.dp.serdes, 3)
         .map { key, dp -> DpTuple(key, dp) }
         .rekey { (_, dp) -> SakKey(SakId(dp.fagsakId), Fagsystem.from(dp.stønad)) }
         .leftJoin(jsonjson(), saker)
-        .map { key, dpTuple, saker ->
-            val utbetalingerPerMeldekort =
-                dpTuple.dp.utbetalinger.groupBy { it.meldeperiode }.map { (meldeperiode, utbetalinger) ->
-                    meldeperiode to dpTuple.dp.copy(utbetalinger = utbetalinger)
-                }
-            UtbetalingWrapper(dpTuple.uid, key, saker, utbetalingerPerMeldekort.toMap())
-        }
-    utbetalingMedSak
-        .flatMapKeyAndValue { _, value ->
-            value.utbetalinger.map { (meldeperiode, u) ->
+        .flatMapKeyValue { sakKey, (dpKey, dpUtbetaling), uids -> 
+            val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling 
+                .utbetalinger
+                .groupBy { it.meldeperiode }
+                .map { (meldeperiode, utbetalinger) -> dpUId(dpUtbetaling.fagsakId, meldeperiode) to dpUtbetaling.copy(utbetalinger = utbetalinger) }
+                .toMutableList()
 
-                val utbetaling = toDomain(DpTuple(value.key, u), value.sak, meldeperiode)
-                KeyValue(uuid(utbetaling.fagsystem, meldeperiode).toString(), utbetaling)
+            if (uids != null) {
+                val dpUids = utbetalingerPerMeldekort.map { (dpUid, _) -> dpUid }
+                val missingMeldeperioder = uids.filter { it !in dpUids }.map { it to null }
+                utbetalingerPerMeldekort.addAll(missingMeldeperioder)
             }
+
+           utbetalingerPerMeldekort.map { (uid, dpUtbetaling) -> 
+                val utbetaling = when (dpUtbetaling) {
+                    null -> fakeDelete(dpKey, sakKey.sakId, uid).also { appLog.info("creating a fake delete to force-trigger a join with existing utbetaling") }
+                    else -> toDomain(dpKey, dpUtbetaling, uids, uid)
+                }
+                appLog.info("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
+                KeyValue(utbetaling.uid.id.toString(), utbetaling)
+           }
         }
         .leftJoin(json(), utbetalinger)
         .branch({ (new, _) -> new.dryrun }, ::dryrunStream)
-        .default(::oppdragStream)
+        .default(::utbetalingDiffStream)
 }
 
-data class UtbetalingWrapper(
-    val key: String,
-    val sakKey: SakKey,
-    val sak: SakValue?,
-    val utbetalinger: Map<String, DpUtbetaling>
+private val suppressProcessorSupplier = SuppressProcessorSupplier(
+    100.milliseconds,
+    1.seconds,
+    "dp-diff-window-agg-session-store",
+    windowedjsonList(),
 )
 
+fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
+    branched
+        .filter { (new, prev) -> 
+            !new.isDuplicate(prev).also { 
+                if (it) {
+                    appLog.info("Duplicate message found for ${new.uid.id}")
+                } else {
+                    appLog.info("New : $new")
+                    appLog.info("Prev: $prev")
+                }
+            }
+        }
+        .rekey { _, (new, _) -> new.originalKey }
+        .map { _, streamsPair -> listOf(UtbetalingLeftJoin(streamsPair.left, streamsPair.right)) }
+        .sessionWindow(jsonList(), 1.seconds)
+        .reduce(suppressProcessorSupplier, "dp-diff-window-agg-session-store") { acc, next -> acc + next }
+        .map { aggregate  -> 
+            Result.catch { 
+                AggregateOppdragService.utled(aggregate)
+            }
+        }
+        .branch({ it.isOk() }) {
+            val result = this.map { it -> it.unwrap() }
+            result.flatMapKeyAndValue { _, (utbetalinger, _) -> 
+                utbetalinger.map { KeyValue(it.uid.id.toString(), it) } 
+            }.produce(Topics.utbetalinger)
+            result.map { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
+            result.map { (_, _) -> StatusReply(Status.MOTTATT) }.produce(Topics.status) // 
+        }
+        .default {
+            this.map { it -> it.unwrapErr() }.produce(Topics.status) 
+        }
+}
 
 fun oppdragStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
     branched.filter { (new, prev) ->
@@ -150,4 +207,63 @@ fun dryrunStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetali
     }
 }
 
-inline fun <reified K : Any, reified V : Any> jsonjson() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jackson<V>())
+class SuppressProcessorSupplier(
+    private val punctuationInterval: Duration,
+    private val inactivityGap: Duration,
+    private val stateStoreName: StateStoreName,
+    private val serdes: Serdes<Windowed<String>, List<UtbetalingLeftJoin>>,
+) : ProcessorSupplier<Windowed<String>, List<UtbetalingLeftJoin>, String, List<UtbetalingLeftJoin>> {
+
+    override fun stores(): Set<StoreBuilder<*>> {
+        return setOf(org.apache.kafka.streams.state.Stores.timestampedKeyValueStoreBuilder(
+            org.apache.kafka.streams.state.Stores.persistentTimestampedKeyValueStore(stateStoreName),
+            serdes.key,
+            serdes.value
+        ))
+    }
+
+    override fun get(): Processor<Windowed<String>, List<UtbetalingLeftJoin>, String, List<UtbetalingLeftJoin>> {
+        return SuppressProcessor(punctuationInterval, inactivityGap, stateStoreName)
+    }
+}
+
+class SuppressProcessor(
+    private val punctuationInterval: Duration,
+    private val inactivityGap: Duration,
+    private val stateStoreName: StateStoreName,
+): Processor<Windowed<String>, List<UtbetalingLeftJoin>, String, List<UtbetalingLeftJoin>> {
+    private lateinit var bufferStore: TimestampedKeyValueStore<Windowed<String>, List<UtbetalingLeftJoin>>
+    private lateinit var context: ProcessorContext<String, List<UtbetalingLeftJoin>>
+
+    override fun init(ctx: ProcessorContext<String, List<UtbetalingLeftJoin>>) {
+        context = ctx
+        bufferStore = context.getStateStore(stateStoreName) as TimestampedKeyValueStore<Windowed<String>, List<UtbetalingLeftJoin>>
+        context.schedule(punctuationInterval.toJavaDuration(), PunctuationType.WALL_CLOCK_TIME, ::punctuate)
+    } 
+
+    override fun process(record: org.apache.kafka.streams.processor.api.Record<Windowed<String>, List<UtbetalingLeftJoin>>) {
+        bufferStore.put(record.key(), ValueAndTimestamp.make(record.value(), record.timestamp()))
+    }
+
+    private fun punctuate(wallClockTime: Long) {
+        val iterator = bufferStore.all()
+        val windowsToEmit = mutableListOf<Windowed<String>>()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            val windowedKey = entry.key
+            val valueAndTimestamp = entry.value
+            val windowEndTime = windowedKey.window().endTime().toEpochMilli()
+            val emissionTimeThreshold = windowEndTime + inactivityGap.inWholeMilliseconds
+
+            if (wallClockTime > emissionTimeThreshold) {
+                val latestAggregate = valueAndTimestamp.value() 
+                val lastestRecordTimestamp = valueAndTimestamp.timestamp()
+                context.forward(org.apache.kafka.streams.processor.api.Record(windowedKey.key(), latestAggregate, lastestRecordTimestamp))
+                windowsToEmit.add(windowedKey)
+            }
+        }
+        iterator.close()
+        windowsToEmit.forEach(bufferStore::delete)
+    }
+}
+

@@ -38,23 +38,49 @@ class StreamsMock : Streams {
         internalStreams.getKeyValueStore(store.name)
     )
 
+    fun append(topology: Topology, block: Topology.() -> Unit): Topology {
+        return topology.apply(block)
+    }
+
     fun advanceWallClockTime(duration: Duration) {
         internalStreams.advanceWallClockTime(duration.toJavaDuration())
     }
 
-    fun <K: Any, V : Any> testTopic(topic: Topic<K, V>): TestTopic<K, V> =
-        TestTopic(
-            input = internalStreams.createInputTopic(
+
+    fun <K: Any, V : Any> testTopic(topic: Topic<K, V>): TestTopic.InputOutput<K, V> {
+        return TestTopic.InputOutput(
+            internalStreams.createInputTopic(
                 topic.name,
                 topic.serdes.key.serializer(),
                 topic.serdes.value.serializer()
             ),
-            output = internalStreams.createOutputTopic(
+            internalStreams.createOutputTopic(
                 topic.name,
                 topic.serdes.key.deserializer(),
                 topic.serdes.value.deserializer()
             )
         )
+    }
+
+    fun <K: Any, V : Any> testInputTopic(topic: Topic<K, V>): TestTopic.Input<K, V> {
+        return TestTopic.Input(
+            internalStreams.createInputTopic(
+                topic.name,
+                topic.serdes.key.serializer(),
+                topic.serdes.value.serializer()
+            ),
+        )
+    }
+
+    fun <K: Any, V : Any> testOutputTopic(topic: Topic<K, V>): TestTopic.Output<K, V> {
+        return TestTopic.Output(
+            internalStreams.createOutputTopic(
+                topic.name,
+                topic.serdes.key.deserializer(),
+                topic.serdes.value.deserializer()
+            )
+        )
+    }
 
     private val producers = mutableMapOf<Topic<*, *>, KafkaProducer<*, *>>()
 

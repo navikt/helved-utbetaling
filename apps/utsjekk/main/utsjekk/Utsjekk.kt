@@ -147,6 +147,14 @@ sealed class TokenType(open val jwt: String) {
     data class Client(override val jwt: String): TokenType(jwt)
 }
 
+fun RoutingCall.fagsystem() =
+    if (System.getenv("ENV") != "prod") {
+        request.header("Fagsystem")?.let { Fagsystem.valueOf(it) }
+            ?: client().toFagsystem()
+    } else {
+        client().toFagsystem()
+    }
+
 @JvmInline
 value class Client(
     private val name: String,

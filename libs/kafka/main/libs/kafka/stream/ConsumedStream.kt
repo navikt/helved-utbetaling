@@ -78,6 +78,11 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return MappedStream(fusedStream, namedSupplier)
     }
 
+    fun groupByKey(serdes: Serdes<K, V>): GroupedStream<K, V> {
+        val grouped = stream.groupByKey(Grouped.with(serdes.key, serdes.value))
+        return GroupedStream(grouped, { "${namedSupplier()}-groupByKey" })
+    }
+
     /**
      * Window will change when something exceeds the window frame or when something new comes in.
      * @param windowSize the size of the window
@@ -135,12 +140,12 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
      *               ||||||||
      *                           |||||||||||||
      */
-    fun sessionWindow(serdes: Serdes<K, V>, inactivityGap: Duration): SessionWindowedStream<K, V> {
-        val window = SessionWindows.ofInactivityGapWithNoGrace(inactivityGap.toJavaDuration())
-        val groupSerde = Grouped.with(serdes.key, serdes.value)
-        val windowedStream: SessionWindowedKStream<K, V> = stream.groupByKey(groupSerde).windowedBy(window)
-        return SessionWindowedStream(serdes, windowedStream, namedSupplier)
-    }
+    // fun sessionWindow(serdes: Serdes<K, V>, inactivityGap: Duration): SessionWindowedStream<K, V> {
+    //     val window = SessionWindows.ofInactivityGapWithNoGrace(inactivityGap.toJavaDuration())
+    //     val groupSerde = Grouped.with(serdes.key, serdes.value)
+    //     val windowedStream: SessionWindowedKStream<K, V> = stream.groupByKey(groupSerde).windowedBy(window)
+    //     return SessionWindowedStream(serdes, windowedStream, namedSupplier)
+    // }
 
     fun <R : Any> join(left: Topic<K, V>, right: KTable<K, R>): JoinedStream<K, V, R> {
         val joinedStream = stream.join(left, right, ::StreamsPair)

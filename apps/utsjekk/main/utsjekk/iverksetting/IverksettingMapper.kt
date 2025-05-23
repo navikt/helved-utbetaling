@@ -6,6 +6,7 @@ import models.kontrakter.felles.Fagsystem
 import models.kontrakter.felles.Personident
 import models.kontrakter.felles.objectMapper
 import models.kontrakter.iverksett.*
+import libs.utils.appLog
 
 fun Iverksetting.Companion.from(dto: IverksettV2Dto, fagsystem: Fagsystem): Iverksetting {
     return Iverksetting(
@@ -86,7 +87,13 @@ fun Stønadsdata.Companion.from(dto: StønadsdataDto): Stønadsdata {
 }
 
 fun TilkjentYtelse.toJson(): String = objectMapper.writeValueAsString(this)
-fun TilkjentYtelse.Mapper.from(json: String): TilkjentYtelse = objectMapper.readValue(json)
+fun TilkjentYtelse.Mapper.from(json: String): TilkjentYtelse {
+    appLog.debug("trying to deserialize TilkjentYtelse: $json")
+    return objectMapper.readValue(json)
+}
 
 fun OppdragResultat.toJson(): String = objectMapper.writeValueAsString(this)
-fun OppdragResultat.Mapper.from(json: String): OppdragResultat = objectMapper.readValue(json)
+fun OppdragResultat.Mapper.from(json: String): OppdragResultat {
+    appLog.debug("trying to deserialize OppdragResultat: $json")
+    return objectMapper.readValue(json)
+}
