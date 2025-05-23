@@ -6,7 +6,7 @@ application {
     mainClass.set("peisschtappern.PeisschtappernKt")
 }
 
-val ktorVersion = "3.1.2"
+val ktorVersion = "3.1.3"
 val libVersion = "3.1.119"
 
 dependencies {
