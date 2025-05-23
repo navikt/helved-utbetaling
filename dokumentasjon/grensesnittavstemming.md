@@ -31,8 +31,20 @@ I oppdragXML for et av oppdragene som avstemmes:
 Det viktige er at formatet på nøklene er likt på tvers. Et enklere format med kun dato vil også fungere. 
 Så vi kunne altså like godt bare sagt `2025-05-21` for `nokkelFom` og `nokkelTom` i avstemming-XML og på `nokkelAvstemming` i oppdrag-XML.
 
-### TODO
-- Hva er gjør `<tidspktMelding>2025-05-21-14.00.00.000000</tidspktMelding>` i oppdrag-XML og er formatet viktig også her?
+### TODO avklaringer
+Spør utbetaling:
+
+- Hva brukes `tidspktMelding` til (i oppdrag-XML), og er formatet viktig også her?
+- Hva med `datoAvstemtFom` og `datoAvstemtTom` i avstemmingXML (data-delen)? Vi har per 23 mai ulikt format på disse og de øvrige datobaserte nøklene nevnt over. F.eks:
+
+```xml
+ <periode>
+    <datoAvstemtFom>2025052200</datoAvstemtFom>
+    <datoAvstemtTom>2025052223</datoAvstemtTom>
+  </periode>
+```
+
+Kan denne være slik den er? Hva er forskjellen på disse og `nokkelFom` og `nokkelTom`?
 
 ## Avstemmingsmeldingene
 En grensesnittavstemming gjøres daglig (på virkedager når Oppdragsystemet er åpent) per fagområde / ytelse. Vi avstemmer AAP, Dagpenger, Tiltakspenger og Tilleggsstønader
