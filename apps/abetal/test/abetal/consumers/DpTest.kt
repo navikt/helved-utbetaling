@@ -56,9 +56,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u),
-                    )
+                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u)
                 }
                 assertEquals(expected, it)
             }
@@ -141,9 +139,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u),
-                    )
+                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u)
                 }
                 assertEquals(expected, it)
             }
@@ -163,14 +159,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(
-                            LocalDate.of(2021, 7, 7),
-                            LocalDate.of(2021, 7, 20),
-                            779u,
-                            2377u
-                        ), // TODO: skal 21 være med?
-                    )
+                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u)
                 }
                 assertEquals(expected, it)
             }
@@ -268,9 +257,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u),
-                    )
+                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u)
                 }
                 assertEquals(expected, it)
             }
@@ -290,9 +277,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u),
-                    )
+                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u)
                 }
                 assertEquals(expected, it)
             }
@@ -312,9 +297,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(LocalDate.of(2021, 8, 9), LocalDate.of(2021, 8, 20), 3000u, 3133u),
-                    )
+                    periode(LocalDate.of(2021, 8, 9), LocalDate.of(2021, 8, 20), 3000u, 3133u)
                 }
                 assertEquals(expected, it)
             }
@@ -417,9 +400,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u),
-                    )
+                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u)
                 }
                 assertEquals(expected, it)
             }
@@ -439,9 +420,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u),
-                    )
+                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u)
                 }
                 assertEquals(expected, it)
             }
@@ -505,9 +484,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                listOf(
-                    periode(2.jun, 13.jun, 100u)
-                )
+                periode(2.jun, 13.jun, 100u)
             }
         }
 
@@ -565,9 +542,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(16.jun, 27.jun, 200u, 200u),
-                    )
+                    periode(16.jun, 27.jun, 200u, 200u)
                 }
                 assertEquals(expected, it)
             }
@@ -625,9 +600,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                listOf(
-                    periode(2.jun, 13.jun, 100u)
-                )
+                periode(2.jun, 13.jun, 100u)
             }
         }
 
@@ -678,9 +651,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(2.jun, 13.jun, 80u, 100u)
-                    )
+                    periode(2.jun, 13.jun, 80u, 100u)
                 }
                 assertEquals(expected, it)
             }
@@ -736,9 +707,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                listOf(
-                    periode(2.jun, 13.jun, 100u)
-                )
+                periode(2.jun, 13.jun, 100u)
             }
         }
 
@@ -773,7 +742,6 @@ internal class DpTest {
                     sakId = sid,
                     behandlingId = bid,
                     originalKey = originalKey1,
-                    førsteUtbetalingPåSak = true,
                     utbetalingerPåSak = setOf(),
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
@@ -783,9 +751,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    listOf(
-                        periode(2.jun, 13.jun, 100u, 100u)
-                    )
+                    periode(2.jun, 13.jun, 100u, 100u)
                 }
                 assertEquals(expected, it)
             }
@@ -819,6 +785,191 @@ internal class DpTest {
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(), index = 1)
 
+    }
+
+    @Test
+    fun `3 meldekort med ulike operasjoner`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val originalKey = UUID.randomUUID().toString()
+        val uid1 = dpUId(sid.id, "132460781") // 16364e1c-7615-6b30-882b-d7d19ea96279
+        val uid2 = dpUId(sid.id, "232460781") // 6fa69f14-a3eb-1457-7859-b3676f59da9d
+        val uid3 = dpUId(sid.id, "132462765") // 08e58fec-5907-af4c-e346-4c039df44050
+        val pid1 = PeriodeId()
+        val pid2 = PeriodeId()
+
+        TestTopics.utbetalinger.produce(uid1.toString()) {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid1,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = originalKey,
+                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                lastPeriodeId = pid1,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 14.sep.atStartOfDay(),
+                beslutterId = Navident("dagpenger"),
+                saksbehandlerId = Navident("dagpenger"),
+                fagsystem = Fagsystem.DAGPENGER,
+            ) {
+                periode(1.sep, 12.sep, 500u) // 1-14
+            }
+        }
+        TestTopics.utbetalinger.produce(uid2.toString()) {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid2,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = originalKey,
+                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                førsteUtbetalingPåSak = false,
+                utbetalingerPåSak = setOf(uid1),
+                lastPeriodeId = pid2,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 14.sep.atStartOfDay(),
+                beslutterId = Navident("dagpenger"),
+                saksbehandlerId = Navident("dagpenger"),
+                fagsystem = Fagsystem.DAGPENGER,
+            ) {
+                periode(15.sep, 26.sep, 600u) // 15-28
+            }
+        }
+
+        TestTopics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid1, uid2)
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.dp.produce(originalKey) {
+            Dp.utbetaling(sid.id, bid.id) {
+                Dp.meldekort("132460781", 1.sep, 12.sep, 600u) + 
+                Dp.meldekort("132462765", 29.sep, 10.okt, 600u) // 29-12
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.status.assertThat()
+            .has(originalKey)
+            .has(originalKey, StatusReply(Status.MOTTATT))
+
+        TestTopics.utbetalinger.assertThat()
+            .has(uid1.id.toString())
+            .with(uid1.id.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE, // FIXME: burde vært en UPDATE
+                    uid = uid1,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    førsteUtbetalingPåSak = false,
+                    utbetalingerPåSak = setOf(uid1, uid2), // TODO: skal uid3 også være med her?
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(1.sep, 12.sep, 600u)
+                }
+                assertEquals(expected, it)
+            }
+            .has(uid2.toString())
+            .with(uid2.toString()) {
+                val expected = utbetaling(
+                    action = Action.DELETE,
+                    uid = uid2,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    førsteUtbetalingPåSak = false,
+                    utbetalingerPåSak = setOf(uid1),
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(15.sep, 26.sep, 600u)
+                }
+                assertEquals(expected, it)
+            }
+            .has(uid3.toString())
+            .with(uid3.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid3,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    førsteUtbetalingPåSak = false,
+                    utbetalingerPåSak = setOf(uid1, uid2), // FIXME: skal den ta med uid3? eller trenger den ikke ta med seg selv
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(29.sep, 10.okt, 600u)
+                }
+                assertEquals(expected, it)
+            }
+        TestTopics.oppdrag.assertThat()
+            .has(originalKey)
+            .with(originalKey) {
+                assertEquals("1", it.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", it.oppdrag110.kodeEndring)
+                assertEquals("DP", it.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, it.oppdrag110.fagsystemId)
+                assertEquals("MND", it.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", it.oppdrag110.saksbehId)
+                assertEquals(3, it.oppdrag110.oppdragsLinje150s.size)
+
+                val linje1 = it.oppdrag110.oppdragsLinje150s[0]
+                assertEquals(pid1.toString(), linje1.refDelytelseId) // kjede på forrige
+                assertEquals("NY", linje1.kodeEndringLinje)
+                assertEquals(bid.id, linje1.henvisning)
+                assertEquals("DPORAS", linje1.kodeKlassifik)
+                assertEquals(600, linje1.sats.toLong())
+                assertEquals(600, linje1.vedtakssats157.vedtakssats.toLong())
+
+                val linje2 = it.oppdrag110.oppdragsLinje150s[1]
+                assertNull(linje2.refDelytelseId)
+                assertEquals("NY", linje2.kodeEndringLinje)
+                assertEquals(bid.id, linje2.henvisning)
+                assertEquals("DPORAS", linje2.kodeKlassifik)
+                assertEquals(600, linje2.sats.toLong())
+                assertEquals(600, linje2.vedtakssats157.vedtakssats.toLong())
+
+                // FIXME: er opphøret alltid sist, eller er det tilfeldig hvor i lista den havner
+                val linje3 = it.oppdrag110.oppdragsLinje150s[2]
+                assertEquals(pid2.toString(), linje3.refDelytelseId) // kjede på forrige
+                assertEquals(TkodeStatusLinje.OPPH, linje3.kodeStatusLinje)
+                // assertEquals(2.jun, linje3.datoStatusFom.toLocalDate())
+                assertEquals("NY", linje3.kodeEndringLinje)
+                assertEquals(bid.id, linje3.henvisning)
+                assertEquals("DPORAS", linje3.kodeKlassifik)
+                assertEquals(600, linje3.sats.toLong())
+                assertEquals(600, linje3.vedtakssats157.vedtakssats.toLong())
+            }
+
+        TestTopics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 5)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 2)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2, uid3), index = 3)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid3), index = 4)
     }
 
 }
