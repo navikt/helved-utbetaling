@@ -39,6 +39,7 @@ spec:
   azure:
     application:
       enabled: true
+      allowAllUsers: false
       claims:
         groups:
           - id: "97140b9a-07c5-414c-beeb-69824d04c044" # 0000-GA-Dagpenger-Prosessering-Admin gir tilgang til prosessering
