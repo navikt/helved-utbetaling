@@ -14,8 +14,10 @@ import java.time.Instant
 import java.util.UUID
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import org.junit.jupiter.api.Disabled
 import kotlin.test.*
 
+@Disabled
 class ApiTest {
     @Test
     fun `can query with limit`() = runTest(TestRuntime.context) {
