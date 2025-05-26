@@ -1,11 +1,12 @@
 package abetal
 
+import libs.kafka.StreamsPair
 import libs.utils.secureLog
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 object AggregateOppdragService {
-    fun utled(aggregate: List<UtbetalingLeftJoin>): OppdragAggregate {
+    fun utled(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): StreamsPair<List<Utbetaling>, Oppdrag> {
         secureLog.trace("aggregate: $aggregate")
         val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> = aggregate.map { (new, prev) ->
             when {
@@ -33,7 +34,7 @@ object AggregateOppdragService {
 
         val oppdrag = utbetalingToOppdrag.map { it.second }.reduce { acc, next -> acc + next }
         val utbetalinger = utbetalingToOppdrag.map { it.first }
-        return OppdragAggregate(utbetalinger, oppdrag)
+        return StreamsPair(utbetalinger, oppdrag)
     } 
 }
 

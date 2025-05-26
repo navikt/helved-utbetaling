@@ -45,6 +45,16 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(mappedStream, namedSupplier)
     }
 
+    fun <U: Any> leftJoin(
+        key: StreamSerde<K>,
+        value: StreamSerde<V>,
+        right: KTable<K, U>
+    ): JoinedStream<K, V, U?> {
+        val named = "${namedSupplier()}-left-join-${right.table.sourceTopic.name}"
+        val joinedStream = stream.leftJoin(named, Serdes(key, value), right, ::StreamsPair)
+        return JoinedStream(joinedStream, { named })
+    }
+
     fun <U : Any> leftJoin(serdes: Serdes<K, V>, right: KTable<K, U>): JoinedStream<K, V, U?> {
         val named = "${namedSupplier()}-left-join-${right.table.sourceTopic.name}"
         val joinedStream = stream.leftJoin(named, serdes, right, ::StreamsPair)
@@ -114,13 +124,14 @@ class MappedStream<K: Any, V : Any> internal constructor(
      *                           |||||||||||||
      */
     fun sessionWindow(
-        serdes: Serdes<K, V>, 
+        keySerde: StreamSerde<K>,
+        valueSerde: StreamSerde<V>,
         inactivityGap: Duration,
     ): SessionWindowedStream<K, V> {
         val window = SessionWindows.ofInactivityGapWithNoGrace(inactivityGap.toJavaDuration())
-        val groupSerde = Grouped.with(serdes.key, serdes.value)
+        val groupSerde = Grouped.with(keySerde, valueSerde)
         val windowedStream: SessionWindowedKStream<K, V> = stream.groupByKey(groupSerde).windowedBy(window)
-        return SessionWindowedStream(serdes, windowedStream, {"${namedSupplier()}-session-window"})
+        return SessionWindowedStream(Serdes(keySerde, valueSerde), windowedStream, {"${namedSupplier()}-session-window"})
     }
 
     fun onEach(onEach: (key: K, value: V, metadata: ProcessorMetadata) -> Unit): MappedStream<K, V> {

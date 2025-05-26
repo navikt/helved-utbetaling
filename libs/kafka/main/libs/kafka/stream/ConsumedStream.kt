@@ -78,6 +78,14 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return MappedStream(fusedStream, namedSupplier)
     }
 
+    fun groupByKey(
+        key: StreamSerde<K>,
+        value: StreamSerde<V>,
+    ): GroupedStream<K, V> {
+        val grouped = stream.groupByKey(Grouped.with(key, value))
+        return GroupedStream(grouped, { "${namedSupplier()}-groupByKey" })
+    }
+
     fun groupByKey(serdes: Serdes<K, V>): GroupedStream<K, V> {
         val grouped = stream.groupByKey(Grouped.with(serdes.key, serdes.value))
         return GroupedStream(grouped, { "${namedSupplier()}-groupByKey" })
