@@ -2,23 +2,14 @@ package abetal
 
 import abetal.models.*
 import libs.kafka.*
+import libs.kafka.processor.SuppressProcessor
 import libs.kafka.stream.MappedStream
 import libs.utils.appLog
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import org.apache.kafka.streams.kstream.Windowed
-import org.apache.kafka.streams.processor.PunctuationType
-import org.apache.kafka.streams.processor.api.Processor
-import org.apache.kafka.streams.processor.api.ProcessorContext
-import org.apache.kafka.streams.processor.api.ProcessorSupplier
-import org.apache.kafka.streams.state.StoreBuilder
-import org.apache.kafka.streams.state.TimestampedKeyValueStore
-import org.apache.kafka.streams.state.ValueAndTimestamp
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.toJavaDuration
 
 object Topics {
     val aap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
@@ -48,6 +39,10 @@ fun createTopology(): Topology = topology {
 
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
 
+/**
+ * Hver gang helved.utbetalinger.v1 blir produsert til
+ * akkumulerer vi uids (UtbetalingID) for saken og erstatter aggregatet på helved.saker.v1
+ */
 fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Set<UtbetalingId>> {
     val ktable = utbetalinger
         .toStream()
@@ -92,24 +87,17 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .default(::utbetalingDiffStream)
 }
 
-private val suppressProcessorSupplier = SuppressProcessorSupplier(
-    100.milliseconds,
+private val suppressProcessorSupplier = SuppressProcessor.supplier(
+    keySerde = WindowedStringSerde,
+    valueSerde = JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>(), 
+    punctuationInterval = 100.milliseconds,
     inactivityGap = 1.seconds,
-    "dp-diff-window-agg-session-store",
+    stateStoreName = "dp-diff-window-agg-session-store",
 )
 
 fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
     branched
-        .filter { (new, prev) -> 
-            !new.isDuplicate(prev).also { 
-                if (it) {
-                    appLog.info("Duplicate message found for ${new.uid.id}")
-                } else {
-                    appLog.info("New : $new")
-                    appLog.info("Prev: $prev")
-                }
-            }
-        }
+        .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { _, (new, _) -> new.originalKey }
         .map { _, streamsPair -> listOf(streamsPair) }
         .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds)
@@ -177,65 +165,6 @@ fun dryrunStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetali
         result.produce(Topics.simulering)
     }.default {
         map { it -> it.unwrapErr() }.produce(Topics.status)
-    }
-}
-
-class SuppressProcessorSupplier(
-    private val punctuationInterval: Duration,
-    private val inactivityGap: Duration,
-    private val stateStoreName: StateStoreName,
-) : ProcessorSupplier<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>, String, List<StreamsPair<Utbetaling, Utbetaling?>>> {
-
-    override fun stores(): Set<StoreBuilder<*>> {
-        return setOf(org.apache.kafka.streams.state.Stores.timestampedKeyValueStoreBuilder(
-            org.apache.kafka.streams.state.Stores.persistentTimestampedKeyValueStore(stateStoreName),
-            WindowedStringSerde,
-            JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>(),
-        ))
-    }
-
-    override fun get(): Processor<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>, String, List<StreamsPair<Utbetaling, Utbetaling?>>> {
-        return SuppressProcessor(punctuationInterval, inactivityGap, stateStoreName)
-    }
-}
-
-class SuppressProcessor(
-    private val punctuationInterval: Duration,
-    private val inactivityGap: Duration,
-    private val stateStoreName: StateStoreName,
-): Processor<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>, String, List<StreamsPair<Utbetaling, Utbetaling?>>> {
-    private lateinit var bufferStore: TimestampedKeyValueStore<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>>
-    private lateinit var context: ProcessorContext<String, List<StreamsPair<Utbetaling, Utbetaling?>>>
-
-    override fun init(ctx: ProcessorContext<String, List<StreamsPair<Utbetaling, Utbetaling?>>>) {
-        context = ctx
-        bufferStore = context.getStateStore(stateStoreName) as TimestampedKeyValueStore<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>>
-        context.schedule(punctuationInterval.toJavaDuration(), PunctuationType.WALL_CLOCK_TIME, ::punctuate)
-    } 
-
-    override fun process(record: org.apache.kafka.streams.processor.api.Record<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>>) {
-        bufferStore.put(record.key(), ValueAndTimestamp.make(record.value(), record.timestamp()))
-    }
-
-    private fun punctuate(wallClockTime: Long) {
-        val iterator = bufferStore.all()
-        val windowsToEmit = mutableListOf<Windowed<String>>()
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            val windowedKey = entry.key
-            val valueAndTimestamp = entry.value
-            val windowEndTime = windowedKey.window().endTime().toEpochMilli()
-            val emissionTimeThreshold = windowEndTime + inactivityGap.inWholeMilliseconds
-
-            if (wallClockTime > emissionTimeThreshold) {
-                val latestAggregate = valueAndTimestamp.value() 
-                val lastestRecordTimestamp = valueAndTimestamp.timestamp()
-                context.forward(org.apache.kafka.streams.processor.api.Record(windowedKey.key(), latestAggregate, lastestRecordTimestamp))
-                windowsToEmit.add(windowedKey)
-            }
-        }
-        iterator.close()
-        windowsToEmit.forEach(bufferStore::delete)
     }
 }
 
