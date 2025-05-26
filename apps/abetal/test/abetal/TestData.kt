@@ -9,6 +9,8 @@ import javax.xml.datatype.XMLGregorianCalendar
 import models.*
 
 val Int.jun: LocalDate get() = LocalDate.of(2025, 6, this)
+val Int.sep: LocalDate get() = LocalDate.of(2025, 9, this)
+val Int.okt: LocalDate get() = LocalDate.of(2025, 10, this)
 val Int.jan: LocalDate get() = LocalDate.of(2025, 1, this)
 val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
 
@@ -49,33 +51,31 @@ object Aap {
         dato: LocalDate,
         beløp: UInt = 123u,
         vedtakssats: UInt? = beløp,
-    ) = Utbetalingsperiode(
-        fom = dato,
-        tom = dato,
-        beløp = beløp,
-        vedtakssats = vedtakssats,
+    ) = listOf(
+        Utbetalingsperiode(
+            fom = dato,
+            tom = dato,
+            beløp = beløp,
+            vedtakssats = vedtakssats,
+        )
     )
 }
 
 object Dp {
     fun utbetaling(
-        fagsakId: String = "$nextInt",
+        sakId: String = "$nextInt",
         behandlingId: String = "$nextInt",
         dryrun: Boolean = false,
         ident: String = "12345678910",
         vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
-        virkningsdato: LocalDate = LocalDate.now(),
-        behandletHendelse: Hendelse = Hendelse(id = "$nextInt"),
         stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
-        utbetalinger: () -> List<DpUtbetalingsperiode>,
+        utbetalinger: () -> List<DpUtbetalingsdag>,
     ): DpUtbetaling = DpUtbetaling(
         dryrun = dryrun,
         behandlingId = behandlingId,
-        fagsakId = fagsakId,
+        sakId = sakId,
         ident = ident,
         vedtakstidspunkt = vedtakstidspunkt,
-        virkningsdato = virkningsdato,
-        behandletHendelse = behandletHendelse,
         stønad = stønad,
         utbetalinger = utbetalinger(),
     ) 
@@ -85,16 +85,13 @@ object Dp {
         fom: LocalDate,
         tom: LocalDate,
         sats: UInt,
-        utbetaling: UInt,
-    ): List<DpUtbetalingsperiode> {
-        // if (!expand) {
-        //     return listOf(DpUtbetalingsperiode(meldeperiode, fom, sats, utbetaling))
-        // }
-        return buildList<DpUtbetalingsperiode> {
+        utbetaltBeløp: UInt = sats,
+    ): List<DpUtbetalingsdag> {
+        return buildList<DpUtbetalingsdag> {
             for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
                 val dato = fom.plusDays(i)
                 if (!dato.erHelg()) {
-                    add(DpUtbetalingsperiode(meldeperiode, dato, sats, utbetaling))
+                    add(DpUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp))
                 }
             }
         }
@@ -146,12 +143,14 @@ fun periode(
     beløp: UInt = 123u,
     vedtakssats: UInt? = beløp,
     betalendeEnhet: NavEnhet? = null,
-) = Utbetalingsperiode(
-    fom = fom,
-    tom = tom,
-    beløp = beløp,
-    vedtakssats = vedtakssats,
-    betalendeEnhet = betalendeEnhet,
+) = listOf(
+    Utbetalingsperiode(
+        fom = fom,
+        tom = tom,
+        beløp = beløp,
+        vedtakssats = vedtakssats,
+        betalendeEnhet = betalendeEnhet,
+    )
 )
 
 
