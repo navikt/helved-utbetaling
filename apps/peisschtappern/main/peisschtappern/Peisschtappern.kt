@@ -45,7 +45,9 @@ fun Application.peisschtappern(
 
     install(Authentication) {
         jwt(TokenProvider.AZURE) {
-            configure(config.azure)
+            configure(config.azure) {
+                it.getListClaim("groups", String::class).any { claim -> claim == "97140b9a-07c5-414c-beeb-69824d04c044" }
+            }
         }
     }
 
