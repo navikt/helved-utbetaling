@@ -46,15 +46,13 @@ fun createTopology(): Topology = topology {
     dpStream(utbetalinger, saker)
 }
 
-data class UtbetalingLeftJoin(val left: Utbetaling, val right: Utbetaling?)
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
-data class OppdragAggregate(val utbetalinger: List<Utbetaling>, val oppdrag: Oppdrag)
 
 fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Set<UtbetalingId>> {
     val ktable = utbetalinger
         .toStream()
         .rekey { _, utbetaling -> SakKey(utbetaling.sakId, Fagsystem.from(utbetaling.stønad)) }
-        .groupByKey(jsonjson())
+        .groupByKey(Serde.json(), Serde.json())
         .aggregate(Tables.saker) { _, utbetaling, uids -> 
             when(utbetaling.action) {
                 Action.DELETE -> uids - utbetaling.uid
@@ -74,10 +72,10 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
         .repartition(Topics.aap.serdes, 3)
         .map { key, aap -> AapTuple(key, aap) }
         .rekey { (_, aap) -> SakKey(aap.sakId, Fagsystem.from(aap.stønad)) }
-        .leftJoin(jsonjson(), saker)
+        .leftJoin(Serde.json(), Serde.json(), saker)
         .map(::toDomain)
         .rekey { utbetaling -> utbetaling.uid.id.toString() }
-        .leftJoin(json(), utbetalinger)
+        .leftJoin(Serde.string(), Serde.json(), utbetalinger)
         .branch({ (new, _) -> new.dryrun }, ::dryrunStream)
         .default(::oppdragStream)
 }
@@ -87,18 +85,17 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .repartition(Topics.dp.serdes, 3)
         .map { key, dp -> DpTuple(key, dp) }
         .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.from(dp.stønad)) }
-        .leftJoin(jsonjson(), saker)
+        .leftJoin(Serde.json(), Serde.json(), saker)
         .flatMapKeyValue(::splitOnMeldeperiode)
-        .leftJoin(json(), utbetalinger)
+        .leftJoin(Serde.string(), Serde.json(), utbetalinger)
         .branch({ (new, _) -> new.dryrun }, ::dryrunStream)
         .default(::utbetalingDiffStream)
 }
 
 private val suppressProcessorSupplier = SuppressProcessorSupplier(
     100.milliseconds,
-    1.seconds,
+    inactivityGap = 1.seconds,
     "dp-diff-window-agg-session-store",
-    windowedjsonList(),
 )
 
 fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
@@ -114,8 +111,8 @@ fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, 
             }
         }
         .rekey { _, (new, _) -> new.originalKey }
-        .map { _, streamsPair -> listOf(UtbetalingLeftJoin(streamsPair.left, streamsPair.right)) }
-        .sessionWindow(jsonList(), 1.seconds)
+        .map { _, streamsPair -> listOf(streamsPair) }
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds)
         .reduce(suppressProcessorSupplier, "dp-diff-window-agg-session-store") { acc, next -> acc + next }
         .map { aggregate  -> 
             Result.catch { 
@@ -124,9 +121,9 @@ fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, 
         }
         .branch({ it.isOk() }) {
             val result = this.map { it -> it.unwrap() }
-            result.flatMapKeyAndValue { _, (utbetalinger, _) -> 
-                utbetalinger.map { KeyValue(it.uid.id.toString(), it) } 
-            }.produce(Topics.utbetalinger)
+            result
+                .flatMapKeyAndValue { _, (utbetalinger, _) -> utbetalinger.map { KeyValue(it.uid.id.toString(), it) } }
+                .produce(Topics.utbetalinger)
             result.map { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
             result.map { (_, _) -> StatusReply(Status.MOTTATT) }.produce(Topics.status) // 
         }
@@ -187,18 +184,17 @@ class SuppressProcessorSupplier(
     private val punctuationInterval: Duration,
     private val inactivityGap: Duration,
     private val stateStoreName: StateStoreName,
-    private val serdes: Serdes<Windowed<String>, List<UtbetalingLeftJoin>>,
-) : ProcessorSupplier<Windowed<String>, List<UtbetalingLeftJoin>, String, List<UtbetalingLeftJoin>> {
+) : ProcessorSupplier<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>, String, List<StreamsPair<Utbetaling, Utbetaling?>>> {
 
     override fun stores(): Set<StoreBuilder<*>> {
         return setOf(org.apache.kafka.streams.state.Stores.timestampedKeyValueStoreBuilder(
             org.apache.kafka.streams.state.Stores.persistentTimestampedKeyValueStore(stateStoreName),
-            serdes.key,
-            serdes.value
+            WindowedStringSerde,
+            JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>(),
         ))
     }
 
-    override fun get(): Processor<Windowed<String>, List<UtbetalingLeftJoin>, String, List<UtbetalingLeftJoin>> {
+    override fun get(): Processor<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>, String, List<StreamsPair<Utbetaling, Utbetaling?>>> {
         return SuppressProcessor(punctuationInterval, inactivityGap, stateStoreName)
     }
 }
@@ -207,17 +203,17 @@ class SuppressProcessor(
     private val punctuationInterval: Duration,
     private val inactivityGap: Duration,
     private val stateStoreName: StateStoreName,
-): Processor<Windowed<String>, List<UtbetalingLeftJoin>, String, List<UtbetalingLeftJoin>> {
-    private lateinit var bufferStore: TimestampedKeyValueStore<Windowed<String>, List<UtbetalingLeftJoin>>
-    private lateinit var context: ProcessorContext<String, List<UtbetalingLeftJoin>>
+): Processor<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>, String, List<StreamsPair<Utbetaling, Utbetaling?>>> {
+    private lateinit var bufferStore: TimestampedKeyValueStore<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>>
+    private lateinit var context: ProcessorContext<String, List<StreamsPair<Utbetaling, Utbetaling?>>>
 
-    override fun init(ctx: ProcessorContext<String, List<UtbetalingLeftJoin>>) {
+    override fun init(ctx: ProcessorContext<String, List<StreamsPair<Utbetaling, Utbetaling?>>>) {
         context = ctx
-        bufferStore = context.getStateStore(stateStoreName) as TimestampedKeyValueStore<Windowed<String>, List<UtbetalingLeftJoin>>
+        bufferStore = context.getStateStore(stateStoreName) as TimestampedKeyValueStore<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>>
         context.schedule(punctuationInterval.toJavaDuration(), PunctuationType.WALL_CLOCK_TIME, ::punctuate)
     } 
 
-    override fun process(record: org.apache.kafka.streams.processor.api.Record<Windowed<String>, List<UtbetalingLeftJoin>>) {
+    override fun process(record: org.apache.kafka.streams.processor.api.Record<Windowed<String>, List<StreamsPair<Utbetaling, Utbetaling?>>>) {
         bufferStore.put(record.key(), ValueAndTimestamp.make(record.value(), record.timestamp()))
     }
 
