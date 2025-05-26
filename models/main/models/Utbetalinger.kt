@@ -51,9 +51,12 @@ data class Utbetaling(
     }
 
     fun isDuplicate(other: Utbetaling?): Boolean {
-        if (other == null) return false
+        if (other == null) {
+            appLog.info("Duplicate message found for $uid")
+            return false
+        }
 
-        return uid == other.uid 
+        val isDuplicate = uid == other.uid 
             && action == other.action 
             && sakId == other.sakId 
             && behandlingId == other.behandlingId 
@@ -65,6 +68,14 @@ data class Utbetaling(
             && periodetype == other.periodetype
             && avvent == other.avvent
             && perioder == other.perioder
+
+
+        if (isDuplicate) {
+            appLog.info("Duplicate message found for $uid")
+            return isDuplicate
+        }
+
+        return isDuplicate
     }
 }
 

@@ -36,7 +36,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 fun Routing.api(manuellKvitteringService: ManuellKvitteringService) {
     get("/api") {
         val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
-        val limit = call.queryParameters["limit"]?.toInt() ?: 100
+        val limit = call.queryParameters["limit"]?.toInt() ?: 10000
         val key = call.queryParameters["key"]
         val value = call.queryParameters["value"]?.split(",")
         val fom = call.queryParameters["fom"]
