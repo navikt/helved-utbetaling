@@ -1,6 +1,5 @@
 package abetal
 
-import abetal.models.AapUtbetaling
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -37,10 +36,19 @@ fun Routing.api(stateStore: StateStore<String, Utbetaling>) {
                 null -> call.respond(HttpStatusCode.BadRequest, "path param uid missing")
                 else -> when(val utbetaling = stateStore.getOrNull(uid)){
                     null -> call.respond(HttpStatusCode.NotFound)
-                    else -> call.respond(utbetaling)
+                    else -> call.respond(
+                        UtbetalingWithTimestamp(
+                            utbetaling = utbetaling.value(),
+                            timestamp = utbetaling.timestamp()
+                        ))
                 }
             }
         }
     }
 }
+
+data class UtbetalingWithTimestamp(
+    val utbetaling: Utbetaling,
+    val timestamp: Long
+)
 
