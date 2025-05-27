@@ -84,7 +84,7 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
         }
         .branch( { o -> o.mmel != null}) {
             filter { o -> o.mmel != null }.map { kvitt ->
-                val statusReply = kvitt.mmel.into()
+                val statusReply = statusReply(kvitt)
                 val tag_fagsystem = Tag.of("fagsystem", Fagsystem.fromFagområde(kvitt.oppdrag110.kodeFagomraade.trimEnd()).name) 
                 val tag_status = Tag.of("status", statusReply.status.name) 
                 meters.counter("helved_kvitteringer", listOf(tag_fagsystem, tag_status)).increment()
@@ -101,15 +101,33 @@ fun Topology.avstemming(avstemProducer: AvstemmingMQProducer) {
     }
 }
 
-private fun Mmel?.into(): StatusReply = when (this) {
-    null -> StatusReply(Status.OK)
-    else -> when (this.alvorlighetsgrad) {
-        "00" -> StatusReply(Status.OK)
-        "04" -> StatusReply(Status.OK, ApiError(200, this.beskrMelding))
-        "08" -> StatusReply(Status.FEILET, ApiError(400, this.beskrMelding))
-        "12" -> StatusReply(Status.FEILET, ApiError(500, this.beskrMelding))
-        else -> StatusReply(Status.FEILET, ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute."))
+private fun statusReply(o: Oppdrag): StatusReply {
+    val detaljer = detaljer(o)
+    return when (o.mmel) {
+        null -> StatusReply(Status.OK)
+        else -> when (o.mmel.alvorlighetsgrad) {
+            "00" -> StatusReply(Status.OK, null, detaljer)
+            "04" -> StatusReply(Status.OK, ApiError(200, o.mmel.beskrMelding), detaljer)
+            "08" -> StatusReply(Status.FEILET, ApiError(400, o.mmel.beskrMelding), detaljer)
+            "12" -> StatusReply(Status.FEILET, ApiError(500, o.mmel.beskrMelding), detaljer)
+            else -> StatusReply(Status.FEILET, ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute."), detaljer)
+        }
     }
+}
+
+private fun detaljer(o: Oppdrag): Detaljer {
+    val linjer = o.oppdrag110.oppdragsLinje150s.map { linje ->
+        DetaljerLinje(
+            id = linje.delytelseId.trimEnd(),
+            idRef = linje.refDelytelseId?.trimEnd(),
+            fom = linje.datoVedtakFom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
+            tom = linje.datoVedtakTom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
+            beløp = linje.sats.toLong().toUInt(),
+            vedtakssats = linje.vedtakssats157?.vedtakssats?.toLong()?.toUInt(),
+            klassekode = linje.kodeKlassifik.trimEnd(),
+        )
+    }
+    return Detaljer(linjer)
 }
 
 
