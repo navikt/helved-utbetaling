@@ -7,8 +7,6 @@ metadata:
     team: helved
 spec:
   image: {{ image }}
-  ingresses:
-    - https://abetal.intern.dev.nav.no
   liveness:
     path: /actuator/live
   readiness:
@@ -34,6 +32,9 @@ spec:
         - id: loki
         - id: elastic
   accessPolicy:
+    inbound:
+      rules:
+        - application: utsjekk
     outbound:
       rules:
         - application: logging

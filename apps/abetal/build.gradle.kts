@@ -21,6 +21,7 @@ dependencies {
     implementation("org.apache.kafka:kafka-streams:4.0.0")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.15.0")
@@ -32,7 +33,7 @@ dependencies {
     implementation("org.apache.kafka:kafka-clients:4.0.0")
 
     testImplementation(kotlin("test"))
-    // testImplementation("org.apache.kafka:kafka-streams:4.0.0") // intercept StreamsBuilder
+    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation(project(":libs:kafka-test"))
 }
