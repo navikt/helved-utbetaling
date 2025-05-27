@@ -307,6 +307,7 @@ internal class AbetalTest {
                 Aap.dag(1.jan)
             }
         }
+        TestTopics.saker.assertThat().hasTotal(1)
 
         val res = runBlocking {
             httpClient.get("/api/utbetalinger/$uid") {
