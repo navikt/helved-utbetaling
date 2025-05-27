@@ -14,6 +14,7 @@ class UrskogTest {
     @Test
     fun `send to mq`() {
         val uid = UUID.randomUUID().toString()
+        val pid = PeriodeId().toString()
 
         val oppdrag = TestData.oppdrag(
             fagsystemId = "$seq",
@@ -21,7 +22,7 @@ class UrskogTest {
             oppdragslinjer = listOf(
                 TestData.oppdragslinje(
                     henvisning = "$seq",
-                    delytelsesId = PeriodeId().toString(),
+                    delytelsesId = pid,
                     klassekode = "AAPUAA",
                     datoVedtakFom = LocalDate.of(2025, 11, 3),
                     datoVedtakTom = LocalDate.of(2025, 11, 7),
@@ -63,7 +64,21 @@ class UrskogTest {
                 assertEquals(Status.HOS_OPPDRAG, it.status)
             }
             .with(uid, index = 1) {
+                val expectedDetaljer =  Detaljer(
+                    listOf(
+                        DetaljerLinje(
+                            id = pid,
+                            idRef = null,
+                            fom = LocalDate.of(2025, 11, 3),
+                            tom = LocalDate.of(2025, 11, 7),
+                            beløp = 700u,
+                            vedtakssats = null,
+                            klassekode = "AAPUAA"
+                        )
+                    )
+                )
                 assertEquals(Status.OK, it.status)
+                assertEquals(expectedDetaljer, it.detaljer)
             }
     }
 }
