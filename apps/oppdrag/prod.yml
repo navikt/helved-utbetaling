@@ -46,6 +46,10 @@ spec:
         flags:
           - name: max_connections
             value: "100"
+          - name: "cloudsql.enable_pgaudit"
+            value: "on"
+          - name: "pgaudit.log"
+            value: "write,ddl"
   azure:
     application:
       enabled: true
