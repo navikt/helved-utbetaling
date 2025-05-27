@@ -1,13 +1,15 @@
 package abetal
 
+import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import models.*
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.assertNotNull
 import kotlin.test.assertEquals
-import kotlin.time.Duration.Companion.milliseconds
 
 internal class AbetalTest {
 
@@ -316,6 +318,13 @@ internal class AbetalTest {
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
+
+        val response = runBlocking {
+            res.body<UtbetalingWithTimestamp>()
+        }
+        assertNotNull(response)
+        assertNotNull(response.utbetaling)
+        assertTrue(response.timestamp > 0)
     }
 }
 
