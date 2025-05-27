@@ -1,7 +1,6 @@
 package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
 import libs.kafka.processor.*
 import libs.kafka.processor.Processor.Companion.addProcessor
 import libs.kafka.stream.ConsumedStream
@@ -53,11 +52,11 @@ class KafkaStreams : Streams {
 
     override fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> = StateStore(
         internalStreams.store(
-            StoreQueryParameters.fromNameAndType<ReadOnlyKeyValueStore<K, V>>(
+            StoreQueryParameters.fromNameAndType<ReadOnlyKeyValueStore<K, ValueAndTimestamp<V>>>(
                 store.name,
-                QueryableStoreTypes.keyValueStore()
+                QueryableStoreTypes.timestampedKeyValueStore()
             )
-        )
+        ) as TimestampedKeyValueStore<K, V>
     )
 }
 

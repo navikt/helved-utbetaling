@@ -6,7 +6,6 @@ import libs.kafka.*
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import org.apache.kafka.streams.state.ValueAndTimestamp
 
 internal class MappedStreamTest {
     @Test
@@ -282,7 +281,7 @@ internal class MappedStreamTest {
         kafka.inputTopic(Topics.A).produce("1", "lol")
 
         val actual = jsonDtoStore.getOrNull(KeyDto("lol"))
-        assertEquals(JsonDto(9, "lol"), actual)
+        assertEquals(JsonDto(9, "lol"), actual?.value())
     }
 }
 

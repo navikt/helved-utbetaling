@@ -1,8 +1,8 @@
 package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
-// import io.micrometer.core.instrument.binder.kafka.KafkaTestMetrics
 import org.apache.kafka.streams.TopologyTestDriver
+import org.apache.kafka.streams.state.TimestampedKeyValueStore
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
@@ -34,8 +34,9 @@ class StreamsMock : Streams {
         this.internalTopology = internalTopology
     }
 
+
     override fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> = StateStore(
-        internalStreams.getKeyValueStore(store.name)
+        internalStreams.getTimestampedKeyValueStore<K, V>(store.name) as TimestampedKeyValueStore<K, V>
     )
 
     fun append(topology: Topology, block: Topology.() -> Unit): Topology {
