@@ -1,10 +1,13 @@
 package abetal
 
-import abetal.models.*
-import java.time.LocalDate
-import kotlin.test.assertEquals
+import io.ktor.client.request.*
+import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
 import models.*
 import org.junit.jupiter.api.Test
+import java.time.LocalDate
+import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class AbetalTest {
 
@@ -295,4 +298,23 @@ internal class AbetalTest {
         TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
         TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
+
+    @Test
+    fun `get utbetaling from api`() {
+        val uid = randomUtbetalingId()
+        TestTopics.aap.produce("${uid.id}") {
+            Aap.utbetaling(Action.CREATE) {
+                Aap.dag(1.jan)
+            }
+        }
+
+        val res = runBlocking {
+            httpClient.get("/api/utbetalinger/$uid") {
+                accept(ContentType.Application.Json)
+            }
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+    }
 }
+

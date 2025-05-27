@@ -11,6 +11,12 @@ import libs.kafka.StreamsMock
 import libs.utils.*
 import org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG
 import org.apache.kafka.streams.state.BuiltInDslStoreSuppliers
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import io.ktor.client.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.jackson.*
 
 object TestTopics {
     val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
@@ -60,3 +66,15 @@ private val testApplication: TestApplication by lazy {
     }
 }
 
+
+val httpClient: HttpClient by lazy {
+    testApplication.createClient {
+        install(ContentNegotiation) {
+            jackson {
+                registerModule(JavaTimeModule())
+                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            }
+        }
+    }
+}

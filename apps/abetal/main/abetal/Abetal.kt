@@ -8,6 +8,11 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.serialization.jackson.*
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import libs.kafka.*
 import libs.utils.*
 
@@ -30,6 +35,13 @@ fun Application.abetal(
     install(MicrometerMetrics) {
         registry = prometheus
         meterBinders += LogbackMetrics()
+    }
+    install(ContentNegotiation) {
+        jackson {
+            registerModule(JavaTimeModule())
+            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+        }
     }
 
     monitor.subscribe(ApplicationStopping) { 
