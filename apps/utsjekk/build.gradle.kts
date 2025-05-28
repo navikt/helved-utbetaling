@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "3.1.3"
-val libVersion = "3.1.119"
+val libVersion = "3.1.131"
 
 dependencies {
     implementation(project(":models"))
@@ -36,11 +36,11 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
+    testImplementation(project(":libs:jdbc-test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("no.nav.helved:auth-test:$libVersion")
-    testImplementation("no.nav.helved:jdbc-test:$libVersion")
 }
 

@@ -54,7 +54,7 @@ object TestRuntime : AutoCloseable {
             abetal = abetalClient.config,
             azure = azure.config,
             jdbc = postgres.config,
-            kafka = StreamsConfig("", "", SslConfig("", "", "")),
+            kafka = kafka.config,
         )
     }
 
@@ -87,7 +87,6 @@ object TestRuntime : AutoCloseable {
         oppdrag.close()
         simulering.close()
         azure.close()
-        // kafka.close()
     }
 }
 
