@@ -62,7 +62,7 @@ data class Dao(
         ): List<Dao> {
             val whereClause = if (key != null || value != null || fom != null || tom != null) {
                 val keyQuery = if (key != null) " record_key = '$key' AND" else ""
-                val valueQuery = if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") " else ""
+                val valueQuery = if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") AND" else ""
                 val fomQuery = if (fom != null) " timestamp_ms > $fom AND" else ""
                 val tomQuery = if (tom != null) " timestamp_ms < $tom AND" else ""
                 val query = "WHERE$keyQuery$valueQuery$fomQuery$tomQuery"
