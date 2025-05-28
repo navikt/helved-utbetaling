@@ -2,8 +2,7 @@ package libs.kafka
 
 import libs.kafka.stream.ConsumedStream
 import org.apache.kafka.streams.KeyValue
-import org.apache.kafka.streams.state.TimestampedKeyValueStore
-import org.apache.kafka.streams.state.ValueAndTimestamp
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 
 typealias StateStoreName = String
 
@@ -12,8 +11,8 @@ open class Store<K : Any, V : Any> private constructor(
     val name: StateStoreName,
     val serde: Serdes<K, V>
 ) {
-    constructor(sourceTable: Table<K, V>) : this(sourceTable, sourceTable.stateStoreName, sourceTable.serdes)
-    constructor(name: StateStoreName, serde: Serdes<K, V>) : this(null, name, serde)
+    constructor(sourceTable: Table<K, V>): this(sourceTable, sourceTable.stateStoreName, sourceTable.serdes)
+    constructor(name: StateStoreName, serde: Serdes<K, V>): this(null, name, serde)
 }
 
 class KStore<K : Any, V : Any>(
@@ -26,20 +25,17 @@ class KStore<K : Any, V : Any>(
         }
 }
 
-class StateStore<K : Any, V>(private val internalStateStore: TimestampedKeyValueStore<K, V>) {
-    fun getOrNull(key: K): ValueAndTimestamp<V>? = internalStateStore.get(key)
+class StateStore<K : Any, V>(private val internalStateStore: ReadOnlyKeyValueStore<K, V>) {
+    fun getOrNull(key: K): V? = internalStateStore.get(key)
 
-    fun iterator(): Iterator<KeyValue<K, ValueAndTimestamp<V>>> = internalStateStore.all().iterator()
+    fun iterator(): Iterator<KeyValue<K, V>> = internalStateStore.all().iterator()
     fun filter(limit: Int = 1000, filter: (KeyValue<K, V>) -> Boolean): List<Pair<K, V>> {
         val seq = sequence<Pair<K, V>> {
             val iter = internalStateStore.all()
-            for (i in 0 until limit) {
+            for(i in 0 until limit) {
                 if (!iter.hasNext()) break
                 val next = iter.next()
-                if (filter(
-                        KeyValue(next.key, next.value.value())
-                    )
-                ) yield(next.key to next.value.value())
+                if (filter(next)) yield(next.key to next.value)
             }
             iter.close()
         }

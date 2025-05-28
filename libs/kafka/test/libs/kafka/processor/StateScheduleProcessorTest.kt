@@ -2,6 +2,7 @@ package libs.kafka.processor
 
 import libs.kafka.*
 import org.junit.jupiter.api.Test
+import org.apache.kafka.streams.state.ValueAndTimestamp
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
@@ -18,11 +19,11 @@ internal class StateScheduleProcessorTest {
         companion object {
             val result = mutableListOf<String>()
         }
-        override fun schedule(wallClockTime: Long, store: StateStore<String, String>) {
+        override fun schedule(wallClockTime: Long, store: StateStore<String, ValueAndTimestamp<String>>) {
             val notLols = store.filter(2) {
-                it.value != "lol"
+                it.value.value() != "lol"
             }.map {
-                it.second
+                it.second.value()
             }
             result.addAll(notLols)
         }
@@ -56,7 +57,7 @@ internal class StateScheduleProcessorTest {
         companion object  {
             var iteratorCount: Int = 0
         }
-        override fun schedule(wallClockTime: Long, store: StateStore<String, String>) {
+        override fun schedule(wallClockTime: Long, store: StateStore<String, ValueAndTimestamp<String>>) {
             val iter = store.iterator()
             while(iter.hasNext()) {
                 iter.next()
