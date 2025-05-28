@@ -77,9 +77,10 @@ data class UtbetalingDao(
         val sql = """
             UPDATE $TABLE_NAME
             SET updated_at = ?, status = ?
-            WHERE utbetaling_id = ? AND deleted_at IS NULL AND id IN (
-                SELECT id 
+            WHERE id = (
+                SELECT id
                 FROM $TABLE_NAME
+                WHERE utbetaling_id = ? AND deleted_at IS NULL
                 ORDER BY created_at DESC
                 LIMIT 1
             )
