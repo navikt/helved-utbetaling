@@ -2,6 +2,7 @@ package peisschtappern
 
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -14,10 +15,8 @@ import java.time.Instant
 import java.util.UUID
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import org.junit.jupiter.api.Disabled
 import kotlin.test.*
 
-@Disabled
 class ApiTest {
     @Test
     fun `can query with limit`() = runTest(TestRuntime.context) {
@@ -26,6 +25,7 @@ class ApiTest {
         save(Channel.Simuleringer)
 
         val result = httpClient.get("/api?limit=2") {
+            bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
 
@@ -39,6 +39,7 @@ class ApiTest {
         save(Channel.Simuleringer)
 
         val result = httpClient.get("/api?key=testkey") {
+            bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
 
@@ -53,6 +54,7 @@ class ApiTest {
         save(Channel.Simuleringer)
 
         val result = httpClient.get("/api?topics=helved.utbetalinger-aap.v1,helved.simuleringer.v1") {
+            bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
 
@@ -68,6 +70,7 @@ class ApiTest {
         save(Channel.Simuleringer)
 
         val result = httpClient.get("/api?value=$sakId") {
+            bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
 
@@ -85,12 +88,23 @@ class ApiTest {
         save(Channel.Simuleringer)
 
         val result = httpClient.get("/api?value=$sakId,$behandlingId") {
+            bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
 
         assertEquals(2, result.size)
         assertNotNull(result.find { it.value!!.contains(sakId) })
         assertNotNull(result.find { it.value!!.contains(behandlingId) })
+    }
+
+    @Test
+    fun `can query for fom, tom and value`() = runTest(TestRuntime.context) {
+        val result = httpClient.get("/api?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }
+
+        assertEquals(HttpStatusCode.OK, result.status)
     }
 
     @Test
@@ -108,6 +122,7 @@ class ApiTest {
         val tom = now.plusSeconds(5L).toString()
 
         val result = httpClient.get("/api?fom=$fom&tom=$tom&key=$key") {
+            bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
 
@@ -132,6 +147,7 @@ class ApiTest {
         )
 
         httpClient.post("/manuell-kvittering") {
+            bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(kvitteringRequest)
         }.let {
