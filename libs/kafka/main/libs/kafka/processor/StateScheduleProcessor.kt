@@ -8,11 +8,12 @@ import org.apache.kafka.streams.processor.api.FixedKeyProcessor
 import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext
 import org.apache.kafka.streams.processor.api.FixedKeyRecord
 import org.apache.kafka.streams.state.TimestampedKeyValueStore
+import org.apache.kafka.streams.state.ValueAndTimestamp
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
 internal interface ScheduleProcessor<K: Any, V> {
-    fun schedule(wallClockTime: Long, store: StateStore<K, V>)
+    fun schedule(wallClockTime: Long, store: StateStore<K, ValueAndTimestamp<V>>)
 } 
 
 abstract class StateScheduleProcessor<K: Any, V: Any>(
