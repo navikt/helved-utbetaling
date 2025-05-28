@@ -10,6 +10,7 @@ import libs.postgres.concurrency.transaction
 import libs.task.Order
 import libs.task.TaskDao
 import libs.task.TaskHistory
+import libs.task.TaskHistoryDao
 import libs.task.Tasks
 import java.time.LocalDateTime
 import java.util.UUID
@@ -83,7 +84,24 @@ fun Route.tasks() {
                 ?: return@put call.respond(HttpStatusCode.NotFound, "Fant ikke task med id $id")
 
             withContext(Jdbc.context) {
-                Tasks.rerun(id)
+                transaction {
+                    val now = LocalDateTime.now()
+                    val task = TaskDao.select { it.id = id }.single()
+                    task
+                        .copy(
+                            status = libs.task.Status.IN_PROGRESS,
+                            updatedAt = now,
+                            scheduledFor = now,
+                        ).update()
+                    TaskHistoryDao(
+                        taskId = task.id,
+                        createdAt = task.createdAt,
+                        triggeredAt = task.updatedAt,
+                        triggeredBy = task.updatedAt,
+                        status = task.status,
+                        message = task.message,
+                    ).insert()
+                }
                 call.respond(HttpStatusCode.OK)
             }
         }
