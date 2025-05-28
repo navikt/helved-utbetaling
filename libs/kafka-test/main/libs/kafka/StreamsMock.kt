@@ -10,6 +10,14 @@ class StreamsMock : Streams {
     private lateinit var internalStreams: TopologyTestDriver
     private lateinit var internalTopology: org.apache.kafka.streams.Topology
 
+    val config by lazy {
+        StreamsConfig(
+            applicationId = "",
+            brokers = "",
+            ssl = SslConfig("", "", "")
+        )
+    }
+
     override fun connect(topology: Topology, config: StreamsConfig, registry: MeterRegistry) {
         topology.registerInternalTopology(this)
 

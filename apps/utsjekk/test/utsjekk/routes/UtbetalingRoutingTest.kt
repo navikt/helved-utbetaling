@@ -879,11 +879,11 @@ class UtbetalingRoutingTest {
                 perioder = utbetaling.perioder + UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u) 
             ))
         }.also {
-            assertEquals(HttpStatusCode.BadRequest, it.status)
             val error = it.body<ApiError.Response>()
             assertEquals("periodene i utbetalingen samsvarer ikke med det som er lagret hos utsjekk.", error.msg)
             assertEquals("utbetaling", error.field)
             assertEquals("${DEFAULT_DOC_STR}opphor_en_utbetaling", error.doc)
+            assertEquals(HttpStatusCode.BadRequest, it.status)
         }
         httpClient.get("/utbetalinger/${uid}") {
             bearerAuth(TestRuntime.azure.generateToken())

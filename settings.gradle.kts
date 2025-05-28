@@ -19,6 +19,7 @@ include(
 )
 
 include(
+    "libs:jdbc-test",
     "libs:kafka",
     "libs:kafka-test",
 )
