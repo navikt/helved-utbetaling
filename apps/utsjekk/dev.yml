@@ -46,6 +46,8 @@ spec:
       value: api://dev-gcp.helved.utsjekk-oppdrag/.default
     - name: SIMULERING_SCOPE
       value: api://dev-gcp.helved.utsjekk-simulering/.default
+    - name: ABETAL_SCOPE
+      value: api://dev-gcp.helved.abetal/.default
     - name: ENV
       value: dev
   azure:

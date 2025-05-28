@@ -7,7 +7,6 @@ import models.*
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import kotlin.test.assertEquals
-import kotlin.time.Duration.Companion.milliseconds
 
 internal class AbetalTest {
 

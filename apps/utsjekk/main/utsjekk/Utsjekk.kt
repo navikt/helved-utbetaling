@@ -51,6 +51,9 @@ fun Application.utsjekk(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
 ) {
+
+    val abetalClient = AbetalClient(config)
+
     val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
         registry = metrics
@@ -116,7 +119,7 @@ fun Application.utsjekk(
     }
 
     val simulering = SimuleringClient(config)
-    val simuleringService = SimuleringService(simulering)
+    val simuleringService = SimuleringService(simulering, abetalClient)
     val simuleringValidator = SimuleringValidator(iverksettingService)
 
     routing {
