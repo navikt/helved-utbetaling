@@ -42,6 +42,7 @@ object TestRuntime : AutoCloseable {
     val azure = AzureFake()
     val oppdrag = OppdragFake()
     val simulering = SimuleringFake()
+    val abetalClient = AbetalClientFake()
     val kafka = StreamsMock()
     val jdbc = Jdbc.initialize(postgres.config)
     val context = CoroutineDatasource(jdbc)
@@ -50,6 +51,7 @@ object TestRuntime : AutoCloseable {
         Config(
             oppdrag = oppdrag.config,
             simulering = simulering.config,
+            abetal = abetalClient.config,
             azure = azure.config,
             jdbc = postgres.config,
             kafka = StreamsConfig("", "", SslConfig("", "", "")),

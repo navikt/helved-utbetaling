@@ -3,7 +3,6 @@ package utsjekk.utbetaling.simulering
 import kotlinx.coroutines.withContext
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
-import models.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
 import utsjekk.notFound
 import utsjekk.utbetaling.FagsystemDto
@@ -20,8 +19,12 @@ import utsjekk.utbetaling.klassekode
 import utsjekk.TokenType
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
+import utsjekk.AbetalClient
 
-class SimuleringService(private val client: SimuleringClient) {
+class SimuleringService(
+    private val client: SimuleringClient,
+    private val abetalClient: AbetalClient
+) {
     suspend fun simuler(
         uid: UtbetalingId,
         utbetaling: Utbetaling,
@@ -33,11 +36,18 @@ class SimuleringService(private val client: SimuleringClient) {
             }
         }
 
-        val oppdrag = if (dao != null) {
-            utbetalingsoppdrag(uid, dao.data, utbetaling)
-        } else {
-            utbetalingsoppdrag(uid, utbetaling)
-        }
+        val abetalUtbetaling = runCatching {
+            abetalClient.utbetaling(uid)
+        }.getOrNull()
+
+        val oppdrag =
+            if (abetalUtbetaling != null) {
+                utbetalingsoppdrag(uid, abetalUtbetaling, utbetaling)
+            } else if (dao != null) {
+                utbetalingsoppdrag(uid, dao.data, utbetaling)
+            } else {
+                utbetalingsoppdrag(uid, utbetaling)
+            }
 
         val simulering = client.simuler(oppdrag, token)
         return SimuleringMapper.oppsummering(simulering)
@@ -48,11 +58,18 @@ class SimuleringService(private val client: SimuleringClient) {
         new: Utbetaling,
         token: TokenType,
     ): SimuleringApi {
-        val existing = withContext(Jdbc.context) {
+        val dao = withContext(Jdbc.context) {
             transaction {
                 UtbetalingDao.findOrNull(uid)?.data ?: notFound("utbetaling $uid")
             }
         }
+
+        val abetalUtbetaling = runCatching {
+            abetalClient.utbetaling(uid)
+        }.getOrNull()
+
+        val existing = abetalUtbetaling ?: dao
+
         existing.validateLockedFields(new)
 
         val oppdrag = UtbetalingsoppdragDto(
@@ -126,13 +143,13 @@ class SimuleringService(private val client: SimuleringClient) {
             avstemmingstidspunkt = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
             brukersNavKontor = utbetaling.perioder.betalendeEnhet()?.enhet,
             utbetalingsperioder = utbetaling.perioder.mapIndexed { i, periode ->
-                val id = if(i == utbetaling.perioder.size - 1) utbetaling.lastPeriodeId else PeriodeId()
+                val id = if (i == utbetaling.perioder.size - 1) utbetaling.lastPeriodeId else PeriodeId()
 
                 UtbetalingsperiodeDto(
                     erEndringPåEksisterendePeriode = false,
                     opphør = null,
                     id = id.toString(),
-                    forrigePeriodeId = forrigeId?.toString().also { forrigeId = id},
+                    forrigePeriodeId = forrigeId?.toString().also { forrigeId = id },
                     vedtaksdato = utbetaling.vedtakstidspunkt.toLocalDate(),
                     klassekode = klassekode(utbetaling.stønad),
                     fom = periode.fom,
