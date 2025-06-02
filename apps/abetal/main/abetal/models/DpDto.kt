@@ -18,7 +18,7 @@ data class DpUtbetaling(
     val ident: String,
     val utbetalinger: List<DpUtbetalingsdag>,
 
-    val vedtakstidspunkt: LocalDateTime = LocalDateTime.now(), // TODO: denne skal ikke ha default-verdi
+    val vedtakstidspunktet: LocalDateTime,
     val stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR, // TODO: denne skal ikke ha default-verdi
 )
 
@@ -82,7 +82,7 @@ fun toDomain(
         behandlingId = BehandlingId(value.behandlingId),
         lastPeriodeId = PeriodeId(),
         personident = Personident(value.ident),
-        vedtakstidspunkt = value.vedtakstidspunkt,
+        vedtakstidspunkt = value.vedtakstidspunktet,
         stønad = value.stønad,
         beslutterId = Navident("dagpenger"),
         saksbehandlerId = Navident("dagpenger"),

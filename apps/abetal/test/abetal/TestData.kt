@@ -75,7 +75,7 @@ object Dp {
         behandlingId = behandlingId,
         sakId = sakId,
         ident = ident,
-        vedtakstidspunkt = vedtakstidspunkt,
+        vedtakstidspunktet = vedtakstidspunkt,
         stønad = stønad,
         utbetalinger = utbetalinger(),
     ) 
