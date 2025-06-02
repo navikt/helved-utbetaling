@@ -17,7 +17,9 @@ import no.nav.utsjekk.kontrakter.felles.Fagsystem
 import no.nav.utsjekk.kontrakter.oppdrag.*
 import port
 import utsjekk.OppdragConfig
+import utsjekk.utbetaling.UtbetalingId
 import java.net.URI
+import java.util.UUID
 
 class OppdragFake : AutoCloseable {
     private val oppdrag = embeddedServer(Netty, port = 0, module = Application::oppdrag).apply { start() }
@@ -41,9 +43,14 @@ class OppdragFake : AutoCloseable {
         avstemminger[fagsystem] = FakeResponse(response)
     }
 
+    fun utbetalRespondWith(uid: UtbetalingId, response: HttpStatusCode) {
+        utbetalinger[uid] = FakeResponse(response)
+    }
+
     suspend fun awaitIverksett(id: OppdragIdDto) = iverksettinger[id]!!.request.await()
     suspend fun awaitStatus(id: OppdragIdDto) = statuser[id]!!.request.await()
     suspend fun awaitAvstemming(fagsystem: Fagsystem) = avstemminger[fagsystem]!!.request.await()
+    suspend fun awaitUtbetaling(uid: UtbetalingId) = utbetalinger[uid]!!.request.await()
 
     fun reset() {
         iverksettinger.clear()
@@ -61,6 +68,7 @@ data class FakeResponse<T, U>(val response: T) {
 private val iverksettinger = mutableMapOf<OppdragIdDto, FakeResponse<HttpStatusCode, Utbetalingsoppdrag>>()
 private val statuser = mutableMapOf<OppdragIdDto, FakeResponse<OppdragStatusDto, OppdragIdDto>>()
 private val avstemminger = mutableMapOf<Fagsystem, FakeResponse<HttpStatusCode, GrensesnittavstemmingRequest>>()
+private val utbetalinger = mutableMapOf<UtbetalingId, FakeResponse<HttpStatusCode, UtbetalingId>>()
 
 private fun Application.oppdrag() {
     install(ContentNegotiation) {
@@ -106,6 +114,17 @@ private fun Application.oppdrag() {
 
             when (fakeResponse) {
                 null -> call.respond(HttpStatusCode.Created, "fallback fake response")
+                else -> call.respond(fakeResponse.response)
+            }
+        }
+
+        post("/utbetalingsoppdrag/{uid}") {
+            val id = call.parameters["uid"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+            val uid = UtbetalingId(UUID.fromString(id))
+            val fakeResponse = utbetalinger[uid]?.also { it.request.complete(uid) }
+
+            when (fakeResponse) {
+                null -> call.respond(HttpStatusCode.OK)
                 else -> call.respond(fakeResponse.response)
             }
         }

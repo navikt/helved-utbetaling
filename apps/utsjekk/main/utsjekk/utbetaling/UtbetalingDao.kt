@@ -80,7 +80,7 @@ data class UtbetalingDao(
             WHERE id = (
                 SELECT id
                 FROM $TABLE_NAME
-                WHERE utbetaling_id = ? AND deleted_at IS NULL
+                WHERE utbetaling_id = ?
                 ORDER BY created_at DESC
                 LIMIT 1
             )
