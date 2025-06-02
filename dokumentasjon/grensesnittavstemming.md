@@ -1,3 +1,19 @@
+
+> ⚠️ **TODO – Avklaringer med Utbetaling**
+>
+> - Hva brukes `datoAvstemtFom` og `datoAvstemtTom` i avstemming-XML til?  
+>   Hva er gyldig format? Per 2. juni benytter vi `YYYYMMDDHH` (f.eks. `2025060200` og `2025060223`) i disse feltene.
+>
+> - Hva er forskjellen på `datoAvstemtFom` / `datoAvstemtTom` og `nokkelFom` / `nokkelTom`?  
+>   Per 2. juni benytter vi ulike formater i disse feltene. `nokkelFom` og `nokkelTom` har timestamp med mikrosekunder, f.eks. `2025-06-02-00.00.00.000000`.
+>
+> - Hva brukes `tidspktMelding` i oppdrag-XML til?  
+>   Hva er gyldig format? Per 2. juni bruker vi samme format som i `nokkelFom` og `nokkelTom`.
+>
+> - Skal vi avstemme alt vi har mottatt i Utsjekk mellom 00:00:00 - 23:59:59 hver dag? Eller tar vi kun med oppdrag som blir sendt fra Utsjekk til OS før OS stenger (kl 21:00)?
+> - Har det noe å si *når* på døgnet en avstemming sendes fra Utsjekk til OS? Er det lik "tidsfrist" i Q1 og Prod? Per nå sender vi avstemmingene om morgenen, når OS har åpnet påfølgende virkedag, i både Q1 og prod.
+---
+
 # Grensesnittavstemming
 
 En grensesnittavstemming består av en start-, data- og sluttmelding som sendes på MQ til Oppdragssystemet. 
