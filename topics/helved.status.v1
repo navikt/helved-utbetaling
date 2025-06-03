@@ -24,3 +24,6 @@ spec:
     - team: helved
       application: peisschtappern
       access: read
+    - team: teamdagpenger
+      application: dp-mellom-barken-og-veden
+      access: read

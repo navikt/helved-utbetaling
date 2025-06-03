@@ -13,7 +13,7 @@ import kotlin.time.Duration.Companion.seconds
 
 object Topics {
     val aap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
-    val dp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
+    val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simulering = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
