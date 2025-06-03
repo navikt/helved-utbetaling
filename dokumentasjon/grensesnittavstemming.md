@@ -47,24 +47,9 @@ I oppdragXML for et av oppdragene som avstemmes:
 Det viktige er at formatet på nøklene er likt på tvers. Et enklere format med kun dato vil også fungere. 
 Så vi kunne altså like godt bare sagt `2025-05-21` for `nokkelFom` og `nokkelTom` i avstemming-XML og på `nokkelAvstemming` i oppdrag-XML.
 
-### TODO avklaringer
-Spør utbetaling:
-
-- Hva brukes `tidspktMelding` til (i oppdrag-XML), og er formatet viktig også her?
-- Hva med `datoAvstemtFom` og `datoAvstemtTom` i avstemmingXML (data-delen)? Vi har per 23 mai ulikt format på disse og de øvrige datobaserte nøklene nevnt over. F.eks:
-
-```xml
- <periode>
-    <datoAvstemtFom>2025052200</datoAvstemtFom>
-    <datoAvstemtTom>2025052223</datoAvstemtTom>
-  </periode>
-```
-
-Kan denne være slik den er? Hva er forskjellen på disse og `nokkelFom` og `nokkelTom`?
 
 ## Avstemmingsmeldingene
-En grensesnittavstemming gjøres daglig (på virkedager når Oppdragsystemet er åpent) per fagområde / ytelse. Vi avstemmer AAP, Dagpenger, Tiltakspenger og Tilleggsstønader
-hver for seg i egne meldinger mot OS.
+En grensesnittavstemming gjøres daglig (på virkedager når Oppdragsystemet er åpent) per fagområde / ytelse. Vi avstemmer AAP, Dagpenger, Tiltakspenger og Tilleggsstønader hver for seg i egne meldinger mot OS.
 
 En grensesnittavstemming gjelder altså bare ett fagområde / ytelse og består av tre deler:
 
@@ -72,9 +57,49 @@ En grensesnittavstemming gjelder altså bare ett fagområde / ytelse og består 
 2. Datamelding
 3. Sluttmedling
 
-Alle de tre er XML-er som sendes til Oppdragssystemet via MQ. Meldingene knyttes sammen av en felles `avleverendeAvstemmingId`, som må være med i hver melding.
-Hvis avstemmingsmeldinger som hører sammen kommer med ulike `avleverendeAvstemmingId`, vil ikke OS klare å knytte de sammen. Følgelig feiler avstemmingen. Vi får ingen feedback
-på det utover at avstemmingen ikke dukker opp i økonomiportalen i Q1.
+Alle de tre er XML-er som sendes til Oppdragssystemet via MQ. Meldingene knyttes sammen av en felles `avleverendeAvstemmingId`, som må være med i hver melding. Hvis avstemmingsmeldinger som hører sammen kommer med ulike `avleverendeAvstemmingId`, vil ikke OS klare å knytte de sammen. Følgelig feiler avstemmingen. Vi får ingen feedback på det utover at avstemmingen ikke dukker opp i økonomiportalen i Q1.
+
+### Felter som finnes i alle tre meldinger
+
+Alle start-, data- og sluttmeldinger inneholder `<aksjon>` som har følgene felter
+
+| Felt         | Type/gyldige verdier  | Beskrivelse                                                                                               |
+|:---------------|:----------------------|:--------------------------------------------------------------------------------------------------------|
+| aksjonType     |  | |
+| kildeType      |  | |
+| avstemmingType |  | |
+| avleverendeKomponentKode |  | |
+| mottakendeKomponentKode |  | |
+| underkomponentKode |  | |
+| nokkelFom |  | |
+| nokkelTom |  | |
+| avleverendeAvstemmingId |  | |
+| brukerId |  | |
+
+### Felter som bare finnes i datamelding
+
+Datameldingen er delt i fire bolker med felter gruppert i `<aksjon>`, `<total>`, `<periode>` og `<grunnlag>`. Førstnevnte inngår i alle meldinger, mens de tre siste bare finnes i datameldingen.
+
+| Felt         | Type/gyldige verdier  | Beskrivelse                                                                                               |
+|:---------------|:----------------------|:--------------------------------------------------------------------------------------------------------|
+| aksjon     |  | Se tabellen over. `aksjon/*` inngår i alle meldinger|
+| total/totalAntall     |  | |
+| total/totalBelop      |  | |
+| total/fortegn |  | |
+| periode/datoAvstemtFom |  | |
+| periode/datoAvstemtTom |  | |
+| grunnlag/godkjentAntall |  | |
+| grunnlag/godkjentBelop |  | |
+| grunnlag/godkjentFortegn |  | |
+| grunnlag/varselAntall |  | |
+| grunnlag/varselBelop |  | |
+| grunnlag/varselFortegn |  | |
+| grunnlag/avvistAntall |  | |
+| grunnlag/avvistBelop|  | |
+| grunnlag/avvistFortegn |  | |
+| grunnlag/manglerAntall |  | |
+| grunnlag/manglerBelop |  | |
+| grunnlag/manglerFortegn |  | |
 
 
 ## Komplett eksempel på grensesnittavstemming
