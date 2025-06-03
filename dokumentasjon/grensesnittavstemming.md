@@ -202,4 +202,7 @@ Eksempel som harmonerer med start-, data- og sluttmeldingen vist over:
 </avstemming-115>
 
 ```
+---
+## Relatert
 
+https://github.com/navikt/tjenestespesifikasjoner/blob/master/avstemming-v1-tjenestespesifikasjon/src/main/wsdl/no/nav/virksomhet/tjenester/avstemming/meldinger/meldinger.xsd 
