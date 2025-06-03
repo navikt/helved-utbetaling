@@ -20,8 +20,6 @@ data class Detaljer(
 )
 
 data class DetaljerLinje(
-    val id: String,
-    val idRef: String?,
     val fom: LocalDate,
     val tom: LocalDate,
     val beløp: UInt,

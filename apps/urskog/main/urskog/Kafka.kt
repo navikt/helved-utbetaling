@@ -118,8 +118,6 @@ private fun statusReply(o: Oppdrag): StatusReply {
 private fun detaljer(o: Oppdrag): Detaljer {
     val linjer = o.oppdrag110.oppdragsLinje150s.map { linje ->
         DetaljerLinje(
-            id = linje.delytelseId.trimEnd(),
-            idRef = linje.refDelytelseId?.trimEnd(),
             fom = linje.datoVedtakFom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
             tom = linje.datoVedtakTom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
             beløp = linje.sats.toLong().toUInt(),
