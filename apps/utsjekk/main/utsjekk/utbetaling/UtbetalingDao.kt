@@ -2,14 +2,8 @@ package utsjekk.utbetaling
 
 import libs.postgres.concurrency.connection
 import libs.postgres.map
-import libs.utils.Result
-import libs.utils.logger
-import libs.utils.map
-import libs.utils.mapErr
-import utsjekk.utbetaling.*
-import libs.utils.secureLog
+import libs.utils.*
 import no.nav.utsjekk.kontrakter.felles.objectMapper
-import org.intellij.lang.annotations.Language
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
@@ -69,7 +63,7 @@ data class UtbetalingDao(
                 stmt.executeUpdate()
             }
         }
-            .map { Unit }
+            .map {}
             .mapErr { DatabaseError.Unknown }
     }
 
@@ -97,7 +91,7 @@ data class UtbetalingDao(
                 stmt.executeUpdate()
             }
         }
-            .map { Unit }
+            .map {}
             .mapErr { DatabaseError.Unknown }
     }
 
@@ -119,8 +113,7 @@ data class UtbetalingDao(
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery()
                     .map(::from)
-                    .filter { it.deleted_at == null || history }
-                    .singleOrNull()
+                    .singleOrNull { it.deleted_at == null || history }
             }
         }
 
@@ -141,7 +134,7 @@ data class UtbetalingDao(
         }
 
         /**
-         * Vi ønsker å markerer utbetalingen (inkl all historikk) som deleted 
+         * Vi ønsker å markerer utbetalingen (inkl all historikk) som deleted
          * slik at det gjenspeiler opphøret hos PO Utbetaling.
          */
         suspend fun delete(id: UtbetalingId): Result<Unit, DatabaseError> {
@@ -161,7 +154,7 @@ data class UtbetalingDao(
                     stmt.executeUpdate()
                 }
             }
-                .map { Unit }
+                .map {}
                 .mapErr { DatabaseError.Unknown }
         }
 
