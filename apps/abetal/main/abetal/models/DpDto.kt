@@ -19,8 +19,24 @@ data class DpUtbetaling(
     val utbetalinger: List<DpUtbetalingsdag>,
 
     val vedtakstidspunktet: LocalDateTime,
-    val stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR, // TODO: denne skal ikke ha default-verdi
+    val type: Rettighetstype,
 )
+
+enum class Rettighetstype {
+    Ordinær,
+    Permittering,
+    PermitteringFiskeindustrien,
+    EØS,
+}
+
+fun Rettighetstype.into(): StønadTypeDagpenger {
+    return when (this) {
+        Rettighetstype.Ordinær -> StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR
+        Rettighetstype.Permittering -> StønadTypeDagpenger.PERMITTERING_ORDINÆR
+        Rettighetstype.PermitteringFiskeindustrien -> StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI
+        Rettighetstype.EØS -> StønadTypeDagpenger.EØS
+    }
+}
 
 data class DpUtbetalingsdag(
     val meldeperiode: String,
@@ -83,7 +99,7 @@ fun toDomain(
         lastPeriodeId = PeriodeId(),
         personident = Personident(value.ident),
         vedtakstidspunkt = value.vedtakstidspunktet,
-        stønad = value.stønad,
+        stønad = value.type.into(),
         beslutterId = Navident("dagpenger"),
         saksbehandlerId = Navident("dagpenger"),
         periodetype = Periodetype.UKEDAG,

@@ -68,7 +68,7 @@ object Dp {
         dryrun: Boolean = false,
         ident: String = "12345678910",
         vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
-        stønad: StønadTypeDagpenger = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+        type: Rettighetstype = Rettighetstype.Ordinær,
         utbetalinger: () -> List<DpUtbetalingsdag>,
     ): DpUtbetaling = DpUtbetaling(
         dryrun = dryrun,
@@ -76,7 +76,7 @@ object Dp {
         sakId = sakId,
         ident = ident,
         vedtakstidspunktet = vedtakstidspunkt,
-        stønad = stønad,
+        type = type,
         utbetalinger = utbetalinger(),
     ) 
 
