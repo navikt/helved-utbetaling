@@ -319,7 +319,7 @@ sealed interface Stønadstype {
             is StønadTypeTiltakspenger -> "TILTAKSPENGER"
             is StønadTypeTilleggsstønader -> "TILLEGGSSTØNADER"
             is StønadTypeAAP -> "AAP"
-            is StønadTypeHistorisk -> "HELSREF"
+            is StønadTypeHistorisk -> "HISTORISK"
         }
 }
 
