@@ -217,3 +217,7 @@ private fun klassekode(stønadstype: StønadTypeAAP): String = when (stønadstyp
     StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING -> "AAPUAA"
 }
 
+private fun klassekode(stønadstype: StønadTypeHistorisk): String = when (stønadstype) {
+    StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER -> "HJRIM"
+}
+
