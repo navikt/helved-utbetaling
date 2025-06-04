@@ -304,10 +304,12 @@ sealed interface Stønadstype {
                 .recoverCatching { StønadTypeTilleggsstønader.valueOf(str) }
                 .recoverCatching { StønadTypeTiltakspenger.valueOf(str) }
                 .recoverCatching { StønadTypeAAP.valueOf(str) }
+                .recoverCatching { StønadTypeHistorisk.valueOf(str) }
                 .getOrThrow()
 
         fun fraKode(klassekode: String): Stønadstype =
-            (StønadTypeDagpenger.entries + StønadTypeTiltakspenger.entries + StønadTypeTilleggsstønader.entries + StønadTypeAAP.entries)
+            (StønadTypeDagpenger.entries + StønadTypeTiltakspenger.entries + StønadTypeTilleggsstønader.entries +
+                    StønadTypeAAP.entries + StønadTypeHistorisk.entries)
                 .single { it.klassekode == klassekode }
     }
 
@@ -426,16 +428,16 @@ private fun beløp(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): U
                     msg = "fant fler ulike beløp blant dagene",
                     field = "beløp",
                     doc =
-                        "opprett_en_utbetaling"
+                    "opprett_en_utbetaling"
                 )
 
         else -> perioder.singleOrNull()?.beløp
             ?: badRequest(
                 msg =
-                    "forventet kun en periode, da sammenslåing av beløp ikke er støttet",
+                "forventet kun en periode, da sammenslåing av beløp ikke er støttet",
                 field = "beløp",
                 doc =
-                    "${DEFAULT_DOC_STR}utbetalinger/perioder"
+                "${DEFAULT_DOC_STR}utbetalinger/perioder"
             )
     }
 
