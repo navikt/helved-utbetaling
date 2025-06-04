@@ -217,7 +217,7 @@ internal class DpTest {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
                     fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
+                    tom = LocalDate.of(2021, 6, 18),
                     sats = 1000u,
                     utbetaltBeløp = 1000u,
                     rettighetstype = Rettighetstype.Ordinær,
@@ -225,7 +225,7 @@ internal class DpTest {
                 ) + Dp.meldekort(
                     meldeperiode = meldeperiode1,
                     fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
+                    tom = LocalDate.of(2021, 6, 18),
                     sats = 100u,
                     utbetaltBeløp = 100u,
                     rettighetstype = Rettighetstype.Ordinær,
@@ -676,7 +676,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(2.jun, 13.jun, 100u)
+                periode(3.jun, 14.jun, 100u)
             }
         }
 
@@ -694,18 +694,17 @@ internal class DpTest {
             ) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
-                    fom = 1.jun,
+                    fom = 3.jun,
                     tom = 14.jun,
                     sats = 100u,
                     utbetaltBeløp = 100u,
-                ) +
-                        Dp.meldekort(
-                            meldeperiode = meldeperiode2,
-                            fom = 15.jun,
-                            tom = 28.jun,
-                            sats = 200u,
-                            utbetaltBeløp = 200u,
-                        )
+                ) + Dp.meldekort(
+                    meldeperiode = meldeperiode2,
+                    fom = 17.jun,
+                    tom = 28.jun,
+                    sats = 200u,
+                    utbetaltBeløp = 200u,
+                )
             }
         }
 
@@ -734,7 +733,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(16.jun, 27.jun, 200u, 200u)
+                    periode(17.jun, 28.jun, 200u, 200u)
                 }
                 assertEquals(expected, it)
             }
@@ -792,7 +791,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(2.jun, 13.jun, 100u)
+                periode(3.jun, 14.jun, 100u)
             }
         }
 
@@ -810,7 +809,7 @@ internal class DpTest {
             ) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
-                    fom = 1.jun,
+                    fom = 3.jun,
                     tom = 14.jun,
                     sats = 100u,
                     utbetaltBeløp = 80u,
@@ -843,7 +842,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(2.jun, 13.jun, 80u, 100u)
+                    periode(3.jun, 14.jun, 80u, 100u)
                 }
                 assertEquals(expected, it)
             }
@@ -1003,7 +1002,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(1.sep, 12.sep, 500u) // 1-14
+                periode(2.sep, 13.sep, 500u) // 1-14
             }
         }
         TestTopics.utbetalinger.produce(uid2.toString()) {
@@ -1023,7 +1022,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(15.sep, 26.sep, 600u) // 15-28
+                periode(16.sep, 27.sep, 600u) // 15-28
             }
         }
 
@@ -1035,8 +1034,8 @@ internal class DpTest {
 
         TestTopics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
-                Dp.meldekort("132460781", 1.sep, 12.sep, 600u) + 
-                Dp.meldekort("132462765", 29.sep, 10.okt, 600u) // 29-12
+                Dp.meldekort("132460781", 2.sep, 13.sep, 600u) + 
+                Dp.meldekort("132462765", 30.sep, 10.okt, 600u) // 29-12
             }
         }
 
@@ -1065,7 +1064,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(1.sep, 12.sep, 600u)
+                    periode(2.sep, 13.sep, 600u)
                 }
                 assertEquals(expected, it)
             }
@@ -1087,7 +1086,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(15.sep, 26.sep, 600u)
+                    periode(16.sep, 27.sep, 600u)
                 }
                 assertEquals(expected, it)
             }
@@ -1109,7 +1108,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(29.sep, 10.okt, 600u)
+                    periode(30.sep, 10.okt, 600u)
                 }
                 assertEquals(expected, it)
             }

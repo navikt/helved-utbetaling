@@ -93,7 +93,7 @@ data class Avvent(
     val feilregistrering: Boolean = false,
 )
 
-private fun Utbetaling.failOnEmptyPerioder() {
+fun Utbetaling.failOnEmptyPerioder() {
     if (perioder.isEmpty()) {
         badRequest(
             msg = "perioder kan ikke være tom",
@@ -115,31 +115,31 @@ fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
     if (ingenEndring) conflict("periods allready exists", "opprett_en_utbetaling")
 }
 
-private fun Utbetaling.failOnÅrsskifte() {
+fun Utbetaling.failOnÅrsskifte() {
     if (periodetype != Periodetype.EN_GANG) return
     if (perioder.minBy { it.fom }.fom.year != perioder.maxBy { it.tom }.tom.year) {
         badRequest("periode strekker seg over årsskifte", "opprett_en_utbetaling")
     }
 }
 
-private fun Utbetaling.failOnZeroBeløp() {
+fun Utbetaling.failOnZeroBeløp() {
     if (perioder.any { it.beløp == 0u }) {
         badRequest("beløp kan ikke være 0", "opprett_en_utbetaling")
     }
 }
 
-private fun Utbetaling.failOnDuplicatePerioder() {
+fun Utbetaling.failOnDuplicatePerioder() {
     val dupFom = perioder.groupBy { it.fom }.any { (_, perioder) -> perioder.size != 1 }
     if (dupFom) badRequest("kan ikke sende inn duplikate perioder", "opprett_en_utbetaling#Duplikate%20perioder")
     val dupTom = perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }
     if (dupTom) badRequest("kan ikke sende inn duplikate perioder", "opprett_en_utbetaling#Duplikate%20perioder")
 }
 
-private fun Utbetaling.failOnTomBeforeFom() {
+fun Utbetaling.failOnTomBeforeFom() {
     if (!perioder.all { it.fom <= it.tom }) badRequest("fom må være før eller lik tom", "opprett_en_utbetaling")
 }
 
-private fun Utbetaling.failOnInconsistentPeriodeType() {
+fun Utbetaling.failOnInconsistentPeriodeType() {
     fun LocalDate.erHelg() = dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
     val consistent = when (periodetype) {
         Periodetype.UKEDAG -> perioder.all { it.fom == it.tom } && perioder.none { it.fom.erHelg() }
@@ -147,11 +147,13 @@ private fun Utbetaling.failOnInconsistentPeriodeType() {
         Periodetype.MND -> perioder.all { it.fom.dayOfMonth == 1 && it.tom.plusDays(1) == it.fom.plusMonths(1) }
         Periodetype.EN_GANG -> perioder.all { it.fom.year == it.tom.year } // tillater engangs over årsskifte
     }
-    if (!consistent) badRequest("inkonsistens blant datoene i periodene")
+    if (!consistent) badRequest("""inkonsistens blant datoene i periodene
+        fom == tom       => ${perioder.all { it.fom == it.tom }}
+        perioder != helg => ${perioder.none { it.fom.erHelg() }}
+    """.trimIndent())
 }
 
-// TODO: remove?
-private fun Utbetaling.failOnIllegalFutureUtbetaling() {
+fun Utbetaling.failOnIllegalFutureUtbetaling() {
     if (stønad is StønadTypeTilleggsstønader) return
     val isDay = periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG) 
     val dayIsFuture = perioder.maxBy{ it.tom }.tom.isAfter(LocalDate.now()) 
@@ -161,8 +163,7 @@ private fun Utbetaling.failOnIllegalFutureUtbetaling() {
     )
 }
 
-// TODO: remove?
-private fun Utbetaling.failOnTooManyPeriods() {
+fun Utbetaling.failOnTooManyPeriods() {
     if (periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG)) {
         val min = perioder.minBy { it.fom }.fom
         val max = perioder.maxBy { it.tom }.tom
@@ -171,7 +172,7 @@ private fun Utbetaling.failOnTooManyPeriods() {
     }
 }
 
-private fun Utbetaling.failOnDuplicate(prev: Utbetaling?) {
+fun Utbetaling.failOnDuplicate(prev: Utbetaling?) {
     prev?.let {
         if (this.copy(førsteUtbetalingPåSak = prev.førsteUtbetalingPåSak) == prev){
             conflict("Denne meldingen har du allerede sendt inn")
@@ -179,13 +180,13 @@ private fun Utbetaling.failOnDuplicate(prev: Utbetaling?) {
     }
 }
 
-private fun Utbetaling.failOnTooLongSakId() {
+fun Utbetaling.failOnTooLongSakId() {
     if (sakId.id.length > 30) {
         badRequest("sakId kan være maks 30 tegn langt", "opprett_en_utbetaling")
     }
 }
 
-private fun Utbetaling.failOnTooLongBehandlingId() {
+fun Utbetaling.failOnTooLongBehandlingId() {
     if (behandlingId.id.length > 30) {
         badRequest("behandlingId kan være maks 30 tegn langt", "opprett_en_utbetaling")
     }
