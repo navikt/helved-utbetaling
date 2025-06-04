@@ -1,6 +1,9 @@
 
 > ⚠️ **TODO – Avklaringer med Utbetaling**
 >
+> - Har det noe å si *når* på døgnet en avstemming sendes fra Utsjekk til OS? Er det lik tidsfrist i Q1 og Prod? Per nå sender vi avstemmingene om morgenen, når OS har åpnet, påfølgende virkedag i både Q1 og prod.
+>  - Skal vi avstemme alt vi har mottatt i Utsjekk mellom 00:00:00 - 23:59:59 hver dag? Eller bør vi f.eks kun ta med oppdrag som blir sendt fra Utsjekk til OS før OS stenger (kl 21:00)?
+>
 > - Hva er forskjellen på `datoAvstemtFom` / `datoAvstemtTom` og `nokkelFom` / `nokkelTom` og hva brukes de til i OS?
 >   - Per nå benytter vi ulike formater i disse feltene. `datoAvstemtFom` og `datoAvstemtTom` er på formen `yyyymmddhh`, mens `nokkelFom` og `nokkelTom` har timestamp med mikrosekunder på formen `yyyy-mm-dd-hh.mm.ss.nnnnnn`.
 >
@@ -8,11 +11,8 @@
 >
 > - Hva brukes `tidspktMelding` i oppdrag-XML til?  Hva er gyldig format?
 >     - Per nå bruker vi samme format som i `nokkelAvstemming` (oppdrag-XML) og `nokkelFom` og `nokkelTom` (avstemming-XML).
->
-> - Skal vi avstemme alt vi har mottatt i Utsjekk mellom 00:00:00 - 23:59:59 hver dag? Eller bør vi f.eks kun ta med oppdrag som blir sendt fra Utsjekk til OS før OS stenger (kl 21:00)?
-> - Har det noe å si *når* på døgnet en avstemming sendes fra Utsjekk til OS? Er det lik tidsfrist i Q1 og Prod? Per nå sender vi avstemmingene om morgenen, når OS har åpnet, påfølgende virkedag i både Q1 og prod.
->
-> - Skal vi for P4-ytelsene (AAP, Dagpenger, Tiltakspenger og Tilleggsstønader) alltid sette T (tillegg) som fortegn? I hvilke tilfeller setter man eventuelt F?
+>  - Skal vi for P4-ytelsene (AAP, Dagpenger, Tiltakspenger og Tilleggsstønader) alltid sette T (tillegg) som fortegn? I hvilke tilfeller setter man eventuelt F?
+
 ---
 
 # Grensesnittavstemming
