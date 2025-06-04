@@ -2,21 +2,15 @@ package utsjekk.utbetaling
 
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.*
-import java.math.BigDecimal
-import javax.xml.datatype.DatatypeFactory
-import javax.xml.datatype.XMLGregorianCalendar
-import no.trygdeetaten.skjema.oppdrag.*
 import utsjekk.badRequest
 
 enum class FagsystemDto(val kode: String) {
     DAGPENGER("DP"),
     TILTAKSPENGER("TILTPENG"),
     TILLEGGSSTØNADER("TILLST"),
-    AAP("AAP");
+    AAP("AAP"),
+    HISTORISK("HELSREF");
 
     companion object {
         fun from(stønad: Stønadstype): FagsystemDto {

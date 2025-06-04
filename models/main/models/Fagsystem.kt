@@ -10,7 +10,7 @@ enum class Fagsystem(val fagområde: String) {
     companion object {
 
         fun fromFagområde(fagområde: String) =
-            Fagsystem.values().single { it.fagområde == fagområde }
+            entries.single { it.fagområde == fagområde }
 
         fun from(stønad: Stønadstype) = when (stønad) {
             is StønadTypeDagpenger -> DAGPENGER
