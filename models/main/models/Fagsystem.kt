@@ -4,7 +4,8 @@ enum class Fagsystem(val fagområde: String) {
     DAGPENGER("DP"),
     TILTAKSPENGER("TILTPENG"),
     TILLEGGSSTØNADER("TILLST"),
-    AAP("AAP");
+    AAP("AAP"),
+    HISTORISK("HELSREF");
 
     companion object {
 
@@ -16,6 +17,7 @@ enum class Fagsystem(val fagområde: String) {
             is StønadTypeTiltakspenger -> TILTAKSPENGER
             is StønadTypeTilleggsstønader -> TILLEGGSSTØNADER
             is StønadTypeAAP -> AAP
+            is StønadTypeHistorisk -> HISTORISK
         }
 
         fun from(kode: String) = when (kode) {
@@ -23,6 +25,7 @@ enum class Fagsystem(val fagområde: String) {
             "TILTPENG" -> Fagsystem.TILTAKSPENGER
             "TILLST" -> Fagsystem.TILLEGGSSTØNADER
             "AAP" -> Fagsystem.AAP
+            "HELSREF" -> Fagsystem.HISTORISK
             else -> error("fagområde $kode not implemented")
         }
     }

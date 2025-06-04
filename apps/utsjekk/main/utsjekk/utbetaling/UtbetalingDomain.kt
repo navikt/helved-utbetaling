@@ -317,6 +317,7 @@ sealed interface Stønadstype {
             is StønadTypeTiltakspenger -> "TILTAKSPENGER"
             is StønadTypeTilleggsstønader -> "TILLEGGSSTØNADER"
             is StønadTypeAAP -> "AAP"
+            is StønadTypeHistorisk -> "HELSREF"
         }
 }
 
@@ -383,6 +384,10 @@ enum class StønadTypeTilleggsstønader(override val klassekode: String) : Støn
 
 enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
     AAP_UNDER_ARBEIDSAVKLARING("AAPUAA"),
+}
+
+enum class StønadTypeHistorisk(override val klassekode: String) : Stønadstype {
+    TILSKUDD_SMÅHJELPEMIDLER("HJRIM"),
 }
 
 

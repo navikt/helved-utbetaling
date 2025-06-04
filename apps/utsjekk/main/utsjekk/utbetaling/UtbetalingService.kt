@@ -149,6 +149,7 @@ internal fun klassekode(stønadstype: Stønadstype): String = when (stønadstype
     is StønadTypeTilleggsstønader -> klassekode(stønadstype)
     is StønadTypeTiltakspenger -> klassekode(stønadstype)
     is StønadTypeAAP -> klassekode(stønadstype)
+    is StønadTypeHistorisk -> klassekode(stønadstype)
 }
 
 private fun klassekode(stønadstype: StønadTypeTiltakspenger): String = when (stønadstype) {
