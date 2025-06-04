@@ -2,6 +2,8 @@ package abetal.consumers
 
 import abetal.*
 import abetal.models.dpUId
+import abetal.models.Rettighetstype
+import abetal.models.Utbetalingstype
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -19,7 +21,7 @@ internal class DpTest {
         val bid = BehandlingId("$nextInt")
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode = "132460781"
-        val uid = dpUId(sid.id, meldeperiode) // 16364e1c-7615-6b30-882b-d7d19ea96279
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
 
         TestTopics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -95,8 +97,8 @@ internal class DpTest {
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
-        val uid1 = dpUId(sid.id, meldeperiode1) // 16364e1c-7615-6b30-882b-d7d19ea96279
-        val uid2 = dpUId(sid.id, meldeperiode2) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
 
         TestTopics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -199,6 +201,196 @@ internal class DpTest {
     }
 
     @Test
+    fun `2 meldekort i ett med 2 klassekoder hver blir til 4 utbetaling med 1 oppdrag`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val originalKey = UUID.randomUUID().toString()
+        val meldeperiode1 = "132460781"
+        val meldeperiode2 = "232460781"
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid2 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG)
+        val uid3 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.PERMITTERING_ORDINÆR)
+        val uid4 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG)
+
+        TestTopics.dp.produce(originalKey) {
+            Dp.utbetaling(sid.id, bid.id) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode1,
+                    fom = LocalDate.of(2021, 6, 7),
+                    tom = LocalDate.of(2021, 6, 20),
+                    sats = 1000u,
+                    utbetaltBeløp = 1000u,
+                    rettighetstype = Rettighetstype.Ordinær,
+                    utbetalingstype = Utbetalingstype.Dagpenger,
+                ) + Dp.meldekort(
+                    meldeperiode = meldeperiode1,
+                    fom = LocalDate.of(2021, 6, 7),
+                    tom = LocalDate.of(2021, 6, 20),
+                    sats = 100u,
+                    utbetaltBeløp = 100u,
+                    rettighetstype = Rettighetstype.Ordinær,
+                    utbetalingstype = Utbetalingstype.DagpengerFerietillegg,
+                ) + Dp.meldekort(
+                    meldeperiode = meldeperiode2,
+                    fom = LocalDate.of(2021, 7, 7),
+                    tom = LocalDate.of(2021, 7, 20),
+                    sats = 600u,
+                    utbetaltBeløp = 600u,
+                    rettighetstype = Rettighetstype.Permittering,
+                    utbetalingstype = Utbetalingstype.Dagpenger,
+                ) + Dp.meldekort(
+                    meldeperiode = meldeperiode2,
+                    fom = LocalDate.of(2021, 7, 7),
+                    tom = LocalDate.of(2021, 7, 20),
+                    sats = 300u,
+                    utbetaltBeløp = 300u,
+                    rettighetstype = Rettighetstype.Permittering,
+                    utbetalingstype = Utbetalingstype.DagpengerFerietillegg,
+                )
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.status.assertThat()
+            .has(originalKey)
+            .has(originalKey, StatusReply(Status.MOTTATT), index = 0)
+
+        TestTopics.utbetalinger.assertThat()
+            .has(uid1.id.toString())
+            .with(uid1.id.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid1,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 1000u, 1000u)
+                }
+                assertEquals(expected, it)
+            }
+            .has(uid2.toString())
+            .with(uid2.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid2,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 100u, 100u)
+                }
+                assertEquals(expected, it)
+            }
+            .has(uid3.id.toString())
+            .with(uid3.id.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid3,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.PERMITTERING_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 600u, 600u)
+                }
+                assertEquals(expected, it)
+            }
+            .has(uid4.id.toString())
+            .with(uid4.id.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid4,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 300u, 300u)
+                }
+                assertEquals(expected, it)
+            }
+        TestTopics.oppdrag.assertThat()
+            .has(originalKey, size = 1)
+            .with(originalKey, index = 0) {
+                assertEquals("1", it.oppdrag110.kodeAksjon)
+                assertEquals("NY", it.oppdrag110.kodeEndring)
+                assertEquals("DP", it.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, it.oppdrag110.fagsystemId)
+                assertEquals("MND", it.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", it.oppdrag110.saksbehId)
+                assertEquals(4, it.oppdrag110.oppdragsLinje150s.size)
+                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
+                assertNull(førsteLinje.refDelytelseId)
+                assertEquals("NY", førsteLinje.kodeEndringLinje)
+                assertEquals(bid.id, førsteLinje.henvisning)
+                assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+                assertEquals(1000, førsteLinje.sats.toLong())
+                assertEquals(1000, førsteLinje.vedtakssats157.vedtakssats.toLong())
+                val andreLinje = it.oppdrag110.oppdragsLinje150s[1]
+                assertEquals("NY", andreLinje.kodeEndringLinje)
+                assertEquals(bid.id, andreLinje.henvisning)
+                assertEquals("DPORASFE", andreLinje.kodeKlassifik)
+                assertEquals(100, andreLinje.sats.toLong())
+                assertEquals(100, andreLinje.vedtakssats157.vedtakssats.toLong())
+                val tredjeLinje = it.oppdrag110.oppdragsLinje150s[2]
+                assertEquals("NY", tredjeLinje.kodeEndringLinje)
+                assertEquals(bid.id, tredjeLinje.henvisning)
+                assertEquals("DPPEASFE1", tredjeLinje.kodeKlassifik)
+                assertEquals(600, tredjeLinje.sats.toLong())
+                assertEquals(600, tredjeLinje.vedtakssats157.vedtakssats.toLong())
+                val fjerdeLinje = it.oppdrag110.oppdragsLinje150s[3]
+                assertEquals("NY", fjerdeLinje.kodeEndringLinje)
+                assertEquals(bid.id, fjerdeLinje.henvisning)
+                assertEquals("DPPEAS", fjerdeLinje.kodeKlassifik)
+                assertEquals(300, fjerdeLinje.sats.toLong())
+                assertEquals(300, fjerdeLinje.vedtakssats157.vedtakssats.toLong())
+            }
+        TestTopics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 4)
+            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 0) {
+                assertEquals(it, setOf(uid1))
+            }
+            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 1) {
+                assertEquals(it, setOf(uid1, uid2))
+            }
+            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 2) {
+                assertEquals(it, setOf(uid1, uid2, uid3))
+            }
+            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 3) {
+                assertEquals(it, setOf(uid1, uid2, uid3, uid4))
+            }
+    }
+
+    @Test
     fun `3 meldekort i 1 utbetalinger blir til 3 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
@@ -206,9 +398,9 @@ internal class DpTest {
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val meldeperiode3 = "132462765"
-        val uid1 = dpUId(sid.id, meldeperiode1) // 16364e1c-7615-6b30-882b-d7d19ea96279
-        val uid2 = dpUId(sid.id, meldeperiode2) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
-        val uid3 = dpUId(sid.id, meldeperiode3) // 08e58fec-5907-af4c-e346-4c039df44050
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
+        val uid3 = dpUId(sid.id, meldeperiode3, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 08e58fec-5907-af4c-e346-4c039df44050
 
         TestTopics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -351,8 +543,8 @@ internal class DpTest {
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
-        val uid1 = dpUId(sid.id, meldeperiode1) // 16364e1c-7615-6b30-882b-d7d19ea96279
-        val uid2 = dpUId(sid.id, meldeperiode2) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
 
         TestTopics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -467,8 +659,8 @@ internal class DpTest {
         val originalKey2 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
-        val uid1 = dpUId(sid.id, meldeperiode1)
-        val uid2 = dpUId(sid.id, meldeperiode2)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
         TestTopics.utbetalinger.produce("${uid1.id}") {
             utbetaling(
@@ -582,7 +774,7 @@ internal class DpTest {
         val originalKey1 = UUID.randomUUID().toString()
         val originalKey2 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
-        val uid1 = dpUId(sid.id, meldeperiode1)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
         val periodeId = PeriodeId()
 
         TestTopics.utbetalinger.produce("${uid1.id}") {
@@ -689,7 +881,7 @@ internal class DpTest {
         val bid = BehandlingId("$nextInt")
         val originalKey1 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
-        val uid1 = dpUId(sid.id, meldeperiode1)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
         val periodeId = PeriodeId()
 
         TestTopics.utbetalinger.produce("${uid1.id}") {
@@ -714,8 +906,6 @@ internal class DpTest {
         TestTopics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid1)
         }
-
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
         TestTopics.dp.produce(originalKey1) {
             Dp.utbetaling(
@@ -792,9 +982,9 @@ internal class DpTest {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val originalKey = UUID.randomUUID().toString()
-        val uid1 = dpUId(sid.id, "132460781") // 16364e1c-7615-6b30-882b-d7d19ea96279
-        val uid2 = dpUId(sid.id, "232460781") // 6fa69f14-a3eb-1457-7859-b3676f59da9d
-        val uid3 = dpUId(sid.id, "132462765") // 08e58fec-5907-af4c-e346-4c039df44050
+        val uid1 = dpUId(sid.id, "132460781", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
+        val uid2 = dpUId(sid.id, "232460781", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
+        val uid3 = dpUId(sid.id, "132462765", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 08e58fec-5907-af4c-e346-4c039df44050
         val pid1 = PeriodeId()
         val pid2 = PeriodeId()
 

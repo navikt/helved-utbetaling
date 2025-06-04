@@ -68,7 +68,6 @@ object Dp {
         dryrun: Boolean = false,
         ident: String = "12345678910",
         vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
-        type: Rettighetstype = Rettighetstype.Ordinær,
         utbetalinger: () -> List<DpUtbetalingsdag>,
     ): DpUtbetaling = DpUtbetaling(
         dryrun = dryrun,
@@ -76,7 +75,6 @@ object Dp {
         sakId = sakId,
         ident = ident,
         vedtakstidspunktet = vedtakstidspunkt,
-        type = type,
         utbetalinger = utbetalinger(),
     ) 
 
@@ -86,12 +84,14 @@ object Dp {
         tom: LocalDate,
         sats: UInt,
         utbetaltBeløp: UInt = sats,
+        rettighetstype: Rettighetstype = Rettighetstype.Ordinær,
+        utbetalingstype: Utbetalingstype = Utbetalingstype.Dagpenger,
     ): List<DpUtbetalingsdag> {
         return buildList<DpUtbetalingsdag> {
             for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
                 val dato = fom.plusDays(i)
                 if (!dato.erHelg()) {
-                    add(DpUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp))
+                    add(DpUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp, rettighetstype, utbetalingstype))
                 }
             }
         }

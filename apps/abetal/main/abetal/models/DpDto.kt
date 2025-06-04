@@ -17,10 +17,13 @@ data class DpUtbetaling(
     val behandlingId: String,
     val ident: String,
     val utbetalinger: List<DpUtbetalingsdag>,
-
     val vedtakstidspunktet: LocalDateTime,
-    val type: Rettighetstype,
 )
+
+enum class Utbetalingstype {
+    DagpengerFerietillegg,
+    Dagpenger,
+}
 
 enum class Rettighetstype {
     Ordinær,
@@ -29,12 +32,24 @@ enum class Rettighetstype {
     EØS,
 }
 
-fun Rettighetstype.into(): StønadTypeDagpenger {
-    return when (this) {
-        Rettighetstype.Ordinær -> StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR
-        Rettighetstype.Permittering -> StønadTypeDagpenger.PERMITTERING_ORDINÆR
-        Rettighetstype.PermitteringFiskeindustrien -> StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI
-        Rettighetstype.EØS -> StønadTypeDagpenger.EØS
+fun DpUtbetalingsdag.stønadstype(): StønadTypeDagpenger {
+    return when (utbetalingstype) {
+        Utbetalingstype.Dagpenger -> {
+            when (rettighetstype) {
+                Rettighetstype.Ordinær -> StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR
+                Rettighetstype.Permittering -> StønadTypeDagpenger.PERMITTERING_ORDINÆR
+                Rettighetstype.PermitteringFiskeindustrien -> StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI
+                Rettighetstype.EØS -> StønadTypeDagpenger.EØS
+            }
+        }
+        Utbetalingstype.DagpengerFerietillegg -> {
+            when (rettighetstype) {
+                Rettighetstype.Ordinær -> StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG
+                Rettighetstype.Permittering -> StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG
+                Rettighetstype.PermitteringFiskeindustrien -> StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI_FERIETILLEGG
+                Rettighetstype.EØS -> StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG
+            }
+        }
     }
 }
 
@@ -43,6 +58,8 @@ data class DpUtbetalingsdag(
     val dato: LocalDate,
     val sats: UInt,
     val utbetaltBeløp: UInt,
+    val rettighetstype: Rettighetstype,
+    val utbetalingstype: Utbetalingstype,
 ) {
     fun into(): Utbetalingsperiode = Utbetalingsperiode(
         fom = dato,
@@ -52,16 +69,19 @@ data class DpUtbetalingsdag(
     )
 }
 
-fun dpUId(sakId: String, meldeperiode: String): UtbetalingId {
-    return UtbetalingId(uuid(SakId(sakId), Fagsystem.DAGPENGER, meldeperiode))
+fun dpUId(sakId: String, meldeperiode: String, stønad: StønadTypeDagpenger): UtbetalingId {
+    return UtbetalingId(uuid(SakId(sakId), Fagsystem.DAGPENGER, meldeperiode, stønad))
 }
 
 fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
     val (dpKey, dpUtbetaling) = tuple
     val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling 
         .utbetalinger
-        .groupBy { it.meldeperiode }
-        .map { (meldeperiode, utbetalinger) -> dpUId(dpUtbetaling.sakId, meldeperiode) to dpUtbetaling.copy(utbetalinger = utbetalinger) }
+        .groupBy { it.meldeperiode to it.stønadstype() }
+        .map { (group, utbetalinger) -> 
+            val (meldeperiode, stønadstype) = group
+            dpUId(dpUtbetaling.sakId, meldeperiode, stønadstype) to dpUtbetaling.copy(utbetalinger = utbetalinger)
+        }
         .toMutableList()
 
     if (uids != null) {
@@ -86,6 +106,9 @@ fun toDomain(
     uidsPåSak: Set<UtbetalingId>?,
     uid: UtbetalingId,
 ): Utbetaling {
+    val stønad = value.utbetalinger.first().stønadstype()
+    require(value.utbetalinger.all { it.stønadstype() == stønad })
+
     return Utbetaling(
         dryrun = value.dryrun,
         originalKey = key,
@@ -99,7 +122,7 @@ fun toDomain(
         lastPeriodeId = PeriodeId(),
         personident = Personident(value.ident),
         vedtakstidspunkt = value.vedtakstidspunktet,
-        stønad = value.type.into(),
+        stønad = stønad,
         beslutterId = Navident("dagpenger"),
         saksbehandlerId = Navident("dagpenger"),
         periodetype = Periodetype.UKEDAG,
@@ -164,9 +187,14 @@ fun fakeDelete(
 
 data class DpTuple(val key: String, val value: DpUtbetaling)
 
-fun uuid(sakId: SakId, fagsystem: Fagsystem, meldeperiode: String): UUID {
+fun uuid(
+    sakId: SakId,
+    fagsystem: Fagsystem,
+    meldeperiode: String,
+    stønad: StønadTypeDagpenger,
+): UUID {
     val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
-    buffer.putLong((fagsystem.name + sakId.id + meldeperiode).hashCode().toLong())
+    buffer.putLong((fagsystem.name + sakId.id + meldeperiode + stønad.klassekode).hashCode().toLong())
 
     val digest = MessageDigest.getInstance("SHA-256")
     val hash = digest.digest(buffer.array())
