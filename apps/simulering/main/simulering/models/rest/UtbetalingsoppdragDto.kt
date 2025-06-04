@@ -14,8 +14,7 @@ enum class FagsystemDto(val kode: String) {
     DAGPENGER("DP"),
     TILTAKSPENGER("TILTPENG"),
     TILLEGGSSTØNADER("TILLST"),
-    AAP("AAP"),
-    HISTORISK("HELSREF");
+    AAP("AAP");
 }
 
 data class UtbetalingsoppdragDto(

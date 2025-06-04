@@ -68,6 +68,8 @@ enum class Fagområde {
     TILTAKSPENGER,
     TILTAKSPENGER_ARENA,
     TILTAKSPENGER_ARENA_MANUELL_POSTERING,
+
+    HISTORISK,
     ;
 
     companion object Mapper

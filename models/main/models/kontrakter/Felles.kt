@@ -20,11 +20,10 @@ enum class Fagsystem(val kode: String) {
     AAP("AAP"),
     DAGPENGER("DP"),
     TILTAKSPENGER("TILTPENG"),
-    TILLEGGSSTØNADER("TILLST"),
-    HISTORISK("HELSREF");
+    TILLEGGSSTØNADER("TILLST");
 }
 
-fun String.tilFagsystem(): Fagsystem = Fagsystem.values().find { it.kode == this } ?: throw IllegalArgumentException("$this er ukjent fagsystem")
+fun String.tilFagsystem(): Fagsystem = Fagsystem.entries.find { it.kode == this } ?: throw IllegalArgumentException("$this er ukjent fagsystem")
 
 object GyldigSakId {
     const val MAKSLENGDE = 25
