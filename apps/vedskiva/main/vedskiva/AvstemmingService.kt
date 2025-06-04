@@ -66,7 +66,7 @@ object AvstemmingService {
         return avstemmingsdatas
     }
 
-    private fun detaljdata(data: Oppdragsdata): Detaljdata? = Detaljdata().apply {
+    private fun detaljdata(data: Oppdragsdata): Detaljdata? {
         val type = detaljType(data.kvittering) ?: return null
         return Detaljdata().apply {
             detaljType = type
