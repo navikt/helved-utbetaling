@@ -147,10 +147,7 @@ fun Utbetaling.failOnInconsistentPeriodeType() {
         Periodetype.MND -> perioder.all { it.fom.dayOfMonth == 1 && it.tom.plusDays(1) == it.fom.plusMonths(1) }
         Periodetype.EN_GANG -> perioder.all { it.fom.year == it.tom.year } // tillater engangs over årsskifte
     }
-    if (!consistent) badRequest("""inkonsistens blant datoene i periodene
-        fom == tom       => ${perioder.all { it.fom == it.tom }}
-        perioder != helg => ${perioder.none { it.fom.erHelg() }}
-    """.trimIndent())
+    if (!consistent) badRequest("inkonsistens blant datoene i periodene")
 }
 
 fun Utbetaling.failOnIllegalFutureUtbetaling() {
