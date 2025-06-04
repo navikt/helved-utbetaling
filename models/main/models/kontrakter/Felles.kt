@@ -21,6 +21,7 @@ enum class Fagsystem(val kode: String) {
     DAGPENGER("DP"),
     TILTAKSPENGER("TILTPENG"),
     TILLEGGSSTØNADER("TILLST"),
+    HISTORISK("HELSREF");
 }
 
 fun String.tilFagsystem(): Fagsystem = Fagsystem.values().find { it.kode == this } ?: throw IllegalArgumentException("$this er ukjent fagsystem")
