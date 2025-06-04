@@ -26,11 +26,20 @@ object Topics {
 
 fun createTopology(): Topology = topology {
     consume(Topics.status)
+        .filterKey { uid ->
+            try {
+                UUID.fromString(uid) != null
+            } catch (e: Exception) {
+                // noen statuser bruker kafka-key til vedtaksteamene (som har brukt abetal)
+                false
+            }
+        }
         .forEach { uid, status ->
             val uid = UtbetalingId(UUID.fromString(uid))
             runBlocking {
                 withContext(Jdbc.context) {
                     val uDao = transaction {
+                        // Hvis en UID ikke finnes her, kan det hende den er i abetal (helved.utbetaling.v1)
                         // TODO: er alltid de som er null irrelevante?
                         UtbetalingDao.findOrNull(uid, history = true)?.also { dao ->
                             val status = when (status.status) {
