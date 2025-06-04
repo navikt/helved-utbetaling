@@ -13,7 +13,7 @@
 > - Skal vi avstemme alt vi har mottatt i Utsjekk mellom 00:00:00 - 23:59:59 hver dag? Eller tar vi f.eks kun med oppdrag som blir sendt fra Utsjekk til OS før OS stenger (kl 21:00)?
 > - Har det noe å si *når* på døgnet en avstemming sendes fra Utsjekk til OS? Er det lik "tidsfrist" i Q1 og Prod? Per nå sender vi avstemmingene om morgenen, når OS har åpnet påfølgende virkedag, i både Q1 og prod.
 >
-> - Skal vi alltid sette T (tillegg) som fortegn?
+> - Skal vi for P4-ytelsene (AAP, Dagpenger, Tiltakspenger og Tilleggsstønader) alltid sette T (tillegg) som fortegn?
 ---
 
 # Grensesnittavstemming
