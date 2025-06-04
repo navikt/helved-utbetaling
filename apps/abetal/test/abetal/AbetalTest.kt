@@ -225,25 +225,24 @@ internal class AbetalTest {
         TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
     }
 
-    // TODO: trenger vi denne?
-    // @Test
-    // fun `error ved blanding av periodetyper`() {
-    //     val uid = randomUtbetalingId()
-    //     TestTopics.aap.produce("${uid.id}") {
-    //         Aap.utbetaling(Action.CREATE) {
-    //             Aap.dag(2.jan) +
-    //             periode(fom = 1.jan, tom = 31.jan)
-    //         }
-    //     }
-    //     TestTopics.status.assertThat()
-    //         .hasTotal(1)
-    //         .has("${uid.id}")
-    //         .with("${uid.id}") {
-    //             assertEquals("inkonsistens blant datoene i periodene", it.error!!.msg)
-    //         }
-    //     TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
-    //     TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
-    // }
+    @Test
+    fun `error ved blanding av periodetyper`() {
+        val uid = randomUtbetalingId()
+        TestTopics.aap.produce("${uid.id}") {
+            Aap.utbetaling(Action.CREATE) {
+                Aap.dag(2.jan) +
+                periode(fom = 1.jan, tom = 31.jan)
+            }
+        }
+        TestTopics.status.assertThat()
+            .hasTotal(1)
+            .has("${uid.id}")
+            .with("${uid.id}") {
+                assertEquals("inkonsistens blant datoene i periodene", it.error!!.msg)
+            }
+        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
+        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
+    }
 
     @Test
     fun `error ved ulovlig fremtidig utbetaling`() {
