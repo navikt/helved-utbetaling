@@ -335,6 +335,10 @@ enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
     AAP_UNDER_ARBEIDSAVKLARING("AAPUAA"),
 }
 
+enum class StønadTypeHistorisk(override val klassekode: String) : Stønadstype {
+    TILSKUDD_SMÅHJELPEMIDLER("HJRIM"),
+}
+
 fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetalingsperiode> {
     return sortedBy { it.fom }
         .groupBy { listOf(it.beløp, it.betalendeEnhet, it.vedtakssats) }
