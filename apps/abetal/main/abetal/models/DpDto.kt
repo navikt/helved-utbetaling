@@ -182,7 +182,7 @@ fun fakeDelete(
     saksbehandlerId = Navident("dagpenger"),
     periodetype = Periodetype.UKEDAG,
     avvent = null,
-    perioder = emptyList(),
+    perioder = listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u)), // placeholder
 )
 
 data class DpTuple(val key: String, val value: DpUtbetaling)
