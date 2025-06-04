@@ -67,8 +67,6 @@ class UrskogTest {
                 val expectedDetaljer =  Detaljer(
                     listOf(
                         DetaljerLinje(
-                            id = pid,
-                            idRef = null,
                             fom = LocalDate.of(2025, 11, 3),
                             tom = LocalDate.of(2025, 11, 7),
                             beløp = 700u,
