@@ -142,3 +142,7 @@ TODO finn eksempel med Opphør
 </ns2:oppdrag>
 
 ```
+
+## Relatert
+
+https://github.com/navikt/tjenestespesifikasjoner/blob/master/nav-virksomhet-oppdragsbehandling-v1-meldingsdefinisjon/src/main/xsd/no/trygdeetaten/skjema/oppdrag/oppdragskjema-1.xsd
