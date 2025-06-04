@@ -1,17 +1,16 @@
 
 > ⚠️ **TODO – Avklaringer med Utbetaling**
 >
-> - Hva brukes `datoAvstemtFom` og `datoAvstemtTom` i avstemming-XML til?  
->   Hva er gyldig format? Per 2. juni benytter vi `YYYYMMDDHH` (f.eks. `2025060200` og `2025060223`) i disse feltene.
+> - Hva er forskjellen på `datoAvstemtFom` / `datoAvstemtTom` og `nokkelFom` / `nokkelTom` og hva brukes de til i OS?  
+>   Per 2. juni benytter vi ulike formater i disse feltene. `datoAvstemtFom` og `datoAvstemtTom` er på formen `yyyymmddhh`, mens `nokkelFom` og `nokkelTom` har timestamp med mikrosekunder på formen `yyyy-mm-dd-hh.mm.ss.nnnnnn`.
 >
-> - Hva er forskjellen på `datoAvstemtFom` / `datoAvstemtTom` og `nokkelFom` / `nokkelTom`?  
->   Per 2. juni benytter vi ulike formater i disse feltene. `nokkelFom` og `nokkelTom` har timestamp med mikrosekunder, f.eks. `2025-06-02-00.00.00.000000`.
+> - Det er vår forståelse det i OS gjøres en select basert på `nokkelFom` og `nokkelTom` (avstemming-XML) og at disse feltene derfor må være på samme format som `nokkelAvstemming` i oppdrag-XML. Ellers vil ikke OS finne oppdragene som skal avstemmes. Er det riktig oppfattet?
 >
 > - Hva brukes `tidspktMelding` i oppdrag-XML til?  
->   Hva er gyldig format? Per 2. juni bruker vi samme format som i `nokkelFom` og `nokkelTom`.
+>   Hva er gyldig format? Per 2. juni bruker vi samme format som i `nokkelAvstemming` (oppdrag-XML) og `nokkelFom` og `nokkelTom` (avstemming-XML).
 >
-> - Skal vi avstemme alt vi har mottatt i Utsjekk mellom 00:00:00 - 23:59:59 hver dag? Eller tar vi f.eks kun med oppdrag som blir sendt fra Utsjekk til OS før OS stenger (kl 21:00)?
-> - Har det noe å si *når* på døgnet en avstemming sendes fra Utsjekk til OS? Er det lik "tidsfrist" i Q1 og Prod? Per nå sender vi avstemmingene om morgenen, når OS har åpnet påfølgende virkedag, i både Q1 og prod.
+> - Skal vi avstemme alt vi har mottatt i Utsjekk mellom 00:00:00 - 23:59:59 hver dag? Eller bør vi f.eks kun ta med oppdrag som blir sendt fra Utsjekk til OS før OS stenger (kl 21:00)?
+> - Har det noe å si *når* på døgnet en avstemming sendes fra Utsjekk til OS? Er det lik "tidsfrist" i Q1 og Prod? Per nå sender vi avstemmingene om morgenen, når OS har åpnet, påfølgende virkedag i både Q1 og prod.
 >
 > - Skal vi for P4-ytelsene (AAP, Dagpenger, Tiltakspenger og Tilleggsstønader) alltid sette T (tillegg) som fortegn?
 ---
