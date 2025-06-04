@@ -52,7 +52,7 @@ data class Utbetaling(
 
     fun isDuplicate(other: Utbetaling?): Boolean {
         if (other == null) {
-            appLog.info("Duplicate message found for $uid")
+            appLog.info("existing utbetaling for $uid was null")
             return false
         }
 
@@ -275,13 +275,13 @@ enum class StønadTypeDagpenger(override val klassekode: String) : Stønadstype 
     PERMITTERING_ORDINÆR("DPPEASFE1"),
     PERMITTERING_FISKEINDUSTRI("DPPEFIFE1"),
     EØS("DPFEASISP"),
-    // ARBEIDSSØKER_ORDINÆR_FERIETILLEGG("DPORASFE"),
+    ARBEIDSSØKER_ORDINÆR_FERIETILLEGG("DPORASFE"),
     // ARBEIDSSØKER_ORDINÆR_FERIETILLEGG_AVDØD("DPORASFE-IOP"),
-    // PERMITTERING_ORDINÆR_FERIETILLEGG("DPPEAS"),
+    PERMITTERING_ORDINÆR_FERIETILLEGG("DPPEAS"),
     // PERMITTERING_ORDINÆR_FERIETILLEGG_AVDØD("DPPEASFE1-IOP"),
-    // PERMITTERING_FISKEINDUSTRI_FERIETILLEGG("DPPEFI"),
+    PERMITTERING_FISKEINDUSTRI_FERIETILLEGG("DPPEFI"),
     // PERMITTERING_FISKEINDUSTRI_FERIETILLEGG_AVDØD("DPPEFIFE1-IOP"),
-    // EØS_FERIETILLEGG("DPDPASISP1");
+    EØS_FERIETILLEGG("DPDPASISP1");
 }
 
 // TODO: legg til klassekodene for barnetillegg

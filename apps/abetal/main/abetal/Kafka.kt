@@ -79,7 +79,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
     consume(Topics.dp)
         .repartition(Topics.dp.serdes, 3)
         .map { key, dp -> DpTuple(key, dp) }
-        .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.from(dp.type.into())) }
+        .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker)
         .flatMapKeyValue(::splitOnMeldeperiode)
         .leftJoin(Serde.string(), Serde.json(), utbetalinger)
