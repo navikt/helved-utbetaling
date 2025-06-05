@@ -19,6 +19,7 @@ interface Streams : AutoCloseable, KafkaFactory {
     fun visulize(): TopologyVisulizer
     fun registerInternalTopology(internalTopology: org.apache.kafka.streams.Topology)
     fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V>
+    fun close(gracefulMillis: Long)
 }
 
 class KafkaStreams : Streams {
@@ -34,21 +35,25 @@ class KafkaStreams : Streams {
     ) {
         topology.registerInternalTopology(this)
 
-        internalStreams = KafkaStreams(internalTopology, config.streamsProperties())
-        // KafkaStreamsMetrics(internalStreams).bindTo(registry)
-        internalStreams.setUncaughtExceptionHandler(UncaughtHandler())
-        internalStreams.setStateListener { state, _ -> if (state == RUNNING) initiallyStarted = true }
-        internalStreams.setGlobalStateRestoreListener(RestoreListener())
-        internalStreams.start()
+    internalStreams = KafkaStreams(internalTopology, config.streamsProperties())
+    internalStreams.setUncaughtExceptionHandler(UncaughtHandler())
+    internalStreams.setStateListener { state, _ -> if (state == RUNNING) initiallyStarted = true }
+    internalStreams.setGlobalStateRestoreListener(RestoreListener())
+    internalStreams.start()
+}
+
+override fun ready(): Boolean = initiallyStarted && internalStreams.state() in listOf(CREATED, REBALANCING, RUNNING)
+override fun live(): Boolean = initiallyStarted && internalStreams.state() != ERROR
+override fun visulize(): TopologyVisulizer = TopologyVisulizer(internalTopology)
+override fun close() = close(10_000)
+override fun close(gracefulMillis: Long) {
+    if(!internalStreams.close(java.time.Duration.ofMillis(gracefulMillis))) {
+        kafkaLog.error("Gracefully waited ${gracefulMillis}ms for streams to close all its thread, but was forced to shutdown before it completed.")
     }
+}
 
-    override fun ready(): Boolean = initiallyStarted && internalStreams.state() in listOf(CREATED, REBALANCING, RUNNING)
-    override fun live(): Boolean = initiallyStarted && internalStreams.state() != ERROR
-    override fun visulize(): TopologyVisulizer = TopologyVisulizer(internalTopology)
-    override fun close() = internalStreams.close()
-
-    override fun registerInternalTopology(internalTopology: org.apache.kafka.streams.Topology) {
-        this.internalTopology = internalTopology
+override fun registerInternalTopology(internalTopology: org.apache.kafka.streams.Topology) {
+    this.internalTopology = internalTopology
     }
 
     override fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> = StateStore(

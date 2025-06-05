@@ -28,7 +28,6 @@ class StreamsMock : Streams {
 //            }
 
         internalStreams = TopologyTestDriver(internalTopology, testProperties)
-        // KafkaTestMetrics(registry, internalStreams::metrics)
     }
 
     override fun ready(): Boolean = true
@@ -117,6 +116,7 @@ class StreamsMock : Streams {
         return KafkaConsumerFake(topic, resetPolicy)
     }
 
+    override fun close(gracefulMillis: Long) = close()
     override fun close() {
         producers.clear()
         internalStreams.close()
