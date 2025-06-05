@@ -97,7 +97,7 @@ internal class AapTest {
         val mottatt = StatusReply(
             Status.MOTTATT,
             Detaljer(listOf(
-                DetaljerLinje(bid2.id, 1.jan, 3.jan, 100u, 100u, "AAPUAA"),
+                DetaljerLinje(bid2.id, 1.jan, 3.jan, 100u, 0u, "AAPUAA"),
                 DetaljerLinje(bid2.id, 2.jan, 3.jan, 100u, 100u, "AAPUAA"),
             ))
         )
