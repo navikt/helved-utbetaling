@@ -45,7 +45,7 @@ object client {
 
     enum class Satstype { DAG, DAG7, MND, ENG }
     enum class PosteringType { YTEL, FEIL, SKAT, JUST, TREK, MOTP }
-    enum class Fagområde { TILLST, TSTARENA, MTSTAREN, DP, MDP, DPARENA, MDPARENA, TILTPENG, TPARENA, MTPARENA, AAP }
+    enum class Fagområde { TILLST, TSTARENA, MTSTAREN, DP, MDP, DPARENA, MDPARENA, TILTPENG, TPARENA, MTPARENA, AAP, HELSREF }
 
     data class SimuleringRequest(
         val fagområde: Fagområde,
