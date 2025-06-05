@@ -80,6 +80,7 @@ internal class Mock : Streams {
     override fun <K : Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> =
         StateStore(internalStreams.getKeyValueStore<K, V>(store.name))
 
+    override fun close(gracefulMillis: Long) = close()
     override fun close() = internalStreams.close()
 }
 
