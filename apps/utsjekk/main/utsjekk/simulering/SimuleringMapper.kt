@@ -100,6 +100,7 @@ fun Fagområde.Mapper.from(dto: client.Fagområde) = when (dto) {
     client.Fagområde.TILTPENG -> Fagområde.TILTAKSPENGER
     client.Fagområde.TPARENA -> Fagområde.TILTAKSPENGER_ARENA
     client.Fagområde.MTPARENA -> Fagområde.TILTAKSPENGER_ARENA_MANUELL_POSTERING
+    client.Fagområde.HELSREF -> Fagområde.HISTORISK
 }
 
 fun Fagsystem.into() = when (this) {
