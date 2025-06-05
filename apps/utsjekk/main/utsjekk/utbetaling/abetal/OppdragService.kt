@@ -20,19 +20,26 @@ private fun LocalDateTime.format() =
 private fun LocalDate.toXMLDate(): XMLGregorianCalendar =
     DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
 
+private fun FagsystemDto.utbetalingFrekvens() = when(this) {
+    FagsystemDto.HISTORISK -> "ENG"
+    else -> "MND"
+}
+
 object OppdragService {
     fun opprett(new: Utbetaling, erførsteUtbetalingPåSak: Boolean): Oppdrag {
+        val fagsystemDto = FagsystemDto.from(new.stønad)
+
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = if (erførsteUtbetalingPåSak) "NY" else "ENDR"
-            kodeFagomraade = FagsystemDto.from(new.stønad).kode
+            kodeFagomraade = fagsystemDto.kode
             fagsystemId = new.sakId.id
-            utbetFrekvens = "MND"
+            utbetFrekvens = fagsystemDto.utbetalingFrekvens()
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = FagsystemDto.from(new.stønad).kode
+                kodeKomponent = fagsystemDto.kode
                 nokkelAvstemming = LocalDateTime.now().format()
                 tidspktMelding = LocalDateTime.now().format()
             }
@@ -115,18 +122,19 @@ object OppdragService {
     fun update(new: Utbetaling, prev: Utbetaling): Oppdrag {
         prev.validateLockedFields(new)
         prev.validateMinimumChanges(new)
+        val fagsystemDto = FagsystemDto.from(new.stønad)
 
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = "ENDR"
-            kodeFagomraade = FagsystemDto.from(new.stønad).kode
+            kodeFagomraade = fagsystemDto.kode
             fagsystemId = new.sakId.id
-            utbetFrekvens = "MND"
+            utbetFrekvens = fagsystemDto.utbetalingFrekvens()
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = FagsystemDto.from(new.stønad).kode
+                kodeKomponent = fagsystemDto.kode
                 nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
             }
@@ -217,18 +225,19 @@ object OppdragService {
     fun delete(new: Utbetaling, prev: Utbetaling): Oppdrag {
         prev.validateLockedFields(new)
         prev.validateEqualityOnDelete(new)
+        val fagsystemDto = FagsystemDto.from(new.stønad)
 
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = "ENDR"
-            kodeFagomraade = FagsystemDto.from(new.stønad).kode
+            kodeFagomraade = fagsystemDto.kode
             fagsystemId = new.sakId.id
-            utbetFrekvens = "MND"
+            utbetFrekvens = fagsystemDto.utbetalingFrekvens()
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = FagsystemDto.from(new.stønad).kode
+                kodeKomponent = fagsystemDto.kode
                 nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
             }
