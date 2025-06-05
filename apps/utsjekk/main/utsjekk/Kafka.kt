@@ -49,6 +49,10 @@ fun createTopology(): Topology = topology {
                                 Status.MOTTATT -> utsjekk.utbetaling.Status.IKKE_PÅBEGYNT // TODO: denn må vi sette selv fra utsjekk
                             }
                             dao.copy(status = status).update(uid)
+
+                            if(status == utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG) {
+                                dao.delete(uid)
+                            }
                         }
                     }
 
