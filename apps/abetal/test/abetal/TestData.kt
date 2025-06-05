@@ -8,11 +8,15 @@ import java.util.UUID
 import javax.xml.datatype.XMLGregorianCalendar
 import models.*
 
+val Int.jun21: LocalDate get() = LocalDate.of(2021, 6, this)
+val Int.jul21: LocalDate get() = LocalDate.of(2021, 7, this)
+val Int.aug21: LocalDate get() = LocalDate.of(2021, 8, this)
 val Int.jun: LocalDate get() = LocalDate.of(2024, 6, this)
+val Int.jul: LocalDate get() = LocalDate.of(2024, 7, this)
 val Int.sep: LocalDate get() = LocalDate.of(2024, 9, this)
 val Int.okt: LocalDate get() = LocalDate.of(2024, 10, this)
-val Int.jan: LocalDate get() = LocalDate.of(2025, 1, this)
 val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
+val Int.jan: LocalDate get() = LocalDate.of(2025, 1, this)
 
 var nextInt: Int = 0
     get() = field++

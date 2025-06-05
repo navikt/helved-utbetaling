@@ -21,14 +21,14 @@ internal class DpTest {
         val bid = BehandlingId("$nextInt")
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode = "132460781"
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
         TestTopics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = "132460781",
                     fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
+                    tom = LocalDate.of(2021, 6, 18),
                     sats = 1077u,
                     utbetaltBeløp = 553u,
                 )
@@ -37,9 +37,15 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(listOf(
+                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+            ))
+        )
         TestTopics.status.assertThat()
             .has(originalKey)
-            .has(originalKey, StatusReply(Status.MOTTATT))
+            .has(originalKey, mottatt)
 
         TestTopics.utbetalinger.assertThat()
             .has(uid.toString())
@@ -97,15 +103,15 @@ internal class DpTest {
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
-        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
         TestTopics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
                     fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
+                    tom = LocalDate.of(2021, 6, 18),
                     sats = 1077u,
                     utbetaltBeløp = 553u,
                 ) + Dp.meldekort(
@@ -120,12 +126,19 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(listOf(
+                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+            ))
+        )
         TestTopics.status.assertThat()
-            .has(originalKey, size = 1)
-            .has(originalKey, StatusReply(Status.MOTTATT), index = 0)
+            .has(originalKey)
+            .has(originalKey, mottatt)
 
         TestTopics.utbetalinger.assertThat()
-            .has(uid1.id.toString(), size = 1)
+            .has(uid1.id.toString())
             .with(uid1.id.toString()) {
                 val expected = utbetaling(
                     action = Action.CREATE,
@@ -252,9 +265,18 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(listOf(
+                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1000u, 1000u, "DPORAS"),
+                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 100u, 100u, "DPORASFE"),
+                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 600u, 600u, "DPPEASFE1"),
+                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 300u, 300u, "DPPEAS"),
+            ))
+        )
         TestTopics.status.assertThat()
             .has(originalKey)
-            .has(originalKey, StatusReply(Status.MOTTATT), index = 0)
+            .has(originalKey, mottatt)
 
         TestTopics.utbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -398,9 +420,9 @@ internal class DpTest {
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val meldeperiode3 = "132462765"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
-        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
-        val uid3 = dpUId(sid.id, meldeperiode3, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 08e58fec-5907-af4c-e346-4c039df44050
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid3 = dpUId(sid.id, meldeperiode3, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
         TestTopics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -428,9 +450,17 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(listOf(
+                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+                DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "DPORAS"),
+            ))
+        )
         TestTopics.status.assertThat()
-            .has(originalKey, size = 1)
-            .has(originalKey, StatusReply(Status.MOTTATT), index = 0)
+            .has(originalKey)
+            .has(originalKey, mottatt)
 
         TestTopics.utbetalinger.assertThat()
             .has(uid1.id.toString(), size = 1)
@@ -571,9 +601,16 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(listOf(
+                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+            ))
+        )
         TestTopics.status.assertThat()
-            .has(originalKey, size = 1)
-            .has(originalKey, StatusReply(Status.MOTTATT), index = 0)
+            .has(originalKey)
+            .has(originalKey, mottatt)
 
         TestTopics.utbetalinger.assertThat()
             .has(uid1.id.toString(), size = 1)
@@ -710,9 +747,15 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(listOf(
+                DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "DPORAS"),
+            ))
+        )
         TestTopics.status.assertThat()
             .has(originalKey2)
-            .has(originalKey2, StatusReply(Status.MOTTATT))
+            .has(originalKey2, mottatt)
 
         TestTopics.utbetalinger.assertThat()
             .has(uid2.toString())
@@ -819,9 +862,15 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(listOf(
+                DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "DPORAS"),
+            ))
+        )
         TestTopics.status.assertThat()
             .has(originalKey2)
-            .has(originalKey2, StatusReply(Status.MOTTATT))
+            .has(originalKey2, mottatt)
 
         TestTopics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -918,9 +967,14 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
+        val mottatt = StatusReply(
+            status = Status.MOTTATT, 
+            detaljer = Detaljer(listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 100u, "DPORAS")))
+        )
+
         TestTopics.status.assertThat()
             .has(originalKey1)
-            .has(originalKey1, StatusReply(Status.MOTTATT))
+            .has(originalKey1, mottatt)
 
         TestTopics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -981,9 +1035,9 @@ internal class DpTest {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val originalKey = UUID.randomUUID().toString()
-        val uid1 = dpUId(sid.id, "132460781", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
-        val uid2 = dpUId(sid.id, "232460781", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
-        val uid3 = dpUId(sid.id, "132462765", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 08e58fec-5907-af4c-e346-4c039df44050
+        val uid1 = dpUId(sid.id, "132460781", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid2 = dpUId(sid.id, "232460781", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid3 = dpUId(sid.id, "132462765", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
         val pid1 = PeriodeId()
         val pid2 = PeriodeId()
 
@@ -1041,9 +1095,17 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(listOf(
+                DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "DPORAS"),
+                DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "DPORAS"),
+                DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 600u, "DPORAS"), // TODO: opphør skal settes til beløp 0?
+            ))
+        )
         TestTopics.status.assertThat()
             .has(originalKey)
-            .has(originalKey, StatusReply(Status.MOTTATT))
+            .has(originalKey, mottatt)
 
         TestTopics.utbetalinger.assertThat()
             .has(uid1.id.toString())

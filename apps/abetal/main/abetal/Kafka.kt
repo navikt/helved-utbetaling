@@ -113,7 +113,7 @@ fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, 
                 .flatMapKeyAndValue { _, (utbetalinger, _) -> utbetalinger.map { KeyValue(it.uid.id.toString(), it) } }
                 .produce(Topics.utbetalinger)
             result.map { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
-            result.map { (_, _) -> StatusReply(Status.MOTTATT) }.produce(Topics.status) // 
+            result.map { (_, oppdrag) -> StatusReply.mottatt(oppdrag) }.produce(Topics.status) // 
         }
         .default {
             this.map { it -> it.unwrapErr() }.produce(Topics.status) 
@@ -142,7 +142,7 @@ fun oppdragStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetal
         val result = this.map { it -> it.unwrap() }
         result.map { (utbetaling, _) -> utbetaling }.produce(Topics.utbetalinger)
         result.map { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
-        result.map { (_, _) -> StatusReply(Status.MOTTATT) }.produce(Topics.status)
+        result.map { (_, oppdrag) -> StatusReply.mottatt(oppdrag) }.produce(Topics.status)
     }.default {
         map { it -> it.unwrapErr() }.produce(Topics.status)
     }
@@ -161,7 +161,7 @@ fun dryrunStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetali
         }
     }.branch({ it.isOk() }) {
         val result = this.map { it -> it.unwrap() }
-        result.map { _ -> StatusReply(Status.MOTTATT) }.produce(Topics.status)
+        result.map { _ -> StatusReply(Status.MOTTATT) }.produce(Topics.status) // TODO: kanskje ikke nødvendig med status på simulering?
         result.produce(Topics.simulering)
     }.default {
         map { it -> it.unwrapErr() }.produce(Topics.status)

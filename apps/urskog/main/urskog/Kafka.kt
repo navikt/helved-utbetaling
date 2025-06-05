@@ -79,7 +79,7 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
         .branch({ o -> o.mmel == null }) {
             filter { o -> o.mmel == null }
                 .map { xml -> oppdragProducer.send(xml) }
-                .map { xml -> StatusReply(status = Status.HOS_OPPDRAG, null, detaljer(xml)) }
+                .map { xml -> StatusReply.sendt(xml) }
                 .produce(Topics.status)
         }
         .branch( { o -> o.mmel != null}) {
@@ -102,31 +102,15 @@ fun Topology.avstemming(avstemProducer: AvstemmingMQProducer) {
 }
 
 private fun statusReply(o: Oppdrag): StatusReply {
-    val detaljer = detaljer(o)
     return when (o.mmel) {
         null -> StatusReply(Status.OK)
         else -> when (o.mmel.alvorlighetsgrad) {
-            "00" -> StatusReply(Status.OK, null, detaljer)
-            "04" -> StatusReply(Status.OK, ApiError(200, o.mmel.beskrMelding), detaljer)
-            "08" -> StatusReply(Status.FEILET, ApiError(400, o.mmel.beskrMelding), detaljer)
-            "12" -> StatusReply(Status.FEILET, ApiError(500, o.mmel.beskrMelding), detaljer)
-            else -> StatusReply(Status.FEILET, ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute."), detaljer)
+            "00" -> StatusReply.ok(o)
+            "04" -> StatusReply.ok(o, ApiError(200, o.mmel.beskrMelding))
+            "08" -> StatusReply.err(o, ApiError(400, o.mmel.beskrMelding))
+            "12" -> StatusReply.err(o, ApiError(500, o.mmel.beskrMelding))
+            else -> StatusReply.err(o, ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute."))
         }
     }
 }
-
-private fun detaljer(o: Oppdrag): Detaljer {
-    val linjer = o.oppdrag110.oppdragsLinje150s.map { linje ->
-        DetaljerLinje(
-            behandlingId = linje.henvisning.trimEnd(),
-            fom = linje.datoVedtakFom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
-            tom = linje.datoVedtakTom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
-            beløp = linje.sats.toLong().toUInt(),
-            vedtakssats = linje.vedtakssats157?.vedtakssats?.toLong()?.toUInt(),
-            klassekode = linje.kodeKlassifik.trimEnd(),
-        )
-    }
-    return Detaljer(linjer)
-}
-
 
