@@ -151,7 +151,7 @@ object soap {
                     oppdrag = Oppdrag(
                         kodeFagomraade = dto.fagsystem.kode,
                         kodeEndring = if (dto.erFørsteUtbetalingPåSak) "NY" else "ENDR",
-                        utbetFrekvens = "MND",
+                        utbetFrekvens = dto.fagsystem.utbetalingFrekvens(),
                         fagsystemId = dto.saksnummer,
                         oppdragGjelderId = dto.aktør,
                         saksbehId = dto.saksbehandlerId,
@@ -170,7 +170,7 @@ object soap {
                                 Oppdrag(
                                     kodeFagomraade = dto.fagområde,
                                     kodeEndring = if (dto.erFørsteUtbetalingPåSak) "NY" else "ENDR",
-                                    utbetFrekvens = "MND",
+                                    utbetFrekvens = dto.fagområde.utbetalingFrekvens(),
                                     fagsystemId = dto.sakId,
                                     oppdragGjelderId = dto.personident.verdi,
                                     saksbehId = dto.saksbehandler,
@@ -181,6 +181,16 @@ object soap {
                         ),
                 )
         }
+    }
+
+    private fun FagsystemDto.utbetalingFrekvens() = when(this) {
+        FagsystemDto.HISTORISK -> "ENG"
+        else -> "MND"
+    }
+
+    private fun String.utbetalingFrekvens() = when(this) {
+        "HELSREF" -> "ENG"
+        else -> "MND"
     }
 
     data class SimulerRequest(
