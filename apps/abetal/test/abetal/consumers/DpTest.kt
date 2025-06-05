@@ -1100,7 +1100,7 @@ internal class DpTest {
             Detaljer(listOf(
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "DPORAS"),
                 DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "DPORAS"),
-                DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "DPORAS"), // TODO: opphør skal settes til beløp 0?
+                DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "DPORAS"),
             ))
         )
         TestTopics.status.assertThat()

@@ -13,7 +13,6 @@ object AggregateOppdragService {
             new.failOnÅrsskifte()
             new.failOnDuplicatePerioder()
             new.failOnTomBeforeFom()
-            // new.failOnInconsistentPeriodeType() // TODO: fom og tom kan være ulik men ikke helg
             new.failOnIllegalFutureUtbetaling()
             new.failOnTooManyPeriods()
             new.failOnDuplicate(prev)

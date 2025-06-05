@@ -46,7 +46,7 @@ fun createTopology(): Topology = topology {
                                 Status.OK -> utsjekk.utbetaling.Status.OK
                                 Status.FEILET -> utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG
                                 Status.HOS_OPPDRAG -> utsjekk.utbetaling.Status.SENDT_TIL_OPPDRAG
-                                Status.MOTTATT -> utsjekk.utbetaling.Status.IKKE_PÅBEGYNT // TODO: denn må vi sette selv fra utsjekk
+                                Status.MOTTATT -> utsjekk.utbetaling.Status.IKKE_PÅBEGYNT
                             }
                             dao.copy(status = status).update(uid)
 
