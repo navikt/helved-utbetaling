@@ -3,6 +3,9 @@ package models
 import java.time.LocalDate
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
+import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
+
 
 data class StatusReply(
     val status: Status, 
@@ -40,13 +43,18 @@ data class DetaljerLinje(
 )
 
 
+private fun beløp(o: OppdragsLinje150): UInt {
+    if (o.kodeStatusLinje == TkodeStatusLinje.OPPH) return 0u
+    return o.sats.toLong().toUInt()
+}
+
 private fun detaljer(o: Oppdrag): Detaljer {
     val linjer = o.oppdrag110.oppdragsLinje150s.map { linje ->
         DetaljerLinje(
             behandlingId = linje.henvisning.trimEnd(),
             fom = linje.datoVedtakFom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
             tom = linje.datoVedtakTom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
-            beløp = linje.sats.toLong().toUInt(), // FIXME: vise 0 hvis det er opphør?
+            beløp = beløp(linje),
             vedtakssats = linje.vedtakssats157?.vedtakssats?.toLong()?.toUInt(),
             klassekode = linje.kodeKlassifik.trimEnd(),
         )
