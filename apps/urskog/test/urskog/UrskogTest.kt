@@ -15,13 +15,14 @@ class UrskogTest {
     fun `send to mq`() {
         val uid = UUID.randomUUID().toString()
         val pid = PeriodeId().toString()
+        val bid = "$seq"
 
         val oppdrag = TestData.oppdrag(
             fagsystemId = "$seq",
             fagområde = "AAP",
             oppdragslinjer = listOf(
                 TestData.oppdragslinje(
-                    henvisning = "$seq",
+                    henvisning = bid,
                     delytelsesId = pid,
                     klassekode = "AAPUAA",
                     datoVedtakFom = LocalDate.of(2025, 11, 3),
@@ -67,6 +68,7 @@ class UrskogTest {
                 val expectedDetaljer =  Detaljer(
                     listOf(
                         DetaljerLinje(
+                            behandlingId = bid, 
                             fom = LocalDate.of(2025, 11, 3),
                             tom = LocalDate.of(2025, 11, 7),
                             beløp = 700u,

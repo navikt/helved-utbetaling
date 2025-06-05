@@ -22,7 +22,7 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
     private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
-    fun send(oppdrag: Oppdrag) {
+    fun send(oppdrag: Oppdrag): Oppdrag {
         val oppdragXml = mapper.writeValueAsString(oppdrag)
         val fk = OppdragForeignKey.from(oppdrag)
 
@@ -35,6 +35,7 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
                 Tag.of("fagsystem", fk.fagsystem.name),
             )).increment()
             mqLog.info("Sender oppdrag $fk")
+            return oppdrag
         }.onFailure {
             meters.counter("helved_oppdrag_mq", listOf(
                 Tag.of("status", "Feilet"),

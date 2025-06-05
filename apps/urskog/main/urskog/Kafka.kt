@@ -79,7 +79,7 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
         .branch({ o -> o.mmel == null }) {
             filter { o -> o.mmel == null }
                 .map { xml -> oppdragProducer.send(xml) }
-                .map { _ -> StatusReply(status = Status.HOS_OPPDRAG) }
+                .map { xml -> StatusReply(status = Status.HOS_OPPDRAG, null, detaljer(xml)) }
                 .produce(Topics.status)
         }
         .branch( { o -> o.mmel != null}) {
@@ -118,6 +118,7 @@ private fun statusReply(o: Oppdrag): StatusReply {
 private fun detaljer(o: Oppdrag): Detaljer {
     val linjer = o.oppdrag110.oppdragsLinje150s.map { linje ->
         DetaljerLinje(
+            behandlingId = linje.henvisning.trimEnd(),
             fom = linje.datoVedtakFom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
             tom = linje.datoVedtakTom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
             beløp = linje.sats.toLong().toUInt(),
