@@ -25,6 +25,11 @@ private fun FagsystemDto.utbetalingFrekvens() = when(this) {
     else -> "MND"
 }
 
+private fun FagsystemDto.kodekomponent() = when(this) {
+    FagsystemDto.HISTORISK -> "INFO"
+    else -> this.kode
+}
+
 object OppdragService {
     fun opprett(new: Utbetaling, erførsteUtbetalingPåSak: Boolean): Oppdrag {
         val fagsystemDto = FagsystemDto.from(new.stønad)
@@ -39,7 +44,7 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = fagsystemDto.kode
+                kodeKomponent = fagsystemDto.kodekomponent()
                 nokkelAvstemming = LocalDateTime.now().format()
                 tidspktMelding = LocalDateTime.now().format()
             }
@@ -134,7 +139,7 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = fagsystemDto.kode
+                kodeKomponent = fagsystemDto.kodekomponent()
                 nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
             }
@@ -237,7 +242,7 @@ object OppdragService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
             avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = fagsystemDto.kode
+                kodeKomponent = fagsystemDto.kodekomponent()
                 nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
                 tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
             }
