@@ -4,7 +4,7 @@ import libs.postgres.JdbcConfig
 import libs.utils.env
 import org.testcontainers.containers.PostgreSQLContainer
 
-class PostgresContainer(appname: String) : AutoCloseable {
+class PostgresContainer(appname: String, waitForContainerMs: Long = 30_000) : AutoCloseable {
     private val container = PostgreSQLContainer("postgres:15").apply {
         if (!isGHA()) {
             withLabel("service", appname)
@@ -21,7 +21,7 @@ class PostgresContainer(appname: String) : AutoCloseable {
         start()
     }
 
-    private fun waitUntilJdbcAvailable(retries: Int = 20, delayMillis: Long = 500) {
+    private fun waitUntilJdbcAvailable(retries: Int, delayMillis: Long) {
         repeat(retries) { attempt ->
             try {
                 java.sql.DriverManager.getConnection(
@@ -40,7 +40,7 @@ class PostgresContainer(appname: String) : AutoCloseable {
     }
 
     val config by lazy {
-        waitUntilJdbcAvailable()
+        waitUntilJdbcAvailable(30, waitForContainerMs/30)
         JdbcConfig(
             host = container.host,
             port = container.firstMappedPort.toString(),
