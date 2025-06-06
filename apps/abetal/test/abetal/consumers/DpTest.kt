@@ -1223,4 +1223,149 @@ internal class DpTest {
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid3), index = 4)
     }
 
+    @Test
+    fun `3 meldekort blir til 3 utbetalinger med 1 oppdrag`() {
+        val sid = SakId("$nextInt")
+        val bid1 = BehandlingId("$nextInt")
+        val bid2 = BehandlingId("$nextInt")
+        val bid3 = BehandlingId("$nextInt")
+        val originalKey = UUID.randomUUID().toString()
+        val meldeperiode = "132460781"
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestTopics.dp.produce(originalKey) {
+            Dp.utbetaling(sid.id, bid1.id) {
+                Dp.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
+            }
+        }
+        TestTopics.dp.produce(originalKey) {
+            Dp.utbetaling(sid.id, bid2.id) {
+                Dp.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
+                Dp.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
+            }
+        }
+        TestTopics.dp.produce(originalKey) {
+            Dp.utbetaling(sid.id, bid3.id) {
+                Dp.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
+                Dp.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
+                Dp.meldekort(meldeperiode, 30.sep, 10.okt, 300u, 300u)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(listOf(
+                DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DPORAS"),
+                DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DPORAS"),
+                DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DPORAS"),
+            ))
+        )
+        TestTopics.status.assertThat()
+            .has(originalKey)
+            .has(originalKey, mottatt)
+
+        TestTopics.utbetalinger.assertThat()
+            .has(uid.toString(), size = 3)
+            .with(uid.toString(), index = 0) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid1,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(2.sep, 13.sep, 300u, 300u)
+                }
+                assertEquals(expected, it)
+            }
+            .with(uid.toString(), index = 1) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid2,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(16.sep, 27.sep, 300u, 300u)
+                }
+                assertEquals(expected, it)
+            }
+            .with(uid.toString(), index = 2) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid3,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(30.sep, 10.okt, 300u, 300u)
+                }
+                assertEquals(expected, it)
+            }
+
+        TestTopics.oppdrag.assertThat()
+            .has(originalKey)
+            .with(originalKey) {
+                assertEquals("1", it.oppdrag110.kodeAksjon)
+                assertEquals("NY", it.oppdrag110.kodeEndring)
+                assertEquals("DP", it.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, it.oppdrag110.fagsystemId)
+                assertEquals("MND", it.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", it.oppdrag110.saksbehId)
+                assertEquals(3, it.oppdrag110.oppdragsLinje150s.size)
+                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                val l1 = it.oppdrag110.oppdragsLinje150s[0]
+                assertNull(l1.refDelytelseId)
+                assertEquals("NY", l1.kodeEndringLinje)
+                assertEquals(bid1.id, l1.henvisning)
+                assertEquals("DPORAS", l1.kodeKlassifik)
+                assertEquals(300, l1.sats.toLong())
+                assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
+                val l2 = it.oppdrag110.oppdragsLinje150s[1]
+                assertNull(l1.refDelytelseId)
+                assertEquals("NY", l1.kodeEndringLinje)
+                assertEquals(bid1.id, l1.henvisning)
+                assertEquals("DPORAS", l1.kodeKlassifik)
+                assertEquals(300, l1.sats.toLong())
+                assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
+                val l3 = it.oppdrag110.oppdragsLinje150s[2]
+                assertNull(l1.refDelytelseId)
+                assertEquals("NY", l1.kodeEndringLinje)
+                assertEquals(bid1.id, l1.henvisning)
+                assertEquals("DPORAS", l1.kodeKlassifik)
+                assertEquals(300, l1.sats.toLong())
+                assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
+            }
+
+        TestTopics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 3)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 1)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 2)
+    }
+
 }
