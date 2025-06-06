@@ -112,8 +112,9 @@ fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, 
             result
                 .flatMapKeyAndValue { _, (utbetalinger, _) -> utbetalinger.map { KeyValue(it.uid.id.toString(), it) } }
                 .produce(Topics.utbetalinger)
-            result.map { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
-            result.map { (_, oppdrag) -> StatusReply.mottatt(oppdrag) }.produce(Topics.status) // 
+            val oppdrag = result.flatMap { (_, oppdrag) -> oppdrag }
+            oppdrag.produce(Topics.oppdrag)
+            oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
         }
         .default {
             this.map { it -> it.unwrapErr() }.produce(Topics.status) 

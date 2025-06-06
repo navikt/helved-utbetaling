@@ -6,7 +6,7 @@ import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 object AggregateOppdragService {
-    fun utled(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): StreamsPair<List<Utbetaling>, Oppdrag> {
+    fun utled(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): StreamsPair<List<Utbetaling>, List<Oppdrag>> {
         secureLog.trace("aggregate: $aggregate")
         val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> = aggregate.map { (new, prev) ->
             new.failOnEmptyPerioder() // vi må tillate tomme perioder pga opphør
@@ -42,7 +42,10 @@ object AggregateOppdragService {
             }
         }
 
-        val oppdrag = utbetalingToOppdrag.map { it.second }.reduce { acc, next -> acc + next }
+        val oppdrag = utbetalingToOppdrag
+            .map { it.second }
+            .groupBy { it.oppdrag110.fagsystemId!! }
+            .map { (_, group) -> group.reduce { acc, next -> acc + next} }
         val utbetalinger = utbetalingToOppdrag.map { it.first }
         return StreamsPair(utbetalinger, oppdrag)
     } 
