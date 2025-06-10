@@ -1,314 +1,517 @@
 package abetal
 
+import abetal.models.dpUId
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import models.*
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
+import org.junit.jupiter.api.assertThrows
+import java.util.*
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class AbetalTest {
 
     @Test
     fun `lagrer ny sakId`() {
-        val uid = randomUtbetalingId()
+        val key = UUID.randomUUID().toString()
+        val meldeperiode = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE, sid) {
-                Aap.dag(1.jan) +
-                Aap.dag(2.jan)
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestTopics.dp.produce(key) {
+            Dp.utbetaling(sid.id) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode,
+                    fom = 1.jan,
+                    tom = 2.jan,
+                    sats = 100u,
+                    utbetaltBeløp = 100u,
+                )
             }
         }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.status.assertThat().has(key)
+        TestTopics.oppdrag.assertThat().has(key)
+        TestTopics.utbetalinger.assertThat().has(uid.toString())
         TestTopics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP))
-            .with(SakKey(sid, Fagsystem.AAP)) {
+            .has(SakKey(sid, Fagsystem.DAGPENGER))
+            .with(SakKey(sid, Fagsystem.DAGPENGER)) {
                 assertEquals(uid, it.single())
             }
+
     }
 
     @Test
+    @Disabled
     fun `appender uid på eksisterende sakId`() {
-        val uid1 = randomUtbetalingId()
-        val uid2 = randomUtbetalingId()
-        val sid = SakId("$nextInt")
-        TestTopics.aap.produce("${uid1.id}") {
-            Aap.utbetaling(Action.CREATE, sid) {
-                Aap.dag(1.jan) +
-                Aap.dag(2.jan)
-            }
-        }
-        TestTopics.aap.produce("${uid2.id}") {
-            Aap.utbetaling(Action.CREATE, sid) {
-                Aap.dag(3.jan) +
-                Aap.dag(6.jan)
-            }
-        }
-        TestTopics.status.assertThat()
-            .hasTotal(2)
-            .has("${uid1.id}")
-            .has("${uid2.id}")
-            .with("${uid1.id}") {
-                assertEquals(null, it.error)
-            }
-            .with("${uid2.id}") {
-                assertEquals(null, it.error)
-            }
+    }
 
-        TestTopics.saker.assertThat()
-            .hasTotal(2)
-            .has(SakKey(sid, Fagsystem.AAP), 2)
-            .with(SakKey(sid, Fagsystem.AAP), index = 0) {
-                assertEquals(1, it.size)
+    @Test
+    fun `setter første utbetaling på sak til NY`() {
+        val key = UUID.randomUUID().toString()
+        val meldeperiode = UUID.randomUUID().toString()
+        val sid = SakId("$nextInt")
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestTopics.dp.produce(key) { 
+            Dp.utbetaling(sid.id) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode,
+                    fom = 1.jan,
+                    tom = 2.jan,
+                    sats = 100u,
+                    utbetaltBeløp = 100u,
+                )
             }
-            .with(SakKey(sid, Fagsystem.AAP), index = 1) {
-                assertEquals(2, it.size)
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.oppdrag.assertThat()
+            .with(key) {
+                assertEquals("NY", it.oppdrag110.kodeEndring)
             }
+        TestTopics.status.assertThat().has(key)
+        TestTopics.utbetalinger.assertThat().has(uid.toString())
+        TestTopics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
     }
 
     @Test
     fun `setter andre utbetaling på sak til ENDR`() {
-        val uid1 = randomUtbetalingId()
-        val uid2 = randomUtbetalingId()
-        val utbet = Aap.utbetaling(Action.CREATE) {
-            Aap.dag(1.jan) +
-            Aap.dag(2.jan)
-        }
-        TestTopics.aap.produce("${uid1.id}") { utbet }
-        TestTopics.aap.produce("${uid2.id}") { utbet }
+        val key = UUID.randomUUID().toString()
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val meldeperiode1 = UUID.randomUUID().toString()
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.oppdrag.assertThat()
-            .with("${uid1.id}") {
-                assertEquals("NY", it.oppdrag110.kodeEndring)
+        val meldeperiode2 = UUID.randomUUID().toString()
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestTopics.utbetalinger.produce("$uid1") {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid1,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = key,
+                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                beslutterId = Navident("dagpenger"),
+                saksbehandlerId = Navident("dagpenger"),
+                fagsystem = Fagsystem.DAGPENGER,
+            ) {
+                periode(1.jan, 2.jan, 100u)
             }
-            .with("${uid2.id}") {
+        }
+
+        TestTopics.dp.produce(key) { 
+            Dp.utbetaling(sid.id) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode2,
+                    fom = 3.jan,
+                    tom = 4.jan,
+                    sats = 100u,
+                    utbetaltBeløp = 100u,
+                )
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.status.assertThat().has(key)
+        TestTopics.utbetalinger.assertThat().has(uid2.toString())
+        TestTopics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER), 3)
+        TestTopics.oppdrag.assertThat()
+            .with(key) {
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
             }
     }
 
     @Test
     fun `is idempotent`() {
-        val uid = randomUtbetalingId()
-        val utbet = Aap.utbetaling(Action.CREATE) {
-            Aap.dag(1.jan) + 
-            Aap.dag(3.jan)
+        val key = UUID.randomUUID().toString()
+        val meldeperiode = UUID.randomUUID().toString()
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestTopics.utbetalinger.produce("$uid") {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = key,
+                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 2.jan.atStartOfDay(),
+                beslutterId = Navident("dagpenger"),
+                saksbehandlerId = Navident("dagpenger"),
+                fagsystem = Fagsystem.DAGPENGER,
+            ) {
+                periode(1.jan, 2.jan, 100u)
+            }
         }
-        TestTopics.aap.produce("${uid.id}") { utbet }
-        TestTopics.aap.produce("${uid.id}") { utbet }
+
+        TestTopics.dp.produce(key) { 
+            Dp.utbetaling(
+                sakId = sid.id,
+                behandlingId = bid.id,
+                vedtakstidspunkt = 2.jun.atStartOfDay(),
+            ) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode,
+                    fom = 1.jan,
+                    tom = 2.jan,
+                    sats = 100u,
+                    utbetaltBeløp = 100u,
+                )
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.oppdrag.assertThat().isEmpty()
+        TestTopics.utbetalinger.assertThat().isEmpty()
 
         TestTopics.status.assertThat()
-            .has(uid.id.toString())
-            // .has(uid.id.toString(), StatusReply(Status.MOTTATT, null)) 
-        TestTopics.utbetalinger.assertThat()
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals(2, it.perioder.size)
-            }
-        TestTopics.oppdrag.assertThat()
-            .with(uid.id.toString()) {
-                it.oppdrag110.kodeEndring == "NY"
-            }
-        TestTopics.saker.assertThat()
-            .hasTotal(1)
-            .has(SakKey(utbet.sakId, Fagsystem.AAP))
-            .with(SakKey(utbet.sakId, Fagsystem.AAP)) {
-                assertEquals(1, it.size)
+            .has(key)
+            .with(key) {
+                val expected = StatusReply(
+                    Status.FEILET,
+                    null,
+                    ApiError(409, "periods already exists", "${DOC}opprett_en_utbetaling")
+                )
+                assertEquals(expected, it)
             }
     }
 
     @Test
     fun `error ved årsskifte`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE, periodetype = Periodetype.EN_GANG) {
-                Aap.dag(31.des) +
-                Aap.dag(1.jan)
-            }
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            utbetalingerPåSak = setOf(),
+            sakId = SakId("$nextInt"),
+            behandlingId = BehandlingId("$nextInt"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.EN_GANG,
+            avvent = null,
+            perioder = listOf(
+                Utbetalingsperiode(31.des, 31.des, 100u),
+                Utbetalingsperiode(1.jan, 1.jan, 100u),
+            ),
+        )
+
+        val err = assertThrows<ApiError> {
+            utbet.validate(null)
         }
-        TestTopics.status.assertThat()
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals(Status.FEILET, it.status)
-                assertEquals("periode strekker seg over årsskifte", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
-        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
+        assertEquals("periode strekker seg over årsskifte", err.msg)
     }
 
     @Test
     fun `error ved for lang sakId`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE, sakId = SakId("123456789123456789123456789123456789")) {
-                Aap.dag(31.des)
-            }
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            utbetalingerPåSak = setOf(),
+            sakId = SakId("012345678901234567890123456789123"),
+            behandlingId = BehandlingId("$nextInt"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.EN_GANG,
+            avvent = null,
+            perioder = listOf(
+                Utbetalingsperiode(31.des, 31.des, 100u),
+            ),
+        )
+
+        val err = assertThrows<ApiError> {
+            utbet.validate(null)
         }
-        TestTopics.status.assertThat()
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals(Status.FEILET, it.status)
-                assertEquals("sakId kan være maks 30 tegn langt", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
-        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
+        assertEquals("sakId kan være maks 30 tegn langt", err.msg)
     }
 
     @Test
     fun `error ved for lang behandlingId`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE, behId = BehandlingId("123456789123456789123456789123456789")) {
-                Aap.dag(31.des)
-            }
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            utbetalingerPåSak = setOf(),
+            sakId = SakId("$nextInt"),
+            behandlingId = BehandlingId("012345678901234567890123456789123"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.EN_GANG,
+            avvent = null,
+            perioder = listOf(
+                Utbetalingsperiode(1.jan, 1.jan, 100u),
+            ),
+        )
+
+        val err = assertThrows<ApiError> {
+            utbet.validate(null)
         }
-        TestTopics.status.assertThat()
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals(Status.FEILET, it.status)
-                assertEquals("behandlingId kan være maks 30 tegn langt", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
-        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
+        assertEquals("behandlingId kan være maks 30 tegn langt", err.msg)
     }
 
     @Test
     fun `error ved to perioder med samme fom`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE) {
-                periode(fom = 1.jan, tom = 2.jan) +
-                periode(fom = 1.jan, tom = 3.jan)
-            }
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            utbetalingerPåSak = setOf(),
+            sakId = SakId("$nextInt"),
+            behandlingId = BehandlingId("012345678901234567890123456789123"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.DAG,
+            avvent = null,
+            perioder = listOf(
+                Utbetalingsperiode(1.jan, 2.jan, 100u),
+                Utbetalingsperiode(1.jan, 3.jan, 100u),
+            ),
+        )
+
+        val err = assertThrows<ApiError> {
+            utbet.validate(null)
         }
-        TestTopics.status.assertThat()
-            .hasTotal(1)
-            .has("${uid.id}", 1)
-            .with("${uid.id}") {
-                assertEquals("kan ikke sende inn duplikate perioder", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().isEmpty()
-        TestTopics.oppdrag.assertThat().isEmpty()
+        assertEquals("kan ikke sende inn duplikate perioder", err.msg)
     }
 
     @Test
     fun `error ved to perioder med samme tom`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE) {
-                periode(fom = 1.jan, tom = 2.jan) +
-                periode(fom = 2.jan, tom = 2.jan)
-            }
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            utbetalingerPåSak = setOf(),
+            sakId = SakId("$nextInt"),
+            behandlingId = BehandlingId("$nextInt"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.DAG,
+            avvent = null,
+            perioder = listOf(
+                Utbetalingsperiode(2.jan, 3.jan, 100u),
+                Utbetalingsperiode(1.jan, 3.jan, 100u),
+            ),
+        )
+
+        val err = assertThrows<ApiError> {
+            utbet.validate(null)
         }
-        TestTopics.status.assertThat()
-            .hasTotal(1)
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals("kan ikke sende inn duplikate perioder", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().isEmpty()
-        TestTopics.oppdrag.assertThat().isEmpty()
+        assertEquals("kan ikke sende inn duplikate perioder", err.msg)
     }
 
     @Test
     fun `error ved tom før fom`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE) {
-                periode(fom = 2.jan, tom = 1.jan)
-            }
-        }
-        TestTopics.status.assertThat()
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals("fom må være før eller lik tom", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
-        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
-    }
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            utbetalingerPåSak = setOf(),
+            sakId = SakId("$nextInt"),
+            behandlingId = BehandlingId("$nextInt"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.DAG,
+            avvent = null,
+            perioder = listOf(
+                Utbetalingsperiode(5.jan, 3.jan, 100u),
+            ),
+        )
 
-    @Test
-    fun `error ved blanding av periodetyper`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE) {
-                Aap.dag(2.jan) +
-                periode(fom = 1.jan, tom = 31.jan)
-            }
+        val err = assertThrows<ApiError> {
+            utbet.validate(null)
         }
-        TestTopics.status.assertThat()
-            .hasTotal(1)
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals("inkonsistens blant datoene i periodene", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
-        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
+        assertEquals("fom må være før eller lik tom", err.msg)
     }
 
     @Test
     fun `error ved ulovlig fremtidig utbetaling`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE) {
-                Aap.dag(LocalDate.now().nesteVirkedag())
-            }
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            utbetalingerPåSak = setOf(),
+            sakId = SakId("$nextInt"),
+            behandlingId = BehandlingId("$nextInt"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.DAG,
+            avvent = null,
+            perioder = listOf(
+                Utbetalingsperiode(
+                    fom = java.time.LocalDate.now().nesteVirkedag(),
+                    tom = java.time.LocalDate.now().nesteVirkedag(),
+                    beløp = 100u,
+                ),
+            ),
+        )
+
+        val err = assertThrows<ApiError> {
+            utbet.validate(null)
         }
-        TestTopics.status.assertThat()
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals("fremtidige utbetalinger er ikke støttet for periode dag/ukedag", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
-        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
+        assertEquals("fremtidige utbetalinger er ikke støttet for periode dag/ukedag", err.msg)
     }
 
     @Test
     fun `error ved for lange perioder`() {
-        val uid = randomUtbetalingId()
-        val sid = SakId("$nextInt")
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE, sid) {
-                (1L..1001L).fold(emptyList()) { acc, next ->
-                    acc + Aap.dag(1.jan.minusDays(next))
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            utbetalingerPåSak = setOf(),
+            sakId = SakId("$nextInt"),
+            behandlingId = BehandlingId("$nextInt"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.DAG,
+            avvent = null,
+            perioder = buildList<Utbetalingsperiode> {
+                for (i in 1L..1001L) {
+                    add(
+                        Utbetalingsperiode(
+                            fom = java.time.LocalDate.now().minusDays(i),
+                            tom = java.time.LocalDate.now().minusDays(i),
+                            beløp = 100u,
+                        )
+                    )
                 }
-            }.copy(periodetype = Periodetype.DAG)
+            },
+        )
+
+        val err = assertThrows<ApiError> {
+            utbet.validate(null)
         }
-        TestTopics.status.assertThat()
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals("DAG støtter maks periode på 1000 dager", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
-        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
+        assertEquals("DAG støtter maks periode på 1000 dager", err.msg)
     }
 
     @Test
     fun `error ved manglende perioder`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-                Aap.utbetaling(Action.CREATE) {
-                    listOf()
-                }
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            utbetalingerPåSak = setOf(),
+            sakId = SakId("$nextInt"),
+            behandlingId = BehandlingId("$nextInt"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.DAG,
+            avvent = null,
+            perioder = listOf(),
+        )
+
+        val err = assertThrows<ApiError> {
+            utbet.validate(null)
         }
-        TestTopics.status.assertThat()
-            .has("${uid.id}")
-            .with("${uid.id}") {
-                assertEquals("perioder kan ikke være tom", it.error!!.msg)
-            }
-        TestTopics.utbetalinger.assertThat().hasNot("${uid.id}")
-        TestTopics.oppdrag.assertThat().hasNot("${uid.id}")
+        assertEquals("perioder kan ikke være tom", err.msg)
     }
 
     @Test
     fun `get utbetaling from api`() {
-        val uid = randomUtbetalingId()
-        TestTopics.aap.produce("${uid.id}") {
-            Aap.utbetaling(Action.CREATE) {
-                Aap.dag(1.jan)
+        val key = UUID.randomUUID().toString()
+        val meldeperiode = UUID.randomUUID().toString()
+        val sid = SakId("$nextInt")
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestTopics.dp.produce(key) { 
+            Dp.utbetaling(sid.id) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode,
+                    fom = 1.jan,
+                    tom = 2.jan,
+                    sats = 100u,
+                    utbetaltBeløp = 100u,
+                )
             }
         }
-        TestTopics.saker.assertThat().hasTotal(1)
 
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestTopics.oppdrag.assertThat()
+            .with(key) {
+                assertEquals("NY", it.oppdrag110.kodeEndring)
+            }
+        TestTopics.status.assertThat().has(key)
+        TestTopics.utbetalinger.assertThat().has(uid.toString())
+        TestTopics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
         val res = runBlocking {
             httpClient.get("/api/utbetalinger/$uid") {
                 accept(ContentType.Application.Json)

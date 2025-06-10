@@ -25,46 +25,6 @@ fun randomUtbetalingId(): UtbetalingId = UtbetalingId(UUID.randomUUID())
 
 fun XMLGregorianCalendar.toLocalDate() = toGregorianCalendar().toZonedDateTime().toLocalDate()
 
-object Aap {
-
-    fun utbetaling(
-        action: Action,
-        sakId: SakId = SakId("$nextInt"),
-        behId: BehandlingId = BehandlingId("$nextInt"),
-        dryrun: Boolean = false,
-        vedtatt: LocalDateTime = LocalDateTime.now(),
-        periodetype: Periodetype = Periodetype.UKEDAG,
-        avvent: Avvent? = null,
-        perioder: () -> List<Utbetalingsperiode>,
-    ) = AapUtbetaling(
-        dryrun = dryrun,
-        action = action,
-        periodetype = periodetype,
-        stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-        sakId = sakId,
-        behandlingId = behId,
-        personident = Personident(""),
-        vedtakstidspunkt = vedtatt,
-        beslutterId = Navident(""),
-        saksbehandlerId = Navident(""),
-        avvent = avvent,
-        perioder = perioder()
-    )
-
-    fun dag(
-        dato: LocalDate,
-        beløp: UInt = 123u,
-        vedtakssats: UInt? = beløp,
-    ) = listOf(
-        Utbetalingsperiode(
-            fom = dato,
-            tom = dato,
-            beløp = beløp,
-            vedtakssats = vedtakssats,
-        )
-    )
-}
-
 object Dp {
     fun utbetaling(
         sakId: String = "$nextInt",
@@ -156,7 +116,4 @@ fun periode(
         betalendeEnhet = betalendeEnhet,
     )
 )
-
-
-
 

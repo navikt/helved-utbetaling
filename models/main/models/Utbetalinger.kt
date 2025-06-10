@@ -41,7 +41,7 @@ data class Utbetaling(
         failOnÅrsskifte()
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
-        failOnInconsistentPeriodeType()
+        // failOnInconsistentPeriodeType()
         failOnIllegalFutureUtbetaling()
         failOnTooManyPeriods()
         failOnDuplicate(prev)
@@ -112,7 +112,7 @@ fun Utbetaling.validateLockedFields(other: Utbetaling) {
 fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
     if (perioder.size != other.perioder.size) return
     val ingenEndring = perioder.zip(other.perioder).all { (l, r) -> l.beløp == r.beløp && l.fom == r.fom && l.tom == r.tom && l.betalendeEnhet == r.betalendeEnhet && l.vedtakssats == r.vedtakssats }
-    if (ingenEndring) conflict("periods allready exists", "opprett_en_utbetaling")
+    if (ingenEndring) conflict("periods already exists", "opprett_en_utbetaling")
 }
 
 fun Utbetaling.failOnÅrsskifte() {

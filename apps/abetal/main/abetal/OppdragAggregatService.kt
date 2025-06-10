@@ -9,16 +9,8 @@ object AggregateOppdragService {
     fun utled(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): StreamsPair<List<Utbetaling>, List<Oppdrag>> {
         secureLog.trace("aggregate: $aggregate")
         val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> = aggregate.map { (new, prev) ->
-            new.failOnEmptyPerioder() // vi må tillate tomme perioder pga opphør
-            new.failOnÅrsskifte()
-            new.failOnDuplicatePerioder()
-            new.failOnTomBeforeFom()
-            new.failOnIllegalFutureUtbetaling()
-            new.failOnTooManyPeriods()
-            new.failOnDuplicate(prev)
-            new.failOnZeroBeløp()
-            new.failOnTooLongSakId()
-            new.failOnTooLongBehandlingId()
+            new.validate(prev)
+
             when {
                 new.action == Action.DELETE -> {
                     val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")

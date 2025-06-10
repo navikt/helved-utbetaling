@@ -101,7 +101,7 @@ data class UtbetalingV2(
 
         if (ingenEndring) {
             conflict(
-                msg = "periods allready exists",
+                msg = "periods already exists",
                 field = "perioder",
                 doc = "opprett_en_utbetaling",
             )
@@ -196,7 +196,7 @@ data class Utbetaling(
         }
         if (ingenEndring) {
             conflict(
-                msg = "periods allready exists",
+                msg = "periods already exists",
                 field = "perioder",
                 doc = "opprett_en_utbetaling",
             )

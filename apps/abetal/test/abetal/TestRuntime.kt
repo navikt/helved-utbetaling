@@ -19,7 +19,6 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
 
 object TestTopics {
-    val aap by lazy { TestRuntime.kafka.testTopic(Topics.aap) }
     val dp by lazy { TestRuntime.kafka.testTopic(Topics.dp) }
     val saker by lazy { TestRuntime.kafka.testTopic(Topics.saker) }
     val utbetalinger by lazy { TestRuntime.kafka.testTopic(Topics.utbetalinger) }
