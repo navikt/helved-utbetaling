@@ -1,1 +1,0 @@
-ALTER TABLE oppdrag_lager DROP COLUMN person_ident;
