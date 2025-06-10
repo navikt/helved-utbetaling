@@ -55,13 +55,13 @@ data class Dao(
         suspend fun find(
             table: Table,
             limit: Int,
-            key: String? = null,
+            key: List<String>? = null,
             value: List<String>? = null,
             fom: Long? = null,
             tom: Long? = null,
         ): List<Dao> {
             val whereClause = if (key != null || value != null || fom != null || tom != null) {
-                val keyQuery = if (key != null) " record_key = '$key' AND" else ""
+                val keyQuery = if (key != null) " (" + key.joinToString(" OR ") { "record_key like '%$it%'" } + ") AND" else ""
                 val valueQuery = if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") AND" else ""
                 val fomQuery = if (fom != null) " timestamp_ms > $fom AND" else ""
                 val tomQuery = if (tom != null) " timestamp_ms < $tom AND" else ""
