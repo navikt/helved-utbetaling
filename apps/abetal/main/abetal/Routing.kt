@@ -1,6 +1,5 @@
 package abetal
 
-import abetal.models.AapUtbetaling
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*

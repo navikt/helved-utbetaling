@@ -12,7 +12,6 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 object Topics {
-    val aap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
     val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
@@ -33,7 +32,6 @@ object Stores {
 fun createTopology(): Topology = topology {
     val utbetalinger = consume(Tables.utbetalinger)
     val saker = utbetalingToSak(utbetalinger)
-    aapStream(utbetalinger, saker)
     dpStream(utbetalinger, saker)
 }
 
@@ -60,19 +58,6 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
         .produce(Topics.saker)
 
     return ktable
-}
-
-fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    consume(Topics.aap)
-        .repartition(Topics.aap.serdes, 3)
-        .map { key, aap -> AapTuple(key, aap) }
-        .rekey { (_, aap) -> SakKey(aap.sakId, Fagsystem.from(aap.stønad)) }
-        .leftJoin(Serde.json(), Serde.json(), saker)
-        .map(::toDomain)
-        .rekey { utbetaling -> utbetaling.uid.id.toString() }
-        .leftJoin(Serde.string(), Serde.json(), utbetalinger)
-        .branch({ (new, _) -> new.dryrun }, ::dryrunStream)
-        .default(::oppdragStream)
 }
 
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
@@ -119,34 +104,6 @@ fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, 
         .default {
             this.map { it -> it.unwrapErr() }.produce(Topics.status) 
         }
-}
-
-fun oppdragStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
-    branched.filter { (new, prev) ->
-        val distinct = !new.isDuplicate(prev)
-        if (!distinct) appLog.info("Duplicate message found for ${new.uid.id}")
-        distinct
-    }.map { (new, prev) ->
-        Result.catch {
-            new.validate(prev)
-            val new = new.copy(perioder = new.perioder.aggreger(new.periodetype))
-            val oppdrag = when (new.action) {
-                Action.CREATE -> OppdragService.opprett(new)
-                Action.UPDATE -> OppdragService.update(new, prev ?: notFound("previous utbetaling"))
-                Action.DELETE -> OppdragService.delete(new, prev ?: notFound("previous utbetaling"))
-            }
-            val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-            val utbetaling = new.copy(lastPeriodeId = lastPeriodeId)
-            utbetaling to oppdrag
-        }
-    }.branch({ it.isOk() }) {
-        val result = this.map { it -> it.unwrap() }
-        result.map { (utbetaling, _) -> utbetaling }.produce(Topics.utbetalinger)
-        result.map { (_, oppdrag) -> oppdrag }.produce(Topics.oppdrag)
-        result.map { (_, oppdrag) -> StatusReply.mottatt(oppdrag) }.produce(Topics.status)
-    }.default {
-        map { it -> it.unwrapErr() }.produce(Topics.status)
-    }
 }
 
 fun dryrunStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
