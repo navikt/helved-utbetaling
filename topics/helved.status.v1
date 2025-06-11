@@ -28,5 +28,5 @@ spec:
       application: dp-mellom-barken-og-veden
       access: read
     - team: helved
-      application: helved
+      application: kafka-cli
       access: write
