@@ -27,3 +27,6 @@ spec:
     - team: helved
       application: vedskiva
       access: read
+    - team: helved
+      application: helved
+      access: read
