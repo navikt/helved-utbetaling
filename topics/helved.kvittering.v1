@@ -20,4 +20,4 @@ spec:
       access: read
     - team: helved
       application: helved
-      access: read
+      access: write
