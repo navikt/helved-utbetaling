@@ -27,3 +27,6 @@ spec:
     - team: teamdagpenger
       application: dp-mellom-barken-og-veden
       access: read
+    - team: helved
+      application: helved
+      access: read

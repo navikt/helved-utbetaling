@@ -17,3 +17,6 @@ spec:
     - team: helved
       application: peisschtappern
       access: read
+    - team: helved
+      application: helved
+      access: read

@@ -21,3 +21,6 @@ spec:
     - team: helved
       application: vedskiva
       access: write
+    - team: helved
+      application: helved
+      access: read
