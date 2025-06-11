@@ -19,4 +19,4 @@ spec:
       access: read
     - team: helved
       application: kafka-cli
-      access: write
+      access: readwrite
