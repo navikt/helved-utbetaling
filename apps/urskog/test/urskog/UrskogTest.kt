@@ -66,7 +66,8 @@ class UrskogTest {
             }
             .with(uid, index = 1) {
                 val expectedDetaljer =  Detaljer(
-                    listOf(
+                    ytelse = Fagsystem.AAP,
+                    linjer = listOf(
                         DetaljerLinje(
                             behandlingId = bid, 
                             fom = LocalDate.of(2025, 11, 3),

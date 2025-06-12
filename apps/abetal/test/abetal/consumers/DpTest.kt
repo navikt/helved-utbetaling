@@ -39,7 +39,9 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             Status.MOTTATT,
-            Detaljer(listOf(
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER,
+                linjer = listOf(
                 DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
             ))
         )
@@ -128,10 +130,13 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             Status.MOTTATT,
-            Detaljer(listOf(
-                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
-                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
-            ))
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER, 
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+                )
+            )
         )
         TestTopics.status.assertThat()
             .has(originalKey)
@@ -267,12 +272,15 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             Status.MOTTATT,
-            Detaljer(listOf(
-                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1000u, 1000u, "DPORAS"),
-                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 100u, 100u, "DPORASFE"),
-                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 600u, 600u, "DPPEASFE1"),
-                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 300u, 300u, "DPPEAS"),
-            ))
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER,
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1000u, 1000u, "DPORAS"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 100u, 100u, "DPORASFE"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 600u, 600u, "DPPEASFE1"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 300u, 300u, "DPPEAS"),
+                )
+            )
         )
         TestTopics.status.assertThat()
             .has(originalKey)
@@ -452,11 +460,14 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             Status.MOTTATT,
-            Detaljer(listOf(
-                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
-                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
-                DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "DPORAS"),
-            ))
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER,
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+                    DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "DPORAS"),
+                )
+            )
         )
         TestTopics.status.assertThat()
             .has(originalKey)
@@ -603,10 +614,13 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             Status.MOTTATT,
-            Detaljer(listOf(
-                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
-                DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
-            ))
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER,
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+                )
+            )
         )
         TestTopics.status.assertThat()
             .has(originalKey)
@@ -749,9 +763,12 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             Status.MOTTATT,
-            Detaljer(listOf(
-                DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "DPORAS"),
-            ))
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER, 
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "DPORAS"),
+                )
+            )
         )
         TestTopics.status.assertThat()
             .has(originalKey2)
@@ -864,9 +881,12 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             Status.MOTTATT,
-            Detaljer(listOf(
-                DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "DPORAS"),
-            ))
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER,
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "DPORAS"),
+                )
+            )
         )
         TestTopics.status.assertThat()
             .has(originalKey2)
@@ -969,7 +989,7 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             status = Status.MOTTATT, 
-            detaljer = Detaljer(listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "DPORAS")))
+            detaljer = Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "DPORAS")))
         )
 
         TestTopics.status.assertThat()
@@ -1097,11 +1117,14 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             Status.MOTTATT,
-            Detaljer(listOf(
-                DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "DPORAS"),
-                DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "DPORAS"),
-                DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "DPORAS"),
-            ))
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER,
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "DPORAS"),
+                    DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "DPORAS"),
+                    DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "DPORAS"),
+                )
+            )
         )
         TestTopics.status.assertThat()
             .has(originalKey)
@@ -1256,11 +1279,14 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             Status.MOTTATT,
-            Detaljer(listOf(
-                DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DPORAS"),
-                DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DPORAS"),
-                DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DPORAS"),
-            ))
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER,
+                linjer = listOf(
+                    DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DPORAS"),
+                    DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DPORAS"),
+                    DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DPORAS"),
+                )
+            )
         )
         TestTopics.status.assertThat()
             .has(originalKey)
@@ -1402,9 +1428,9 @@ internal class DpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        val mottatt1 = StatusReply(Status.MOTTATT, Detaljer(listOf(DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DPORAS"))))
-        val mottatt2 = StatusReply(Status.MOTTATT, Detaljer(listOf(DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DPORAS"))))
-        val mottatt3 = StatusReply(Status.MOTTATT, Detaljer(listOf(DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DPORAS"))))
+        val mottatt1 = StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DPORAS"))))
+        val mottatt2 = StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DPORAS"))))
+        val mottatt3 = StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DPORAS"))))
 
         TestTopics.status.assertThat()
             .has(originalKey, 3)
