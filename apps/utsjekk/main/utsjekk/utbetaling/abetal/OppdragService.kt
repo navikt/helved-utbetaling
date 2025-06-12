@@ -1,24 +1,20 @@
 package utsjekk.utbetaling.abetal
 
 import models.nesteUkedag
-import models.nesteVirkedag
 import no.trygdeetaten.skjema.oppdrag.*
 import utsjekk.utbetaling.*
 import java.math.BigDecimal
-import java.time.*
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
-import java.util.GregorianCalendar
-import java.util.UUID
+import java.util.*
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 
 private val objectFactory = ObjectFactory()
-private fun LocalDateTime.format() =
-    truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
-
-private fun LocalDate.toXMLDate(): XMLGregorianCalendar =
-    DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
+private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofPattern(pattern))
+private fun LocalDate.toXMLDate(): XMLGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
 
 private fun FagsystemDto.utbetalingFrekvens() = when(this) {
     FagsystemDto.HISTORISK -> "ENG"
@@ -43,11 +39,7 @@ object OppdragService {
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = fagsystemDto.kodekomponent()
-                nokkelAvstemming = LocalDateTime.now().format()
-                tidspktMelding = LocalDateTime.now().format()
-            }
+            avstemming115 = avstemming115(fagsystemDto.kodekomponent())
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             addLinjer(new)
@@ -84,11 +76,7 @@ object OppdragService {
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = new.fagsystem().kode
-                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-            }
+            avstemming115 = avstemming115(new.fagsystem().kode)
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             addLinjer(new)
@@ -138,11 +126,7 @@ object OppdragService {
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = fagsystemDto.kodekomponent()
-                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-            }
+            avstemming115 = avstemming115(fagsystemDto.kodekomponent())
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
@@ -171,11 +155,7 @@ object OppdragService {
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = new.fagsystem().kode
-                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-            }
+            avstemming115 = avstemming115(new.fagsystem().kode) 
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.kjeder.entries.forEach { (key, value) ->
@@ -241,11 +221,7 @@ object OppdragService {
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = fagsystemDto.kodekomponent()
-                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-            }
+            avstemming115 = avstemming115(fagsystemDto.kodekomponent()) 
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }
@@ -258,6 +234,14 @@ object OppdragService {
         }
     }
 }
+
+private fun avstemming115(fagsystemKode: String): Avstemming115 {
+    return objectFactory.createAvstemming115().apply {
+        kodeKomponent = fagsystemKode
+        nokkelAvstemming = LocalDateTime.now().format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        tidspktMelding = LocalDateTime.now().format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+    }
+} 
 
 fun opphørsdato(
     new: List<Utbetalingsperiode>,

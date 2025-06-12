@@ -1,18 +1,7 @@
 package utsjekk.iverksetting.abetal
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
-import java.util.*
-import javax.xml.datatype.DatatypeFactory
-import javax.xml.datatype.XMLGregorianCalendar
-import kotlinx.coroutines.runBlocking
 import libs.postgres.concurrency.transaction
-import libs.utils.*
-import models.PeriodeId
-import models.nesteVirkedag
+import libs.utils.appLog
 import models.kontrakter.felles.BrukersNavKontor
 import models.kontrakter.felles.Satstype
 import models.kontrakter.oppdrag.OppdragStatus
@@ -23,9 +12,16 @@ import utsjekk.iverksetting.*
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.*
+import javax.xml.datatype.DatatypeFactory
+import javax.xml.datatype.XMLGregorianCalendar
 
 private val objectFactory = ObjectFactory()
-private fun LocalDateTime.format() = truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofPattern(pattern))
 private fun LocalDate.toXMLDate(): XMLGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
 
 object OppdragService {
@@ -152,11 +148,7 @@ private fun oppdrag(utbetalingsoppdrag: Utbetalingsoppdrag): Oppdrag {
         oppdragGjelderId = utbetalingsoppdrag.aktør
         datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
         saksbehId = utbetalingsoppdrag.saksbehandlerId
-        avstemming115 = objectFactory.createAvstemming115().apply {
-            kodeKomponent = utbetalingsoppdrag.fagsystem.kode
-            nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-            tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-        }
+        avstemming115 = avstemming115(utbetalingsoppdrag.fagsystem.kode) 
         oppdragsEnhet120(utbetalingsoppdrag).map { oppdragsEnhet120s.add(it) }
         utbetalingsoppdrag.utbetalingsperiode.map { periode ->
             oppdragsLinje150s.add(
@@ -173,6 +165,13 @@ private fun oppdrag(utbetalingsoppdrag: Utbetalingsoppdrag): Oppdrag {
     }
 }
 
+private fun avstemming115(fagområde: String): Avstemming115 {
+    return objectFactory.createAvstemming115().apply {
+        kodeKomponent = fagområde
+        nokkelAvstemming = LocalDateTime.now().format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        tidspktMelding = LocalDateTime.now().format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+    }
+} 
 
 private fun oppdragsEnhet120(utbetalingsoppdrag: Utbetalingsoppdrag): List<OppdragsEnhet120> {
     val bos = objectFactory.createOppdragsEnhet120().apply {

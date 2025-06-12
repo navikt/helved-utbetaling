@@ -81,9 +81,6 @@ fun vedskiva(
 
                oppdragDaos.reduce()
 
-               // val fom = last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()
-               // val tom = today.minusDays(1)
-
                oppdragDaos.values
                    .filterNot { it.isEmpty() } 
                    .groupBy { requireNotNull(it.first().oppdrag).oppdrag110.kodeFagomraade.trimEnd() }
@@ -98,7 +95,7 @@ fun vedskiva(
                             personident = Personident(oppdrag.oppdrag110.oppdragGjelderId.trimEnd()),
                             sakId = SakId(oppdrag.oppdrag110.fagsystemId.trimEnd()),
                             lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
-                            innsendt = oppdrag.oppdrag110.oppdragsLinje150s.first().vedtakId.trimEnd().toLocalDate(),
+                            innsendt = oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd().toLocalDateTime(),
                             totalBeløpAllePerioder = oppdrag.oppdrag110.oppdragsLinje150s.sumOf {it.sats.toLong().toUInt() },
                             kvittering = oppdrag.mmel?.let { mmel ->
                                 Kvittering(
@@ -109,7 +106,7 @@ fun vedskiva(
                             },
                            )
                        }
-                       val avstemming = Avstemming(avstemmingId, avstemFom.toLocalDate(), avstemTom.toLocalDate(), oppdragsdatas)
+                       val avstemming = Avstemming(avstemmingId, avstemFom, avstemTom, oppdragsdatas)
                        val messages = AvstemmingService.create(avstemming)
                        messages.forEach { msg -> avstemmingProducer.send(UUID.randomUUID().toString(), msg, 0) }
                        appLog.info("Avstemming for $fagområde completed with avstemmingId: $avstemmingId")
@@ -127,6 +124,7 @@ fun vedskiva(
 
 private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
 private fun String.toLocalDate(): LocalDate = LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+private fun String.toLocalDateTime(): LocalDateTime = LocalDateTime.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
 
 private fun MutableMap<String, Set<Dao>>.accAndDedup(dao: Dao) {
     val daosForKey = getOrDefault(dao.key, emptySet())
