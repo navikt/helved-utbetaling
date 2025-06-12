@@ -30,8 +30,8 @@ object AvstemmingService {
             this.avleverendeKomponentKode = avstemming.fagsystem.fagområde
             this.mottakendeKomponentKode = "OS"
             this.underkomponentKode = avstemming.fagsystem.fagområde
-            this.nokkelFom = avstemming.fom.atStartOfDay().format()
-            this.nokkelTom = avstemming.tom.atTime(LocalTime.MAX).format()
+            this.nokkelFom = avstemming.fom.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+            this.nokkelTom = avstemming.tom.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
             this.avleverendeAvstemmingId = avstemming.id
             this.brukerId = avstemming.fagsystem.fagområde
         }
@@ -72,7 +72,7 @@ object AvstemmingService {
             detaljType = type
             offnr = data.personident.ident
             avleverendeTransaksjonNokkel = data.sakId.id
-            tidspunkt = data.innsendt.atStartOfDay().format()
+            tidspunkt = data.innsendt.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
             if (type in listOf(DetaljType.AVVI, DetaljType.VARS)) {
                 val kvittering = data.kvittering ?: return null
                 meldingKode = kvittering.kode
@@ -90,9 +90,8 @@ object AvstemmingService {
     }
 
     private fun periodedata(avstemming: Avstemming) = Periodedata().apply {
-        val formatter = DateTimeFormatter.ofPattern("yyyyMMddHH")
-        datoAvstemtFom = avstemming.fom.atTime(0, 0).format(formatter)
-        datoAvstemtTom = avstemming.tom.atTime(23, 59).format(formatter)
+        datoAvstemtFom = avstemming.fom.format("yyyyMMddHH")
+        datoAvstemtTom = avstemming.tom.format("yyyyMMddHH")
     }
 
     private fun grunnlagsdata(datas: List<Oppdragsdata>) = Grunnlagsdata().apply {
@@ -128,4 +127,4 @@ object AvstemmingService {
     }
 }
 
-private fun LocalDateTime.format() = format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofPattern(pattern))

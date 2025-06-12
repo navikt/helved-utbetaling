@@ -7,13 +7,12 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 import java.util.*
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 
 private val objectFactory = ObjectFactory()
-private fun LocalDateTime.format() = truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofPattern(pattern))
 fun LocalDate.toXMLDate(): XMLGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
 
 object OppdragService {
@@ -28,11 +27,7 @@ object OppdragService {
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = Fagsystem.from(new.stønad).fagområde
-                nokkelAvstemming = LocalDateTime.now().format()
-                tidspktMelding = LocalDateTime.now().format()
-            }
+            avstemming115 = avstemming115(Fagsystem.from(new.stønad).fagområde) 
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.perioder.mapIndexed { i, periode ->
@@ -60,11 +55,7 @@ object OppdragService {
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = Fagsystem.from(new.stønad).fagområde
-                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-            }
+            avstemming115 = avstemming115(Fagsystem.from(new.stønad).fagområde) 
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
@@ -92,11 +83,7 @@ object OppdragService {
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = objectFactory.createAvstemming115().apply {
-                kodeKomponent = Fagsystem.from(new.stønad).fagområde
-                nokkelAvstemming = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-                tidspktMelding = LocalDate.now().nesteVirkedag().atStartOfDay().format()
-            }
+            avstemming115 = avstemming115(Fagsystem.from(new.stønad).fagområde) 
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }
@@ -109,6 +96,14 @@ object OppdragService {
         }
     }
 }
+
+private fun avstemming115(fagområde: String): Avstemming115 {
+    return objectFactory.createAvstemming115().apply {
+        kodeKomponent = fagområde
+        nokkelAvstemming = LocalDateTime.now().format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        tidspktMelding = LocalDateTime.now().format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+    }
+} 
 
 fun opphørsdato(
     new: List<Utbetalingsperiode>,

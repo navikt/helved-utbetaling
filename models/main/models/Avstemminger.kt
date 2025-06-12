@@ -1,13 +1,14 @@
 package models
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 typealias AvstemmingId = String
 
 data class Avstemming(
     val id: AvstemmingId,
-    val fom: LocalDate,
-    val tom: LocalDate,
+    val fom: LocalDateTime,
+    val tom: LocalDateTime,
     val oppdragsdata: List<Oppdragsdata>
 ) {
     val fagsystem get() = oppdragsdata.first().fagsystem
@@ -18,7 +19,7 @@ data class Oppdragsdata(
     val personident: Personident,
     val sakId: SakId,
     val lastDelytelseId: String,
-    val innsendt: LocalDate,
+    val innsendt: LocalDateTime,
     val totalBeløpAllePerioder: UInt,
     val kvittering: Kvittering?,
 )
