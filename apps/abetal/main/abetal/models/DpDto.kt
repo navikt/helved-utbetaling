@@ -116,7 +116,6 @@ fun toDomain(
         uid = uid,
         action = Action.CREATE,
         førsteUtbetalingPåSak = uidsPåSak == null,
-        utbetalingerPåSak = uidsPåSak ?: emptySet(), // hvis lista null er det første utbetaling, hvis lista er tom har det være en delete der før
         sakId = SakId(value.sakId),
         behandlingId = BehandlingId(value.behandlingId),
         lastPeriodeId = PeriodeId(),
@@ -171,7 +170,6 @@ fun fakeDelete(
     uid = uid,
     action = Action.DELETE,
     førsteUtbetalingPåSak = false,
-    utbetalingerPåSak = emptySet(),
     sakId = sakId,
     behandlingId = BehandlingId(""),
     lastPeriodeId = PeriodeId(),

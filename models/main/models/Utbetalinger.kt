@@ -23,7 +23,6 @@ data class Utbetaling(
     val uid: UtbetalingId,
     val action: Action,
     val førsteUtbetalingPåSak: Boolean,
-    val utbetalingerPåSak: Set<UtbetalingId>,
     val sakId: SakId,
     val behandlingId: BehandlingId,
     val lastPeriodeId: PeriodeId,
