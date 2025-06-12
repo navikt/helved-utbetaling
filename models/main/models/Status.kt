@@ -30,7 +30,8 @@ enum class Status {
 }
 
 data class Detaljer(
-    val linjer: List<DetaljerLinje>
+    val ytelse: Fagsystem,
+    val linjer: List<DetaljerLinje>,
 )
 
 data class DetaljerLinje(
@@ -49,15 +50,17 @@ private fun beløp(o: OppdragsLinje150): UInt {
 }
 
 private fun detaljer(o: Oppdrag): Detaljer {
-    val linjer = o.oppdrag110.oppdragsLinje150s.map { linje ->
-        DetaljerLinje(
-            behandlingId = linje.henvisning.trimEnd(),
-            fom = linje.datoVedtakFom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
-            tom = linje.datoVedtakTom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
-            beløp = beløp(linje),
-            vedtakssats = linje.vedtakssats157?.vedtakssats?.toLong()?.toUInt(),
-            klassekode = linje.kodeKlassifik.trimEnd(),
-        )
-    }
-    return Detaljer(linjer)
+    return Detaljer(
+        ytelse = Fagsystem.fromFagområde(o.oppdrag110.kodeFagomraade.trimEnd()),
+        linjer = o.oppdrag110.oppdragsLinje150s.map { linje ->
+            DetaljerLinje(
+                behandlingId = linje.henvisning.trimEnd(),
+                fom = linje.datoVedtakFom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
+                tom = linje.datoVedtakTom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
+                beløp = beløp(linje),
+                vedtakssats = linje.vedtakssats157?.vedtakssats?.toLong()?.toUInt(),
+                klassekode = linje.kodeKlassifik.trimEnd(),
+            )
+        }
+    )
 }
