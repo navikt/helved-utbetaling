@@ -22,13 +22,13 @@ object AggregateOppdragService {
                 prev == null -> {
                     val oppdrag = OppdragService.opprett(new) 
                     val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                    val utbetaling = new.copy(lastPeriodeId = lastPeriodeId)
+                    val utbetaling = new.copy(action = Action.CREATE, lastPeriodeId = lastPeriodeId)
                     utbetaling to oppdrag
                 }
                 else -> {
                     val oppdrag = OppdragService.update(new, prev)
                     val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                    val utbetaling = new.copy(lastPeriodeId = lastPeriodeId)
+                    val utbetaling = new.copy(action = Action.UPDATE, lastPeriodeId = lastPeriodeId)
                     utbetaling to oppdrag
                 }
             }

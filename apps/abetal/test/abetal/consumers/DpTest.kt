@@ -896,7 +896,7 @@ internal class DpTest {
             .has(uid1.toString())
             .with(uid1.toString()) {
                 val expected = utbetaling(
-                    action = Action.CREATE,
+                    action = Action.UPDATE,
                     uid = uid1,
                     sakId = sid,
                     behandlingId = bid,
@@ -1134,7 +1134,7 @@ internal class DpTest {
             .has(uid1.id.toString())
             .with(uid1.id.toString()) {
                 val expected = utbetaling(
-                    action = Action.CREATE, // FIXME: burde vært en UPDATE
+                    action = Action.UPDATE,
                     uid = uid1,
                     originalKey = originalKey,
                     sakId = sid,
