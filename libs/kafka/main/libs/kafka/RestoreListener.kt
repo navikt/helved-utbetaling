@@ -30,12 +30,14 @@ internal class RestoreListener : StateRestoreListener {
         val startMs = durationForPartition.getOrDefault(partition.partition(), Long.MAX_VALUE)
         val duration = (System.currentTimeMillis() - startMs).toDuration(DurationUnit.MILLISECONDS)
 
-        log.info(
-            "Recovered #$totalRestored records on partition ${partition.partition()} ($duration)",
-            StructuredArguments.kv("partition", partition.partition()),
-            StructuredArguments.kv("topic", partition.topic()),
-            StructuredArguments.kv("store", storeName),
-        )
+        if (totalRestored > 0) {
+            log.info(
+                "recover $totalRestored records on ${partition.topic()}:${partition.partition()} ($duration)",
+                StructuredArguments.kv("partition", partition.partition()),
+                StructuredArguments.kv("topic", partition.topic()),
+                StructuredArguments.kv("store", storeName),
+            )
+        }
     }
 
     override fun onBatchRestored(partition: TopicPartition, storeName: String, endOffset: Long, numRestored: Long) {
