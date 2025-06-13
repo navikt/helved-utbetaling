@@ -6,7 +6,7 @@ application {
     mainClass.set("utsjekk.UtsjekkKt")
 }
 
-val ktorVersion = "3.1.3"
+val ktorVersion = "3.2.0"
 val libVersion = "3.1.131"
 
 dependencies {
