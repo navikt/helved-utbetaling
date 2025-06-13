@@ -1,17 +1,18 @@
 package vedskiva
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.kafka.KafkaFactory
 import libs.postgres.Jdbc
 import libs.postgres.Migrator
 import libs.postgres.concurrency.transaction
-import libs.utils.*
+import libs.utils.appLog
+import libs.utils.secureLog
 import models.*
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -43,78 +44,82 @@ fun vedskiva(
     runBlocking {
         withContext(Jdbc.context) {
             if (!today.erHelligdag()) {
-               val last: Scheduled? = transaction {
-                   Scheduled.lastOrNull()
-               } 
-               appLog.info("last scheduled: $last")
-               if (today == last?.created_at) {
-                   appLog.info("Already avstemt today")
-                   return@withContext
-               }
+                val last: Scheduled? = transaction {
+                    Scheduled.lastOrNull()
+                }
+                appLog.info("last scheduled: $last")
+                if (today == last?.created_at) {
+                    appLog.info("Already avstemt today")
+                    return@withContext
+                }
 
-               val oppdragDaos = mutableMapOf<String, Set<Dao>>()
-               val avstemFom = (last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()).atStartOfDay() 
-               val avstemTom = today.atStartOfDay().minusNanos(1)
+                val oppdragDaos = mutableMapOf<String, Set<Dao>>()
+                val avstemFom = (last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()).atStartOfDay()
+                val avstemTom = today.atStartOfDay().minusNanos(1)
 
-               peisschtappern.oppdrag(
-                   fom = avstemFom, 
-                   tom = avstemTom,
-               ).also {
-                   appLog.info("Fetched ${it.size} oppdrag between $avstemFom - $avstemTom from peisschtappern")
-               }.filter { dao -> 
-                   val avstemmingdag = dao.oppdrag?.let { oppdrag -> 
-                       val tidspktMelding = oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd() 
-                       LocalDateTime.parse(tidspktMelding, formatter).toLocalDate() 
-                   } 
-                   val keep = avstemmingdag in listOf(today, null)
-                   if (!keep) appLog.warn("Filter oppdrag not suited for todays avstemming k:${dao.key} p:${dao.partition} o:${dao.offset}")
-                   keep
-               }.also {
-                   appLog.info("Keeping ${it.size} of the fetched ones")
-               }.forEach { dao ->
-                   if (dao.value == null) {
-                       appLog.error("Found tombstone key:${dao.key} p:${dao.partition} o:${dao.offset}. Tombstones are not necessary on topics with retention.")
-                   } else {
-                       oppdragDaos.accAndDedup(dao)
-                   }
-               } 
+                peisschtappern.oppdrag(
+                    fom = avstemFom,
+                    tom = avstemTom,
+                ).also {
+                    appLog.info("Fetched ${it.size} oppdrag between $avstemFom - $avstemTom from peisschtappern")
+                }.filter { dao ->
+                    val avstemmingdag: LocalDateTime? = dao.oppdrag?.let { oppdrag ->
+                        val tidspktMelding = oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd()
+                        LocalDateTime.parse(tidspktMelding, formatter)
+                    }
+                    val keep =
+                        avstemmingdag == null || (avstemmingdag >= avstemFom && avstemmingdag <= avstemTom)
+                    if (!keep) appLog.warn("Filter oppdrag not suited for todays avstemming k:${dao.key} p:${dao.partition} o:${dao.offset}")
+                    keep
+                }.also {
+                    appLog.info("Keeping ${it.size} of the fetched ones")
+                }.forEach { dao ->
+                    if (dao.value == null) {
+                        appLog.error("Found tombstone key:${dao.key} p:${dao.partition} o:${dao.offset}. Tombstones are not necessary on topics with retention.")
+                    } else {
+                        oppdragDaos.accAndDedup(dao)
+                    }
+                }
 
-               oppdragDaos.reduce()
+                oppdragDaos.reduce()
 
-               oppdragDaos.values
-                   .filterNot { it.isEmpty() } 
-                   .groupBy { requireNotNull(it.first().oppdrag).oppdrag110.kodeFagomraade.trimEnd() }
-                   .forEach { (fagområde, daos) -> 
-                       appLog.debug("create oppdragsdatas for $fagområde")
-                       daos.flatten().forEach { appLog.debug("oppdragsdata k:${it.key} p:${it.partition} o:${it.offset}") }
-                       val avstemmingId = AvstemmingService.genererId()
+                oppdragDaos.values
+                    .filterNot { it.isEmpty() }
+                    .groupBy { requireNotNull(it.first().oppdrag).oppdrag110.kodeFagomraade.trimEnd() }
+                    .forEach { (fagområde, daos) ->
+                        appLog.debug("create oppdragsdatas for $fagområde")
+                        daos.flatten()
+                            .forEach { appLog.debug("oppdragsdata k:${it.key} p:${it.partition} o:${it.offset}") }
+                        val avstemmingId = AvstemmingService.genererId()
 
-                       val oppdragsdatas = daos.flatten().mapNotNull { it.oppdrag }.map { oppdrag ->
-                           Oppdragsdata(
-                            fagsystem = Fagsystem.fromFagområde(fagområde),
-                            personident = Personident(oppdrag.oppdrag110.oppdragGjelderId.trimEnd()),
-                            sakId = SakId(oppdrag.oppdrag110.fagsystemId.trimEnd()),
-                            lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
-                            innsendt = oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd().toLocalDateTime(),
-                            totalBeløpAllePerioder = oppdrag.oppdrag110.oppdragsLinje150s.sumOf {it.sats.toLong().toUInt() },
-                            kvittering = oppdrag.mmel?.let { mmel ->
-                                Kvittering(
-                                    alvorlighetsgrad = mmel.alvorlighetsgrad.trimEnd(),
-                                    kode = mmel.kodeMelding?.trimEnd(),
-                                    melding = mmel.beskrMelding?.trimEnd(),
-                                )
-                            },
-                           )
-                       }
-                       val avstemming = Avstemming(avstemmingId, avstemFom, avstemTom, oppdragsdatas)
-                       val messages = AvstemmingService.create(avstemming)
-                       messages.forEach { msg -> avstemmingProducer.send(UUID.randomUUID().toString(), msg, 0) }
-                       appLog.info("Avstemming for $fagområde completed with avstemmingId: $avstemmingId")
-                   }
+                        val oppdragsdatas = daos.flatten().mapNotNull { it.oppdrag }.map { oppdrag ->
+                            Oppdragsdata(
+                                fagsystem = Fagsystem.fromFagområde(fagområde),
+                                personident = Personident(oppdrag.oppdrag110.oppdragGjelderId.trimEnd()),
+                                sakId = SakId(oppdrag.oppdrag110.fagsystemId.trimEnd()),
+                                lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
+                                innsendt = oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd().toLocalDateTime(),
+                                totalBeløpAllePerioder = oppdrag.oppdrag110.oppdragsLinje150s.sumOf {
+                                    it.sats.toLong().toUInt()
+                                },
+                                kvittering = oppdrag.mmel?.let { mmel ->
+                                    Kvittering(
+                                        alvorlighetsgrad = mmel.alvorlighetsgrad.trimEnd(),
+                                        kode = mmel.kodeMelding?.trimEnd(),
+                                        melding = mmel.beskrMelding?.trimEnd(),
+                                    )
+                                },
+                            )
+                        }
+                        val avstemming = Avstemming(avstemmingId, avstemFom, avstemTom, oppdragsdatas)
+                        val messages = AvstemmingService.create(avstemming)
+                        messages.forEach { msg -> avstemmingProducer.send(UUID.randomUUID().toString(), msg, 0) }
+                        appLog.info("Avstemming for $fagområde completed with avstemmingId: $avstemmingId")
+                    }
 
-               transaction {
-                   Scheduled(today, avstemFom.toLocalDate(), avstemTom.toLocalDate()).insert()
-               }
+                transaction {
+                    Scheduled(today, avstemFom.toLocalDate(), avstemTom.toLocalDate()).insert()
+                }
             } else {
                 appLog.info("Today is a holiday or weekend, no avstemming")
             }
@@ -124,7 +129,8 @@ fun vedskiva(
 
 private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
 private fun String.toLocalDate(): LocalDate = LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-private fun String.toLocalDateTime(): LocalDateTime = LocalDateTime.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+private fun String.toLocalDateTime(): LocalDateTime =
+    LocalDateTime.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
 
 private fun MutableMap<String, Set<Dao>>.accAndDedup(dao: Dao) {
     val daosForKey = getOrDefault(dao.key, emptySet())
@@ -139,9 +145,9 @@ private fun MutableMap<String, Set<Dao>>.accAndDedup(dao: Dao) {
 private fun MutableMap<String, Set<Dao>>.reduce() {
     val obsoleteDaos = mutableListOf<Dao>()
     entries.forEach { (_, daos) ->
-        daos.filter { dao -> 
-            dao.oppdrag?.mmel == null 
-        }.forEach { dao -> 
+        daos.filter { dao ->
+            dao.oppdrag?.mmel == null
+        }.forEach { dao ->
             if (daos.findCorrelated(dao) != null) {
                 obsoleteDaos.add(dao)
             } else {
@@ -149,7 +155,7 @@ private fun MutableMap<String, Set<Dao>>.reduce() {
             }
         }
     }
-    obsoleteDaos.forEach { dao -> 
+    obsoleteDaos.forEach { dao ->
         appLog.debug("Found oppdrag with kvittering, removing ukvittert key:${dao.key} p:${dao.partition} o:${dao.offset}")
         this[dao.key] = this[dao.key]!! - dao
     }
@@ -162,8 +168,8 @@ private fun Set<Dao>.findCorrelated(dao: Dao): Dao? {
 
     return this.singleOrNull {
         firstDelytelseId == it.oppdrag?.oppdrag110?.oppdragsLinje150s?.first()?.delytelseId?.trimEnd() &&
-        lastDelytelseId == it.oppdrag?.oppdrag110?.oppdragsLinje150s?.last()?.delytelseId?.trimEnd() && 
-        mmel != it.oppdrag?.mmel
+                lastDelytelseId == it.oppdrag?.oppdrag110?.oppdragsLinje150s?.last()?.delytelseId?.trimEnd() &&
+                mmel != it.oppdrag?.mmel
     }
 }
 
