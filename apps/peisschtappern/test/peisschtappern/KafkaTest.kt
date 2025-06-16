@@ -3,6 +3,7 @@ package peisschtappern
 import kotlinx.coroutines.test.runTest
 import libs.kafka.TestTopic
 import org.junit.jupiter.api.Assertions.assertEquals
+import libs.jdbc.*
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNotNull
 
@@ -37,7 +38,7 @@ class KafkaTest {
             case.testTopic.produce("123") {
                 "content for ${case.channel.table.name}".toByteArray()
             }
-            val dao = awaitDatabase(100) {
+            val dao = TestRuntime.jdbc.await(100) {
                 Dao.find("123", case.channel.table).singleOrNull()
             }
 
