@@ -1565,7 +1565,7 @@ internal class DpTest {
         val meldeperiode = "132460781"
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id, dryrun = true) {
                 Dp.meldekort(
                     meldeperiode = "132460781",
@@ -1587,11 +1587,11 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
             ))
         )
-        TestTopics.status.assertThat().isEmpty()
-        TestTopics.utbetalinger.assertThat().isEmpty()
-        TestTopics.oppdrag.assertThat().isEmpty()
-        TestTopics.saker.assertThat().isEmpty()
-        TestTopics.simulering.assertThat()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.saker.assertThat().isEmpty()
+        TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
             .has(originalKey)
             .with(originalKey) {

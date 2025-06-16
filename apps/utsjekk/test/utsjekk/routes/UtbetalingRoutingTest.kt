@@ -1,7 +1,6 @@
 package utsjekk.utbetaling
 
 import TestRuntime
-import TestTopics
 import httpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
@@ -170,7 +169,7 @@ class UtbetalingRoutingTest {
         assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
 
         val endretUtbetaling = utbetaling.copy(perioder = listOf(utbetaling.perioder[0].copy(beløp=1u)))
-        TestTopics.status.produce(uid.toString()) {
+        TestRuntime.topics.status.produce(uid.toString()) {
             StatusReply.ok(oppdrag)
         }
         val status = runBlocking {
