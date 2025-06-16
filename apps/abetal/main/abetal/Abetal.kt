@@ -22,7 +22,19 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(Netty, port = 8080, module = Application::abetal).start(wait = true)
+    embeddedServer(
+        factory = Netty,
+        configure = {
+            shutdownGracePeriod = 5000L
+            shutdownTimeout = 50_000L
+            connectors.add(EngineConnectorBuilder().apply {
+                // host = "127.0.0.1",
+                port = 8080
+            })
+        },
+        // port = 8080, 
+        module = Application::abetal,
+    ).start(wait = true)
 }
 
 fun Application.abetal(
