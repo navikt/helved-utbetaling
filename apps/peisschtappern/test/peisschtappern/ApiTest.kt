@@ -135,7 +135,7 @@ class ApiTest {
         val xmlMapper = XMLMapper<Oppdrag>()
         val initialOppdrag = xmlMapper.readValue(TestData.oppdragXml)
 
-        val oppdragProducer = TestRuntime.vanillaKafka.createProducer(TestRuntime.config.kafka, oppdrag)
+        val oppdragProducer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, oppdrag)
         oppdragProducer.send("202503271001", initialOppdrag)
 
         val kvitteringRequest = KvitteringRequest(

@@ -208,7 +208,7 @@ class IverksettingRouteTest {
         }
         requireNotNull(uid) { "iverksetting.uid was null" }
 
-        TestTopics.status.produce(uid.id.toString()) {
+        TestRuntime.topics.status.produce(uid.id.toString()) {
             StatusReply(Status.OK)
         }
 
