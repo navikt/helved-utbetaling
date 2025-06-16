@@ -45,7 +45,7 @@ class KafkaStreams : Streams {
 override fun ready(): Boolean = initiallyStarted && internalStreams.state() in listOf(CREATED, REBALANCING, RUNNING)
 override fun live(): Boolean = initiallyStarted && internalStreams.state() != ERROR
 override fun visulize(): TopologyVisulizer = TopologyVisulizer(internalTopology)
-override fun close() = close(10_000)
+override fun close() = close(45_000)
 override fun close(gracefulMillis: Long) {
     if(!internalStreams.close(java.time.Duration.ofMillis(gracefulMillis))) {
         kafkaLog.error("Gracefully waited ${gracefulMillis}ms for streams to close all its thread, but was forced to shutdown before it completed.")
