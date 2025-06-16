@@ -25,13 +25,13 @@ import models.kontrakter.oppdrag.OppdragStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import utsjekk.DEFAULT_DOC_STR
 import utsjekk.iverksetting.BehandlingId
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.IverksettingId
 import utsjekk.iverksetting.SakId
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import java.time.LocalDate
-import utsjekk.DEFAULT_DOC_STR
 
 class IverksettingRouteTest {
 

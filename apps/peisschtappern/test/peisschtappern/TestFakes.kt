@@ -8,6 +8,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import libs.auth.*
+import libs.ktor.*
 import java.net.URI
 
 class AzureFake : AutoCloseable {

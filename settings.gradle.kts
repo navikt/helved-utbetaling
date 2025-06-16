@@ -21,4 +21,5 @@ include(
     "libs:jdbc-test",
     "libs:kafka",
     "libs:kafka-test",
+    "libs:ktor-test",
 )

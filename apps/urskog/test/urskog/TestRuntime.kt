@@ -5,6 +5,7 @@ import io.ktor.server.netty.*
 import kotlinx.coroutines.runBlocking
 import libs.kafka.StreamsMock
 import libs.mq.MQ
+import libs.ktor.*
 import libs.utils.logger
 
 class TestTopics(private val kafka: StreamsMock) {
@@ -21,33 +22,16 @@ class TestTopics(private val kafka: StreamsMock) {
 val testLog = logger("test")
 
 object TestRuntime {
-    val ktor: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>
-    val kafka: StreamsMock
-    val mq: MQ
-    val ws: WSFake
-    val fakes: HttpFakes
-    val topics: TestTopics
-
-    init {
-        kafka = StreamsMock()
-        mq = oppdragURFake()
-        ws = WSFake()
-        fakes = HttpFakes()
-        ktor = embeddedServer(Netty, port = 0) {
-            val config: Config = TestConfig.create(fakes.proxyConfig, fakes.azureConfig, fakes.simuleringConfig)
+    val kafka: StreamsMock = StreamsMock()
+    val mq: MQ = oppdragURFake()
+    val ws: WSFake = WSFake()
+    val fakes: HttpFakes = HttpFakes()
+    val config: Config = TestConfig.create(fakes.proxyConfig, fakes.azureConfig, fakes.simuleringConfig)
+    val ktor = KtorRuntime<Config>(
+        module = {
             urskog(config, kafka, mq)
-        }
-        Runtime.getRuntime().addShutdownHook(Thread {
-            testLog.info("Shutting down TestRunner")
-            ktor.stop(1000L, 5000L)
-        })
-        ktor.start(wait = false)
-        topics = TestTopics(kafka)
-    }
+        },
+    )
+    val topics: TestTopics = TestTopics(kafka)
 }
-
-val NettyApplicationEngine.port: Int
-    get() = runBlocking {
-        resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
-    }
 

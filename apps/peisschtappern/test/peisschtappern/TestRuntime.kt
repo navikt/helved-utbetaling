@@ -1,8 +1,5 @@
 package peisschtappern
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -15,6 +12,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.firstOrNull
 import libs.jdbc.PostgresContainer
 import libs.kafka.*
+import libs.ktor.KtorRuntime
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
@@ -27,58 +25,30 @@ private val testLog = logger("test")
 
 object TestRuntime {
     private val postgres = PostgresContainer("peisschtappern")
-    val ktor: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>
-    val azure: AzureFake
-    val kafka: StreamsMock
-    val vanillaKafka: KafkaFactoryFake
-    val jdbc: DataSource
-    val context: CoroutineDatasource
+    val azure: AzureFake = AzureFake()
+    val kafka: StreamsMock = StreamsMock()
+    val vanillaKafka: KafkaFactoryFake = KafkaFactoryFake()
+    val jdbc: DataSource = Jdbc.initialize(postgres.config)
+    val context: CoroutineDatasource = CoroutineDatasource(jdbc)
+    val config: Config = Config(
+        azure = azure.config,
+        jdbc = postgres.config.copy(migrations = listOf(File("test/premigrations"), File("migrations"))),
+        kafka = kafka.config,
+    )
 
-    init {
-        kafka = StreamsMock()
-        azure = AzureFake()
-        vanillaKafka= KafkaFactoryFake()
-        jdbc = Jdbc.initialize(postgres.config)
-        context = CoroutineDatasource(jdbc)
-        ktor = embeddedServer(Netty, port = 0) {
-            val config: Config = Config(
-                azure = azure.config,
-                jdbc = postgres.config.copy(migrations = listOf(File("test/premigrations"), File("migrations"))),
-                kafka = StreamsConfig("", "", SslConfig("", "", "")),
-            )
+    val ktor = KtorRuntime<Config>(
+        module = { 
             peisschtappern(config, kafka, vanillaKafka)
-        }
-
-        Runtime.getRuntime().addShutdownHook(Thread {
-            testLog.info("Shutting down TestRunner")
+        },
+        onClose = {
             jdbc.truncate()
             postgres.close()
-            ktor.stop(1000L, 5000L)
             azure.close()
-        })
-        ktor.start(wait = false)
-    }
+        }
+    )
 
     fun reset() {
         vanillaKafka.reset()
-    }
-}
-
-val NettyApplicationEngine.port: Int
-    get() = runBlocking {
-        resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
-    }
-
-val httpClient: HttpClient = HttpClient(CIO) {
-    install(ContentNegotiation) {
-        jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
-    }
-    defaultRequest {
-        url("http://localhost:${TestRuntime.ktor.engine.port}")
     }
 }
 

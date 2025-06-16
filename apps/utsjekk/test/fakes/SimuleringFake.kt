@@ -12,7 +12,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import port
+import libs.ktor.port
 import utsjekk.SimuleringConfig
 import utsjekk.simulering.client
 import utsjekk.utbetaling.UtbetalingsoppdragDto
