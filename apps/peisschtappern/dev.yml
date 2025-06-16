@@ -45,6 +45,9 @@ spec:
       rules:
         - application: helved-peisen
         - application: vedskiva
+        - application: azure-token-generator
+          namespace: nais
+          cluster: dev-gcp
     outbound:
       rules:
         - application: logging
@@ -61,5 +64,5 @@ spec:
           day: 7
           hour: 23
         databases:
-          - name: peisschtappern
+          - name: s
             envVarPrefix: DB
