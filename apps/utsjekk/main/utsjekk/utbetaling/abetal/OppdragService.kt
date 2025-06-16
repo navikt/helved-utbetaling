@@ -29,7 +29,6 @@ private fun FagsystemDto.kodekomponent() = when(this) {
 object OppdragService {
     fun opprett(new: Utbetaling, erførsteUtbetalingPåSak: Boolean): Oppdrag {
         val fagsystemDto = FagsystemDto.from(new.stønad)
-
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = if (erførsteUtbetalingPåSak) "NY" else "ENDR"

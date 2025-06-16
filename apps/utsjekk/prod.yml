@@ -77,6 +77,7 @@ spec:
           namespace: nais-system
         - application: utsjekk-oppdrag
         - application: utsjekk-simulering
+        - application: abetal
   gcp:
     sqlInstances:
       - type: "POSTGRES_15" #WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade

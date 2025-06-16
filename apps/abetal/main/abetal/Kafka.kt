@@ -68,8 +68,34 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .leftJoin(Serde.json(), Serde.json(), saker)
         .flatMapKeyValue(::splitOnMeldeperiode)
         .leftJoin(Serde.string(), Serde.json(), utbetalinger)
-        .branch({ (new, _) -> new.dryrun }, ::dryrunStream)
-        .default(::utbetalingDiffStream)
+        .filter { (new, prev) -> !new.isDuplicate(prev) }
+        .rekey { new, _ -> new.originalKey }
+        .map { new, prev -> listOf(StreamsPair(new, prev)) }
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds)
+        .reduce(suppressProcessorSupplier, "dp-diff-window-agg-session-store") { acc, next -> acc + next }
+        .map { aggregate  -> 
+            Result.catch { 
+                val oppdragAgg = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                val dryrunAgg = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                oppdragAgg to dryrunAgg
+            }
+        }
+        .branch({ it.isOk() }) {
+            val result = this.map { it -> it.unwrap() }
+
+            val utbetalinger = result.flatMapKeyAndValue { _, (oppdragAgg, _) -> oppdragAgg.utbets.map { KeyValue(it.uid.toString(), it) }}
+            utbetalinger.produce(Topics.utbetalinger)
+
+            val simuleringer = result.flatMap { (_, simAgg) -> simAgg.sims } 
+            simuleringer.produce(Topics.simulering)
+
+            val oppdrag = result.flatMap { (oppdragAgg, _) -> oppdragAgg.opps }
+            oppdrag.produce(Topics.oppdrag)
+            oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
+        }
+        .default {
+            this.map { it -> it.unwrapErr() }.produce(Topics.status) 
+        }
 }
 
 private val suppressProcessorSupplier = SuppressProcessor.supplier(
@@ -89,40 +115,26 @@ fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, 
         .reduce(suppressProcessorSupplier, "dp-diff-window-agg-session-store") { acc, next -> acc + next }
         .map { aggregate  -> 
             Result.catch { 
-                AggregateOppdragService.utled(aggregate)
+                val oppdragAgg = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                val dryrunAgg = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                oppdragAgg to dryrunAgg
             }
         }
         .branch({ it.isOk() }) {
             val result = this.map { it -> it.unwrap() }
-            result
-                .flatMapKeyAndValue { _, (utbetalinger, _) -> utbetalinger.map { KeyValue(it.uid.id.toString(), it) } }
-                .produce(Topics.utbetalinger)
-            val oppdrag = result.flatMap { (_, oppdrag) -> oppdrag }
+
+            val utbetalinger = result.flatMapKeyAndValue { _, (oppdragAgg, _) -> oppdragAgg.utbets.map { KeyValue(it.uid.toString(), it) }}
+            utbetalinger.produce(Topics.utbetalinger)
+
+            val simuleringer = result.flatMap { (_, simAgg) -> simAgg.sims } 
+            simuleringer.produce(Topics.simulering)
+
+            val oppdrag = result.flatMap { (oppdragAgg, _) -> oppdragAgg.opps }
             oppdrag.produce(Topics.oppdrag)
             oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
         }
         .default {
             this.map { it -> it.unwrapErr() }.produce(Topics.status) 
         }
-}
-
-fun dryrunStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
-    branched.map { (new, prev) ->
-        Result.catch {
-            new.validate(prev)
-            val new = new.copy(perioder = new.perioder.aggreger(new.periodetype))
-            when (new.action) {
-                Action.CREATE -> SimuleringService.opprett(new)
-                Action.UPDATE -> SimuleringService.update(new, prev ?: notFound("previous utbetaling"))
-                Action.DELETE -> SimuleringService.delete(new, prev ?: notFound("previous utbetaling"))
-            }
-        }
-    }.branch({ it.isOk() }) {
-        val result = this.map { it -> it.unwrap() }
-        result.map { _ -> StatusReply(Status.MOTTATT) }.produce(Topics.status) // TODO: kanskje ikke nødvendig med status på simulering?
-        result.produce(Topics.simulering)
-    }.default {
-        map { it -> it.unwrapErr() }.produce(Topics.status)
-    }
 }
 

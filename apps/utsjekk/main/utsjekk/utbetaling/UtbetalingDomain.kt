@@ -129,6 +129,7 @@ data class Utbetaling(
     val satstype: Satstype,
     val perioder: List<Utbetalingsperiode>,
     val avvent: Avvent?,
+    val erFørsteUtbetaling: Boolean? = null,
 ) {
     companion object {
         fun from(dto: UtbetalingApi, lastPeriodeId: PeriodeId = PeriodeId()): Utbetaling =
@@ -137,6 +138,7 @@ data class Utbetaling(
                 behandlingId = BehandlingId(dto.behandlingId),
                 lastPeriodeId = lastPeriodeId,
                 personident = Personident(dto.personident),
+                erFørsteUtbetaling = dto.erFørsteUtbetaling,
                 vedtakstidspunkt = dto.vedtakstidspunkt,
                 stønad = dto.stønad,
                 beslutterId = Navident(dto.beslutterId),

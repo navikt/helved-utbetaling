@@ -4,10 +4,17 @@ import libs.kafka.StreamsPair
 import libs.utils.secureLog
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 
-object AggregateOppdragService {
-    fun utled(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): StreamsPair<List<Utbetaling>, List<Oppdrag>> {
-        secureLog.trace("aggregate: $aggregate")
+sealed interface Aggregate {
+    data class OppdragAggregate(val utbets: List<Utbetaling>, val opps: List<Oppdrag>): Aggregate 
+    data class SimuleringAggregate(val sims: List<SimulerBeregningRequest>): Aggregate 
+}
+
+object AggregateService {
+
+    fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): Aggregate.OppdragAggregate {
+        secureLog.trace("oppdrag aggregate: $aggregate")
         val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> = aggregate.map { (new, prev) ->
             new.validate(prev)
 
@@ -38,13 +45,43 @@ object AggregateOppdragService {
             .map { it.second }
             .groupBy { it.oppdrag110.fagsystemId!! }
             .map { (_, group) -> group.reduce { acc, next -> acc + next} }
+
         val utbetalinger = utbetalingToOppdrag.map { it.first }
-        return StreamsPair(utbetalinger, oppdrag)
+
+        return Aggregate.OppdragAggregate(utbetalinger, oppdrag)
     } 
+
+    fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): Aggregate.SimuleringAggregate {
+        secureLog.trace("dryrun aggregate: $aggregate")
+        val simuleringer: List<SimulerBeregningRequest> = aggregate.map { (new, prev) ->
+            new.validate(prev)
+            when {
+                new.action == Action.DELETE -> {
+                    val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
+                    SimuleringService.delete(prev, prev)
+                }
+                prev == null -> SimuleringService.opprett(new)
+                else -> SimuleringService.update(new, prev)
+            }
+        }
+
+        val simuleringerPerSak = simuleringer
+            .groupBy { it.request.oppdrag.fagsystemId.trimEnd() }
+            .map { (_, group) -> group.reduce { acc, next -> acc + next } }
+
+        return Aggregate.SimuleringAggregate(simuleringerPerSak)
+    }
 }
 
 operator fun Oppdrag.plus(other: Oppdrag): Oppdrag {
-    if(oppdrag110.kodeAksjon != "NY") oppdrag110.kodeAksjon = other.oppdrag110.kodeAksjon 
+    if(oppdrag110.kodeEndring != "NY") oppdrag110.kodeEndring = other.oppdrag110.kodeEndring 
     oppdrag110.oppdragsLinje150s.addAll(other.oppdrag110.oppdragsLinje150s)
     return this
 }
+
+operator fun SimulerBeregningRequest.plus(other: SimulerBeregningRequest): SimulerBeregningRequest {
+    if(request.oppdrag.kodeEndring != "NY") request.oppdrag.kodeEndring = other.request.oppdrag.kodeEndring
+    request.oppdrag.oppdragslinjes.addAll(other.request.oppdrag.oppdragslinjes)
+    return this
+}
+
