@@ -32,11 +32,11 @@ class SimuleringTest {
         TestRuntime.ws.respondWith = Resource.read("/simuler-ok.xml")
         val uid = UUID.randomUUID().toString()
 
-        TestTopics.simuleringer.produce(uid) {
+        TestRuntime.topics.simuleringer.produce(uid) {
             simulering()
         }
 
-        TestTopics.dryrunAap.assertThat()
+        TestRuntime.topics.dryrunAap.assertThat()
             .has(uid)
             .with(uid, 0) {
                 val expected = Simulering(
@@ -66,11 +66,11 @@ class SimuleringTest {
         TestRuntime.ws.respondWith = Resource.read("/simuler-fault.xml")
         val uid = UUID.randomUUID().toString()
 
-        TestTopics.simuleringer.produce(uid) {
+        TestRuntime.topics.simuleringer.produce(uid) {
             simulering()
         }
 
-        TestTopics.dryrunAap.assertThat().hasNot(uid)
+        TestRuntime.topics.dryrunAap.assertThat().hasNot(uid)
     }
 }
 
