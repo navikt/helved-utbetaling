@@ -1557,4 +1557,58 @@ internal class DpTest {
             .has(SakKey(sid3, Fagsystem.DAGPENGER), setOf(uid3))
     }
 
+    @Test
+    fun `simuler 1 meldekort i 1 utbetalinger`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val originalKey = UUID.randomUUID().toString()
+        val meldeperiode = "132460781"
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestTopics.dp.produce(originalKey) {
+            Dp.utbetaling(sid.id, bid.id, dryrun = true) {
+                Dp.meldekort(
+                    meldeperiode = "132460781",
+                    fom = LocalDate.of(2021, 6, 7),
+                    tom = LocalDate.of(2021, 6, 18),
+                    sats = 1077u,
+                    utbetaltBeløp = 553u,
+                )
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER,
+                linjer = listOf(
+                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+            ))
+        )
+        TestTopics.status.assertThat().isEmpty()
+        TestTopics.utbetalinger.assertThat().isEmpty()
+        TestTopics.oppdrag.assertThat().isEmpty()
+        TestTopics.saker.assertThat().isEmpty()
+        TestTopics.simulering.assertThat()
+            .hasTotal(1)
+            .has(originalKey)
+            .with(originalKey) {
+                assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
+                assertEquals("NY", it.request.oppdrag.kodeEndring)
+                assertEquals("DP", it.request.oppdrag.kodeFagomraade)
+                assertEquals(sid.id, it.request.oppdrag.fagsystemId)
+                assertEquals("MND", it.request.oppdrag.utbetFrekvens)
+                assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
+                assertEquals("dagpenger", it.request.oppdrag.saksbehId)
+                assertEquals(1, it.request.oppdrag.oppdragslinjes.size)
+                assertNull(it.request.oppdrag.oppdragslinjes[0].refDelytelseId)
+                val l1 = it.request.oppdrag.oppdragslinjes[0]
+                assertEquals("NY", l1.kodeEndringLinje)
+                assertEquals("DPORAS", l1.kodeKlassifik)
+                assertEquals(553, l1.sats.toLong())
+            }
+    }
 }
+
