@@ -29,7 +29,7 @@ class UtbetalingService(
             return Err(DatabaseError.Conflict)
         }
 
-        val erFørsteUtbetalingPåSak = withContext(Jdbc.context) {
+        val erFørsteUtbetalingPåSak = utbetaling.erFørsteUtbetaling ?: withContext(Jdbc.context) {
             transaction {
                 UtbetalingDao.find(utbetaling.sakId, history = true)
                     .map { it.stønad.asFagsystemStr() }

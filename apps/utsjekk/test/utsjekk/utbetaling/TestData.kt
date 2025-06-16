@@ -95,7 +95,8 @@ fun UtbetalingApi.Companion.dagpenger(
     saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
     beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
     avvent: Avvent? = null,
-): UtbetalingApi {
+    erFørsteUtbetalingPåSak: Boolean? = null,
+    ): UtbetalingApi {
     return UtbetalingApi(
         sakId.id,
         behandlingId.id,
@@ -107,6 +108,7 @@ fun UtbetalingApi.Companion.dagpenger(
         periodeType,
         perioder,
         avvent,
+        erFørsteUtbetalingPåSak
     )
 }
 

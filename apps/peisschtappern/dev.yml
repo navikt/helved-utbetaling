@@ -40,11 +40,19 @@ spec:
     application:
       enabled: true
       allowAllUsers: false
+      claims:
+        groups:
+          - id: dec3ee50-b683-4644-9507-520e8f054ac2
   accessPolicy:
     inbound:
       rules:
         - application: helved-peisen
         - application: vedskiva
+          # generer obo token: https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp.helved.peisschtappern
+          #ref https://docs.nais.io/auth/entra-id/how-to/generate/?h=azure+token
+        - application: azure-token-generator
+          namespace: nais
+          cluster: dev-gcp
     outbound:
       rules:
         - application: logging
