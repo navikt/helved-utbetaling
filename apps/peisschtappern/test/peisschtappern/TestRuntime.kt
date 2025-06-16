@@ -10,7 +10,7 @@ import io.ktor.server.netty.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.firstOrNull
-import libs.jdbc.PostgresContainer
+import libs.jdbc.*
 import libs.kafka.*
 import libs.ktor.KtorRuntime
 import libs.postgres.Jdbc
@@ -41,7 +41,7 @@ object TestRuntime {
             peisschtappern(config, kafka, vanillaKafka)
         },
         onClose = {
-            jdbc.truncate()
+            jdbc.truncate(*Table.values().map{it.name}.toTypedArray())
             postgres.close()
             azure.close()
         }
@@ -49,31 +49,6 @@ object TestRuntime {
 
     fun reset() {
         vanillaKafka.reset()
-    }
-}
-
-fun <T> awaitDatabase(timeoutMs: Long = 3_000, query: suspend () -> T?): T? =
-    runBlocking {
-        withTimeoutOrNull(timeoutMs) {
-            channelFlow {
-                withContext(TestRuntime.context + Dispatchers.IO) {
-                    while (true) transaction {
-                        query()?.let { send(it) }
-                        delay(50)
-                    }
-                }
-            }.firstOrNull()
-        }
-    }
-
-fun DataSource.truncate() = runBlocking {
-    withContext(Jdbc.context) {
-        transaction {
-            Table.values().forEach {
-                coroutineContext.connection.prepareStatement("TRUNCATE TABLE ${it.name} CASCADE").execute()
-                testLog.info("table '$it' truncated.")
-            }
-        }
     }
 }
 

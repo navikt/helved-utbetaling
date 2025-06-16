@@ -1,26 +1,26 @@
 package vedskiva
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.client.*
-import io.ktor.http.ContentType
+import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import java.io.File
-import java.net.URI
 import kotlinx.coroutines.*
-import libs.jdbc.PostgresContainer
+import libs.jdbc.*
 import libs.kafka.*
 import libs.ktor.*
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.*
 import libs.utils.logger
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
+import java.io.File
+import java.net.URI
 
 val testLog = logger("test")
 
@@ -41,27 +41,15 @@ object TestRuntime {
 
     init {
         Runtime.getRuntime().addShutdownHook(Thread {
-            testLog.info("Shutting down TestRunner")
-            truncate()
+            reset()
             postgres.close()
         })
     }
 
     fun reset() {
-        truncate()
+        jdbc.truncate(Scheduled.TABLE_NAME)
         kafka.reset()
         PeisschtappernFake.response.clear()
-    }
-
-    private fun truncate() {
-        runBlocking {
-            withContext(Jdbc.context) {
-                transaction {
-                    coroutineContext.connection.prepareStatement("TRUNCATE TABLE ${Scheduled.TABLE_NAME} CASCADE").execute()
-                    testLog.info("table '${Scheduled.TABLE_NAME}' truncated.") 
-                }
-            }
-        }
     }
 }
 

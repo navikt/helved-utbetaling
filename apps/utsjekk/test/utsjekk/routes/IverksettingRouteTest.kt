@@ -2,7 +2,6 @@ package utsjekk.routes
 
 import TestData
 import TestRuntime
-import awaitDatabase
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.readValue
 import httpClient
@@ -14,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.transaction
+import libs.jdbc.*
 import models.Status
 import models.StatusReply
 import models.kontrakter.felles.Fagsystem
@@ -52,7 +52,7 @@ class IverksettingRouteTest {
             }
 
             val status = runBlocking {
-                awaitDatabase {
+                TestRuntime.jdbc.await {
                     IverksettingResultatDao.select {
                         this.fagsystem = Fagsystem.TILLEGGSSTØNADER
                         this.sakId = SakId(dto.sakId)
@@ -116,7 +116,7 @@ class IverksettingRouteTest {
             assertEquals(HttpStatusCode.Accepted, it.status)
         }
 
-        awaitDatabase {
+        TestRuntime.jdbc.await {
             IverksettingResultatDao.select {
                 this.fagsystem = Fagsystem.TILLEGGSSTØNADER
                 this.sakId = SakId(dto.sakId)
@@ -189,7 +189,7 @@ class IverksettingRouteTest {
 
         assertEquals(HttpStatusCode.Accepted, res.status)
 
-        awaitDatabase {
+        TestRuntime.jdbc.await {
             IverksettingDao.select {
                 this.fagsystem = Fagsystem.TILLEGGSSTØNADER
                 this.sakId = SakId(dto.sakId)
@@ -212,7 +212,7 @@ class IverksettingRouteTest {
             StatusReply(Status.OK)
         }
 
-        awaitDatabase {
+        TestRuntime.jdbc.await {
             IverksettingResultatDao.select {
                 this.fagsystem = Fagsystem.TILLEGGSSTØNADER
                 this.sakId = SakId(dto.sakId)
