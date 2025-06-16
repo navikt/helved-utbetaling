@@ -24,7 +24,7 @@ class ApiTest {
         save(Channel.Utbetalinger)
         save(Channel.Simuleringer)
 
-        val result = httpClient.get("/api?limit=2") {
+        val result = TestRuntime.ktor.httpClient.get("/api?limit=2") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
@@ -38,7 +38,7 @@ class ApiTest {
         save(Channel.Utbetalinger, "testkey")
         save(Channel.Simuleringer)
 
-        val result = httpClient.get("/api?key=testkey") {
+        val result = TestRuntime.ktor.httpClient.get("/api?key=testkey") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
@@ -53,7 +53,7 @@ class ApiTest {
         save(Channel.Utbetalinger)
         save(Channel.Simuleringer)
 
-        val result = httpClient.get("/api?topics=helved.utbetalinger-aap.v1,helved.simuleringer.v1") {
+        val result = TestRuntime.ktor.httpClient.get("/api?topics=helved.utbetalinger-aap.v1,helved.simuleringer.v1") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
@@ -69,7 +69,7 @@ class ApiTest {
         save(Channel.Utbetalinger)
         save(Channel.Simuleringer)
 
-        val result = httpClient.get("/api?value=$sakId") {
+        val result = TestRuntime.ktor.httpClient.get("/api?value=$sakId") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
@@ -87,7 +87,7 @@ class ApiTest {
         save(Channel.Utbetalinger)
         save(Channel.Simuleringer)
 
-        val result = httpClient.get("/api?value=$sakId,$behandlingId") {
+        val result = TestRuntime.ktor.httpClient.get("/api?value=$sakId,$behandlingId") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
@@ -99,7 +99,7 @@ class ApiTest {
 
     @Test
     fun `can query for fom, tom and value`() = runTest(TestRuntime.context) {
-        val result = httpClient.get("/api?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4") {
+        val result = TestRuntime.ktor.httpClient.get("/api?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }
@@ -121,7 +121,7 @@ class ApiTest {
         val fom = now.minusSeconds(5L).toString()
         val tom = now.plusSeconds(5L).toString()
 
-        val result = httpClient.get("/api?fom=$fom&tom=$tom&key=$key") {
+        val result = TestRuntime.ktor.httpClient.get("/api?fom=$fom&tom=$tom&key=$key") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Dao>>()
@@ -146,7 +146,7 @@ class ApiTest {
             kodeMelding = "Test"
         )
 
-        httpClient.post("/manuell-kvittering") {
+        TestRuntime.ktor.httpClient.post("/manuell-kvittering") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(kvitteringRequest)

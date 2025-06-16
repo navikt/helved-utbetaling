@@ -504,7 +504,7 @@ internal class AbetalTest {
         TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
         TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
         val res = runBlocking {
-            httpClient.get("/api/utbetalinger/$uid") {
+            TestRuntime.ktor.httpClient.get("/api/utbetalinger/$uid") {
                 accept(ContentType.Application.Json)
             }
         }

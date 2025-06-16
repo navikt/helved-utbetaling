@@ -21,6 +21,7 @@ import javax.jms.TextMessage
 import libs.mq.*
 import libs.utils.Resource
 import libs.auth.TEST_JWKS
+import libs.ktor.*
 import libs.ws.*
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.*

@@ -12,7 +12,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.net.URI
-import port
+import libs.ktor.port
 import utsjekk.AbetalConfig
 import utsjekk.utbetaling.Utbetaling
 

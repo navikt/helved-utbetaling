@@ -29,9 +29,8 @@ dependencies {
 
     testImplementation(kotlin("test")) 
     testImplementation(project(":libs:kafka-test"))
+    testImplementation(project(":libs:ktor-test"))
     testImplementation("no.nav.helved:auth-test:$libVersion")
     testImplementation("no.nav.helved:mq-test:$libVersion")
     testImplementation("org.apache.kafka:kafka-streams:4.0.0") // StreamsConfig
-    testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }

@@ -15,7 +15,7 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.CompletableDeferred
 import models.kontrakter.felles.Fagsystem
 import models.kontrakter.oppdrag.*
-import port
+import libs.ktor.port
 import utsjekk.OppdragConfig
 import java.net.URI
 
