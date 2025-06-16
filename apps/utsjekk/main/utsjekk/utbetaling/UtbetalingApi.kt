@@ -18,6 +18,7 @@ data class UtbetalingApi(
     val periodeType: PeriodeType,
     val perioder: List<UtbetalingsperiodeApi>,
     val avvent: Avvent?,
+    val erFørsteUtbetaling: Boolean? = null,
 ) {
     companion object {
         fun from(domain: Utbetaling) = UtbetalingApi(

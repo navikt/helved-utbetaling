@@ -1,13 +1,17 @@
 package utsjekk.utbetaling
 
 import TestRuntime
+import TestTopics
 import httpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import libs.postgres.concurrency.transaction
+import models.StatusReply
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.*
@@ -64,6 +68,139 @@ class UtbetalingRoutingTest {
         }.let {
             assertEquals(HttpStatusCode.Conflict, it.status)
         }
+    }
+
+    @Test
+    fun `erFørsteUtbetaling lik true på sak skal ha kodeendring lik NY`() = runTest {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+            erFørsteUtbetalingPåSak = true
+        )
+
+        val uid = UUID.randomUUID()
+
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        assertEquals(0, oppdragTopic.uncommitted().size)
+        val actual = oppdragTopic.history().singleOrNull { (key, _) -> key == uid.toString() }?.second
+        assertNotNull(actual)
+        assertEquals("NY", actual.oppdrag110.kodeEndring)
+    }
+
+    @Test
+    fun `erFørsteUtbetaling lik false på sak skal ha kodeendring lik ENDR`() = runTest {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+            erFørsteUtbetalingPåSak = false
+        )
+
+        val uid = UUID.randomUUID()
+
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        assertEquals(0, oppdragTopic.uncommitted().size)
+        val actual = oppdragTopic.history().singleOrNull { (key, _) -> key == uid.toString() }?.second
+        assertNotNull(actual)
+        assertEquals("ENDR", actual.oppdrag110.kodeEndring)
+    }
+
+    @Test
+    fun `hvis erFørsteUtbetaling lik null på sak og den ikke finnes i basen skal kodeendring være lik NY`() = runTest {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+            erFørsteUtbetalingPåSak = null
+        )
+
+        val uid = UUID.randomUUID()
+
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        assertEquals(0, oppdragTopic.uncommitted().size)
+        val actual = oppdragTopic.history().singleOrNull { (key, _) -> key == uid.toString() }?.second
+        assertNotNull(actual)
+        assertEquals("NY", actual.oppdrag110.kodeEndring)
+    }
+    @Test
+    fun `hvis erFørsteUtbetaling lik null på sak og den finnes i basen skal kodeendring være lik ENDR`() = runTest {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+            erFørsteUtbetalingPåSak = null
+        )
+
+        val uid = UUID.randomUUID()
+
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        assertEquals(0, oppdragTopic.uncommitted().size)
+        val oppdrag = oppdragTopic.history().singleOrNull { (key, _) -> key == uid.toString() }?.second
+        assertNotNull(oppdrag)
+        assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
+
+        val endretUtbetaling = utbetaling.copy(perioder = listOf(utbetaling.perioder[0].copy(beløp=1u)))
+        TestTopics.status.produce(uid.toString()) {
+            StatusReply.ok(oppdrag)
+        }
+        val status = runBlocking {
+                withTimeout(1000L) {
+                var status: Status? = null
+                while (status != Status.OK) {
+                    httpClient.get("/utbetalinger/$uid/status") {
+                        bearerAuth(TestRuntime.azure.generateToken())
+                        accept(ContentType.Application.Json)
+                    }.let {
+                        status = it.body<Status>()
+                    }
+                }
+                status
+            }
+        }
+        assertEquals(status, Status.OK)
+        httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(endretUtbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+
+        assertEquals(0, oppdragTopic.uncommitted().size)
+        val endretOppdrag = oppdragTopic.history().filter { (key, _) -> key == uid.toString() }
+        assertEquals(2, endretOppdrag.size)
+        assertEquals("NY", endretOppdrag[0].second.oppdrag110.kodeEndring)
+        assertEquals("ENDR", endretOppdrag[1].second.oppdrag110.kodeEndring)
     }
 
     @Test
