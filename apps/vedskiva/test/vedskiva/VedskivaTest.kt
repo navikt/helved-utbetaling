@@ -627,6 +627,7 @@ class VedskivaTest {
         assertEquals(0, avsProducer.history().size)
     }
 
+    // Hvis denne feiler så kan de hende at det er flere dager siden forrige virkedag
     @Test
     fun `will skip previous avstemminger`() = runTest(TestRuntime.context) {
         val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
@@ -636,9 +637,9 @@ class VedskivaTest {
                 kvittering = mmel("00"),
                 partition = 1,
                 offset = 2,
-                key = "avstemt 3 days ago",
+                key = "avstemt 4 days ago",
                 beløper = listOf(4000),
-                avstemmingdag = LocalDate.now().minusDays(3),
+                avstemmingdag = LocalDate.now().minusDays(4),
             )
         )
 
