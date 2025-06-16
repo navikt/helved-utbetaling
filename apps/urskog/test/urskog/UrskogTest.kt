@@ -32,7 +32,7 @@ class UrskogTest {
                 )
             ),
         )
-        TestTopics.oppdrag.produce(uid) {
+        TestRuntime.topics.oppdrag.produce(uid) {
             oppdrag
         }
 
@@ -42,7 +42,7 @@ class UrskogTest {
 
         // because streams and vanilla kafka producer is not connected by TestTopologyDriver,
         // we will manually add a kvittering to see the rest of the stream
-        TestTopics.kvittering.produce(OppdragForeignKey.from(oppdrag)) {
+        TestRuntime.topics.kvittering.produce(OppdragForeignKey.from(oppdrag)) {
             oppdrag.apply {
                 mmel = Mmel().apply {
                     alvorlighetsgrad = "00" // 00/04/08/12
@@ -53,13 +53,13 @@ class UrskogTest {
         }
         testLog.info("test complete")
 
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(uid)
             .with(uid, 0) {
                 assertEquals("00", it.mmel.alvorlighetsgrad)
             }
 
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(uid, size = 2)
             .with(uid, index = 0) {
                 assertEquals(Status.HOS_OPPDRAG, it.status)

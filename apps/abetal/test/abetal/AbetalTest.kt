@@ -21,7 +21,7 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(key) {
+        TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode,
@@ -35,10 +35,10 @@ internal class AbetalTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestTopics.status.assertThat().has(key)
-        TestTopics.oppdrag.assertThat().has(key)
-        TestTopics.utbetalinger.assertThat().has(uid.toString())
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.status.assertThat().has(key)
+        TestRuntime.topics.oppdrag.assertThat().has(key)
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER))
             .with(SakKey(sid, Fagsystem.DAGPENGER)) {
                 assertEquals(uid, it.single())
@@ -58,7 +58,7 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(key) { 
+        TestRuntime.topics.dp.produce(key) { 
             Dp.utbetaling(sid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode,
@@ -72,13 +72,13 @@ internal class AbetalTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .with(key) {
                 assertEquals("NY", it.oppdrag110.kodeEndring)
             }
-        TestTopics.status.assertThat().has(key)
-        TestTopics.utbetalinger.assertThat().has(uid.toString())
-        TestTopics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
+        TestRuntime.topics.status.assertThat().has(key)
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
     }
 
     @Test
@@ -92,7 +92,7 @@ internal class AbetalTest {
         val meldeperiode2 = UUID.randomUUID().toString()
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.utbetalinger.produce("$uid1") {
+        TestRuntime.topics.utbetalinger.produce("$uid1") {
             utbetaling(
                 action = Action.CREATE,
                 uid = uid1,
@@ -110,7 +110,7 @@ internal class AbetalTest {
             }
         }
 
-        TestTopics.dp.produce(key) { 
+        TestRuntime.topics.dp.produce(key) { 
             Dp.utbetaling(sid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode2,
@@ -124,10 +124,10 @@ internal class AbetalTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestTopics.status.assertThat().has(key)
-        TestTopics.utbetalinger.assertThat().has(uid2.toString())
-        TestTopics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER), 3)
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.status.assertThat().has(key)
+        TestRuntime.topics.utbetalinger.assertThat().has(uid2.toString())
+        TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER), 3)
+        TestRuntime.topics.oppdrag.assertThat()
             .with(key) {
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
             }
@@ -141,7 +141,7 @@ internal class AbetalTest {
         val bid = BehandlingId("$nextInt")
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.utbetalinger.produce("$uid") {
+        TestRuntime.topics.utbetalinger.produce("$uid") {
             utbetaling(
                 action = Action.CREATE,
                 uid = uid,
@@ -159,7 +159,7 @@ internal class AbetalTest {
             }
         }
 
-        TestTopics.dp.produce(key) { 
+        TestRuntime.topics.dp.produce(key) { 
             Dp.utbetaling(
                 sakId = sid.id,
                 behandlingId = bid.id,
@@ -177,10 +177,10 @@ internal class AbetalTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestTopics.oppdrag.assertThat().isEmpty()
-        TestTopics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(key)
             .with(key) {
                 val expected = StatusReply(
@@ -482,7 +482,7 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(key) { 
+        TestRuntime.topics.dp.produce(key) { 
             Dp.utbetaling(sid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode,
@@ -496,13 +496,13 @@ internal class AbetalTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .with(key) {
                 assertEquals("NY", it.oppdrag110.kodeEndring)
             }
-        TestTopics.status.assertThat().has(key)
-        TestTopics.utbetalinger.assertThat().has(uid.toString())
-        TestTopics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
+        TestRuntime.topics.status.assertThat().has(key)
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
         val res = runBlocking {
             httpClient.get("/api/utbetalinger/$uid") {
                 accept(ContentType.Application.Json)

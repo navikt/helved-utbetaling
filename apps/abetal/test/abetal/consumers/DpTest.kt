@@ -23,7 +23,7 @@ internal class DpTest {
         val meldeperiode = "132460781"
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = "132460781",
@@ -45,11 +45,11 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
             ))
         )
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey)
             .has(originalKey, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
                 val expected = utbetaling(
@@ -71,7 +71,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey)
             .with(originalKey) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -93,7 +93,7 @@ internal class DpTest {
                 }
             }
 
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
     }
@@ -108,7 +108,7 @@ internal class DpTest {
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -138,11 +138,11 @@ internal class DpTest {
                 )
             )
         )
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey)
             .has(originalKey, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
             .with(uid1.id.toString()) {
                 val expected = utbetaling(
@@ -183,7 +183,7 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey, size = 1)
             .with(originalKey, index = 0) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -208,7 +208,7 @@ internal class DpTest {
                 assertEquals(779, andreLinje.sats.toLong())
                 assertEquals(2377, andreLinje.vedtakssats157.vedtakssats.toLong())
             }
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
             .with(SakKey(sid, Fagsystem.DAGPENGER), index = 0) {
                 assertEquals(it, setOf(uid1))
@@ -230,7 +230,7 @@ internal class DpTest {
         val uid3 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.PERMITTERING_ORDINÆR)
         val uid4 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG)
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -282,11 +282,11 @@ internal class DpTest {
                 )
             )
         )
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey)
             .has(originalKey, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
             .with(uid1.id.toString()) {
                 val expected = utbetaling(
@@ -367,7 +367,7 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey, size = 1)
             .with(originalKey, index = 0) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -404,7 +404,7 @@ internal class DpTest {
                 assertEquals(300, fjerdeLinje.sats.toLong())
                 assertEquals(300, fjerdeLinje.vedtakssats157.vedtakssats.toLong())
             }
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 4)
             .with(SakKey(sid, Fagsystem.DAGPENGER), index = 0) {
                 assertEquals(it, setOf(uid1))
@@ -432,7 +432,7 @@ internal class DpTest {
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
         val uid3 = dpUId(sid.id, meldeperiode3, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -469,11 +469,11 @@ internal class DpTest {
                 )
             )
         )
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey)
             .has(originalKey, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString(), size = 1)
             .with(uid1.id.toString()) {
                 val expected = utbetaling(
@@ -534,7 +534,7 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey, size = 1)
             .with(originalKey, index = 0) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -570,7 +570,7 @@ internal class DpTest {
                 assertEquals(3000, linje3.sats.toLong())
                 assertEquals(3133, linje3.vedtakssats157.vedtakssats.toLong())
             }
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 3)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
@@ -587,7 +587,7 @@ internal class DpTest {
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 16364e1c-7615-6b30-882b-d7d19ea96279
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -598,7 +598,7 @@ internal class DpTest {
                 )
             }
         }
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode2,
@@ -622,11 +622,11 @@ internal class DpTest {
                 )
             )
         )
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey)
             .has(originalKey, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString(), size = 1)
             .with(uid1.id.toString()) {
                 val expected = utbetaling(
@@ -667,7 +667,7 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey, size = 1)
             .with(originalKey, index = 0) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -696,7 +696,7 @@ internal class DpTest {
                 assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
             }
 
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
@@ -713,7 +713,7 @@ internal class DpTest {
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.utbetalinger.produce("${uid1.id}") {
+        TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
             utbetaling(
                 action = Action.CREATE,
                 uid = uid1,
@@ -731,13 +731,13 @@ internal class DpTest {
             }
         }
 
-        TestTopics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid1)
         }
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestTopics.dp.produce(originalKey2) {
+        TestRuntime.topics.dp.produce(originalKey2) {
             Dp.utbetaling(
                 sakId = sid.id,
                 behandlingId = bid.id,
@@ -770,11 +770,11 @@ internal class DpTest {
                 )
             )
         )
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey2)
             .has(originalKey2, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid2.toString())
             .with(uid2.toString()) {
                 val expected = utbetaling(
@@ -797,7 +797,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey2)
             .with(originalKey2) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -819,7 +819,7 @@ internal class DpTest {
                 }
             }
 
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
@@ -835,7 +835,7 @@ internal class DpTest {
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
         val periodeId = PeriodeId()
 
-        TestTopics.utbetalinger.produce("${uid1.id}") {
+        TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
             utbetaling(
                 action = Action.CREATE,
                 uid = uid1,
@@ -854,13 +854,13 @@ internal class DpTest {
             }
         }
 
-        TestTopics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid1)
         }
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestTopics.dp.produce(originalKey2) {
+        TestRuntime.topics.dp.produce(originalKey2) {
             Dp.utbetaling(
                 sakId = sid.id,
                 behandlingId = bid.id,
@@ -887,11 +887,11 @@ internal class DpTest {
                 )
             )
         )
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey2)
             .has(originalKey2, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .with(uid1.toString()) {
                 val expected = utbetaling(
@@ -914,7 +914,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey2)
             .with(originalKey2) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -936,7 +936,7 @@ internal class DpTest {
                 assertEquals(100, førsteLinje.vedtakssats157.vedtakssats.toLong())
             }
 
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
     }
@@ -950,7 +950,7 @@ internal class DpTest {
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
         val periodeId = PeriodeId()
 
-        TestTopics.utbetalinger.produce("${uid1.id}") {
+        TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
             utbetaling(
                 action = Action.CREATE,
                 uid = uid1,
@@ -969,11 +969,11 @@ internal class DpTest {
             }
         }
 
-        TestTopics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid1)
         }
 
-        TestTopics.dp.produce(originalKey1) {
+        TestRuntime.topics.dp.produce(originalKey1) {
             Dp.utbetaling(
                 sakId = sid.id,
                 behandlingId = bid.id,
@@ -990,11 +990,11 @@ internal class DpTest {
             detaljer = Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "DPORAS")))
         )
 
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey1)
             .has(originalKey1, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .with(uid1.toString()) {
                 val expected = utbetaling(
@@ -1016,7 +1016,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey1)
             .with(originalKey1) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -1040,7 +1040,7 @@ internal class DpTest {
                 assertEquals(100, førsteLinje.vedtakssats157.vedtakssats.toLong())
             }
 
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(), index = 1)
@@ -1058,7 +1058,7 @@ internal class DpTest {
         val pid1 = PeriodeId()
         val pid2 = PeriodeId()
 
-        TestTopics.utbetalinger.produce(uid1.toString()) {
+        TestRuntime.topics.utbetalinger.produce(uid1.toString()) {
             utbetaling(
                 action = Action.CREATE,
                 uid = uid1,
@@ -1076,7 +1076,7 @@ internal class DpTest {
                 periode(2.sep, 13.sep, 500u) // 1-14
             }
         }
-        TestTopics.utbetalinger.produce(uid2.toString()) {
+        TestRuntime.topics.utbetalinger.produce(uid2.toString()) {
             utbetaling(
                 action = Action.CREATE,
                 uid = uid2,
@@ -1096,13 +1096,13 @@ internal class DpTest {
             }
         }
 
-        TestTopics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid1, uid2)
         }
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort("132460781", 2.sep, 13.sep, 600u) + 
                 Dp.meldekort("132462765", 30.sep, 10.okt, 600u) // 29-12
@@ -1122,11 +1122,11 @@ internal class DpTest {
                 )
             )
         )
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey)
             .has(originalKey, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
             .with(uid1.id.toString()) {
                 val expected = utbetaling(
@@ -1190,7 +1190,7 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey)
             .with(originalKey) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -1230,7 +1230,7 @@ internal class DpTest {
                 assertEquals(600, linje3.vedtakssats157.vedtakssats.toLong())
             }
 
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 5)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
@@ -1249,18 +1249,18 @@ internal class DpTest {
         val meldeperiode = "132460781"
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid1.id) {
                 Dp.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
             }
         }
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid2.id) {
                 Dp.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
                 Dp.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
             }
         }
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid3.id) {
                 Dp.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
                 Dp.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
@@ -1281,11 +1281,11 @@ internal class DpTest {
                 )
             )
         )
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey)
             .has(originalKey, mottatt)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString(), size = 3)
             .with(uid.toString(), index = 0) {
                 val expected = utbetaling(
@@ -1345,7 +1345,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey)
             .with(originalKey) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -1380,7 +1380,7 @@ internal class DpTest {
                 assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
             }
 
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.DAGPENGER), size = 3)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 1)
@@ -1403,17 +1403,17 @@ internal class DpTest {
         val uid2 = dpUId(sid2.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
         val uid3 = dpUId(sid3.id, meldeperiode3, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid1.id, bid1.id) {
                 Dp.meldekort(meldeperiode1, 2.sep, 13.sep, 300u, 300u)
             }
         }
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid2.id, bid2.id) {
                 Dp.meldekort(meldeperiode2, 16.sep, 27.sep, 300u, 300u)
             }
         }
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid3.id, bid3.id) {
                 Dp.meldekort(meldeperiode3, 30.sep, 10.okt, 300u, 300u)
             }
@@ -1425,13 +1425,13 @@ internal class DpTest {
         val mottatt2 = StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DPORAS"))))
         val mottatt3 = StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DPORAS"))))
 
-        TestTopics.status.assertThat()
+        TestRuntime.topics.status.assertThat()
             .has(originalKey, 3)
             .has(originalKey, mottatt1, index = 0)
             .has(originalKey, mottatt2, index = 1)
             .has(originalKey, mottatt3, index = 2)
 
-        TestTopics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .with(uid1.toString()) {
                 val expected = utbetaling(
@@ -1491,7 +1491,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestTopics.oppdrag.assertThat()
+        TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey, size = 3)
             .with(originalKey, index = 0) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
@@ -1548,7 +1548,7 @@ internal class DpTest {
                 assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
             }
 
-        TestTopics.saker.assertThat()
+        TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid1, Fagsystem.DAGPENGER))
             .has(SakKey(sid1, Fagsystem.DAGPENGER), setOf(uid1))
             .has(SakKey(sid2, Fagsystem.DAGPENGER))
@@ -1565,7 +1565,7 @@ internal class DpTest {
         val meldeperiode = "132460781"
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
 
-        TestTopics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id, dryrun = true) {
                 Dp.meldekort(
                     meldeperiode = "132460781",
@@ -1587,11 +1587,11 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
             ))
         )
-        TestTopics.status.assertThat().isEmpty()
-        TestTopics.utbetalinger.assertThat().isEmpty()
-        TestTopics.oppdrag.assertThat().isEmpty()
-        TestTopics.saker.assertThat().isEmpty()
-        TestTopics.simulering.assertThat()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.saker.assertThat().isEmpty()
+        TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
             .has(originalKey)
             .with(originalKey) {
