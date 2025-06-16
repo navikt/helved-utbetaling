@@ -69,5 +69,5 @@ spec:
           day: 7
           hour: 23
         databases:
-          - name: s
+          - name: peisschtappern
             envVarPrefix: DB
