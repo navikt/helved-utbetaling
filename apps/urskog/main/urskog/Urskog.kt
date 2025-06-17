@@ -21,7 +21,17 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(Netty, port = 8080, module = Application::urskog).start(wait = true)
+    embeddedServer(
+        factory = Netty,
+        configure = {
+            shutdownGracePeriod = 5000L
+            shutdownTimeout = 50_000L
+            connectors.add(EngineConnectorBuilder().apply {
+                port = 8080
+            })
+        },
+        module = Application::urskog,
+    ).start(wait = true)
 }
 
 fun Application.urskog(
