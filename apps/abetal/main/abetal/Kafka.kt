@@ -83,11 +83,13 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .branch({ it.isOk() }) {
             val result = this.map { it -> it.unwrap() }
 
-            val utbetalinger = result.flatMapKeyAndValue { _, (oppdragAgg, _) -> oppdragAgg.utbets.map { KeyValue(it.uid.toString(), it) }}
-            utbetalinger.produce(Topics.utbetalinger)
+            result
+                .flatMapKeyAndValue { _, (oppdragAgg, _) -> oppdragAgg.utbets.map { KeyValue(it.uid.toString(), it) }}
+                .produce(Topics.utbetalinger)
 
-            val simuleringer = result.flatMap { (_, simAgg) -> simAgg.sims } 
-            simuleringer.produce(Topics.simulering)
+            result
+                .flatMap { (_, simAgg) -> simAgg.sims } 
+                .produce(Topics.simulering)
 
             val oppdrag = result.flatMap { (oppdragAgg, _) -> oppdragAgg.opps }
             oppdrag.produce(Topics.oppdrag)
@@ -106,35 +108,4 @@ private val suppressProcessorSupplier = SuppressProcessor.supplier(
     stateStoreName = "dp-diff-window-agg-session-store",
 )
 
-fun utbetalingDiffStream(branched: MappedStream<String, StreamsPair<Utbetaling, Utbetaling?>>) {
-    branched
-        .filter { (new, prev) -> !new.isDuplicate(prev) }
-        .rekey { _, (new, _) -> new.originalKey }
-        .map { _, streamsPair -> listOf(streamsPair) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds)
-        .reduce(suppressProcessorSupplier, "dp-diff-window-agg-session-store") { acc, next -> acc + next }
-        .map { aggregate  -> 
-            Result.catch { 
-                val oppdragAgg = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                val dryrunAgg = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                oppdragAgg to dryrunAgg
-            }
-        }
-        .branch({ it.isOk() }) {
-            val result = this.map { it -> it.unwrap() }
-
-            val utbetalinger = result.flatMapKeyAndValue { _, (oppdragAgg, _) -> oppdragAgg.utbets.map { KeyValue(it.uid.toString(), it) }}
-            utbetalinger.produce(Topics.utbetalinger)
-
-            val simuleringer = result.flatMap { (_, simAgg) -> simAgg.sims } 
-            simuleringer.produce(Topics.simulering)
-
-            val oppdrag = result.flatMap { (oppdragAgg, _) -> oppdragAgg.opps }
-            oppdrag.produce(Topics.oppdrag)
-            oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
-        }
-        .default {
-            this.map { it -> it.unwrapErr() }.produce(Topics.status) 
-        }
-}
 

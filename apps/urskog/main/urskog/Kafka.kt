@@ -71,8 +71,8 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
         .materialize(Stores.keystore)
 
     kstore.join(kvitteringKTable)
-        .filter { (_, kvitt) -> kvitt?.mmel != null }
-        .mapKeyAndValue { _, (uid, kvitt) -> uid to kvitt!! }
+        .filter { (uid, kvitt) -> kvitt?.mmel != null && uid != null }
+        .mapKeyAndValue { _, (uid, kvitt) -> uid!! to kvitt!! }
         .produce(Topics.oppdrag)
 
     oppdragTopic

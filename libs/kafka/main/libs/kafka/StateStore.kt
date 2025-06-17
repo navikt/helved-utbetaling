@@ -19,7 +19,7 @@ class KStore<K : Any, V : Any>(
     val store: Store<K, V>,
     val internalKTable: org.apache.kafka.streams.kstream.KTable<K, V>,
 ) {
-    fun <U : Any> join(table: KTable<K, U>): ConsumedStream<K, StreamsPair<V, U?>> =
+    fun <U : Any> join(table: KTable<K, U>): ConsumedStream<K, StreamsPair<V?, U?>> =
         ConsumedStream(internalKTable.join(table.internalKTable, ::StreamsPair).toStream()) {
             "consume-${store.name}-join-${table.table.stateStoreName}"
         }
