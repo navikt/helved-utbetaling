@@ -26,10 +26,17 @@ spec:
   azure:
     application:
       enabled: true
+  terminationGracePeriodSeconds: 60
   liveness:
     path: /actuator/live
+    failureThreshold: 60
+    initialDelay: 1
+    periodSeconds: 1
   readiness:
     path: /actuator/ready
+    failureThreshold: 60
+    initialDelay: 1
+    periodSeconds: 1
   prometheus:
     path: /actuator/metric
     enabled: true
@@ -38,10 +45,10 @@ spec:
     max: 1
   resources:
     limits:
-      memory: 1024Mi
+      memory: 2048Mi
     requests:
-      memory: 512Mi
-      cpu: 200m
+      memory: 1024Mi
+      cpu: 500m
   observability:
     autoInstrumentation:
       enabled: true
