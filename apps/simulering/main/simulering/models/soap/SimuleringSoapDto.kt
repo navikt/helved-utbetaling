@@ -158,7 +158,6 @@ object soap {
                         datoOppdragGjelderFom = LocalDate.EPOCH,
                         enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
                         oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) },
-                        erFørsteUtbetaling = dto.erFørsteUtbetalingPåSak,
                     )
                 ),
             )
@@ -178,7 +177,6 @@ object soap {
                                     datoOppdragGjelderFom = LocalDate.EPOCH,
                                     enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
                                     oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) },
-                                    erFørsteUtbetaling = dto.erFørsteUtbetalingPåSak,
                                 )
                         ),
                 )
@@ -211,7 +209,6 @@ object soap {
         "oppdragslinje",
     )
     data class Oppdrag(
-        val erFørsteUtbetaling: Boolean,
         val kodeEndring: String,
         val kodeFagomraade: String,
         val fagsystemId: String,
