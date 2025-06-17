@@ -51,10 +51,11 @@ Alle start-, data- og sluttmeldinger inneholder `<aksjon>` som har følgene felt
 | avleverendeKomponentKode | AAP, TILLST, TILTPENG eller DP | Fagområdet vi avstemmer for|
 | mottakendeKomponentKode | OS |Alltid OS (Oppdragssystemet) |
 | underkomponentKode | AAP, TILLST, TILTPENG eller DP | Fagområdet vi avstemmer for. Vet ikke hvorfor vi trenger både `avleverendeKomponentKode` og `underkomponentKode`, som har samme verdi  |
-| nokkelFom |  | |
-| nokkelTom |  | |
-| avleverendeAvstemmingId |  | |
-| brukerId |  | |
+| nokkelFom | Vi bruker timestamp på formatet YYYY-MM-DD-HH.mm.ss.nnnnnn | Brukes i `select`-en OS gjør for å plukke oppdragene som skal avstemmes. Samme format som `nokkelAvstemming` i oppdrag-XML |
+| nokkelTom | Vi bruker timestamp på formatet YYYY-MM-DD-HH.mm.ss.nnnnnn | Brukes i `select`-en OS gjør for å plukke oppdragene som skal avstemmes. Samme format som `nokkelAvstemming` i oppdrag-XML |
+| avleverendeAvstemmingId | ID på avstemmingen | Det skal være samme ID på tvers av alle meldinger som inngår i en og samme avstemming (på tvers av START-, DATA-, og AVSL-meldingene for en og samme avstemming) |
+| brukerId | AAP, TILLST, TILTPENG eller DP | Fagområdet vi avstemmer for. Vi setter Samme verdi her som i `avleverendeKomponentKode` og `underkomponentKode`|
+
 
 ### Felter som bare finnes i datamelding
 
@@ -63,9 +64,9 @@ Datameldingen er delt i fire bolker med felter gruppert i `<aksjon>`, `<total>`,
 | Felt         | Type/gyldige verdier  | Beskrivelse                                                                                               |
 |:---------------|:----------------------|:--------------------------------------------------------------------------------------------------------|
 | aksjon     |  | Se tabellen over. `aksjon/*` inngår i alle meldinger|
-| total/totalAntall     |  | |
-| total/totalBelop      |  | |
-| total/fortegn |  | |
+| total/totalAntall     | Antall transaksjoner | |
+| total/totalBelop      | Summering av sats (per oppdragslinje?) per transaksjon | Ingen utregning / beregning av f.eks total for en periode med dagsats, men kun selve satsen ) |
+| total/fortegn | T eller F  | T for Tillegg eller F for fradrag (Tror vi i praksis alltid setter T?) |
 | periode/datoAvstemtFom | Dato på formatet YYYYMMDDHH  | Info som vises i avstemmingsskjermbilde for økonomimedarbeider. Ingen funksjonell betydning. Timen er ikke viktig og kan egentlig være hva som helst, da den ikke vises i skjermbildet. |
 | periode/datoAvstemtTom | Dato på formatet YYYYMMDDHH | Info som vises i avstemmingsskjermbilde for økonomimedarbeider. Ingen funksjonell betydning. Timen er ikke viktig og kan egentlig være hva som helst, da den ikke vises i skjermbildet.|
 | grunnlag/godkjentAntall |  | |
