@@ -45,12 +45,12 @@ Alle start-, data- og sluttmeldinger inneholder `<aksjon>` som har følgene felt
 
 | Felt         | Type/gyldige verdier  | Beskrivelse                                                                                               |
 |:---------------|:----------------------|:--------------------------------------------------------------------------------------------------------|
-| aksjonType     |  | |
-| kildeType      |  | |
-| avstemmingType |  | |
-| avleverendeKomponentKode |  | |
-| mottakendeKomponentKode |  | |
-| underkomponentKode |  | |
+| aksjonType     | START, DATA eller AVSL | Beskriver hvilken av de tre meldingstypene dette er |
+| kildeType      | AVLEV | Vi setter alltid AVLEV |
+| avstemmingType | GRSN | Vi setter alltid GRSN (grensesnittavstemming)|
+| avleverendeKomponentKode | AAP, TILLST, TILTPENG eller DP | Fagområdet vi avstemmer for|
+| mottakendeKomponentKode | OS |Alltid OS (Oppdragssystemet) |
+| underkomponentKode | AAP, TILLST, TILTPENG eller DP | Fagområdet vi avstemmer for. Vet ikke hvorfor vi trenger både `avleverendeKomponentKode` og `underkomponentKode`, som har samme verdi  |
 | nokkelFom |  | |
 | nokkelTom |  | |
 | avleverendeAvstemmingId |  | |
