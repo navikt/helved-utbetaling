@@ -1,20 +1,3 @@
-
-> ⚠️ **TODO – Avklaringer med Utbetaling**
->
-> - Har det noe å si *når* på døgnet en avstemming sendes fra Utsjekk til OS? Er det lik tidsfrist i Q1 og Prod? Per nå sender vi avstemmingene om morgenen, når OS har åpnet, påfølgende virkedag i både Q1 og prod.
->  - Skal vi avstemme alt vi har mottatt i Utsjekk mellom 00:00:00 - 23:59:59 hver dag? Eller bør vi f.eks kun ta med oppdrag som blir sendt fra Utsjekk til OS før OS stenger (kl 21:00)?
->
-> - Hva er forskjellen på `datoAvstemtFom` / `datoAvstemtTom` og `nokkelFom` / `nokkelTom` og hva brukes de til i OS?
->   - Per nå benytter vi ulike formater i disse feltene. `datoAvstemtFom` og `datoAvstemtTom` er på formen `yyyymmddhh`, mens `nokkelFom` og `nokkelTom` har timestamp med mikrosekunder på formen `yyyy-mm-dd-hh.mm.ss.nnnnnn`.
->
-> - Det er vår forståelse det i OS gjøres en select basert på `nokkelFom` og `nokkelTom` (i avstemming-XML) og at disse feltene derfor må være på samme format som `nokkelAvstemming` (i oppdrag-XML). Ellers vil ikke OS finne oppdragene som skal avstemmes. Formatet kan være enklere, så lenge det er likt på tvers. Det vil si at `yyyy-mm-dd` ville fungert like godt som `yyyy-mm-dd-hh.mm.ss.nnnnnn`? Er det riktig oppfattet?
->
-> - Hva brukes `tidspktMelding` i oppdrag-XML til?  Hva er gyldig format?
->     - Per nå bruker vi samme format som i `nokkelAvstemming` (oppdrag-XML) og `nokkelFom` og `nokkelTom` (avstemming-XML).
->  - Skal vi for P4-ytelsene (AAP, Dagpenger, Tiltakspenger og Tilleggsstønader) alltid sette T (tillegg) som fortegn? I hvilke tilfeller setter man eventuelt F?
-
----
-
 # Grensesnittavstemming
 
 En grensesnittavstemming består av en start-, data- og sluttmelding som sendes på MQ til Oppdragssystemet. 
@@ -23,7 +6,7 @@ Komplette eksempler på disse meldingene finnes lenger ned på denne siden.
 Vi kan se resultatet av en avstemming i økonomiportalen i Q1, så fremt den sendes på riktig måte på riktig format. 
 
 ## Likt format på nøkler i oppdrag-XML og avstemming-XML
-Når avstemmingen kjøres i OS kjøres det en SQL basert på `nokkelFom` og `nokkelTom` som finnes i avstemmingsXML-en. For at denne SQL-en skal gi resultat, 
+Når avstemmingen kjøres i hos Utbetaling kjøres det en `select` basert på `nokkelFom` og `nokkelTom` som finnes i avstemmingsXML-en. For at denne `select`-en skal gi resultat, 
 så må formatet på disse nøklene være lik som `nokkelAvstemming` fra oppdragXML-en.
 
 **Eksempel:**
@@ -31,25 +14,19 @@ så må formatet på disse nøklene være lik som `nokkelAvstemming` fra oppdrag
 I avstemming-XML (start-, data- og sluttmelding):
 
 ```xml
-<nokkelFom>2025-05-21-00.00.00.000000</nokkelFom>
-<nokkelTom>2025-05-21-23.59.59.999999</nokkelTom>
+ <nokkelFom>2025-06-13-00.00.00.000000</nokkelFom>
+ <nokkelTom>2025-06-15-23.59.59.999999</nokkelTom>
 ```
 
 I oppdragXML for et av oppdragene som avstemmes:
 
 ```xml
 <avstemming-115>
-    <kodeKomponent>TILLST</kodeKomponent>
-    <nokkelAvstemming>2025-05-21-14.00.00.000000</nokkelAvstemming>
-    <tidspktMelding>2025-05-21-14.00.00.000000</tidspktMelding>
+  <kodeKomponent>AAP</kodeKomponent>
+  <nokkelAvstemming>2025-06-13-10.31.51.998858</nokkelAvstemming>
+  <tidspktMelding>2025-06-13-10.31.51.998939</tidspktMelding>
 </avstemming-115>
 ```
-
-
-⚠️ Spør utbetaling om dette er riktig oppfattet:
-> Det viktige er at formatet på nøklene er likt på tvers. Et enklere format med kun dato vil også fungere. 
-Så vi kunne altså like godt bare sagt `2025-05-21` for `nokkelFom` og `nokkelTom` i avstemming-XML og på `nokkelAvstemming` i oppdrag-XML.
-
 
 ## Avstemmingsmeldingene
 En grensesnittavstemming gjøres daglig (på virkedager når Oppdragsystemet er åpent) per fagområde / ytelse. Vi avstemmer AAP, Dagpenger, Tiltakspenger og Tilleggsstønader hver for seg i egne meldinger mot OS.
@@ -89,8 +66,8 @@ Datameldingen er delt i fire bolker med felter gruppert i `<aksjon>`, `<total>`,
 | total/totalAntall     |  | |
 | total/totalBelop      |  | |
 | total/fortegn |  | |
-| periode/datoAvstemtFom |  | |
-| periode/datoAvstemtTom |  | |
+| periode/datoAvstemtFom | Dato på formatet YYYYMMDDHH  | Info som vises i avstemmingsskjermbilde for økonomimedarbeider. Ingen funksjonell betydning. Timen er ikke viktig og kan egentlig være hva som helst, da den ikke vises i skjermbildet. |
+| periode/datoAvstemtTom | Dato på formatet YYYYMMDDHH | Info som vises i avstemmingsskjermbilde for økonomimedarbeider. Ingen funksjonell betydning. Timen er ikke viktig og kan egentlig være hva som helst, da den ikke vises i skjermbildet.|
 | grunnlag/godkjentAntall |  | |
 | grunnlag/godkjentBelop |  | |
 | grunnlag/godkjentFortegn |  | |
