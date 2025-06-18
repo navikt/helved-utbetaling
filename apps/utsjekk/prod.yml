@@ -63,8 +63,8 @@ spec:
           - NAVident
           - azp_name
   accessPolicy:
-    inbound:
-      rules:
+    #inbound:
+      #rules:
         #- application: helved-peisen
         #- application: tiltakspenger-saksbehandling-api
         #  namespace: tpts
