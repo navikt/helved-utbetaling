@@ -1,0 +1,68 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: peisschtappern
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  image: {{ image }}
+  liveness:
+    path: /actuator/live
+  readiness:
+    path: /actuator/ready
+  prometheus:
+    path: /actuator/metric
+    enabled: true
+  replicas:
+    min: 1
+    max: 1
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      memory: 512Mi
+      cpu: 300m
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: loki
+        - id: elastic
+  kafka:
+    pool: nav-prod
+    streams: true
+  azure:
+    application:
+      enabled: true
+      allowAllUsers: false
+  accessPolicy:
+    inbound:
+      rules:
+        - application: helved-peisen
+        - application: vedskiva
+    outbound:
+      rules:
+        - application: logging
+          namespace: nais-system
+  gcp:
+    sqlInstances:
+      - type: "POSTGRES_17" 
+        diskAutoresize: true
+        tier: "db-custom-1-3840"
+        cascadingDelete: false
+        highAvailability: true 
+        pointInTimeRecovery: true
+        maintenance:
+          day: 7
+          hour: 23
+        databases:
+          - name: peisschtappern
+            envVarPrefix: DB
+        flags:
+          - name: "cloudsql.enable_pgaudit"
+            value: "on"
+          - name: "pgaudit.log"
+            value: "write,ddl"
