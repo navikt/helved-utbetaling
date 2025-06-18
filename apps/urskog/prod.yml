@@ -1,0 +1,87 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: urskog
+  namespace: helved
+  labels:
+    team: helved
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+spec:
+  image: {{ image }}
+  accessPolicy:
+    outbound:
+      external:
+        - host: helved-ws-proxy.prod-fss-pub.nais.io
+        - host: mpls02.adeo.no
+          ports:
+            - port: 1414
+      rules:
+        - application: logging
+          namespace: nais-system
+        - application: helved-ws-proxy
+          cluster: prod-fss
+  azure:
+    application:
+      enabled: true
+  terminationGracePeriodSeconds: 60
+  liveness:
+    path: /actuator/live
+    failureThreshold: 60
+    initialDelay: 1
+    periodSeconds: 1
+  readiness:
+    path: /actuator/ready
+    failureThreshold: 60
+    initialDelay: 1
+    periodSeconds: 1
+  prometheus:
+    path: /actuator/metric
+    enabled: true
+  replicas:
+    min: 1
+    max: 1
+  resources:
+    limits:
+      memory: 2048Mi
+    requests:
+      memory: 1024Mi
+      cpu: 500m
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: loki
+        - id: elastic
+  kafka:
+    pool: nav-prod
+    streams: true
+  envFrom:
+     # TODO: sjekk hva disse inneholder, er det samme eller noe ulikt?
+    - secret: utsjekk-oppdrag-simulering
+    - secret: utsjekk-oppdrag
+  env:
+    - name: PROXY_HOST
+      value: https://helved-ws-proxy.prod-fss-pub.nais.io
+    - name: PROXY_SCOPE
+      value: api://prod-fss.helved.ws-proxy/.default
+    - name: SIMULERING_PATH
+      value: cics/cics/services/simulerFpServiceWSBinding
+    - name: MQ_HOSTNAME
+      value: mpls02.adeo.no
+    - name: MQ_PORT
+      value: "1414"
+    - name: MQ_MANAGER
+      value: MQLS02
+    - name: MQ_CHANNEL
+      value: P_DP_OPPDRAG
+    - name: MQ_OPPDRAG_QUEUE
+      value: QA.P231.OB04_OPPDRAG_XML
+    - name: MQ_OPPDRAG_KVITTERING_QUEUE
+      value: QA.P_DP_OPPDRAG.OPPDRAG_DP_XML_KVITT
+    - name: MQ_AVSTEMMING_QUEUE
+      value: QA.P234.OB29_AVSTEMMING_XML
