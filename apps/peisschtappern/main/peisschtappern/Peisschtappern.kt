@@ -8,7 +8,7 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.jwt
-import io.ktor.server.engine.embeddedServer
+import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -33,7 +33,17 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(Netty, port = 8080, module = Application::peisschtappern).start(wait = true)
+    embeddedServer(
+        factory = Netty,
+        configure = {
+            shutdownGracePeriod = 5000L
+            shutdownTimeout = 50_000L
+            connectors.add(EngineConnectorBuilder().apply {
+                port = 8080
+            })
+        },
+        module = Application::peisschtappern,
+    ).start(wait = true)
 }
 
 fun Application.peisschtappern(
