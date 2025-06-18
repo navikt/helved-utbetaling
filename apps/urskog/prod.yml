@@ -76,7 +76,7 @@ spec:
     - name: MQ_PORT
       value: "1414"
     - name: MQ_MANAGER
-      value: MQLS02
+      value: MPLS02
     - name: MQ_CHANNEL
       value: P_DP_OPPDRAG
     - name: MQ_OPPDRAG_QUEUE
