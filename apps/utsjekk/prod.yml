@@ -65,13 +65,13 @@ spec:
   accessPolicy:
     inbound:
       rules:
-        - application: helved-peisen
-        - application: tiltakspenger-saksbehandling-api
-          namespace: tpts
-        - application: tilleggsstonader-sak
-          namespace: tilleggsstonader
-        - application: utbetal
-          namespace: aap
+        #- application: helved-peisen
+        #- application: tiltakspenger-saksbehandling-api
+        #  namespace: tpts
+        #- application: tilleggsstonader-sak
+        #  namespace: tilleggsstonader
+        #- application: utbetal
+        #  namespace: aap
     outbound:
       rules:
         - application: utsjekk-oppdrag
