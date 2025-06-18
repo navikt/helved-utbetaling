@@ -1,0 +1,53 @@
+apiVersion: nais.io/v1
+kind: Naisjob
+metadata:
+  labels:
+    team: helved
+  name: vedskiva
+  namespace: helved
+spec:
+  schedule: "0 5 * * *"
+  image: {{ image }} 
+  ttlSecondsAfterFinished: 14400
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  gcp:
+    sqlInstances:
+      - type: POSTGRES_17
+        tier: db-custom-1-3840
+        cascadingDelete: false
+        highAvailability: true 
+        pointInTimeRecovery: true
+        databases:
+          - name: vedskiva
+            envVarPrefix: DB
+        flags:
+          - name: "cloudsql.enable_pgaudit"
+            value: "on"
+          - name: "pgaudit.log"
+            value: "write,ddl"
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: loki
+        - id: elastic
+  kafka:
+    pool: nav-prod
+    streams: true
+  azure:
+    application:
+      enabled: true
+  accessPolicy:
+    outbound:
+      rules:
+        - application: logging
+          namespace: nais-system
+        - application: peisschtappern
+  env:
+    - name: PEISSCHTAPPERN_SCOPE
+      value: api://prod-gcp.helved.peisschtappern/.default
