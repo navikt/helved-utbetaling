@@ -25,8 +25,12 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
             val fagsystem = call.fagsystem()
             val iverksetting = Iverksetting.from(dto, fagsystem)
 
-            iverksettingService.valider(iverksetting)
-            iverksettingService.iverksett(iverksetting)
+            try {
+                iverksettingService.valider(iverksetting)
+                iverksettingService.iverksett(iverksetting)
+            } catch (e: ApiError) {
+                if (e.statusCode != 409) throw e
+            }
 
             call.respond(HttpStatusCode.Accepted)
         }

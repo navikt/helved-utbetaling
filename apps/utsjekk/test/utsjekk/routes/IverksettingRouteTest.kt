@@ -233,7 +233,7 @@ class IverksettingRouteTest {
     }
 
     @Test
-    fun `svarer med CONFLICT når iverksetting allerede er iverksatt`() = runTest(TestRuntime.context) {
+    fun `svarer med ACCEPTED når det egentlig er CONFLICT for å hindre spam`() = runTest(TestRuntime.context) {
         val dto = TestData.dto.iverksetting()
 
         httpClient.post("/api/iverksetting/v2") {
@@ -251,7 +251,7 @@ class IverksettingRouteTest {
             setBody(dto)
         }.let {
             println(it.bodyAsText())
-            assertEquals(HttpStatusCode.Conflict, it.status)
+            assertEquals(HttpStatusCode.Accepted, it.status)
         }
     }
 
