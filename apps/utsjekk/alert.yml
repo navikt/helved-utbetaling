@@ -13,7 +13,7 @@ spec:
           expr: sum(kube_deployment_status_replicas_available{app="utsjekk", namespace="helved"} offset 5m) by (deployment, namespace) == 0
           for: 5m
           annotations:
-            consequence: 'Applikasjon utsjekk er nede'
+            consequence: 'utsjekk er dau'
             action: '`kubectl describe pod -l app=utsjekk` -> `kubectl logs -l app=utsjekk`'
           labels:
             namespace: helved
