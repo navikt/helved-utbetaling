@@ -76,3 +76,25 @@ jobs:
           RESOURCE: apps/${{ github.workflow }}/dev.yml,apps/${{ github.workflow }}/alert.yml
           VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
 
+  deploy-prod:
+    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    permissions:
+      contents: read    # read repository files
+      id-token: write   # publish nais manifest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nais/login@v0
+        id: login
+        with:
+          team: helved
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+      - uses: nais/deploy/actions/deploy@v2
+        env:
+          PRINT_PAYLOAD: true
+          CLUSTER: prod-gcp
+          RESOURCE: apps/${{ github.workflow }}/prod.yml,apps/${{ github.workflow }}/alert.yml
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
