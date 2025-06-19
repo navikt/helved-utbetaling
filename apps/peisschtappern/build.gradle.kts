@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "3.2.0"
-val libVersion = "3.1.149"
+val libVersion = "3.1.156"
 
 dependencies {
     implementation(project(":libs:kafka"))
