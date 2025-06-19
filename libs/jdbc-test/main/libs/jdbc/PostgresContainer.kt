@@ -11,7 +11,7 @@ class PostgresContainer(appname: String, waitForContainerMs: Long = 30_000) : Au
             withReuse(true)
             withNetwork(null)
             withCreateContainerCmdModifier { cmd ->
-                cmd.withName("$appname-pg") // FIXME: removing this will remove the flaky 'conflict' container error
+                cmd.withName("$appname-pg-${System.currentTimeMillis()}")
                 cmd.hostConfig?.apply {
                     withMemory(512 * 1024 * 1024)
                     withMemorySwap(1024 * 1024 * 1024)
