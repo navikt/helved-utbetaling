@@ -14,7 +14,7 @@ spec:
   acl:
     - team: helved
       application: abetal
-      access: write
+      access: readwrite
     - team: helved
       application: urskog
       access: readwrite

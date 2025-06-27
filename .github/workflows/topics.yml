@@ -26,6 +26,8 @@ jobs:
           - helved.utbetalinger-aap.v1
           - helved.utbetalinger-dp.v1
           - helved.utbetalinger.v1
+          - helved.pending-utbetalinger.v1
+          - helved.fk.v1
         env:
           - dev
           - prod

@@ -2,19 +2,15 @@ package abetal
 
 import libs.kafka.StreamsPair
 import libs.utils.secureLog
-import models.*
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import models.Action
+import models.PeriodeId
+import models.Utbetaling
+import models.notFound
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
-
-sealed interface Aggregate {
-    data class OppdragAggregate(val utbets: List<Utbetaling>, val opps: List<Oppdrag>): Aggregate 
-    data class SimuleringAggregate(val sims: List<SimulerBeregningRequest>): Aggregate 
-}
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 object AggregateService {
-
-    fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): Aggregate.OppdragAggregate {
-        secureLog.trace("oppdrag aggregate: $aggregate")
+    fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<Pair<Oppdrag, List<Utbetaling>>> {
         val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> = aggregate.map { (new, prev) ->
             new.validate(prev)
 
@@ -48,11 +44,13 @@ object AggregateService {
 
         val utbetalinger = utbetalingToOppdrag.map { it.first }
 
-        return Aggregate.OppdragAggregate(utbetalinger, oppdrag)
+        val oppdragToUtbetalinger = oppdrag
+            .map { o -> o to utbetalinger.filter { it.sakId.id == o.oppdrag110.fagsystemId } }
+
+        return oppdragToUtbetalinger
     } 
 
-    fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): Aggregate.SimuleringAggregate {
-        secureLog.trace("dryrun aggregate: $aggregate")
+    fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<SimulerBeregningRequest> {
         val simuleringer: List<SimulerBeregningRequest> = aggregate.map { (new, prev) ->
             new.validate(prev)
             when {
@@ -69,10 +67,11 @@ object AggregateService {
             .groupBy { it.request.oppdrag.fagsystemId.trimEnd() }
             .map { (_, group) -> group.reduce { acc, next -> acc + next } }
 
-        return Aggregate.SimuleringAggregate(simuleringerPerSak)
+        return simuleringerPerSak
     }
 }
 
+// TODO: addAll fungerer ikke, vi må fjerne "duplikater". Dvs alt (??) er likt unntatt delytelseId (??) og henvisning 
 operator fun Oppdrag.plus(other: Oppdrag): Oppdrag {
     if(oppdrag110.kodeEndring != "NY") oppdrag110.kodeEndring = other.oppdrag110.kodeEndring 
     oppdrag110.oppdragsLinje150s.addAll(other.oppdrag110.oppdragsLinje150s)

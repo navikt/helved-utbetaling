@@ -171,6 +171,16 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return BranchedStream(branched).branch(predicate, consumed)
     }
 
+    fun <U: Any> leftJoin(
+        key: StreamSerde<K>,
+        value: StreamSerde<V>,
+        right: KTable<K, U>,
+        named: String,
+    ): JoinedStream<K, V, U?> {
+        val joinedStream = stream.leftJoin(named, Serdes(key, value), right, ::StreamsPair)
+        return JoinedStream(joinedStream)
+    }
+
     fun secureLog(log: Log.(V) -> Unit): ConsumedStream<K, V> {
         val loggedStream = stream.peek ({ _, value -> log(Log.secure, value) })
         return ConsumedStream(loggedStream)
