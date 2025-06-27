@@ -6,12 +6,12 @@ open class Topic<K: Any, V : Any>(
     val name: String,
     val serdes: Serdes<K, V>,
 ) {
-    internal fun consumed(named: String): Consumed<K, V> {
-        return Consumed.with(serdes.key, serdes.value).withName(named)
+    internal fun consumed(named: String = "consume-$name"): Consumed<K, V> {
+        return Consumed.with(serdes.key, serdes.value).withName(Named(named).toString())
     }
 
-    internal open fun produced(named: String): Produced<K, V> {
-        return Produced.with(serdes.key, serdes.value).withName(named)
+    internal open fun produced(): Produced<K, V> {
+        return Produced.with(serdes.key, serdes.value)
     }
 
     internal infix fun <U : Any> join(right: KTable<K, U>): Joined<K, V, U> {
@@ -19,7 +19,7 @@ open class Topic<K: Any, V : Any>(
             serdes.key,
             serdes.value,
             right.table.sourceTopic.serdes.value,
-            "$name-join-${right.table.sourceTopic.name}",
+            Named("$name-join-${right.table.sourceTopicName}").toString(),
         )
     }
 
@@ -28,7 +28,7 @@ open class Topic<K: Any, V : Any>(
             serdes.key,
             serdes.value,
             right.table.sourceTopic.serdes.value,
-            "$name-left-join-${right.table.sourceTopic.name}",
+            Named("$name-leftjoin-${right.table.sourceTopicName}").toString(),
         )
     }
 }

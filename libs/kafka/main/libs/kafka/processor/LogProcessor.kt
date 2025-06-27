@@ -8,8 +8,7 @@ import org.slf4j.LoggerFactory
 
 internal class LogConsumeTopicProcessor<K: Any, V>(
     private val topic: Topic<K, V & Any>,
-    namedSuffix: String = "",
-) : Processor<K, V, V>("log-consume-${topic.name}$namedSuffix") {
+) : Processor<K, V, V>() {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         kafkaLog.trace(
             "consume ${keyValue.key} on ${metadata.topic}",
@@ -30,8 +29,9 @@ internal class LogConsumeTopicProcessor<K: Any, V>(
 }
 
 internal class LogProduceStateStoreProcessor<K: Any, V>(
+    named: String,
     private val name: StateStoreName,
-): Processor<K, V, V>("log-produced-$name") {
+): Processor<K, V, V>(named) {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         kafkaLog.trace(
             "materialize ${keyValue.key} on $name",
@@ -51,7 +51,7 @@ internal class LogProduceStateStoreProcessor<K: Any, V>(
 
 internal class LogProduceTableProcessor<K: Any, V>(
     private val table: Table<K, V & Any>,
-) : Processor<K, V, V>("log-produced-${table.sourceTopicName}") {
+) : Processor<K, V, V>() {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         kafkaLog.trace(
             "materialize ${keyValue.key} on ${table.sourceTopicName}",
@@ -72,9 +72,8 @@ internal class LogProduceTableProcessor<K: Any, V>(
 }
 
 internal class LogProduceTopicProcessor<K: Any, V> internal constructor(
-    named: String,
     private val topic: Topic<K, V & Any>,
-) : Processor<K, V, V>(named) {
+) : Processor<K, V, V>() {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         kafkaLog.trace(
             "produce ${keyValue.key} on ${topic.name}",

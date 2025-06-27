@@ -22,9 +22,8 @@ class KTable<K: Any, V : Any>(
     }
 
     fun toStream(): ConsumedStream<K, V> {
-        return ConsumedStream(
-            internalKTable.toStream().skipTombstone(table.sourceTopic, "to-stream"),
-            { "consume-${table.stateStoreName}" })
+        val stream = internalKTable.toStream().skipTombstone(table.sourceTopic)
+        return ConsumedStream(stream)
     }
 
     fun schedule(scheduler: StateScheduleProcessor<K, V>) {

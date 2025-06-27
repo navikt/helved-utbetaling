@@ -4,11 +4,18 @@ import libs.kafka.Mock
 import libs.kafka.Tables
 import libs.kafka.Topics
 import libs.kafka.produce
+import libs.kafka.Names
 import libs.kafka.JsonSerde
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
 
 internal class BranchedStreamTest {
+
+    @AfterEach
+    fun cleanup() {
+        Names.clear()
+    }
 
     @Test
     fun `branch from consumed`() {
@@ -160,9 +167,7 @@ internal class BranchedStreamTest {
             consume(Topics.A)
                 .join(Topics.A, tableB)
                 .branch({ (left, _) -> left == "lol" }, {
-                    // StreamsPair<L, R> -> LR krever ny serde. L er implisitt StreamsPair<L, R>
                     map { (left, right) -> left + right }.produce(Topics.C)
-
                 })
                 .default {
                     map { (_, right) -> right + right }.produce(Topics.D)

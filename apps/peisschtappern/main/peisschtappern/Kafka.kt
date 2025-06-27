@@ -33,7 +33,7 @@ fun createTopology(): Topology = topology {
 }
 
 private fun Topology.save(topic: Topic<String, ByteArray>, table: Table) {
-    consume(topic) { key, value, metadata ->
+    forEach(topic) { key, value, metadata ->
         runBlocking {
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {

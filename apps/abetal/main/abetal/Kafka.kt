@@ -27,6 +27,7 @@ object Tables {
 
 object Stores {
     val utbetalinger = Store(Tables.utbetalinger)
+    val dpAggregate = Store("dp-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
 }
 
 fun createTopology(): Topology = topology {
@@ -45,7 +46,7 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
     val ktable = utbetalinger
         .toStream()
         .rekey { _, utbetaling -> SakKey(utbetaling.sakId, Fagsystem.from(utbetaling.stønad)) }
-        .groupByKey(Serde.json(), Serde.json())
+        .groupByKey(Serde.json(), Serde.json(), "utbetalinger-groupby-sakkey")
         .aggregate(Tables.saker) { _, utbetaling, uids -> 
             when(utbetaling.action) {
                 Action.DELETE -> uids - utbetaling.uid
@@ -60,19 +61,21 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
     return ktable
 }
 
+private val suppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggregate, 100.milliseconds, 1.seconds)
+
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     consume(Topics.dp)
-        .repartition(Topics.dp.serdes, 3)
+        .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
         .map { key, dp -> DpTuple(key, dp) }
         .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
-        .leftJoin(Serde.json(), Serde.json(), saker)
+        .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
         .flatMapKeyValue(::splitOnMeldeperiode)
-        .leftJoin(Serde.string(), Serde.json(), utbetalinger)
+        .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
         .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds)
-        .reduce(suppressProcessorSupplier, "dp-diff-window-agg-session-store") { acc, next -> acc + next }
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds, "dp-utbetalinger-session") 
+        .reduce(suppressProcessorSupplier, Stores.dpAggregate.name)  { acc, next -> acc + next }
         .map { aggregate  -> 
             Result.catch { 
                 val oppdragAgg = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
@@ -99,13 +102,4 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
             this.map { it -> it.unwrapErr() }.produce(Topics.status) 
         }
 }
-
-private val suppressProcessorSupplier = SuppressProcessor.supplier(
-    keySerde = WindowedStringSerde,
-    valueSerde = JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>(), 
-    punctuationInterval = 100.milliseconds,
-    inactivityGap = 1.seconds,
-    stateStoreName = "dp-diff-window-agg-session-store",
-)
-
 

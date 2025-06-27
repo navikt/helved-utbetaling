@@ -4,11 +4,17 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.kafka.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import org.apache.kafka.streams.state.ValueAndTimestamp
 
 internal class MappedStreamTest {
+    @AfterEach
+    fun cleanup() {
+        Names.clear()
+    }
+
     @Test
     fun `map a filtered joined stream`() {
         val kafka = Mock.withTopology {
@@ -253,7 +259,7 @@ internal class MappedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.E)
                 .map { it -> ChangedDto(9, it.data) }
-                .leftJoin(json(), table)
+                .leftJoin(json(), table, "changed-leftjoin-B")
                 .map { l, r -> jacksonObjectMapper().writeValueAsString(l.copy(data = r!!)) }
                 .produce(Topics.C)
         }

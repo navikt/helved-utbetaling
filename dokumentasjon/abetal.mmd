@@ -6,31 +6,29 @@ graph LR
 subgraph Topologi
     %% TOPICS
     helved.utbetalinger.v1([helved.utbetalinger.v1])
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition([from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition])
-	consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store-repartition([consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store-repartition])
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate-repartition([suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate-repartition])
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-repartition([from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-repartition])
+	dp-periode-leftjoin-utbetalinger-repartition([dp-periode-leftjoin-utbetalinger-repartition])
+	dp-utbetalinger-session-repartition([dp-utbetalinger-session-repartition])
+	utbetalinger-groupby-sakkey-repartition([utbetalinger-groupby-sakkey-repartition])
+	dptuple-leftjoin-saker-repartition([dptuple-leftjoin-saker-repartition])
 	helved.saker.v1([helved.saker.v1])
 	teamdagpenger.utbetaling.v1([teamdagpenger.utbetaling.v1])
 	from-teamdagpenger.utbetaling.v1-repartition([from-teamdagpenger.utbetaling.v1-repartition])
-	helved.oppdrag.v1([helved.oppdrag.v1])
 	helved.simuleringer.v1([helved.simuleringer.v1])
+	helved.oppdrag.v1([helved.oppdrag.v1])
 	helved.status.v1([helved.status.v1])
 
     %% JOINS
-    from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1{left-join}
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1{left-join}
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced{left-join}
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window{left-join}
+    dp-periode-leftjoin-utbetalinger{leftjoin}
+	dptuple-leftjoin-saker{leftjoin}
 
     %% STATE PROCESSORS
-    from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced{operation}
+    
     
     %% STATE STORES
     helved.utbetalinger.v1-state-store[(helved.utbetalinger.v1-state-store)]
-	consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store[(consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store)]
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate[(suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate)]
-	dp-diff-window-agg-session-store[(dp-diff-window-agg-session-store)]
+	helved.saker.v1-state-store-materialized[(helved.saker.v1-state-store-materialized)]
+	dp-aggregate-store-materialized[(dp-aggregate-store-materialized)]
+	dp-aggregate-store[(dp-aggregate-store)]
 	helved.saker.v1-state-store[(helved.saker.v1-state-store)]
     
     %% DATABASES
@@ -41,28 +39,15 @@ subgraph Topologi
     
     
     %% JOIN STREAMS
-    from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1
-	helved.utbetalinger.v1-state-store --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1 --> suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate-repartition
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-repartition --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1
-	consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1 --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate-repartition --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced --> helved.utbetalinger.v1
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced --> helved.oppdrag.v1
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced --> helved.status.v1
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced --> helved.simuleringer.v1
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate-repartition --> suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window
-	dp-diff-window-agg-session-store --> suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window --> helved.utbetalinger.v1
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window --> helved.oppdrag.v1
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window --> helved.status.v1
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window --> helved.simuleringer.v1
+    dp-periode-leftjoin-utbetalinger-repartition --> dp-periode-leftjoin-utbetalinger
+	helved.utbetalinger.v1-state-store --> dp-periode-leftjoin-utbetalinger
+	dp-periode-leftjoin-utbetalinger --> dp-utbetalinger-session-repartition
+	dptuple-leftjoin-saker-repartition --> dptuple-leftjoin-saker
+	helved.saker.v1-state-store-materialized --> dptuple-leftjoin-saker
+	dptuple-leftjoin-saker --> dp-periode-leftjoin-utbetalinger-repartition
 
     %% TABLE STREAMS
-    helved.utbetalinger.v1 --> helved.utbetalinger.v1-state-store
-	helved.saker.v1 --> helved.saker.v1-state-store
+    
 
     %% JOB STREAMS
     
@@ -71,21 +56,16 @@ subgraph Topologi
     
 
     %% REPARTITION STREAMS
-    helved.utbetalinger.v1 --> |rekey| consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store-repartition
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition --> |rekey| suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate-repartition
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-repartition --> |rekey| from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition
+    helved.utbetalinger.v1 --> |rekey| utbetalinger-groupby-sakkey-repartition
+	dp-periode-leftjoin-utbetalinger-repartition --> |rekey| dp-utbetalinger-session-repartition
+	dptuple-leftjoin-saker-repartition --> |rekey| dp-periode-leftjoin-utbetalinger-repartition
     
     %% BASIC STREAMS
     teamdagpenger.utbetaling.v1 --> from-teamdagpenger.utbetaling.v1-repartition
-	from-teamdagpenger.utbetaling.v1-repartition --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-repartition
+	from-teamdagpenger.utbetaling.v1-repartition --> dptuple-leftjoin-saker-repartition
     
     %% CUSTOM PROCESS STREAMS
-    suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate-repartition --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced
-	suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate --> from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced --> helved.utbetalinger.v1
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced --> helved.oppdrag.v1
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced --> helved.status.v1
-	from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-operation-reduced --> helved.simuleringer.v1
+    
 end
 
 %% COLORS
@@ -97,19 +77,19 @@ end
 
 %% STYLES
 style helved.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dp-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dp-utbetalinger-session-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style utbetalinger-groupby-sakkey-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dptuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style teamdagpenger.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style from-teamdagpenger.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.simuleringer.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style consume-helved.utbetalinger.v1-state-store-groupByKey-aggregate-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style suppress-from-teamdagpenger.utbetaling.v1-left-join-helved.saker.v1-left-join-helved.utbetalinger.v1-session-window-aggregate fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-diff-window-agg-session-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.saker.v1-state-store-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dp-aggregate-store-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dp-aggregate-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 

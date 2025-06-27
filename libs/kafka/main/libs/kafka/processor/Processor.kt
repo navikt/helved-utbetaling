@@ -1,21 +1,21 @@
 package libs.kafka.processor
 
-import kotlin.jvm.optionals.getOrNull
 import libs.kafka.*
-import org.apache.kafka.streams.kstream.*
+import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.processor.api.*
+import kotlin.jvm.optionals.getOrNull
 
 internal interface KProcessor<K, V, U> {
     fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): U
 }
 
-abstract class Processor<K: Any, V, U>(private val named: String) : KProcessor<K, V, U> {
+abstract class Processor<K: Any, V, U>(private val named: String? = null) : KProcessor<K, V, U> {
     internal companion object {
         internal fun <K: Any, V, U> KStream<K, V>.addProcessor(processor: Processor<K, V, U>): KStream<K, U> =
-            processValues(
-                { processor.run { InternalProcessor() } },
-                Named.`as`("stateless-operation-${processor.named}"),
-            )
+            when (processor.named) {
+                null -> processValues({ processor.run { InternalProcessor() } })
+                else -> processValues({ processor.run { InternalProcessor() } }, Named(processor.named).into())
+            }
     }
 
     private inner class InternalProcessor : FixedKeyProcessor<K, V, U> {
@@ -75,11 +75,7 @@ data class ProcessorMetadata(
 //        keyValue to metadata
 //}
 
-internal class MetadataProcessor<K: Any, V>(
-    named: String, // e.g. topic-name
-) : Processor<K, V, Pair<KeyValue<K, V>, ProcessorMetadata>>(
-    "from-$named-enrich-metadata",
-) {
+internal class MetadataProcessor<K: Any, V>(): Processor<K, V, Pair<KeyValue<K, V>, ProcessorMetadata>>() {
     override fun process(
         metadata: ProcessorMetadata,
         keyValue: KeyValue<K, V>,

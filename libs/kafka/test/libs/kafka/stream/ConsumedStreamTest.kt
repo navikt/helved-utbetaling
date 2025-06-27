@@ -10,12 +10,18 @@ import libs.kafka.processor.ProcessorMetadata
 import libs.kafka.produce
 import org.apache.kafka.streams.errors.TopologyException
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class ConsumedStreamTest {
+
+    @AfterEach
+    fun cleanup() {
+        Names.clear()
+    }
 
     @Test
     fun `map with metadata`() {
@@ -84,7 +90,7 @@ internal class ConsumedStreamTest {
     fun `use custom processor with mapping`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .processor(object : Processor<String, String, Int>("named") {
+                .processor(object : Processor<String, String, Int>() {
                     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): Int {
                         return keyValue.value.toInt() + 1
                     }
@@ -104,7 +110,7 @@ internal class ConsumedStreamTest {
     fun `use custom processor in place`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .processor(object : Processor<String, String, String>("something") {
+                .processor(object : Processor<String, String, String>() {
                     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): String {
                         return keyValue.value
                     }
@@ -214,13 +220,16 @@ internal class ConsumedStreamTest {
     }
 
     @Test
-    fun repartition() {
+    fun `repartition not co partitioned`() {
         val msg = assertThrows<TopologyException> {
             Mock.withTopology {
-                val ktable = consumeRepartitioned(Tables.B, 3)
+                val ktable = consume(Topics.B)
+                    .repartition(Topics.B, 3)
+                    .map { it }
+                    .materialize(Tables.B)
 
                 consume(Topics.A)
-                    .repartition(string(), 4)
+                    .repartition(Topics.A, 4)
                     .join(Topics.A, ktable)
                     .map { a, b -> a + b }
                     .produce(Topics.C)

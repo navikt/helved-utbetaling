@@ -1,9 +1,15 @@
 package libs.kafka
 
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
 
 class KTableTest {
+
+    @AfterEach
+    fun cleanup() {
+        Names.clear()
+    }
 
     @Test
     fun `can make it to stream`() {

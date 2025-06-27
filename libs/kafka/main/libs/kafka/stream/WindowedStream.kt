@@ -1,47 +1,38 @@
 package libs.kafka.stream
 
-import kotlin.time.Duration.Companion.seconds
-import libs.kafka.*
-import libs.kafka.processor.LogProduceStateStoreProcessor
-import libs.kafka.processor.Processor.Companion.addProcessor
+import libs.kafka.Named
+import libs.kafka.Serdes
+import libs.kafka.StateStoreName
 import org.apache.kafka.common.utils.Bytes
-import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Materialized
-import org.apache.kafka.streams.kstream.Named
 import org.apache.kafka.streams.kstream.SessionWindowedKStream
-import org.apache.kafka.streams.kstream.Suppressed
-import org.apache.kafka.streams.processor.api.Processor
-import org.apache.kafka.streams.processor.api.ProcessorSupplier
 import org.apache.kafka.streams.kstream.TimeWindowedKStream
 import org.apache.kafka.streams.kstream.Windowed
+import org.apache.kafka.streams.processor.api.ProcessorSupplier
 import org.apache.kafka.streams.state.SessionStore
 import org.apache.kafka.streams.state.WindowStore
 
 class TimeWindowedStream<K: Any, V : Any> internal constructor(
     private val serdes: Serdes<K, V>,
     private val stream: TimeWindowedKStream<K, V>,
-    private val namedSupplier: () -> String,
 ) {
-    fun reduce(acc: (V, V) -> V): ConsumedStream<K, V> {
-        val named = "${namedSupplier()}-reduced"
-
-        val materialized = Materialized.`as`<K, V, WindowStore<Bytes, ByteArray>>("$named-store")
+    fun reduce(name: StateStoreName, acc: (V, V) -> V): ConsumedStream<K, V> {
+        val materialized = Materialized.`as`<K, V, WindowStore<Bytes, ByteArray>>(name)
             .withKeySerde(serdes.key)
             .withValueSerde(serdes.value)
 
         val reducedStream = stream
-            .reduce(acc, Named.`as`("${namedSupplier()}-operation-reduced"), materialized)
+            .reduce(acc, Named("$name-reduce").into(), materialized)
             .toStream()
-            .selectKey { key, _ -> key.key() }
+            .selectKey ({ key, _ -> key.key() }, Named("rekey-$name").into())
 
-        return ConsumedStream(reducedStream, {named} ) 
+        return ConsumedStream(reducedStream ) 
     }
 }
 
 class SessionWindowedStream<K: Any, V : Any> internal constructor(
     private val serdes: Serdes<K, V>,
     private val stream: SessionWindowedKStream<K, V>,
-    private val namedSupplier: () -> String,
 ) {
 
     fun reduce(
@@ -49,18 +40,16 @@ class SessionWindowedStream<K: Any, V : Any> internal constructor(
         storeName: StateStoreName,
         acc: (V, V) -> V,
     ): ConsumedStream<K, V> {
-        val named = "${namedSupplier()}-reduced"
-
-        val materialized = Materialized.`as`<K, V, SessionStore<Bytes, ByteArray>>("suppress-${namedSupplier()}-aggregate")
+        val materialized = Materialized.`as`<K, V, SessionStore<Bytes, ByteArray>>(Named("$storeName-materialized").toString())
             .withKeySerde(serdes.key)
             .withValueSerde(serdes.value)
 
         val reducedStream = stream
-            .reduce(acc, Named.`as`("${namedSupplier()}-operation-reduced"), materialized)
+            .reduce(acc, Named("$storeName-reduce").into(), materialized)
             .toStream()
-            .process(supplier, Named.`as`("suppress-${namedSupplier()}"), storeName)
+            .process(supplier, Named("$storeName-suppress").into(), storeName)
             .selectKey { key, _ -> key }
 
-        return ConsumedStream(reducedStream, { named }) 
+        return ConsumedStream(reducedStream) 
     }
 }
