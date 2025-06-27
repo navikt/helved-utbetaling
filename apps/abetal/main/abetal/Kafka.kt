@@ -6,6 +6,7 @@ import abetal.models.splitOnMeldeperiode
 import libs.kafka.*
 import libs.kafka.processor.SuppressProcessor
 import models.*
+import libs.utils.appLog
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import kotlin.time.Duration.Companion.milliseconds
@@ -68,9 +69,12 @@ fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTab
         }
         .leftJoin(Serde.xml(), Serde.json(), fks, "oppdrag-leftjoin-fks")
         .flatMapKeyValue { o, info, pks -> 
-            requireNotNull(pks) { "primary key used to move pending to utbetalinger was null. Oppdraginfo: $info" }
-                .uids
-                .map { pk -> KeyValue(pk, info)}
+            if (pks == null) {
+                appLog.warn("primary key used to move pending to utbetalinger was null. Oppdraginfo: $info")
+                emptyList()
+            } else {
+                pks.uids.map { pk -> KeyValue(pk, info)}
+            }
         }
         .leftJoin(Serde.string(), Serde.json(), pending, "pk-leftjoin-pending")
         .map { info, pending -> requireNotNull(pending) { "Fant ikke pending utbetaling. Oppdragsinfo: $info" } }
