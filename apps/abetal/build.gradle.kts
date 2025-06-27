@@ -25,7 +25,7 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.15.1")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.1")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
 
     // TODO: ER det mulig å innkapsulere denne i libs?
