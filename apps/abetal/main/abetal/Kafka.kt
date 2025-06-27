@@ -55,7 +55,7 @@ data class PKs(val originalKey: String, val uids: List<String>)
  */
 fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTable<String, Utbetaling>) {
     consume(Topics.oppdrag)
-        .filter { it.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") }
+        .filter { it.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") && it.oppdrag110.kodeFagomraade.trimEnd() in listOf("AAP", "DP") }
         .rekey { it.apply { it.mmel = null} }
         .map { 
             val last = it.oppdrag110.oppdragsLinje150s.last()
