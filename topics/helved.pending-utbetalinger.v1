@@ -1,7 +1,7 @@
 apiVersion: kafka.nais.io/v1
 kind: Topic
 metadata:
-  name: oppdrag.v1
+  name: pending-utbetalinger.v1
   namespace: helved
   labels:
     team: helved
@@ -16,16 +16,7 @@ spec:
       application: abetal
       access: readwrite
     - team: helved
-      application: urskog
-      access: readwrite
-    - team: helved
-      application: utsjekk
-      access: write
-    - team: helved
       application: peisschtappern
-      access: readwrite
-    - team: helved
-      application: vedskiva
       access: read
     - team: helved
       application: kafka-cli

@@ -45,4 +45,10 @@ class TopicAssertion<K: Any, V : Any> private constructor(topic: TestOutputTopic
     fun hasTombstone(key: K) = this.also {
         assertTrue(valuesForKey(key).contains(null))
     }
+
+    fun get(key: K, index: Int = 0): V { 
+        val value = valuesForKey(key).getOrNull(index) ?: fail("no record found for key $key")
+        return value
+    }
 }
+

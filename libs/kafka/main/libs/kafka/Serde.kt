@@ -24,6 +24,7 @@ data class Serdes<K: Any, V>(
 interface StreamSerde<T> : Serde<T>
 
 object Serde {
+    inline fun <reified V: Any> xml() = XmlSerde.xml<V>()
     inline fun <reified V: Any> json() = JsonSerde.jackson<V>()
     inline fun <reified V: Any> listStreamsPair() = JsonSerde.listStreamsPair<V, V?>()
     fun string() = StringSerde

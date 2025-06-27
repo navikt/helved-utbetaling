@@ -112,6 +112,8 @@ sealed class Channel(
     data object DryrunTs : Channel(Topics.dryrunTs, Table.dryrun_ts, 10)
     data object DryrunDp : Channel(Topics.dryrunDp, Table.dryrun_dp, 11)
     data object Status : Channel(Topics.status, Table.status, 12)
+    data object PendingUtbetalinger : Channel(Topics.pendingUtbetalinger, Table.pending_utbetalinger, 13)
+    data object Fk : Channel(Topics.fk, Table.fk, 14)
 
     companion object {
         fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel }

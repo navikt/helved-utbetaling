@@ -22,6 +22,8 @@ class TestTopics(private val kafka: StreamsMock) {
     val oppdrag = kafka.testTopic(Topics.oppdrag) 
     val status = kafka.testTopic(Topics.status) 
     val simulering = kafka.testTopic(Topics.simulering) 
+    val pendingUtbetalinger = kafka.testTopic(Topics.pendingUtbetalinger) 
+    val fk = kafka.testTopic(Topics.fk) 
 }
 
 object TestRuntime {

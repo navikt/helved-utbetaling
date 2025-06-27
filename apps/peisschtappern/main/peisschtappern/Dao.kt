@@ -22,6 +22,8 @@ enum class Table {
     saker,
     aap,
     status,
+    pending_utbetalinger,
+    fk,
 }
 
 data class Dao(
