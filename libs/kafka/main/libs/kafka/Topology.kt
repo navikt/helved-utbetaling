@@ -1,14 +1,17 @@
 package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
-import libs.kafka.processor.*
+import libs.kafka.processor.LogConsumeTopicProcessor
+import libs.kafka.processor.MetadataProcessor
 import libs.kafka.processor.Processor.Companion.addProcessor
+import libs.kafka.processor.ProcessorMetadata
 import libs.kafka.stream.ConsumedStream
-import org.apache.kafka.streams.*
+import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.KafkaStreams.State.*
-import org.apache.kafka.streams.kstream.*
-import org.apache.kafka.streams.state.*
+import org.apache.kafka.streams.StoreQueryParameters
+import org.apache.kafka.streams.StreamsBuilder
+import org.apache.kafka.streams.state.QueryableStoreTypes
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 
 private fun <K: Any, V : Any> nameSupplierFrom(topic: Topic<K, V>): () -> String = { "from-${topic.name}" }
 
@@ -66,50 +69,59 @@ override fun registerInternalTopology(internalTopology: org.apache.kafka.streams
     )
 }
 
+internal object Names {
+    private val names: MutableSet<Named> = mutableSetOf()
+
+    internal fun register(name: Named) {
+        if (names.contains(name)) error("$name already registered")
+        names.add(name)
+    }
+
+    internal fun clear() = names.clear()
+}
+
+@JvmInline
+value class Named(private val value: String) {
+    constructor(num: Int): this("$num")
+
+    init {
+        Names.register(this)
+    }
+
+    fun into() = org.apache.kafka.streams.kstream.Named.`as`(value)
+
+    operator fun plus(name: String): Named = Named("$value-$name")
+
+    override fun toString() = value
+}
+
 class Topology internal constructor() {
     private val builder = StreamsBuilder()
 
     fun <K: Any, V : Any> consume(topic: Topic<K, V>): ConsumedStream<K, V> {
-        val consumed = consumeWithLogging<K, V?>(topic).skipTombstone(topic)
-        return ConsumedStream(consumed, nameSupplierFrom(topic))
+        val stream = builder
+            .stream(topic.name, topic.consumed())
+            .addProcessor(LogConsumeTopicProcessor<K, V>(topic))
+            .skipTombstone(topic) 
+        return ConsumedStream(stream)
     }
 
     fun <K: Any, V : Any> consume(table: Table<K, V>): KTable<K, V> {
-        val stream = consumeWithLogging<K, V?>(table.sourceTopic)
-        return stream.toKTable(table)
+        return builder
+            .stream(table.sourceTopicName, table.sourceTopic.consumed())
+            .addProcessor(LogConsumeTopicProcessor<K, V?>(table.sourceTopic))
+            .toKTable(table)
     }
 
-    fun <K: Any, V : Any> consumeRepartitioned(table: Table<K, V>, partitions: Int): KTable<K, V> {
-        val internalKTable = consumeWithLogging<K, V?>(table.sourceTopic)
-            .repartition(repartitioned(table, partitions))
-            .addProcessor(LogProduceTableProcessor(table))
-            .toTable(
-                Named.`as`("${table.sourceTopicName}-to-table"),
-                materialized(table)
-            )
-
-        return KTable(table, internalKTable)
-    }
-
-    /**
-     * The topology does not allow duplicate named nodes.
-     * Somethimes it is necessary to consume the same topic again for mocking external responses.
-     */
-    fun <K: Any, V : Any> consumeForMock(topic: Topic<K, V>, namedPrefix: String = "mock"): ConsumedStream<K, V> {
-        val consumed = consumeWithLogging(topic, namedPrefix).skipTombstone(topic, namedPrefix)
-        val prefixedNamedSupplier = { "$namedPrefix-${nameSupplierFrom(topic).invoke()}" }
-        return ConsumedStream(consumed, prefixedNamedSupplier)
-    }
-
-    fun <K: Any, V : Any> consume(
+    fun <K: Any, V : Any> forEach(
         topic: Topic<K, V>,
         onEach: (key: K, value: V?, metadata: ProcessorMetadata) -> Unit,
-    ): ConsumedStream<K, V> {
-        val stream = consumeWithLogging<K, V?>(topic)
-        stream.addProcessor(MetadataProcessor(topic.name)).foreach { _, (kv, metadata) ->
-            onEach(kv.key, kv.value, metadata)
-        }
-        return ConsumedStream(stream.skipTombstone(topic), nameSupplierFrom(topic))
+    ) {
+        builder
+            .stream(topic.name, topic.consumed())
+            .addProcessor(LogConsumeTopicProcessor<K, V>(topic))
+            .addProcessor(MetadataProcessor())
+            .foreach { _, (kv, metadata) -> onEach(kv.key, kv.value, metadata) }
     }
 
     fun registerInternalTopology(stream: Streams) {
@@ -117,14 +129,6 @@ class Topology internal constructor() {
     }
 
     fun intercept(block: StreamsBuilder.() -> Unit) = builder.block()
-
-    private fun <K: Any, V> consumeWithLogging(topic: Topic<K, V & Any>): KStream<K, V> = consumeWithLogging(topic, "")
-
-    private fun <K: Any, V> consumeWithLogging(topic: Topic<K, V & Any>, namedSuffix: String): KStream<K, V> {
-        val consumeInternal = topic.consumed("consume-${topic.name}$namedSuffix")
-        val consumeLogger = LogConsumeTopicProcessor<K, V>(topic, namedSuffix)
-        return builder.stream(topic.name, consumeInternal).addProcessor(consumeLogger)
-    }
 }
 
 fun topology(init: Topology.() -> Unit): Topology = Topology().apply(init)

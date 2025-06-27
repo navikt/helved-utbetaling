@@ -2,6 +2,7 @@ package libs.kafka.processor
 
 import libs.kafka.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
 import org.apache.kafka.streams.state.ValueAndTimestamp
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -10,6 +11,11 @@ import kotlin.time.toDuration
 import kotlin.time.Duration
 
 internal class StateScheduleProcessorTest {
+
+    @AfterEach
+    fun cleanup() {
+        Names.clear()
+    }
 
     private class FilterScheduler(ktable: KTable<String, String>, interval: Duration): StateScheduleProcessor<String, String>(
         named = "filter-${ktable.table.stateStoreName}-scheduler",

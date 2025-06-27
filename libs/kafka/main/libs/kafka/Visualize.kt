@@ -222,7 +222,7 @@ class Mermaid(
         }
 
         private val String.topicShape get() = "$this([$this])"
-        private val String.joinShape get() = if (this.contains("-left-join-")) "$this{left-join}" else "$this{join}"
+        private val String.joinShape get() = if (this.contains("-leftjoin-")) "$this{leftjoin}" else "$this{join}"
         private val String.processorShape get() = "$this{operation}"
         private val String.storeShape get() = "$this[($this)]"
         private val String.jobShape get() = "$this(($this))"
@@ -238,7 +238,7 @@ class Mermaid(
             val statefulProcessors = processors.filter { it.stores().isNotEmpty() }
             val statefulJobs = statefulProcessors.filter { it.successors().isEmpty() }
             val statefulStores = statefulProcessors.flatMap(Processor::stores).distinct()
-            val statefulJoins = statefulProcessors.filter { it.name().contains("-join-") }
+            val statefulJoins = statefulProcessors.filter { it.name().contains("join-") }
             val customStateProcessorStreams = statefulProcessors.filter { it.name().contains("-operation-") }
             val jobNames = statefulJobs.map(Processor::name).distinct()
 

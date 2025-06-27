@@ -7,10 +7,16 @@ import libs.kafka.Topics
 import libs.kafka.produce
 import no.nav.aap.kafka.streams.v2.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 internal class JoinedStreamTest {
+
+    @AfterEach
+    fun cleanup() {
+        Names.clear()
+    }
 
     @Test
     fun `join topic with table`() {

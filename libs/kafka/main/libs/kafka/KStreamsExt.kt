@@ -1,18 +1,21 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package libs.kafka
 
-import libs.kafka.processor.*
+import libs.kafka.processor.LogProduceTableProcessor
+import libs.kafka.processor.LogProduceTopicProcessor
 import libs.kafka.processor.Processor.Companion.addProcessor
 import org.apache.kafka.common.utils.Bytes
-import org.apache.kafka.streams.kstream.*
-import org.apache.kafka.streams.state.*
+import org.apache.kafka.streams.kstream.Joined
+import org.apache.kafka.streams.kstream.KStream
+import org.apache.kafka.streams.kstream.Materialized
+import org.apache.kafka.streams.kstream.Repartitioned
+import org.apache.kafka.streams.state.KeyValueStore
+import org.apache.kafka.streams.kstream.KTable as _KTable
 
-internal fun <K: Any, V : Any> KStream<K, V>.produceWithLogging(
-    topic: Topic<K, V>,
-    named: String,
-) {
-    val logger = LogProduceTopicProcessor("log-${named}", topic)
-    val options = topic.produced(named)
-    return addProcessor(logger).to(topic.name, options)
+internal fun <K: Any, V : Any> KStream<K, V>.produceWithLogging(topic: Topic<K, V>) {
+    val logger = LogProduceTopicProcessor(topic)
+    return addProcessor(logger).to(topic.name, topic.produced())
 }
 
 internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.leftJoin(
@@ -31,7 +34,7 @@ internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.leftJoin(
     ktable: KTable<K, R>,
     joiner: (L, R?) -> LR,
 ): KStream<K, LR> {
-    val joined = Joined.with(leftSerdes.key, leftSerdes.value, ktable.table.serdes.value, named)
+    val joined = Joined.with(leftSerdes.key, leftSerdes.value, ktable.table.serdes.value, Named(named).toString())
     return leftJoin(ktable.internalKTable, joiner, joined)
 }
 
@@ -72,13 +75,11 @@ internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.join(
     return join(ktable, joiner, joined)
 }
 
-internal fun <K: Any, V : Any> KStream<K, V?>.toKTable(table: Table<K, V>): KTable<K, V> {
-    val internalKTable = addProcessor(LogProduceTableProcessor(table))
-        .toTable(
-            Named.`as`("${table.sourceTopicName}-to-table"),
-            materialized(table)
-        )
-
+internal fun <K: Any, V : Any> KStream<K, V?>.toKTable(
+    table: Table<K, V>,
+    named: String = "ktable-${table.sourceTopicName}"
+): KTable<K, V> {
+    val internalKTable = addProcessor(LogProduceTableProcessor(table)).toTable(Named(named).into(), materialized(table))
     return KTable(table, internalKTable)
 }
 
@@ -103,32 +104,18 @@ internal fun <K: Any, V : Any> materialized(table: Table<K, V>): Materialized<K,
         .withValueSerde(table.sourceTopic.serdes.value)
 }
 
-@Suppress("UNCHECKED_CAST")
 internal fun <K: Any, V> KStream<K, V>.filterNotNull(): KStream<K, V & Any> {
-    val filteredInternalKStream = filter { _, value -> value != null }
-    return filteredInternalKStream as KStream<K, V & Any>
+    return filter ({ _, value -> value != null }) as KStream<K, V & Any>
 }
 
-@Suppress("UNCHECKED_CAST")
-internal fun <K: Any, V> org.apache.kafka.streams.kstream.KTable<K, V>.skipTombstone(
-    table: Table<K, V & Any>
-): org.apache.kafka.streams.kstream.KTable<K, V & Any> {
-    val named = Named.`as`("skip-table-${table.sourceTopicName}-tombstone")
-    val filteredInternalKTable = filter({ _, value -> value != null }, named)
-    return filteredInternalKTable as org.apache.kafka.streams.kstream.KTable<K, V & Any>
+internal fun <K: Any, V> _KTable<K, V>.skipTombstone(
+    table: Table<K, V & Any>,
+    named: String = "ktable-${table.sourceTopicName}-skiptomb",
+): _KTable<K, V & Any> {
+    return filter({ _, value -> value != null } , Named(named).into()) as _KTable<K, V & Any>
 }
 
 internal fun <K: Any, V> KStream<K, V>.skipTombstone(topic: Topic<K, V & Any>): KStream<K, V & Any> {
-    return skipTombstone(topic, "")
-}
-
-@Suppress("UNCHECKED_CAST")
-internal fun <K: Any, V> KStream<K, V>.skipTombstone(
-    topic: Topic<K, V & Any>,
-    namedSuffix: String,
-): KStream<K, V & Any> {
-    val named = Named.`as`("skip-${topic.name}-tombstone$namedSuffix")
-    val filteredInternalStream = filter({ _, value -> value != null }, named)
-    return filteredInternalStream as KStream<K, V & Any>
+    return filter({ _, value -> value != null }) as KStream<K, V & Any>
 }
 

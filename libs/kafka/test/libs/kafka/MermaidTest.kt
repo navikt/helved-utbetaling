@@ -5,9 +5,15 @@ import libs.kafka.Tables
 import libs.kafka.Topics
 import libs.kafka.produce
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
 
 class MermaidTest {
+
+    @AfterEach
+    fun cleanup() {
+        Names.clear()
+    }
 
     @Test
     fun `join i en stream og initier i en annen`() {

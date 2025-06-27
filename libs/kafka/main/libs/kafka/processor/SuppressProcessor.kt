@@ -3,6 +3,7 @@ package libs.kafka.processor
 import libs.kafka.StateStoreName
 import libs.kafka.StreamSerde
 import libs.kafka.StreamsPair
+import libs.kafka.Store
 import org.apache.kafka.streams.kstream.Windowed
 import org.apache.kafka.streams.processor.PunctuationType
 import org.apache.kafka.streams.processor.api.Processor
@@ -21,6 +22,14 @@ class SuppressProcessor<K: Any, V: Any>(
 ): Processor<Windowed<K>, List<StreamsPair<V, V?>>, K, List<StreamsPair<V, V?>>> {
 
     companion object {
+        fun <K: Any, V: Any> supplier(
+            store: Store<Windowed<K>, List<StreamsPair<V, V?>>>,
+            punctuationInterval: Duration,
+            inactivityGap: Duration,
+        ):ProcessorSupplier<Windowed<K>, List<StreamsPair<V, V?>>, K, List<StreamsPair<V, V?>>> {
+            return supplier(store.serde.key, store.serde.value, punctuationInterval, inactivityGap, store.name)
+        }
+
         fun <K: Any, V: Any> supplier(
             keySerde: StreamSerde<Windowed<K>>,
             valueSerde: StreamSerde<List<StreamsPair<V, V?>>>,
