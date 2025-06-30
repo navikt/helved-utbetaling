@@ -35,8 +35,10 @@ COPY --from=jre /customjre $JAVA_HOME
 COPY apps/*/build/libs/*-all.jar /app.jar
 ENTRYPOINT [                           \
     "java",                            \
-    "-XX:MaxRAMPercentage=60.0",       \
+    "-XX:+UseG1GC",                    \
+    "-XX:MaxRAMPercentage=70.0",       \
     "-XX:ActiveProcessorCount=2",      \
+    "-XX:+UseStringDeduplication",     \
     "-XX:+HeapDumpOnOutOfMemoryError", \
     "-XX:HeapDumpPath=/tmp",           \
     "-jar",                            \
