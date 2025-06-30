@@ -92,10 +92,10 @@ fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?
 
    return utbetalingerPerMeldekort.map { (uid, dpUtbetaling) -> 
         val utbetaling = when (dpUtbetaling) {
-            null -> fakeDelete(dpKey, sakKey.sakId, uid).also { appLog.info("creating a fake delete to force-trigger a join with existing utbetaling") }
+            null -> fakeDelete(dpKey, sakKey.sakId, uid).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
             else -> toDomain(dpKey, dpUtbetaling, uids, uid)
         }
-        appLog.info("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
+        appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
         KeyValue(utbetaling.uid.id.toString(), utbetaling)
    }
 }
