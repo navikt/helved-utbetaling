@@ -10,8 +10,9 @@ import libs.kafka.Streams
 import libs.kafka.Topic
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
+import libs.utils.appLog
+import libs.utils.secureLog
 import java.time.Instant
-import libs.utils.*
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/actuator") {
@@ -34,36 +35,74 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 }
 
 fun Route.api(manuellKvitteringService: ManuellKvitteringService) {
-    get("/api") {
-        val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
-        val limit = call.queryParameters["limit"]?.toInt() ?: 10000
-        val key = call.queryParameters["key"]?.split(",")
-        val value = call.queryParameters["value"]?.split(",")
-        val fom = call.queryParameters["fom"]
-            ?.runCatching { Instant.parse(this).toEpochMilli() }
-            ?.getOrNull()
-        val tom = call.queryParameters["tom"]
-            ?.runCatching { Instant.parse(this).toEpochMilli() }
-            ?.getOrNull()
+    route("/api") {
+        get {
+            val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
+            val limit = call.queryParameters["limit"]?.toInt() ?: 10000
+            val key = call.queryParameters["key"]?.split(",")
+            val value = call.queryParameters["value"]?.split(",")
+            val fom = call.queryParameters["fom"]
+                ?.runCatching { Instant.parse(this).toEpochMilli() }
+                ?.getOrNull()
+            val tom = call.queryParameters["tom"]
+                ?.runCatching { Instant.parse(this).toEpochMilli() }
+                ?.getOrNull()
 
-        val daos = withContext(Jdbc.context + Dispatchers.IO) {
-            transaction {
-                coroutineScope {
-                    val deferred = channels.map { channel ->
-                        async {
-                            Dao.find(channel.table, limit, key, value, fom, tom)
+            val daos = withContext(Jdbc.context + Dispatchers.IO) {
+                transaction {
+                    coroutineScope {
+                        val deferred = channels.map { channel ->
+                            async {
+                                Dao.find(channel.table, limit, key, value, fom, tom)
+                            }
                         }
-                    }
 
-                    deferred.awaitAll()
-                        .flatten()
-                        .sortedByDescending { it.timestamp_ms }
-                        .take(limit)
+                        deferred.awaitAll()
+                            .flatten()
+                            .sortedByDescending { it.timestamp_ms }
+                            .take(limit)
+                    }
                 }
             }
+
+            call.respond(daos)
         }
 
-        call.respond(daos)
+        route("/saker") {
+            get {
+                val saker = withContext(Jdbc.context + Dispatchers.IO) {
+                    transaction {
+                        Dao.find(Channel.Saker.table, Integer.MAX_VALUE)
+                    }
+                }
+
+                call.respond(saker)
+            }
+
+            get("/{sakId}/{fagsystem}") {
+                val sakId = call.parameters["sakId"]!!
+                val fagsystem = call.parameters["fagsystem"]!!
+
+                val hendelser: List<Dao> = withContext(Jdbc.context + Dispatchers.IO) {
+                    transaction {
+                        coroutineScope {
+                            val deferred: List<Deferred<List<Dao>>> = listOf(
+                                async { Dao.findOppdrag(sakId, fagsystem) },
+                                async { Dao.findKvitteringer(sakId, fagsystem) },
+                                async { Dao.findUtbetalinger(sakId, fagsystem) },
+                                async { Dao.findSimuleringer(sakId, fagsystem) },
+                            )
+
+                            deferred.awaitAll()
+                                .flatten()
+                                .sortedByDescending { it.timestamp_ms }
+                        }
+                    }
+                }
+
+                call.respond(hendelser)
+            }
+        }
     }
 
     post("/manuell-kvittering") {

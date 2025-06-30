@@ -84,6 +84,84 @@ data class Dao(
                 stmt.executeQuery().map(::from)
             }
         }
+
+        suspend fun findOppdrag(sakId: String, fagsystem: String): List<Dao> {
+            val sql = """
+                SELECT *
+                FROM oppdrag
+                WHERE
+                    (xpath(
+                            '//ns2:oppdrag/oppdrag-110/fagsystemId/text()',
+                            record_value::xml,
+                            ARRAY[ARRAY['ns2', 'http://www.trygdeetaten.no/skjema/oppdrag']]
+                     ))[1]::text = '$sakId'
+                  AND
+                    (xpath(
+                            '//ns2:oppdrag/oppdrag-110/kodeFagomraade/text()',
+                            record_value::xml,
+                            ARRAY[ARRAY['ns2', 'http://www.trygdeetaten.no/skjema/oppdrag']]
+                     ))[1]::text = '$fagsystem';
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery()?.map(::from) ?: emptyList()
+            }
+        }
+
+        suspend fun findKvitteringer(sakId: String, fagsystem: String): List<Dao> {
+            val sql = """
+                SELECT *
+                FROM kvittering
+                WHERE
+                    (xpath(
+                            '//ns2:oppdrag/oppdrag-110/fagsystemId/text()',
+                            record_value::xml,
+                            ARRAY[ARRAY['ns2', 'http://www.trygdeetaten.no/skjema/oppdrag']]
+                     ))[1]::text = '$sakId'
+                  AND
+                    (xpath(
+                            '//ns2:oppdrag/oppdrag-110/kodeFagomraade/text()',
+                            record_value::xml,
+                            ARRAY[ARRAY['ns2', 'http://www.trygdeetaten.no/skjema/oppdrag']]
+                     ))[1]::text = '$fagsystem';
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
+        suspend fun findUtbetalinger(sakId: String, fagsystem: String): List<Dao> {
+            val sql = """
+                SELECT *
+                FROM utbetalinger
+                WHERE json(record_value) ->> 'fagsystem' = '$fagsystem' AND json(record_value) ->> 'sakId' = '$sakId';
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
+        suspend fun findSimuleringer(sakId: String, fagsystem: String): List<Dao> {
+            val sql = """
+                SELECT *
+                FROM simuleringer
+                WHERE json(record_value) ->> 'fagsystem' = '$fagsystem' AND json(record_value) ->> 'sakId' = '$sakId';
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
     }
 
     suspend fun insert(table: Table) {
