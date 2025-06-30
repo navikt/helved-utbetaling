@@ -15,6 +15,7 @@ import java.time.Instant
 import java.util.UUID
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import org.junit.jupiter.api.Disabled
 import kotlin.test.*
 
 class ApiTest {
@@ -162,6 +163,23 @@ class ApiTest {
         assertEquals("00", updatedMessage.mmel.alvorlighetsgrad)
         assertEquals("Test", updatedMessage.mmel.beskrMelding)
         assertEquals("Test", updatedMessage.mmel.kodeMelding)
+    }
+
+    @Test
+    fun `get saker`() = runTest(TestRuntime.context) {
+        TestRuntime.ktor.httpClient.get("/api/saker") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<Dao>>()
+    }
+
+    @Disabled("Denne feiler om man kjører den sammen med andre tester som produserer ugyldig json/xml i db")
+    @Test
+    fun `get hendelser for sak`() = runTest(TestRuntime.context) {
+        TestRuntime.ktor.httpClient.get("/api/saker/test/test") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<Dao>>()
     }
 
     private suspend fun save(
