@@ -12,10 +12,10 @@ val libVersion = "3.1.168"
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:mq"))
 
     implementation("no.nav.helved:utils:$libVersion")
     implementation("no.nav.helved:auth:$libVersion")
-    implementation("no.nav.helved:mq:$libVersion")
     implementation("no.nav.helved:ws:$libVersion")
     implementation("no.nav.helved:xml:$libVersion")
 
@@ -30,7 +30,7 @@ dependencies {
     testImplementation(kotlin("test")) 
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
+    testImplementation(project(":libs:mq-test"))
     testImplementation("no.nav.helved:auth-test:$libVersion")
-    testImplementation("no.nav.helved:mq-test:$libVersion")
     testImplementation("org.apache.kafka:kafka-streams:4.0.0") // StreamsConfig
 }

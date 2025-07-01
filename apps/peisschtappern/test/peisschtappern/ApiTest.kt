@@ -197,7 +197,8 @@ class ApiTest {
             offset = 1,
             timestamp_ms = timestamp,
             stream_time_ms = timestamp,
-            system_time_ms = timestamp
+            system_time_ms = timestamp,
+            trace_id = null,
         )
 
         transaction {
