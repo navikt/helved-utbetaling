@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.kafka.*
+import libs.tracing.*
 import libs.postgres.Jdbc
 import libs.postgres.concurrency.transaction
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -49,6 +50,7 @@ private fun Topology.save(topic: Topic<String, ByteArray>, table: Table) {
                         timestamp_ms = metadata.timestamp,
                         stream_time_ms = metadata.streamTimeMs,
                         system_time_ms = metadata.systemTimeMs,
+                        trace_id = Tracing.getCurrentTraceId(),
                     ).insert(table)
                 }
             }

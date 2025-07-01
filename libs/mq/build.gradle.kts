@@ -1,0 +1,14 @@
+val libVersion = "3.1.165"
+
+dependencies {
+    api(project(":libs:tracing"))
+
+    api("no.nav.helved:utils:$libVersion")
+    api("no.nav.helved:xml:$libVersion")
+
+    api("com.ibm.mq:com.ibm.mq.allclient:9.4.1.0")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+
+    testImplementation(kotlin("test"))
+    testImplementation(project(":libs:mq-test"))
+}

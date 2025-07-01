@@ -22,4 +22,7 @@ include(
     "libs:kafka",
     "libs:kafka-test",
     "libs:ktor-test",
+    "libs:mq",
+    "libs:mq-test",
+    "libs:tracing",
 )
