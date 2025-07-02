@@ -26,7 +26,7 @@ import kotlinx.coroutines.withContext
 import libs.auth.*
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
-import libs.postgres.*
+import libs.jdbc.*
 import libs.utils.*
 import models.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
@@ -34,7 +34,6 @@ import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.iverksetting
 import utsjekk.simulering.SimuleringValidator
 import utsjekk.simulering.simulering
-import utsjekk.task.tasks
 import utsjekk.utbetaling.UtbetalingService
 import utsjekk.utbetaling.simulering.SimuleringService
 import utsjekk.utbetaling.utbetalingRoute
@@ -138,7 +137,6 @@ fun Application.utsjekk(
             iverksetting(iverksettingService)
             simulering(simuleringValidator, simulering)
             utbetalingRoute(simuleringService, utbetalingService)
-            tasks()
         }
 
         probes(metrics)

@@ -3,9 +3,9 @@ package vedskiva
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.kafka.KafkaFactory
-import libs.postgres.Jdbc
-import libs.postgres.Migrator
-import libs.postgres.concurrency.transaction
+import libs.jdbc.Jdbc
+import libs.jdbc.Migrator
+import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.*

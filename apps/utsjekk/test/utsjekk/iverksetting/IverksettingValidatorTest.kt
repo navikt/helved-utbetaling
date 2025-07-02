@@ -3,7 +3,7 @@ package utsjekk.iverksetting
 import TestData
 import TestRuntime
 import kotlinx.coroutines.test.runTest
-import libs.postgres.concurrency.transaction
+import libs.jdbc.concurrency.transaction
 import models.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue

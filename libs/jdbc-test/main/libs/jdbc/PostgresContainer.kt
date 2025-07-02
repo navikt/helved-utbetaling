@@ -1,6 +1,6 @@
 package libs.jdbc
 
-import libs.postgres.JdbcConfig
+import libs.jdbc.JdbcConfig
 import libs.utils.env
 import org.testcontainers.containers.PostgreSQLContainer
 

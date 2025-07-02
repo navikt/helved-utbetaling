@@ -8,8 +8,8 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.*
 import libs.kafka.Streams
 import libs.kafka.Topic
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.transaction
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import libs.utils.secureLog
 import java.time.Instant

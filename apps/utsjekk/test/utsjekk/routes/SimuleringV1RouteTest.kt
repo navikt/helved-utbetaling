@@ -14,7 +14,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.coroutines.test.runTest
-import libs.postgres.concurrency.transaction
+import libs.jdbc.concurrency.transaction
 import models.kontrakter.felles.Fagsystem
 import models.kontrakter.felles.StønadTypeDagpenger
 import models.kontrakter.felles.StønadTypeTiltakspenger

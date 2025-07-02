@@ -1,6 +1,6 @@
 package utsjekk.iverksetting.resultat
 
-import libs.postgres.concurrency.transaction
+import libs.jdbc.concurrency.transaction
 import utsjekk.iverksetting.*
 
 object IverksettingResultater {

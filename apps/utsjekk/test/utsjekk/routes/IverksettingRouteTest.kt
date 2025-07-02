@@ -12,7 +12,7 @@ import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import libs.postgres.concurrency.transaction
+import libs.jdbc.concurrency.transaction
 import libs.jdbc.*
 import models.Status
 import models.StatusReply

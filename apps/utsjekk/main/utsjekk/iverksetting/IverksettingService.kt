@@ -1,8 +1,8 @@
 package utsjekk.iverksetting
 
 import kotlinx.coroutines.withContext
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.transaction
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
 import models.kontrakter.felles.Fagsystem
 import models.kontrakter.iverksett.IverksettStatus

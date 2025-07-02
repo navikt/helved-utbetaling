@@ -5,8 +5,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.kafka.*
 import libs.utils.*
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.transaction
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.transaction
 import models.*
 import models.StatusReply
 import models.kontrakter.oppdrag.OppdragStatus

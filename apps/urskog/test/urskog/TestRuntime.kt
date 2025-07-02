@@ -28,6 +28,7 @@ object TestRuntime {
     val fakes: HttpFakes = HttpFakes()
     val config: Config = TestConfig.create(fakes.proxyConfig, fakes.azureConfig, fakes.simuleringConfig)
     val ktor = KtorRuntime<Config>(
+        appName = "urskog",
         module = {
             urskog(config, kafka, mq)
         },

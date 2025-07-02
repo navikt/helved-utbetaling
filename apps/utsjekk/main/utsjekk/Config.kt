@@ -4,7 +4,7 @@ import java.net.URI
 import java.net.URL
 import libs.auth.AzureConfig
 import libs.kafka.StreamsConfig
-import libs.postgres.JdbcConfig
+import libs.jdbc.JdbcConfig
 import libs.utils.env
 
 data class Config(

@@ -1,8 +1,8 @@
 package utsjekk.utbetaling
 
 import kotlinx.coroutines.withContext
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.transaction
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.transaction
 import libs.utils.Err
 import libs.utils.Result
 import libs.kafka.KafkaProducer

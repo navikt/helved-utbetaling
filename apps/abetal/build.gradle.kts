@@ -12,9 +12,9 @@ val libVersion = "3.1.171"
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:utils"))
 
     implementation("no.nav.helved:xml:$libVersion")
-    implementation("no.nav.helved:utils:$libVersion")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.17.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")

@@ -3,8 +3,8 @@ package vedskiva
 import java.sql.ResultSet
 import java.time.LocalDate
 import kotlin.coroutines.coroutineContext
-import libs.postgres.concurrency.connection
-import libs.postgres.map
+import libs.jdbc.concurrency.connection
+import libs.jdbc.map
 import libs.utils.logger
 import libs.utils.secureLog
 

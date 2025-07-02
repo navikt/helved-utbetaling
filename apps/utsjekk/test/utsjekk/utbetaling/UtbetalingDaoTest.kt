@@ -2,7 +2,7 @@ package utsjekk.utbetaling
 
 import TestRuntime
 import kotlinx.coroutines.test.runTest
-import libs.postgres.concurrency.transaction
+import libs.jdbc.concurrency.transaction
 import libs.utils.onFailure
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

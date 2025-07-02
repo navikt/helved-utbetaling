@@ -5,8 +5,8 @@ import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.coroutines.coroutineContext
-import libs.postgres.*
-import libs.postgres.concurrency.connection
+import libs.jdbc.*
+import libs.jdbc.concurrency.connection
 import libs.utils.*
 import libs.utils.secureLog
 import models.kontrakter.felles.objectMapper

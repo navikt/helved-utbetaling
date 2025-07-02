@@ -1,0 +1,5 @@
+CREATE TABLE TEST_TABLE3
+(
+    id    UUID PRIMARY KEY,
+    data  TEXT NOT NULL
+);

@@ -1,8 +1,8 @@
 package utsjekk.utbetaling.simulering
 
 import kotlinx.coroutines.withContext
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.transaction
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.transaction
 import utsjekk.clients.SimuleringClient
 import utsjekk.notFound
 import utsjekk.utbetaling.FagsystemDto

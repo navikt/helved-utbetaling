@@ -16,8 +16,8 @@ import kotlinx.coroutines.*
 import libs.jdbc.*
 import libs.kafka.*
 import libs.ktor.*
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.*
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.*
 import libs.utils.logger
 import java.io.File
 import java.net.URI
@@ -47,7 +47,7 @@ object TestRuntime {
     }
 
     fun reset() {
-        jdbc.truncate(Scheduled.TABLE_NAME)
+        jdbc.truncate("vedskiva", Scheduled.TABLE_NAME)
         kafka.reset()
         PeisschtappernFake.response.clear()
     }
@@ -58,7 +58,7 @@ val http: HttpClient by lazy {
 }
 
 class AzureFake {
-    private val server = KtorRuntime<Nothing>(AzureFake::azure)
+    private val server = KtorRuntime<Nothing>("vedskiva.azure", AzureFake::azure)
 
     fun generateToken() = jwksGenerator.generate()
 
@@ -90,7 +90,7 @@ class AzureFake {
 }
 
 class PeisschtappernFake {
-    private val server = KtorRuntime<Nothing>(PeisschtappernFake::server)
+    private val server = KtorRuntime<Nothing>("vedskiva.peisschtappern", PeisschtappernFake::server)
 
     companion object {
         val response = mutableListOf<Dao>()
