@@ -1,4 +1,4 @@
-val libVersion = "3.1.165"
+val libVersion = "3.1.171"
 val ktorVersion = "3.2.0"
 
 dependencies {
