@@ -3,8 +3,8 @@ package vedskiva
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.transaction
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.transaction
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
 import no.trygdeetaten.skjema.oppdrag.*
 import org.junit.jupiter.api.BeforeEach

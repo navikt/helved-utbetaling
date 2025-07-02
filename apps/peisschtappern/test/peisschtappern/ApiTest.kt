@@ -10,7 +10,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.coroutines.test.runTest
-import libs.postgres.concurrency.transaction
+import libs.jdbc.concurrency.transaction
 import java.time.Instant
 import java.util.UUID
 import libs.xml.XMLMapper

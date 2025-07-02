@@ -13,10 +13,10 @@ import kotlinx.coroutines.flow.firstOrNull
 import libs.jdbc.*
 import libs.kafka.*
 import libs.ktor.KtorRuntime
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.CoroutineDatasource
-import libs.postgres.concurrency.connection
-import libs.postgres.concurrency.transaction
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
+import libs.jdbc.concurrency.connection
+import libs.jdbc.concurrency.transaction
 import libs.utils.logger
 import java.io.File
 import javax.sql.DataSource
@@ -37,11 +37,12 @@ object TestRuntime {
     )
 
     val ktor = KtorRuntime<Config>(
+        appName = "peisschtappern",
         module = { 
             peisschtappern(config, kafka, vanillaKafka)
         },
         onClose = {
-            jdbc.truncate(*Table.values().map{it.name}.toTypedArray())
+            jdbc.truncate("peisschtappern", *Table.values().map{it.name}.toTypedArray())
             postgres.close()
             azure.close()
         }

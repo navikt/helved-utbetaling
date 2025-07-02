@@ -2,8 +2,8 @@ package utsjekk.iverksetting.resultat
 
 import java.sql.ResultSet
 import kotlin.coroutines.coroutineContext
-import libs.postgres.*
-import libs.postgres.concurrency.connection
+import libs.jdbc.*
+import libs.jdbc.concurrency.connection
 import libs.utils.*
 import models.kontrakter.felles.Fagsystem
 import models.kontrakter.felles.objectMapper

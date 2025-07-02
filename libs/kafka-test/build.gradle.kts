@@ -1,8 +1,6 @@
-val libVersion = "3.1.171"
-
 dependencies {
     implementation(project(":libs:kafka"))
-    implementation("no.nav.helved:utils:$libVersion")
+    implementation(project(":libs:utils"))
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.15.1")
     implementation("org.apache.kafka:kafka-streams:4.0.0")

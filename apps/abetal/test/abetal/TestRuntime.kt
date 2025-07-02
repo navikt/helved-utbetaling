@@ -36,6 +36,7 @@ object TestRuntime {
         })
     )
     val ktor = KtorRuntime<Config>(
+        appName = "abetal",
         module = {
             abetal(
                 config = config, 

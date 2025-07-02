@@ -9,7 +9,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import libs.postgres.concurrency.transaction
+import libs.jdbc.concurrency.transaction
 import models.StatusReply
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

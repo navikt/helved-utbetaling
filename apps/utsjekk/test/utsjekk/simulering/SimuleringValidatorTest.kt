@@ -11,7 +11,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
-import libs.postgres.concurrency.transaction
+import libs.jdbc.concurrency.transaction
 import models.kontrakter.felles.StønadTypeDagpenger
 import models.kontrakter.iverksett.StønadsdataDagpengerDto
 import models.kontrakter.oppdrag.OppdragStatus

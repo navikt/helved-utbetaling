@@ -2,8 +2,8 @@ val libVersion = "3.1.171"
 
 dependencies {
     api(project(":libs:tracing"))
+    api(project(":libs:utils"))
 
-    api("no.nav.helved:utils:$libVersion")
     api("no.nav.helved:xml:$libVersion")
 
     api("com.ibm.mq:com.ibm.mq.allclient:9.4.1.0")

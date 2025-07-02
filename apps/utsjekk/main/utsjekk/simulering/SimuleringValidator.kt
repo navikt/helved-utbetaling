@@ -1,7 +1,7 @@
 package utsjekk.simulering
 
 import kotlinx.coroutines.withContext
-import libs.postgres.Jdbc
+import libs.jdbc.Jdbc
 import models.kontrakter.oppdrag.OppdragStatus
 import utsjekk.badRequest
 import utsjekk.conflict

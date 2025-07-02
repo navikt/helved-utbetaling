@@ -15,12 +15,10 @@ import kotlinx.coroutines.flow.firstOrNull
 import libs.jdbc.*
 import libs.kafka.StreamsMock
 import libs.ktor.*
-import libs.postgres.Jdbc
-import libs.postgres.concurrency.CoroutineDatasource
-import libs.postgres.concurrency.connection
-import libs.postgres.concurrency.transaction
-import libs.task.TaskDao
-import libs.task.TaskHistoryDao
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
+import libs.jdbc.concurrency.connection
+import libs.jdbc.concurrency.transaction
 import libs.utils.logger
 import utsjekk.Config
 import utsjekk.Topics
@@ -57,13 +55,13 @@ object TestRuntime {
         kafka = kafka.config,
     )
     val ktor = KtorRuntime<Config>(
+        appName = "utsjekk",
         module = {
             utsjekk(config, kafka)
         },
         onClose = {
             jdbc.truncate(
-                TaskDao.TABLE_NAME,
-                TaskHistoryDao.TABLE_NAME,
+                "utsjekk",
                 IverksettingDao.TABLE_NAME,
                 IverksettingResultatDao.TABLE_NAME,
                 UtbetalingDao.TABLE_NAME,

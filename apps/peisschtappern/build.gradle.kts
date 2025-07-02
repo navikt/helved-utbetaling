@@ -10,13 +10,12 @@ val ktorVersion = "3.2.0"
 val libVersion = "3.1.171"
 
 dependencies {
+    implementation(project(":libs:auth"))
+    implementation(project(":libs:jdbc"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:tracing"))
+    implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:$libVersion")
-
-    implementation("no.nav.helved:auth:$libVersion")
-    implementation("no.nav.helved:jdbc:$libVersion")
-    implementation("no.nav.helved:utils:$libVersion")
 
     implementation("org.apache.kafka:kafka-clients:4.0.0")
 
@@ -35,6 +34,6 @@ dependencies {
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:jdbc-test"))
-    testImplementation("no.nav.helved:auth-test:$libVersion")
+    testImplementation(project(":libs:auth-test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }

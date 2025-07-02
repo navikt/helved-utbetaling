@@ -12,25 +12,19 @@ val libVersion = "3.1.171"
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
-
-    implementation("no.nav.helved:auth:$libVersion")
-    implementation("no.nav.helved:jdbc:$libVersion")
-    implementation("no.nav.helved:job:$libVersion")
+    implementation(project(":libs:auth"))
+    implementation(project(":libs:jdbc"))
     implementation("no.nav.helved:xml:$libVersion")
-    implementation("no.nav.helved:task:$libVersion")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.17.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
-
     implementation("org.apache.kafka:kafka-clients:4.0.0")
-
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.15.1")
-
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
 
@@ -38,7 +32,7 @@ dependencies {
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:jdbc-test"))
+    testImplementation(project(":libs:auth-test"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
-    testImplementation("no.nav.helved:auth-test:$libVersion")
 }
 

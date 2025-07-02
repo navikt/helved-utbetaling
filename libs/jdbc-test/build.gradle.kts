@@ -1,8 +1,6 @@
-val libVersion = "3.1.171"
-
 dependencies {
-    implementation("no.nav.helved:jdbc:$libVersion")
-    implementation("no.nav.helved:utils:$libVersion")
+    implementation(project(":libs:utils"))
+    implementation(project(":libs:jdbc"))
     implementation(kotlin("test"))
     api("org.testcontainers:postgresql:1.21.3")
 }

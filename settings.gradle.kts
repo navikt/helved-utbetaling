@@ -18,11 +18,19 @@ include(
 )
 
 include(
+    "libs:auth",
+    "libs:auth-test",
+    "libs:cache",
+    "libs:http",
+    "libs:jdbc",
     "libs:jdbc-test",
     "libs:kafka",
     "libs:kafka-test",
+    "libs:ktor",
     "libs:ktor-test",
     "libs:mq",
     "libs:mq-test",
     "libs:tracing",
+    "libs:utils",
+    "libs:ws",
 )

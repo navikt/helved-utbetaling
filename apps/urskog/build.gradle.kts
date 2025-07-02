@@ -11,12 +11,12 @@ val libVersion = "3.1.171"
 
 dependencies {
     implementation(project(":models"))
+    implementation(project(":libs:auth"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:mq"))
+    implementation(project(":libs:utils"))
+    implementation(project(":libs:ws"))
 
-    implementation("no.nav.helved:utils:$libVersion")
-    implementation("no.nav.helved:auth:$libVersion")
-    implementation("no.nav.helved:ws:$libVersion")
     implementation("no.nav.helved:xml:$libVersion")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
@@ -28,9 +28,9 @@ dependencies {
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
 
     testImplementation(kotlin("test")) 
+    testImplementation(project(":libs:auth-test"))
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:mq-test"))
-    testImplementation("no.nav.helved:auth-test:$libVersion")
     testImplementation("org.apache.kafka:kafka-streams:4.0.0") // StreamsConfig
 }

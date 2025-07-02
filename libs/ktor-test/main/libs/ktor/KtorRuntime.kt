@@ -17,6 +17,7 @@ import libs.utils.logger
 private val testLog = logger("test")
 
 open class KtorRuntime<Config: Any>(
+    val appName: String,
     val module: Application.() -> Unit,
     val onClose: () -> Unit = {}, 
 ) {
@@ -28,7 +29,7 @@ open class KtorRuntime<Config: Any>(
         }
 
         Runtime.getRuntime().addShutdownHook(Thread {
-            testLog.info("Shutting down TestRunner")
+            testLog.info("Shutting down $appName TestRunner")
             onClose()
             ktor.stop(1000L, 5000L)
         })

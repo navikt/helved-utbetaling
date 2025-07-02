@@ -1,6 +1,6 @@
 package utsjekk.iverksetting.abetal
 
-import libs.postgres.concurrency.transaction
+import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import models.kontrakter.felles.BrukersNavKontor
 import models.kontrakter.felles.Satstype

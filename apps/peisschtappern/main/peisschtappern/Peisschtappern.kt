@@ -23,8 +23,8 @@ import libs.auth.configure
 import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
-import libs.postgres.Jdbc
-import libs.postgres.Migrator
+import libs.jdbc.Jdbc
+import libs.jdbc.Migrator
 import libs.utils.*
 
 fun main() {

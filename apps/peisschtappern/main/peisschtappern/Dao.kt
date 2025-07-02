@@ -1,7 +1,7 @@
 package peisschtappern
 
-import libs.postgres.concurrency.connection
-import libs.postgres.map
+import libs.jdbc.concurrency.connection
+import libs.jdbc.map
 import libs.utils.logger
 import libs.utils.secureLog
 import java.sql.ResultSet

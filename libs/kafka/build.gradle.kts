@@ -1,8 +1,7 @@
-val ktorVersion = "3.0.2"
 val libVersion = "3.1.171"
 
 dependencies {
-    implementation("no.nav.helved:utils:$libVersion")
+    implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:$libVersion")
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.15.1")

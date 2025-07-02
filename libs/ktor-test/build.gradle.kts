@@ -1,8 +1,7 @@
-val libVersion = "3.1.171"
 val ktorVersion = "3.2.0"
 
 dependencies {
-    api("no.nav.helved:utils:$libVersion")
+    api(project(":libs:utils"))
     api("io.ktor:ktor-client-cio:$ktorVersion")
     api("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     api("io.ktor:ktor-server-netty:$ktorVersion")

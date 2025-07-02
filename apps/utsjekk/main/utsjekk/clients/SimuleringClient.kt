@@ -9,7 +9,7 @@ import io.ktor.http.*
 import kotlinx.coroutines.withContext
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
-import libs.postgres.Jdbc
+import libs.jdbc.Jdbc
 import models.kontrakter.oppdrag.Utbetalingsoppdrag
 import utsjekk.*
 import utsjekk.iverksetting.UtbetalingId

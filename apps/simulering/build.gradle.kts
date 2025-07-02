@@ -8,15 +8,14 @@ application {
 
 val ktorVersion = "3.2.0"
 val libVersion = "3.1.171"
-val kontraktVersion = "1.0_20241213145703_7ff5f9c"
 
 dependencies {
     implementation(project(":models"))
-    implementation("no.nav.helved:auth:$libVersion")
-    implementation("no.nav.helved:http:$libVersion")
-    implementation("no.nav.helved:ktor:$libVersion")
-    implementation("no.nav.helved:utils:$libVersion")
-    implementation("no.nav.helved:ws:$libVersion")
+    implementation(project(":libs:http"))
+    implementation(project(":libs:auth"))
+    implementation(project(":libs:ktor"))
+    implementation(project(":libs:utils"))
+    implementation(project(":libs:ws"))
     implementation("no.nav.helved:xml:$libVersion")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.17.0-alpha")
@@ -35,6 +34,6 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.1")
 
     testImplementation(kotlin("test"))
+    testImplementation(project(":libs:auth-test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    testImplementation("no.nav.helved:auth-test:$libVersion")
 }
