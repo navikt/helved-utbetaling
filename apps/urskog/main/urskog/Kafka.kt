@@ -103,7 +103,7 @@ fun Topology.avstemming(avstemProducer: AvstemmingMQProducer) {
 
 private fun statusReply(o: Oppdrag): StatusReply {
     return when (o.mmel) {
-        null -> StatusReply(Status.OK)
+        null -> StatusReply(Status.OK) // TODO: denne kan skape feil hvis statusReply blir kalt fra et sted som ikke har kvittering
         else -> when (o.mmel.alvorlighetsgrad) {
             "00" -> StatusReply.ok(o)
             "04" -> StatusReply.ok(o, ApiError(200, o.mmel.beskrMelding))
