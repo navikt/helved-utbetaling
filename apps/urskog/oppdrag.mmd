@@ -1,0 +1,25 @@
+---
+config:
+  theme: neo-dark
+  layout: dagre
+  look: neo
+---
+flowchart
+ subgraph Topologi["urskog"]
+        oppdrag(["helved.oppdrag.v1"])
+        status(["helved.status.v1"])
+        kvittering(["helved.kvittering.v1"])
+        keystore[("fk to uid")]
+        kvittering-store[("kvittering")]
+        keystore-join-kvittering-store{"join"}
+  end
+  
+    oppdrag --> |rekey to fk| keystore
+    oppdrag --> QA.Q1_231.OB04_OPPDRAG_XML 
+    oppdrag --> |HOS_OPPDRAG| status
+    QA.Q1_DP_OPPDRAG.OPPDRAG_DP_XML_KVITT --> kvittering
+    kvittering --> |rekey to fk| kvittering-store
+    kvittering-store --> keystore-join-kvittering-store
+    keystore --> keystore-join-kvittering-store
+    keystore-join-kvittering-store --> oppdrag
+

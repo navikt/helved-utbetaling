@@ -1,0 +1,21 @@
+---
+config:
+  theme: neo-dark
+  layout: dagre
+  look: neo
+---
+flowchart LR
+ subgraph Topologi["urskog"]
+        simuleringer(["helved.simuleringer.v1"])
+        status(["helved.status.v1"])
+        dryrun-aap(["helved.dryrun-aap.v1"])
+        dryrun-tp(["helved.dryrun-tp.v1"])
+        dryrun-ts(["helved.dryrun-ts.v1"])
+  end
+    simuleringer --> |filter AAP| dryrun-aap
+    simuleringer --> |filter tiltakspenger| dryrun-tp
+    simuleringer --> |filter tilleggsstønader| dryrun-ts
+    simuleringer --> |bad request| status
+    simuleringer <--> helved-ws-proxy
+    helved-ws-proxy <--> |get sts token| Gandalf
+    helved-ws-proxy <--> |send sts token| OS/UR
