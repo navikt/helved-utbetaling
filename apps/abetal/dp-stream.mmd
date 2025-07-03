@@ -1,0 +1,28 @@
+---
+config:
+  theme: neo-dark
+  layout: dagre
+  look: neo
+---
+flowchart LR
+ subgraph Topologi["dp-stream"]
+        utbetalinger(["utbetalinger"])
+        pending-utbetalinger(["pending-utbetalinger"])
+        saker(["saker"])
+        fk(["fk"])
+        teamdagpenger(["teamdagpenger"])
+        simuleringer(["simuleringer"])
+        oppdrag(["oppdrag"])
+        status(["status"])
+        teamdagpenger-leftjoin-saker{"left join"}
+        teamdagpenger-leftjoin-utbetalinger{"left join"}
+        teamdagpenger-aggregate[("aggregate")]
+  end
+    teamdagpenger --> teamdagpenger-leftjoin-saker
+    saker --> teamdagpenger-leftjoin-saker
+    teamdagpenger-leftjoin-saker -- split on meldeperiode --> teamdagpenger-leftjoin-utbetalinger
+    utbetalinger --> teamdagpenger-leftjoin-utbetalinger
+    teamdagpenger-leftjoin-utbetalinger -- suppress --> teamdagpenger-aggregate
+    teamdagpenger-aggregate --> pending-utbetalinger & simuleringer & status & fk & oppdrag
+
+

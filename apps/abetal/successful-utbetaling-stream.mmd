@@ -1,0 +1,20 @@
+---
+config:
+  theme: neo-dark
+  layout: dagre
+  look: neo
+---
+flowchart LR
+ subgraph Topologi["successful-utbetaling-stream"]
+        utbetalinger(["utbetalinger"])
+        pending-utbetalinger(["pending-utbetalinger"])
+        fk(["fk"])
+        oppdrag(["oppdrag"])
+        oppdrag-leftjoin-fks{"left join"}
+        oppdrag-leftjoin-pending{"left join"}
+  end
+    oppdrag --> |filter OK| oppdrag-leftjoin-fks
+    fk --> oppdrag-leftjoin-fks
+    oppdrag-leftjoin-fks --> |flatMap uids| oppdrag-leftjoin-pending
+    pending-utbetalinger --> oppdrag-leftjoin-pending
+    oppdrag-leftjoin-pending --> utbetalinger

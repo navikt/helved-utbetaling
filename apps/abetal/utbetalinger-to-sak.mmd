@@ -1,0 +1,17 @@
+---
+config:
+  theme: neo-dark
+  layout: dagre
+  look: neo
+---
+flowchart LR
+ subgraph Topologi["utbetalinger-to-sak"]
+        utbetalinger-ktable[("utbetalinger")]
+        saker-aggregate[("saker")]
+        saker(["saker"])
+        utbetalinger(["utbetalinger"])
+
+  end
+    utbetalinger --> utbetalinger-ktable
+    utbetalinger-ktable --> |group by SakKey| saker-aggregate
+    saker-aggregate --> saker
