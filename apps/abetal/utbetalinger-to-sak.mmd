@@ -4,7 +4,7 @@ config:
   layout: dagre
   look: neo
 ---
-flowchart LR
+flowchart
  subgraph Topologi["utbetalinger-to-sak"]
         utbetalinger-ktable[("utbetalinger")]
         saker-aggregate[("saker")]
@@ -15,3 +15,4 @@ flowchart LR
     utbetalinger --> utbetalinger-ktable
     utbetalinger-ktable --> |group by SakKey| saker-aggregate
     saker-aggregate --> saker
+
