@@ -1,24 +1,51 @@
 ![img](utbetaling.png)
 
-# Utbetaling
-Utbetaling består av tre komponenter:
- - [utsjekk](apps/utsjekk/README.md)
- - [oppdrag](apps/oppdrag/README.md)
- - [simulering](apps/simulering/README.md)
+# Monorepo structure
+```
+.
+├── apps/
+│   ├── abetal            # async betaling
+│   ├── peisschtappern    # database-sink for alle våre topics
+│   ├── simulering        # rest -> soap via proxy
+│   ├── urskog            # økosystem med urgamle teknologier som MQ
+│   ├── utsjekk           # restful betaling
+│   └── vedskiva          # scheduler for avstemming
+│
+├── libs/
+│   ├── auth              # token providers
+│   ├── cache             # coroutine safe caching
+│   ├── http              # ktor client factory
+│   ├── jdbc              # coroutine enabled transactions, connections, migrations
+│   ├── kafka             # kafka streams sane defaults kotlin wrappers
+│   ├── ktor              # ktor extension 
+│   ├── mq                # MQ consumer and producer
+│   ├── tracing           # OpenTelemetry utils
+│   ├── utils             # Common utils like log, result, env, etc
+│   └── ws                # SOAP web-service and STS-proxy clients. 
+│
+├── documentasjon/        # intern doc
+├── models/               # gjenbrukbart
+└── topics/               # kafka-topic nais-manifester
+```
 
 ## OpenAPI 3.0
+Spec for utsjekk sitt rest-api.
+
 [openapi.yaml](dokumentasjon/openapi.yml)
 
-## DEVS
+## Development
 
-### Reusable testcontainers
-
-Add this to your `~/.testcontainers.properties` file
-
+### Reusable Testcontainers
+`~/.testcontainers.properties`:
 ```properties
-checks.disable=true                 # faster startup
-testcontainers.reuse.enable=true    # reuse container
-ryuk.disabled=true                  # disable ryuk
+# Linux/MacOS uses unix sockets 
+docker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+# faster startup
+checks.disable=true
+# reuse container, never call stop()
+testcontainers.reuse.enable=true
+# disable orchestrator
+ryuk.disabled=true
 ```
 
 If containers are shut down and you get 409 conflict in the tests trying to setup testcontainers,
@@ -37,7 +64,6 @@ docker container prune
 ```
 
 # References
-
 - https://docs.oracle.com/javaee/6/api/javax/jms/Session.html
 - https://pawelpluta.com/optimise-testcontainers-for-better-tests-performance/
 - https://github.com/navikt/tbd-libs/blob/main/minimal-soap-client/src/main/kotlin/com/github/navikt/tbd_libs/soap/SoapResponseHandler.kt
