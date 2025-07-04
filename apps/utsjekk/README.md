@@ -1,10 +1,18 @@
 ![img](utsjekk.png)
 
-# Utsjekk
-Orkestrator for utbetalinger, simuleringer og Avstemminger.
+En rest-basert fasade for utbetalinger.
 
-Tilbyr fler APIer:
- - REST, sjekk [openapi.yml](../../dokumentasjon/openapi.yml)
- - Kafka, sjekk [topic.yml](https://github.com/navikt/helved-iac/blob/main/kafka/iverksetting-status-v1/topic.yaml)
+## Features
+- Atomiske utbetalinger uten kjeding via `/utbetalinger/{uid}`
+- Simulering uten kjeding via `/utbetlainger/{uid}/simuler`
+- Utbetalinger med kjeding via `/api/iverksetting/v2`
+- Simulering med kjeding via `/api/simulering/v2`
 
+## Topology
+- Utbetalinger kommer inn via REST-APIet
+- Disse blir lagret i databasen samtidig som de utledes til Oppdrag som legges på helved.oppdrag.v1
+- Status om oppdraget leses fra helved.status.v1 og lagres i databasen
+- REST-APIet brukes for å polle på denne statusen 
+
+![utsjekk](utsjekk.svg)
 

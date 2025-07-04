@@ -1,0 +1,17 @@
+---
+config:
+  theme: neo-dark
+  layout: dagre
+  look: neo
+---
+flowchart RL
+ subgraph Topologi["utsjekk"]
+    utbetaling[("postgres")]
+    oppdrag(["helved.oppdrag.v1"])
+    status(["helved.status.v1"])
+        
+  end
+    REST --> |1| oppdrag
+    REST --> |1| utbetaling
+    status --> |2| utbetaling
+    utbetaling --> |3| REST
