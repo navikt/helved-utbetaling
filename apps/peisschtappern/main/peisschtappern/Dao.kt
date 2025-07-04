@@ -86,6 +86,44 @@ data class Dao(
             }
         }
 
+        suspend fun findAll(
+            channels: List<Channel>,
+            limit: Int,
+            key: List<String>? = null,
+            value: List<String>? = null,
+            fom: Long? = null,
+            tom: Long? = null,
+        ): List<Dao> {
+            val whereClause = if (key != null || value != null || fom != null || tom != null) {
+                val keyQuery =
+                    if (key != null) " (" + key.joinToString(" OR ") { "record_key like '%$it%'" } + ") AND" else ""
+                val valueQuery =
+                    if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") AND" else ""
+                val fomQuery = if (fom != null) " timestamp_ms > $fom AND" else ""
+                val tomQuery = if (tom != null) " timestamp_ms < $tom AND" else ""
+                val query = "WHERE$keyQuery$valueQuery$fomQuery$tomQuery"
+                query.removeSuffix(" AND").removeSuffix(" ")
+            } else ""
+
+            val unionQuery = channels.joinToString(" UNION ALL ") { channel ->
+                "SELECT * FROM ${channel.table.name} $whereClause"
+            }
+
+            val sql = """
+                SELECT * FROM (
+                    $unionQuery
+                ) data
+                ORDER BY timestamp_ms DESC 
+                LIMIT $limit 
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
         suspend fun findOppdrag(sakId: String, fagsystem: String): List<Dao> {
             val sql = """
                 SELECT *
