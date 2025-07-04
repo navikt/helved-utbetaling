@@ -1,0 +1,39 @@
+---
+config:
+  theme: neo-dark
+  layout: dagre
+  look: neo
+---
+flowchart TB
+ subgraph Topologi["vedskiva"]
+    postgres[("postgres")]
+    avstemming(["helved.avstemming.v1"])
+    oppdrag(["helved.oppdrag.v1"])
+    kvittering(["helved.kvittering.v1"])
+    simuleringer(["helved.simuleringer.v1"])
+    utbetalinger(["helved.utbetalinger.v1"])
+    saker(["helved.saker.v1"])
+    aap(["helved.utbetalinger-aap.v1"])
+    dryrun-aap(["helved.dryrun-aap.v1"])
+    dryrun-tp(["helved.dryrun-tp.v1"])
+    dryrun-ts(["helved.dryrun-ts.v1"])
+    dryrun-dp(["helved.dryrun-dp.v1"])
+    status(["helved.status.v1"])
+    pending-utbetalinger(["helved.pending-utbetalinger.v1"])
+    fk(["helved.fk.v1"])
+  end
+
+  avstemming --> postgres
+  oppdrag --> postgres
+  kvittering --> postgres
+  simuleringer --> postgres
+  utbetalinger --> postgres
+  saker --> postgres
+  aap --> postgres
+  dryrun-aap --> postgres
+  dryrun-tp --> postgres
+  dryrun-ts --> postgres
+  dryrun-dp --> postgres
+  status --> postgres
+  pending-utbetalinger --> postgres
+  fk --> postgres
