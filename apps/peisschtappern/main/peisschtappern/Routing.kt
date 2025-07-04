@@ -13,6 +13,7 @@ import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import libs.utils.secureLog
 import java.time.Instant
+import peisschtappern.Dao.Companion.findAll
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/actuator") {
@@ -50,18 +51,7 @@ fun Route.api(manuellKvitteringService: ManuellKvitteringService) {
 
             val daos = withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    coroutineScope {
-                        val deferred = channels.map { channel ->
-                            async {
-                                Dao.find(channel.table, limit, key, value, fom, tom)
-                            }
-                        }
-
-                        deferred.awaitAll()
-                            .flatten()
-                            .sortedByDescending { it.timestamp_ms }
-                            .take(limit)
-                    }
+                    findAll(channels, limit, key, value, fom, tom)
                 }
             }
 
