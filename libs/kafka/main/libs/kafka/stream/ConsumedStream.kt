@@ -53,6 +53,10 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return MappedStream(mappedStream)
     }
 
+    fun merge(other: ConsumedStream<K, V>): ConsumedStream<K, V> {
+        return ConsumedStream(stream.merge(other.stream))
+    }
+
     fun <U : Any> mapWithMetadata(mapper: (V, ProcessorMetadata) -> U): MappedStream<K, U> {
         val mappedStream = stream
             .addProcessor(MetadataProcessor())

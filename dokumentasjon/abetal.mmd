@@ -17,6 +17,7 @@ subgraph Topologi
 	helved.fk.v1([helved.fk.v1])
 	teamdagpenger.utbetaling.v1([teamdagpenger.utbetaling.v1])
 	from-teamdagpenger.utbetaling.v1-repartition([from-teamdagpenger.utbetaling.v1-repartition])
+	helved.utbetalinger-dp.v1([helved.utbetalinger-dp.v1])
 	helved.simuleringer.v1([helved.simuleringer.v1])
 	helved.oppdrag.v1([helved.oppdrag.v1])
 	helved.status.v1([helved.status.v1])
@@ -77,6 +78,7 @@ subgraph Topologi
     
     %% BASIC STREAMS
     teamdagpenger.utbetaling.v1 --> from-teamdagpenger.utbetaling.v1-repartition
+	helved.utbetalinger-dp.v1 --> dptuple-leftjoin-saker-repartition
 	from-teamdagpenger.utbetaling.v1-repartition --> dptuple-leftjoin-saker-repartition
 	helved.oppdrag.v1 --> oppdrag-leftjoin-fks-repartition
     
@@ -104,6 +106,7 @@ style oppdrag-leftjoin-fks-repartition fill:#c233b4, stroke:#2a204a, stroke-widt
 style helved.fk.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style teamdagpenger.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style from-teamdagpenger.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.utbetalinger-dp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.simuleringer.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
