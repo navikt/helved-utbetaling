@@ -2451,5 +2451,96 @@ internal class DpTest {
                 assertEquals(553, l1.sats.toLong())
             }
     }
+
+    @Test
+    fun `test 1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val originalKey = UUID.randomUUID().toString()
+        val meldeperiode = "132460781"
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestRuntime.topics.dpUtbetalinger.produce(originalKey) {
+            Dp.utbetaling(sid.id, bid.id) {
+                Dp.meldekort(
+                    meldeperiode = "132460781",
+                    fom = LocalDate.of(2021, 6, 7),
+                    tom = LocalDate.of(2021, 6, 18),
+                    sats = 1077u,
+                    utbetaltBeløp = 553u,
+                )
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(
+                ytelse = Fagsystem.DAGPENGER,
+                linjer = listOf(
+                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+            ))
+        )
+        TestRuntime.topics.status.assertThat()
+            .has(originalKey)
+            .has(originalKey, mottatt)
+
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(originalKey)
+            .with(originalKey) {
+                assertEquals("1", it.oppdrag110.kodeAksjon)
+                assertEquals("NY", it.oppdrag110.kodeEndring)
+                assertEquals("DP", it.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, it.oppdrag110.fagsystemId)
+                assertEquals("MND", it.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", it.oppdrag110.saksbehId)
+                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
+                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
+                    assertEquals("NY", a.kodeEndringLinje)
+                    assertEquals(bid.id, a.henvisning)
+                    assertEquals("DPORAS", a.kodeKlassifik)
+                    assertEquals(553, a.sats.toLong())
+                    assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(a.delytelseId, b.refDelytelseId)
+                }
+            }
+            .get(originalKey)
+
+        TestRuntime.topics.oppdrag.produce(originalKey) { 
+            oppdrag.apply { 
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            } 
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u)
+                }
+                assertEquals(expected, it)
+            }
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
+    }
 }
 

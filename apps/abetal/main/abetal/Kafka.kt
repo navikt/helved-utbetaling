@@ -21,6 +21,7 @@ object Topics {
     val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, UtbetalingId>())
     val pendingUtbetalinger = Topic("helved.pending-utbetalinger.v1", json<Utbetaling>())
     val fk = Topic("helved.fk.v1", Serdes(XmlSerde.xml<Oppdrag>(), JsonSerde.jackson<PKs>()))
+    val dpUtbetalinger = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
 }
 
 object Tables {
@@ -124,6 +125,7 @@ private val suppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggr
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
+        .merge(consume(Topics.dpUtbetalinger)) // vi i team helved må kunne teste samme løype som dp
         .map { key, dp -> DpTuple(key, dp) }
         .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
