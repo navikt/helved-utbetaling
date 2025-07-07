@@ -18,6 +18,7 @@ RUN jlink \
     --add-modules jdk.crypto.ec \
     --add-modules jdk.charsets \
     --add-modules jdk.xml.dom \
+    --add-modules jdk.management \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
