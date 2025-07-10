@@ -18,7 +18,7 @@ dependencies {
     implementation("no.nav.helved:xml:$libVersion")
 
     implementation("org.apache.kafka:kafka-clients:4.0.0")
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.17.0-alpha")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.17.1-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.1")
 
