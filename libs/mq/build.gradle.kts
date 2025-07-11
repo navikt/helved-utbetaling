@@ -1,4 +1,4 @@
-val libVersion = "3.1.172"
+val libVersion = "3.1.174"
 
 dependencies {
     api(project(":libs:tracing"))

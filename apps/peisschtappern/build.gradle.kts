@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "3.2.1"
-val libVersion = "3.1.172"
+val libVersion = "3.1.174"
 
 dependencies {
     implementation(project(":libs:auth"))
