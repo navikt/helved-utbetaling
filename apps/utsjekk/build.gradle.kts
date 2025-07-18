@@ -16,7 +16,7 @@ dependencies {
     implementation(project(":libs:jdbc"))
     implementation("no.nav.helved:xml:$libVersion")
 
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.17.1-alpha")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.18.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
     implementation("org.apache.kafka:kafka-clients:4.0.0")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
