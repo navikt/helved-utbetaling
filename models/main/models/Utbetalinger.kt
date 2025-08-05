@@ -87,7 +87,7 @@ enum class Årsak(val kode: String) {
 data class Avvent(
     val fom: LocalDate,
     val tom: LocalDate,
-    val overføres: LocalDate,
+    val overføres: LocalDate? = null,
     val årsak: Årsak? = null,
     val feilregistrering: Boolean = false,
 )
