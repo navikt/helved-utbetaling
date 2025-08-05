@@ -42,80 +42,10 @@ enum class Årsak(val kode: String) {
 data class Avvent(
     val fom: LocalDate,
     val tom: LocalDate,
-    val overføres: LocalDate,
+    val overføres: LocalDate? = null,
     val årsak: Årsak? = null,
     val feilregistrering: Boolean = false,
 )
-
-// Forslag til nytt domeneobjekt som representerer en utbetaling
-data class UtbetalingV2(
-    val sakId: SakId,
-    val behandlingId: BehandlingId,
-    val personident: Personident,
-    val vedtakstidspunkt: LocalDateTime,
-    val beslutterId: Navident,
-    val saksbehandlerId: Navident,
-    // Hver liste med perioder pr. stønadstype vil kjedes sammen. Her kan man også endre hvordan ting kjedes ved å bruke
-    // noe annet enn stønadstype som nøkkel, som f.eks. stønadstype + måned f.eks.
-    val kjeder: Map<String, Utbetalingsperioder>,
-    val avvent: Avvent?,
-) {
-    data class Utbetalingsperioder(
-        val satstype: Satstype, // Perioder innen samme kjede kan ikke ha forskjellige satstyper
-        val stønad: Stønadstype, // Perioder innen samme kjede kan ikke ha forskjellige stønadstyper
-        val perioder: List<Utbetalingsperiode>,
-        // IDen til siste periode i `perioder`. Brukes for å fortsette kjeden når vi genererer nye oppdragslinjer.
-        val lastPeriodeId: String?
-    )
-
-    data class Utbetalingsperiode(
-        val fom: LocalDate,
-        val tom: LocalDate,
-        val beløp: UInt,
-        val betalendeEnhet: NavEnhet? = null,
-        val vedtakssats: UInt? = null,
-    )
-
-    fun validateLockedFields(other: UtbetalingV2) {
-        if (sakId != other.sakId) badRequest("cant change immutable field", "sakId")
-        // TODO: oppslag mot PDL, se at det fortsatt er samme person, ikke nødvendigvis samme ident
-        if (personident != other.personident) badRequest("cant change immutable field", "personident")
-    }
-
-    fun validateMinimumChanges(other: UtbetalingV2) {
-        if (kjeder.keys != other.kjeder.keys) return // Har forskjellig antall kjeder
-        if (kjeder.entries.any { other.kjeder[it.key]?.perioder?.size != it.value.perioder.size }) {
-            return // Har forskjellig antall perioder i samme kjede
-        }
-
-        // Sammenligne periode for periode og se om det finnes endring
-        val ingenEndring = kjeder.entries.all {
-            it.value.perioder.zip(other.kjeder[it.key]!!.perioder).all { (first, second) ->
-                first.beløp == second.beløp
-                        && first.fom == second.fom
-                        && first.tom == second.tom
-                        && first.betalendeEnhet == second.betalendeEnhet
-                        && first.vedtakssats == second.vedtakssats
-            }
-        }
-
-        if (ingenEndring) {
-            conflict(
-                msg = "periods already exists",
-                field = "perioder",
-                doc = "opprett_en_utbetaling",
-            )
-        }
-    }
-}
-
-fun UtbetalingV2.fagsystem(): FagsystemDto {
-    return FagsystemDto.from(kjeder.values.first().stønad)
-}
-
-fun UtbetalingV2.betalendeEnhet(): NavEnhet? {
-    return kjeder.values.flatMap { it.perioder }.sortedBy { it.tom }.find { it.betalendeEnhet != null }?.betalendeEnhet
-}
 
 data class Utbetaling(
     val sakId: SakId,

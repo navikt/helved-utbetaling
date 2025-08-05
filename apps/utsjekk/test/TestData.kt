@@ -281,58 +281,6 @@ object TestData {
     }
 
     object domain {
-        fun utbetalingV2(
-            sakId: utsjekk.utbetaling.SakId = utsjekk.utbetaling.SakId("1"),
-            behandlingId: utsjekk.utbetaling.BehandlingId = utsjekk.utbetaling.BehandlingId("1"),
-            personident: utsjekk.utbetaling.Personident = utsjekk.utbetaling.Personident("02439107599"),
-            vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
-            beslutterId: Navident = Navident("AB12345"),
-            saksbehandlerId: Navident = Navident("CD23456"),
-            kjeder: Map<String, UtbetalingV2.Utbetalingsperioder> = emptyMap(),
-            avvent: Avvent? = null,
-        ): UtbetalingV2 {
-            return UtbetalingV2(
-                sakId = sakId,
-                behandlingId = behandlingId,
-                personident = personident,
-                vedtakstidspunkt = vedtakstidspunkt,
-                beslutterId = beslutterId,
-                saksbehandlerId = saksbehandlerId,
-                kjeder = kjeder,
-                avvent = avvent,
-            )
-        }
-
-        fun utbetalingsperioder(
-            satstype: utsjekk.utbetaling.Satstype,
-            stønad: Stønadstype,
-            perioder: List<UtbetalingV2.Utbetalingsperiode> = emptyList(),
-            lastPeriodeId: String? = null,
-        ): UtbetalingV2.Utbetalingsperioder {
-            return UtbetalingV2.Utbetalingsperioder(
-                satstype = satstype,
-                stønad = stønad,
-                perioder = perioder,
-                lastPeriodeId = lastPeriodeId
-            )
-        }
-
-        fun utbetalingsperiode(
-            fom: LocalDate,
-            tom: LocalDate,
-            beløp: UInt,
-            betalendeEnhet: NavEnhet? = null,
-            vedtakssats: UInt? = null,
-        ): UtbetalingV2.Utbetalingsperiode {
-            return UtbetalingV2.Utbetalingsperiode(
-                fom = fom,
-                tom = tom,
-                beløp = beløp,
-                betalendeEnhet = betalendeEnhet,
-                vedtakssats = vedtakssats,
-            )
-        }
-
         fun iverksetting(
             fagsystem: Fagsystem = DEFAULT_FAGSYSTEM,
             sakId: SakId = SakId(RandomOSURId.generate()),
