@@ -71,7 +71,7 @@ fun Application.utsjekk(
     }
 
     kafka.connect(
-        createTopology(),
+        createTopology(abetalClient),
         config.kafka,
         metrics,
     )
