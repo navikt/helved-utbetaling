@@ -24,7 +24,7 @@ object Topics {
     val status = Topic("helved.status.v1", json<StatusReply>())
 }
 
-fun createTopology(): Topology = topology {
+fun createTopology(abetalClient: AbetalClient): Topology = topology {
     consume(Topics.status)
         .filterKey { uid ->
             try {
@@ -50,7 +50,7 @@ fun createTopology(): Topology = topology {
                             }
                             dao.copy(status = status).update(uid)
 
-                            if(status == utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG) {
+                            if (status == utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG) {
                                 dao.delete(uid)
                             }
                         }
@@ -71,7 +71,12 @@ fun createTopology(): Topology = topology {
                     }
 
                     if (uDao == null && iDao == null) {
-                        appLog.warn("Både db-tabell utbetaling og iverksettingsresultat mangler rad med uid ${uid.id}. Status: $status")
+                        // Sjekk om UID finnes i abetal
+                        if (abetalClient.exists(uid)) {
+                            appLog.info("Mottok status for uid=${uid.id} som håndteres av abetal. Status: $status")
+                        } else {
+                            appLog.warn("Både db-tabell utbetaling og iverksettingsresultat mangler rad med uid ${uid.id}. UID finnes heller ikke i abetal. Status: $status")
+                        }
                     }
                 }
             }
