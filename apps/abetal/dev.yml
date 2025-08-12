@@ -38,6 +38,9 @@ spec:
       destinations:
         - id: loki
         - id: elastic
+  azure:
+    application:
+      enabled: true
   accessPolicy:
     inbound:
       rules:
