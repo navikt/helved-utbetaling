@@ -5,7 +5,6 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import libs.auth.AzureTokenProvider
@@ -20,10 +19,9 @@ class AbetalClient(
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
     suspend fun utbetaling(uid: UtbetalingId): Utbetaling {
-        val response = client.get("${config.abetal.host}/api/utbetalinger") {
+        val response = client.get("${config.abetal.host}/api/utbetalinger${uid.id}") {
             bearerAuth(azure.getClientCredentialsToken(config.abetal.scope).access_token)
             contentType(ContentType.Application.Json)
-            parameter("uid", uid)
         }
         return response.body()
     }
