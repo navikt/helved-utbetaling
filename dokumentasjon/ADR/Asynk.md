@@ -5,14 +5,11 @@
 Utkast
 
 ## Kontekst
-Alle konsumenter har fram til sommeren 2025 benyttet Utsjekk sitt REST API. Under panseret har Utsjekk hatt en egen task scheduler, som har holdt styr på hvilke utbetalingsoppdrag som var videresendt og hvilke som ikke var det. I tillegg hadde den egne tasker for å sjekke om oppdragene hadde fått kvittering fra OS. Scheduleren har hatt innebygget logikk for å prøve igjen dersom noe feilet (retry-mekanisme).
+Alle konsumenter har fram til sommeren 2025 benyttet Utsjekk sitt REST API. Under panseret hadde Utsjekk en egen Postgres-basert task scheduler, arvet fra PO Familie. Den holdt styr på hvilke oppdrag som var sendt til OS/UR, sjekket jevnlig om de hadde fått kvittering, og forsøkte på nytt når noe feilet. Løsningen fungerte, men den var komplisert vanskelig å endre. Team Hel Ved hadde ikke eierskap til koden.
 
-Scheduleren ble, sammen med resten av tjenesten for iverksetting av utbetalinger, arvet fra PO Familie. Team hel ved hadde ikke eierskap til koden.
+REST-API-et skapte også krav om høy oppetid, siden konsumentene ikke fikk sendt oppdrag når Utsjekk var nede. I tillegg forventes store topper i trafikken, for eksempel når AAP og Dagpenger kjører mange utbetalinger etter hver meldeperiode.
 
-REST API-er skaper krav om høy oppetid, siden konsumentene ikke får sendt oppdrag når API-et er nede. Det er i tillegg forventet høye topper i trafikken, ettersom både AAP og Dagpenger kjører mange utbetalinger etter hver meldeperiode.
-
-Team hel ved tror det er bedre å ta i bruk Kafka – som er laget for hva scheduleren så langt har forsøkt å løse; altså kø, rekkefølge, feilhåndtering og gjentatte forsøk. Med Kafka streams får vi en enklere løsning som er mer robust og bedre skalerbar. I stedet for at alle konsumenter går mot samme REST API, ønsker vi at de produserer utbetalinger til hvert sitt Topic, som Utsjekk kan lese fra. Det betyr at de kan "sende" utbetalinger, selv om Utsjekk er nede. Utsjekk vil lese fra der den slapp, når den er oppe igjen. I tillegg vil topper i trafikk / belastning håndteres bedre enn hva som hadde vært tilfelle med et felles og synkront REST-API.
-
+Vi tror Kafka passer bedre til behovene scheduleren forsøkte å løse: kø, rekkefølge, feilhåndtering og gjentatte forsøk. Med Kafka Streams får vi en enklere, mer robust og skalerbar løsning. I stedet for at alle konsumenter går mot samme REST-endepunkt, kan de produsere utbetalinger til egne topics som Utsjekk leser fra. Dermed kan oppdrag «sendes» selv om Utsjekk er nede, og systemet håndterer trafikk-topper bedre enn et felles, synkront API ville gjort.
 
 
 ## Alternativer vurdert
@@ -21,7 +18,7 @@ Team hel ved tror det er bedre å ta i bruk Kafka – som er laget for hva sched
 
 ## Beslutning
 
-< Hvilke(n) endring(er) foreslås som svar på utfordringen? >
+Utsjekk går over til en asynkron integrasjon basert på Kafka. Konsumentene publiserer utbetalingsoppdrag til egne topics, som Utsjekk leser og prosesserer med Kafka Streams. REST-API-et beholdes midlertidig for bakoverkompatibilitet, men fases ut når konsumentene har tatt i bruk den nye løsningen.
 
 ## Konsekvenser
 
