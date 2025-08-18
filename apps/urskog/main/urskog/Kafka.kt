@@ -2,21 +2,18 @@ package urskog
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.runBlocking
 import libs.kafka.*
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
-import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import java.util.*
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simuleringer = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
     val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
+    val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val dryrunTilleggsstønader = Topic("helved.dryrun-ts.v1", json<models.v1.Simulering>())
     val dryrunTiltakspenger = Topic("helved.dryrun-tp.v1", json<models.v1.Simulering>())
     val status = Topic("helved.status.v1", json<StatusReply>())
@@ -47,6 +44,9 @@ fun Topology.simulering(simuleringService: SimuleringService) {
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.AAP }) {
                     map { (sim, _) -> sim }.map(::into).produce(Topics.dryrunAap)
                 }
+                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.DAGPENGER }) {
+                    map { (sim, _) -> sim }.map(::into).produce(Topics.dryrunDp)
+                }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILLEGGSSTØNADER }) {
                     map{(sim, _) -> sim}.map(::intoV1).produce(Topics.dryrunTilleggsstønader)
                 }
@@ -58,8 +58,6 @@ fun Topology.simulering(simuleringService: SimuleringService) {
             map { result -> result.unwrapErr() }.produce(Topics.status)
         }
 }
-
-private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
 
 fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) {
     val kvitteringKTable = consume(Tables.kvittering)
