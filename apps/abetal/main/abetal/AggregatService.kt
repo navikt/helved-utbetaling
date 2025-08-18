@@ -1,5 +1,7 @@
 package abetal
 
+import java.math.BigDecimal
+import javax.xml.datatype.XMLGregorianCalendar
 import libs.kafka.StreamsPair
 import models.Action
 import models.PeriodeId
@@ -47,6 +49,8 @@ object AggregateService {
             .map { (_, group) -> group.reduce { acc, next -> acc + next } }
 
         val utbetalinger = utbetalingToOppdrag.map { it.first }
+            .groupBy { it.uid }
+            .map { (_, group) -> group.reduce { acc, next -> acc + next } }
 
         val oppdragToUtbetalinger = oppdrag
             .map { o -> o to utbetalinger.filter { it.sakId.id == o.oppdrag110.fagsystemId } }
@@ -78,10 +82,46 @@ object AggregateService {
     }
 }
 
-// TODO: addAll fungerer ikke, vi må fjerne "duplikater". Dvs alt (??) er likt unntatt delytelseId (??) og henvisning
+data class Oppdrag150(
+    val vedtakId: String,
+    val fom: XMLGregorianCalendar,
+    val tom: XMLGregorianCalendar,
+    val kodeKlassifik: String,
+    val sats: BigDecimal,
+    val vedtakssats: BigDecimal
+)
+
+operator fun Utbetaling.plus(other: Utbetaling): Utbetaling {
+
+    return this.copy(perioder = (perioder union other.perioder).toList())
+}
+
 operator fun Oppdrag.plus(other: Oppdrag): Oppdrag {
     if (oppdrag110.kodeEndring != "NY") oppdrag110.kodeEndring = other.oppdrag110.kodeEndring
-    oppdrag110.oppdragsLinje150s.addAll(other.oppdrag110.oppdragsLinje150s)
+    val currentOppdrag150s = oppdrag110.oppdragsLinje150s.map { it ->
+        Oppdrag150(
+            it.vedtakId,
+            it.datoVedtakFom,
+            it.datoVedtakTom,
+            it.kodeKlassifik,
+            it.sats,
+            it.vedtakssats157.vedtakssats
+        )
+    }
+
+    val otherOppdrag150s = other.oppdrag110.oppdragsLinje150s.filter {
+        val oppdrag150 = Oppdrag150(
+            it.vedtakId,
+            it.datoVedtakFom,
+            it.datoVedtakTom,
+            it.kodeKlassifik,
+            it.sats,
+            it.vedtakssats157.vedtakssats
+        )
+        oppdrag150 !in currentOppdrag150s
+    }
+
+    oppdrag110.oppdragsLinje150s.addAll(otherOppdrag150s)
     return this
 }
 
