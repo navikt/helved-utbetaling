@@ -14,7 +14,12 @@ Vi tror Kafka passer bedre til behovene scheduleren forsøkte å løse: kø, rek
 
 ## Alternativer vurdert
 
-< Valgfri seksjon - med liste med alternativer >
+- **Videreføre REST-API og scheduler**<br/>
+Ville fortsatt gitt krav om høy oppetid på API-et. Skalerbarhet og toppbelastning ville fortsatt vært en utfordring. Teamet måtte ha tatt eierskap til komplisert kode.
+- **Kafka som asynkron integrasjon**<br/>
+Konsumenter kan sende oppdrag når som helst, uten å være avhengig av at Utsjekk er oppe samtidig. Bedre håndtering av topper i trafikk, og fjerner behovet for å vedlikeholde en egen scheduler. Kafka er godt kjent i Nav.
+- Mer?
+
 
 ## Beslutning
 
@@ -22,7 +27,19 @@ Utsjekk går over til en asynkron integrasjon basert på Kafka. Konsumentene pub
 
 ## Konsekvenser
 
-< Hva blir situasjonen etter at denne beslutningen eventuelt er tatt? Hva blir enklere eller vanskeligere på bakgrunn av dette? (Både positive og negative konsekvenser beskrives.) >
+**Fordeler**
+- Konsumentene kan sende oppdrag når som helst, uten å være avhengig av at Utsjekk er oppe samtidig.
+- Trafikktopper glattes ut i køen i stedet for å måtte håndteres i sanntid.
+- Enklere og mer robust enn den gamle scheduleren
+- Bedre håndtering av økt trafikk / belastning
+- Kafka er godt kjent i Nav
+
+**Ulemper**
+- Overgangsperiode med to grensesnitt (REST + Kafka) å vedlikeholde
+- Eksisterende konsumenter må gjøre en endring hos seg for å gå over fra REST til Kafka
+- Historiske utbetalinger som har kommet inn via iverksetting-løypa på REST (tiltpeng og tillst) ligger i en annen datamodell. For at disse skal kunne endres videre i Kafka-løypa, må de migreres til den nye modellen 
+- Ny kompetanse kreves i teamet på observabilitet med mer i Kafka?
+
 
 ## Referanser:
 - [Ansvarsdeling mellom vedtaksløsninger og Hel ved / Utsjekk](https://confluence.adeo.no/spaces/ARML/pages/688985372/013-ADR-P4+Ansvarsdeling+mellom+vedtaksl%C3%B8sninger+og+Utsjekk) på Confluence
