@@ -1,6 +1,5 @@
 package abetal
 
-import abetal.models.dpUId
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
