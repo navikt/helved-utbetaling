@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.UUID
 import java.util.Base64
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 import java.time.*
 import kotlin.getOrThrow
 import libs.utils.secureLog
@@ -358,3 +359,21 @@ private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
     }.map { it.toList() }
 }
 
+fun uuid(
+    sakId: SakId,
+    fagsystem: Fagsystem,
+    meldeperiode: String,
+    stønad: Stønadstype,
+): UUID {
+    val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
+    buffer.putLong((fagsystem.name + sakId.id + meldeperiode + stønad.klassekode).hashCode().toLong())
+
+    val digest = MessageDigest.getInstance("SHA-256")
+    val hash = digest.digest(buffer.array())
+
+    val bb = ByteBuffer.wrap(hash)
+    val mostSigBits = bb.long
+    val leastSigBits = bb.long
+
+    return UUID(mostSigBits, leastSigBits)
+}
