@@ -33,6 +33,7 @@ import utsjekk.clients.SimuleringClient
 import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.iverksetting
 import utsjekk.simulering.SimuleringValidator
+import utsjekk.simulering.simulerBlocking
 import utsjekk.simulering.simulering
 import utsjekk.utbetaling.UtbetalingService
 import utsjekk.utbetaling.simulering.SimuleringService
@@ -77,10 +78,12 @@ fun Application.utsjekk(
     )
 
     val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
+    val dpUtbetalingerProducer = kafka.createProducer(config.kafka, Topics.utbetalingDp)
 
     monitor.subscribe(ApplicationStopping) {
         kafka.close()
         oppdragProducer.close()
+        dpUtbetalingerProducer.close()
     }
 
     Jdbc.initialize(config.jdbc)
@@ -110,7 +113,8 @@ fun Application.utsjekk(
             when (cause) {
                 is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse)
                 is BadRequestException -> {
-                    val msg =  "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
+                    val msg =
+                        "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
                     appLog.debug(msg) // client error
                     secureLog.debug(msg, cause) // client error
                     val res = ApiError.Response(msg = msg, field = null, doc = DEFAULT_DOC_STR)
@@ -136,6 +140,7 @@ fun Application.utsjekk(
         authenticate(TokenProvider.AZURE) {
             iverksetting(iverksettingService)
             simulering(simuleringValidator, simulering)
+            simulerBlocking(dpUtbetalingerProducer)
             utbetalingRoute(simuleringService, utbetalingService)
         }
 
@@ -151,12 +156,12 @@ fun ApplicationCall.client(): Client =
         ?.let(::Client)
         ?: forbidden("missing JWT claim", "azp_name", "kom_i_gang")
 
-fun ApplicationCall.hasClaim(claim: String): Boolean = 
+fun ApplicationCall.hasClaim(claim: String): Boolean =
     principal<JWTPrincipal>()?.getClaim(claim, String::class) != null
 
 sealed class TokenType(open val jwt: String) {
-    data class Obo(override val jwt: String): TokenType(jwt)
-    data class Client(override val jwt: String): TokenType(jwt)
+    data class Obo(override val jwt: String) : TokenType(jwt)
+    data class Client(override val jwt: String) : TokenType(jwt)
 }
 
 fun RoutingCall.fagsystem() =
@@ -169,7 +174,7 @@ fun RoutingCall.fagsystem() =
 
 @JvmInline
 value class Client(
-    private val name: String,
+    val name: String,
 ) {
     fun toFagsystem(): Fagsystem =
         when (name) {

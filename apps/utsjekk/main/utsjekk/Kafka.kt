@@ -14,6 +14,7 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.common.utils.Utils
 import utsjekk.iverksetting.OppdragResultat
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.simulering.SimuleringSubscriptions
 import utsjekk.utbetaling.UtbetalingDao
 import utsjekk.utbetaling.UtbetalingId
 
@@ -22,6 +23,8 @@ object Topics {
 
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
+    val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
+    val utbetalingDp = Topic("helved.utbetaling-dp.v1", json<DpUtbetaling>())
 }
 
 fun createTopology(abetalClient: AbetalClient): Topology = topology {
@@ -80,6 +83,10 @@ fun createTopology(abetalClient: AbetalClient): Topology = topology {
                     }
                 }
             }
+        }
+    consume(Topics.dryrunDp)
+        .forEach { key, dto ->
+            SimuleringSubscriptions.complete(key, dto)
         }
 }
 

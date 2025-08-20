@@ -3,22 +3,11 @@ import fakes.AzureFake
 import fakes.OppdragFake
 import fakes.SimuleringFake
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.jackson.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.firstOrNull
 import libs.jdbc.*
 import libs.kafka.StreamsMock
 import libs.ktor.*
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.CoroutineDatasource
-import libs.jdbc.concurrency.connection
-import libs.jdbc.concurrency.transaction
 import libs.utils.logger
 import utsjekk.Config
 import utsjekk.Topics
@@ -35,6 +24,7 @@ val httpClient = TestRuntime.ktor.httpClient
 class TestTopics(private val kafka: StreamsMock) {
     val oppdrag = kafka.testTopic(Topics.oppdrag) 
     val status = kafka.testTopic(Topics.status)
+    val dryrunDp = kafka.testTopic(Topics.dryrunDp)
 }
 
 object TestRuntime {
