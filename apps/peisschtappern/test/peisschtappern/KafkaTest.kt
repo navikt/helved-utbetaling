@@ -30,6 +30,8 @@ class KafkaTest {
                Channel.Status -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.PendingUtbetalinger -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Fk -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Dp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.DpIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
             }
         }
     }
