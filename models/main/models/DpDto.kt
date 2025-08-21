@@ -115,62 +115,24 @@ private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode>
         }.flatten()
 }
 
-private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
-    if (this.isEmpty()) return emptyList()
-
-    return this.drop(1).fold(mutableListOf(mutableListOf(this.first()))) { acc, item ->
-        val lastSublist = acc.last()
-        if (predicate(lastSublist.last(), item)) {
-            acc.add(mutableListOf(item))
-        } else {
-            lastSublist.add(item)
-        }
-        acc
-    }.map { it.toList() }
-}
-
-fun fakeDelete(
-    originalKey: String,
-    sakId: SakId,
-    uid: UtbetalingId,
-) = Utbetaling(
-    dryrun = false,
-    originalKey = originalKey,
-    fagsystem = Fagsystem.DAGPENGER,
-    uid = uid,
-    action = Action.DELETE,
-    førsteUtbetalingPåSak = false,
-    sakId = sakId,
-    behandlingId = BehandlingId(""),
-    lastPeriodeId = PeriodeId(),
-    personident = Personident(""),
-    vedtakstidspunkt = LocalDateTime.now(),
-    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
-    beslutterId = Navident("dagpenger"), 
-    saksbehandlerId = Navident("dagpenger"),
-    periodetype = Periodetype.UKEDAG,
-    avvent = null,
-    perioder = listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u)), // placeholder
-)
-
 data class DpTuple(val key: String, val value: DpUtbetaling)
 
-fun uuid(
-    sakId: SakId,
-    fagsystem: Fagsystem,
-    meldeperiode: String,
-    stønad: StønadTypeDagpenger,
-): UUID {
-    val buffer = ByteBuffer.allocate(Long.BYTES)
-    buffer.putLong((fagsystem.name + sakId.id + meldeperiode + stønad.klassekode).hashCode().toLong())
-
-    val digest = MessageDigest.getInstance("SHA-256")
-    val hash = digest.digest(buffer.array())
-
-    val bb = ByteBuffer.wrap(hash)
-    val mostSigBits = bb.long
-    val leastSigBits = bb.long
-
-    return UUID(mostSigBits, leastSigBits)
-}
+// fun uuid(
+//     sakId: SakId,
+//     fagsystem: Fagsystem,
+//     meldeperiode: String,
+//     stønad: StønadTypeDagpenger,
+// ): UUID {
+//     val buffer = ByteBuffer.allocate(Long.BYTES)
+//     buffer.putLong((fagsystem.name + sakId.id + meldeperiode + stønad.klassekode).hashCode().toLong())
+//
+//     val digest = MessageDigest.getInstance("SHA-256")
+//     val hash = digest.digest(buffer.array())
+//
+//     val bb = ByteBuffer.wrap(hash)
+//     val mostSigBits = bb.long
+//     val leastSigBits = bb.long
+//
+//     return UUID(mostSigBits, leastSigBits)
+// }
 
