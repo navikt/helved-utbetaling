@@ -11,6 +11,7 @@ import kotlin.time.Duration.Companion.seconds
 
 object Topics {
     val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
+    val aap = Topic("aap.utbetaling.v1", json<AapUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simulering = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
@@ -19,6 +20,7 @@ object Topics {
     val pendingUtbetalinger = Topic("helved.pending-utbetalinger.v1", json<Utbetaling>())
     val fk = Topic("helved.fk.v1", Serdes(XmlSerde.xml<Oppdrag>(), JsonSerde.jackson<PKs>()))
     val dpUtbetalinger = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
+    val aapUtbetalinger = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
 }
 
 object Tables {
@@ -31,6 +33,7 @@ object Tables {
 object Stores {
     val utbetalinger = Store(Tables.utbetalinger)
     val dpAggregate = Store("dp-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val aapAggregate = Store("aap-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
 }
 
 fun createTopology(): Topology = topology {
@@ -39,6 +42,7 @@ fun createTopology(): Topology = topology {
     val saker = utbetalingToSak(utbetalinger)
     val fks = consume(Tables.fk)
     dpStream(utbetalinger, saker)
+    aapStream(utbetalinger, saker)
     successfulUtbetalingStream(fks, pendingUtbetalinger)
 }
 
@@ -105,7 +109,9 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
     return ktable
 }
 
-private val suppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggregate, 100.milliseconds, 1.seconds)
+private val dpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggregate, 100.milliseconds, 1.seconds)
+private val aapSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.aapAggregate, 100.milliseconds, 1.seconds)
+
 
 /**
  * Dagpenger sender en tykk melding med mange meldeperioder.
@@ -132,7 +138,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
         .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds, "dp-utbetalinger-session") 
-        .reduce(suppressProcessorSupplier, Stores.dpAggregate.name)  { acc, next -> acc + next }
+        .reduce(dpSuppressProcessorSupplier, Stores.dpAggregate.name)  { acc, next -> acc + next }
         .map { aggregate  -> 
             Result.catch { 
                 val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
@@ -169,6 +175,55 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         }
 }
 
+fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
+    consume(Topics.aap)
+        .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
+        .merge(consume(Topics.aapUtbetalinger)) // vi i team helved må kunne teste samme løype som aap
+        .map { key, aap -> AapTuple(key, aap) }
+        .rekey { (_, aap) -> SakKey(SakId(aap.sakId), Fagsystem.AAP) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
+        .flatMapKeyValue(::splitOnMeldeperiode)
+        .leftJoin(Serde.string(), Serde.json(), utbetalinger, "aap-periode-leftjoin-utbetalinger")
+        .filter { (new, prev) -> !new.isDuplicate(prev) }
+        .rekey { new, _ -> new.originalKey }
+        .map { new, prev -> listOf(StreamsPair(new, prev)) }
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds, "aap-utbetalinger-session")
+        .reduce(aapSuppressProcessorSupplier, Stores.aapAggregate.name)  { acc, next -> acc + next }
+        .map { aggregate  ->
+            Result.catch {
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                oppdragToUtbetalinger to simuleringer
+            }
+        }
+        .branch({ it.isOk() }) {
+            val result = map { it -> it.unwrap() }
+
+            result
+                .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.flatMap { agg -> agg.second.map { KeyValue(it.uid.toString(), it) } } }
+                .produce(Topics.pendingUtbetalinger)
+
+            result
+                .flatMap { (_, simuleringer) -> simuleringer }
+                .produce(Topics.simulering)
+
+            val oppdrag = result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
+            oppdrag.produce(Topics.oppdrag)
+            oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
+
+            result
+                .flatMapKeyAndValue { originalKey, (oppdragToUtbetalinger, _) ->
+                    oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
+                        val uids = utbetalinger.map { u -> u.uid.toString() }
+                        KeyValue(oppdrag, PKs(originalKey, uids))
+                    }
+                }
+                .produce(Topics.fk)
+        }
+        .default {
+            map { it -> it.unwrapErr() }.produce(Topics.status)
+        }
+}
 // TODO: erstatt DpTuple med noe mer generisk
 private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
     val (dpKey, dpUtbetaling) = tuple
@@ -189,7 +244,8 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<Utbeta
 
     return utbetalingerPerMeldekort.map { (uid, dpUtbetaling) ->
         val utbetaling = when (dpUtbetaling) {
-            null -> fakeDelete(dpKey, sakKey.sakId, uid).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
+            null -> fakeDelete(dpKey, sakKey.sakId, uid, Fagsystem.DAGPENGER, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                Navident("dagpenger"), Navident("dagpenger")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
             else -> toDomain(dpKey, dpUtbetaling, uids, uid)
         }
         appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
@@ -197,3 +253,30 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<Utbeta
     }
 }
 
+// TODO: erstatt DpTuple med noe mer generisk
+private fun splitOnMeldeperiode(sakKey: SakKey, tuple: AapTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
+    val (aapKey, aapUtbetaling) = tuple
+    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, AapUtbetaling?>> = aapUtbetaling
+        .utbetalinger
+        .groupBy { it.meldeperiode }
+        .map { (meldeperiode, utbetalinger) ->
+            aapUId(aapUtbetaling.sakId, meldeperiode, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING) to aapUtbetaling.copy(utbetalinger = utbetalinger)
+        }
+        .toMutableList()
+
+    if (uids != null) {
+        val aapUids = utbetalingerPerMeldekort.map { (aapUid, _) -> aapUid }
+        val missingMeldeperioder = uids.filter { it !in aapUids }.map { it to null }
+        utbetalingerPerMeldekort.addAll(missingMeldeperioder)
+    }
+
+    return utbetalingerPerMeldekort.map { (uid, aapUtbetaling) ->
+        val utbetaling = when (aapUtbetaling) {
+            null -> fakeDelete(aapKey, sakKey.sakId, uid, Fagsystem.AAP, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                Navident("kelvin"), Navident("kelvin")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
+            else -> toDomain(aapKey, aapUtbetaling, uids, uid)
+        }
+        appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
+        KeyValue(utbetaling.uid.id.toString(), utbetaling)
+    }
+}

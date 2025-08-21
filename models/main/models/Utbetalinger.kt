@@ -345,20 +345,6 @@ private fun beløp(perioder: List<Utbetalingsperiode>, periodetype: Periodetype)
             badRequest("forventet kun en periode, da sammenslåing av beløp ikke er støttet", "opprett_en_utbetaling")
     }
 
-private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
-    if (this.isEmpty()) return emptyList()
-
-    return this.drop(1).fold(mutableListOf(mutableListOf(this.first()))) { acc, item ->
-        val lastSublist = acc.last()
-        if (predicate(lastSublist.last(), item)) {
-            acc.add(mutableListOf(item))
-        } else {
-            lastSublist.add(item)
-        }
-        acc
-    }.map { it.toList() }
-}
-
 fun uuid(
     sakId: SakId,
     fagsystem: Fagsystem,
@@ -377,3 +363,31 @@ fun uuid(
 
     return UUID(mostSigBits, leastSigBits)
 }
+
+fun fakeDelete(
+    originalKey: String,
+    sakId: SakId,
+    uid: UtbetalingId,
+    fagsystem: Fagsystem,
+    stønad: Stønadstype,
+    beslutterId: Navident,
+    saksbehandlerId: Navident,
+) = Utbetaling(
+    dryrun = false,
+    originalKey = originalKey,
+    fagsystem = fagsystem,
+    uid = uid,
+    action = Action.DELETE,
+    førsteUtbetalingPåSak = false,
+    sakId = sakId,
+    behandlingId = BehandlingId(""),
+    lastPeriodeId = PeriodeId(),
+    personident = Personident(""),
+    vedtakstidspunkt = LocalDateTime.now(),
+    stønad = stønad,
+    beslutterId = beslutterId,
+    saksbehandlerId = saksbehandlerId,
+    periodetype = Periodetype.UKEDAG,
+    avvent = null,
+    perioder = listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u)), // placeholder
+)
