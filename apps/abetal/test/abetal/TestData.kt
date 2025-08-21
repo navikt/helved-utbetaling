@@ -24,6 +24,41 @@ fun randomUtbetalingId(): UtbetalingId = UtbetalingId(UUID.randomUUID())
 
 fun XMLGregorianCalendar.toLocalDate() = toGregorianCalendar().toZonedDateTime().toLocalDate()
 
+object Aap {
+    fun utbetaling(
+        sakId: String = "$nextInt",
+        behandlingId: String = "$nextInt",
+        dryrun: Boolean = false,
+        ident: String = "12345678910",
+        vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
+        utbetalinger: () -> List<AapUtbetalingsdag>,
+    ): AapUtbetaling = AapUtbetaling(
+        dryrun = dryrun,
+        behandlingId = behandlingId,
+        sakId = sakId,
+        ident = ident,
+        vedtakstidspunktet = vedtakstidspunkt,
+        utbetalinger = utbetalinger(),
+    )
+
+    fun meldekort(
+        meldeperiode: String,
+        fom: LocalDate,
+        tom: LocalDate,
+        sats: UInt,
+        utbetaltBeløp: UInt = sats,
+    ): List<AapUtbetalingsdag> {
+        return buildList {
+            for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
+                val dato = fom.plusDays(i)
+                if (!dato.erHelg()) {
+                    add(AapUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp))
+                }
+            }
+        }
+    }
+}
+
 object Dp {
     fun utbetaling(
         sakId: String = "$nextInt",
@@ -39,7 +74,7 @@ object Dp {
         ident = ident,
         vedtakstidspunktet = vedtakstidspunkt,
         utbetalinger = utbetalinger(),
-    ) 
+    )
 
     fun meldekort(
         meldeperiode: String,
@@ -70,7 +105,7 @@ fun utbetaling(
     førsteUtbetalingPåSak: Boolean = true,
     lastPeriodeId: PeriodeId = PeriodeId(),
     periodetype: Periodetype = Periodetype.UKEDAG,
-    stønad: Stønadstype = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+    stønad: Stønadstype = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING, // TODO: Denen brukes i DP test?
     personident: Personident = Personident(""),
     vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
     beslutterId: Navident = Navident(""),

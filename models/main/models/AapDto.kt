@@ -56,7 +56,7 @@ fun toDomain(
         saksbehandlerId = Navident("kelvin"),
         periodetype = Periodetype.UKEDAG,
         avvent = null,
-        perioder = perioder(value.utbetalinger), //.map { it.into() },
+        perioder = perioder(value.utbetalinger),
     )
 }
 

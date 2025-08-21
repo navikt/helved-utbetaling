@@ -1,11 +1,7 @@
 package models
 
-import java.lang.Long
-import java.nio.ByteBuffer
-import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
 
 data class DpUtbetaling(
     val dryrun: Boolean = false,
@@ -116,23 +112,3 @@ private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode>
 }
 
 data class DpTuple(val key: String, val value: DpUtbetaling)
-
-// fun uuid(
-//     sakId: SakId,
-//     fagsystem: Fagsystem,
-//     meldeperiode: String,
-//     stønad: StønadTypeDagpenger,
-// ): UUID {
-//     val buffer = ByteBuffer.allocate(Long.BYTES)
-//     buffer.putLong((fagsystem.name + sakId.id + meldeperiode + stønad.klassekode).hashCode().toLong())
-//
-//     val digest = MessageDigest.getInstance("SHA-256")
-//     val hash = digest.digest(buffer.array())
-//
-//     val bb = ByteBuffer.wrap(hash)
-//     val mostSigBits = bb.long
-//     val leastSigBits = bb.long
-//
-//     return UUID(mostSigBits, leastSigBits)
-// }
-

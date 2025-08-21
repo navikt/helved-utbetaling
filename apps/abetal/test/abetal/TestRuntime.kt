@@ -7,6 +7,8 @@ import org.apache.kafka.streams.state.BuiltInDslStoreSuppliers
 import java.util.*
 
 class TestTopics(private val kafka: StreamsMock) {
+    // TODO: Legg til riktig topic for AAP
+    val aap = kafka.testTopic(Topics.aap)
     val dp = kafka.testTopic(Topics.dp)
     val saker = kafka.testTopic(Topics.saker) 
     val utbetalinger = kafka.testTopic(Topics.utbetalinger) 
