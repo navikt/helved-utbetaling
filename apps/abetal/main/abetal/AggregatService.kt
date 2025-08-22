@@ -93,7 +93,9 @@ data class Oppdrag150(
 
 operator fun Utbetaling.plus(other: Utbetaling): Utbetaling {
 
-    return this.copy(perioder = (perioder union other.perioder).toList())
+    return this.copy(
+        behandlingId = other.behandlingId,
+        perioder = (perioder union other.perioder).toList())
 }
 
 operator fun Oppdrag.plus(other: Oppdrag): Oppdrag {
@@ -120,6 +122,8 @@ operator fun Oppdrag.plus(other: Oppdrag): Oppdrag {
         )
         oppdrag150 !in currentOppdrag150s
     }
+
+    otherOppdrag150s.first().refDelytelseId = this.oppdrag110.oppdragsLinje150s.last().delytelseId
 
     oppdrag110.oppdragsLinje150s.addAll(otherOppdrag150s)
     return this
