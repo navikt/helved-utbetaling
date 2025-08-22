@@ -7,7 +7,6 @@ import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.*
-import org.junit.jupiter.api.Disabled
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
@@ -1876,15 +1875,7 @@ internal class DpTest {
             .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid3), index = 4)
     }
 
-    // TODO: få dette scenarioet til å feile - nå går den stille igjennom med 1 tredjedel av utbetalingene
-    //       Hvis f.eks bruker trykker lagre 3 ganger på rappen, vil dette bli til 3 behandlinger på samme meldeperiode.
-    //       Det er mest sansynligvis bare siste behandling som skal gjelde, da de 2 første blir skrevet over.
-    //       Aggregatet til oppdrag tar bare med første behandling (3 ganger) og ikke siste,
-    //       Men kvitteringen trigger join med 'pending-utbetalinger' og lagrer siste behandling 3 ganger.
-    //       Dvs at tilstanden hos oss er riktig, men feil hos OS.
-    // FIXME: Send feil tilbake til DP, eller fiks Oppdrag-aggregatet.
     @Test
-    @Disabled
     fun `en meldeperiode som endres 3 ganger samtidig skal feile`() {
         val sid = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
@@ -1940,7 +1931,7 @@ internal class DpTest {
                     uid = uid,
                     originalKey = originalKey,
                     sakId = sid,
-                    behandlingId = bid1,
+                    behandlingId = bid3,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
@@ -1956,7 +1947,6 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        // FIXME: Hvordan kan vi hindre oppdraget her? Nå blir første sendt 3 ganger, og ikke 1 + 2 + 3
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey)
             .with(originalKey) {
@@ -1979,14 +1969,14 @@ internal class DpTest {
                 val l2 = it.oppdrag110.oppdragsLinje150s[1]
                 assertNull(l1.refDelytelseId)
                 assertEquals("NY", l2.kodeEndringLinje)
-                assertEquals(bid1.id, l2.henvisning)
+                assertEquals(bid2.id, l2.henvisning)
                 assertEquals("DPORAS", l2.kodeKlassifik)
                 assertEquals(300, l2.sats.toLong())
                 assertEquals(300, l2.vedtakssats157.vedtakssats.toLong())
                 val l3 = it.oppdrag110.oppdragsLinje150s[2]
                 assertNull(l1.refDelytelseId)
                 assertEquals("NY", l3.kodeEndringLinje)
-                assertEquals(bid1.id, l3.henvisning)
+                assertEquals(bid3.id, l3.henvisning)
                 assertEquals("DPORAS", l3.kodeKlassifik)
                 assertEquals(300, l3.sats.toLong())
                 assertEquals(300, l3.vedtakssats157.vedtakssats.toLong())
@@ -1999,7 +1989,6 @@ internal class DpTest {
             }
         }
 
-        // FIXME: Hvordan kan vi hindre utbetalingene her? Nå blir siste sendt 3 ganger, og ikke 1 + 2 + 3
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString(), size = 1)
             .with(uid.toString(), index = 0) {
@@ -2008,7 +1997,7 @@ internal class DpTest {
                     uid = uid,
                     originalKey = originalKey,
                     sakId = sid,
-                    behandlingId = bid1,
+                    behandlingId = bid3,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
@@ -2018,8 +2007,8 @@ internal class DpTest {
                     personident = Personident("12345678910")
                 ) {
                     periode(2.sep, 13.sep, 300u, 300u) +
-                            periode(16.sep, 27.sep, 300u, 300u) +
-                            periode(30.sep, 10.okt, 300u, 300u)
+                    periode(16.sep, 27.sep, 300u, 300u) +
+                    periode(30.sep, 10.okt, 300u, 300u)
                 }
                 assertEquals(expected, it)
             }

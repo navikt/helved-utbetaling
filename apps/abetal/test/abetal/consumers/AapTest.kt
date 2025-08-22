@@ -1,7 +1,6 @@
 package abetal.consumers
 
 import abetal.Aap
-import abetal.Dp
 import abetal.SakKey
 import abetal.TestRuntime
 import abetal.aug21
@@ -31,7 +30,6 @@ import models.StønadTypeAAP
 import models.aapUId
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -1072,15 +1070,7 @@ class AapTest {
             .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid3), index = 4)
     }
 
-    // TODO: få dette scenarioet til å feile - nå går den stille igjennom med 1 tredjedel av utbetalingene
-    //       Hvis f.eks bruker trykker lagre 3 ganger på rappen, vil dette bli til 3 behandlinger på samme meldeperiode.
-    //       Det er mest sansynligvis bare siste behandling som skal gjelde, da de 2 første blir skrevet over.
-    //       Aggregatet til oppdrag tar bare med første behandling (3 ganger) og ikke siste,
-    //       Men kvitteringen trigger join med 'pending-utbetalinger' og lagrer siste behandling 3 ganger.
-    //       Dvs at tilstanden hos oss er riktig, men feil hos OS.
-    // FIXME: Send feil tilbake til AAP, eller fiks Oppdrag-aggregatet.
     @Test
-    //@Disabled
     fun `en meldeperiode som endres 3 ganger samtidig skal feile`() {
         val sid = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
