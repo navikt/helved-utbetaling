@@ -1,6 +1,7 @@
 package abetal.consumers
 
 import abetal.Aap
+import abetal.Dp
 import abetal.SakKey
 import abetal.TestRuntime
 import abetal.aug21
@@ -1079,7 +1080,7 @@ class AapTest {
     //       Dvs at tilstanden hos oss er riktig, men feil hos OS.
     // FIXME: Send feil tilbake til AAP, eller fiks Oppdrag-aggregatet.
     @Test
-    @Disabled
+    //@Disabled
     fun `en meldeperiode som endres 3 ganger samtidig skal feile`() {
         val sid = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
@@ -1097,11 +1098,14 @@ class AapTest {
         TestRuntime.topics.aap.produce(originalKey) {
             Aap.utbetaling(sid.id, bid2.id) {
                 Aap.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
+                Aap.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
             }
         }
         TestRuntime.topics.aap.produce(originalKey) {
             Aap.utbetaling(sid.id, bid3.id) {
                 Aap.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
+                Aap.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
+                Aap.meldekort(meldeperiode, 30.sep, 10.okt, 300u, 300u)
             }
         }
 
@@ -1132,23 +1136,22 @@ class AapTest {
                     uid = uid,
                     originalKey = originalKey,
                     sakId = sid,
-                    behandlingId = bid1,
+                    behandlingId = bid3,
                     fagsystem = Fagsystem.AAP,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
                     vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("AAP"),
-                    saksbehandlerId = Navident("AAP"),
+                    beslutterId = Navident("kelvin"),
+                    saksbehandlerId = Navident("kelvin"),
                     personident = Personident("12345678910")
                 ) {
                     periode(2.sep, 13.sep, 300u, 300u) +
-                            periode(16.sep, 27.sep, 300u, 300u) +
-                            periode(30.sep, 10.okt, 300u, 300u)
+                    periode(16.sep, 27.sep, 300u, 300u) +
+                    periode(30.sep, 10.okt, 300u, 300u)
                 }
                 assertEquals(expected, it)
             }
 
-        // FIXME: Hvordan kan vi hindre oppdraget her? Nå blir første sendt 3 ganger, og ikke 1 + 2 + 3
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(originalKey)
             .with(originalKey) {
@@ -1158,7 +1161,7 @@ class AapTest {
                 assertEquals(sid.id, it.oppdrag110.fagsystemId)
                 assertEquals("MND", it.oppdrag110.utbetFrekvens)
                 assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("AAP", it.oppdrag110.saksbehId)
+                assertEquals("kelvin", it.oppdrag110.saksbehId)
                 assertEquals(3, it.oppdrag110.oppdragsLinje150s.size)
                 assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
                 val l1 = it.oppdrag110.oppdragsLinje150s[0]
@@ -1169,16 +1172,16 @@ class AapTest {
                 assertEquals(300, l1.sats.toLong())
                 assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
                 val l2 = it.oppdrag110.oppdragsLinje150s[1]
-                assertNull(l1.refDelytelseId)
+                assertEquals(l1.delytelseId, l2.refDelytelseId)
                 assertEquals("NY", l2.kodeEndringLinje)
-                assertEquals(bid1.id, l2.henvisning)
+                assertEquals(bid2.id, l2.henvisning)
                 assertEquals("AAPUAA", l2.kodeKlassifik)
                 assertEquals(300, l2.sats.toLong())
                 assertEquals(300, l2.vedtakssats157.vedtakssats.toLong())
                 val l3 = it.oppdrag110.oppdragsLinje150s[2]
-                assertNull(l1.refDelytelseId)
+                assertEquals(l2.delytelseId, l3.refDelytelseId)
                 assertEquals("NY", l3.kodeEndringLinje)
-                assertEquals(bid1.id, l3.henvisning)
+                assertEquals(bid3.id, l3.henvisning)
                 assertEquals("AAPUAA", l3.kodeKlassifik)
                 assertEquals(300, l3.sats.toLong())
                 assertEquals(300, l3.vedtakssats157.vedtakssats.toLong())
@@ -1191,7 +1194,6 @@ class AapTest {
             }
         }
 
-        // FIXME: Hvordan kan vi hindre utbetalingene her? Nå blir siste sendt 3 ganger, og ikke 1 + 2 + 3
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString(), size = 1)
             .with(uid.toString(), index = 0) {
@@ -1200,18 +1202,18 @@ class AapTest {
                     uid = uid,
                     originalKey = originalKey,
                     sakId = sid,
-                    behandlingId = bid1,
+                    behandlingId = bid3,
                     fagsystem = Fagsystem.AAP,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
                     vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("AAP"),
-                    saksbehandlerId = Navident("AAP"),
+                    beslutterId = Navident("kelvin"),
+                    saksbehandlerId = Navident("kelvin"),
                     personident = Personident("12345678910")
                 ) {
                     periode(2.sep, 13.sep, 300u, 300u) +
-                            periode(16.sep, 27.sep, 300u, 300u) +
-                            periode(30.sep, 10.okt, 300u, 300u)
+                    periode(16.sep, 27.sep, 300u, 300u) +
+                    periode(30.sep, 10.okt, 300u, 300u)
                 }
                 assertEquals(expected, it)
             }
