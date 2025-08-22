@@ -1,3 +1,3 @@
 dependencies {
-    api("com.nimbusds:nimbus-jose-jwt:10.3.1")
+    api("com.nimbusds:nimbus-jose-jwt:10.4.2")
 }
