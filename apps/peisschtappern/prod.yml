@@ -67,3 +67,6 @@ spec:
             value: "on"
           - name: "pgaudit.log"
             value: "write,ddl"
+  env:
+    - name: PEISEN_HOST
+      value: https://peisen.intern.nav.no/

@@ -1,0 +1,173 @@
+package peisschtappern
+
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.contentType
+import kotlinx.coroutines.runBlocking
+import libs.http.HttpClientFactory
+import libs.kafka.StringSerde
+import libs.xml.XMLMapper
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import org.apache.flink.api.common.eventtime.WatermarkStrategy
+import org.apache.flink.api.common.functions.OpenContext
+import org.apache.flink.api.common.state.ValueState
+import org.apache.flink.api.common.state.ValueStateDescriptor
+import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.connector.kafka.source.KafkaSource
+import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer
+import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema
+import org.apache.flink.core.execution.CheckpointingMode
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
+import org.apache.flink.streaming.api.functions.KeyedProcessFunction
+import org.apache.flink.util.Collector
+import org.apache.kafka.clients.consumer.ConsumerRecord
+import java.time.Duration
+import java.util.Properties
+
+data class KafkaRecord(val key: String, val value: Oppdrag)
+
+class FlinkOppdragKvitteringAlert {
+
+    private val http = HttpClientFactory.new(LogLevel.ALL)
+    private val webhookUrl: String = System.getenv("slack-webhook")
+        ?: error("Kan ikke hente slack-webhook fra env")
+
+    private val env = StreamExecutionEnvironment.getExecutionEnvironment()
+
+    fun stop() = env.close()
+    fun start() {
+
+        env.enableCheckpointing(Duration.ofSeconds(30).toMillis(), CheckpointingMode.EXACTLY_ONCE)
+
+        val bootstrapServers = System.getenv("KAFKA_BROKERS") ?: "<KAFKA_BOOTSTRAP_SERVERS>"
+        val groupId = "flink-oppdrag-checker"
+
+        val consumerProps = Properties().apply {
+            setProperty("isolation.level", "read_committed")
+            setProperty("auto.offset.reset", "earliest")
+        }
+
+        val mapper: XMLMapper<Oppdrag> = XMLMapper()
+
+        val oppdragSource = KafkaSource.builder<KafkaRecord>()
+            .setBootstrapServers(bootstrapServers)
+            .setGroupId(groupId)
+            .setTopics(Topics.oppdrag.toString())
+            .setProperties(consumerProps)
+            .setStartingOffsets(OffsetsInitializer.committedOffsets())
+            .setDeserializer(object : KafkaRecordDeserializationSchema<KafkaRecord> {
+                override fun deserialize(
+                    record: ConsumerRecord<ByteArray, ByteArray>,
+                    out: Collector<KafkaRecord>
+                ) {
+                    val key = StringSerde.deserializer().deserialize("", record.key())
+                    val value = mapper.readValue(record.value())
+                    out.collect(KafkaRecord(key, value!!))
+                }
+
+                override fun getProducedType(): TypeInformation<KafkaRecord> =
+                    TypeInformation.of(KafkaRecord::class.java)
+            })
+            .build()
+
+        val alerts = env
+            .fromSource(oppdragSource, WatermarkStrategy.noWatermarks(), "oppdrag-source")
+            .keyBy { it.key }
+            .process(KvitteringTimeout(Duration.ofHours(1)))
+            .name("missing-kvittering-check")
+            .executeAndCollect("Flink Oppdrag/Kvittering hourly check")
+        alerts.use {
+            runBlocking {
+                while (it.hasNext()) {
+                    http.post(webhookUrl) {
+                        contentType(io.ktor.http.ContentType.Application.Json)
+                        setBody(it.next())
+                    }
+                }
+            }
+        }
+    }
+
+    class KvitteringTimeout(
+        private val timeout: Duration
+    ) : KeyedProcessFunction<String, KafkaRecord, String>() {
+
+        private lateinit var alertState: ValueState<AlertState>
+
+        override fun open(openContext: OpenContext) {
+            alertState = runtimeContext.getState(
+                ValueStateDescriptor("alertState", TypeInformation.of(AlertState::class.java))
+            )
+        }
+
+        override fun processElement(
+            value: KafkaRecord,
+            ctx: KeyedProcessFunction<String, KafkaRecord, String>.Context,
+            out: Collector<String>
+        ) {
+            val previousState = alertState.value()
+
+            val hasKvittering = value.value.mmel != null
+            if (hasKvittering) {
+                previousState?.let {
+                    ctx.timerService().deleteProcessingTimeTimer(it.timestamp)
+                    alertState.clear()
+                }
+                return
+            }
+
+            previousState?.let {
+                ctx.timerService().deleteProcessingTimeTimer(it.timestamp)
+            }
+
+            val currentTimestamp = ctx.timerService().currentProcessingTime()
+            val timer = currentTimestamp + timeout.toMillis()
+            val sakId = value.value.oppdrag110.fagsystemId.trim()
+            val fagsystem = value.value.oppdrag110.kodeFagomraade.trim()
+            ctx.timerService().registerProcessingTimeTimer(timer)
+            //alertState.update(listOf(timer.toString(), sakId, fagsystem).joinToString(":"))
+            alertState.update(AlertState(timer, sakId, fagsystem))
+        }
+
+        override fun onTimer(
+            timestamp: Long,
+            ctx: KeyedProcessFunction<String, KafkaRecord, String>.OnTimerContext,
+            out: Collector<String>
+        ) {
+            val alertStateValue = alertState.value() ?: return
+            val json = """                {
+                  "channel": "team-hel-ved-alerts",
+                  "blocks": [
+                    {
+                      "type": "header",
+                      "text": { "type": "plain_text", "text": "Flink alert :alert: (${System.getenv("NAIS_CLUSTER_NAME")})", "emoji": true }
+                    },
+                    {
+                      "type": "section",
+                      "text": { "type": "mrkdwn", "text": "Mangler kvittering for ${ctx.currentKey}" },
+                      "accessory": {
+                        "type": "button",
+                        "text": { "type": "plain_text", "text": "Peisen" },
+                        "url": "${System.getenv("PEISEN_HOST")}/sak?sakId=${alertStateValue.sakId}&fagsystem=${alertStateValue.fagsystem}",
+                        "action_id": "button-action"
+                      }
+                    }
+                  ]
+                }"""
+            alertState.clear()
+            out.collect(json)
+        }
+    }
+}
+
+//private val String.timestamp get() = split(":")[0].toLong()
+//private val String.sakId get() = split(":")[1]
+//private val String.behandlingId get() = split(":")[2]
+//private val String.fagsystem get() = split(":")[3]
+
+data class AlertState(
+    var timestamp: Long,
+    var sakId: String,
+    var fagsystem: String
+) // Spiser Kryo dette ? Kanskje pga TypeInformation
