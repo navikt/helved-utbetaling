@@ -13,9 +13,8 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 object AggregateService {
     fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<Pair<Oppdrag, List<Utbetaling>>> {
 
-        val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> = aggregate
-            .filter { (new, prev) -> prev == null || new.perioder != prev.perioder }
-            .map { (new, prev) ->
+        val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> =
+            aggregate.filter { (new, prev) -> prev == null || new.perioder != prev.perioder }.map { (new, prev) ->
                 new.validate()
 
                 when {
@@ -43,25 +42,34 @@ object AggregateService {
                 }
             }
 
-        val oppdrag = utbetalingToOppdrag
-            .map { it.second }
-            .groupBy { it.oppdrag110.fagsystemId!! }
-            .map { (_, group) -> group.reduce { acc, next -> acc + next } }
+        val kjeder = utbetalingToOppdrag.groupBy { it.first.uid }.map { (_, kjede) -> kjede.reduce { acc, next -> acc + next } }
+        val oppdrager = kjeder.map { it.second }
+        if (oppdrager.isEmpty()) return emptyList()
+        val oppdrag = oppdrager.reduce { acc, next -> acc + next }
 
-        val utbetalinger = utbetalingToOppdrag.map { it.first }
-            .groupBy { it.uid }
-            .map { (_, group) -> group.reduce { acc, next -> acc + next } }
+        val utbetalinger = kjeder.map { it.first }
 
-        val oppdragToUtbetalinger = oppdrag
-            .map { o -> o to utbetalinger.filter { it.sakId.id == o.oppdrag110.fagsystemId } }
 
-        return oppdragToUtbetalinger
+        // TODO: Må vi ta hensyn til sakid? Kan det komme forskjellige sakid vi må gruppere på?
+        /*
+            val oppdrag = utbetalingToOppdrag
+                .map { it.second }
+                .groupBy { it.oppdrag110.fagsystemId!! }
+                .map { (_, group) -> group.reduce { acc, next -> acc + next } }
+
+            val utbetalinger = utbetalingToOppdrag.map { it.first }
+                .groupBy { it.uid }
+                .map { (_, group) -> group.reduce { acc, next -> acc + next } }
+
+            val oppdragToUtbetalinger = oppdrag
+                .map { o -> o to utbetalinger.filter { it.sakId.id == o.oppdrag110.fagsystemId } }
+            */
+        return listOf(oppdrag to utbetalinger)
     }
 
     fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<SimulerBeregningRequest> {
-        val simuleringer: List<SimulerBeregningRequest> = aggregate
-            .filter { (new, prev) -> prev == null || new.perioder != prev.perioder }
-            .map { (new, prev) ->
+        val simuleringer: List<SimulerBeregningRequest> =
+            aggregate.filter { (new, prev) -> prev == null || new.perioder != prev.perioder }.map { (new, prev) ->
                 new.validate()
                 when {
                     new.action == Action.DELETE -> {
@@ -74,8 +82,7 @@ object AggregateService {
                 }
             }
 
-        val simuleringerPerSak = simuleringer
-            .groupBy { it.request.oppdrag.fagsystemId.trimEnd() }
+        val simuleringerPerSak = simuleringer.groupBy { it.request.oppdrag.fagsystemId.trimEnd() }
             .map { (_, group) -> group.reduce { acc, next -> acc + next } }
 
         return simuleringerPerSak
@@ -91,39 +98,60 @@ data class Oppdrag150(
     val vedtakssats: BigDecimal
 )
 
-operator fun Utbetaling.plus(other: Utbetaling): Utbetaling {
-
-    return this.copy(
-        behandlingId = other.behandlingId,
-        perioder = (perioder union other.perioder).toList())
+operator fun Pair<Utbetaling, Oppdrag>.plus(other: Pair<Utbetaling, Oppdrag>): Pair<Utbetaling, Oppdrag> {
+    return (first noe other.first) to (second kjed other.second)
 }
 
-operator fun Oppdrag.plus(other: Oppdrag): Oppdrag {
+infix fun Utbetaling.noe(other: Utbetaling): Utbetaling {
+    return this.copy(
+       perioder = (perioder union other.perioder).toList()
+    )
+}
+
+operator fun Utbetaling.plus(other: Utbetaling): Utbetaling {
+    return this.copy(
+        behandlingId = other.behandlingId,
+        perioder = (perioder union other.perioder).toList()
+    )
+}
+
+infix fun Oppdrag.kjed(other: Oppdrag): Oppdrag {
     if (oppdrag110.kodeEndring != "NY") oppdrag110.kodeEndring = other.oppdrag110.kodeEndring
     val currentOppdrag150s = oppdrag110.oppdragsLinje150s.map { it ->
         Oppdrag150(
-            it.vedtakId,
-            it.datoVedtakFom,
-            it.datoVedtakTom,
-            it.kodeKlassifik,
-            it.sats,
-            it.vedtakssats157.vedtakssats
+            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157.vedtakssats
         )
     }
 
     val otherOppdrag150s = other.oppdrag110.oppdragsLinje150s.filter {
         val oppdrag150 = Oppdrag150(
-            it.vedtakId,
-            it.datoVedtakFom,
-            it.datoVedtakTom,
-            it.kodeKlassifik,
-            it.sats,
-            it.vedtakssats157.vedtakssats
+            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157.vedtakssats
         )
         oppdrag150 !in currentOppdrag150s
     }
+    if (otherOppdrag150s.isNotEmpty() ) {
+        otherOppdrag150s.first().refDelytelseId = this.oppdrag110.oppdragsLinje150s.last().delytelseId
+    }
 
-    otherOppdrag150s.first().refDelytelseId = this.oppdrag110.oppdragsLinje150s.last().delytelseId
+    oppdrag110.oppdragsLinje150s.addAll(otherOppdrag150s)
+    return this
+}
+
+operator fun Oppdrag.plus(other: Oppdrag): Oppdrag {
+    if (oppdrag110.kodeEndring != "NY") oppdrag110.kodeEndring = other.oppdrag110.kodeEndring
+    require(oppdrag110.fagsystemId == other.oppdrag110.fagsystemId)
+    val currentOppdrag150s = oppdrag110.oppdragsLinje150s.map { it ->
+        Oppdrag150(
+            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157.vedtakssats
+        )
+    }
+
+    val otherOppdrag150s = other.oppdrag110.oppdragsLinje150s.filter {
+        val oppdrag150 = Oppdrag150(
+            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157.vedtakssats
+        )
+        oppdrag150 !in currentOppdrag150s
+    }
 
     oppdrag110.oppdragsLinje150s.addAll(otherOppdrag150s)
     return this

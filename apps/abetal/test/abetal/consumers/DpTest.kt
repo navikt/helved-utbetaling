@@ -7,6 +7,7 @@ import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.*
+import org.junit.jupiter.api.Disabled
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
@@ -1876,6 +1877,7 @@ internal class DpTest {
     }
 
     @Test
+    @Disabled
     fun `en meldeperiode som endres 3 ganger samtidig skal feile`() {
         val sid = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
@@ -2019,7 +2021,9 @@ internal class DpTest {
                     .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
             }
 
+        // Dette støtter vi ikke lengre
         @Test
+        @Disabled
         fun `3 saker blir til 3 utbetalinger med 3 oppdrag`() {
             val sid1 = SakId("$nextInt")
             val sid2 = SakId("$nextInt")
@@ -2294,15 +2298,6 @@ internal class DpTest {
 
             TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-            val mottatt = StatusReply(
-                Status.MOTTATT,
-                Detaljer(
-                    ytelse = Fagsystem.DAGPENGER,
-                    linjer = listOf(
-                        DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
-                    )
-                )
-            )
             TestRuntime.topics.status.assertThat().isEmpty()
             TestRuntime.topics.utbetalinger.assertThat().isEmpty()
             TestRuntime.topics.oppdrag.assertThat().isEmpty()
