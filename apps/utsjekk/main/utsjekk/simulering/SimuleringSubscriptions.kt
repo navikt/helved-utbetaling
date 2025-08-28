@@ -1,20 +1,13 @@
 package utsjekk.simulering
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.get
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.logging.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withTimeoutOrNull
@@ -25,10 +18,10 @@ import models.DpUtbetaling
 import models.Fagsystem
 import models.Simulering
 import models.UtbetalingId
-import models.locked
-import utsjekk.Config
-import utsjekk.client
+import utsjekk.*
 import utsjekk.utbetaling.Utbetaling
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
 
 object SimuleringSubscriptions {
@@ -72,32 +65,30 @@ fun Route.simulerBlocking(dpUtbetalingerProducer: KafkaProducer<String, DpUtbeta
 
     route("/api/simulering/v3") {
         post {
-            val key = call.request.headers["Transaction-ID"] ?: UUID.randomUUID().toString().also {
-                println("Transaction-ID mangler: $it")
-            }
+            val key = call.request.headers["Transaction-ID"] ?: UUID.randomUUID().toString()
 
-            val fagsystem = when (call.client().name) {
-                "azure-token-generator" -> Fagsystem.DAGPENGER
-                else -> TODO("Implementer azp for ${call.client().name}")
+            val fagsystem = when (val name = call.client().name) {
+                "azure-token-generator" -> Fagsystem.valueOf(call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator"))
+                "helved-performance" -> Fagsystem.valueOf(call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator"))
+                "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
+                "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
+                else -> forbidden(msg = "mangler mapping mellom appname ($name) og fagsystem-enum", doc = "kom_i_gang")
             }
 
             suspend fun simulerDagpenger() {
                 val dto = call.receive<DpUtbetaling>()
-                val response = SimuleringSubscriptions.subscribe(key)
+                val deferred = SimuleringSubscriptions.subscribe(key)
                 dpUtbetalingerProducer.send(key, dto)
-                withTimeoutOrNull(30.seconds) { call.respond(response.await()) }
-                    ?: call.respond(HttpStatusCode.RequestTimeout)
+                withTimeoutOrNull(30.seconds) { 
+                    call.respond(deferred.await())
+                } ?: call.respond(HttpStatusCode.RequestTimeout)
                 SimuleringSubscriptions.unsubscribe(key)
             }
 
             when (fagsystem) {
                 Fagsystem.DAGPENGER -> simulerDagpenger()
-                Fagsystem.AAP -> TODO()
-                Fagsystem.TILTAKSPENGER -> TODO()
-                Fagsystem.TILLEGGSSTØNADER -> TODO()
-                Fagsystem.HISTORISK -> TODO()
+                else -> notFound("simulering/v3 for $fagsystem is not implemented yet")
             }
-
         }
     }
 }
