@@ -1,33 +1,21 @@
 package utsjekk.routes
 
+import TestRuntime
 import fakes.Azp
 import httpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import models.DpUtbetaling
-import models.DpUtbetalingsdag
-import models.Fagsystem
-import models.Rettighetstype
-import models.Simulering
-import models.Simuleringsperiode
-import models.SimulertUtbetaling
-import models.StønadTypeDagpenger
-import models.Utbetalingstype
+import models.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.simulering.SimuleringSubscriptions
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.*
 
 class SimuleringRouteTest {
 
@@ -41,6 +29,7 @@ class SimuleringRouteTest {
                     contentType(ContentType.Application.Json)
                     bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.AZURE_TOKEN_GENERATOR))
                     header("Transaction-ID", key)
+                    header("fagsystem", "DAGPENGER")
                     setBody(
                         DpUtbetaling(
                             dryrun = true,
