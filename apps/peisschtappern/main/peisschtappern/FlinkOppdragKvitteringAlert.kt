@@ -25,12 +25,10 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import java.time.Duration
 import java.util.Properties
 
-data class KafkaRecord(val key: String, val value: Oppdrag)
-
 class FlinkOppdragKvitteringAlert {
 
     private val http = HttpClientFactory.new(LogLevel.ALL)
-    private val webhookUrl: String = System.getenv("slack-webhook")
+    private val webhookUrl: String = System.getenv("apiUrl")
         ?: error("Kan ikke hente slack-webhook fra env")
 
     private val env = StreamExecutionEnvironment.getExecutionEnvironment()
@@ -126,7 +124,6 @@ class FlinkOppdragKvitteringAlert {
             val sakId = value.value.oppdrag110.fagsystemId.trim()
             val fagsystem = value.value.oppdrag110.kodeFagomraade.trim()
             ctx.timerService().registerProcessingTimeTimer(timer)
-            //alertState.update(listOf(timer.toString(), sakId, fagsystem).joinToString(":"))
             alertState.update(AlertState(timer, sakId, fagsystem))
         }
 
@@ -161,13 +158,10 @@ class FlinkOppdragKvitteringAlert {
     }
 }
 
-//private val String.timestamp get() = split(":")[0].toLong()
-//private val String.sakId get() = split(":")[1]
-//private val String.behandlingId get() = split(":")[2]
-//private val String.fagsystem get() = split(":")[3]
-
 data class AlertState(
     var timestamp: Long,
     var sakId: String,
     var fagsystem: String
 ) // Spiser Kryo dette ? Kanskje pga TypeInformation
+
+data class KafkaRecord(val key: String, val value: Oppdrag)

@@ -17,6 +17,7 @@ subprojects {
 
         withType<Test> {
             useJUnitPlatform()
+            environment("apiUrl", "http://localhost:9999")
             // testLogging { events("passed", "skipped", "failed") }
         }
 
