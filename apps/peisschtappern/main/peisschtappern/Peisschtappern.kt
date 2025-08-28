@@ -16,6 +16,7 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
@@ -87,7 +88,10 @@ fun Application.peisschtappern(
 
     val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, oppdrag)
     val manuellKvitteringService = ManuellKvitteringService(oppdragsdataProducer)
-
+    val flinkAlert = FlinkOppdragKvitteringAlert()
+    val flinkJob = launch {
+        flinkAlert.start()
+    }
     routing {
         probes(kafka, prometheus)
 
@@ -99,5 +103,8 @@ fun Application.peisschtappern(
     monitor.subscribe(ApplicationStopping) {
         kafka.close()
         oppdragsdataProducer.close()
+        flinkJob.cancel()
+        flinkAlert.stop()
     }
+
 }
