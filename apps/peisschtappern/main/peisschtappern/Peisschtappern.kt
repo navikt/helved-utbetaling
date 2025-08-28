@@ -86,13 +86,13 @@ fun Application.peisschtappern(
     )
 
     val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, oppdrag)
-    val manuellKvitteringService = ManuellKvitteringService(oppdragsdataProducer)
+    val manuellOppdragService = ManuellOppdragService(oppdragsdataProducer)
 
     routing {
         probes(kafka, prometheus)
 
         authenticate(TokenProvider.AZURE) {
-            api(manuellKvitteringService)
+            api( manuellOppdragService)
         }
     }
 
