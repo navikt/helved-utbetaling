@@ -118,8 +118,8 @@ data class TilkjentYtelse(
     val utbetalingsoppdrag: Utbetalingsoppdrag? = null,
     val andelerTilkjentYtelse: List<AndelTilkjentYtelse>,
     val sisteAndelIKjede: AndelTilkjentYtelse? = null,
-    @JsonSerialize(keyUsing = KjedenøkkelKeySerializer::class)
-    @JsonDeserialize(keyUsing = KjedenøkkelKeyDeserializer::class)
+    @param:JsonSerialize(keyUsing = KjedenøkkelKeySerializer::class)
+    @param:JsonDeserialize(keyUsing = KjedenøkkelKeyDeserializer::class)
     val sisteAndelPerKjede: Map<Kjedenøkkel, AndelTilkjentYtelse> =
         sisteAndelIKjede?.let {
             mapOf(it.stønadsdata.tilKjedenøkkel() to it)
