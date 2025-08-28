@@ -24,7 +24,7 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.15.2")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.15.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
 
