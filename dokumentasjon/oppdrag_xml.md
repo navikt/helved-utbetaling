@@ -16,8 +16,8 @@ Oppdragslinjene inneholder informasjon om hver enkelt utbetalingsperiode.
 | datoOppdragGjelderFom | Timestamp                                            | Vet ikke hva dette er. Vi setter alltid 01.01.2000                                                                                                                                                                 | 
 | saksbehId             | NAV-ident                                            | NAV-ident på saksbehandleren som har gjort behandlingen i vedtaksløsningen. Denne oppdaterer vi for hver nye utbetaling på saken                                                                                   | 
 | Avstemming-115         | Kodekomponent, nokkelAvstemming og tidspktAvstemming | Informasjon som OS trenger for å plukke ut riktige oppdrag til avstemming. Vi setter både nøkkelAvstemming og tidspktAvstemming til timestampet oppdraget blir sendt. Kodekomponent er det samme som fagområde.  <br/><br/> [Se egen side om grensesnittavstemming](https://github.com/navikt/helved-utbetaling/blob/main/dokumentasjon/grensesnittavstemming.md) | 
-| Avvent-118 | Liste | Se eget avsnitt|
-| OppdragsEnhet120      | Liste                                                | Se eget avsnitt                                                                                                                                                                                                    | 
+| Avvent-118 | Liste | Se eget [avsnitt](https://github.com/navikt/helved-utbetaling/blob/main/dokumentasjon/oppdrag_xml.md#avvent-118) |
+| OppdragsEnhet120      | Liste                                                | Se eget avsnitt                                                                                                                                                                                                   | 
 | OppdragsLinje150      | Liste                                                | Se eget avsnitt                                                                                                                                                                                                    | 
 
 ## Felter på Oppdragslinje150
@@ -73,6 +73,36 @@ I disse tilfellene sender vi to OppdragEnhet120 til OS. Da setter vi bostedsenhe
 </oppdrags-enhet-120>
 ```
 
+## Avvent-118
+
+Avvent-funksjonen gjør det mulig å holde tilbake hele eller deler av en utbetaling. Avvent-funksjonen kun aktuell for AAP. AAP bruker avvent i følgende scenarioer:
+
+1. Bruker har mottatt en annen folketrygdeytelse for samme tidsrom (årsakskode `AVAV` = Avvent avregning mot annen ytelse)
+2. Bruker har mottatt sosialstønad i påvente av ytelse, og Nav og skal avvente et refusjonskrav fra den kommunale sosialtjenesten (årsakskode `AVRK` = Avvent refusjonskrav)
+3. Bruker har mottatt støtte fra tjenestepensjonsordning i påvente av ytelse, og Nav skal avvente et refusjonskrav fra tjenestepensjonsordningen (årsakskode `AVRK` = Avvent refusjonskrav)
+
+Når man bruker avvent-funksjonen må man angi en årsakskode. Det er enten `AVAV` (avvent avregning mot annen ytelse) eller `AVRK` (avvent refusjonskrav). Oppdrag med årsakskode `AVAV` ligger på vent til økonomilinja manuelt reaktiverer utbetalingen. `AVRK` ligger på vent 21 dager eller 42 dager, knyttet til lovbestemte frister for å kreve refusjon. Dersom krav ikke mottas innenfor fristen går betalingen ut automatisk.
+
+### Felter på avvent-118
+
+| Felt         | Type/gyldige verdier  | Beskrivelse                                                                                               |
+|:-------------|:----------------------|:----------------------------------------------------------------------------------------------------------|
+| datoAvventFom    | Dato | Fom-dato for delen av utbetalingsperioden som skal holdes tilbake |
+| datoAvventTom    | Dato | Tom-dato for delen av utbetalingsperioden som skal holdes tilbake. `datoAvventFom` og `datoAvventTom` brukes altså til å angi hvilken del av en utbetalingsperiode man ønsker å avvente beregning og utbetaling for |
+| datoOverfores    | Dato | Brukes til å angi hvor lenge utbetalingen skal holdes tilbake. Optional / ikke påkrevet i Utsjekk fordi oppdrag hvor man har brukt avvent noen ganger skal plukkes så fort som mulig av økonomimedarbeider, og ikke på en gitt dato  |
+| kodeArsak        | AVAV, AVRK | `AVAV` betyr AVvent AVregning. `AVRK` betyr AVvent RefusjonsKrav |
+| feilreg          | J,N | Optional felt som brukes for å fjerne instruksen om å utsette beregningen og utbetalingen, dersom det ble gjort ved en feil. `J` her betyr altså at oppdraget ikke skal avventes likevel |
+
+Eksempel:
+```xml
+<avvent-118>
+    <datoAvventFom>2025-07-01+02:00</datoAvventFom>
+    <datoAvventTom>2025-07-20+02:00</datoAvventTom>
+    <kodeArsak>AVAV</kodeArsak>
+    <datoOverfores>2025-09-17+02:00</datoOverfores>
+    <feilreg>N</feilreg>
+</avvent-118>
+```
 
 ## Fullstendig eksempel
 TODO finn eksempel med Opphør
