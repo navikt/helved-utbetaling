@@ -6,7 +6,7 @@ import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.ObjectFactory
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
-class ManuellKvitteringService(
+class ManuellOppdragService(
     private val oppdragProducer: KafkaProducer<String, Oppdrag>
 ) {
     fun addKvitteringManuelt(
@@ -31,6 +31,20 @@ class ManuellKvitteringService(
 
         return oppdrag
     }
+
+    fun sendOppdragManuelt(
+        oppdragXml: String,
+        messageKey: String,
+    ): Oppdrag {
+
+        val xmlMapper = XMLMapper<Oppdrag>()
+        val oppdrag = xmlMapper.readValue(oppdragXml)
+
+        oppdragProducer.send(messageKey, oppdrag)
+
+        return oppdrag
+    }
+
 
 }
 

@@ -35,7 +35,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     }
 }
 
-fun Route.api(manuellKvitteringService: ManuellKvitteringService) {
+fun Route.api(manuellOppdragService: ManuellOppdragService) {
     route("/api") {
         get {
             val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
@@ -99,7 +99,7 @@ fun Route.api(manuellKvitteringService: ManuellKvitteringService) {
         val request = call.receive<KvitteringRequest>()
 
         try {
-            manuellKvitteringService.addKvitteringManuelt(
+            manuellOppdragService.addKvitteringManuelt(
                 oppdragXml = request.oppdragXml,
                 messageKey = request.messageKey,
                 alvorlighetsgrad = request.alvorlighetsgrad,
@@ -114,6 +114,24 @@ fun Route.api(manuellKvitteringService: ManuellKvitteringService) {
             call.respond(HttpStatusCode.BadRequest, msg)
         }
     }
+
+    post("/manuell-oppdrag") {
+        val request = call.receive<OppdragRequest>()
+
+        try {
+            manuellOppdragService.sendOppdragManuelt(
+                oppdragXml = request.oppdragXml,
+                messageKey = request.messageKey
+
+            )
+            call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.messageKey} on ${oppdrag.name}")
+        } catch (e: Exception) {
+            val msg = "Failed to send oppdrag for uid:${request.messageKey}"
+            appLog.error(msg)
+            secureLog.error(msg, e)
+            call.respond(HttpStatusCode.BadRequest, msg)
+        }
+    }
 }
 
 data class KvitteringRequest(
@@ -122,6 +140,11 @@ data class KvitteringRequest(
     val alvorlighetsgrad: String,
     val beskrMelding: String?,
     val kodeMelding: String?,
+)
+
+data class OppdragRequest(
+    val messageKey: String,
+    val oppdragXml: String
 )
 
 sealed class Channel(
