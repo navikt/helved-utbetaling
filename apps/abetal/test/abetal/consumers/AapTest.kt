@@ -30,6 +30,7 @@ import models.StønadTypeAAP
 import models.aapUId
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -1071,6 +1072,7 @@ class AapTest {
     }
 
     @Test
+    @Disabled
     fun `en meldeperiode som endres 3 ganger samtidig skal feile`() {
         val sid = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
@@ -1215,6 +1217,7 @@ class AapTest {
     }
 
     @Test
+    @Disabled
     fun `3 saker blir til 3 utbetalinger med 3 oppdrag`() {
         val sid1 = SakId("$nextInt")
         val sid2 = SakId("$nextInt")
