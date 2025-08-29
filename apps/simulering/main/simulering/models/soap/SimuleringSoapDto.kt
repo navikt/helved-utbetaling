@@ -138,11 +138,11 @@ object soap {
 
     @JacksonXmlRootElement(localName = "ns3:simulerBeregningRequest")
     data class SimulerBeregningRequest(
-        @JacksonXmlProperty(isAttribute = true, localName = "ns2")
+        @param:JacksonXmlProperty(isAttribute = true, localName = "ns2")
         val ns2: String = "http://nav.no/system/os/entiteter/oppdragSkjema",
-        @JacksonXmlProperty(isAttribute = true, localName = "ns3")
+        @param:JacksonXmlProperty(isAttribute = true, localName = "ns3")
         val ns3: String = "http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt",
-        @JacksonXmlProperty(isAttribute = true)
+        @param:JacksonXmlProperty(isAttribute = true)
         val request: SimulerRequest,
     ) {
         companion object {
@@ -216,7 +216,7 @@ object soap {
         val oppdragGjelderId: String,
         val datoOppdragGjelderFom: LocalDate?,
         val saksbehId: String,
-        @JsonProperty("ns2:enhet")
+        @param:JsonProperty("ns2:enhet")
         val enhet: List<Enhet>,
         val oppdragslinje: List<Oppdragslinje>,
     )
@@ -273,9 +273,9 @@ object soap {
         val utbetalesTilId: String?,
         val refFagsystemId: String?,
         val refDelytelseId: String?,
-        @JsonProperty("ns2:attestant")
+        @param:JsonProperty("ns2:attestant")
         val attestant: List<Attestant>,
-        @JsonProperty("ns2:vedtakssats")
+        @param:JsonProperty("ns2:vedtakssats")
         val vedtakssats: Vedtakssats?,
     ) {
         companion object {
