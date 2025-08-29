@@ -6,6 +6,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.contentType
 import kotlinx.coroutines.runBlocking
 import libs.http.HttpClientFactory
+import libs.kafka.StreamsConfig
 import libs.kafka.StringSerde
 import libs.xml.XMLMapper
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -25,21 +26,22 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import java.time.Duration
 import java.util.Properties
 
-class FlinkOppdragKvitteringAlert {
+interface Flink {
+    fun start()
+    fun stop()
+}
+
+class FlinkOppdragKvitteringAlert(val flinkConfig: FlinkConfig, val kafkaConfig: StreamsConfig) : Flink {
 
     private val http = HttpClientFactory.new(LogLevel.ALL)
-    private val webhookUrl: String = System.getenv("apiUrl")
-        ?: error("Kan ikke hente slack-webhook fra env")
 
     private val env = StreamExecutionEnvironment.getExecutionEnvironment()
 
-    fun stop() = env.close()
-    fun start() {
+    override fun stop() = env.close()
+
+    override fun start() {
 
         env.enableCheckpointing(Duration.ofSeconds(30).toMillis(), CheckpointingMode.EXACTLY_ONCE)
-
-        val bootstrapServers = System.getenv("KAFKA_BROKERS") ?: "<KAFKA_BOOTSTRAP_SERVERS>"
-        val groupId = "flink-oppdrag-checker"
 
         val consumerProps = Properties().apply {
             setProperty("isolation.level", "read_committed")
@@ -49,11 +51,11 @@ class FlinkOppdragKvitteringAlert {
         val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
         val oppdragSource = KafkaSource.builder<KafkaRecord>()
-            .setBootstrapServers(bootstrapServers)
-            .setGroupId(groupId)
+            .setBootstrapServers(kafkaConfig.brokers)
+            .setGroupId("flink-oppdrag-checker")
             .setTopics(Topics.oppdrag.toString())
             .setProperties(consumerProps)
-            .setStartingOffsets(OffsetsInitializer.committedOffsets())
+            .setStartingOffsets(OffsetsInitializer.latest())
             .setDeserializer(object : KafkaRecordDeserializationSchema<KafkaRecord> {
                 override fun deserialize(
                     record: ConsumerRecord<ByteArray, ByteArray>,
@@ -75,10 +77,11 @@ class FlinkOppdragKvitteringAlert {
             .process(KvitteringTimeout(Duration.ofHours(1)))
             .name("missing-kvittering-check")
             .executeAndCollect("Flink Oppdrag/Kvittering hourly check")
+
         alerts.use {
             runBlocking {
                 while (it.hasNext()) {
-                    http.post(webhookUrl) {
+                    http.post(flinkConfig.slackWebhookUrl) {
                         contentType(io.ktor.http.ContentType.Application.Json)
                         setBody(it.next())
                     }

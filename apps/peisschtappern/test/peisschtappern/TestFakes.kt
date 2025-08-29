@@ -1,5 +1,6 @@
 package peisschtappern
 
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -29,6 +30,31 @@ class AzureFake : AutoCloseable {
     fun generateToken() = jwksGenerator.generate()
 
     override fun close() = azure.stop(0, 0)
+}
+
+class FlinkFake : Flink {
+    private val flink = embeddedServer(Netty, port = 0, module = Application::flink).apply { start() }
+
+    val config by lazy {
+        FlinkConfig(
+            slackWebhookUrl = "http://localhost:${flink.engine.port}/slack"
+        )
+    }
+
+    override fun start() {}
+
+    override fun stop() {}
+}
+
+private fun Application.flink() {
+    install(ContentNegotiation) {
+        jackson {}
+    }
+    routing {
+        post("/slack") {
+            call.respond(HttpStatusCode.OK)
+        }
+    }
 }
 
 private fun Application.azure() {
