@@ -3,10 +3,11 @@ package peisschtappern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.kafka.*
-import libs.tracing.*
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
+import libs.kafka.*
+import libs.tracing.Tracing
+import libs.utils.env
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 
@@ -31,13 +32,17 @@ object Topics {
 
 val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
 
-fun createTopology(): Topology = topology {
+fun createTopology(config: Config): Topology = topology {
     Channel.all()
         .sortedBy { it.revision }
-        .forEach { save(it.topic, it.table) }
+        .forEach { save(it.topic, it.table, config.image.commitHash()) }
 }
 
-private fun Topology.save(topic: Topic<String, ByteArray>, table: Table) {
+private fun Topology.save(
+    topic: Topic<String, ByteArray>,
+    table: Table,
+    commitHash: String,
+) {
     forEach(topic) { key, value, metadata ->
         runBlocking {
             withContext(Jdbc.context + Dispatchers.IO) {
@@ -53,6 +58,7 @@ private fun Topology.save(topic: Topic<String, ByteArray>, table: Table) {
                         stream_time_ms = metadata.streamTimeMs,
                         system_time_ms = metadata.systemTimeMs,
                         trace_id = Tracing.getCurrentTraceId(),
+                        commit = commitHash, 
                     ).insert(table)
                 }
             }
@@ -62,3 +68,4 @@ private fun Topology.save(topic: Topic<String, ByteArray>, table: Table) {
 
 class DefaultKafkaFactory : KafkaFactory {}
 
+private fun String.commitHash(): String = substringAfterLast(":")

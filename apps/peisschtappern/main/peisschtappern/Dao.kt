@@ -39,6 +39,7 @@ data class Dao(
     val stream_time_ms: Long,
     val system_time_ms: Long,
     val trace_id: String?,
+    val commit: String? = null,
 ) {
     companion object {
         suspend fun find(key: String, table: Table, limit: Int = 1000): List<Dao> {
@@ -217,8 +218,9 @@ data class Dao(
                 timestamp_ms,
                 stream_time_ms,
                 system_time_ms,
-                trace_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                trace_id,
+                commit
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """.trimIndent()
 
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
@@ -232,6 +234,7 @@ data class Dao(
             stmt.setObject(8, stream_time_ms)
             stmt.setObject(9, system_time_ms)
             stmt.setObject(10, trace_id)
+            stmt.setObject(11, commit)
             daoLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
@@ -250,5 +253,6 @@ private fun from(rs: ResultSet) = Dao(
     stream_time_ms = rs.getLong("stream_time_ms"),
     system_time_ms = rs.getLong("system_time_ms"),
     trace_id = rs.getString("trace_id"),
+    commit = rs.getString("commit"),
 )
 
