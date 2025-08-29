@@ -79,21 +79,21 @@ object SoapXml {
 
 @JacksonXmlRootElement(localName = "Envelope", namespace = "http://schemas.xmlsoap.org/soap/envelope/")
 data class SoapResponse<T>(
-    @JacksonXmlProperty(localName = "Header")
+    @param:JacksonXmlProperty(localName = "Header")
     val header: SoapHeader?,
-    @JacksonXmlProperty(localName = "Body")
+    @param:JacksonXmlProperty(localName = "Body")
     val body: T,
 )
 
 data class SoapHeader(
-    @JacksonXmlProperty(localName = "Action", namespace = "http://www.w3.org/2005/08/addressing")
+    @param:JacksonXmlProperty(localName = "Action", namespace = "http://www.w3.org/2005/08/addressing")
     val action: String,
-    @JacksonXmlProperty(localName = "MessageID", namespace = "http://www.w3.org/2005/08/addressing")
+    @param:JacksonXmlProperty(localName = "MessageID", namespace = "http://www.w3.org/2005/08/addressing")
     val messageId: String,
 )
 
 data class SoapFault(
-    @JacksonXmlProperty(localName = "Fault", namespace = "http://www.w3.org/2003/05/soap-envelope")
+    @param:JacksonXmlProperty(localName = "Fault", namespace = "http://www.w3.org/2003/05/soap-envelope")
     val fault: Fault
 )
 
