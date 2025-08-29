@@ -1,4 +1,4 @@
-val ktorVersion = "3.2.1"
+val ktorVersion = "3.2.3"
 val libVersion = "3.1.171"
 
 dependencies {
@@ -6,7 +6,7 @@ dependencies {
     api(project(":libs:http"))
     api(project(":libs:utils"))
 
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.19.1")
+    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.19.2")
 
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-core:$ktorVersion")

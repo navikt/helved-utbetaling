@@ -1,14 +1,11 @@
-package abetal.models
+package models
 
-import abetal.*
+import java.lang.Long
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
-import libs.kafka.*
-import libs.utils.appLog
-import models.*
 
 data class DpUtbetaling(
     val dryrun: Boolean = false,
@@ -18,6 +15,8 @@ data class DpUtbetaling(
     val ident: String,
     val utbetalinger: List<DpUtbetalingsdag>,
     val vedtakstidspunktet: LocalDateTime,
+    val saksbehandler: String? = null,
+    val beslutter: String? = null,
 )
 
 enum class Utbetalingstype {
@@ -73,33 +72,6 @@ fun dpUId(sakId: String, meldeperiode: String, stønad: StønadTypeDagpenger): U
     return UtbetalingId(uuid(SakId(sakId), Fagsystem.DAGPENGER, meldeperiode, stønad))
 }
 
-fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
-    val (dpKey, dpUtbetaling) = tuple
-    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling 
-        .utbetalinger
-        .groupBy { it.meldeperiode to it.stønadstype() }
-        .map { (group, utbetalinger) -> 
-            val (meldeperiode, stønadstype) = group
-            dpUId(dpUtbetaling.sakId, meldeperiode, stønadstype) to dpUtbetaling.copy(utbetalinger = utbetalinger)
-        }
-        .toMutableList()
-
-    if (uids != null) {
-        val dpUids = utbetalingerPerMeldekort.map { (dpUid, _) -> dpUid }
-        val missingMeldeperioder = uids.filter { it !in dpUids }.map { it to null }
-        utbetalingerPerMeldekort.addAll(missingMeldeperioder)
-    }
-
-   return utbetalingerPerMeldekort.map { (uid, dpUtbetaling) -> 
-        val utbetaling = when (dpUtbetaling) {
-            null -> fakeDelete(dpKey, sakKey.sakId, uid).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
-            else -> toDomain(dpKey, dpUtbetaling, uids, uid)
-        }
-        appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
-        KeyValue(utbetaling.uid.id.toString(), utbetaling)
-   }
-}
-
 fun toDomain(
     key: String,
     value: DpUtbetaling,
@@ -122,8 +94,8 @@ fun toDomain(
         personident = Personident(value.ident),
         vedtakstidspunkt = value.vedtakstidspunktet,
         stønad = stønad,
-        beslutterId = Navident("dagpenger"),
-        saksbehandlerId = Navident("dagpenger"),
+        beslutterId = value.beslutter?.let(::Navident) ?: Navident("dagpenger"),
+        saksbehandlerId = value.saksbehandler?.let(::Navident) ?: Navident("dagpenger"),
         periodetype = Periodetype.UKEDAG,
         avvent = null,
         perioder = perioder(value.utbetalinger), //.map { it.into() },
@@ -191,7 +163,7 @@ fun uuid(
     meldeperiode: String,
     stønad: StønadTypeDagpenger,
 ): UUID {
-    val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
+    val buffer = ByteBuffer.allocate(Long.BYTES)
     buffer.putLong((fagsystem.name + sakId.id + meldeperiode + stønad.klassekode).hashCode().toLong())
 
     val digest = MessageDigest.getInstance("SHA-256")

@@ -16,7 +16,6 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
@@ -82,20 +81,20 @@ fun Application.peisschtappern(
     }
 
     kafka.connect(
-        topology = createTopology(),
+        topology = createTopology(config),
         config = config.kafka,
         registry = prometheus
     )
 
     val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, oppdrag)
-    val manuellKvitteringService = ManuellKvitteringService(oppdragsdataProducer)
+    val manuellOppdragService = ManuellOppdragService(oppdragsdataProducer)
     flink.start()
 
     routing {
         probes(kafka, prometheus)
 
         authenticate(TokenProvider.AZURE) {
-            api(manuellKvitteringService)
+            api( manuellOppdragService)
         }
     }
 

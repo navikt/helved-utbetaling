@@ -30,3 +30,7 @@ spec:
     - team: helved
       application: kafka-cli
       access: readwrite
+    - team: helved
+      application: helved-performance
+      access: read
+

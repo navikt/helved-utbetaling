@@ -6,8 +6,8 @@ application {
     mainClass.set("urskog.UrskogKt")
 }
 
-val ktorVersion = "3.2.1"
-val libVersion = "3.1.172"
+val ktorVersion = "3.2.3"
+val libVersion = "3.1.184"
 
 dependencies {
     implementation(project(":models"))
@@ -23,8 +23,8 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
 
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.17.1-alpha")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.15.1")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.19.0-alpha")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.15.3")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
 
     testImplementation(kotlin("test")) 

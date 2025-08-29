@@ -30,6 +30,8 @@ class KafkaTest {
                Channel.Status -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.PendingUtbetalinger -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Fk -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Dp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.DpIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
             }
         }
     }
@@ -54,6 +56,7 @@ class KafkaTest {
             assertNotNull(dao.timestamp_ms)
             assertNotNull(dao.stream_time_ms)
             assertNotNull(dao.system_time_ms)
+            assertEquals("test", dao.commit)
         }
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.UUID
 import java.util.Base64
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 import java.time.*
 import kotlin.getOrThrow
 import libs.utils.secureLog
@@ -35,15 +36,13 @@ data class Utbetaling(
     val avvent: Avvent?,
     val perioder: List<Utbetalingsperiode>,
 ) {
-    fun validate(prev: Utbetaling?) {
+    fun validate() {
         failOnEmptyPerioder()
         failOnÅrsskifte()
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
-        // failOnInconsistentPeriodeType()
         failOnIllegalFutureUtbetaling()
         failOnTooManyPeriods()
-        failOnDuplicate(prev)
         failOnZeroBeløp()
         failOnTooLongSakId()
         failOnTooLongBehandlingId()
@@ -55,7 +54,7 @@ data class Utbetaling(
             return false
         }
 
-        val isDuplicate = uid == other.uid 
+        val isDuplicate = uid == other.uid
             && action == other.action 
             && sakId == other.sakId 
             && behandlingId == other.behandlingId 
@@ -87,7 +86,7 @@ enum class Årsak(val kode: String) {
 data class Avvent(
     val fom: LocalDate,
     val tom: LocalDate,
-    val overføres: LocalDate,
+    val overføres: LocalDate? = null,
     val årsak: Årsak? = null,
     val feilregistrering: Boolean = false,
 )
@@ -110,7 +109,7 @@ fun Utbetaling.validateLockedFields(other: Utbetaling) {
 
 fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
     if (perioder.size != other.perioder.size) return
-    val ingenEndring = perioder.zip(other.perioder).all { (l, r) -> l.beløp == r.beløp && l.fom == r.fom && l.tom == r.tom && l.betalendeEnhet == r.betalendeEnhet && l.vedtakssats == r.vedtakssats }
+    val ingenEndring = perioder.sortedBy { it.hashCode() }.zip(other.perioder.sortedBy { it.hashCode() }).all { (l, r) -> l.beløp == r.beløp && l.fom == r.fom && l.tom == r.tom && l.vedtakssats == r.vedtakssats }
     if (ingenEndring) conflict("periods already exists", "opprett_en_utbetaling")
 }
 
@@ -138,17 +137,6 @@ fun Utbetaling.failOnTomBeforeFom() {
     if (!perioder.all { it.fom <= it.tom }) badRequest("fom må være før eller lik tom", "opprett_en_utbetaling")
 }
 
-fun Utbetaling.failOnInconsistentPeriodeType() {
-    fun LocalDate.erHelg() = dayOfWeek in listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
-    val consistent = when (periodetype) {
-        Periodetype.UKEDAG -> perioder.all { it.fom == it.tom } && perioder.none { it.fom.erHelg() }
-        Periodetype.DAG -> perioder.all { it.fom == it.tom }
-        Periodetype.MND -> perioder.all { it.fom.dayOfMonth == 1 && it.tom.plusDays(1) == it.fom.plusMonths(1) }
-        Periodetype.EN_GANG -> perioder.all { it.fom.year == it.tom.year } // tillater engangs over årsskifte
-    }
-    if (!consistent) badRequest("inkonsistens blant datoene i periodene")
-}
-
 fun Utbetaling.failOnIllegalFutureUtbetaling() {
     if (stønad is StønadTypeTilleggsstønader) return
     val isDay = periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG) 
@@ -165,14 +153,6 @@ fun Utbetaling.failOnTooManyPeriods() {
         val max = perioder.maxBy { it.tom }.tom
         val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max)+1 > 1000 
         if (tooManyPeriods) badRequest("$periodetype støtter maks periode på 1000 dager", "opprett_en_utbetaling")
-    }
-}
-
-fun Utbetaling.failOnDuplicate(prev: Utbetaling?) {
-    prev?.let {
-        if (this.copy(førsteUtbetalingPåSak = prev.førsteUtbetalingPåSak) == prev){
-            conflict("Denne meldingen har du allerede sendt inn")
-        } 
     }
 }
 
@@ -379,3 +359,21 @@ private fun <T> List<T>.splitWhen(predicate: (T, T) -> Boolean): List<List<T>> {
     }.map { it.toList() }
 }
 
+fun uuid(
+    sakId: SakId,
+    fagsystem: Fagsystem,
+    meldeperiode: String,
+    stønad: Stønadstype,
+): UUID {
+    val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
+    buffer.putLong((fagsystem.name + sakId.id + meldeperiode + stønad.klassekode).hashCode().toLong())
+
+    val digest = MessageDigest.getInstance("SHA-256")
+    val hash = digest.digest(buffer.array())
+
+    val bb = ByteBuffer.wrap(hash)
+    val mostSigBits = bb.long
+    val leastSigBits = bb.long
+
+    return UUID(mostSigBits, leastSigBits)
+}

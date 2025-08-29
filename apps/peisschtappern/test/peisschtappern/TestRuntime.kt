@@ -32,6 +32,7 @@ object TestRuntime {
         azure = azure.config,
         jdbc = postgres.config.copy(migrations = listOf(File("test/premigrations"), File("migrations"))),
         kafka = kafka.config,
+        image = "test:test",
         flink = flink.config,
     )
 
