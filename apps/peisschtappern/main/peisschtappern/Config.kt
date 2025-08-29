@@ -13,4 +13,5 @@ data class Config(
     ),
     val kafka: StreamsConfig = StreamsConfig(),
     val azure: AzureConfig = AzureConfig(),
+    val image: String = env("NAIS_APP_IMAGE"),
 )

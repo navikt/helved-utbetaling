@@ -1,0 +1,17 @@
+ALTER TABLE avstemming ADD COLUMN commit TEXT;
+ALTER TABLE oppdrag ADD COLUMN commit TEXT;
+ALTER TABLE dryrun_aap ADD COLUMN commit TEXT;
+ALTER TABLE dryrun_tp ADD COLUMN commit TEXT;
+ALTER TABLE dryrun_ts ADD COLUMN commit TEXT;
+ALTER TABLE dryrun_dp ADD COLUMN commit TEXT;
+ALTER TABLE kvittering ADD COLUMN commit TEXT;
+ALTER TABLE simuleringer ADD COLUMN commit TEXT;
+ALTER TABLE utbetalinger ADD COLUMN commit TEXT;
+ALTER TABLE saker ADD COLUMN commit TEXT;
+ALTER TABLE aap ADD COLUMN commit TEXT;
+ALTER TABLE status ADD COLUMN commit TEXT;
+ALTER TABLE pending_utbetalinger ADD COLUMN commit TEXT;
+ALTER TABLE fk ADD COLUMN commit TEXT;
+ALTER TABLE dp ADD COLUMN commit TEXT;
+ALTER TABLE dpIntern ADD COLUMN commit TEXT;
+

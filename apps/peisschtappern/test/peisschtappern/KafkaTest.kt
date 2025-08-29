@@ -56,6 +56,7 @@ class KafkaTest {
             assertNotNull(dao.timestamp_ms)
             assertNotNull(dao.stream_time_ms)
             assertNotNull(dao.system_time_ms)
+            assertEquals("test", dao.commit)
         }
     }
 }

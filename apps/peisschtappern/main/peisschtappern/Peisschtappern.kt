@@ -80,7 +80,7 @@ fun Application.peisschtappern(
     }
 
     kafka.connect(
-        topology = createTopology(),
+        topology = createTopology(config),
         config = config.kafka,
         registry = prometheus
     )
