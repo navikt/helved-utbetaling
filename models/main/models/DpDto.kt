@@ -15,6 +15,8 @@ data class DpUtbetaling(
     val ident: String,
     val utbetalinger: List<DpUtbetalingsdag>,
     val vedtakstidspunktet: LocalDateTime,
+    val saksbehandler: String? = null,
+    val beslutter: String? = null,
 )
 
 enum class Utbetalingstype {
@@ -92,8 +94,8 @@ fun toDomain(
         personident = Personident(value.ident),
         vedtakstidspunkt = value.vedtakstidspunktet,
         stønad = stønad,
-        beslutterId = Navident("dagpenger"),
-        saksbehandlerId = Navident("dagpenger"),
+        beslutterId = value.beslutter?.let(::Navident) ?: Navident("dagpenger"),
+        saksbehandlerId = value.saksbehandler?.let(::Navident) ?: Navident("dagpenger"),
         periodetype = Periodetype.UKEDAG,
         avvent = null,
         perioder = perioder(value.utbetalinger), //.map { it.into() },
