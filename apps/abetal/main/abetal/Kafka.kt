@@ -1,8 +1,5 @@
 package abetal
 
-import abetal.models.DpTuple
-import abetal.models.DpUtbetaling
-import abetal.models.splitOnMeldeperiode
 import libs.kafka.*
 import libs.kafka.processor.SuppressProcessor
 import models.*
@@ -170,5 +167,33 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .default {
             map { it -> it.unwrapErr() }.produce(Topics.status) 
         }
+}
+
+// TODO: erstatt DpTuple med noe mer generisk
+private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
+    val (dpKey, dpUtbetaling) = tuple
+    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling
+        .utbetalinger
+        .groupBy { it.meldeperiode to it.stønadstype() }
+        .map { (group, utbetalinger) ->
+            val (meldeperiode, stønadstype) = group
+            dpUId(dpUtbetaling.sakId, meldeperiode, stønadstype) to dpUtbetaling.copy(utbetalinger = utbetalinger)
+        }
+        .toMutableList()
+
+    if (uids != null) {
+        val dpUids = utbetalingerPerMeldekort.map { (dpUid, _) -> dpUid }
+        val missingMeldeperioder = uids.filter { it !in dpUids }.map { it to null }
+        utbetalingerPerMeldekort.addAll(missingMeldeperioder)
+    }
+
+    return utbetalingerPerMeldekort.map { (uid, dpUtbetaling) ->
+        val utbetaling = when (dpUtbetaling) {
+            null -> fakeDelete(dpKey, sakKey.sakId, uid).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
+            else -> toDomain(dpKey, dpUtbetaling, uids, uid)
+        }
+        appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
+        KeyValue(utbetaling.uid.id.toString(), utbetaling)
+    }
 }
 

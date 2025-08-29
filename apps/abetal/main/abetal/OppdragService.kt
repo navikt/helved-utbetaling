@@ -219,7 +219,7 @@ private fun avvent118(avvent: Avvent): Avvent118 {
     return objectFactory.createAvvent118().apply {
         datoAvventFom = avvent.fom.toXMLDate()
         datoAvventTom = avvent.tom.toXMLDate()
-        datoOverfores = avvent.overføres.toXMLDate()
+        datoOverfores = avvent.overføres?.toXMLDate()
         avvent.årsak?.let { årsak -> kodeArsak = årsak.kode }
         feilreg = if (avvent.feilregistrering) "J" else "N"
     }

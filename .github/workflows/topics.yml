@@ -37,7 +37,7 @@ jobs:
       contents: read    # read repository files
       id-token: write   # publish nais manifest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: nais/login@v0
         id: login
         with:

@@ -1,12 +1,10 @@
 package abetal
 
-import abetal.models.dpUId
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
@@ -353,16 +351,7 @@ internal class AbetalTest {
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
-        TestRuntime.topics.status.assertThat()
-            .has(key)
-            .with(key) {
-                val expected = StatusReply(
-                    Status.FEILET,
-                    null,
-                    ApiError(409, "periods already exists", "${DOC}opprett_en_utbetaling")
-                )
-                assertEquals(expected, it)
-            }
+        TestRuntime.topics.status.assertThat().isEmpty()
     }
 
     @Test
@@ -391,7 +380,7 @@ internal class AbetalTest {
         )
 
         val err = assertThrows<ApiError> {
-            utbet.validate(null)
+            utbet.validate()
         }
         assertEquals("periode strekker seg over årsskifte", err.msg)
     }
@@ -421,7 +410,7 @@ internal class AbetalTest {
         )
 
         val err = assertThrows<ApiError> {
-            utbet.validate(null)
+            utbet.validate()
         }
         assertEquals("sakId kan være maks 30 tegn langt", err.msg)
     }
@@ -451,7 +440,7 @@ internal class AbetalTest {
         )
 
         val err = assertThrows<ApiError> {
-            utbet.validate(null)
+            utbet.validate()
         }
         assertEquals("behandlingId kan være maks 30 tegn langt", err.msg)
     }
@@ -466,7 +455,7 @@ internal class AbetalTest {
             action = Action.CREATE,
             førsteUtbetalingPåSak = true,
             sakId = SakId("$nextInt"),
-            behandlingId = BehandlingId("012345678901234567890123456789123"),
+            behandlingId = BehandlingId("0123456789012345678901234567"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
             vedtakstidspunkt = java.time.LocalDateTime.now(),
@@ -482,7 +471,7 @@ internal class AbetalTest {
         )
 
         val err = assertThrows<ApiError> {
-            utbet.validate(null)
+            utbet.validate()
         }
         assertEquals("kan ikke sende inn duplikate perioder", err.msg)
     }
@@ -513,7 +502,7 @@ internal class AbetalTest {
         )
 
         val err = assertThrows<ApiError> {
-            utbet.validate(null)
+            utbet.validate()
         }
         assertEquals("kan ikke sende inn duplikate perioder", err.msg)
     }
@@ -543,7 +532,7 @@ internal class AbetalTest {
         )
 
         val err = assertThrows<ApiError> {
-            utbet.validate(null)
+            utbet.validate()
         }
         assertEquals("fom må være før eller lik tom", err.msg)
     }
@@ -577,7 +566,7 @@ internal class AbetalTest {
         )
 
         val err = assertThrows<ApiError> {
-            utbet.validate(null)
+            utbet.validate()
         }
         assertEquals("fremtidige utbetalinger er ikke støttet for periode dag/ukedag", err.msg)
     }
@@ -615,7 +604,7 @@ internal class AbetalTest {
         )
 
         val err = assertThrows<ApiError> {
-            utbet.validate(null)
+            utbet.validate()
         }
         assertEquals("DAG støtter maks periode på 1000 dager", err.msg)
     }
@@ -643,7 +632,7 @@ internal class AbetalTest {
         )
 
         val err = assertThrows<ApiError> {
-            utbet.validate(null)
+            utbet.validate()
         }
         assertEquals("perioder kan ikke være tom", err.msg)
     }
@@ -684,6 +673,84 @@ internal class AbetalTest {
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
+    }
+
+    @Test
+    fun `send inn kjede med ny meldeperiode på eksisterende sak `() {
+        val sakId = SakId("15507598")
+        val behandlingId1 = BehandlingId("AZiYMlhDege3YrU10jE4vw==")
+        val behandlingId2 = BehandlingId("AZiYV47lclqGSyZS1/R9mQ==")
+        val originalKey1 = UUID.randomUUID().toString()
+        val originalKey2 = UUID.randomUUID().toString()
+        val meldeperiode1 = "2024-06-10"
+        val meldeperiode2 = "2024-06-24"
+        val uid1 = dpUId(sakId.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid2 = dpUId(sakId.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestRuntime.topics.dp.produce(originalKey1) {
+            Dp.utbetaling(
+                sakId = sakId.id,
+                behandlingId = behandlingId1.id
+            ) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode1,
+                    fom = 10.jun,
+                    tom = 14.jun,
+                    sats = 500u
+                )
+            }
+        }
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
+            .has(originalKey1)
+            .get(originalKey1)
+        TestRuntime.topics.oppdrag.produce(originalKey1) { oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } } }
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid1.toString())
+        TestRuntime.topics.saker.assertThat().has(SakKey(sakId, Fagsystem.DAGPENGER))
+
+        TestRuntime.topics.dp.produce(originalKey2) {
+            Dp.utbetaling(
+                sakId = sakId.id,
+                behandlingId = behandlingId2.id
+            ) {
+                val originalDays = Dp.meldekort(
+                    meldeperiode = meldeperiode1,
+                    fom = 10.jun,
+                    tom = 14.jun,
+                    sats = 500u
+                )
+                val newDays = Dp.meldekort(
+                    meldeperiode = meldeperiode2,
+                    fom = 24.jun,
+                    tom = 28.jun,
+                    sats = 550u
+                )
+                originalDays + newDays
+            }
+        }
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestRuntime.topics.oppdrag.assertThat().has(originalKey2)
+            .with(originalKey2) { oppdrag2 ->
+                assertEquals("ENDR", oppdrag2.oppdrag110.kodeEndring)
+                assertEquals(1, oppdrag2.oppdrag110.oppdragsLinje150s.size)
+                val linje = oppdrag2.oppdrag110.oppdragsLinje150s.first()
+                assertEquals(behandlingId2.id, linje.henvisning)
+                assertEquals(550, linje.sats.toLong())
+            }
+
+        TestRuntime.topics.status.assertThat()
+            .has(originalKey2)
+            .with(originalKey2) {
+                assertEquals(Status.MOTTATT, it.status)
+                assertNull(it.error)
+                assertEquals(1, it.detaljer?.linjer?.size)
+                assertEquals(behandlingId2.id, it.detaljer?.linjer?.first()?.behandlingId)
+            }
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid2.toString())
     }
 }
 

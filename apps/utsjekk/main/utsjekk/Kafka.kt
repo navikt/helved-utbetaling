@@ -14,6 +14,7 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.common.utils.Utils
 import utsjekk.iverksetting.OppdragResultat
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.simulering.SimuleringSubscriptions
 import utsjekk.utbetaling.UtbetalingDao
 import utsjekk.utbetaling.UtbetalingId
 
@@ -22,9 +23,11 @@ object Topics {
 
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
+    val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
+    val utbetalingDp = Topic("helved.utbetaling-dp.v1", json<DpUtbetaling>())
 }
 
-fun createTopology(): Topology = topology {
+fun createTopology(abetalClient: AbetalClient): Topology = topology {
     consume(Topics.status)
         .filterKey { uid ->
             try {
@@ -50,7 +53,7 @@ fun createTopology(): Topology = topology {
                             }
                             dao.copy(status = status).update(uid)
 
-                            if(status == utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG) {
+                            if (status == utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG) {
                                 dao.delete(uid)
                             }
                         }
@@ -71,10 +74,19 @@ fun createTopology(): Topology = topology {
                     }
 
                     if (uDao == null && iDao == null) {
-                        appLog.warn("Både db-tabell utbetaling og iverksettingsresultat mangler rad med uid ${uid.id}. Status: $status")
+                        // Sjekk om UID finnes i abetal
+                        if (abetalClient.exists(uid)) {
+                            appLog.info("Mottok status for uid=${uid.id} som håndteres av abetal. Status: $status")
+                        } else {
+                            appLog.warn("Både db-tabell utbetaling og iverksettingsresultat mangler rad med uid ${uid.id}. UID finnes heller ikke i abetal. Status: $status")
+                        }
                     }
                 }
             }
+        }
+    consume(Topics.dryrunDp)
+        .forEach { key, dto ->
+            SimuleringSubscriptions.complete(key, dto)
         }
 }
 

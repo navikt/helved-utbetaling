@@ -187,6 +187,7 @@ class ApiTest {
         key: String = UUID.randomUUID().toString(),
         value: String = UUID.randomUUID().toString(),
         timestamp: Long = Instant.now().toEpochMilli(),
+        commitHash: String = "test",
     ) {
         val dao = Dao(
             topic_name = channel.topic.name,
@@ -199,6 +200,7 @@ class ApiTest {
             stream_time_ms = timestamp,
             system_time_ms = timestamp,
             trace_id = null,
+            commit = commitHash
         )
 
         transaction {
