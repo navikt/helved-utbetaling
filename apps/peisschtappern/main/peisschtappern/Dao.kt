@@ -195,7 +195,18 @@ data class Dao(
             val sql = """
                 SELECT *
                 FROM simuleringer
-                WHERE json(record_value) ->> 'fagsystem' = '$fagsystem' AND json(record_value) ->> 'sakId' = '$sakId';
+                WHERE
+                  (xpath(
+                     '/ns3:simulerBeregningRequest/request/oppdrag/kodeFagomraade/text()',
+                     record_value::xml,
+                     ARRAY['xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"']
+                  ))[1]::text = '$fagsystem'
+                AND
+                  (xpath(
+                     '/ns3:simulerBeregningRequest/request/oppdrag/fagsystemId/text()',
+                     record_value::xml,
+                     ARRAY['xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"']
+                  ))[1]::text = '$sakId';
             """.trimIndent()
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
