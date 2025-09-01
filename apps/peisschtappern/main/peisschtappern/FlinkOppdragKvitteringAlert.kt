@@ -167,4 +167,5 @@ data class AlertState(
     var fagsystem: String
 ) // Spiser Kryo dette ? Kanskje pga TypeInformation
 
-data class KafkaRecord(val key: String, val value: Oppdrag)
+// TODO: Flink vil ha POJO, vi vil ha immutable data class med val. Prøver med POJO
+data class KafkaRecord(var key: String, var value: Oppdrag)
