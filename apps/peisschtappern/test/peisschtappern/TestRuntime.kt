@@ -39,7 +39,12 @@ object TestRuntime {
     val ktor = KtorRuntime<Config>(
         appName = "peisschtappern",
         module = { 
-            peisschtappern(config, kafka, vanillaKafka, flink)
+            peisschtappern(
+                config, 
+                kafka, 
+                vanillaKafka, 
+                // flink,
+            )
         },
         onClose = {
             jdbc.truncate("peisschtappern", *Table.values().map{it.name}.toTypedArray())
