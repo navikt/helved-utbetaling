@@ -199,13 +199,13 @@ data class Dao(
                   (xpath(
                      '/ns3:simulerBeregningRequest/request/oppdrag/kodeFagomraade/text()',
                      record_value::xml,
-                     ARRAY['xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"']
+                     ARRAY[ARRAY['ns3', 'http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt']]
                   ))[1]::text = '$fagsystem'
                 AND
                   (xpath(
                      '/ns3:simulerBeregningRequest/request/oppdrag/fagsystemId/text()',
                      record_value::xml,
-                     ARRAY['xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"']
+                     ARRAY[ARRAY['ns3', 'http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt']]
                   ))[1]::text = '$sakId';
             """.trimIndent()
 
