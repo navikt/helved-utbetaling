@@ -33,14 +33,6 @@ jobs:
 
       - run: ./gradlew apps:${{ github.workflow }}:test apps:${{ github.workflow }}:buildFatJar --continue --no-daemon
 
-      - uses: dorny/test-reporter@v2.1.1
-        if: success() || failure()
-        with:
-          name: tests
-          path: "**/**/build/test-results/test/TEST-*.xml"
-          reporter: java-junit
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: nais/docker-build-push@v0
         with:
           team: helved
