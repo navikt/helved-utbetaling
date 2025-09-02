@@ -1,5 +1,6 @@
 package peisschtappern
 
+import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import libs.kafka.TestTopic
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -38,19 +39,26 @@ class KafkaTest {
 
     @Test
     fun `consume and save daos`() = runTest(TestRuntime.context) {
+        val key = UUID.randomUUID().toString()
         testCases.forEach { case ->
-            case.testTopic.produce("123") {
+            val byteArray = if (case.channel.topic == Topics.oppdrag) {
+                TestData.oppdragXml.toByteArray()
+            } else {
                 "content for ${case.channel.table.name}".toByteArray()
+
+            }
+            case.testTopic.produce(key) {
+                byteArray
             }
             val dao = TestRuntime.jdbc.await(100) {
-                Dao.find("123", case.channel.table).singleOrNull()
+                Dao.find(key, case.channel.table).singleOrNull()
             }
 
             assertNotNull(dao)
             assertEquals("v1", dao.version)
             assertEquals(case.channel.topic.name, dao.topic_name)
-            assertEquals("123", dao.key)
-            assertEquals("content for ${case.channel.table.name}", dao.value)
+            assertEquals(key, dao.key)
+            assertEquals(String(byteArray), dao.value)
             assertEquals(0, dao.partition)
             assertEquals(0, dao.offset)
             assertNotNull(dao.timestamp_ms)

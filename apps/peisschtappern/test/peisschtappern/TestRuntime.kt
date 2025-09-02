@@ -24,7 +24,6 @@ object TestRuntime {
     private val postgres = PostgresContainer("peisschtappern")
     val azure: AzureFake = AzureFake()
     val kafka: StreamsMock = StreamsMock()
-    val flink: FlinkFake = FlinkFake()
     val vanillaKafka: KafkaFactoryFake = KafkaFactoryFake()
     val jdbc: DataSource = Jdbc.initialize(postgres.config)
     val context: CoroutineDatasource = CoroutineDatasource(jdbc)
@@ -33,7 +32,6 @@ object TestRuntime {
         jdbc = postgres.config.copy(migrations = listOf(File("test/premigrations"), File("migrations"))),
         kafka = kafka.config,
         image = "test:test",
-        flink = flink.config,
     )
 
     val ktor = KtorRuntime<Config>(
@@ -47,7 +45,7 @@ object TestRuntime {
             )
         },
         onClose = {
-            jdbc.truncate("peisschtappern", *Table.values().map{it.name}.toTypedArray())
+            jdbc.truncate("peisschtappern", *Table.entries.map{it.name}.toTypedArray(), TimerDao.TABLE_NAME)
             postgres.close()
             azure.close()
         }

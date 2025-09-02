@@ -30,11 +30,6 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.15.3")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.2")
 
-    implementation("org.apache.flink:flink-streaming-java:2.1.0")
-    implementation("org.apache.flink:flink-clients:2.1.0")
-    implementation("org.apache.flink:flink-connector-kafka:4.0.1-2.0")
-    implementation("org.apache.flink:flink-connector-base:2.1.0")
-
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
