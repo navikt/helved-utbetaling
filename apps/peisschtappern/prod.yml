@@ -44,6 +44,7 @@ spec:
       rules:
         - application: helved-peisen
         - application: vedskiva
+        - application: branntårn
     outbound:
       rules:
         - application: logging
@@ -70,5 +71,3 @@ spec:
   env:
     - name: PEISEN_HOST
       value: https://peisen.intern.nav.no/
-  envFrom:
-    - secret: slack-webhook
