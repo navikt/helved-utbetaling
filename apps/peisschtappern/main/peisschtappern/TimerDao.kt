@@ -37,7 +37,20 @@ data class TimerDao(
             }
         }
 
-        suspend fun delete(key: String): Unit {
+        suspend fun findAll(): List<TimerDao> {
+            val sql = """
+                SELECT *
+                FROM $TABLE_NAME
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                timeDaoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
+        suspend fun delete(key: String) {
             val sql = """
                 DELETE FROM $TABLE_NAME
                 WHERE record_key = ?

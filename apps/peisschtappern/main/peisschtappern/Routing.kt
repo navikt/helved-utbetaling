@@ -93,6 +93,18 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
                 call.respond(hendelser)
             }
         }
+
+        route("/brann") {
+            get {
+                val timers = withContext(Jdbc.context + Dispatchers.IO) {
+                    transaction {
+                        TimerDao.findAll()
+                    }
+                }
+
+                call.respond(timers)
+            }
+        }
     }
 
     post("/manuell-kvittering") {

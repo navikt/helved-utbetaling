@@ -173,6 +173,14 @@ class ApiTest {
         }.body<List<Dao>>()
     }
 
+    @Test
+    fun `get timers`() = runTest(TestRuntime.context) {
+        TestRuntime.ktor.httpClient.get("/api/brann") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<TimerDao>>()
+    }
+
     @Disabled("Denne feiler om man kjører den sammen med andre tester som produserer ugyldig json/xml i db")
     @Test
     fun `get hendelser for sak`() = runTest(TestRuntime.context) {
