@@ -1,16 +1,11 @@
 package branntårn
 
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.get
-import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
 import libs.http.HttpClientFactory
 
@@ -37,7 +32,7 @@ private fun json(brann: Brann, config: Config): String = """{
     },
     {
       "type": "section",
-      "text": { "type": "mrkdwn", "text": "Mangler kvittering for ${brann.kafkaKey}" },
+      "text": { "type": "mrkdwn", "text": "Mangler kvittering for ${brann.key}" },
       "accessory": {
         "type": "button",
         "text": { "type": "plain_text", "text": "Peisen" },

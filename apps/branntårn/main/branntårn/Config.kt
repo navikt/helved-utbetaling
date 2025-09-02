@@ -1,6 +1,5 @@
 package branntårn
 
-import java.net.URI
 import java.net.URL
 import libs.auth.AzureConfig
 import libs.utils.env
