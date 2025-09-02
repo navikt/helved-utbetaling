@@ -7,5 +7,5 @@ dependencies {
     api("io.ktor:ktor-server-netty:$ktorVersion")
     api("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     api("io.ktor:ktor-serialization-jackson:$ktorVersion")
-    api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.2")
+    api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0")
 }
