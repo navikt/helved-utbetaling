@@ -8,7 +8,7 @@ on:
       - 'apps/branntårn/**'
       - '.github/workflows/branntårn.yml'
       - 'build.gradle.kts'
-      - 'Dockerfile'
+      - 'apps/branntårn/Dockerfile'
 
 jobs:
   build:
