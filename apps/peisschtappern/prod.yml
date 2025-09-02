@@ -44,7 +44,7 @@ spec:
       rules:
         - application: helved-peisen
         - application: vedskiva
-        - application: branntårn
+        - application: branntaarn
     outbound:
       rules:
         - application: logging

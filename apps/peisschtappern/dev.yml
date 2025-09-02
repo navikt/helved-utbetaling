@@ -49,7 +49,7 @@ spec:
       rules:
         - application: helved-peisen
         - application: vedskiva
-        - application: branntårn
+        - application: branntaarn
           # generer obo token: https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp.helved.peisschtappern
           #ref https://docs.nais.io/auth/entra-id/how-to/generate/?h=azure+token
         - application: azure-token-generator

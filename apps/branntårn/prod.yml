@@ -3,7 +3,7 @@ kind: Naisjob
 metadata:
   labels:
     team: helved
-  name: branntårn
+  name: branntaarn
   namespace: helved
 spec:
   schedule: "0 * * * *" # Runs every hour
