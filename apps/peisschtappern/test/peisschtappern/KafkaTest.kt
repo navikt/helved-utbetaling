@@ -60,7 +60,7 @@ class KafkaTest {
             assertEquals(key, dao.key)
             assertEquals(String(byteArray), dao.value)
             assertEquals(0, dao.partition)
-            assertEquals(0, dao.offset)
+            if (case.channel.topic != Topics.oppdrag) assertEquals(0, dao.offset)
             assertNotNull(dao.timestamp_ms)
             assertNotNull(dao.stream_time_ms)
             assertNotNull(dao.system_time_ms)

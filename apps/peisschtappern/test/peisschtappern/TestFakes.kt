@@ -1,6 +1,5 @@
 package peisschtappern
 
-import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
