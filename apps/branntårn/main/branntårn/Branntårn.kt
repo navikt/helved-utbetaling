@@ -22,6 +22,9 @@ fun branntårn(
 
     val peisschtappern = PeisschtappernClient(config)
     val slack = SlackClient(config)
-    peisschtappern.branner().forEach(slack::post)
+    peisschtappern.branner()
+        .filter { brann -> brann.timeout.isBefore(now) }
+        .onEach(peisschtappern::slukk)
+        .forEach(slack::post)
 }
 

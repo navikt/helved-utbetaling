@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import kotlinx.coroutines.runBlocking
@@ -28,12 +29,19 @@ class PeisschtappernClient(
         }
     }
 
+    fun slukk(brann: Brann) {
+        runBlocking {
+            client.delete("${config.peisschtappern.host}/api/brann/${brann.key}") {
+                bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
+            }
+        }
+    }
+
 }
 
 data class Brann(
-    val start: LocalDateTime,
-    val kafkaKey: String,
+    val key: String,
+    val timeout: LocalDateTime,
     val sakId: String,
     val fagsystem: String,
-) 
-
+)
