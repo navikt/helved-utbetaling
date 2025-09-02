@@ -7,8 +7,8 @@ import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.kafka.*
 import libs.tracing.Tracing
-import libs.utils.env
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import peisschtappern.AlertService.missingKvitteringHandler
 
 
 object Topics {
@@ -47,6 +47,9 @@ private fun Topology.save(
         runBlocking {
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
+                    if (topic == Topics.oppdrag) {
+                        missingKvitteringHandler(key, value)
+                    }
                     Dao(
                         version = topic.name.substringAfterLast("."),
                         topic_name = topic.name,

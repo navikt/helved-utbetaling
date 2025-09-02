@@ -50,7 +50,6 @@ fun Application.peisschtappern(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
     kafkaFactory: KafkaFactory = DefaultKafkaFactory(),
-    // flink: Flink = FlinkOppdragKvitteringAlert(config.flink, config.kafka),
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
@@ -88,7 +87,6 @@ fun Application.peisschtappern(
 
     val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, oppdrag)
     val manuellOppdragService = ManuellOppdragService(oppdragsdataProducer)
-    // flink.start()
 
     routing {
         probes(kafka, prometheus)
@@ -101,7 +99,6 @@ fun Application.peisschtappern(
     monitor.subscribe(ApplicationStopping) {
         kafka.close()
         oppdragsdataProducer.close()
-        // flink.stop()
     }
 
 }

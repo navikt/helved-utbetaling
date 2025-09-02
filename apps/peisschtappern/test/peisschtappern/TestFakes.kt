@@ -32,31 +32,6 @@ class AzureFake : AutoCloseable {
     override fun close() = azure.stop(0, 0)
 }
 
-class FlinkFake : Flink {
-    private val flink = embeddedServer(Netty, port = 0, module = Application::flink).apply { start() }
-
-    val config by lazy {
-        FlinkConfig(
-            slackWebhookUrl = "http://localhost:${flink.engine.port}/slack"
-        )
-    }
-
-    override fun start() {}
-
-    override fun stop() {}
-}
-
-private fun Application.flink() {
-    install(ContentNegotiation) {
-        jackson {}
-    }
-    routing {
-        post("/slack") {
-            call.respond(HttpStatusCode.OK)
-        }
-    }
-}
-
 private fun Application.azure() {
     install(ContentNegotiation) {
         jackson {}
