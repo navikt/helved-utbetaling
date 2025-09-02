@@ -41,7 +41,6 @@ object TestRuntime {
                 config, 
                 kafka, 
                 vanillaKafka, 
-                // flink,
             )
         },
         onClose = {
