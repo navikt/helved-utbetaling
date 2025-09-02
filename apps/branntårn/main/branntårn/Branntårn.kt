@@ -27,4 +27,3 @@ fun branntårn(
         .onEach(peisschtappern::slukk)
         .forEach(slack::post)
 }
-
