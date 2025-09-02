@@ -40,8 +40,7 @@ jobs:
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
           image_suffix: ${{ github.workflow }}
           tag: ${{ github.sha }}
-          docker_context: 'apps/branntårn'
-          dockerfile: Dockerfile
+          dockerfile: 'apps/branntårn/Dockerfile'
 
   deploy-dev:
     if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
