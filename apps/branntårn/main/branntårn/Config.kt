@@ -1,5 +1,6 @@
 package branntårn
 
+import java.net.URI
 import java.net.URL
 import libs.auth.AzureConfig
 import libs.utils.env
@@ -14,7 +15,7 @@ data class Config(
 
 data class PeisschtappernConfig(
     val scope: String = env("PEISSCHTAPPERN_SCOPE"),
-    val host: URL = env("PEISSCHTAPPERN_HOST")
+    val host: URL = env("PEISSCHTAPPERN_HOST", URI("http://peisschtappern").toURL())
 )
 
 data class PeisenConfig(

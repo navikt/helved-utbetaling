@@ -49,6 +49,7 @@ spec:
       rules:
         - application: helved-peisen
         - application: vedskiva
+        - application: branntårn
           # generer obo token: https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp.helved.peisschtappern
           #ref https://docs.nais.io/auth/entra-id/how-to/generate/?h=azure+token
         - application: azure-token-generator
@@ -75,5 +76,3 @@ spec:
   env:
     - name: PEISEN_HOST
       value: https://peisen.intern.dev.nav.no/
-  envFrom:
-    - secret: slack-webhook

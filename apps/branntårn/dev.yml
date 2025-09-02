@@ -1,0 +1,39 @@
+apiVersion: nais.io/v1
+kind: Naisjob
+metadata:
+  labels:
+    team: helved
+  name: branntårn
+  namespace: helved
+spec:
+  schedule: "0 * * * *" # Runs every hour
+  image: {{ image }} 
+  ttlSecondsAfterFinished: 14400
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: loki
+        - id: elastic
+  azure:
+    application:
+      enabled: true
+  accessPolicy:
+    outbound:
+      rules:
+        - application: logging
+          namespace: nais-system
+        - application: peisschtappern
+  env:
+    - name: PEISSCHTAPPERN_SCOPE
+      value: api://dev-gcp.helved.peisschtappern/.default
+    - name: PEISEN_HOST
+      value: https://peisen.intern.dev.nav.no/
+  envFrom:
+    - secret: slack-webhook
