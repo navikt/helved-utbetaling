@@ -104,6 +104,14 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
 
                 call.respond(timers)
             }
+
+            delete("/{key}") {
+                withContext(Jdbc.context + Dispatchers.IO) {
+                    transaction {
+                        TimerDao.delete(call.parameters["key"]!!)
+                    }
+                }
+            }
         }
     }
 

@@ -58,7 +58,6 @@ data class TimerDao(
 
             return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 stmt.setString(1, key)
-
                 jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeUpdate()
