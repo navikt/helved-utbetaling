@@ -23,7 +23,7 @@ class SimuleringService(private val config: Config) {
 
     suspend fun simuler(request: SimulerBeregningRequest): SimulerBeregningResponse {
         val response = soap.call(SimulerAction.BEREGNING, requestMapper.writeValueAsString(request))
-        val xml = stripEnvelope(response) ?: response.intoFault()
+        val xml = stripEnvelope(response) ?: response.intoFault().panic()
         return responseMapper.readValue(xml)
     }
 
@@ -48,45 +48,58 @@ fun stripEnvelope(input: String): String? {
     return input.substring(startIdx, endIdx)
 }
 
-private val faultMapper = XmlMapper(JacksonXmlModule().apply { setDefaultUseWrapper(false) })
-private fun String.intoFault(): Nothing {
-    val fault = runCatching { faultMapper.readValue<SoapResponse<SoapFault>>(this).body.fault }.getOrNull()
-    if (fault == null) panic(this)
-    when {
-        fault.faultstring.contains("Personen finnes ikke") -> notFound(this)
-        fault.faultstring.contains("ugyldig") -> badRequest(this)
-        fault.faultstring.contains("simulerBeregningFeilUnderBehandling") -> resolveBehandlingFault(fault)
-        fault.faultstring.contains("Conversion to SOAP failed") -> resolveSoapConversionFailure(fault)
-        else -> panic(fault)
+private fun String.intoFault(): Fault {
+    val builder = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+        .apply { isNamespaceAware = true }
+        .newDocumentBuilder()
+    val document = builder.parse(java.io.ByteArrayInputStream(this.toByteArray(Charsets.UTF_8)))
+    val fault = document.getElementsByTagName("SOAP-ENV:Fault").item(0) as org.w3c.dom.Element
+    val faultcode = fault.getElementsByTagName("faultcode").item(0).textContent.trim()
+    val faultstring = fault.getElementsByTagName("faultstring").item(0).textContent.trim()
+    val detailElement = fault.getElementsByTagName("detail")?.item(0) as? org.w3c.dom.Element
+
+    fun toMap(element: org.w3c.dom.Element): Map<String, Any> {
+        val res = mutableMapOf<String, Any>()
+        val children = element.childNodes
+        for (i in 0 until children.length) {
+            val node = children.item(i)
+            if (node is org.w3c.dom.Element) {
+                val childMap = toMap(node)
+                if (childMap.isEmpty()) {
+                    res[node.tagName] = node.textContent.trim()
+                }  else {
+                    res[node.tagName] = childMap
+                }
+            }
+        }
+        return res
     }
+
+    val detail = detailElement?.let(::toMap) ?: emptyMap()
+    return Fault(faultcode, faultstring, detail)
+}
+
+private fun Fault.panic(): Nothing {
+    when (faultstring) {
+        "simulerBeregningFeilUnderBehandling" -> {
+            detail["sf:simulerBeregningFeilUnderBehandling"]?.let {
+                val map = it as Map<String, String>
+                val errorMessage = map["errorMessage"] ?: panic(this)
+                unprocessable(errorMessage)
+            }
+        }
+        "Conversion from SOAP failed" -> {
+            detail["CICSFault"]?.let { badRequest(it as String) }
+        }
+        "Personen finnes ikke"  -> notFound("Personen finnes ikke")
+        else -> panic(this) 
+    }
+    panic(this) // fallback
 }
 
 private fun panic(any: Any): Nothing {
     wsLog.error("ukjent soap feil {}", any)
     secureLog.error("ukjent soap feil {}", any)
-    internalServerError("ukjent soap feil")
+    badRequest("ukjent soap feil $any")
 }
 
-private fun resolveBehandlingFault(fault: Fault): Nothing {
-    val detail = fault.detail ?: panic(fault)
-    val feilUnderBehandling = detail["simulerBeregningFeilUnderBehandling"] as? Map<*, *> ?: panic(fault)
-    val errorMessage = feilUnderBehandling["errorMessage"] as? String ?: panic(fault)
-    when {
-        errorMessage.contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> notFound("SakId ikke funnet")
-        errorMessage.contains("DELYTELSE-ID/LINJE-ID ved endring finnes ikke") -> unprocessable("Referert utbetaling finnes ikke og kan ikke simuleres på. Mulig årsak er at det simuleres på en utbetaling som ikke er utbetalt enda, prøv igjen neste virkedag.")
-        errorMessage.contains("Oppdraget finnes fra før") -> conflict("Utbetaling med SakId/BehandlingId finnes fra før")
-        errorMessage.contains("Referert vedtak/linje ikke funnet") -> notFound("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
-        errorMessage.contains("Navn på person ikke funnet i PDL") -> notFound("Navn på person ikke funnet i PDL")
-        errorMessage.contains("Personen finnes ikke i PDL") -> notFound("Personen finnes ikke i PDL")
-        else -> panic(errorMessage)
-    }
-}
-
-private fun resolveSoapConversionFailure(fault: Fault): Nothing {
-    val detail = fault.detail ?: panic(fault)
-    val cicsFault = detail["CICSFault"]?.toString() ?: panic(fault)
-    when {
-        cicsFault.contains("DFHPI1008") -> forbidden("ConsumerId (service-user) er ikke gyldig for simuleringstjenesten. Det kan ha vært datalast i Oppdragsystemet. Kontakt oss eller PO Utbetaling.")
-        else -> panic(fault)
-    }
-}

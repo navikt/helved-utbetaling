@@ -1,0 +1,16 @@
+<SOAP-ENV:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Body>
+        <SOAP-ENV:Fault xmlns="">
+            <faultcode>SOAP-ENV:Client</faultcode>
+            <faultstring>simulerBeregningFeilUnderBehandling                                             </faultstring>
+            <detail>
+                <sf:simulerBeregningFeilUnderBehandling xmlns:sf="http://nav.no/system/os/tjenester/oppdragService">
+                    <errorMessage>DELYTELSE-ID/LINJE-ID ved endring finnes ikke: 0nMih85oRkaV5FqgMN6E</errorMessage>
+                    <errorSource>K231BB50 section: CA10-KON</errorSource>
+                    <rootCause>Kode BB50019F - SQL      - MQ</rootCause>
+                    <dateTimeStamp>2025-09-03T09:08:45</dateTimeStamp>
+                </sf:simulerBeregningFeilUnderBehandling>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+            </detail>
+        </SOAP-ENV:Fault>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

@@ -1,0 +1,11 @@
+<SOAP-ENV:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Body>
+        <SOAP-ENV:Fault xmlns="">
+            <faultcode>SOAP-ENV:Server</faultcode>
+            <faultstring>Conversion from SOAP failed</faultstring>
+            <detail>
+                <CICSFault xmlns="http://www.ibm.com/software/htp/cics/WSFault">DFHPI1009 02/09/2025 13:45:58 CICSQ1OS OSW8 21049 XML to data transformation failed. A conversion error (OUTPUT_OVERFLOW) occurred when converting field saksbehId for WEBSERVICE simulerFpServiceWSBinding.</CICSFault>
+            </detail>
+        </SOAP-ENV:Fault>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
