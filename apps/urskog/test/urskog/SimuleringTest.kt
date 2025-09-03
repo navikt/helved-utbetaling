@@ -8,10 +8,13 @@ import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import libs.utils.secureLog
+import models.ApiError
 import models.Fagsystem
 import models.Simulering
 import models.Simuleringsperiode
 import models.SimulertUtbetaling
+import models.Status
+import models.StatusReply
 import models.StønadTypeAAP
 import no.nav.system.os.entiteter.oppdragskjema.Enhet
 import no.nav.system.os.entiteter.oppdragskjema.ObjectFactory as OppdragFactory
@@ -71,6 +74,57 @@ class SimuleringTest {
         }
 
         TestRuntime.topics.dryrunAap.assertThat().hasNot(uid)
+
+        val expectedStatus = StatusReply(
+            status = Status.FEILET,
+            error = ApiError(400, "ukjent soap feil Fault(faultcode=SOAP-ENV:Client, faultstring=Malformed SOAP message, detail={cics:FaultDetail={cics:XMLSSParser={cics:ParserResponse=XRC_NOT_WELL_FORMED, cics:ParserReason=00012388, cics:ParserOffset=00000732}}})")
+        )
+
+        TestRuntime.topics.status.assertThat()
+            .has(uid)
+            .has(uid, expectedStatus) 
+    }
+
+    @Test
+    fun `DELYTELSE-ID eller LINJE-ID ved endring finnes ikke`() {
+        TestRuntime.ws.respondWith = Resource.read("/simuler-fault-delytelsesid.xml")
+        val uid = UUID.randomUUID().toString()
+
+        TestRuntime.topics.simuleringer.produce(uid) {
+            simulering()
+        }
+
+        TestRuntime.topics.dryrunAap.assertThat().hasNot(uid)
+
+        val expectedStatus = StatusReply(
+            status = Status.FEILET,
+            error = ApiError(422, "DELYTELSE-ID/LINJE-ID ved endring finnes ikke: 0nMih85oRkaV5FqgMN6E")
+        )
+
+        TestRuntime.topics.status.assertThat()
+            .has(uid)
+            .has(uid, expectedStatus) 
+    }
+
+    @Test
+    fun `antall tegn i saksbehandler er for lang`() {
+        TestRuntime.ws.respondWith = Resource.read("/simuler-fault-overflow.xml")
+        val uid = UUID.randomUUID().toString()
+
+        TestRuntime.topics.simuleringer.produce(uid) {
+            simulering()
+        }
+
+        TestRuntime.topics.dryrunAap.assertThat().hasNot(uid)
+
+        val expectedStatus = StatusReply(
+            status = Status.FEILET,
+            error = ApiError(400, "DFHPI1009 02/09/2025 13:45:58 CICSQ1OS OSW8 21049 XML to data transformation failed. A conversion error (OUTPUT_OVERFLOW) occurred when converting field saksbehId for WEBSERVICE simulerFpServiceWSBinding.")
+        )
+
+        TestRuntime.topics.status.assertThat()
+            .has(uid)
+            .has(uid, expectedStatus) 
     }
 }
 

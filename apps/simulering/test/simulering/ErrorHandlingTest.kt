@@ -42,7 +42,7 @@ class ErrorHandlingTest {
                     setBody(enSimuleringRequestBody())
                 }
 
-                kotlin.test.assertEquals(HttpStatusCode.BadRequest, res.status)
+                assertEquals(HttpStatusCode.BadRequest, res.status)
             }
         }
     }
@@ -75,11 +75,6 @@ class ErrorHandlingTest {
                 assertEquals(HttpStatusCode.InternalServerError, response.status)
             }
         }
-    }
-
-    @Test
-    fun `can resolve client fault`() {
-
     }
 }
 
