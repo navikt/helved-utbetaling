@@ -1,4 +1,4 @@
-package branntårn
+package branntaarn
 
 import libs.utils.appLog
 import libs.utils.secureLog
@@ -11,10 +11,10 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    branntårn()
+    branntaarn()
 }
 
-fun branntårn(
+fun branntaarn(
     config: Config = Config(),
     now: LocalDateTime = LocalDateTime.now(),
 ) {
