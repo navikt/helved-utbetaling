@@ -1,4 +1,4 @@
-package branntårn
+package branntaarn
 
 import java.net.URI
 import java.net.URL

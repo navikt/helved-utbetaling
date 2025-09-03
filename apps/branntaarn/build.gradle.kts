@@ -3,7 +3,7 @@ plugins {
 }
 
 application {
-    mainClass.set("branntårn.BranntårnKt")
+    mainClass.set("branntaarn.BranntaarnKt")
 }
 
 val ktorVersion = "3.2.0"

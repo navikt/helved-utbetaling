@@ -6,7 +6,7 @@ rootProject.name = "helved-utbetaling"
 
 include(
     "apps:abetal",
-    "apps:branntårn",
+    "apps:branntaarn",
     "apps:peisschtappern",
     "apps:simulering",
     "apps:urskog",

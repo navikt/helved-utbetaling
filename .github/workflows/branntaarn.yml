@@ -1,14 +1,14 @@
-name: branntårn
+name: branntaarn
 
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
     paths:
-      - 'apps/branntårn/**'
-      - '.github/workflows/branntårn.yml'
+      - 'apps/branntaarn/**'
+      - '.github/workflows/branntaarn.yml'
       - 'build.gradle.kts'
-      - 'apps/branntårn/Dockerfile'
+      - 'apps/branntaarn/Dockerfile'
 
 jobs:
   build:
@@ -40,7 +40,7 @@ jobs:
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
           image_suffix: ${{ github.workflow }}
           tag: ${{ github.sha }}
-          dockerfile: 'apps/branntårn/Dockerfile'
+          dockerfile: 'apps/branntaarn/Dockerfile'
 
   deploy-dev:
     if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
