@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: branntaarn-alerts
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  groups:
+    - name: app
+      rules:
+        - alert: error logs
+          expr: sum by (app) (max_over_time(log_messages_errors{app="branntaarn", namespace="helved", level="Error"}[5m]) or vector(0)) - sum by (app) (max_over_time(log_messages_errors{app="branntaarn", namespace="helved", level="Error"}[5m] offset 5m) or vector(0)) > 0
+          for: 10s
+          annotations:
+            action: 'Check logs'
+            dashboard_url: https://grafana.nav.cloud.nais.io/a/grafana-lokiexplore-app/explore/service_namespace/helved/logs?patterns=%5B%5D&from=now-6h&to=now&var-ds=P7BE696147D279490&var-filters=service_namespace%7C%3D%7Chelved&var-filters=service_name%7C%3D%7Cbranntaarn&var-fields=logger_name%7C%21~%7C__CV%CE%A9__%7B%22value%22:%22org.apache.kafka.%2A%22__gfc__%22parser%22:%22json%22%7D,org.apache.kafka.%2A&var-fields=logger_name%7C%21%3D%7C__CV%CE%A9__%7B%22value%22:%22%5C%22%5C%22%22__gfc__%22parser%22:%22json%22%7D,%22%22&var-levels=detected_level%7C%21%3D%7Cunknown,%21unknown&var-metadata=&var-patterns=&var-lineFilters=&urlColumns=%5B%22Time%22,%22service_name%22,%22detected_level%22,%22logger_name%22,%22message%22,%22trace_id%22%5D&visualizationType=%22table%22&displayedFields=%5B%5D&var-labelBy=$__all&var-lineFilterV2=&timezone=browser&var-all-fields=logger_name%7C%21~%7C__CV%CE%A9__%7B%22value%22:%22org.apache.kafka.%2A%22__gfc__%22parser%22:%22json%22%7D,org.apache.kafka.%2A&var-all-fields=logger_name%7C%21%3D%7C__CV%CE%A9__%7B%22value%22:%22%5C%22%5C%22%22__gfc__%22parser%22:%22json%22%7D,%22%22&sortOrder=%22Descending%22&wrapLogMessage=false
+          labels:
+            namespace: helved
+            severity: critical
