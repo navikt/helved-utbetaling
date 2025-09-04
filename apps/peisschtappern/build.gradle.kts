@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":libs:kafka"))
     implementation(project(":libs:tracing"))
     implementation(project(":libs:utils"))
+    implementation(project(":models"))
     implementation("no.nav.helved:xml:$libVersion")
 
     implementation("org.apache.kafka:kafka-clients:4.0.0")
