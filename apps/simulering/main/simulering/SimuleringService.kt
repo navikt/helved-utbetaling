@@ -146,7 +146,7 @@ private val xmlMapper: ObjectMapper =
     XmlMapper(JacksonXmlModule().apply { setDefaultUseWrapper(false) })
         .registerKotlinModule()
         .enable(SerializationFeature.INDENT_OUTPUT)
-        .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+        .setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_EMPTY, JsonInclude.Include.NON_NULL))
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
         .registerModule(
