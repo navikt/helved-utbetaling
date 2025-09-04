@@ -103,7 +103,11 @@ private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode>
         .sortedBy { it.dato }
         .groupBy { listOf(it.utbetaltBeløp, it.sats) }
         .map { (_, p) -> 
-            p.splitWhen { a, b -> a.dato.plusDays(1) != b.dato }.map { 
+            p.splitWhen { a, b -> 
+                val harSammenhengendeDager = a.dato.plusDays(1) == b.dato
+                val harSammenhengendeUker = a.dato.nesteUkedag() == b.dato
+                !harSammenhengendeUker && !harSammenhengendeDager
+            }.map { 
                 Utbetalingsperiode(
                     fom = it.first().dato,
                     tom = it.last().dato,
