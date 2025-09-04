@@ -1,18 +1,137 @@
 package abetal.consumers
 
 import abetal.*
+import com.fasterxml.jackson.module.kotlin.readValue
+import libs.kafka.JsonSerde
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.*
-import org.junit.jupiter.api.Disabled
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class DpTest {
+
+    @Test
+    fun `simulering av dp`() {
+        val utbet = JsonSerde.jackson.readValue<DpUtbetaling>("""
+            {
+              "dryrun": false,
+              "sakId": "rsid3",
+              "behandlingId": "rbid1",
+              "ident": "15898099536",
+              "utbetalinger": [
+                {
+                  "meldeperiode": "2025-08-01/2025-08-14",
+                  "dato": "2025-08-01",
+                  "sats": 1000,
+                  "utbetaltBeløp": 1000,
+                  "rettighetstype": "Ordinær",
+                  "utbetalingstype": "Dagpenger"
+                },
+                {
+                  "meldeperiode": "2025-08-01/2025-08-14",
+                  "dato": "2025-08-02",
+                  "sats": 1000,
+                  "utbetaltBeløp": 1000,
+                  "rettighetstype": "Ordinær",
+                  "utbetalingstype": "Dagpenger"
+                },
+                {
+                  "meldeperiode": "2025-08-01/2025-08-14",
+                  "dato": "2025-08-03",
+                  "sats": 1000,
+                  "utbetaltBeløp": 1000,
+                  "rettighetstype": "Ordinær",
+                  "utbetalingstype": "Dagpenger"
+                }
+              ],
+              "vedtakstidspunktet": "2025-08-27T10:00:00Z",
+              "saksbehandler": "dagpenger",
+              "beslutter": "dagpenger"
+            }""".trimIndent())
+        val uid = "9aa7f092-704a-1d53-8b98-0ece9cabb5e4"
+        val transaction1 = UUID.randomUUID().toString()
+        TestRuntime.topics.dp.produce(transaction1) { utbet }
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.topics.status.assertThat().has(transaction1)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid)
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat().has(transaction1).with(transaction1) {
+            assertEquals("1", it.oppdrag110.kodeAksjon)
+            assertEquals("NY", it.oppdrag110.kodeEndring)
+            assertEquals("DP", it.oppdrag110.kodeFagomraade)
+            assertEquals("rsid3", it.oppdrag110.fagsystemId)
+            assertEquals("MND", it.oppdrag110.utbetFrekvens)
+            assertEquals("15898099536", it.oppdrag110.oppdragGjelderId)
+            assertEquals("dagpenger", it.oppdrag110.saksbehId)
+            assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
+            assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+            val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
+            assertNull(førsteLinje.refDelytelseId)
+            assertEquals("NY", førsteLinje.kodeEndringLinje)
+            assertEquals("rbid1", førsteLinje.henvisning)
+            assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+            assertEquals("DAG", førsteLinje.typeSats)
+            assertEquals(1000, førsteLinje.sats.toLong())
+            assertEquals(1000, førsteLinje.vedtakssats157.vedtakssats.toLong())
+        }.get(transaction1)
+        TestRuntime.topics.oppdrag.produce(transaction1) { oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } } }
+        TestRuntime.topics.utbetalinger.assertThat().has(uid)
+
+        val dryrun = JsonSerde.jackson.readValue<DpUtbetaling>("""
+            {
+              "dryrun": true,
+              "sakId": "rsid3",
+              "behandlingId": "rbid2",
+              "ident": "15898099536",
+              "utbetalinger": [
+                {
+                  "meldeperiode": "2025-08-01/2025-08-14",
+                  "dato": "2025-08-01",
+                  "sats": 1000,
+                  "utbetaltBeløp": 900,
+                  "rettighetstype": "Ordinær",
+                  "utbetalingstype": "Dagpenger"
+                },
+                {
+                  "meldeperiode": "2025-08-01/2025-08-14",
+                  "dato": "2025-08-02",
+                  "sats": 1000,
+                  "utbetaltBeløp": 900,
+                  "rettighetstype": "Ordinær",
+                  "utbetalingstype": "Dagpenger"
+                },
+                {
+                  "meldeperiode": "2025-08-01/2025-08-14",
+                  "dato": "2025-08-03",
+                  "sats": 1000,
+                  "utbetaltBeløp": 900,
+                  "rettighetstype": "Ordinær",
+                  "utbetalingstype": "Dagpenger"
+                }
+              ],
+              "vedtakstidspunktet": "2025-08-27T10:00:00Z",
+              "saksbehandler": "R123456",
+              "beslutter": "R123456"
+            }""".trimIndent())
+        val transaction2 = UUID.randomUUID().toString()
+        TestRuntime.topics.dp.produce(transaction2) { dryrun }
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.topics.simulering.assertThat().has(transaction2).with(transaction2) {
+            assertEquals("ENDR", it.request.oppdrag.kodeEndring)
+            assertEquals("DP", it.request.oppdrag.kodeFagomraade)
+            assertEquals("rsid3", it.request.oppdrag.fagsystemId)
+            assertEquals("MND", it.request.oppdrag.utbetFrekvens)
+            assertEquals("15898099536", it.request.oppdrag.oppdragGjelderId)
+            assertEquals("R123456", it.request.oppdrag.saksbehId)
+            assertEquals(1, it.request.oppdrag.oppdragslinjes.size)
+        }
+    }
 
     @Test
     fun `1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
