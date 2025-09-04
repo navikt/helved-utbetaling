@@ -49,21 +49,6 @@ object AggregateService {
 
         val utbetalinger = kjeder.map { it.first }
 
-
-        // TODO: Må vi ta hensyn til sakid? Kan det komme forskjellige sakid vi må gruppere på?
-        /*
-            val oppdrag = utbetalingToOppdrag
-                .map { it.second }
-                .groupBy { it.oppdrag110.fagsystemId!! }
-                .map { (_, group) -> group.reduce { acc, next -> acc + next } }
-
-            val utbetalinger = utbetalingToOppdrag.map { it.first }
-                .groupBy { it.uid }
-                .map { (_, group) -> group.reduce { acc, next -> acc + next } }
-
-            val oppdragToUtbetalinger = oppdrag
-                .map { o -> o to utbetalinger.filter { it.sakId.id == o.oppdrag110.fagsystemId } }
-            */
         return listOf(oppdrag to utbetalinger)
     }
 

@@ -99,10 +99,11 @@ fun toDomain(
 }
 
 private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode> {
-    return perioder.sortedBy { it.dato }
+    return perioder
+        .sortedBy { it.dato }
         .groupBy { listOf(it.utbetaltBeløp, it.sats) }
         .map { (_, p) -> 
-            p.splitWhen { a, b -> a.dato.nesteUkedag() != b.dato }.map { 
+            p.splitWhen { a, b -> a.dato.plusDays(1) != b.dato }.map { 
                 Utbetalingsperiode(
                     fom = it.first().dato,
                     tom = it.last().dato,
