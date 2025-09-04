@@ -191,6 +191,34 @@ data class Dao(
             }
         }
 
+        suspend fun findDpUtbetalinger(sakId: String): List<Dao> {
+            val sql = """
+                SELECT *
+                FROM dp
+                WHERE json(record_value) ->> 'sakId' = '$sakId';
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
+        suspend fun findDpInternUtbetalinger(sakId: String): List<Dao> {
+            val sql = """
+                SELECT *
+                FROM dpintern
+                WHERE json(record_value) ->> 'sakId' = '$sakId';
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
         suspend fun findSimuleringer(sakId: String, fagsystem: String): List<Dao> {
             val sql = """
                 SELECT *
@@ -207,6 +235,21 @@ data class Dao(
                      record_value::xml,
                      ARRAY[ARRAY['ns3', 'http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt']]
                   ))[1]::text = '$sakId';
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
+        suspend fun findSaker(sakId: String, fagsystem: String): List<Dao> {
+            val sql = """
+                SELECT *
+                FROM saker
+                WHERE json(record_key) ->> 'sakId' = '$sakId'
+                    AND json(record_key) ->> 'fagsystem' = '$fagsystem';
             """.trimIndent()
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->

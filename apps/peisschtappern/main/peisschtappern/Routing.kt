@@ -81,6 +81,9 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
                                 async { Dao.findKvitteringer(sakId, fagsystem) },
                                 async { Dao.findUtbetalinger(sakId, fagsystem) },
                                 async { Dao.findSimuleringer(sakId, fagsystem) },
+                                async { if (fagsystem === "DP") Dao.findDpUtbetalinger(sakId) else emptyList()},
+                                async { if (fagsystem === "DP") Dao.findDpInternUtbetalinger(sakId) else emptyList()},
+                                async { Dao.findSaker(sakId, fagsystem) },
                             )
 
                             deferred.awaitAll()
