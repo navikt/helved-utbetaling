@@ -83,6 +83,7 @@ private fun Fault.panic(): Nothing {
     when (faultstring) {
         "simulerBeregningFeilUnderBehandling" -> {
             detail["sf:simulerBeregningFeilUnderBehandling"]?.let {
+                @Suppress("UNCHECKED_CAST")
                 val map = it as Map<String, String>
                 val errorMessage = map["errorMessage"] ?: panic(this)
                 unprocessable(errorMessage)
