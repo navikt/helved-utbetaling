@@ -12,6 +12,7 @@ import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import libs.utils.secureLog
+import models.Fagsystem
 import java.time.Instant
 import peisschtappern.Dao.Companion.findAll
 
@@ -71,19 +72,19 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
 
             get("/{sakId}/{fagsystem}") {
                 val sakId = call.parameters["sakId"]!!
-                val fagsystem = call.parameters["fagsystem"]!!
+                val fagsystem: Fagsystem = Fagsystem.from(call.parameters["fagsystem"]!!)
 
                 val hendelser: List<Dao> = withContext(Jdbc.context + Dispatchers.IO) {
                     transaction {
                         coroutineScope {
                             val deferred: List<Deferred<List<Dao>>> = listOf(
-                                async { Dao.findOppdrag(sakId, fagsystem) },
-                                async { Dao.findKvitteringer(sakId, fagsystem) },
-                                async { Dao.findUtbetalinger(sakId, fagsystem) },
-                                async { Dao.findSimuleringer(sakId, fagsystem) },
-                                async { if (fagsystem === "DP") Dao.findDpUtbetalinger(sakId) else emptyList()},
-                                async { if (fagsystem === "DP") Dao.findDpInternUtbetalinger(sakId) else emptyList()},
-                                async { Dao.findSaker(sakId, fagsystem) },
+                                async { Dao.findOppdrag(sakId, fagsystem.fagområde) },
+                                async { Dao.findKvitteringer(sakId, fagsystem.fagområde) },
+                                async { Dao.findUtbetalinger(sakId, fagsystem.name) },
+                                async { Dao.findSimuleringer(sakId, fagsystem.fagområde) },
+                                async { if (fagsystem == Fagsystem.DAGPENGER) Dao.findDpUtbetalinger(sakId) else emptyList()},
+                                async { if (fagsystem === Fagsystem.DAGPENGER) Dao.findDpInternUtbetalinger(sakId) else emptyList()},
+                                async { Dao.findSaker(sakId, fagsystem.name) },
                             )
 
                             deferred.awaitAll()
