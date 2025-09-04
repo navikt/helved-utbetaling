@@ -109,8 +109,8 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
     return ktable
 }
 
-private val dpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggregate, 100.milliseconds, 1.seconds)
-private val aapSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.aapAggregate, 100.milliseconds, 1.seconds)
+private val dpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggregate, 50.milliseconds, 50.milliseconds)
+private val aapSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.aapAggregate, 50.milliseconds, 50.milliseconds)
 
 
 /**
@@ -137,7 +137,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds, "dp-utbetalinger-session") 
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 50.milliseconds, "dp-utbetalinger-session") 
         .reduce(dpSuppressProcessorSupplier, Stores.dpAggregate.name)  { acc, next -> acc + next }
         .map { aggregate  -> 
             Result.catch { 
@@ -187,7 +187,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
         .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 1.seconds, "aap-utbetalinger-session")
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 50.milliseconds, "aap-utbetalinger-session")
         .reduce(aapSuppressProcessorSupplier, Stores.aapAggregate.name)  { acc, next -> acc + next }
         .map { aggregate  ->
             Result.catch {
@@ -253,7 +253,6 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<Utbeta
     }
 }
 
-// TODO: erstatt DpTuple med noe mer generisk
 private fun splitOnMeldeperiode(sakKey: SakKey, tuple: AapTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
     val (aapKey, aapUtbetaling) = tuple
     val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, AapUtbetaling?>> = aapUtbetaling
