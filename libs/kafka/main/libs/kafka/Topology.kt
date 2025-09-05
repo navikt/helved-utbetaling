@@ -1,6 +1,7 @@
 package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
 import libs.kafka.processor.LogConsumeTopicProcessor
 import libs.kafka.processor.MetadataProcessor
 import libs.kafka.processor.Processor.Companion.addProcessor
@@ -34,15 +35,16 @@ class KafkaStreams : Streams {
     override fun connect(
         topology: Topology,
         config: StreamsConfig,
-        registry: MeterRegistry, // TODO: remove
+        registry: MeterRegistry,
     ) {
-        topology.registerInternalTopology(this)
+    topology.registerInternalTopology(this)
 
     internalStreams = KafkaStreams(internalTopology, config.streamsProperties())
     internalStreams.setUncaughtExceptionHandler(UncaughtHandler())
     internalStreams.setStateListener { state, _ -> if (state == RUNNING) initiallyStarted = true }
     internalStreams.setGlobalStateRestoreListener(RestoreListener())
     internalStreams.start()
+    KafkaStreamsMetrics(internalStreams).bindTo(registry)
 }
 
 override fun ready(): Boolean = initiallyStarted && internalStreams.state() in listOf(CREATED, REBALANCING, RUNNING)
