@@ -37,7 +37,7 @@ data class StreamsConfig(
         this[StreamsConfig.producerPrefix(ProducerConfig.COMPRESSION_TYPE_CONFIG)] = compressionType
 
         // Default is 'INFO' but <record-e2e-latency-*> is recorded in 'DEBUG'
-        this[StreamsConfig.METRICS_RECORDING_LEVEL_CONFIG] = "DEBUG"
+        this[StreamsConfig.METRICS_RECORDING_LEVEL_CONFIG] = "INFO"
 
         /*
          * Enable exactly onces semantics:

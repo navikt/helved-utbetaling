@@ -1,14 +1,15 @@
 package abetal
 
-import java.math.BigDecimal
-import javax.xml.datatype.XMLGregorianCalendar
 import libs.kafka.StreamsPair
+import libs.utils.appLog
 import models.Action
 import models.PeriodeId
 import models.Utbetaling
 import models.notFound
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import java.math.BigDecimal
+import javax.xml.datatype.XMLGregorianCalendar
 
 object AggregateService {
     fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<Pair<Oppdrag, List<Utbetaling>>> {
@@ -58,12 +59,19 @@ object AggregateService {
                 new.validate()
                 when {
                     new.action == Action.DELETE -> {
+                        appLog.info("simuler opphør for $prev")
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         SimuleringService.delete(prev, prev)
                     }
 
-                    prev == null -> SimuleringService.opprett(new)
-                    else -> SimuleringService.update(new, prev)
+                    prev == null -> {
+                        appLog.info("simuler opprett for $new")
+                        SimuleringService.opprett(new)
+                    }
+                    else -> {
+                        appLog.info("simuler endring for $prev -> $new")
+                        SimuleringService.update(new, prev)
+                    }
                 }
             }
 

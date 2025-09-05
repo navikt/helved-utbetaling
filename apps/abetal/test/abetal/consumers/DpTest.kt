@@ -130,6 +130,12 @@ internal class DpTest {
             assertEquals("15898099536", it.request.oppdrag.oppdragGjelderId)
             assertEquals("R123456", it.request.oppdrag.saksbehId)
             assertEquals(1, it.request.oppdrag.oppdragslinjes.size)
+            val linje1 = it.request.oppdrag.oppdragslinjes.get(0)
+            assertEquals("NY", linje1.kodeEndringLinje)
+            assertNull(linje1.kodeStatusLinje)
+            assertNull(linje1.datoStatusFom)
+            assertEquals("R123456", linje1.saksbehId)
+            assertEquals(900, linje1.sats.toLong())
         }
     }
 

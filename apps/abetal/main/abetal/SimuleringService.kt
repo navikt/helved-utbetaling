@@ -33,7 +33,7 @@ object SimuleringService {
             enhets.addAll(enheter(new))
             new.perioder.mapIndexed { i, periode ->
                 val periodeId = if (i == new.perioder.size - 1) new.lastPeriodeId else PeriodeId()
-                val oppdragslinje = oppdragslinje(new, periode, periodeId, forrigeId.also { forrigeId = periodeId }, null )
+                val oppdragslinje = oppdragslinje(new, false, periode, periodeId, forrigeId.also { forrigeId = periodeId }, null )
                 oppdragslinjes.add(oppdragslinje)
             }
         }
@@ -61,7 +61,7 @@ object SimuleringService {
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
             val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.periodetype)
-            val opphørslinje = oppdragslinje(new, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato )
+            val opphørslinje = oppdragslinje(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato )
             if (opphørsdato != null) oppdragslinjes.add(opphørslinje)
             oppdragslinjes.addAll(nyeLinjer(new, prev, opphørsdato))
         }
@@ -86,7 +86,7 @@ object SimuleringService {
             enhets.addAll(enheter(new))
             val lastPeriode = new.perioder.maxBy { it.fom }
             val opphør = new.perioder.minBy { it.fom }.fom
-            val oppdragslinje = oppdragslinje(new, lastPeriode, prev.lastPeriodeId, null, opphør)
+            val oppdragslinje = oppdragslinje(new, false, lastPeriode, prev.lastPeriodeId, null, opphør)
             oppdragslinjes.add(oppdragslinje)
         }
         return rootFactory.createSimulerBeregningRequest().apply {
@@ -116,6 +116,7 @@ private fun enheter(new: Utbetaling): List<Enhet> {
 
 private fun oppdragslinje(
     utbetaling: Utbetaling,
+    erEndringPåEksisterendePeriode: Boolean,
     periode: Utbetalingsperiode,
     periodeId: PeriodeId,
     forrigePeriodeId: PeriodeId?,
@@ -125,7 +126,7 @@ private fun oppdragslinje(
         attestantId = utbetaling.beslutterId.ident
     }
     return objectFactory.createOppdragslinje().apply {
-        kodeEndringLinje = if (utbetaling.førsteUtbetalingPåSak) "NY" else "ENDR"
+        kodeEndringLinje = if (erEndringPåEksisterendePeriode) "ENDR" else "NY"
         opphør?.let {
             kodeStatusLinje = KodeStatusLinje.OPPH
             datoStatusFom = opphør.format()
@@ -182,7 +183,7 @@ private fun nyeLinjer(
         .filter { if (opphørsdato != null) it.fom >= opphørsdato else true }
         .map { p ->
             val pid = PeriodeId()
-            oppdragslinje(new, p, pid, sistePeriodeId, null).also {
+            oppdragslinje(new, false, p, pid, sistePeriodeId, null).also {
                 sistePeriodeId = pid
             }
         }

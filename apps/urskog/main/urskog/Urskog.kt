@@ -2,18 +2,19 @@ package urskog
 
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
-import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
+import io.micrometer.core.instrument.config.MeterFilter
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import java.time.LocalDate
 import libs.kafka.*
-import libs.utils.*
-import libs.mq.MQ
 import libs.mq.DefaultMQ
+import libs.mq.MQ
+import libs.utils.*
 import models.erHelligdag
+import java.time.LocalDate
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
