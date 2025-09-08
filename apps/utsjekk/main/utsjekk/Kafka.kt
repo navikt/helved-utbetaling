@@ -37,8 +37,13 @@ fun createTopology(abetalClient: AbetalClient): Topology = topology {
                 false
             }
         }
-        .forEach { uid, status ->
-            val uid = UtbetalingId(UUID.fromString(uid))
+        .forEach { key, status ->
+            val uid = UtbetalingId(UUID.fromString(key))
+
+            if (status.status == Status.FEILET) {
+                SimuleringSubscriptions.complete(key, status)
+            }
+
             runBlocking {
                 withContext(Jdbc.context) {
                     val uDao = transaction {
