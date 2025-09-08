@@ -11,12 +11,14 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.selects.select
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.kafka.KafkaProducer
 import models.DpUtbetaling
 import models.Fagsystem
 import models.Simulering
+import models.StatusReply
 import models.UtbetalingId
 import utsjekk.*
 import utsjekk.utbetaling.Utbetaling
@@ -27,23 +29,35 @@ import kotlin.time.Duration.Companion.seconds
 object SimuleringSubscriptions {
 
     private val subscriptions = ConcurrentHashMap<String, CompletableDeferred<Simulering>>()
+    private val statuses = ConcurrentHashMap<String, CompletableDeferred<StatusReply>>()
     val subscriptionEvents = Channel<String>(Channel.UNLIMITED)
 
-    fun subscribe(key: String): CompletableDeferred<Simulering> {
+    fun subscribe(key: String): Pair<CompletableDeferred<Simulering>, CompletableDeferred<StatusReply>> {
         if (subscriptions.containsKey(key)) locked("Simulering for $key pågår allerede")
-        val completableDeferred = CompletableDeferred<Simulering>()
-        subscriptions[key] = completableDeferred
+
+        val simuleringDeferred = CompletableDeferred<Simulering>()
+        subscriptions[key] = simuleringDeferred 
+
+        val statusDeferred = CompletableDeferred<StatusReply>()
+        statuses[key] = statusDeferred
+
         subscriptionEvents.trySend(key)
-        return completableDeferred
+        return simuleringDeferred to statusDeferred
     }
 
     fun unsubscribe(key: String) {
         subscriptions[key]?.cancel()
         subscriptions.remove(key)
+        statuses[key]?.cancel()
+        statuses.remove(key)
     }
 
     fun complete(key: String, simulering: Simulering) {
         subscriptions[key]?.complete(simulering)
+    }
+
+    fun complete(key: String, status: StatusReply) {
+        statuses[key]?.complete(status)
     }
 }
 
@@ -77,11 +91,22 @@ fun Route.simulerBlocking(dpUtbetalingerProducer: KafkaProducer<String, DpUtbeta
 
             suspend fun simulerDagpenger() {
                 val dto = call.receive<DpUtbetaling>()
-                val deferred = SimuleringSubscriptions.subscribe(key)
+                val (sim, status) = SimuleringSubscriptions.subscribe(key)
+
                 dpUtbetalingerProducer.send(key, dto)
-                withTimeoutOrNull(30.seconds) { 
-                    call.respond(deferred.await())
-                } ?: call.respond(HttpStatusCode.RequestTimeout)
+
+                val result = withTimeoutOrNull(30.seconds) { 
+                    select<Any?> {
+                        sim.onAwait { it }
+                        status.onAwait { it }
+                    }
+                }
+                when (result) {
+                    is Simulering -> call.respond(result)
+                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result) // TODO: use status.error (ApiError) instead?
+                    null -> call.respond(HttpStatusCode.RequestTimeout)
+                    else -> call.respond(HttpStatusCode.InternalServerError)
+                }
                 SimuleringSubscriptions.unsubscribe(key)
             }
 

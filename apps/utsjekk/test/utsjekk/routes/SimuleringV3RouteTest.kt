@@ -93,5 +93,64 @@ class SimuleringRouteTest {
             assertEquals(HttpStatusCode.OK, res.status)
             assertEquals(sim, res.body<Simulering>())
         }
+
+    @Test
+    fun `simuler for dagpenger feiler med status`() =
+        runTest {
+            val key = UUID.randomUUID().toString()
+
+            val a = async {
+                httpClient.post("/api/simulering/v3") {
+                    contentType(ContentType.Application.Json)
+                    bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.AZURE_TOKEN_GENERATOR))
+                    header("Transaction-ID", key)
+                    header("fagsystem", "DAGPENGER")
+                    setBody(
+                        DpUtbetaling(
+                            dryrun = true,
+                            behandlingId = "1234",
+                            sakId = "sakId",
+                            ident = "12345678910",
+                            vedtakstidspunktet = LocalDateTime.now(),
+                            utbetalinger = listOf(
+                                DpUtbetalingsdag(
+                                    meldeperiode = "18-19 aug",
+                                    dato = LocalDate.of(2025, 8, 18),
+                                    sats = 573u,
+                                    utbetaltBeløp = 573u,
+                                    rettighetstype = Rettighetstype.Ordinær,
+                                    utbetalingstype = Utbetalingstype.Dagpenger
+                                ),
+                                DpUtbetalingsdag(
+                                    meldeperiode = "18-19 aug",
+                                    dato = LocalDate.of(2025, 8, 19),
+                                    sats = 999u,
+                                    utbetaltBeløp = 999u,
+                                    rettighetstype = Rettighetstype.Ordinær,
+                                    utbetalingstype = Utbetalingstype.Dagpenger
+                                )
+                            ),
+                        )
+                    )
+                }
+            }
+
+            val status = StatusReply.err(ApiError(400, "bad bad bad")) 
+
+            launch {
+                val subscription = SimuleringSubscriptions.subscriptionEvents.receive()
+                assertEquals(key, subscription)
+
+                TestRuntime.topics.status.produce(key) {
+                    status
+                }
+            }
+
+            val res = a.await()
+
+            assertEquals(HttpStatusCode.BadRequest, res.status)
+            assertEquals(status, res.body<StatusReply>())
+        }
 }
+
 
