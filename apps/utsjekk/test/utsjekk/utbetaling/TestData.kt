@@ -152,3 +152,28 @@ fun Utbetaling.Companion.dagpenger(
     avvent,
 )
 
+fun Utbetaling.Companion.aap(
+    vedtakstidspunkt: LocalDate,
+    perioder: List<Utbetalingsperiode>,
+    satstype: Satstype = Satstype.VIRKEDAG,
+    lastPeriodeId: PeriodeId = PeriodeId(),
+    stønad: StønadTypeAAP = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+    sakId: SakId = SakId(RandomOSURId.generate()),
+    personident: Personident = Personident.random(),
+    behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
+    saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+    beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
+    avvent: Avvent? = null,
+): Utbetaling = Utbetaling(
+    sakId,
+    behandlingId,
+    lastPeriodeId,
+    personident,
+    vedtakstidspunkt.atStartOfDay(),
+    stønad,
+    beslutterId,
+    saksbehandlerId,
+    satstype,
+    perioder,
+    avvent,
+)
