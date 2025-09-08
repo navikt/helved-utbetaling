@@ -20,14 +20,16 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.auth.*
+import libs.auth.TokenProvider
+import libs.auth.configure
+import libs.jdbc.Jdbc
+import libs.jdbc.Migrator
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
-import libs.jdbc.*
-import libs.utils.*
+import libs.utils.appLog
+import libs.utils.secureLog
 import models.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
 import utsjekk.iverksetting.IverksettingService
@@ -35,9 +37,11 @@ import utsjekk.iverksetting.iverksetting
 import utsjekk.simulering.SimuleringValidator
 import utsjekk.simulering.simulerBlocking
 import utsjekk.simulering.simulering
+import utsjekk.utbetaling.UtbetalingMigrator
 import utsjekk.utbetaling.UtbetalingService
 import utsjekk.utbetaling.simulering.SimuleringService
 import utsjekk.utbetaling.utbetalingRoute
+import java.io.File
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -80,12 +84,6 @@ fun Application.utsjekk(
     val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
     val dpUtbetalingerProducer = kafka.createProducer(config.kafka, Topics.utbetalingDp)
 
-    monitor.subscribe(ApplicationStopping) {
-        kafka.close()
-        oppdragProducer.close()
-        dpUtbetalingerProducer.close()
-    }
-
     Jdbc.initialize(config.jdbc)
     runBlocking {
         withContext(Jdbc.context) {
@@ -120,7 +118,6 @@ fun Application.utsjekk(
                     val res = ApiError.Response(msg = msg, field = null, doc = DEFAULT_DOC_STR)
                     call.respond(HttpStatusCode.BadRequest, res)
                 }
-
                 else -> {
                     val msg = "Intern feil, årsaken logges av sikkerhetsmessig grunn i secureLog."
                     appLog.error(msg)
@@ -136,15 +133,25 @@ fun Application.utsjekk(
     val simuleringService = SimuleringService(simulering, abetalClient)
     val simuleringValidator = SimuleringValidator(iverksettingService)
 
+    val aapMigrator = UtbetalingMigrator(config, kafka)
+
     routing {
         authenticate(TokenProvider.AZURE) {
             iverksetting(iverksettingService)
             simulering(simuleringValidator, simulering)
             simulerBlocking(dpUtbetalingerProducer)
             utbetalingRoute(simuleringService, utbetalingService)
+            aapMigrator.route(this)
         }
 
         probes(metrics)
+    }
+
+    monitor.subscribe(ApplicationStopping) {
+        kafka.close()
+        oppdragProducer.close()
+        dpUtbetalingerProducer.close()
+        aapMigrator.close()
     }
 }
 
