@@ -11,6 +11,8 @@ data class AapUtbetaling(
     val ident: String,
     val utbetalinger: List<AapUtbetalingsdag>,
     val vedtakstidspunktet: LocalDateTime,
+    val saksbehandler: String? = null,
+    val beslutter: String? = null,
 )
 
 data class AapUtbetalingsdag(
@@ -52,8 +54,8 @@ fun toDomain(
         personident = Personident(value.ident),
         vedtakstidspunkt = value.vedtakstidspunktet,
         stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-        beslutterId = Navident("kelvin"),
-        saksbehandlerId = Navident("kelvin"),
+        beslutterId = value.beslutter?.let(::Navident) ?: Navident("kelvin"),
+        saksbehandlerId = value.saksbehandler?.let(::Navident) ?: Navident("kelvin"),
         periodetype = Periodetype.UKEDAG,
         avvent = null,
         perioder = perioder(value.utbetalinger),
