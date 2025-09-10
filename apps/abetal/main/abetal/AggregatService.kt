@@ -10,6 +10,7 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.math.BigDecimal
 import javax.xml.datatype.XMLGregorianCalendar
+import models.unprocessable
 
 object AggregateService {
     fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<Pair<Oppdrag, List<Utbetaling>>> {
@@ -54,10 +55,13 @@ object AggregateService {
     }
 
     fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<SimulerBeregningRequest> {
-        val simuleringer: List<SimulerBeregningRequest> =
-            aggregate.filter { (new, prev) -> prev == null || new.perioder != prev.perioder }.map { (new, prev) ->
+        val filtered = aggregate.filter { (new, prev) -> prev == null || new.perioder != prev.perioder }
+
+        val simuleringer: List<SimulerBeregningRequest> = filtered.map { (new, prev) ->
                 new.validate()
                 when {
+                    filtered.isEmpty() -> unprocessable("Kan ikke simulere uten endring")
+
                     new.action == Action.DELETE -> {
                         appLog.info("simuler opphør for $prev")
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
