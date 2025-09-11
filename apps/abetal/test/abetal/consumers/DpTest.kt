@@ -1,6 +1,7 @@
 package abetal.consumers
 
 import abetal.*
+import abetal.TestRuntime
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.kafka.JsonSerde
 import models.*
@@ -10,11 +11,17 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.*
+import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class DpTest {
+
+    @AfterEach
+    fun `assert empty topic`() {
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+    }
 
     @Test
     fun `simulering av dp`() {
@@ -137,6 +144,57 @@ internal class DpTest {
             assertEquals("R123456", linje1.saksbehId)
             assertEquals(900, linje1.sats.toLong())
         }
+    }
+
+    @Test
+    fun `simulering uten endring kaster feil1`() {
+        val key = UUID.randomUUID().toString()
+        val key2 = UUID.randomUUID().toString()
+
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val meldeperiode1 = UUID.randomUUID().toString()
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+
+        TestRuntime.topics.utbetalinger.produce("$uid1") {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid1,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = key,
+                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                beslutterId = Navident("dagpenger"),
+                saksbehandlerId = Navident("dagpenger"),
+                fagsystem = Fagsystem.DAGPENGER,
+            ) {
+                periode(1.jan, 2.jan, 100u)
+            }
+        }
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestRuntime.topics.dp.produce(key) {
+            Dp.utbetaling(sid.id, bid.id, dryrun = true) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode1,
+                    fom = 1.jan,
+                    tom = 2.jan,
+                    sats = 100u,
+                    utbetaltBeløp = 100u,
+                )
+            }
+        }
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
+            assertEquals(Status.FEILET, statusReply.status)
+            assertEquals(statusReply.error?.msg , "kan ikke simulere uten endringer")
+        }
+
+        TestRuntime.topics.simulering.assertThat().hasNot(key)
+
     }
 
     @Test
