@@ -20,9 +20,9 @@ data class StreamsConfig(
 
         ssl?.let { putAll(it.properties()) }
 
-        this[StreamsConfig.PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProduceAgainHandler::class.java.name
-        this[StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeAgainHandler::class.java.name
-        this[StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessAgainHandler::class.java.name
+        this[StreamsConfig.PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProduceAgainHandler::class.java
+        this[StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeNextHandler::class.java
+        this[StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessAgainHandler::class.java
 
         // Configuration for resilience
         this[StreamsConfig.producerPrefix(ProducerConfig.ACKS_CONFIG)] = "all"
