@@ -26,6 +26,7 @@ object Topics {
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val utbetalingDp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val utbetalingAap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
+    val utbetaling = Topic("helved.utbetalinger-aap.v1", json<Utbetaling>())
 }
 
 fun createTopology(abetalClient: AbetalClient): Topology = topology {
