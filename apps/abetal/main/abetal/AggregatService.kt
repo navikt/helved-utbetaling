@@ -10,6 +10,7 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.math.BigDecimal
 import javax.xml.datatype.XMLGregorianCalendar
+import models.badRequest
 
 object AggregateService {
     fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<Pair<Oppdrag, List<Utbetaling>>> {
@@ -54,8 +55,17 @@ object AggregateService {
     }
 
     fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<SimulerBeregningRequest> {
-        val simuleringer: List<SimulerBeregningRequest> =
-            aggregate.filter { (new, prev) -> prev == null || new.perioder != prev.perioder }.map { (new, prev) ->
+        val hasChanges: (StreamsPair<Utbetaling, Utbetaling?>) -> Boolean = { (new, prev) ->
+            prev == null || new.perioder != prev.perioder
+        }
+
+        if (aggregate.isNotEmpty() && aggregate.none(hasChanges)) {
+            badRequest("kan ikke simulere uten endringer")
+        }
+
+        val simuleringer = aggregate
+            .filter(hasChanges)
+            .map { (new, prev) ->
                 new.validate()
                 when {
                     new.action == Action.DELETE -> {
@@ -68,6 +78,7 @@ object AggregateService {
                         appLog.info("simuler opprett for $new")
                         SimuleringService.opprett(new)
                     }
+
                     else -> {
                         appLog.info("simuler endring for $prev -> $new")
                         SimuleringService.update(new, prev)
@@ -97,7 +108,7 @@ operator fun Pair<Utbetaling, Oppdrag>.plus(other: Pair<Utbetaling, Oppdrag>): P
 
 infix fun Utbetaling.noe(other: Utbetaling): Utbetaling {
     return this.copy(
-       perioder = (perioder union other.perioder).toList()
+        perioder = (perioder union other.perioder).toList()
     )
 }
 
@@ -122,7 +133,7 @@ infix fun Oppdrag.kjed(other: Oppdrag): Oppdrag {
         )
         oppdrag150 !in currentOppdrag150s
     }
-    if (otherOppdrag150s.isNotEmpty() ) {
+    if (otherOppdrag150s.isNotEmpty()) {
         otherOppdrag150s.first().refDelytelseId = this.oppdrag110.oppdragsLinje150s.last().delytelseId
     }
 
