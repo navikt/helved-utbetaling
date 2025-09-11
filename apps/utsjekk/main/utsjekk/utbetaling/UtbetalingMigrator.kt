@@ -8,13 +8,18 @@ import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.kafka.Streams
-import models.AapUtbetaling
-import models.AapUtbetalingsdag
-import utsjekk.*
 import java.util.*
+import java.time.LocalDate
+import utsjekk.*
+
+data class UtbetalingMigrationDto(
+    val meldeperiode: String,
+    val fom: LocalDate,
+    val tom: LocalDate,
+)
 
 class UtbetalingMigrator(config: Config, kafka: Streams): AutoCloseable {
-    val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetalingAap)
+    val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)
 
     fun route(route: Route) {
         route.route("/utbetalinger/{uid}/migrate") {
@@ -24,20 +29,22 @@ class UtbetalingMigrator(config: Config, kafka: Streams): AutoCloseable {
                     ?.let(::UtbetalingId)
                     ?: badRequest("parameter mangler", "uid")
 
-                val meldeperiode = call.receive<String>()
-                transfer(uid, meldeperiode)
+                val meldeperioder = call.receive<List<UtbetalingMigrationDto>>()
+                transfer(uid, meldeperioder)
                 call.respond(HttpStatusCode.OK)
             }
         }
     }
 
-    suspend fun transfer(uid: UtbetalingId, meldeperiode: String) {
+    suspend fun transfer(uid: UtbetalingId, meldeperioder: List<UtbetalingMigrationDto>) {
         withContext(Jdbc.context) {
             transaction { 
-                val utbet = UtbetalingDao.findOrNull(uid) ?: notFound("utbetaling $uid")
-                val aapUtbet = aapUtbetaling(uid, meldeperiode, utbet)
-                val key = uid.id.toString()
-                utbetalingProducer.send(key, aapUtbet, partition(key))
+                val dao = UtbetalingDao.findOrNull(uid) ?: notFound("utbetaling $uid")
+                val utbets = meldeperioder.map { utbetaling(uid, it, dao.data) }
+                utbets.forEach { utbet -> 
+                    val key = utbet.uid.id.toString()
+                    utbetalingProducer.send(key, utbet, partition(key))
+                }
             }
         }
     }
@@ -46,28 +53,56 @@ class UtbetalingMigrator(config: Config, kafka: Streams): AutoCloseable {
         utbetalingProducer.close()
     }
 
-    private fun aapUtbetaling(
-        uid: UtbetalingId,
-        meldeperiode: String,
-        dao: UtbetalingDao,
-    ) = AapUtbetaling(
+    private fun utbetaling(
+        originalKey: UtbetalingId,
+        req: UtbetalingMigrationDto,
+        from: Utbetaling,
+    ): models.Utbetaling = models.Utbetaling(
         dryrun = false,
-        sakId = dao.data.sakId.id,
-        behandlingId = dao.data.behandlingId.id,
-        ident = dao.data.personident.ident,
-        utbetalinger = dao.data.perioder.map { aapUtbetalingsdag(meldeperiode, it) },
-        vedtakstidspunktet = dao.data.vedtakstidspunkt,
+        originalKey = originalKey.id.toString(),
+        fagsystem = models.Fagsystem.AAP,
+        uid = models.aapUId(from.sakId.id, req.meldeperiode, models.StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING),
+        action = models.Action.CREATE, 
+        førsteUtbetalingPåSak = from.erFørsteUtbetaling ?: false,
+        sakId = models.SakId(from.sakId.id),
+        behandlingId = models.BehandlingId(from.behandlingId.id),
+        lastPeriodeId = models.PeriodeId.decode(from.lastPeriodeId.toString()),
+        personident = models.Personident(from.personident.ident),
+        vedtakstidspunkt = from.vedtakstidspunkt,
+        stønad = models.StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+        beslutterId = models.Navident(from.beslutterId.ident),
+        saksbehandlerId = models.Navident(from.saksbehandlerId.ident),
+        periodetype = models.Periodetype.UKEDAG,
+        avvent = from.avvent?.let(::avvent),
+        perioder = utbetalingsperioder(from.perioder, req.fom, req.tom),
     )
 
-    private fun aapUtbetalingsdag(
-        meldeperiode: String,
-        periode: Utbetalingsperiode,
-    ) = AapUtbetalingsdag(
-        meldeperiode = meldeperiode,
-        dato = periode.fom, // er periode.fom == periode.tom ?
-        utbetaltBeløp = periode.beløp,
-        sats = periode.fastsattDagsats ?: periode.beløp,
-    )
+    private fun utbetalingsperioder(
+        perioder: List<Utbetalingsperiode>,
+        fom: LocalDate,
+        tom: LocalDate,
+    ): List<models.Utbetalingsperiode> {
+        return perioder
+            .filter { it.fom >= fom && it.tom <= tom } // Test grundig
+            .map { 
+                models.Utbetalingsperiode(
+                    fom = it.fom,
+                    tom = it.tom,
+                    beløp = it.beløp,
+                    betalendeEnhet = it.betalendeEnhet?.let { models.NavEnhet(it.enhet) },
+                    vedtakssats = it.fastsattDagsats ?: it.beløp,
+                )
+            }
+    }
+
+    private fun avvent(from: Avvent) = 
+        models.Avvent(
+            fom = from.fom,
+            tom = from.tom,
+            overføres = from.overføres,
+            årsak = from.årsak?.let { årsak -> models.Årsak.valueOf(årsak.name) },
+            feilregistrering = from.feilregistrering,
+        )
 }
 
 private fun uuid(str: String): UUID {
