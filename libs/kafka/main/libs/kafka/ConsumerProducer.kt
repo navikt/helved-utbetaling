@@ -33,8 +33,8 @@ open class KafkaProducer<K: Any, V>(
             when (err) {
                 null -> kafkaLog.trace("produce ${topic.name}", kv("key", record.key()), kv("topic", topic.name), kv("partition", md.partition()), kv("offset", md.offset())) 
                 else -> {
-                    kafkaLog.error("Failed to produce record for ${record.key()} on ${topic.name}")
-                    secureLog.error("Failed to produce record for ${record.key()} on ${topic.name}", err)
+                    kafkaLog.error("Failed to produce record for ${record.key()} on ${topic.name}:${md.partition()}")
+                    secureLog.error("Failed to produce record for ${record.key()} on ${topic.name}:${md.partition()}", err)
                 }
             }
         }.get()
