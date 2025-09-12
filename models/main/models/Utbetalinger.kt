@@ -59,7 +59,7 @@ data class Utbetaling(
             && sakId == other.sakId 
             && behandlingId == other.behandlingId 
             && personident == other.personident
-            && vedtakstidspunkt == other.vedtakstidspunkt
+            && vedtakstidspunkt.equals(other.vedtakstidspunkt)
             && stønad == other.stønad
             && beslutterId == other.beslutterId
             && saksbehandlerId == other.saksbehandlerId
@@ -109,7 +109,7 @@ fun Utbetaling.validateLockedFields(other: Utbetaling) {
 
 fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
     if (perioder.size != other.perioder.size) return
-    val ingenEndring = perioder.sortedBy { it.hashCode() }.zip(other.perioder.sortedBy { it.hashCode() }).all { (l, r) -> l.beløp == r.beløp && l.fom == r.fom && l.tom == r.tom && l.vedtakssats == r.vedtakssats }
+    val ingenEndring = perioder.sortedBy { it.hashCode() }.zip(other.perioder.sortedBy { it.hashCode() }).all { (l, r) -> l.beløp == r.beløp && l.fom.equals(r.fom) && l.tom.equals(r.tom) && l.vedtakssats == r.vedtakssats }
     if (ingenEndring) conflict("periods already exists", "opprett_en_utbetaling")
 }
 
@@ -322,8 +322,8 @@ fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetaling
         .map { (_, perioder) ->
             perioder.splitWhen { a, b ->
                 when (periodetype) {
-                    Periodetype.UKEDAG -> a.tom.nesteUkedag() != b.fom
-                    else -> a.tom.plusDays(1) != b.fom
+                    Periodetype.UKEDAG -> !a.tom.nesteUkedag().equals(b.fom)
+                    else -> !a.tom.plusDays(1).equals(b.fom)
                 }
             }.map {
                 Utbetalingsperiode(
