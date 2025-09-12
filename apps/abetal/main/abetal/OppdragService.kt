@@ -154,7 +154,7 @@ private fun nyeLinjer(
             // som har endret seg.
             if (prev.perioder[førsteEndringIdx].tom > new.perioder[førsteEndringIdx].tom
                 && prev.perioder[førsteEndringIdx].beløp == new.perioder[førsteEndringIdx].beløp
-                && prev.perioder[førsteEndringIdx].fom == new.perioder[førsteEndringIdx].fom
+                && prev.perioder[førsteEndringIdx].fom.equals(new.perioder[førsteEndringIdx].fom)
             ) {
                 førsteEndringIdx += 1
             }
