@@ -12,7 +12,7 @@ import java.util.*
 import java.time.LocalDate
 import utsjekk.*
 
-data class UtbetalingMigrationDto(
+data class MigrationRequest(
     val meldeperiode: String,
     val fom: LocalDate,
     val tom: LocalDate,
@@ -29,22 +29,20 @@ class UtbetalingMigrator(config: Config, kafka: Streams): AutoCloseable {
                     ?.let(::UtbetalingId)
                     ?: badRequest("parameter mangler", "uid")
 
-                val meldeperioder = call.receive<List<UtbetalingMigrationDto>>()
-                transfer(uid, meldeperioder)
+                val request = call.receive<MigrationRequest>()
+                transfer(uid, request)
                 call.respond(HttpStatusCode.OK)
             }
         }
     }
 
-    suspend fun transfer(uid: UtbetalingId, meldeperioder: List<UtbetalingMigrationDto>) {
+    suspend fun transfer(uid: UtbetalingId, request: MigrationRequest) {
         withContext(Jdbc.context) {
             transaction { 
                 val dao = UtbetalingDao.findOrNull(uid) ?: notFound("utbetaling $uid")
-                val utbets = meldeperioder.map { utbetaling(uid, it, dao.data) }
-                utbets.forEach { utbet -> 
-                    val key = utbet.uid.id.toString()
-                    utbetalingProducer.send(key, utbet, partition(key))
-                }
+                val utbet = utbetaling(uid, request, dao.data)
+                val key = utbet.uid.id.toString()
+                utbetalingProducer.send(key, utbet, partition(key))
             }
         }
     }
@@ -55,7 +53,7 @@ class UtbetalingMigrator(config: Config, kafka: Streams): AutoCloseable {
 
     private fun utbetaling(
         originalKey: UtbetalingId,
-        req: UtbetalingMigrationDto,
+        req: MigrationRequest,
         from: Utbetaling,
     ): models.Utbetaling = models.Utbetaling(
         dryrun = false,
@@ -81,18 +79,14 @@ class UtbetalingMigrator(config: Config, kafka: Streams): AutoCloseable {
         perioder: List<Utbetalingsperiode>,
         fom: LocalDate,
         tom: LocalDate,
-    ): List<models.Utbetalingsperiode> {
-        return perioder
-            .filter { it.fom >= fom && it.tom <= tom } // Test grundig
-            .map { 
-                models.Utbetalingsperiode(
-                    fom = it.fom,
-                    tom = it.tom,
-                    beløp = it.beløp,
-                    betalendeEnhet = it.betalendeEnhet?.let { models.NavEnhet(it.enhet) },
-                    vedtakssats = it.fastsattDagsats ?: it.beløp,
-                )
-            }
+    ): List<models.Utbetalingsperiode> = perioder.map { 
+        models.Utbetalingsperiode(
+            fom = it.fom,
+            tom = it.tom,
+            beløp = it.beløp,
+            betalendeEnhet = it.betalendeEnhet?.let { models.NavEnhet(it.enhet) },
+            vedtakssats = it.fastsattDagsats ?: it.beløp,
+        )
     }
 
     private fun avvent(from: Avvent) = 
