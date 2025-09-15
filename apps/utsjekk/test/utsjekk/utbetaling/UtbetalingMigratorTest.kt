@@ -22,7 +22,7 @@ class UtbetalingMigratorTest {
         val res = httpClient.post("/utbetalinger/$uid/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(listOf(UtbetalingMigrationDto(meldeperiode, LocalDate.now(), LocalDate.now())))
+            setBody(MigrationRequest(meldeperiode, LocalDate.now(), LocalDate.now()))
         }
 
         assertEquals(HttpStatusCode.NotFound, res.status)
@@ -46,7 +46,7 @@ class UtbetalingMigratorTest {
         val res = httpClient.post("/utbetalinger/$uid/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(listOf(UtbetalingMigrationDto(meldeperiode, 4.feb, 4.feb)))
+            setBody(MigrationRequest(meldeperiode, 4.feb, 4.feb))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
