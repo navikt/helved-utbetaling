@@ -21,7 +21,7 @@ class ConsumeAgainHandler : DeserializationExceptionHandler {
 
     override fun handle(context: ErrorHandlerContext, record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception): ConsumeHandler {
         val msg = """
-               Exception deserializing record. Retrying...
+               Feil ved deserializing, forsøker igjen.
                Topic: ${record.topic()}
                Partition: ${record.partition()}
                Offset: ${record.offset()}
@@ -39,7 +39,7 @@ class ConsumeNextHandler : DeserializationExceptionHandler {
 
     override fun handle( context: ErrorHandlerContext, record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception): ConsumeHandler {
         val msg = """
-               Exception deserializing record. Reading next record...
+               Feil ved deserializing, fortsetter med neste record.
                Topic: ${record.topic()}
                Partition: ${record.partition()}
                Offset: ${record.offset()}
@@ -61,8 +61,8 @@ class ProcessAgainHandler: ProcessingExceptionHandler {
         r: org.apache.kafka.streams.processor.api.Record<*, *>, 
         e: java.lang.Exception,
     ): ProcessingHandler {
-        kafkaLog.error("Feil ved prosessering av record, logger og leser neste record")
-        secureLog.error("Feil ved prosessering av record, logger og leser neste record", e)
+        kafkaLog.error("Feil ved prosessering i topologien, forsøker igjen.")
+        secureLog.error("Feil ved prosessering i topologien, forsøker igjen.", e)
         return ProcessingHandler.FAIL
     }
 }
@@ -74,8 +74,8 @@ class ProcessNextHandler: ProcessingExceptionHandler {
         r: org.apache.kafka.streams.processor.api.Record<*, *>, 
         e: java.lang.Exception,
     ): ProcessingHandler {
-        kafkaLog.error("Feil ved prosessering av record, logger og leser neste record")
-        secureLog.error("Feil ved prosessering av record, logger og leser neste record", e)
+        kafkaLog.error("Feil ved prosessering i topologien, fortsetter med neste record.")
+        secureLog.error("Feil ved prosessering i topologien, fortsetter med neste record.", e)
         return ProcessingHandler.CONTINUE
     }
 }
@@ -112,8 +112,8 @@ class ProduceAgainHandler : ProductionExceptionHandler {
         r: ProducerRecord<ByteArray, ByteArray>?,
         e: java.lang.Exception?
     ): ProduceHandler {
-        kafkaLog.error("Feil i streams, logger og leser neste record")
-        secureLog.error("Feil i streams, logger og leser neste record", e)
+        kafkaLog.error("Feil ved serializing, forsøker igjen.")
+        secureLog.error("Feil ved serializing, forsøker igjen.", e)
         return ProduceHandler.FAIL
     }
 }
@@ -126,8 +126,8 @@ class ProduceNextHandler : ProductionExceptionHandler {
         r: ProducerRecord<ByteArray, ByteArray>?,
         e: java.lang.Exception?
     ): ProduceHandler {
-        kafkaLog.error("Feil i streams, logger og leser neste record")
-        secureLog.error("Feil i streams, logger og leser neste record", e)
+        kafkaLog.error("Feil ved serializing, fortsetter med neste record.")
+        secureLog.error("Feil ved serializing, fortsetter med neste record.", e)
         return ProduceHandler.CONTINUE
     }
 }
