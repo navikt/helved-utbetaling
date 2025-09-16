@@ -133,7 +133,8 @@ fun Application.utsjekk(
     val simuleringService = SimuleringService(simulering, abetalClient)
     val simuleringValidator = SimuleringValidator(iverksettingService)
 
-    val aapMigrator = UtbetalingMigrator(config, kafka)
+    val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)
+    val aapMigrator = UtbetalingMigrator(utbetalingProducer)
 
     routing {
         authenticate(TokenProvider.AZURE) {
@@ -151,7 +152,7 @@ fun Application.utsjekk(
         kafka.close()
         oppdragProducer.close()
         dpUtbetalingerProducer.close()
-        aapMigrator.close()
+        utbetalingProducer.close()
     }
 }
 

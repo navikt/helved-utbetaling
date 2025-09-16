@@ -158,9 +158,9 @@ object Bdd {
 
         return Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = behandlingsinformasjon1,
-            nyeAndeler = andeler.value,
-            forrigeAndeler = forrigeKjeder,
-            sisteAndelPerKjede = sisteOffsetPerIdent,
+            requested = andeler.value,
+            existing = forrigeKjeder,
+            lastExistingByKjede = sisteOffsetPerIdent,
         )
     }
 

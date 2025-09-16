@@ -26,35 +26,35 @@ object Utbetalingsgenerator {
      */
     fun lagUtbetalingsoppdrag(
         behandlingsinformasjon: Behandlingsinformasjon,
-        nyeAndeler: List<AndelData>,
-        forrigeAndeler: List<AndelData>,
-        sisteAndelPerKjede: Map<Kjedenøkkel, AndelData>,
+        requested: List<AndelData>,
+        existing: List<AndelData>,
+        lastExistingByKjede: Map<Kjedenøkkel, AndelData>,
     ): BeregnetUtbetalingsoppdrag {
-        validerAndeler(forrigeAndeler, nyeAndeler)
-        val nyeAndelerGruppert = nyeAndeler.groupByKjedenøkkel()
-        val forrigeKjeder = forrigeAndeler.groupByKjedenøkkel()
+        validerAndeler(existing, requested)
+        val nyeAndelerGruppert = requested.groupByKjedenøkkel()
+        val existingKjeder = existing.groupByKjedenøkkel()
 
         return lagUtbetalingsoppdrag(
-            nyeAndeler = nyeAndelerGruppert,
-            forrigeKjeder = forrigeKjeder,
-            sisteAndelPerKjede = sisteAndelPerKjede,
+            requested = nyeAndelerGruppert,
+            existingKjeder = existingKjeder,
+            lastExistingByKjede = lastExistingByKjede,
             behandlingsinformasjon = behandlingsinformasjon,
         )
     }
 
     private fun lagUtbetalingsoppdrag(
-        nyeAndeler: Map<Kjedenøkkel, List<AndelData>>,
-        forrigeKjeder: Map<Kjedenøkkel, List<AndelData>>,
-        sisteAndelPerKjede: Map<Kjedenøkkel, AndelData>,
+        requested: Map<Kjedenøkkel, List<AndelData>>,
+        existingKjeder: Map<Kjedenøkkel, List<AndelData>>,
+        lastExistingByKjede: Map<Kjedenøkkel, AndelData>,
         behandlingsinformasjon: Behandlingsinformasjon,
     ): BeregnetUtbetalingsoppdrag {
-        val nyeKjeder = lagNyeKjeder(nyeAndeler, forrigeKjeder, sisteAndelPerKjede)
+        val nyeKjeder = lagNyeKjeder(requested, existingKjeder, lastExistingByKjede)
 
         val utbetalingsoppdrag =
             Utbetalingsoppdrag(
                 saksbehandlerId = behandlingsinformasjon.saksbehandlerId,
                 beslutterId = behandlingsinformasjon.beslutterId,
-                erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak(sisteAndelPerKjede),
+                erFørsteUtbetalingPåSak = erFørsteUtbetalingPåSak(lastExistingByKjede),
                 saksnummer = behandlingsinformasjon.fagsakId.id,
                 fagsystem = behandlingsinformasjon.fagsystem,
                 aktør = behandlingsinformasjon.personident,
@@ -70,23 +70,23 @@ object Utbetalingsgenerator {
     }
 
     private fun lagNyeKjeder(
-        nyeKjeder: Map<Kjedenøkkel, List<AndelData>>,
-        forrigeKjeder: Map<Kjedenøkkel, List<AndelData>>,
-        sisteAndelPerKjede: Map<Kjedenøkkel, AndelData>,
+        requestedKjeder: Map<Kjedenøkkel, List<AndelData>>,
+        existingKjeder: Map<Kjedenøkkel, List<AndelData>>,
+        lastExistingByKjede: Map<Kjedenøkkel, AndelData>,
     ): List<ResultatForKjede> {
-        val alleKjedenøkler = nyeKjeder.keys + forrigeKjeder.keys
-        var sistePeriodeId = sisteAndelPerKjede.values.mapNotNull { it.periodeId }.maxOrNull() ?: -1
+        val alleKjedenøkler = requestedKjeder.keys + existingKjeder.keys
+        var sistePeriodeId = lastExistingByKjede.values.mapNotNull { it.periodeId }.maxOrNull() ?: -1
         return alleKjedenøkler.map { kjedenøkkel ->
-            val forrigeAndeler = forrigeKjeder[kjedenøkkel] ?: emptyList()
-            val nyeAndeler = nyeKjeder[kjedenøkkel] ?: emptyList()
-            val sisteAndel = sisteAndelPerKjede[kjedenøkkel]
-            val opphørsdato = finnOpphørsdato(forrigeAndeler, nyeAndeler)
+            val existing = existingKjeder[kjedenøkkel] ?: emptyList()
+            val nyeAndeler = requestedKjeder[kjedenøkkel] ?: emptyList()
+            val lastExisting = lastExistingByKjede[kjedenøkkel]
+            val opphørsdato = finnOpphørsdato(existing, nyeAndeler)
 
             val nyKjede =
                 beregnNyKjede(
-                    forrigeAndeler.uten0beløp(),
+                    existing.uten0beløp(),
                     nyeAndeler.uten0beløp(),
-                    sisteAndel,
+                    lastExisting,
                     sistePeriodeId,
                     opphørsdato,
                 )
@@ -100,10 +100,10 @@ object Utbetalingsgenerator {
      * må opphøre alle andeler pga nye 0-andeler som har startdato før forrige første periode
      */
     private fun finnOpphørsdato(
-        forrigeAndeler: List<AndelData>,
+        existing: List<AndelData>,
         nyeAndeler: List<AndelData>,
     ): LocalDate? {
-        val forrigeFørsteAndel = forrigeAndeler.firstOrNull()
+        val forrigeFørsteAndel = existing.firstOrNull()
         val nyFørsteAndel = nyeAndeler.firstOrNull()
         if (
             forrigeFørsteAndel != null &&
@@ -136,22 +136,22 @@ object Utbetalingsgenerator {
     private fun erFørsteUtbetalingPåSak(sisteAndelMedPeriodeId: Map<Kjedenøkkel, AndelData>) = sisteAndelMedPeriodeId.isEmpty()
 
     private fun beregnNyKjede(
-        forrige: List<AndelData>,
-        nye: List<AndelData>,
-        sisteAndel: AndelData?,
+        existing: List<AndelData>,
+        requested: List<AndelData>,
+        lastExisting: AndelData?,
         periodeId: Long,
         opphørsdato: LocalDate?,
     ): ResultatForKjede {
-        val beståendeAndeler = finnBeståendeAndeler(forrige, nye, opphørsdato)
-        val nyeAndeler = nye.subList(beståendeAndeler.andeler.size, nye.size)
+        val beståendeAndeler = finnBeståendeAndeler(existing, requested, opphørsdato)
+        val nyeAndeler = requested.subList(beståendeAndeler.andeler.size, requested.size)
 
-        val (nyeAndelerMedPeriodeId, gjeldendePeriodeId) = nyeAndelerMedPeriodeId(nyeAndeler, periodeId, sisteAndel)
+        val (nyeAndelerMedPeriodeId, gjeldendePeriodeId) = nyeAndelerMedPeriodeId(nyeAndeler, periodeId, lastExisting)
         return ResultatForKjede(
             beståendeAndeler = beståendeAndeler.andeler,
             nyeAndeler = nyeAndelerMedPeriodeId,
             opphørsandel =
                 beståendeAndeler.opphørFra?.let {
-                    Pair(sisteAndel ?: error("Må ha siste andel for å kunne opphøre"), it)
+                    Pair(lastExisting ?: error("Må ha siste andel for å kunne opphøre"), it)
                 },
             sistePeriodeId = gjeldendePeriodeId,
         )
@@ -160,17 +160,16 @@ object Utbetalingsgenerator {
     private fun nyeAndelerMedPeriodeId(
         nyeAndeler: List<AndelData>,
         periodeId: Long,
-        sisteAndel: AndelData?,
+        lastExisting: AndelData?,
     ): Pair<List<AndelData>, Long> {
         var gjeldendePeriodeId = periodeId
-        var forrigePeriodeId = sisteAndel?.periodeId
-        val nyeAndelerMedPeriodeId =
-            nyeAndeler.mapIndexed { _, andelData ->
-                gjeldendePeriodeId += 1
-                val nyAndel = andelData.copy(periodeId = gjeldendePeriodeId, forrigePeriodeId = forrigePeriodeId)
-                forrigePeriodeId = gjeldendePeriodeId
-                nyAndel
-            }
+        var forrigePeriodeId = lastExisting?.periodeId
+        val nyeAndelerMedPeriodeId = nyeAndeler.map { andelData ->
+            gjeldendePeriodeId += 1
+            val nyAndel = andelData.copy(periodeId = gjeldendePeriodeId, forrigePeriodeId = forrigePeriodeId)
+            forrigePeriodeId = gjeldendePeriodeId
+            nyAndel
+        }
         return Pair(nyeAndelerMedPeriodeId, gjeldendePeriodeId)
     }
 
