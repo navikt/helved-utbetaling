@@ -22,7 +22,7 @@ data class StreamsConfig(
 
         this[StreamsConfig.PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProduceAgainHandler::class.java
         this[StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeAgainHandler::class.java
-        this[StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessNextHandler::class.java
+        this[StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessAgainHandler::class.java
 
         // Configuration for resilience
         this[StreamsConfig.producerPrefix(ProducerConfig.ACKS_CONFIG)] = "all"
