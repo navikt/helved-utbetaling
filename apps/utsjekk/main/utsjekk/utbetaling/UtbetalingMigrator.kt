@@ -7,7 +7,7 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
-import libs.kafka.Streams
+import libs.kafka.KafkaProducer
 import java.util.*
 import java.time.LocalDate
 import utsjekk.*
@@ -18,8 +18,7 @@ data class MigrationRequest(
     val tom: LocalDate,
 )
 
-class UtbetalingMigrator(config: Config, kafka: Streams): AutoCloseable {
-    val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)
+class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, models.Utbetaling>) {
 
     fun route(route: Route) {
         route.route("/utbetalinger/{uid}/migrate") {
@@ -45,10 +44,6 @@ class UtbetalingMigrator(config: Config, kafka: Streams): AutoCloseable {
                 utbetalingProducer.send(key, utbet, partition(key))
             }
         }
-    }
-
-    override fun close() {
-        utbetalingProducer.close()
     }
 
     private fun utbetaling(

@@ -109,9 +109,9 @@ class SimuleringClient(
 
         val beregnetUtbetalingsoppdrag = Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = sim.behandlingsinformasjon,
-            nyeAndeler = sim.nyTilkjentYtelse.lagAndelData(),
-            forrigeAndeler = forrigeTilkjenteYtelse?.lagAndelData() ?: emptyList(),
-            sisteAndelPerKjede = sisteAndelPerKjede,
+            requested = sim.nyTilkjentYtelse.lagAndelData(),
+            existing = forrigeTilkjenteYtelse?.lagAndelData() ?: emptyList(),
+            lastExistingByKjede = sisteAndelPerKjede,
         )
 
         return beregnetUtbetalingsoppdrag.utbetalingsoppdrag

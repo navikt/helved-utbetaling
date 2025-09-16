@@ -38,9 +38,9 @@ class UtbetalingsgeneratorTest {
         val andel1 = andelData(1.feb, 31.mar, 700)
         val oppdrag1 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId1),
-            nyeAndeler = listOf(andel1),
-            forrigeAndeler = emptyList(),
-            sisteAndelPerKjede = emptyMap(),
+            requested = listOf(andel1),
+            existing = emptyList(),
+            lastExistingByKjede = emptyMap(),
         )
         val expected1 = beregnetUtbetalingsoppdrag(
             sakId = sakId,
@@ -56,9 +56,9 @@ class UtbetalingsgeneratorTest {
         val andel2 = andelData(1.apr, 31.may, 900)    // skal ha andelId +1 i forhold til den nye kopien av andel1 (andel1_v2)
         val oppdrag2 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId2),
-            nyeAndeler = listOf(andel1_v2, andel2),
-            forrigeAndeler = listOf(oppdrag1.copyPeriodeIdTo(andel1)),
-            sisteAndelPerKjede = listOf(oppdrag1.copyPeriodeIdTo(andel1))
+            requested = listOf(andel1_v2, andel2),
+            existing = listOf(oppdrag1.copyPeriodeIdTo(andel1)),
+            lastExistingByKjede = listOf(oppdrag1.copyPeriodeIdTo(andel1))
                 .uten0beløp()
                 .groupBy { andel -> andel.stønadsdata.tilKjedenøkkel() }
                 .mapValues { (_, andeler) -> andeler.latestByPeriodeId() }
@@ -84,16 +84,16 @@ class UtbetalingsgeneratorTest {
 
         val oppdrag1 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId1),
-            nyeAndeler = listOf(andel1),
-            forrigeAndeler = emptyList(),
-            sisteAndelPerKjede = emptyMap(),
+            requested = listOf(andel1),
+            existing = emptyList(),
+            lastExistingByKjede = emptyMap(),
         )
 
         val oppdrag2 = Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = behandlingsinformasjon(fagsakId = sakId, behandlingId = behId2),
-            nyeAndeler = listOf(andel2),
-            forrigeAndeler = listOf(oppdrag1.copyPeriodeIdTo(andel1)),
-            sisteAndelPerKjede = listOf(oppdrag1.copyPeriodeIdTo(andel1))
+            requested = listOf(andel2),
+            existing = listOf(oppdrag1.copyPeriodeIdTo(andel1)),
+            lastExistingByKjede = listOf(oppdrag1.copyPeriodeIdTo(andel1))
                 .uten0beløp()
                 .groupBy { andel -> andel.stønadsdata.tilKjedenøkkel() }
                 .mapValues { (_, andeler) -> andeler.latestByPeriodeId() },

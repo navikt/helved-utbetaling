@@ -122,9 +122,9 @@ object OppdragService {
             ?: emptyMap()
         return Utbetalingsgenerator.lagUtbetalingsoppdrag(
             behandlingsinformasjon = info,
-            nyeAndeler = nyeAndeler,
-            forrigeAndeler = forrigeAndeler,
-            sisteAndelPerKjede = sisteAndelPerKjede,
+            requested = nyeAndeler,
+            existing = forrigeAndeler,
+            lastExistingByKjede = sisteAndelPerKjede,
         )
     }
 
