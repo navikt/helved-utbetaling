@@ -20,13 +20,6 @@ enum class Utbetalingstype {
     Dagpenger,
 }
 
-enum class Rettighetstype {
-    Ordinær,
-    Permittering,
-    PermitteringFiskeindustrien,
-    EØS,
-}
-
 fun DpUtbetalingsdag.stønadstype(): StønadTypeDagpenger {
     return when (utbetalingstype) {
         Utbetalingstype.Dagpenger -> {
@@ -43,7 +36,6 @@ data class DpUtbetalingsdag(
     val dato: LocalDate,
     val sats: UInt,
     val utbetaltBeløp: UInt,
-    val rettighetstype: Rettighetstype,
     val utbetalingstype: Utbetalingstype,
 ) {
     fun into(): Utbetalingsperiode = Utbetalingsperiode(

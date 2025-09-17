@@ -82,14 +82,13 @@ object Dp {
         tom: LocalDate,
         sats: UInt,
         utbetaltBeløp: UInt = sats,
-        rettighetstype: Rettighetstype = Rettighetstype.Ordinær,
         utbetalingstype: Utbetalingstype = Utbetalingstype.Dagpenger,
     ): List<DpUtbetalingsdag> {
         return buildList<DpUtbetalingsdag> {
             for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
                 val dato = fom.plusDays(i)
                 if (!dato.erHelg()) {
-                    add(DpUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp, rettighetstype, utbetalingstype))
+                    add(DpUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp, utbetalingstype))
                 }
             }
         }
