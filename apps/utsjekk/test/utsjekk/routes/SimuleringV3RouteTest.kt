@@ -43,7 +43,6 @@ class SimuleringRouteTest {
                                     dato = LocalDate.of(2025, 8, 18),
                                     sats = 573u,
                                     utbetaltBeløp = 573u,
-                                    rettighetstype = Rettighetstype.Ordinær,
                                     utbetalingstype = Utbetalingstype.Dagpenger
                                 ),
                                 DpUtbetalingsdag(
@@ -51,7 +50,6 @@ class SimuleringRouteTest {
                                     dato = LocalDate.of(2025, 8, 19),
                                     sats = 999u,
                                     utbetaltBeløp = 999u,
-                                    rettighetstype = Rettighetstype.Ordinær,
                                     utbetalingstype = Utbetalingstype.Dagpenger
                                 )
                             ),
@@ -118,7 +116,6 @@ class SimuleringRouteTest {
                                     dato = LocalDate.of(2025, 8, 18),
                                     sats = 573u,
                                     utbetaltBeløp = 573u,
-                                    rettighetstype = Rettighetstype.Ordinær,
                                     utbetalingstype = Utbetalingstype.Dagpenger
                                 ),
                                 DpUtbetalingsdag(
@@ -126,7 +123,6 @@ class SimuleringRouteTest {
                                     dato = LocalDate.of(2025, 8, 19),
                                     sats = 999u,
                                     utbetaltBeløp = 999u,
-                                    rettighetstype = Rettighetstype.Ordinær,
                                     utbetalingstype = Utbetalingstype.Dagpenger
                                 )
                             ),

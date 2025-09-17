@@ -37,7 +37,6 @@ internal class DpTest {
                   "dato": "2025-08-01",
                   "sats": 1000,
                   "utbetaltBeløp": 1000,
-                  "rettighetstype": "Ordinær",
                   "utbetalingstype": "Dagpenger"
                 },
                 {
@@ -45,7 +44,6 @@ internal class DpTest {
                   "dato": "2025-08-02",
                   "sats": 1000,
                   "utbetaltBeløp": 1000,
-                  "rettighetstype": "Ordinær",
                   "utbetalingstype": "Dagpenger"
                 },
                 {
@@ -53,7 +51,6 @@ internal class DpTest {
                   "dato": "2025-08-03",
                   "sats": 1000,
                   "utbetaltBeløp": 1000,
-                  "rettighetstype": "Ordinær",
                   "utbetalingstype": "Dagpenger"
                 }
               ],
@@ -102,7 +99,6 @@ internal class DpTest {
                   "dato": "2025-08-01",
                   "sats": 1000,
                   "utbetaltBeløp": 900,
-                  "rettighetstype": "Ordinær",
                   "utbetalingstype": "Dagpenger"
                 },
                 {
@@ -110,7 +106,6 @@ internal class DpTest {
                   "dato": "2025-08-02",
                   "sats": 1000,
                   "utbetaltBeløp": 900,
-                  "rettighetstype": "Ordinær",
                   "utbetalingstype": "Dagpenger"
                 },
                 {
@@ -118,7 +113,6 @@ internal class DpTest {
                   "dato": "2025-08-03",
                   "sats": 1000,
                   "utbetaltBeløp": 900,
-                  "rettighetstype": "Ordinær",
                   "utbetalingstype": "Dagpenger"
                 }
               ],
@@ -481,7 +475,6 @@ internal class DpTest {
                     tom = LocalDate.of(2021, 6, 18),
                     sats = 1000u,
                     utbetaltBeløp = 1000u,
-                    rettighetstype = Rettighetstype.Ordinær,
                     utbetalingstype = Utbetalingstype.Dagpenger,
                 ) + Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -489,7 +482,6 @@ internal class DpTest {
                     tom = LocalDate.of(2021, 6, 18),
                     sats = 100u,
                     utbetaltBeløp = 100u,
-                    rettighetstype = Rettighetstype.Ordinær,
                     utbetalingstype = Utbetalingstype.DagpengerFerietillegg,
                 ) + Dp.meldekort(
                     meldeperiode = meldeperiode2,
@@ -497,7 +489,6 @@ internal class DpTest {
                     tom = LocalDate.of(2021, 7, 20),
                     sats = 600u,
                     utbetaltBeløp = 600u,
-                    rettighetstype = Rettighetstype.Permittering,
                     utbetalingstype = Utbetalingstype.Dagpenger,
                 ) + Dp.meldekort(
                     meldeperiode = meldeperiode2,
@@ -505,7 +496,6 @@ internal class DpTest {
                     tom = LocalDate.of(2021, 7, 20),
                     sats = 300u,
                     utbetaltBeløp = 300u,
-                    rettighetstype = Rettighetstype.Permittering,
                     utbetalingstype = Utbetalingstype.DagpengerFerietillegg,
                 )
             }
