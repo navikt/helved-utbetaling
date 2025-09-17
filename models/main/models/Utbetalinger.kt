@@ -188,8 +188,8 @@ fun Utbetaling.failOnWeekendInPeriodetypeDag() {
 }
 
 @JvmInline
-value class PeriodeId (private val id: UUID) {
-    constructor() : this(UUID.randomUUID())
+value class PeriodeId (private val id: String) {
+    constructor() : this(UUID.randomUUID().toString())
 
     init { 
         toString() // verifiser at encoding blir under 30 tegn
@@ -200,11 +200,11 @@ value class PeriodeId (private val id: UUID) {
                 val byteBuffer: ByteBuffer = ByteBuffer.wrap(Base64.getDecoder().decode(encoded))
                 // ||||||||||||||||||||||||||||||||||||||||||||||||||||||||
                 // ^ les neste 64 og lag en long
-                return PeriodeId(UUID(byteBuffer.long, byteBuffer.long))
+                return PeriodeId(UUID(byteBuffer.long, byteBuffer.long).toString())
             } catch (e: Throwable) {
-                appLog.warn("Klarte ikke dekomprimere UUID: $encoded")
-                secureLog.warn("Klarte ikke dekomprimere UUID: $encoded", e)
-                throw e
+                appLog.warn("Klarte ikke dekomprimere UUID: $encoded. Bruker det gamle formatet.")
+                secureLog.warn("Klarte ikke dekomprimere UUID: $encoded. Bruker det gamle formatet.", e)
+                return PeriodeId(encoded)
             }
         }
     }
@@ -215,14 +215,20 @@ value class PeriodeId (private val id: UUID) {
      * To Longs er 128 bits
      */
     override fun toString(): String {
-        val byteBuffer = ByteBuffer.allocate(java.lang.Long.BYTES * 2).apply { // 128 bits
-            putLong(id.mostSignificantBits) // første 64 bits
-            putLong(id.leastSignificantBits) // siste 64 bits
-        }
-
-        // e.g. dNl8DVZKQM2gJ0AcJ/pNKQ== (24 tegn)
-        return Base64.getEncoder().encodeToString(byteBuffer.array()).also {
-            require(it.length <= 30) { "base64 encoding av UUID ble over 30 tegn." }
+        try {
+            val uuid = UUID.fromString(id)
+            val byteBuffer = ByteBuffer.allocate(java.lang.Long.BYTES * 2).apply { // 128 bits
+                putLong(uuid.mostSignificantBits) // første 64 bits
+                putLong(uuid.leastSignificantBits) // siste 64 bits
+            }
+            // e.g. dNl8DVZKQM2gJ0AcJ/pNKQ== (24 tegn)
+            return Base64.getEncoder().encodeToString(byteBuffer.array()).also {
+                require(it.length <= 30) { "base64 encoding av UUID ble over 30 tegn." }
+            }
+        } catch (e: Exception) {
+            return id.also {
+                require(it.length <= 30) { "gammelt format av periodeid er over 30 tegn." }
+            }
         }
     }
 }
