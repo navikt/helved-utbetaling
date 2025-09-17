@@ -46,6 +46,7 @@ data class Utbetaling(
         failOnZeroBeløp()
         failOnTooLongSakId()
         failOnTooLongBehandlingId()
+        failOnWeekendInPeriodetypeDag()
     }
 
     fun isDuplicate(other: Utbetaling?): Boolean {
@@ -165,6 +166,24 @@ fun Utbetaling.failOnTooLongSakId() {
 fun Utbetaling.failOnTooLongBehandlingId() {
     if (behandlingId.id.length > 30) {
         badRequest("behandlingId kan være maks 30 tegn langt", "opprett_en_utbetaling")
+    }
+}
+
+fun Utbetaling.failOnWeekendInPeriodetypeDag() {
+    if (periodetype == Periodetype.DAG) {
+
+        val harHelgedager = perioder.any { periode ->
+            generateSequence(periode.fom) { it.plusDays(1) }
+                .takeWhile { !it.isAfter(periode.tom) }
+                .any { it.erHelg() }
+        }
+
+        if (harHelgedager) {
+            badRequest(
+                msg = "periodetype DAG kan ikke inneholde helgedager (lørdag/søndag)",
+                doc = "opprett_en_utbetaling"
+            )
+        }
     }
 }
 

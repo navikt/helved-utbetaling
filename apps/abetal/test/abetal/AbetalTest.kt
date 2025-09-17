@@ -558,8 +558,8 @@ internal class AbetalTest {
             avvent = null,
             perioder = listOf(
                 Utbetalingsperiode(
-                    fom = java.time.LocalDate.now().nesteVirkedag(),
-                    tom = java.time.LocalDate.now().nesteVirkedag(),
+                    fom = LocalDate.now().nesteVirkedag(),
+                    tom = LocalDate.now().nesteVirkedag(),
                     beløp = 100u,
                 ),
             ),
@@ -594,8 +594,8 @@ internal class AbetalTest {
                 for (i in 1L..1001L) {
                     add(
                         Utbetalingsperiode(
-                            fom = java.time.LocalDate.now().minusDays(i),
-                            tom = java.time.LocalDate.now().minusDays(i),
+                            fom = LocalDate.now().minusDays(i),
+                            tom = LocalDate.now().minusDays(i),
                             beløp = 100u,
                         )
                     )
@@ -607,6 +607,40 @@ internal class AbetalTest {
             utbet.validate()
         }
         assertEquals("DAG støtter maks periode på 1000 dager", err.msg)
+    }
+
+    @Test
+    fun `error ved helgedager i perioder med periodetype DAG`() {
+        val utbet = Utbetaling(
+            dryrun = false,
+            originalKey = "123",
+            fagsystem = Fagsystem.AAP,
+            uid = randomUtbetalingId(),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = true,
+            sakId = SakId("$nextInt"),
+            behandlingId = BehandlingId("$nextInt"),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            beslutterId = Navident("123"),
+            saksbehandlerId = Navident("123"),
+            periodetype = Periodetype.DAG,
+            avvent = null,
+            perioder = listOf(
+                Utbetalingsperiode(
+                    fom = LocalDate.of(2024, 1, 5),
+                    tom = LocalDate.of(2024, 1, 8),
+                    beløp = 100u
+                ),
+            ),
+        )
+
+        val err = assertThrows<ApiError> {
+            utbet.validate()
+        }
+        assertEquals("periodetype DAG kan ikke inneholde helgedager (lørdag/søndag)", err.msg)
     }
 
     @Test
