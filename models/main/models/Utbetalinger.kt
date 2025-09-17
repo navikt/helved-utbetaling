@@ -46,7 +46,7 @@ data class Utbetaling(
         failOnZeroBeløp()
         failOnTooLongSakId()
         failOnTooLongBehandlingId()
-        failOnWeekendInPeriodetypeDag()
+        //failOnWeekendInPeriodetypeDag()
     }
 
     fun isDuplicate(other: Utbetaling?): Boolean {
@@ -170,7 +170,7 @@ fun Utbetaling.failOnTooLongBehandlingId() {
 }
 
 fun Utbetaling.failOnWeekendInPeriodetypeDag() {
-    if (periodetype == Periodetype.DAG) {
+    if (periodetype == Periodetype.UKEDAG) {
 
         val harHelgedager = perioder.any { periode ->
             generateSequence(periode.fom) { it.plusDays(1) }
