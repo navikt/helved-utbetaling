@@ -33,6 +33,7 @@ import libs.utils.secureLog
 import models.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
 import utsjekk.iverksetting.IverksettingService
+import utsjekk.iverksetting.IverksettingMigrator
 import utsjekk.iverksetting.iverksetting
 import utsjekk.simulering.SimuleringValidator
 import utsjekk.simulering.simulerBlocking
@@ -135,6 +136,7 @@ fun Application.utsjekk(
 
     val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)
     val aapMigrator = UtbetalingMigrator(utbetalingProducer)
+    val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer)
 
     routing {
         authenticate(TokenProvider.AZURE) {
@@ -143,6 +145,7 @@ fun Application.utsjekk(
             simulerBlocking(dpUtbetalingerProducer)
             utbetalingRoute(simuleringService, utbetalingService)
             aapMigrator.route(this)
+            iverksettingMigrator.route(this)
         }
 
         probes(metrics)
