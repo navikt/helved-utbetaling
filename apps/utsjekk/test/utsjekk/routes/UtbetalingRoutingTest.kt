@@ -836,7 +836,7 @@ class UtbetalingRoutingTest {
         }
 
         val updatedUtbetaling = utbetaling.copy(
-            stønad = StønadTypeDagpenger.PERMITTERING_ORDINÆR
+            stønad = StønadTypeDagpenger.DAGPENGERFERIE
         )
         val error = httpClient.put("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())

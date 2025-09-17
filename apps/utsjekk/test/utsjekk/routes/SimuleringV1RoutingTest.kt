@@ -360,7 +360,7 @@ class SimuleringRoutingTest {
         }
 
         val updatedUtbetaling = utbetaling.copy(
-            stønad = StønadTypeDagpenger.PERMITTERING_ORDINÆR
+            stønad = StønadTypeDagpenger.DAGPENGERFERIE
         )
         val error = httpClient.post("/utbetalinger/$uid/simuler") {
             bearerAuth(TestRuntime.azure.generateToken())

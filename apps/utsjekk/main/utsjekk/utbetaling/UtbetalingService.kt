@@ -200,17 +200,8 @@ private fun klassekode(stønadstype: StønadTypeTilleggsstønader): String = whe
 }
 
 private fun klassekode(stønadstype: StønadTypeDagpenger): String = when (stønadstype) {
-    StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR -> "DPORAS"
-    StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG -> "DPORASFE"
-    StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG_AVDØD -> "DPORASFE-IOP"
-    StønadTypeDagpenger.PERMITTERING_ORDINÆR -> "DPPEASFE1"
-    StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG -> "DPPEAS"
-    StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG_AVDØD -> "DPPEASFE1-IOP"
-    StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI -> "DPPEFIFE1"
-    StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI_FERIETILLEGG -> "DPPEFI"
-    StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI_FERIETILLEGG_AVDØD -> "DPPEFIFE1-IOP"
-    StønadTypeDagpenger.EØS -> "DPFEASISP"
-    StønadTypeDagpenger.EØS_FERIETILLEGG -> "DPDPASISP1"
+    StønadTypeDagpenger.DAGPENGER -> "DAGPENGER"
+    StønadTypeDagpenger.DAGPENGERFERIE -> "DAGPENGERFERIE"
 }
 
 private fun klassekode(stønadstype: StønadTypeAAP): String = when (stønadstype) {

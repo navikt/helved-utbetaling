@@ -30,20 +30,10 @@ enum class Rettighetstype {
 fun DpUtbetalingsdag.stønadstype(): StønadTypeDagpenger {
     return when (utbetalingstype) {
         Utbetalingstype.Dagpenger -> {
-            when (rettighetstype) {
-                Rettighetstype.Ordinær -> StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR
-                Rettighetstype.Permittering -> StønadTypeDagpenger.PERMITTERING_ORDINÆR
-                Rettighetstype.PermitteringFiskeindustrien -> StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI
-                Rettighetstype.EØS -> StønadTypeDagpenger.EØS
-            }
+            StønadTypeDagpenger.DAGPENGER
         }
         Utbetalingstype.DagpengerFerietillegg -> {
-            when (rettighetstype) {
-                Rettighetstype.Ordinær -> StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG
-                Rettighetstype.Permittering -> StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG
-                Rettighetstype.PermitteringFiskeindustrien -> StønadTypeDagpenger.PERMITTERING_FISKEINDUSTRI_FERIETILLEGG
-                Rettighetstype.EØS -> StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG
-            }
+            StønadTypeDagpenger.DAGPENGERFERIE
         }
     }
 }
@@ -102,12 +92,12 @@ private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode>
     return perioder
         .sortedBy { it.dato }
         .groupBy { listOf(it.utbetaltBeløp, it.sats) }
-        .map { (_, p) -> 
-            p.splitWhen { a, b -> 
+        .map { (_, p) ->
+            p.splitWhen { a, b ->
                 val harSammenhengendeDager = a.dato.plusDays(1).equals(b.dato)
                 val harSammenhengendeUker = a.dato.nesteUkedag().equals(b.dato)
                 !harSammenhengendeUker && !harSammenhengendeDager
-            }.map { 
+            }.map {
                 Utbetalingsperiode(
                     fom = it.first().dato,
                     tom = it.last().dato,

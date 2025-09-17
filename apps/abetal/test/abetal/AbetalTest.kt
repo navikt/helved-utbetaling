@@ -23,8 +23,8 @@ internal class AbetalTest {
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -50,8 +50,8 @@ internal class AbetalTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER, 
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DAGPENGER"),
                 )
             )
         )
@@ -71,7 +71,7 @@ internal class AbetalTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -91,7 +91,7 @@ internal class AbetalTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -116,13 +116,13 @@ internal class AbetalTest {
                 assertNull(førsteLinje.refDelytelseId)
                 assertEquals("NY", førsteLinje.kodeEndringLinje)
                 assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+                assertEquals("DAGPENGER", førsteLinje.kodeKlassifik)
                 assertEquals(553, førsteLinje.sats.toLong())
                 assertEquals(1077, førsteLinje.vedtakssats157.vedtakssats.toLong())
                 val andreLinje = it.oppdrag110.oppdragsLinje150s[1]
                 assertEquals("NY", andreLinje.kodeEndringLinje)
                 assertEquals(bid.id, andreLinje.henvisning)
-                assertEquals("DPORAS", andreLinje.kodeKlassifik)
+                assertEquals("DAGPENGER", andreLinje.kodeKlassifik)
                 assertEquals(779, andreLinje.sats.toLong())
                 assertEquals(2377, andreLinje.vedtakssats157.vedtakssats.toLong())
             }
@@ -145,7 +145,7 @@ internal class AbetalTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -165,7 +165,7 @@ internal class AbetalTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -190,7 +190,7 @@ internal class AbetalTest {
         val key = UUID.randomUUID().toString()
         val meldeperiode = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id) {
@@ -224,7 +224,7 @@ internal class AbetalTest {
         val key = UUID.randomUUID().toString()
         val meldeperiode = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(key) { 
             Dp.utbetaling(sid.id) {
@@ -257,10 +257,10 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val meldeperiode1 = UUID.randomUUID().toString()
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
 
         val meldeperiode2 = UUID.randomUUID().toString()
-        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.utbetalinger.produce("$uid1") {
             utbetaling(
@@ -269,7 +269,7 @@ internal class AbetalTest {
                 sakId = sid,
                 behandlingId = bid,
                 originalKey = key,
-                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                stønad = StønadTypeDagpenger.DAGPENGER,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
                 beslutterId = Navident("dagpenger"),
@@ -311,7 +311,7 @@ internal class AbetalTest {
         val meldeperiode = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.utbetalinger.produce("$uid") {
             utbetaling(
@@ -320,7 +320,7 @@ internal class AbetalTest {
                 sakId = sid,
                 behandlingId = bid,
                 originalKey = key,
-                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                stønad = StønadTypeDagpenger.DAGPENGER,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 2.jan.atStartOfDay(),
                 beslutterId = Navident("dagpenger"),
@@ -678,7 +678,7 @@ internal class AbetalTest {
         val key = UUID.randomUUID().toString()
         val meldeperiode = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(key) { 
             Dp.utbetaling(sid.id) {
@@ -720,8 +720,8 @@ internal class AbetalTest {
         val originalKey2 = UUID.randomUUID().toString()
         val meldeperiode1 = "2024-06-10"
         val meldeperiode2 = "2024-06-24"
-        val uid1 = dpUId(sakId.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid2 = dpUId(sakId.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sakId.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
+        val uid2 = dpUId(sakId.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(originalKey1) {
             Dp.utbetaling(

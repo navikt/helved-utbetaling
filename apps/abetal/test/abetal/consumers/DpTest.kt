@@ -61,7 +61,7 @@ internal class DpTest {
               "saksbehandler": "dagpenger",
               "beslutter": "dagpenger"
             }""".trimIndent())
-        val uid = "9aa7f092-704a-1d53-8b98-0ece9cabb5e4"
+        val uid = "26c8ad95-1731-e800-abd5-ba92ec6aad86"
         val transaction1 = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transaction1) { utbet }
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
@@ -82,7 +82,7 @@ internal class DpTest {
             assertNull(førsteLinje.refDelytelseId)
             assertEquals("NY", førsteLinje.kodeEndringLinje)
             assertEquals("rbid1", førsteLinje.henvisning)
-            assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+            assertEquals("DAGPENGER", førsteLinje.kodeKlassifik)
             assertEquals("DAG", førsteLinje.typeSats)
             assertEquals(1000, førsteLinje.sats.toLong())
             assertEquals(1000, førsteLinje.vedtakssats157.vedtakssats.toLong())
@@ -154,7 +154,7 @@ internal class DpTest {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val meldeperiode1 = UUID.randomUUID().toString()
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.utbetalinger.produce("$uid1") {
             utbetaling(
@@ -163,7 +163,7 @@ internal class DpTest {
                 sakId = sid,
                 behandlingId = bid,
                 originalKey = key,
-                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                stønad = StønadTypeDagpenger.DAGPENGER,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
                 beslutterId = Navident("dagpenger"),
@@ -203,7 +203,7 @@ internal class DpTest {
         val bid = BehandlingId("$nextInt")
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode = "132460781"
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -224,7 +224,7 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
                 )
             )
         )
@@ -249,7 +249,7 @@ internal class DpTest {
                 it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
                     assertEquals("NY", a.kodeEndringLinje)
                     assertEquals(bid.id, a.henvisning)
-                    assertEquals("DPORAS", a.kodeKlassifik)
+                    assertEquals("DAGPENGER", a.kodeKlassifik)
                     assertEquals(553, a.sats.toLong())
                     assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
                     assertEquals(a.delytelseId, b.refDelytelseId)
@@ -274,7 +274,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -296,8 +296,8 @@ internal class DpTest {
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -324,8 +324,8 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DAGPENGER"),
                 )
             )
         )
@@ -346,7 +346,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -366,7 +366,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -392,13 +392,13 @@ internal class DpTest {
                 assertNull(førsteLinje.refDelytelseId)
                 assertEquals("NY", førsteLinje.kodeEndringLinje)
                 assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+                assertEquals("DAGPENGER", førsteLinje.kodeKlassifik)
                 assertEquals(553, førsteLinje.sats.toLong())
                 assertEquals(1077, førsteLinje.vedtakssats157.vedtakssats.toLong())
                 val andreLinje = it.oppdrag110.oppdragsLinje150s[1]
                 assertEquals("NY", andreLinje.kodeEndringLinje)
                 assertEquals(bid.id, andreLinje.henvisning)
-                assertEquals("DPORAS", andreLinje.kodeKlassifik)
+                assertEquals("DAGPENGER", andreLinje.kodeKlassifik)
                 assertEquals(779, andreLinje.sats.toLong())
                 assertEquals(2377, andreLinje.vedtakssats157.vedtakssats.toLong())
             }
@@ -421,7 +421,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -441,7 +441,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -468,10 +468,10 @@ internal class DpTest {
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid2 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG)
-        val uid3 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.PERMITTERING_ORDINÆR)
-        val uid4 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
+        val uid2 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGERFERIE)
+        val uid3 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
+        val uid4 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGERFERIE)
 
         TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -518,10 +518,10 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1000u, 1000u, "DPORAS"),
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 100u, 100u, "DPORASFE"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 600u, 600u, "DPPEASFE1"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 300u, 300u, "DPPEAS"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1000u, 1000u, "DAGPENGER"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 100u, 100u, "DAGPENGERFERIE"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 600u, 600u, "DAGPENGER"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 300u, 300u, "DAGPENGERFERIE"),
                 )
             )
         )
@@ -542,7 +542,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -562,7 +562,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG,
+                    stønad = StønadTypeDagpenger.DAGPENGERFERIE,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -582,7 +582,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.PERMITTERING_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -602,7 +602,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG,
+                    stønad = StønadTypeDagpenger.DAGPENGERFERIE,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -627,25 +627,25 @@ internal class DpTest {
                 assertNull(førsteLinje.refDelytelseId)
                 assertEquals("NY", førsteLinje.kodeEndringLinje)
                 assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+                assertEquals("DAGPENGER", førsteLinje.kodeKlassifik)
                 assertEquals(1000, førsteLinje.sats.toLong())
                 assertEquals(1000, førsteLinje.vedtakssats157.vedtakssats.toLong())
                 val andreLinje = it.oppdrag110.oppdragsLinje150s[1]
                 assertEquals("NY", andreLinje.kodeEndringLinje)
                 assertEquals(bid.id, andreLinje.henvisning)
-                assertEquals("DPORASFE", andreLinje.kodeKlassifik)
+                assertEquals("DAGPENGERFERIE", andreLinje.kodeKlassifik)
                 assertEquals(100, andreLinje.sats.toLong())
                 assertEquals(100, andreLinje.vedtakssats157.vedtakssats.toLong())
                 val tredjeLinje = it.oppdrag110.oppdragsLinje150s[2]
                 assertEquals("NY", tredjeLinje.kodeEndringLinje)
                 assertEquals(bid.id, tredjeLinje.henvisning)
-                assertEquals("DPPEASFE1", tredjeLinje.kodeKlassifik)
+                assertEquals("DAGPENGER", tredjeLinje.kodeKlassifik)
                 assertEquals(600, tredjeLinje.sats.toLong())
                 assertEquals(600, tredjeLinje.vedtakssats157.vedtakssats.toLong())
                 val fjerdeLinje = it.oppdrag110.oppdragsLinje150s[3]
                 assertEquals("NY", fjerdeLinje.kodeEndringLinje)
                 assertEquals(bid.id, fjerdeLinje.henvisning)
-                assertEquals("DPPEAS", fjerdeLinje.kodeKlassifik)
+                assertEquals("DAGPENGERFERIE", fjerdeLinje.kodeKlassifik)
                 assertEquals(300, fjerdeLinje.sats.toLong())
                 assertEquals(300, fjerdeLinje.vedtakssats157.vedtakssats.toLong())
             }
@@ -668,7 +668,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -688,7 +688,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR_FERIETILLEGG,
+                    stønad = StønadTypeDagpenger.DAGPENGERFERIE,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -708,7 +708,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.PERMITTERING_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -728,7 +728,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.PERMITTERING_ORDINÆR_FERIETILLEGG,
+                    stønad = StønadTypeDagpenger.DAGPENGERFERIE,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -762,9 +762,9 @@ internal class DpTest {
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val meldeperiode3 = "132462765"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid3 = dpUId(sid.id, meldeperiode3, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
+        val uid3 = dpUId(sid.id, meldeperiode3, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -797,9 +797,9 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
-                    DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "DPORAS"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DAGPENGER"),
+                    DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "DAGPENGER"),
                 )
             )
         )
@@ -820,7 +820,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -840,7 +840,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -860,7 +860,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -887,7 +887,7 @@ internal class DpTest {
                 assertNull(linje1.refDelytelseId)
                 assertEquals("NY", linje1.kodeEndringLinje)
                 assertEquals(bid.id, linje1.henvisning)
-                assertEquals("DPORAS", linje1.kodeKlassifik)
+                assertEquals("DAGPENGER", linje1.kodeKlassifik)
                 assertEquals(553, linje1.sats.toLong())
                 assertEquals(1077, linje1.vedtakssats157.vedtakssats.toLong())
 
@@ -895,7 +895,7 @@ internal class DpTest {
                 assertNull(linje2.refDelytelseId)
                 assertEquals("NY", linje2.kodeEndringLinje)
                 assertEquals(bid.id, linje2.henvisning)
-                assertEquals("DPORAS", linje2.kodeKlassifik)
+                assertEquals("DAGPENGER", linje2.kodeKlassifik)
                 assertEquals(779, linje2.sats.toLong())
                 assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
 
@@ -903,7 +903,7 @@ internal class DpTest {
                 assertNull(linje3.refDelytelseId)
                 assertEquals("NY", linje3.kodeEndringLinje)
                 assertEquals(bid.id, linje3.henvisning)
-                assertEquals("DPORAS", linje3.kodeKlassifik)
+                assertEquals("DAGPENGER", linje3.kodeKlassifik)
                 assertEquals(3000, linje3.sats.toLong())
                 assertEquals(3133, linje3.vedtakssats157.vedtakssats.toLong())
             }
@@ -926,7 +926,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -946,7 +946,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -966,7 +966,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -993,12 +993,12 @@ internal class DpTest {
         val uid1 = dpUId(
             sid.id,
             meldeperiode1,
-            StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR
+            StønadTypeDagpenger.DAGPENGER
         ) // 16364e1c-7615-6b30-882b-d7d19ea96279
         val uid2 = dpUId(
             sid.id,
             meldeperiode2,
-            StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR
+            StønadTypeDagpenger.DAGPENGER
         ) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
 
         TestRuntime.topics.dp.produce(originalKey) {
@@ -1031,8 +1031,8 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DAGPENGER"),
                 )
             )
         )
@@ -1053,7 +1053,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1073,7 +1073,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1100,7 +1100,7 @@ internal class DpTest {
                 assertNull(linje1.refDelytelseId)
                 assertEquals("NY", linje1.kodeEndringLinje)
                 assertEquals(bid.id, linje1.henvisning)
-                assertEquals("DPORAS", linje1.kodeKlassifik)
+                assertEquals("DAGPENGER", linje1.kodeKlassifik)
                 assertEquals(553, linje1.sats.toLong())
                 assertEquals(1077, linje1.vedtakssats157.vedtakssats.toLong())
 
@@ -1108,7 +1108,7 @@ internal class DpTest {
                 assertNull(linje2.refDelytelseId)
                 assertEquals("NY", linje2.kodeEndringLinje)
                 assertEquals(bid.id, linje2.henvisning)
-                assertEquals("DPORAS", linje2.kodeKlassifik)
+                assertEquals("DAGPENGER", linje2.kodeKlassifik)
                 assertEquals(779, linje2.sats.toLong())
                 assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
             }
@@ -1131,7 +1131,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1151,7 +1151,7 @@ internal class DpTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1177,8 +1177,8 @@ internal class DpTest {
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid1.id) {
@@ -1217,8 +1217,8 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid1.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
-                    DetaljerLinje(bid2.id, 7.jul21, 20.jul21, 2377u, 779u, "DPORAS"),
+                    DetaljerLinje(bid1.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
+                    DetaljerLinje(bid2.id, 7.jul21, 20.jul21, 2377u, 779u, "DAGPENGER"),
                 )
             )
         )
@@ -1239,7 +1239,7 @@ internal class DpTest {
                     behandlingId = bid1,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1259,7 +1259,7 @@ internal class DpTest {
                     behandlingId = bid2,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1286,7 +1286,7 @@ internal class DpTest {
                 assertNull(linje1.refDelytelseId)
                 assertEquals("NY", linje1.kodeEndringLinje)
                 assertEquals(bid1.id, linje1.henvisning)
-                assertEquals("DPORAS", linje1.kodeKlassifik)
+                assertEquals("DAGPENGER", linje1.kodeKlassifik)
                 assertEquals(553, linje1.sats.toLong())
                 assertEquals(1077, linje1.vedtakssats157.vedtakssats.toLong())
 
@@ -1294,7 +1294,7 @@ internal class DpTest {
                 assertNull(linje2.refDelytelseId)
                 assertEquals("NY", linje2.kodeEndringLinje)
                 assertEquals(bid2.id, linje2.henvisning)
-                assertEquals("DPORAS", linje2.kodeKlassifik)
+                assertEquals("DAGPENGER", linje2.kodeKlassifik)
                 assertEquals(779, linje2.sats.toLong())
                 assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
             }
@@ -1317,7 +1317,7 @@ internal class DpTest {
                     behandlingId = bid1,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1337,7 +1337,7 @@ internal class DpTest {
                     behandlingId = bid2,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1362,8 +1362,8 @@ internal class DpTest {
         val originalKey2 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
+        val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
             utbetaling(
@@ -1372,7 +1372,7 @@ internal class DpTest {
                 sakId = sid,
                 behandlingId = bid,
                 originalKey = originalKey1,
-                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                stønad = StønadTypeDagpenger.DAGPENGER,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
                 beslutterId = Navident("dagpenger"),
@@ -1418,7 +1418,7 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "DPORAS"),
+                    DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "DAGPENGER"),
                 )
             )
         )
@@ -1440,7 +1440,7 @@ internal class DpTest {
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1466,7 +1466,7 @@ internal class DpTest {
                 it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
                     assertEquals("ENDR", a.kodeEndringLinje)
                     assertEquals(bid.id, a.henvisning)
-                    assertEquals("DPORAS", a.kodeKlassifik)
+                    assertEquals("DAGPENGER", a.kodeKlassifik)
                     assertEquals(200, a.sats.toLong())
                     assertEquals(200, a.vedtakssats157.vedtakssats.toLong())
                     assertEquals(a.delytelseId, b.refDelytelseId)
@@ -1492,7 +1492,7 @@ internal class DpTest {
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1516,7 +1516,7 @@ internal class DpTest {
         val originalKey1 = UUID.randomUUID().toString()
         val originalKey2 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
         val periodeId = PeriodeId()
 
         TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
@@ -1526,7 +1526,7 @@ internal class DpTest {
                 sakId = sid,
                 behandlingId = bid,
                 originalKey = originalKey1,
-                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                stønad = StønadTypeDagpenger.DAGPENGER,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
@@ -1567,7 +1567,7 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "DPORAS"),
+                    DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "DAGPENGER"),
                 )
             )
         )
@@ -1589,7 +1589,7 @@ internal class DpTest {
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1617,7 +1617,7 @@ internal class DpTest {
                 assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
                 assertEquals("NY", førsteLinje.kodeEndringLinje)
                 assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+                assertEquals("DAGPENGER", førsteLinje.kodeKlassifik)
                 assertEquals(80, førsteLinje.sats.toLong())
                 assertEquals(100, førsteLinje.vedtakssats157.vedtakssats.toLong())
             }
@@ -1641,7 +1641,7 @@ internal class DpTest {
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1663,7 +1663,7 @@ internal class DpTest {
         val bid = BehandlingId("$nextInt")
         val originalKey1 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
         val periodeId = PeriodeId()
 
         TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
@@ -1673,7 +1673,7 @@ internal class DpTest {
                 sakId = sid,
                 behandlingId = bid,
                 originalKey = originalKey1,
-                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                stønad = StønadTypeDagpenger.DAGPENGER,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
@@ -1703,7 +1703,8 @@ internal class DpTest {
 
         val mottatt = StatusReply(
             status = Status.MOTTATT,
-            detaljer = Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "DPORAS")))
+            detaljer = Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u,
+                "DAGPENGER")))
         )
 
         TestRuntime.topics.status.assertThat()
@@ -1723,7 +1724,7 @@ internal class DpTest {
                     originalKey = originalKey1,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = 14.jun.atStartOfDay(),
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1753,7 +1754,7 @@ internal class DpTest {
                 assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
                 assertEquals("NY", førsteLinje.kodeEndringLinje)
                 assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("DPORAS", førsteLinje.kodeKlassifik)
+                assertEquals("DAGPENGER", førsteLinje.kodeKlassifik)
                 assertEquals(100, førsteLinje.sats.toLong())
                 assertEquals(100, førsteLinje.vedtakssats157.vedtakssats.toLong())
             }
@@ -1776,7 +1777,7 @@ internal class DpTest {
                     originalKey = originalKey1,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = 14.jun.atStartOfDay(),
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1798,9 +1799,9 @@ internal class DpTest {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val originalKey = UUID.randomUUID().toString()
-        val uid1 = dpUId(sid.id, "132460781", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid2 = dpUId(sid.id, "232460781", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-        val uid3 = dpUId(sid.id, "132462765", StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid1 = dpUId(sid.id, "132460781", StønadTypeDagpenger.DAGPENGER)
+        val uid2 = dpUId(sid.id, "232460781", StønadTypeDagpenger.DAGPENGER)
+        val uid3 = dpUId(sid.id, "132462765", StønadTypeDagpenger.DAGPENGER)
         val pid1 = PeriodeId()
         val pid2 = PeriodeId()
 
@@ -1811,7 +1812,7 @@ internal class DpTest {
                 sakId = sid,
                 behandlingId = bid,
                 originalKey = originalKey,
-                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                stønad = StønadTypeDagpenger.DAGPENGER,
                 lastPeriodeId = pid1,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 14.sep.atStartOfDay(),
@@ -1829,7 +1830,7 @@ internal class DpTest {
                 sakId = sid,
                 behandlingId = bid,
                 originalKey = originalKey,
-                stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                stønad = StønadTypeDagpenger.DAGPENGER,
                 førsteUtbetalingPåSak = false,
                 lastPeriodeId = pid2,
                 personident = Personident("12345678910"),
@@ -1862,9 +1863,9 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "DPORAS"),
-                    DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "DPORAS"),
-                    DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "DPORAS"),
+                    DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "DAGPENGER"),
+                    DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "DAGPENGER"),
+                    DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "DAGPENGER"),
                 )
             )
         )
@@ -1886,7 +1887,7 @@ internal class DpTest {
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     førsteUtbetalingPåSak = false,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1907,7 +1908,7 @@ internal class DpTest {
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     førsteUtbetalingPåSak = false,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1928,7 +1929,7 @@ internal class DpTest {
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     førsteUtbetalingPåSak = false,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1954,7 +1955,7 @@ internal class DpTest {
                 assertEquals(pid1.toString(), linje1.refDelytelseId) // kjede på forrige
                 assertEquals("NY", linje1.kodeEndringLinje)
                 assertEquals(bid.id, linje1.henvisning)
-                assertEquals("DPORAS", linje1.kodeKlassifik)
+                assertEquals("DAGPENGER", linje1.kodeKlassifik)
                 assertEquals(600, linje1.sats.toLong())
                 assertEquals(600, linje1.vedtakssats157.vedtakssats.toLong())
 
@@ -1962,7 +1963,7 @@ internal class DpTest {
                 assertNull(linje2.refDelytelseId)
                 assertEquals("NY", linje2.kodeEndringLinje)
                 assertEquals(bid.id, linje2.henvisning)
-                assertEquals("DPORAS", linje2.kodeKlassifik)
+                assertEquals("DAGPENGER", linje2.kodeKlassifik)
                 assertEquals(600, linje2.sats.toLong())
                 assertEquals(600, linje2.vedtakssats157.vedtakssats.toLong())
 
@@ -1973,7 +1974,7 @@ internal class DpTest {
                 // assertEquals(2.jun, linje3.datoStatusFom.toLocalDate())
                 assertEquals("NY", linje3.kodeEndringLinje)
                 assertEquals(bid.id, linje3.henvisning)
-                assertEquals("DPORAS", linje3.kodeKlassifik)
+                assertEquals("DAGPENGER", linje3.kodeKlassifik)
                 assertEquals(600, linje3.sats.toLong())
                 assertEquals(600, linje3.vedtakssats157.vedtakssats.toLong())
             }
@@ -1997,7 +1998,7 @@ internal class DpTest {
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     førsteUtbetalingPåSak = false,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -2018,7 +2019,7 @@ internal class DpTest {
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     førsteUtbetalingPåSak = false,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -2039,7 +2040,7 @@ internal class DpTest {
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     førsteUtbetalingPåSak = false,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -2068,7 +2069,7 @@ internal class DpTest {
         val bid3 = BehandlingId("$nextInt")
         val originalKey = UUID.randomUUID().toString()
         val meldeperiode = "132460781"
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(originalKey) {
             Dp.utbetaling(sid.id, bid1.id) {
@@ -2096,9 +2097,9 @@ internal class DpTest {
             Detaljer(
                 ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
-                    DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DPORAS"),
-                    DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DPORAS"),
-                    DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DPORAS"),
+                    DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DAGPENGER"),
+                    DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DAGPENGER"),
+                    DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DAGPENGER"),
                 )
             )
         )
@@ -2119,7 +2120,7 @@ internal class DpTest {
                     behandlingId = bid3,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -2148,21 +2149,21 @@ internal class DpTest {
                 assertNull(l1.refDelytelseId)
                 assertEquals("NY", l1.kodeEndringLinje)
                 assertEquals(bid1.id, l1.henvisning)
-                assertEquals("DPORAS", l1.kodeKlassifik)
+                assertEquals("DAGPENGER", l1.kodeKlassifik)
                 assertEquals(300, l1.sats.toLong())
                 assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
                 val l2 = it.oppdrag110.oppdragsLinje150s[1]
                 assertNull(l1.refDelytelseId)
                 assertEquals("NY", l2.kodeEndringLinje)
                 assertEquals(bid2.id, l2.henvisning)
-                assertEquals("DPORAS", l2.kodeKlassifik)
+                assertEquals("DAGPENGER", l2.kodeKlassifik)
                 assertEquals(300, l2.sats.toLong())
                 assertEquals(300, l2.vedtakssats157.vedtakssats.toLong())
                 val l3 = it.oppdrag110.oppdragsLinje150s[2]
                 assertNull(l1.refDelytelseId)
                 assertEquals("NY", l3.kodeEndringLinje)
                 assertEquals(bid3.id, l3.henvisning)
-                assertEquals("DPORAS", l3.kodeKlassifik)
+                assertEquals("DAGPENGER", l3.kodeKlassifik)
                 assertEquals(300, l3.sats.toLong())
                 assertEquals(300, l3.vedtakssats157.vedtakssats.toLong())
             }
@@ -2185,7 +2186,7 @@ internal class DpTest {
                     behandlingId = bid3,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -2218,9 +2219,9 @@ internal class DpTest {
             val meldeperiode1 = "100000000"
             val meldeperiode2 = "200000000"
             val meldeperiode3 = "300000000"
-            val uid1 = dpUId(sid1.id, meldeperiode1, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-            val uid2 = dpUId(sid2.id, meldeperiode2, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
-            val uid3 = dpUId(sid3.id, meldeperiode3, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+            val uid1 = dpUId(sid1.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
+            val uid2 = dpUId(sid2.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
+            val uid3 = dpUId(sid3.id, meldeperiode3, StønadTypeDagpenger.DAGPENGER)
 
             TestRuntime.topics.dp.produce(originalKey) {
                 Dp.utbetaling(sid1.id, bid1.id) {
@@ -2242,15 +2243,15 @@ internal class DpTest {
 
             val mottatt1 = StatusReply(
                 Status.MOTTATT,
-                Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DPORAS")))
+                Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DAGPENGER")))
             )
             val mottatt2 = StatusReply(
                 Status.MOTTATT,
-                Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DPORAS")))
+                Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DAGPENGER")))
             )
             val mottatt3 = StatusReply(
                 Status.MOTTATT,
-                Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DPORAS")))
+                Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DAGPENGER")))
             )
 
             TestRuntime.topics.status.assertThat()
@@ -2272,7 +2273,7 @@ internal class DpTest {
                         behandlingId = bid1,
                         fagsystem = Fagsystem.DAGPENGER,
                         lastPeriodeId = it.lastPeriodeId,
-                        stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                        stønad = StønadTypeDagpenger.DAGPENGER,
                         vedtakstidspunkt = it.vedtakstidspunkt,
                         beslutterId = Navident("dagpenger"),
                         saksbehandlerId = Navident("dagpenger"),
@@ -2291,7 +2292,7 @@ internal class DpTest {
                         behandlingId = bid2,
                         fagsystem = Fagsystem.DAGPENGER,
                         lastPeriodeId = it.lastPeriodeId,
-                        stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                        stønad = StønadTypeDagpenger.DAGPENGER,
                         vedtakstidspunkt = it.vedtakstidspunkt,
                         beslutterId = Navident("dagpenger"),
                         saksbehandlerId = Navident("dagpenger"),
@@ -2310,7 +2311,7 @@ internal class DpTest {
                         behandlingId = bid3,
                         fagsystem = Fagsystem.DAGPENGER,
                         lastPeriodeId = it.lastPeriodeId,
-                        stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                        stønad = StønadTypeDagpenger.DAGPENGER,
                         vedtakstidspunkt = it.vedtakstidspunkt,
                         beslutterId = Navident("dagpenger"),
                         saksbehandlerId = Navident("dagpenger"),
@@ -2337,7 +2338,7 @@ internal class DpTest {
                     assertNull(l1.refDelytelseId)
                     assertEquals("NY", l1.kodeEndringLinje)
                     assertEquals(bid1.id, l1.henvisning)
-                    assertEquals("DPORAS", l1.kodeKlassifik)
+                    assertEquals("DAGPENGER", l1.kodeKlassifik)
                     assertEquals(300, l1.sats.toLong())
                     assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
                 }
@@ -2355,7 +2356,7 @@ internal class DpTest {
                     assertNull(l1.refDelytelseId)
                     assertEquals("NY", l1.kodeEndringLinje)
                     assertEquals(bid2.id, l1.henvisning)
-                    assertEquals("DPORAS", l1.kodeKlassifik)
+                    assertEquals("DAGPENGER", l1.kodeKlassifik)
                     assertEquals(300, l1.sats.toLong())
                     assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
                 }
@@ -2373,7 +2374,7 @@ internal class DpTest {
                     assertNull(l1.refDelytelseId)
                     assertEquals("NY", l1.kodeEndringLinje)
                     assertEquals(bid3.id, l1.henvisning)
-                    assertEquals("DPORAS", l1.kodeKlassifik)
+                    assertEquals("DAGPENGER", l1.kodeKlassifik)
                     assertEquals(300, l1.sats.toLong())
                     assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
                 }
@@ -2402,7 +2403,7 @@ internal class DpTest {
                         behandlingId = bid1,
                         fagsystem = Fagsystem.DAGPENGER,
                         lastPeriodeId = it.lastPeriodeId,
-                        stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                        stønad = StønadTypeDagpenger.DAGPENGER,
                         vedtakstidspunkt = it.vedtakstidspunkt,
                         beslutterId = Navident("dagpenger"),
                         saksbehandlerId = Navident("dagpenger"),
@@ -2421,7 +2422,7 @@ internal class DpTest {
                         behandlingId = bid2,
                         fagsystem = Fagsystem.DAGPENGER,
                         lastPeriodeId = it.lastPeriodeId,
-                        stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                        stønad = StønadTypeDagpenger.DAGPENGER,
                         vedtakstidspunkt = it.vedtakstidspunkt,
                         beslutterId = Navident("dagpenger"),
                         saksbehandlerId = Navident("dagpenger"),
@@ -2440,7 +2441,7 @@ internal class DpTest {
                         behandlingId = bid3,
                         fagsystem = Fagsystem.DAGPENGER,
                         lastPeriodeId = it.lastPeriodeId,
-                        stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                        stønad = StønadTypeDagpenger.DAGPENGER,
                         vedtakstidspunkt = it.vedtakstidspunkt,
                         beslutterId = Navident("dagpenger"),
                         saksbehandlerId = Navident("dagpenger"),
@@ -2465,7 +2466,7 @@ internal class DpTest {
             val bid = BehandlingId("$nextInt")
             val originalKey = UUID.randomUUID().toString()
             val meldeperiode = "132460781"
-            val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+            val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
             TestRuntime.topics.dp.produce(originalKey) {
                 Dp.utbetaling(sid.id, bid.id, dryrun = true) {
@@ -2500,7 +2501,7 @@ internal class DpTest {
                     assertNull(it.request.oppdrag.oppdragslinjes[0].refDelytelseId)
                     val l1 = it.request.oppdrag.oppdragslinjes[0]
                     assertEquals("NY", l1.kodeEndringLinje)
-                    assertEquals("DPORAS", l1.kodeKlassifik)
+                    assertEquals("DAGPENGER", l1.kodeKlassifik)
                     assertEquals(553, l1.sats.toLong())
                 }
         }
@@ -2511,7 +2512,7 @@ internal class DpTest {
             val bid = BehandlingId("$nextInt")
             val originalKey = UUID.randomUUID().toString()
             val meldeperiode = "132460781"
-            val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR)
+            val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
             TestRuntime.topics.dpUtbetalinger.produce(originalKey) {
                 Dp.utbetaling(sid.id, bid.id) {
@@ -2532,7 +2533,7 @@ internal class DpTest {
                 Detaljer(
                     ytelse = Fagsystem.DAGPENGER,
                     linjer = listOf(
-                        DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DPORAS"),
+                        DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
                     )
                 )
             )
@@ -2557,7 +2558,7 @@ internal class DpTest {
                     it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
                         assertEquals("NY", a.kodeEndringLinje)
                         assertEquals(bid.id, a.henvisning)
-                        assertEquals("DPORAS", a.kodeKlassifik)
+                        assertEquals("DAGPENGER", a.kodeKlassifik)
                         assertEquals(553, a.sats.toLong())
                         assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
                         assertEquals(a.delytelseId, b.refDelytelseId)
@@ -2582,7 +2583,7 @@ internal class DpTest {
                         behandlingId = bid,
                         fagsystem = Fagsystem.DAGPENGER,
                         lastPeriodeId = it.lastPeriodeId,
-                        stønad = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                        stønad = StønadTypeDagpenger.DAGPENGER,
                         vedtakstidspunkt = it.vedtakstidspunkt,
                         beslutterId = Navident("dagpenger"),
                         saksbehandlerId = Navident("dagpenger"),

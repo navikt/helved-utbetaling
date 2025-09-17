@@ -70,7 +70,7 @@ class SimuleringRouteTest {
                                 fagsystem = Fagsystem.DAGPENGER,
                                 sakId = "sakId",
                                 utbetalesTil = "12345678910",
-                                stønadstype = StønadTypeDagpenger.ARBEIDSSØKER_ORDINÆR,
+                                stønadstype = StønadTypeDagpenger.DAGPENGER,
                                 tidligereUtbetalt = 1572,
                                 nyttBeløp = 1572,
                             )
