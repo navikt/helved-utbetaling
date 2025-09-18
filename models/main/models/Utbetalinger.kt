@@ -382,6 +382,7 @@ fun uuid(
 }
 
 fun fakeDelete(
+    dryrun: Boolean,
     originalKey: String,
     sakId: SakId,
     uid: UtbetalingId,
@@ -390,7 +391,7 @@ fun fakeDelete(
     beslutterId: Navident,
     saksbehandlerId: Navident,
 ) = Utbetaling(
-    dryrun = false,
+    dryrun = dryrun,
     originalKey = originalKey,
     fagsystem = fagsystem,
     uid = uid,

@@ -71,6 +71,7 @@ object OppdragService {
     }
 
     // før denne kalles, join prev med status for å sjekke om den er locket (status != OK)
+    // TODO: Trenger vi både new og prev?
     fun delete(new: Utbetaling, prev: Utbetaling): Oppdrag {
         prev.validateLockedFields(new)
 
