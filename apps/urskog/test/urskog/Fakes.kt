@@ -30,19 +30,23 @@ import java.nio.charset.Charset
 import java.time.LocalDateTime
 import java.util.*
 
+val receivedMqOppdrag = mutableListOf<Oppdrag>()
+
 fun oppdragURFake(): MQ {
     val mapper = XMLMapper<Oppdrag>()
     lateinit var mq: MQFake 
     val ctx by lazy {
         JMSContextFake {
-            val oppdrag = mapper.readValue(it.text).apply {
+            val oppdrag = mapper.readValue(it.text)
+            receivedMqOppdrag.add(oppdrag)
+            val kvittert = oppdrag.apply {
                 mmel = Mmel().apply {
                     alvorlighetsgrad = "00" // 00/04/08/12
                     // kodeMelding = ""
                     // beskrMelding = ""
                 }
             }
-            mq.textMessage(mapper.writeValueAsString(oppdrag))
+            mq.textMessage(mapper.writeValueAsString(kvittert))
         }
     }
     mq = MQFake(ctx) 

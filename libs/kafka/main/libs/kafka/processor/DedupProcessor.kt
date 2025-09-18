@@ -29,7 +29,8 @@ import kotlin.time.toJavaDuration
 class DedupProcessor<K: Any, V: Any> (
     private val stateStoreName: StateStoreName,
     private val retention: Duration,
-    private val downstream: () -> Unit,
+    private val hasher: (V) -> Int,
+    private val downstream: (V) -> Unit,
 ): Processor<K, V, K, V> {
     private lateinit var store: TimestampedKeyValueStore<String, V>
     private lateinit var context: ProcessorContext<K, V>
@@ -51,21 +52,21 @@ class DedupProcessor<K: Any, V: Any> (
     } 
 
     override fun process(record: Record<K, V>) {
-        val dedupKey = "${record.key()}|${record.value().hashCode()}" // TODO: ensure hash works for e.g. jaxb
+        val dedupKey = hasher(record.value()).toString()
         val seen = store.get(dedupKey)
         val now = record.timestamp()
         if (seen == null || now - seen.timestamp() > retention.inWholeMilliseconds) {
             try {
-                downstream()
+                downstream(record.value())
                 store.put(dedupKey, ValueAndTimestamp.make(record.value(), now))
-                kafkaLog.debug("dedup allow key=${record.key()}")
+                kafkaLog.debug("dedup allow key=${record.key()} value.hash=${record.value().hashCode()}")
                 context.forward(record)
             } catch (e: Exception) {
-                kafkaLog.warn("downstream failed, dedup will retry key=${record.key()}")
+                kafkaLog.warn("downstream failed, dedup will retry key=${record.key()} value.hash=${record.value().hashCode()}")
                 throw e
             }
         } else {
-            kafkaLog.debug("dedup deny key=${record.key()}")
+            kafkaLog.debug("dedup deny key=${record.key()} value.hash=${record.value().hashCode()}")
         }
     }
 
@@ -74,7 +75,8 @@ class DedupProcessor<K: Any, V: Any> (
             serdes: Serdes<K, V>,
             retention: Duration,
             stateStoreName: StateStoreName,
-            downstream: () -> Unit,
+            hasher: (V) -> Int = { it.hashCode() },
+            downstream: (V) -> Unit,
         ): ProcessorSupplier<K, V, K, V> {
             return object: ProcessorSupplier<K, V, K, V> {
                 override fun stores(): Set<StoreBuilder<*>> = setOf(
@@ -84,7 +86,7 @@ class DedupProcessor<K: Any, V: Any> (
                         serdes.value
                     )
                 )
-                override fun get(): Processor<K, V, K, V> = DedupProcessor(stateStoreName, retention, downstream)
+                override fun get(): Processor<K, V, K, V> = DedupProcessor(stateStoreName, retention, hasher,downstream)
             }
         }
     }

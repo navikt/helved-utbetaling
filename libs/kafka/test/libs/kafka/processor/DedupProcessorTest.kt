@@ -101,9 +101,9 @@ class DedupProcessorTest {
         }
         runCatching { kafka.inputTopic(Topics.B).produce("1", "hello") }
         val store = kafka.getStore(Store("test-dedup-store", Topics.B.serdes))
-        assertNull(store.getOrNull("1|${"hello".hashCode()}"))
+        assertNull(store.getOrNull("hello".hashCode().toString()))
         kafka.inputTopic(Topics.B).produce("1", "hello")
-        assertEquals("hello", store.getOrNull("1|${"hello".hashCode()}"))
+        assertEquals("hello", store.getOrNull("hello".hashCode().toString()))
         val records = kafka.outputTopic(Topics.C).readRecordsToList()
         assertEquals(1, records.size)
     }

@@ -120,6 +120,7 @@ package "Sub-topology: 1" {
 	KSTREAM_PROCESSVALUES_0000000051 --> KSTREAM_SINK_0000000052
 }
 package "Sub-topology: 2" {
+	database "dedup-oppdrag-mq" <<State Store>> as dedup_oppdrag_mq
 	agent "consume-helved.oppdrag.v1" <<Source>> as consume_helved_oppdrag_v1
 	agent "KSTREAM-PROCESSVALUES-0000000037" <<Processor>> as KSTREAM_PROCESSVALUES_0000000037
 	agent "KSTREAM-FILTER-0000000038" <<Processor>> as KSTREAM_FILTER_0000000038
@@ -130,7 +131,7 @@ package "Sub-topology: 2" {
 	agent "KSTREAM-FILTER-0000000055" <<Processor>> as KSTREAM_FILTER_0000000055
 	agent "KSTREAM-FILTER-0000000061" <<Processor>> as KSTREAM_FILTER_0000000061
 	agent "KSTREAM-MAP-0000000040" <<Processor>> as KSTREAM_MAP_0000000040
-	agent "KSTREAM-MAPVALUES-0000000056" <<Processor>> as KSTREAM_MAPVALUES_0000000056
+	agent "KSTREAM-PROCESSOR-0000000056" <<Processor>> as KSTREAM_PROCESSOR_0000000056
 	agent "KSTREAM-MAPVALUES-0000000057" <<Processor>> as KSTREAM_MAPVALUES_0000000057
 	agent "KSTREAM-MAPVALUES-0000000062" <<Processor>> as KSTREAM_MAPVALUES_0000000062
 	agent "fk-uid-store-materialize-log" <<Processor>> as fk_uid_store_materialize_log
@@ -141,6 +142,7 @@ package "Sub-topology: 2" {
 	agent "KSTREAM-SINK-0000000064" <<Sink>> as KSTREAM_SINK_0000000064
 	agent "fk-uid-store-materialize-repartition-sink" <<Sink>> as fk_uid_store_materialize_repartition_sink
 	helved_oppdrag_v1 --> consume_helved_oppdrag_v1
+	dedup_oppdrag_mq -- KSTREAM_PROCESSOR_0000000056
 	helved_status_v1 <-- KSTREAM_SINK_0000000059
 	helved_status_v1 <-- KSTREAM_SINK_0000000064
 	fk_uid_store_materialize_repartition <-- fk_uid_store_materialize_repartition_sink
@@ -153,10 +155,10 @@ package "Sub-topology: 2" {
 	KSTREAM_BRANCH_00000000531 --> KSTREAM_FILTER_0000000055
 	KSTREAM_BRANCH_00000000532 --> KSTREAM_FILTER_0000000061
 	KSTREAM_FILTER_0000000039 --> KSTREAM_MAP_0000000040
-	KSTREAM_FILTER_0000000055 --> KSTREAM_MAPVALUES_0000000056
+	KSTREAM_FILTER_0000000055 --> KSTREAM_PROCESSOR_0000000056
 	KSTREAM_FILTER_0000000061 --> KSTREAM_MAPVALUES_0000000062
 	KSTREAM_MAP_0000000040 --> fk_uid_store_materialize_log
-	KSTREAM_MAPVALUES_0000000056 --> KSTREAM_MAPVALUES_0000000057
+	KSTREAM_PROCESSOR_0000000056 --> KSTREAM_MAPVALUES_0000000057
 	KSTREAM_MAPVALUES_0000000057 --> KSTREAM_PROCESSVALUES_0000000058
 	KSTREAM_MAPVALUES_0000000062 --> KSTREAM_PROCESSVALUES_0000000063
 	fk_uid_store_materialize_log --> fk_uid_store_materialize_repartition_filter

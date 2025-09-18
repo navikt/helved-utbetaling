@@ -4,10 +4,12 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.runBlocking
 import libs.kafka.*
+import libs.kafka.processor.DedupProcessor
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import kotlin.time.Duration.Companion.hours
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
@@ -59,6 +61,12 @@ fun Topology.simulering(simuleringService: SimuleringService) {
         }
 }
 
+private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
+
+fun dedupHash(oppdrag: Oppdrag): Int {
+    return mapper.writeValueAsString(oppdrag).hashCode()
+}
+
 fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) {
     val kvitteringKTable = consume(Tables.kvittering)
     val oppdragTopic = consume(Topics.oppdrag)
@@ -76,7 +84,16 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
     oppdragTopic
         .branch({ o -> o.mmel == null }) {
             filter { o -> o.mmel == null }
-                .map { xml -> oppdragProducer.send(xml) }
+                .processor(
+                    DedupProcessor.supplier(
+                        Topics.oppdrag.serdes,
+                        1.hours,
+                        "dedup-oppdrag-mq",
+                        ::dedupHash,
+                    ){ xml -> 
+                        oppdragProducer.send(xml) 
+                    }
+                )
                 .map { xml -> StatusReply.sendt(xml) }
                 .produce(Topics.status)
         }
