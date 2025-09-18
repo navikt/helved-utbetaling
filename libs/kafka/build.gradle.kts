@@ -5,7 +5,7 @@ dependencies {
     implementation("no.nav.helved:xml:$libVersion")
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.15.3")
-    implementation("org.apache.kafka:kafka-streams:4.1.0")
+    api("org.apache.kafka:kafka-streams:4.1.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.18")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
