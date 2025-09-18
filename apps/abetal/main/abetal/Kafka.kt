@@ -7,7 +7,6 @@ import libs.utils.appLog
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 object Topics {
     val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
@@ -227,6 +226,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
 // TODO: erstatt DpTuple med noe mer generisk
 private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
     val (dpKey, dpUtbetaling) = tuple
+    val dryrun = dpUtbetaling.dryrun
     val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling
         .utbetalinger
         .groupBy { it.meldeperiode to it.stønadstype() }
@@ -244,7 +244,7 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<Utbeta
 
     return utbetalingerPerMeldekort.map { (uid, dpUtbetaling) ->
         val utbetaling = when (dpUtbetaling) {
-            null -> fakeDelete(dpKey, sakKey.sakId, uid, Fagsystem.DAGPENGER, StønadTypeDagpenger.DAGPENGER,
+            null -> fakeDelete(dryrun, dpKey, sakKey.sakId, uid, Fagsystem.DAGPENGER, StønadTypeDagpenger.DAGPENGER,
                 Navident("dagpenger"), Navident("dagpenger")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
             else -> toDomain(dpKey, dpUtbetaling, uids, uid)
         }
@@ -255,6 +255,7 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<Utbeta
 
 private fun splitOnMeldeperiode(sakKey: SakKey, tuple: AapTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
     val (aapKey, aapUtbetaling) = tuple
+    val dryrun = aapUtbetaling.dryrun
     val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, AapUtbetaling?>> = aapUtbetaling
         .utbetalinger
         .groupBy { it.meldeperiode }
@@ -271,7 +272,7 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: AapTuple, uids: Set<Utbet
 
     return utbetalingerPerMeldekort.map { (uid, aapUtbetaling) ->
         val utbetaling = when (aapUtbetaling) {
-            null -> fakeDelete(aapKey, sakKey.sakId, uid, Fagsystem.AAP, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            null -> fakeDelete(dryrun, aapKey, sakKey.sakId, uid, Fagsystem.AAP, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
                 Navident("kelvin"), Navident("kelvin")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
             else -> toDomain(aapKey, aapUtbetaling, uids, uid)
         }
