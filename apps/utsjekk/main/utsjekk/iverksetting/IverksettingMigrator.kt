@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
+import libs.utils.appLog
 import libs.utils.secureLog
 import models.PeriodeId
 import models.kontrakter.oppdrag.OppdragStatus
@@ -37,7 +38,7 @@ class IverksettingMigrator(
     }
 
     suspend fun transfer(fs: models.kontrakter.felles.Fagsystem, req: MigrationRequest) {
-        if (fs != models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER) {
+        if (fs !in listOf(models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER, models.kontrakter.felles.Fagsystem.TILTAKSPENGER)) {
             notImplemented("kan ikke migrere $fs enda")
         } 
         withContext(Jdbc.context) {
@@ -60,9 +61,11 @@ class IverksettingMigrator(
                     .groupBy { it.stønadsdata.tilKjedenøkkel() }
                     .mapValues { andel -> andel.value.sortedBy { it.fom} }
 
+                // TODO: bare lag for andeler som skal hører til meldeperiode,
+
                 andelerByKlassekode.forEach { klassekode, andeler ->
-                    println("forsøker å migrere klassekode: ${klassekode.klassifiseringskode}")
-                    val utbet = utbetaling(req, iverksetting, andeler, klassekode.klassifiseringskode)
+                    appLog.info("forsøker å migrere $klassekode}")
+                    val utbet = utbetaling(req, iverksetting, andeler, klassekode.klassifiseringskode, models.Fagsystem.from(fs.kode))
                     val key = utbet.uid.id.toString()
                     utbetalingProducer.send(key, utbet, partition(key))
                 }
@@ -70,16 +73,19 @@ class IverksettingMigrator(
         }
     }
 
+        
+
     private fun utbetaling(
         req: MigrationRequest,
         iverksetting: Iverksetting,
         andeler: List<AndelData>,
         klassekode: String,
+        fagsystem: models.Fagsystem,
     ): models.Utbetaling = models.Utbetaling(
         dryrun = false,
-        originalKey = iverksetting.behandlingId.id, // TODO: er dette riktig, eller har det ikke noe å si?
-        fagsystem = models.Fagsystem.AAP,
-        uid = tsUId(iverksetting.sakId.id, req.meldeperiode, models.Stønadstype.fraKode(klassekode)),
+        originalKey = iverksetting.iverksettingId?.id ?: iverksetting.behandlingId.id,
+        fagsystem = fagsystem,
+        uid = tsUId(iverksetting.sakId.id, req.meldeperiode, models.Stønadstype.fraKode(klassekode), fagsystem),
         action = models.Action.CREATE, 
         førsteUtbetalingPåSak = false,
         sakId = models.SakId(iverksetting.sakId.id),
@@ -96,12 +102,11 @@ class IverksettingMigrator(
     )
 }
 
-fun tsUId(sakId: String, meldeperiode: String, stønad: models.Stønadstype): models.UtbetalingId {
-    if (stønad !is models.StønadTypeTilleggsstønader) badRequest("kan ikke migrere tilleggstønader med stønadstype $stønad")
+fun tsUId(sakId: String, meldeperiode: String, stønad: models.Stønadstype, fagsystem: models.Fagsystem): models.UtbetalingId {
     return models.UtbetalingId(
         models.uuid(
             sakId = models.SakId(sakId),
-            fagsystem = models.Fagsystem.TILLEGGSSTØNADER,
+            fagsystem = fagsystem,
             meldeperiode = meldeperiode,
             stønad = stønad
         )
