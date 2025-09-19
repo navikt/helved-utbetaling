@@ -19,7 +19,7 @@ data class MigrationRequest(
     val sakId: String,
     val behandlingId: String,
     val iverksettingId: String?,
-    val meldeperiode: String,
+    val meldeperiode: String, // eller meldekortId
 )
 
 class IverksettingMigrator(
@@ -60,8 +60,11 @@ class IverksettingMigrator(
                     .lagAndelData()
                     .groupBy { it.stønadsdata.tilKjedenøkkel() }
                     .mapValues { andel -> andel.value.sortedBy { it.fom} }
-
-                // TODO: bare lag for andeler som skal hører til meldeperiode,
+                    .filter { (nøkkel, _) -> 
+                        if (nøkkel is KjedenøkkelMeldeplikt) {
+                            nøkkel.meldekortId == req.meldeperiode
+                        } else true
+                    }
 
                 andelerByKlassekode.forEach { klassekode, andeler ->
                     appLog.info("forsøker å migrere $klassekode}")
@@ -72,8 +75,6 @@ class IverksettingMigrator(
             }
         }
     }
-
-        
 
     private fun utbetaling(
         req: MigrationRequest,
