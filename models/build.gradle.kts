@@ -1,4 +1,4 @@
-val libVersion = "3.1.187"
+val libVersion = "3.1.199"
 
 dependencies {
     implementation(project(":libs:utils"))
