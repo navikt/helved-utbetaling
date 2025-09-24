@@ -161,6 +161,11 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
             oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
 
             result
+                .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
+                .map { StatusReply.ok() }
+                .produce(Topics.status)
+
+            result
                 .flatMapKeyAndValue { originalKey, (oppdragToUtbetalinger, _) -> 
                     oppdragToUtbetalinger.map { (oppdrag, utbetalinger) -> 
                         val uids = utbetalinger.map { u -> u.uid.toString() }
@@ -209,6 +214,11 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
             val oppdrag = result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
             oppdrag.produce(Topics.oppdrag)
             oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
+
+            result
+                .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
+                .map { StatusReply.ok() }
+                .produce(Topics.status)
 
             result
                 .flatMapKeyAndValue { originalKey, (oppdragToUtbetalinger, _) ->

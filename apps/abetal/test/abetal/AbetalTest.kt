@@ -352,7 +352,7 @@ internal class AbetalTest {
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
-        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.status.assertThat().has(key, StatusReply.ok())
     }
 
     @Test

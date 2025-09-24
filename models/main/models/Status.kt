@@ -1,7 +1,6 @@
 package models
 
 import java.time.LocalDate
-import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
@@ -15,6 +14,7 @@ data class StatusReply(
     companion object {
         fun mottatt(oppdrag: Oppdrag): StatusReply = StatusReply(Status.MOTTATT, detaljer(oppdrag))
         fun ok(oppdrag: Oppdrag): StatusReply = StatusReply(Status.OK, detaljer(oppdrag))
+        fun ok(): StatusReply = StatusReply(Status.OK)
         fun ok(oppdrag: Oppdrag, error: ApiError) = StatusReply(Status.OK, detaljer(oppdrag), error)
         fun sendt(oppdrag: Oppdrag): StatusReply = StatusReply(Status.HOS_OPPDRAG, detaljer(oppdrag))
         fun err(oppdrag: Oppdrag, error: ApiError) = StatusReply(Status.FEILET, detaljer(oppdrag), error)
