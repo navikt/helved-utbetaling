@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jdk-alpine AS jre
+FROM eclipse-temurin:25-jdk-alpine AS jre
 RUN jlink \
     --verbose \
     --module-path $JAVA_HOME/bin/jmods/ \
