@@ -20,6 +20,8 @@ object Topics {
     val fk = Topic("helved.fk.v1", Serdes(XmlSerde.xml<Oppdrag>(), JsonSerde.jackson<PKs>()))
     val dpUtbetalinger = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val aapUtbetalinger = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
+    // TODO: rename denne til tsUtbetalinger når ts har laget topic
+    val ts = Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>())
 }
 
 object Tables {
@@ -33,6 +35,7 @@ object Stores {
     val utbetalinger = Store(Tables.utbetalinger)
     val dpAggregate = Store("dp-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
     val aapAggregate = Store("aap-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val tsAggregate = Store("ts-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
 }
 
 fun createTopology(): Topology = topology {
@@ -42,6 +45,7 @@ fun createTopology(): Topology = topology {
     val fks = consume(Tables.fk)
     dpStream(utbetalinger, saker)
     aapStream(utbetalinger, saker)
+    tsStream(utbetalinger, saker)
     successfulUtbetalingStream(fks, pendingUtbetalinger)
 }
 
@@ -57,7 +61,10 @@ data class PKs(val originalKey: String, val uids: List<String>)
  */
 fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTable<String, Utbetaling>) {
     consume(Topics.oppdrag)
-        .filter { it.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") && it.oppdrag110.kodeFagomraade.trimEnd() in listOf("AAP", "DP") }
+        .filter { 
+            it.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04")
+                // && it.oppdrag110.kodeFagomraade.trimEnd() in listOf("AAP", "DP") 
+        }
         .rekey { it.apply { it.mmel = null} }
         .map { 
             val last = it.oppdrag110.oppdragsLinje150s.last()
@@ -78,7 +85,11 @@ fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTab
             }
         }
         .leftJoin(Serde.string(), Serde.json(), pending, "pk-leftjoin-pending")
-        .map { info, pending -> requireNotNull(pending) { "Fant ikke pending utbetaling. Oppdragsinfo: $info" } }
+        .mapNotNull { info, pending -> 
+            if (pending == null) appLog.warn("Fant ikke pending utbetaling. Oppdragsinfo: $info")
+            // requireNotNull(pending) { "Fant ikke pending utbetaling. Oppdragsinfo: $info" }
+            pending
+        }
         .produce(Topics.utbetalinger)
 }
 
@@ -110,6 +121,7 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
 
 private val dpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggregate, 50.milliseconds, 50.milliseconds)
 private val aapSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.aapAggregate, 50.milliseconds, 50.milliseconds)
+private val tsSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.tsAggregate, 50.milliseconds, 50.milliseconds)
 
 
 /**
@@ -133,7 +145,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
         .flatMapKeyValue(::splitOnMeldeperiode)
         .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
-        .filter { (new, prev) -> !new.isDuplicate(prev) }
+        .filter { (new, prev) -> !new.isDuplicate(prev) } // TODO: mulig DP ønsker status OK selv om det er duplikat
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
         .sessionWindow(Serde.string(), Serde.listStreamsPair(), 50.milliseconds, "dp-utbetalinger-session") 
@@ -233,16 +245,71 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
             map { it -> it.unwrapErr() }.produce(Topics.status)
         }
 }
-// TODO: erstatt DpTuple med noe mer generisk
+
+fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
+    consume(Topics.ts)
+        // .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
+        // .merge(consume(Topics.tsUtbetalinger))
+        .map { key, ts -> TsTuple(key, ts) }
+        .rekey { (_, ts) -> SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "tstuple-leftjoin-saker")
+        .mapKeyValue(::fromTs)
+        .leftJoin(Serde.string(), Serde.json(), utbetalinger, "ts-periode-leftjoin-utbetalinger")
+        .filter { (new, prev) -> !new.isDuplicate(prev) }
+        .rekey { new, _ -> new.originalKey }
+        .map { new, prev -> listOf(StreamsPair(new, prev)) }
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 50.milliseconds, "ts-utbetalinger-session")
+        .reduce(tsSuppressProcessorSupplier, Stores.tsAggregate.name)  { acc, next -> acc + next }
+        .map { aggregate  ->
+            Result.catch {
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                oppdragToUtbetalinger to simuleringer
+            }
+        }
+        .branch({ it.isOk() }) {
+            val result = map { it -> it.unwrap() }
+
+            result
+                .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.flatMap { agg -> agg.second.map { KeyValue(it.uid.toString(), it) } } }
+                .produce(Topics.pendingUtbetalinger)
+
+            result
+                .flatMap { (_, simuleringer) -> simuleringer }
+                .produce(Topics.simulering)
+
+            val oppdrag = result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
+            oppdrag.produce(Topics.oppdrag)
+            oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
+
+            result
+                .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
+                .map { StatusReply.ok() }
+                .produce(Topics.status)
+
+            result
+                .flatMapKeyAndValue { originalKey, (oppdragToUtbetalinger, _) ->
+                    oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
+                        val uids = utbetalinger.map { u -> u.uid.toString() }
+                        KeyValue(oppdrag, PKs(originalKey, uids))
+                    }
+                }
+                .produce(Topics.fk)
+        }
+        .default {
+            map { it -> it.unwrapErr() }.produce(Topics.status)
+        }
+}
+
 private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
-    val (dpKey, dpUtbetaling) = tuple
-    val dryrun = dpUtbetaling.dryrun
-    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling
+    val (dpKey, tsUtbetaling) = tuple
+    val dryrun = tsUtbetaling.dryrun
+    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = tsUtbetaling
         .utbetalinger
         .groupBy { it.meldeperiode to it.stønadstype() }
         .map { (group, utbetalinger) ->
             val (meldeperiode, stønadstype) = group
-            dpUId(dpUtbetaling.sakId, meldeperiode, stønadstype) to dpUtbetaling.copy(utbetalinger = utbetalinger)
+            dpUId(tsUtbetaling.sakId, meldeperiode, stønadstype) to tsUtbetaling.copy(utbetalinger = utbetalinger)
         }
         .toMutableList()
 
@@ -252,11 +319,11 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<Utbeta
         utbetalingerPerMeldekort.addAll(missingMeldeperioder)
     }
 
-    return utbetalingerPerMeldekort.map { (uid, dpUtbetaling) ->
-        val utbetaling = when (dpUtbetaling) {
+    return utbetalingerPerMeldekort.map { (uid, tsUtbetaling) ->
+        val utbetaling = when (tsUtbetaling) {
             null -> fakeDelete(dryrun, dpKey, sakKey.sakId, uid, Fagsystem.DAGPENGER, StønadTypeDagpenger.DAGPENGER,
                 Navident("dagpenger"), Navident("dagpenger")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
-            else -> toDomain(dpKey, dpUtbetaling, uids, uid)
+            else -> toDomain(dpKey, tsUtbetaling, uids, uid)
         }
         appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
         KeyValue(utbetaling.uid.id.toString(), utbetaling)
@@ -290,3 +357,9 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: AapTuple, uids: Set<Utbet
         KeyValue(utbetaling.uid.id.toString(), utbetaling)
     }
 }
+
+private fun fromTs(sakKey: SakKey, req: TsTuple, uids: Set<UtbetalingId>?): KeyValue<String, Utbetaling> {
+    val utbetaling = req.toDomain(uids)
+    return KeyValue("${utbetaling.uid}", utbetaling)
+}
+
