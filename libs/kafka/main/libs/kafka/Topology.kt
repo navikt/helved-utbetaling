@@ -71,7 +71,7 @@ override fun registerInternalTopology(internalTopology: org.apache.kafka.streams
     )
 }
 
-internal object Names {
+object Names {
     private val names: MutableSet<Named> = mutableSetOf()
 
     internal fun register(name: Named) {
@@ -79,7 +79,7 @@ internal object Names {
         names.add(name)
     }
 
-    internal fun clear() = names.clear()
+    fun clear() = names.clear()
 }
 
 @JvmInline
@@ -97,7 +97,7 @@ value class Named(private val value: String) {
     override fun toString() = value
 }
 
-class Topology internal constructor() {
+class Topology {
     private val builder = StreamsBuilder()
 
     fun <K: Any, V : Any> consume(topic: Topic<K, V>): ConsumedStream<K, V> {
