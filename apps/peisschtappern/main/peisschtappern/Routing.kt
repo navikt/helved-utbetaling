@@ -85,6 +85,10 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
                                 async { if (fagsystem == Fagsystem.DAGPENGER) Dao.findDpUtbetalinger(sakId) else emptyList()},
                                 async { if (fagsystem === Fagsystem.DAGPENGER) Dao.findDpInternUtbetalinger(sakId) else emptyList()},
                                 async { Dao.findSaker(sakId, fagsystem.name) },
+                                async {
+                                    val keys = Dao.findOppdrag(sakId, fagsystem.fagområde).map { it.key }
+                                    Dao.findStatusByKeys(keys)
+                                }
                             )
 
                             deferred.awaitAll()

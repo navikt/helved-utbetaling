@@ -152,6 +152,20 @@ data class Dao(
             }
         }
 
+        suspend fun findStatusByKeys(keys: List<String>): List<Dao> {
+            val sql = """
+                SELECT *
+                FROM status
+                WHERE record_key IN (${keys.joinToString { "'$it'" }});
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
         suspend fun findKvitteringer(sakId: String, fagsystem: String): List<Dao> {
             val sql = """
                 SELECT *
