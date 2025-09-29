@@ -14,12 +14,14 @@ import models.PeriodeId
 import models.kontrakter.oppdrag.OppdragStatus
 import utsjekk.*
 import utsjekk.iverksetting.resultat.IverksettingResultater
+import java.util.UUID
 
 data class MigrationRequest(
     val sakId: String,
     val behandlingId: String,
     val iverksettingId: String?,
-    val meldeperiode: String, // eller meldekortId
+    val meldeperiode: String?, // eller meldekortId
+    val uid: UUID?,
 )
 
 class IverksettingMigrator(
@@ -31,6 +33,7 @@ class IverksettingMigrator(
             post {
                 val fagsystem = call.fagsystem()
                 val request = call.receive<MigrationRequest>()
+                if(request.meldeperiode == null && request.uid == null) badRequest("mangler en av: 'meldeperiode' eller 'uid'")
                 transfer(fagsystem, request)
                 call.respond(HttpStatusCode.OK)
             }
@@ -62,7 +65,7 @@ class IverksettingMigrator(
                     .mapValues { andel -> andel.value.sortedBy { it.fom} }
                     .filter { (nøkkel, _) -> 
                         if (nøkkel is KjedenøkkelMeldeplikt) {
-                            nøkkel.meldekortId == req.meldeperiode
+                            nøkkel.meldekortId == req.meldeperiode!!
                         } else true
                     }
 
@@ -86,7 +89,9 @@ class IverksettingMigrator(
         dryrun = false,
         originalKey = iverksetting.iverksettingId?.id ?: iverksetting.behandlingId.id,
         fagsystem = fagsystem,
-        uid = tsUId(iverksetting.sakId.id, req.meldeperiode, models.Stønadstype.fraKode(klassekode), fagsystem),
+        uid = req.uid
+            ?.let { models.UtbetalingId(it) } 
+            ?: uid(iverksetting.sakId.id, requireNotNull(req.meldeperiode), models.Stønadstype.fraKode(klassekode), fagsystem),
         action = models.Action.CREATE, 
         førsteUtbetalingPåSak = false,
         sakId = models.SakId(iverksetting.sakId.id),
@@ -103,10 +108,9 @@ class IverksettingMigrator(
     )
 }
 
-fun tsUId(sakId: String, meldeperiode: String, stønad: models.Stønadstype, fagsystem: models.Fagsystem): models.UtbetalingId {
+fun uid(sakId: String, meldeperiode: String, stønad: models.Stønadstype, fagsystem: models.Fagsystem): models.UtbetalingId {
     return models.UtbetalingId(
-        models.uuid(
-            sakId = models.SakId(sakId),
+        models.uuid(sakId = models.SakId(sakId),
             fagsystem = fagsystem,
             meldeperiode = meldeperiode,
             stønad = stønad
