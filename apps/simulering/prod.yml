@@ -11,8 +11,6 @@ metadata:
     team: helved
 spec:
   image: {{image}}
-  ingresses:
-    - https://helved-oppdrag-simulering.intern.nav.no
   accessPolicy:
     inbound:
       rules:

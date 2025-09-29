@@ -7,8 +7,6 @@ metadata:
     team: helved
 spec:
   image: {{ image }}
-  ingresses:
-      - https://utsjekk.intern.nav.no
   liveness:
     path: /actuator/health
     initialDelay: 30

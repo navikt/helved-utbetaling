@@ -7,8 +7,6 @@ metadata:
     team: helved
 spec:
   image: {{ image }}
-  ingresses:
-    - https://peisschtappern.intern.dev.nav.no
   terminationGracePeriodSeconds: 60
   liveness:
     path: /actuator/live
