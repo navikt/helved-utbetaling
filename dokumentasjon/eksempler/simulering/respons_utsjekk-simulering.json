@@ -22,7 +22,7 @@
               "belop": 21000,
               "sats": 1000.0,
               "satstype": "DAG",
-              "klassekode": "AAPUAA",
+              "klassekode": "AAPOR",
               "trekkVedtakId": null,
               "refunderesOrgNr": null
             },
@@ -33,7 +33,7 @@
               "belop": -21000,
               "sats": 1000.0,
               "satstype": "DAG",
-              "klassekode": "AAPUAA",
+              "klassekode": "AAPOR",
               "trekkVedtakId": null,
               "refunderesOrgNr": null
             }
@@ -59,7 +59,7 @@
               "belop": 10000,
               "sats": 1000.0,
               "satstype": "DAG",
-              "klassekode": "AAPUAA",
+              "klassekode": "AAPOR",
               "trekkVedtakId": null,
               "refunderesOrgNr": null
             },
@@ -70,7 +70,7 @@
               "belop": -10000,
               "sats": 1000.0,
               "satstype": "DAG",
-              "klassekode": "AAPUAA",
+              "klassekode": "AAPOR",
               "trekkVedtakId": null,
               "refunderesOrgNr": null
             }
@@ -107,7 +107,7 @@
               "belop": 5000,
               "sats": 1000.0,
               "satstype": "DAG",
-              "klassekode": "AAPUAA",
+              "klassekode": "AAPOR",
               "trekkVedtakId": null,
               "refunderesOrgNr": null
             }

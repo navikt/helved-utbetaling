@@ -32,7 +32,7 @@ class UrskogTest {
                 TestData.oppdragslinje(
                     henvisning = bid,
                     delytelsesId = pid,
-                    klassekode = "AAPUAA",
+                    klassekode = "AAPOR",
                     datoVedtakFom = LocalDate.of(2025, 11, 3),
                     datoVedtakTom = LocalDate.of(2025, 11, 7),
                     typeSats = "DAG",
@@ -82,7 +82,7 @@ class UrskogTest {
                             tom = LocalDate.of(2025, 11, 7),
                             beløp = 700u,
                             vedtakssats = null,
-                            klassekode = "AAPUAA"
+                            klassekode = "AAPOR"
                         )
                     )
                 )
@@ -104,7 +104,7 @@ class UrskogTest {
                 TestData.oppdragslinje(
                     henvisning = bid,
                     delytelsesId = pid,
-                    klassekode = "AAPUAA",
+                    klassekode = "AAPOR",
                     datoVedtakFom = LocalDate.of(2025, 11, 3),
                     datoVedtakTom = LocalDate.of(2025, 11, 7),
                     typeSats = "DAG",
@@ -134,7 +134,7 @@ class UrskogTest {
                 TestData.oppdragslinje(
                     henvisning = bid,
                     delytelsesId = pid,
-                    klassekode = "AAPUAA",
+                    klassekode = "AAPOR",
                     datoVedtakFom = LocalDate.of(2025, 11, 3),
                     datoVedtakTom = LocalDate.of(2025, 11, 7),
                     typeSats = "DAG",

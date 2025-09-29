@@ -46,7 +46,7 @@
                                 <delytelseId xmlns="">20241213-TEST4#1</delytelseId>
                                 <bostedsenhet xmlns="">8020</bostedsenhet>
                                 <skykldnerId xmlns=""></skykldnerId>
-                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klassekode xmlns="">AAPOR</klassekode>
                                 <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
                                 <typeKlasse xmlns="">YTEL</typeKlasse>
                                 <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
@@ -72,7 +72,7 @@
                                 <delytelseId xmlns=""></delytelseId>
                                 <bostedsenhet xmlns="">8020</bostedsenhet>
                                 <skykldnerId xmlns=""></skykldnerId>
-                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klassekode xmlns="">AAPOR</klassekode>
                                 <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
                                 <typeKlasse xmlns="">YTEL</typeKlasse>
                                 <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
@@ -115,7 +115,7 @@
                                 <delytelseId xmlns="">20241213-TEST4#1</delytelseId>
                                 <bostedsenhet xmlns="">8020</bostedsenhet>
                                 <skykldnerId xmlns=""></skykldnerId>
-                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klassekode xmlns="">AAPOR</klassekode>
                                 <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
                                 <typeKlasse xmlns="">YTEL</typeKlasse>
                                 <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
@@ -141,7 +141,7 @@
                                 <delytelseId xmlns=""></delytelseId>
                                 <bostedsenhet xmlns="">8020</bostedsenhet>
                                 <skykldnerId xmlns=""></skykldnerId>
-                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klassekode xmlns="">AAPOR</klassekode>
                                 <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
                                 <typeKlasse xmlns="">YTEL</typeKlasse>
                                 <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>
@@ -210,7 +210,7 @@
                                 <delytelseId xmlns="">20241213-TEST4#1</delytelseId>
                                 <bostedsenhet xmlns="">8020</bostedsenhet>
                                 <skykldnerId xmlns=""></skykldnerId>
-                                <klassekode xmlns="">AAPUAA</klassekode>
+                                <klassekode xmlns="">AAPOR</klassekode>
                                 <klasseKodeBeskrivelse xmlns="">AAP under arbeidsavklaring</klasseKodeBeskrivelse>
                                 <typeKlasse xmlns="">YTEL</typeKlasse>
                                 <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti</typeKlasseBeskrivelse>

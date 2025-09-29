@@ -818,7 +818,7 @@ private fun oppdragslinje(
     opphør: LocalDate? = null,
     fagsystemId: String = "1",              // sakId
     vedtakId: LocalDate = LocalDate.now(),  // vedtakstidspunkt
-    klassekode: String = "AAPUAA",
+    klassekode: String = "AAPOR",
     saksbehId: String = "Z999999",          // saksbehandler
     beslutterId: String = "Z999999",        // beslutter
     utbetalesTilId: String = "12345678910", // personident
