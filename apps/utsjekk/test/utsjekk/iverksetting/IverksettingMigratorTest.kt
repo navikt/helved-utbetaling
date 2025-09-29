@@ -33,10 +33,25 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode))
+            setBody(MigrationRequest(sid, bid, iid, meldeperiode, null))
         }
 
         assertEquals(HttpStatusCode.NotFound, res.status)
+    }
+
+    @Test
+    fun `kan ikke migrere når både meldeperiode og uid mangler`() = runTest(TestRuntime.context) {
+        val sid = "s1"
+        val bid = "b1"
+        val iid = "i1"
+
+        val res = httpClient.post("/api/iverksetting/v2/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(MigrationRequest(sid, bid, iid, null, null))
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
     }
 
     @Test
@@ -44,7 +59,7 @@ class IverksettingMigratorTest {
         val sid = RandomOSURId.generate()
         val bid = RandomOSURId.generate()
         val iid = RandomOSURId.generate()
-        val meldeperiode = "123"
+        val uid = UUID.randomUUID()
 
         transaction {
             TestData.dao.iverksetting(
@@ -61,7 +76,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode))
+            setBody(MigrationRequest(sid, bid, iid, null, uid))
         }
 
         assertEquals(HttpStatusCode.NotFound, res.status)
@@ -72,7 +87,7 @@ class IverksettingMigratorTest {
         val sid = RandomOSURId.generate()
         val bid = RandomOSURId.generate()
         val iid = RandomOSURId.generate()
-        val meldeperiode = "123"
+        val uid = UUID.randomUUID()
 
         transaction {
             TestData.dao.iverksetting(
@@ -96,7 +111,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode))
+            setBody(MigrationRequest(sid, bid, iid, null, uid))
         }
 
         assertEquals(HttpStatusCode.Locked, res.status)
@@ -109,7 +124,7 @@ class IverksettingMigratorTest {
         val bid = RandomOSURId.generate()
         val iid = RandomOSURId.generate()
         val pid = 4L
-        val meldeperiode = "123"
+        val uid = UUID.randomUUID()
 
         val personident = transaction {
             val iv = TestData.dao.iverksetting(
@@ -125,7 +140,7 @@ class IverksettingMigratorTest {
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem =models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER, 
+                fagsystem = models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER, 
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),
@@ -149,13 +164,13 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode))
+            setBody(MigrationRequest(sid, bid, iid, null, uid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
         val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
         assertEquals(0, utbetaling.uncommitted().size)
-        val new_uid = tsUId(sid, meldeperiode, models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP, models.Fagsystem.TILLEGGSSTØNADER)
+        val new_uid = models.UtbetalingId(uid)
         val actual = utbetaling.history() .single { (key, _) -> key == new_uid.toString() }.second
         assertEquals(false, actual.dryrun)
         assertEquals(iid, actual.originalKey)
@@ -244,13 +259,13 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode))
+            setBody(MigrationRequest(sid, bid, iid, meldeperiode, null))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
         val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
         assertEquals(0, utbetaling.uncommitted().size)
-        val new_uid = tsUId(sid, meldeperiode, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
+        val new_uid = uid(sid, meldeperiode, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
         val actual = utbetaling.history() .single { (key, _) -> key == new_uid.toString() }.second
         assertEquals(false, actual.dryrun)
         assertEquals(iid, actual.originalKey)
@@ -339,13 +354,13 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode))
+            setBody(MigrationRequest(sid, bid, iid, meldeperiode, null))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
         val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
         assertEquals(0, utbetaling.uncommitted().size)
-        val new_uid = tsUId(sid, meldeperiode, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
+        val new_uid = uid(sid, meldeperiode, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
         val actual = utbetaling.history() .single { (key, _) -> key == new_uid.toString() }.second
         assertEquals(false, actual.dryrun)
         assertEquals(iid, actual.originalKey)
@@ -439,13 +454,13 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode))
+            setBody(MigrationRequest(sid, bid, iid, meldeperiode, null))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
         val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
         assertEquals(0, utbetaling.uncommitted().size)
-        val uid1 = tsUId(sid, meldeperiode, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
+        val uid1 = uid(sid, meldeperiode, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
         val actual1 = utbetaling.history() .single { (key, _) -> key == uid1.toString() }.second
         assertEquals(false, actual1.dryrun)
         assertEquals(iid, actual1.originalKey)
@@ -470,7 +485,7 @@ class IverksettingMigratorTest {
         assertEquals(14.feb, actual1.perioder[0].tom)
         assertEquals(null, actual1.perioder[0].betalendeEnhet)
 
-        val uid2 = tsUId(sid, meldeperiode, models.StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB, models.Fagsystem.TILTAKSPENGER)
+        val uid2 = uid(sid, meldeperiode, models.StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB, models.Fagsystem.TILTAKSPENGER)
         val actual2 = utbetaling.history() .single { (key, _) -> key == uid2.toString() }.second
         assertEquals(false, actual2.dryrun)
         assertEquals(iid, actual2.originalKey)
