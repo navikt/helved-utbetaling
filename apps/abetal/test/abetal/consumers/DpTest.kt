@@ -1675,10 +1675,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
-            setOf(uid1)
-        }
-
         TestRuntime.topics.dp.produce(originalKey1) {
             Dp.utbetaling(
                 sakId = sid.id,

@@ -99,7 +99,7 @@ data class Oppdrag150(
     val tom: XMLGregorianCalendar,
     val kodeKlassifik: String,
     val sats: BigDecimal,
-    val vedtakssats: BigDecimal
+    val vedtakssats: BigDecimal?
 )
 
 operator fun Pair<Utbetaling, Oppdrag>.plus(other: Pair<Utbetaling, Oppdrag>): Pair<Utbetaling, Oppdrag> {
@@ -123,13 +123,13 @@ infix fun Oppdrag.kjed(other: Oppdrag): Oppdrag {
     if (oppdrag110.kodeEndring != "NY") oppdrag110.kodeEndring = other.oppdrag110.kodeEndring
     val currentOppdrag150s = oppdrag110.oppdragsLinje150s.map { it ->
         Oppdrag150(
-            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157.vedtakssats
+            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157?.vedtakssats
         )
     }
 
     val otherOppdrag150s = other.oppdrag110.oppdragsLinje150s.filter {
         val oppdrag150 = Oppdrag150(
-            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157.vedtakssats
+            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157?.vedtakssats
         )
         oppdrag150 !in currentOppdrag150s
     }
@@ -146,13 +146,13 @@ operator fun Oppdrag.plus(other: Oppdrag): Oppdrag {
     require(oppdrag110.fagsystemId == other.oppdrag110.fagsystemId)
     val currentOppdrag150s = oppdrag110.oppdragsLinje150s.map { it ->
         Oppdrag150(
-            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157.vedtakssats
+            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157?.vedtakssats
         )
     }
 
     val otherOppdrag150s = other.oppdrag110.oppdragsLinje150s.filter {
         val oppdrag150 = Oppdrag150(
-            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157.vedtakssats
+            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157?.vedtakssats
         )
         oppdrag150 !in currentOppdrag150s
     }

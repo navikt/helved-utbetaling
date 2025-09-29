@@ -1,0 +1,29 @@
+apiVersion: kafka.nais.io/v1
+kind: Topic
+metadata:
+  name: utbetalinger-ts.v1
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  pool: {{kafkapool}}
+  config:
+    cleanupPolicy: compact,delete
+    retentionHours: 336
+    partitions: 3
+  acl:
+    - team: helved
+      application: abetal
+      access: read
+    - team: helved
+      application: utsjekk
+      access: write
+    - team: helved
+      application: helved-performance
+      access: write
+    - team: helved
+      application: peisschtappern
+      access: read
+    - team: helved
+      application: kafka-cli
+      access: readwrite
