@@ -205,7 +205,7 @@ private fun klassekode(stønadstype: StønadTypeDagpenger): String = when (støn
 }
 
 private fun klassekode(stønadstype: StønadTypeAAP): String = when (stønadstype) {
-    StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING -> "AAPUAA"
+    StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING -> "AAPOR"
 }
 
 private fun klassekode(stønadstype: StønadTypeHistorisk): String = when (stønadstype) {

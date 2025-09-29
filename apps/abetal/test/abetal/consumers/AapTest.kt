@@ -67,7 +67,7 @@ class AapTest {
             Detaljer(
                 ytelse = Fagsystem.AAP,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPUAA"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
                 )
             )
         )
@@ -92,7 +92,7 @@ class AapTest {
                 it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
                     assertEquals("NY", a.kodeEndringLinje)
                     assertEquals(bid.id, a.henvisning)
-                    assertEquals("AAPUAA", a.kodeKlassifik)
+                    assertEquals("AAPOR", a.kodeKlassifik)
                     assertEquals(553, a.sats.toLong())
                     assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
                     assertEquals(a.delytelseId, b.refDelytelseId)
@@ -167,8 +167,8 @@ class AapTest {
             Detaljer(
                 ytelse = Fagsystem.AAP,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPUAA"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPUAA"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPOR"),
                 )
             )
         )
@@ -193,13 +193,13 @@ class AapTest {
                 assertNull(førsteLinje.refDelytelseId)
                 assertEquals("NY", førsteLinje.kodeEndringLinje)
                 assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("AAPUAA", førsteLinje.kodeKlassifik)
+                assertEquals("AAPOR", førsteLinje.kodeKlassifik)
                 assertEquals(553, førsteLinje.sats.toLong())
                 assertEquals(1077, førsteLinje.vedtakssats157.vedtakssats.toLong())
                 val andreLinje = it.oppdrag110.oppdragsLinje150s[1]
                 assertEquals("NY", andreLinje.kodeEndringLinje)
                 assertEquals(bid.id, andreLinje.henvisning)
-                assertEquals("AAPUAA", andreLinje.kodeKlassifik)
+                assertEquals("AAPOR", andreLinje.kodeKlassifik)
                 assertEquals(779, andreLinje.sats.toLong())
                 assertEquals(2377, andreLinje.vedtakssats157.vedtakssats.toLong())
             }
@@ -305,9 +305,9 @@ class AapTest {
             Detaljer(
                 ytelse = Fagsystem.AAP,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPUAA"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPUAA"),
-                    DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "AAPUAA"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPOR"),
+                    DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "AAPOR"),
                 )
             )
         )
@@ -333,7 +333,7 @@ class AapTest {
                 assertNull(linje1.refDelytelseId)
                 assertEquals("NY", linje1.kodeEndringLinje)
                 assertEquals(bid.id, linje1.henvisning)
-                assertEquals("AAPUAA", linje1.kodeKlassifik)
+                assertEquals("AAPOR", linje1.kodeKlassifik)
                 assertEquals(553, linje1.sats.toLong())
                 assertEquals(1077, linje1.vedtakssats157.vedtakssats.toLong())
 
@@ -341,7 +341,7 @@ class AapTest {
                 assertNull(linje2.refDelytelseId)
                 assertEquals("NY", linje2.kodeEndringLinje)
                 assertEquals(bid.id, linje2.henvisning)
-                assertEquals("AAPUAA", linje2.kodeKlassifik)
+                assertEquals("AAPOR", linje2.kodeKlassifik)
                 assertEquals(779, linje2.sats.toLong())
                 assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
 
@@ -349,7 +349,7 @@ class AapTest {
                 assertNull(linje3.refDelytelseId)
                 assertEquals("NY", linje3.kodeEndringLinje)
                 assertEquals(bid.id, linje3.henvisning)
-                assertEquals("AAPUAA", linje3.kodeKlassifik)
+                assertEquals("AAPOR", linje3.kodeKlassifik)
                 assertEquals(3000, linje3.sats.toLong())
                 assertEquals(3133, linje3.vedtakssats157.vedtakssats.toLong())
             }
@@ -470,8 +470,8 @@ class AapTest {
             Detaljer(
                 ytelse = Fagsystem.AAP,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPUAA"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPUAA"),
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
+                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPOR"),
                 )
             )
         )
@@ -555,8 +555,8 @@ class AapTest {
             Detaljer(
                 ytelse = Fagsystem.AAP,
                 linjer = listOf(
-                    DetaljerLinje(bid1.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPUAA"),
-                    DetaljerLinje(bid2.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPUAA"),
+                    DetaljerLinje(bid1.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
+                    DetaljerLinje(bid2.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPOR"),
                 )
             )
         )
@@ -660,7 +660,7 @@ class AapTest {
             Detaljer(
                 ytelse = Fagsystem.AAP,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "AAPUAA"),
+                    DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "AAPOR"),
                 )
             )
         )
@@ -683,7 +683,7 @@ class AapTest {
                 it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
                     assertEquals("ENDR", a.kodeEndringLinje)
                     assertEquals(bid.id, a.henvisning)
-                    assertEquals("AAPUAA", a.kodeKlassifik)
+                    assertEquals("AAPOR", a.kodeKlassifik)
                     assertEquals(200, a.sats.toLong())
                     assertEquals(200, a.vedtakssats157.vedtakssats.toLong())
                     assertEquals(a.delytelseId, b.refDelytelseId)
@@ -784,7 +784,7 @@ class AapTest {
             Detaljer(
                 ytelse = Fagsystem.AAP,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "AAPUAA"),
+                    DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "AAPOR"),
                 )
             )
         )
@@ -831,7 +831,7 @@ class AapTest {
 
                 val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
                 assertEquals("NY", førsteLinje.kodeEndringLinje)
-                assertEquals("AAPUAA", førsteLinje.kodeKlassifik)
+                assertEquals("AAPOR", førsteLinje.kodeKlassifik)
                 assertEquals(80, førsteLinje.sats.toLong())
                 assertEquals(100, førsteLinje.vedtakssats157.vedtakssats.toLong())
             }
@@ -917,7 +917,7 @@ class AapTest {
 
         val mottatt = StatusReply(
             status = Status.MOTTATT,
-            detaljer = Detaljer(Fagsystem.AAP, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "AAPUAA")))
+            detaljer = Detaljer(Fagsystem.AAP, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "AAPOR")))
         )
 
         TestRuntime.topics.status.assertThat()
@@ -932,7 +932,7 @@ class AapTest {
                 val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
                 assertEquals(TkodeStatusLinje.OPPH, førsteLinje.kodeStatusLinje)
                 assertEquals(2.jun, førsteLinje.datoStatusFom.toLocalDate())
-                assertEquals("AAPUAA", førsteLinje.kodeKlassifik)
+                assertEquals("AAPOR", førsteLinje.kodeKlassifik)
             }
             .get(originalKey1)
 
@@ -1024,9 +1024,9 @@ class AapTest {
             Detaljer(
                 ytelse = Fagsystem.AAP,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "AAPUAA"),
-                    DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "AAPUAA"),
-                    DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "AAPUAA"),
+                    DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "AAPOR"),
+                    DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "AAPOR"),
+                    DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "AAPOR"),
                 )
             )
         )
@@ -1108,9 +1108,9 @@ class AapTest {
             Detaljer(
                 ytelse = Fagsystem.AAP,
                 linjer = listOf(
-                    DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "AAPUAA"),
-                    DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "AAPUAA"),
-                    DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "AAPUAA"),
+                    DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "AAPOR"),
+                    DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "AAPOR"),
+                    DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "AAPOR"),
                 )
             )
         )
@@ -1160,21 +1160,21 @@ class AapTest {
                 assertNull(l1.refDelytelseId)
                 assertEquals("NY", l1.kodeEndringLinje)
                 assertEquals(bid1.id, l1.henvisning)
-                assertEquals("AAPUAA", l1.kodeKlassifik)
+                assertEquals("AAPOR", l1.kodeKlassifik)
                 assertEquals(300, l1.sats.toLong())
                 assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
                 val l2 = it.oppdrag110.oppdragsLinje150s[1]
                 assertEquals(l1.delytelseId, l2.refDelytelseId)
                 assertEquals("NY", l2.kodeEndringLinje)
                 assertEquals(bid2.id, l2.henvisning)
-                assertEquals("AAPUAA", l2.kodeKlassifik)
+                assertEquals("AAPOR", l2.kodeKlassifik)
                 assertEquals(300, l2.sats.toLong())
                 assertEquals(300, l2.vedtakssats157.vedtakssats.toLong())
                 val l3 = it.oppdrag110.oppdragsLinje150s[2]
                 assertEquals(l2.delytelseId, l3.refDelytelseId)
                 assertEquals("NY", l3.kodeEndringLinje)
                 assertEquals(bid3.id, l3.henvisning)
-                assertEquals("AAPUAA", l3.kodeKlassifik)
+                assertEquals("AAPOR", l3.kodeKlassifik)
                 assertEquals(300, l3.sats.toLong())
                 assertEquals(300, l3.vedtakssats157.vedtakssats.toLong())
             }
@@ -1317,7 +1317,7 @@ class AapTest {
                 assertEquals(sid.id, it.request.oppdrag.fagsystemId)
                 assertEquals("kelvin", it.request.oppdrag.saksbehId)
                 val l1 = it.request.oppdrag.oppdragslinjes[0]
-                assertEquals("AAPUAA", l1.kodeKlassifik)
+                assertEquals("AAPOR", l1.kodeKlassifik)
                 assertEquals(553, l1.sats.toLong())
             }
     }
@@ -1349,7 +1349,7 @@ class AapTest {
             Status.MOTTATT,
             Detaljer(
                 ytelse = Fagsystem.AAP,
-                linjer = listOf(DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPUAA"))
+                linjer = listOf(DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"))
             )
         )
         TestRuntime.topics.status.assertThat()

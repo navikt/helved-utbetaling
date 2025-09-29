@@ -34,7 +34,7 @@
             "tom": "2024-11-30",
             "beløp": 21000,
             "type": "YTELSE",
-            "klassekode": "AAPUAA"
+            "klassekode": "AAPOR"
           },
           {
             "fagområde": "AAP",
@@ -43,7 +43,7 @@
             "tom": "2024-11-30",
             "beløp": -21000,
             "type": "YTELSE",
-            "klassekode": "AAPUAA"
+            "klassekode": "AAPOR"
           }
         ]
       },
@@ -58,7 +58,7 @@
             "tom": "2024-12-13",
             "beløp": 10000,
             "type": "YTELSE",
-            "klassekode": "AAPUAA"
+            "klassekode": "AAPOR"
           },
           {
             "fagområde": "AAP",
@@ -67,7 +67,7 @@
             "tom": "2024-12-13",
             "beløp": -10000,
             "type": "YTELSE",
-            "klassekode": "AAPUAA"
+            "klassekode": "AAPOR"
           }
         ]
       },
@@ -91,7 +91,7 @@
             "tom": "2024-12-20",
             "beløp": 5000,
             "type": "YTELSE",
-            "klassekode": "AAPUAA"
+            "klassekode": "AAPOR"
           }
         ]
       }

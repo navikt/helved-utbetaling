@@ -281,7 +281,7 @@ data class StønadsdataAAP(
 ) : Stønadsdata(stønadstype) {
     fun tilKlassifiseringAAP() =
         when (stønadstype) {
-            StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING -> "AAPUAA"
+            StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING -> "AAPOR"
         }
 
     override fun tilKjedenøkkel(): Kjedenøkkel =
