@@ -18,6 +18,7 @@ class TestTopics(private val kafka: StreamsMock) {
     val fk = kafka.testTopic(Topics.fk) 
     val dpUtbetalinger = kafka.testTopic(Topics.dpUtbetalinger) 
     val ts = kafka.testTopic(Topics.ts) 
+    val tp = kafka.testTopic(Topics.tp) 
 }
 
 object TestRuntime {

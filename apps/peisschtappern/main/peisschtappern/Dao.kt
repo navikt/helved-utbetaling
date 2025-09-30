@@ -25,7 +25,9 @@ enum class Table {
     pending_utbetalinger,
     fk,
     dpIntern,
-    dp
+    dp,
+    tsIntern,
+    tpIntern,
 }
 
 data class Dao(
