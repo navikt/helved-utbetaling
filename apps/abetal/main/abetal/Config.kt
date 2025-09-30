@@ -5,9 +5,9 @@ import java.util.Properties
 
 data class Config(
     val kafka: StreamsConfig = StreamsConfig(
-        additionalProperties = Properties().apply {
-            this[org.apache.kafka.streams.StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeNextHandler::class.java
-        }
+        // additionalProperties = Properties().apply {
+        //     this[org.apache.kafka.streams.StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeNextHandler::class.java
+        // }
     ),
 )
 
