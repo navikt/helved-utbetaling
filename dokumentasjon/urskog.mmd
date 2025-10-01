@@ -7,10 +7,10 @@ subgraph Topologi
     %% TOPICS
     helved.simuleringer.v1([helved.simuleringer.v1])
 	helved.dryrun-aap.v1([helved.dryrun-aap.v1])
+	helved.status.v1([helved.status.v1])
 	helved.dryrun-dp.v1([helved.dryrun-dp.v1])
 	helved.dryrun-ts.v1([helved.dryrun-ts.v1])
 	helved.dryrun-tp.v1([helved.dryrun-tp.v1])
-	helved.status.v1([helved.status.v1])
 	helved.kvittering.v1([helved.kvittering.v1])
 	fk-uid-store-materialize-repartition([fk-uid-store-materialize-repartition])
 	helved.oppdrag.v1([helved.oppdrag.v1])
@@ -51,10 +51,14 @@ subgraph Topologi
     
     %% BASIC STREAMS
     helved.simuleringer.v1 --> helved.status.v1
-	helved.simuleringer.v1 --> helved.dryrun-aap.v1
 	helved.simuleringer.v1 --> helved.dryrun-dp.v1
 	helved.simuleringer.v1 --> helved.dryrun-ts.v1
+	helved.simuleringer.v1 --> helved.status.v1
+	helved.simuleringer.v1 --> helved.status.v1
+	helved.simuleringer.v1 --> helved.dryrun-aap.v1
+	helved.simuleringer.v1 --> helved.status.v1
 	helved.simuleringer.v1 --> helved.dryrun-tp.v1
+	helved.simuleringer.v1 --> helved.status.v1
     
     %% CUSTOM PROCESS STREAMS
     
@@ -70,10 +74,10 @@ end
 %% STYLES
 style helved.simuleringer.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.dryrun-aap.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.dryrun-dp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.dryrun-ts.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.dryrun-tp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.kvittering.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style fk-uid-store-materialize-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a

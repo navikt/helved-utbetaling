@@ -44,16 +44,28 @@ fun Topology.simulering(simuleringService: SimuleringService) {
         .branch({ result -> result.isOk() }) {
             map { result -> result.unwrap() }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.AAP }) {
-                    map { (sim, _) -> sim }.map(::into).produce(Topics.dryrunAap)
+                    map { (sim, _) -> sim }
+                        .map { Result.catch { into(it) } }
+                        .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunAap) }
+                        .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.DAGPENGER }) {
-                    map { (sim, _) -> sim }.map(::into).produce(Topics.dryrunDp)
+                    map { (sim, _) -> sim }
+                        .map { Result.catch { into(it) } }
+                        .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunDp) }
+                        .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILLEGGSSTØNADER }) {
-                    map{(sim, _) -> sim}.map(::intoV1).produce(Topics.dryrunTilleggsstønader)
+                    map { (sim, _) -> sim }
+                        .map { Result.catch { intoV1(it) } }
+                        .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunTilleggsstønader) }
+                        .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILTAKSPENGER }) {
-                    map{(sim, _) -> sim}.map(::intoV1).produce(Topics.dryrunTiltakspenger)
+                    map { (sim, _) -> sim }
+                        .map { Result.catch { intoV1(it) } }
+                        .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunTiltakspenger) }
+                        .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }
         }
         .default {
