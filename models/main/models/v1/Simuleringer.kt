@@ -35,14 +35,14 @@ data class Postering(
     val type: PosteringType,
     val klassekode: String,
 )
-enum class PosteringType {
-    YTELSE,
-    FEILUTBETALING,
-    FORSKUDSSKATT,
-    JUSTERING,
-    TREKK,
-    MOTPOSTERING,
-    ;
+
+enum class PosteringType(val typeKlasse: String) {
+    YTELSE("YTEL"),
+    FEILUTBETALING("FEIL"),
+    FORSKUDSSKATT("SKAT"),
+    JUSTERING("JUST"),
+    TREKK("TREK"),
+    MOTPOSTERING("MOTP"),
 }
 
 enum class Fagområde(val fagsystem: Fagsystem) { 

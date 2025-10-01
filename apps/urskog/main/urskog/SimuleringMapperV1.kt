@@ -61,7 +61,7 @@ private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<mo
                             fom = LocalDate.parse(detaljer.faktiskFom),
                             tom = LocalDate.parse(detaljer.faktiskTom),
                             beløp = detaljer.belop.toDouble().toInt(),
-                            type = models.v1.PosteringType.valueOf(detaljer.typeKlasse),
+                            type = models.v1.PosteringType.entries.single { it.typeKlasse == detaljer.typeKlasse.trimEnd() },
                             klassekode = detaljer.klassekode.trimEnd(),
                         )
                     }
