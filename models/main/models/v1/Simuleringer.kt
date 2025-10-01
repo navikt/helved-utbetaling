@@ -27,7 +27,7 @@ data class Periode(
     val posteringer: List<Postering>,
 )
 data class Postering(
-    val fagområde: Fagområde, // TODO: string?
+    val fagområde: Fagområde,
     val sakId: SakId,
     val fom: LocalDate,
     val tom: LocalDate,
@@ -44,20 +44,27 @@ enum class PosteringType {
     MOTPOSTERING,
     ;
 }
-enum class Fagområde {
-    AAP,
 
-    TILLEGGSSTØNADER,
-    TILLEGGSSTØNADER_ARENA,
-    TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING,
-
-    DAGPENGER,
-    DAGPENGER_MANUELL_POSTERING,
-    DAGPENGER_ARENA,
-    DAGPENGER_ARENA_MANUELL_POSTERING,
-
-    TILTAKSPENGER,
-    TILTAKSPENGER_ARENA,
-    TILTAKSPENGER_ARENA_MANUELL_POSTERING,
-    ;
+enum class Fagområde(val fagsystem: Fagsystem) { 
+    TILLSTPB(Fagsystem.TILLEGGSSTØNADER),
+    TILLSTLM(Fagsystem.TILLEGGSSTØNADER), 
+    TILLSTBO(Fagsystem.TILLEGGSSTØNADER), 
+    TILLSTDR(Fagsystem.TILLEGGSSTØNADER), 
+    TILLSTRS(Fagsystem.TILLEGGSSTØNADER), 
+    TILLSTRO(Fagsystem.TILLEGGSSTØNADER), 
+    TILLSTRA(Fagsystem.TILLEGGSSTØNADER), 
+    TILLSTFL(Fagsystem.TILLEGGSSTØNADER), 
+    TILLST(Fagsystem.TILLEGGSSTØNADER),   
+    TSTARENA(Fagsystem.TILLEGGSSTØNADER),
+    MTSTAREN(Fagsystem.TILLEGGSSTØNADER),
+    DP(Fagsystem.DAGPENGER),
+    MDP(Fagsystem.DAGPENGER),
+    DPARENA(Fagsystem.DAGPENGER),
+    MDPARENA(Fagsystem.DAGPENGER),
+    TILTPENG(Fagsystem.TILTAKSPENGER),
+    TPARENA(Fagsystem.TILTAKSPENGER),
+    MTPARENA(Fagsystem.TILTAKSPENGER),
+    AAP(Fagsystem.AAP),
+    HELSREF(Fagsystem.HISTORISK),
 }
+
