@@ -66,7 +66,7 @@ class IverksettingMigrator(
                     .filter { (nøkkel, _) -> 
                         if (nøkkel is KjedenøkkelMeldeplikt) {
                             nøkkel.meldekortId == req.meldeperiode!!
-                        } else true
+                        } else true // FIXME:ved fler klassekoder på sak (TILST) blir uid skrevet over så bare siste klassekode i saken blir migrert
                     }
 
                 andelerByKlassekode.forEach { klassekode, andeler ->

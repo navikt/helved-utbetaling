@@ -76,6 +76,9 @@ private val stønadstyperForTillst = listOf(
     StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
     StønadTypeTilleggsstønader.LÆREMIDLER_AAP,
     StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE,
+    StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+    StønadTypeTilleggsstønader.BOUTGIFTER_ENSLIG_FORSØRGER,
+    StønadTypeTilleggsstønader.BOUTGIFTER_ETTERLATTE,
 ) 
 
 /**
