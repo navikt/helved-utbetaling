@@ -45,7 +45,7 @@ data class DetaljerLinje(
 
 
 private fun beløp(o: OppdragsLinje150): UInt {
-    if (o.kodeStatusLinje == TkodeStatusLinje.OPPH) return 0u
+    if (o.kodeStatusLinje == TkodeStatusLinje.OPPH) return 0u // ikke alltid sant, f.eks opphøre midt i perioden = halvparten
     return o.sats.toLong().toUInt()
 }
 

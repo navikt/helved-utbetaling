@@ -16,6 +16,9 @@ val Int.sep: LocalDate get() = LocalDate.of(2024, 9, this)
 val Int.okt: LocalDate get() = LocalDate.of(2024, 10, this)
 val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
 val Int.jan: LocalDate get() = LocalDate.of(2025, 1, this)
+val Int.feb25: LocalDate get() = LocalDate.of(2025, 2, this)
+val Int.mar25: LocalDate get() = LocalDate.of(2025, 3, this)
+val Int.apr25: LocalDate get() = LocalDate.of(2025, 4, this)
 
 var nextInt: Int = 0
     get() = field++

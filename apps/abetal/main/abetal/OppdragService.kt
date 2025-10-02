@@ -116,9 +116,15 @@ fun opphørsdato(
         return prev.first().fom
     }
 
+    var førsteEndringIdx = prev.zip(new).indexOfFirst { it.first != it.second }
+    when (førsteEndringIdx) {
+        -1 if new.size > prev.size -> førsteEndringIdx = prev.size
+        -1 if prev.size > new.size -> førsteEndringIdx = new.size
+    }
+
     // Hvis det finnes et mellomrom må vi opphøre fra starten av mellomrommet
     // TODO: respekter periodetype
-    val opphørsdato = new
+    val opphørsdato = new.drop(førsteEndringIdx)
         .windowed(2)
         .find {
             if (periodetype != Periodetype.UKEDAG) {
