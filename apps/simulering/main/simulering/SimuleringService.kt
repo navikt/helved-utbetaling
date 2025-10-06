@@ -21,6 +21,7 @@ import libs.utils.*
 import libs.ws.*
 import simulering.models.rest.rest
 import simulering.models.soap.soap
+import simulering.models.soap.soap.Beregning
 import simulering.models.soap.soap.SimulerBeregningRequest
 
 private object SimulerAction {
@@ -40,21 +41,21 @@ class SimuleringService(private val config: Config) {
     suspend fun simuler(request: SimulerBeregningRequest): rest.SimuleringResponse {
         val xml = xmlMapper.writeValueAsString(request).replace(Regex("ns\\d="), "xmlns:$0")
         val response = soap.call(SimulerAction.BEREGNING, xml)
-        return json(response).intoDto()
+        return (json(response) ?: Beregning.empty(request)).intoDto()
     }
 
     suspend fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse {
         val request = SimulerBeregningRequest.from(request)
         val xml = xmlMapper.writeValueAsString(request).replace(Regex("ns\\d="), "xmlns:$0")
         val response = soap.call(SimulerAction.BEREGNING, xml)
-        return json(response).intoDto()
+        return (json(response) ?: Beregning.empty(request)).intoDto()
     }
 
-    fun json(xml: String): soap.Beregning {
+    fun json(xml: String): Beregning? {
         try {
             wsLog.debug("Forsøker å deserialisere simulering")
             val wrapper = simulerBeregningResponse(xml)
-            return wrapper.response.simulering
+            return wrapper.response?.simulering
         } catch (e: Throwable) {
             wsLog.error("Feilet deserialisering av simulering", e)
             secureLog.error("Feilet deserialisering av simulering", e)
@@ -105,7 +106,7 @@ class SimuleringService(private val config: Config) {
     }
 
     private fun resolveSoapConversionFailure(fault: Fault): Nothing {
-        val detail = fault.detail ?: soapError(fault)
+        val detail = fault.detail
         val cicsFault = detail["CICSFault"]?.toString() ?: soapError(fault)
 
         if (cicsFault.contains("DFHPI1008")) {
@@ -122,7 +123,7 @@ class SimuleringService(private val config: Config) {
     }
 
     private fun resolveBehandlingFault(fault: Fault): Nothing {
-        val detail = fault.detail ?: soapError(fault)
+        val detail = fault.detail
         val feilUnderBehandling = detail["simulerBeregningFeilUnderBehandling"] as? Map<*, *> ?: soapError(fault)
         val errorMessage = feilUnderBehandling["errorMessage"] as? String ?: soapError(fault)
         with(errorMessage) {
