@@ -57,9 +57,16 @@ class SimuleringService(private val config: Config) {
             val wrapper = simulerBeregningResponse(xml)
             return wrapper.response?.simulering
         } catch (e: Throwable) {
-            wsLog.error("Feilet deserialisering av simulering", e)
-            secureLog.error("Feilet deserialisering av simulering", e)
-            fault(xml)
+            try {
+                fault(xml)
+                wsLog.error("Feilet deserialisering av simulering", e)
+                // secureLog.error("Feilet deserialisering av simulering", e)
+                throw e
+            } catch (e2: Throwable) {
+                wsLog.error("Feilet deserialisering av simulering", e2)
+                // secureLog.error("Feilet deserialisering av simulering", e2)
+                throw e2
+            }
         }
     }
 
@@ -67,22 +74,16 @@ class SimuleringService(private val config: Config) {
         runCatching {
             tryInto<soap.SimuleringResponse>(xml).simulerBeregningResponse
         }.getOrElse {
-            wsLog.error("Feilet deserialisering av SOAP-melding")
-            secureLog.error("Feilet deserialisering av SOAP-melding: ${it.message}", it)
+            wsLog.warn("Feilet deserialisering av SOAP-melding")
+            secureLog.warn("Feilet deserialisering av SOAP-melding: ${it.message}", it)
             throw it
         }
 
     // denne kaster exception oppover i call-stacken
     private fun fault(xml: String): Nothing {
-        try {
-            wsLog.debug("Forsøker å deserialisere fault")
-            val fault = tryInto<SoapFault>(xml).fault
-            logAndThrow(fault)
-        } catch (e: Throwable) {
-            wsLog.error("Feilet deserialisering av fault")
-            secureLog.error("Feilet deserialisering av fault", e)
-            throw e
-        }
+        wsLog.debug("Forsøker å deserialisere fault")
+        val fault = tryInto<SoapFault>(xml).fault
+        logAndThrow(fault)
     }
 
     private inline fun <reified T> tryInto(xml: String): T {

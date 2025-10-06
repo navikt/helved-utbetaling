@@ -46,8 +46,8 @@ import java.io.File
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        // secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(
@@ -112,17 +112,16 @@ fun Application.utsjekk(
             when (cause) {
                 is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse)
                 is BadRequestException -> {
-                    val msg =
-                        "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
+                    val msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
                     appLog.debug(msg) // client error
                     secureLog.debug(msg, cause) // client error
                     val res = ApiError.Response(msg = msg, field = null, doc = DEFAULT_DOC_STR)
                     call.respond(HttpStatusCode.BadRequest, res)
                 }
                 else -> {
-                    val msg = "Intern feil, årsaken logges av sikkerhetsmessig grunn i secureLog."
-                    appLog.error(msg)
-                    secureLog.error(msg, cause)
+                    val msg = "Ukjent feil, helved er varslet."
+                    appLog.error(msg, cause)
+                    // secureLog.error(msg, cause)
                     val res = ApiError.Response(msg = msg, field = null, doc = "")
                     call.respond(HttpStatusCode.InternalServerError, res)
                 }
