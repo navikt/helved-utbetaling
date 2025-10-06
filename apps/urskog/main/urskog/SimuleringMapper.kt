@@ -9,7 +9,9 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 
 fun into(jaxb: SimulerBeregningResponse): Simulering {
     return Simulering(
-        perioder = jaxb.response.simulering.beregningsPeriodes.map(::into)
+        // Hvis responsen er tom er det snakk om en simulering av et opphør av noe som ikke har blitt effektuert av
+        // oppdragssystemet enda.
+        perioder = if (jaxb.response == null) emptyList() else jaxb.response.simulering.beregningsPeriodes.map(::into)
     )
 }
 

@@ -1,30 +1,21 @@
 package urskog
 
 import libs.utils.Resource
-import java.math.BigDecimal
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import libs.utils.secureLog
-import models.ApiError
-import models.Fagsystem
-import models.Simulering
-import models.Simuleringsperiode
-import models.SimulertUtbetaling
-import models.Status
-import models.StatusReply
-import models.StønadTypeAAP
+import models.*
 import no.nav.system.os.entiteter.oppdragskjema.Enhet
-import no.nav.system.os.entiteter.oppdragskjema.ObjectFactory as OppdragFactory
 import no.nav.system.os.entiteter.typer.simpletypes.FradragTillegg
 import no.nav.system.os.entiteter.typer.simpletypes.KodeStatusLinje
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.ObjectFactory as RootFactory
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.Oppdragslinje
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.UUID
+import kotlin.test.assertEquals
+import no.nav.system.os.entiteter.oppdragskjema.ObjectFactory as OppdragFactory
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.ObjectFactory as RootFactory
 
 class SimuleringTest {
     private var seq: Int = 0
@@ -65,6 +56,18 @@ class SimuleringTest {
     }
 
     @Test
+    fun `parse tom simulering`() {
+        TestRuntime.ws.respondWith = Resource.read("/simuler-tom.xml")
+        val uid = UUID.randomUUID().toString()
+
+        TestRuntime.topics.simuleringer.produce(uid) {
+            simulering()
+        }
+
+        TestRuntime.topics.dryrunAap.assertThat().has(uid)
+    }
+
+    @Test
     fun `parse soap fault`() {
         TestRuntime.ws.respondWith = Resource.read("/simuler-fault.xml")
         val uid = UUID.randomUUID().toString()
@@ -82,7 +85,7 @@ class SimuleringTest {
 
         TestRuntime.topics.status.assertThat()
             .has(uid)
-            .has(uid, expectedStatus) 
+            .has(uid, expectedStatus)
     }
 
     @Test
@@ -103,7 +106,7 @@ class SimuleringTest {
 
         TestRuntime.topics.status.assertThat()
             .has(uid)
-            .has(uid, expectedStatus) 
+            .has(uid, expectedStatus)
     }
 
     @Test
@@ -124,7 +127,7 @@ class SimuleringTest {
 
         TestRuntime.topics.status.assertThat()
             .has(uid)
-            .has(uid, expectedStatus) 
+            .has(uid, expectedStatus)
     }
 }
 

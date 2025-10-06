@@ -1,8 +1,5 @@
 package urskog
 
-import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
-import com.fasterxml.jackson.dataformat.xml.XmlMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.client.plugins.logging.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
