@@ -97,7 +97,7 @@ private fun Fault.panic(): Nothing {
 
 private fun panic(any: Any): Nothing {
     wsLog.error("ukjent soap feil {}", any)
-    secureLog.error("ukjent soap feil {}", any)
+    // secureLog.error("ukjent soap feil {}", any)
     badRequest("ukjent soap feil $any")
 }
 
