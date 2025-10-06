@@ -15,6 +15,7 @@ import models.kontrakter.felles.Personident
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import simulering.models.rest.rest
 import simulering.models.soap.soap
@@ -61,9 +62,19 @@ class SimuleringTest {
             simulering.json(Resource.read("/sim-res.xml"))
         }
 
-        val expected = simuleringResponse().simulerBeregningResponse.response.simulering
+        val expected = simuleringResponse().simulerBeregningResponse.response!!.simulering
 
         assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `can resolve empty simulering response`() {
+        val actual = TestRuntime().use { runtime ->
+            val simulering = SimuleringService(runtime.config)
+            simulering.json(Resource.read("/simuler-tom.xml"))
+        }
+
+        assertNull(actual)
     }
 
     @Test

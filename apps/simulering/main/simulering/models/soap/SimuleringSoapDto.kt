@@ -20,7 +20,7 @@ object soap {
     )
 
     data class SimulerBeregningResponse(
-        val response: Response,
+        val response: Response?,
     )
 
     data class Response(
@@ -43,6 +43,15 @@ object soap {
                 totalBelop = belop.toInt(),
                 perioder = beregningsPeriode.map(Periode::intoDto),
             )
+
+        companion object {
+            fun empty(request: SimulerBeregningRequest) = Beregning(
+                gjelderId = request.request.oppdrag.oppdragGjelderId,
+                datoBeregnet = LocalDate.now(),
+                belop = 0.0,
+                beregningsPeriode = emptyList()
+            )
+        }
     }
 
     // entiteten sin referanse-id 312
@@ -183,12 +192,12 @@ object soap {
         }
     }
 
-    private fun FagsystemDto.utbetalingFrekvens() = when(this) {
+    private fun FagsystemDto.utbetalingFrekvens() = when (this) {
         FagsystemDto.HISTORISK -> "ENG"
         else -> "MND"
     }
 
-    private fun String.utbetalingFrekvens() = when(this) {
+    private fun String.utbetalingFrekvens() = when (this) {
         "HELSREF" -> "ENG"
         else -> "MND"
     }
