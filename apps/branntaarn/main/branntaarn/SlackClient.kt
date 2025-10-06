@@ -24,6 +24,7 @@ class SlackClient(
 }
 
 private fun json(brann: Brann, config: Config): String = """{
+  "channel": "#team-hel-ved-alerts",
   "blocks": [
     {
       "type": "header",
