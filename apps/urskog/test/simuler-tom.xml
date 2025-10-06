@@ -1,0 +1,7 @@
+<SOAP-ENV:Envelope
+        xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Body>
+        <simulerBeregningResponse
+                xmlns="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"></simulerBeregningResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
