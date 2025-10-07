@@ -98,6 +98,7 @@ data class Dao(
             value: List<String>? = null,
             fom: Long? = null,
             tom: Long? = null,
+            traceId: String? = null,
         ): List<Dao> {
             val whereClause = if (key != null || value != null || fom != null || tom != null) {
                 val keyQuery =
@@ -106,7 +107,8 @@ data class Dao(
                     if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") AND" else ""
                 val fomQuery = if (fom != null) " timestamp_ms > $fom AND" else ""
                 val tomQuery = if (tom != null) " timestamp_ms < $tom AND" else ""
-                val query = "WHERE$keyQuery$valueQuery$fomQuery$tomQuery"
+                val traceIdQuery = if (traceId != null) " trace_id = '$traceId' AND" else ""
+                val query = "WHERE$keyQuery$valueQuery$fomQuery$tomQuery$traceIdQuery"
                 query.removeSuffix(" AND").removeSuffix(" ")
             } else ""
 

@@ -49,10 +49,11 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
             val tom = call.queryParameters["tom"]
                 ?.runCatching { Instant.parse(this).toEpochMilli() }
                 ?.getOrNull()
+            val traceId = call.queryParameters["trace_id"]
 
             val daos = withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    findAll(channels, limit, key, value, fom, tom)
+                    findAll(channels, limit, key, value, fom, tom, traceId)
                 }
             }
 
