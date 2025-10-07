@@ -26,9 +26,9 @@ spec:
     max: 1
   resources:
     limits:
-      memory: 2048Mi
+      memory: 4096Mi
     requests:
-      memory: 1024Mi
+      memory: 2048Mi
       cpu: 1000m
   observability:
     autoInstrumentation:
