@@ -51,7 +51,7 @@ data class Utbetaling(
 
     fun isDuplicate(other: Utbetaling?): Boolean {
         if (other == null) {
-            appLog.info("existing utbetaling for $uid was null")
+            appLog.info("uid $uid is new")
             return false
         }
 

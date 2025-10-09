@@ -107,7 +107,7 @@ fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTab
 fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Set<UtbetalingId>> {
     val ktable = utbetalinger
         .toStream()
-        .rekey { _, utbetaling -> SakKey(utbetaling.sakId, Fagsystem.from(utbetaling.stønad)) }
+        .rekey { _, utbetaling -> SakKey(utbetaling.sakId, utbetaling.fagsystem) }
         .groupByKey(Serde.json(), Serde.json(), "utbetalinger-groupby-sakkey")
         .aggregate(Tables.saker) { _, utbetaling, uids -> 
             when(utbetaling.action) {

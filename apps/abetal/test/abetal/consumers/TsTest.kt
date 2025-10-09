@@ -108,6 +108,90 @@ internal class TsTest {
     }
 
     @Test
+    fun `1 utbetalinger med nytt fagområde`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val originalKey = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        TestRuntime.topics.ts.produce(originalKey) {
+            Ts.utbetaling(uid, sid.id, bid.id, brukFagområdeTillst = false) {
+                Ts.periode(7.jun, 18.jun, 1077u)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(
+                ytelse = Fagsystem.TILLSTPB,
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun, 18.jun, null, 1077u, "TSTBASISP2-OP"),
+                )
+            )
+        )
+        TestRuntime.topics.status.assertThat()
+            .has(originalKey)
+            .has(originalKey, mottatt)
+
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(originalKey)
+            .with(originalKey) {
+                assertEquals("1", it.oppdrag110.kodeAksjon)
+                assertEquals("NY", it.oppdrag110.kodeEndring)
+                assertEquals("TILLSTPB", it.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, it.oppdrag110.fagsystemId)
+                assertEquals("MND", it.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", it.oppdrag110.saksbehId)
+                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
+                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
+                    assertEquals("NY", a.kodeEndringLinje)
+                    assertEquals(bid.id, a.henvisning)
+                    assertEquals("TSTBASISP2-OP", a.kodeKlassifik)
+                    assertEquals(1077, a.sats.toLong())
+                    assertEquals(a.delytelseId, b.refDelytelseId)
+                }
+            }
+            .get(originalKey)
+
+        TestRuntime.topics.oppdrag.produce(originalKey) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = uid,
+                    originalKey = originalKey,
+                    sakId = sid,
+                    behandlingId = bid,
+                    fagsystem = Fagsystem.TILLSTPB,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("ts"),
+                    saksbehandlerId = Navident("ts"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(7.jun, 18.jun, 1077u, null)
+                }
+                assertEquals(expected, it)
+            }
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.TILLSTPB), size = 1)
+            .has(SakKey(sid, Fagsystem.TILLSTPB), setOf(uid), index = 0)
+    }
+
+    @Test
     fun `1 utbetalinger i transaksjon = 1 utbetaling og 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")

@@ -24,7 +24,7 @@ object SimuleringService {
         var forrigeId: PeriodeId? = null
         val oppdrag = objectFactory.createOppdrag().apply {
             kodeEndring = if (new.førsteUtbetalingPåSak) "NY" else "ENDR"
-            kodeFagomraade = Fagsystem.from(new.stønad).fagområde
+            kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
             utbetFrekvens = "MND"
             oppdragGjelderId = new.personident.ident
@@ -51,7 +51,7 @@ object SimuleringService {
 
         val oppdrag = objectFactory.createOppdrag().apply {
             kodeEndring = "ENDR"
-            kodeFagomraade = Fagsystem.from(new.stønad).fagområde
+            kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
             utbetFrekvens = "MND"
             oppdragGjelderId = new.personident.ident
@@ -77,7 +77,7 @@ object SimuleringService {
 
         val oppdrag = objectFactory.createOppdrag().apply {
             kodeEndring = "ENDR"
-            kodeFagomraade = Fagsystem.from(new.stønad).fagområde
+            kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
             utbetFrekvens = "MND"
             oppdragGjelderId = new.personident.ident
