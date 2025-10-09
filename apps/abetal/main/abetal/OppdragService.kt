@@ -21,13 +21,13 @@ object OppdragService {
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = if(new.førsteUtbetalingPåSak) "NY" else "ENDR"
-            kodeFagomraade = Fagsystem.from(new.stønad).fagområde
+            kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
             utbetFrekvens = "MND"
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = avstemming115(Fagsystem.from(new.stønad).fagområde) 
+            avstemming115 = avstemming115(new.fagsystem.fagområde) 
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.perioder.mapIndexed { i, periode ->
@@ -49,13 +49,13 @@ object OppdragService {
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = "ENDR"
-            kodeFagomraade = Fagsystem.from(new.stønad).fagområde
+            kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
             utbetFrekvens = "MND"
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = avstemming115(Fagsystem.from(new.stønad).fagområde) 
+            avstemming115 = avstemming115(new.fagsystem.fagområde) 
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
@@ -78,13 +78,13 @@ object OppdragService {
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = "ENDR"
-            kodeFagomraade = Fagsystem.from(new.stønad).fagområde
+            kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
             utbetFrekvens = "MND"
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = avstemming115(Fagsystem.from(new.stønad).fagområde) 
+            avstemming115 = avstemming115(new.fagsystem.fagområde) 
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }

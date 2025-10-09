@@ -108,7 +108,7 @@ data class OppdragForeignKey(
         )
 
         fun from(utbetaling: Utbetaling) = OppdragForeignKey(
-            fagsystem = Fagsystem.from(utbetaling.stønad),
+            fagsystem = utbetaling.fagsystem,
             sakId = utbetaling.sakId,
             behandlingId = utbetaling.behandlingId,
             lastPeriodeId = utbetaling.lastPeriodeId,
