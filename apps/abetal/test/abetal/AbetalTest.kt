@@ -20,13 +20,13 @@ internal class AbetalTest {
     fun `with positive kvittering pending utbetalinger is persisted`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -56,8 +56,8 @@ internal class AbetalTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
@@ -66,7 +66,7 @@ internal class AbetalTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -86,7 +86,7 @@ internal class AbetalTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -102,8 +102,8 @@ internal class AbetalTest {
                 assertEquals(expected, it)
             }
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -126,21 +126,21 @@ internal class AbetalTest {
                 assertEquals(779, andreLinje.sats.toLong())
                 assertEquals(2377, andreLinje.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
         TestRuntime.topics.saker.assertThat().isEmpty()
 
         //
         // SIMULATE A KVITTERING REKEYED JOINED AND PRODUCED TO OPPDRAG
         //
-        TestRuntime.topics.oppdrag.produce(originalKey) { oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" }}}
+        TestRuntime.topics.oppdrag.produce(transactionId) { oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" }}}
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
             .with(uid1.id.toString()) {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -160,7 +160,7 @@ internal class AbetalTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -716,14 +716,14 @@ internal class AbetalTest {
         val sakId = SakId("15507598")
         val behandlingId1 = BehandlingId("AZiYMlhDege3YrU10jE4vw==")
         val behandlingId2 = BehandlingId("AZiYV47lclqGSyZS1/R9mQ==")
-        val originalKey1 = UUID.randomUUID().toString()
-        val originalKey2 = UUID.randomUUID().toString()
+        val transactionId1 = UUID.randomUUID().toString()
+        val transactionId2 = UUID.randomUUID().toString()
         val meldeperiode1 = "2024-06-10"
         val meldeperiode2 = "2024-06-24"
         val uid1 = dpUId(sakId.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
         val uid2 = dpUId(sakId.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.dp.produce(originalKey1) {
+        TestRuntime.topics.dp.produce(transactionId1) {
             Dp.utbetaling(
                 sakId = sakId.id,
                 behandlingId = behandlingId1.id
@@ -739,14 +739,14 @@ internal class AbetalTest {
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
         val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey1)
-            .get(originalKey1)
-        TestRuntime.topics.oppdrag.produce(originalKey1) { oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } } }
+            .has(transactionId1)
+            .get(transactionId1)
+        TestRuntime.topics.oppdrag.produce(transactionId1) { oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } } }
 
         TestRuntime.topics.utbetalinger.assertThat().has(uid1.toString())
         TestRuntime.topics.saker.assertThat().has(SakKey(sakId, Fagsystem.DAGPENGER))
 
-        TestRuntime.topics.dp.produce(originalKey2) {
+        TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
                 sakId = sakId.id,
                 behandlingId = behandlingId2.id
@@ -768,8 +768,8 @@ internal class AbetalTest {
         }
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestRuntime.topics.oppdrag.assertThat().has(originalKey2)
-            .with(originalKey2) { oppdrag2 ->
+        TestRuntime.topics.oppdrag.assertThat().has(transactionId2)
+            .with(transactionId2) { oppdrag2 ->
                 assertEquals("ENDR", oppdrag2.oppdrag110.kodeEndring)
                 assertEquals(1, oppdrag2.oppdrag110.oppdragsLinje150s.size)
                 val linje = oppdrag2.oppdrag110.oppdragsLinje150s.first()
@@ -778,8 +778,8 @@ internal class AbetalTest {
             }
 
         TestRuntime.topics.status.assertThat()
-            .has(originalKey2)
-            .with(originalKey2) {
+            .has(transactionId2)
+            .with(transactionId2) {
                 assertEquals(Status.MOTTATT, it.status)
                 assertNull(it.error)
                 assertEquals(1, it.detaljer?.linjer?.size)

@@ -29,7 +29,7 @@ data class TpPeriode(
     )
 }
 
-data class TpTuple(val originalKey: String, val dto: TpUtbetaling)
+data class TpTuple(val transactionId: String, val dto: TpUtbetaling)
 
 fun tpUId(sakId: String, meldeperiode: String, stønad: StønadTypeTiltakspenger): UtbetalingId {
     return UtbetalingId(uuid(SakId(sakId), Fagsystem.TILTAKSPENGER, meldeperiode, stønad))
@@ -41,7 +41,7 @@ fun TpTuple.toDomain(
 ): Utbetaling {
     return Utbetaling(
         dryrun = dto.dryrun,
-        originalKey = originalKey,
+        originalKey = transactionId,
         fagsystem = Fagsystem.TILTAKSPENGER,
         uid = uid,
         action = Action.CREATE,

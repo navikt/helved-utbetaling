@@ -47,12 +47,12 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
     }
 
     private fun utbetaling(
-        originalKey: UtbetalingId,
+        transactionId: UtbetalingId,
         req: MigrationRequest,
         from: Utbetaling,
     ): models.Utbetaling = models.Utbetaling(
         dryrun = false,
-        originalKey = originalKey.id.toString(),
+        originalKey = transactionId.id.toString(),
         fagsystem = models.Fagsystem.AAP,
         uid = models.aapUId(from.sakId.id, req.meldeperiode, models.StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING),
         action = models.Action.CREATE, 

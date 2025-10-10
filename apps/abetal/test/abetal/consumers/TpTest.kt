@@ -167,11 +167,11 @@ internal class TpTest {
     fun `1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val meldeperiode = "132460781"
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = "132460781",
@@ -195,14 +195,14 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -221,9 +221,9 @@ internal class TpTest {
                     assertEquals(a.delytelseId, b.refDelytelseId)
                 }
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -235,7 +235,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -259,13 +259,13 @@ internal class TpTest {
     fun `2 meldekort i 1 utbetalinger blir til 2 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -296,8 +296,8 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -307,7 +307,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -327,7 +327,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -344,8 +344,8 @@ internal class TpTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey, size = 1)
-            .with(originalKey, index = 0) {
+            .has(transactionId, size = 1)
+            .with(transactionId, index = 0) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -368,9 +368,9 @@ internal class TpTest {
                 assertEquals(779, andreLinje.sats.toLong())
                 assertEquals(2377, andreLinje.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -382,7 +382,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -402,7 +402,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -431,7 +431,7 @@ internal class TpTest {
     fun `2 meldekort i ett med 2 klassekoder hver blir til 4 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
@@ -439,7 +439,7 @@ internal class TpTest {
         val uid3 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
         val uid4 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGERFERIE)
 
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -488,8 +488,8 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -499,7 +499,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -519,7 +519,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -539,7 +539,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -559,7 +559,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid4,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -575,8 +575,8 @@ internal class TpTest {
                 assertEquals(expected, it)
             }
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -611,9 +611,9 @@ internal class TpTest {
                 assertEquals(300, fjerdeLinje.sats.toLong())
                 assertEquals(300, fjerdeLinje.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -625,7 +625,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -645,7 +645,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -665,7 +665,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -685,7 +685,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid4,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -720,7 +720,7 @@ internal class TpTest {
     fun `3 meldekort i 1 utbetalinger blir til 3 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val meldeperiode3 = "132462765"
@@ -728,7 +728,7 @@ internal class TpTest {
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
         val uid3 = dpUId(sid.id, meldeperiode3, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -766,8 +766,8 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -777,7 +777,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -797,7 +797,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -817,7 +817,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -834,8 +834,8 @@ internal class TpTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -869,9 +869,9 @@ internal class TpTest {
                 assertEquals(3000, linje3.sats.toLong())
                 assertEquals(3133, linje3.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -883,7 +883,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -903,7 +903,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -923,7 +923,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -949,7 +949,7 @@ internal class TpTest {
     fun `2 meldekort i 2 utbetalinger blir til 2 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val uid1 = dpUId(
@@ -963,7 +963,7 @@ internal class TpTest {
             StønadTypeDagpenger.DAGPENGER
         ) // 6fa69f14-a3eb-1457-7859-b3676f59da9d
 
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -974,7 +974,7 @@ internal class TpTest {
                 )
             }
         }
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode2,
@@ -999,8 +999,8 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1010,7 +1010,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1030,7 +1030,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1047,8 +1047,8 @@ internal class TpTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -1074,9 +1074,9 @@ internal class TpTest {
                 assertEquals(779, linje2.sats.toLong())
                 assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1088,7 +1088,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1108,7 +1108,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1136,13 +1136,13 @@ internal class TpTest {
         val sid = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
         val bid2 = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid1.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -1153,7 +1153,7 @@ internal class TpTest {
                 )
             }
         }
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid2.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -1185,8 +1185,8 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1196,7 +1196,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid1,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1216,7 +1216,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid2,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1233,8 +1233,8 @@ internal class TpTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -1260,9 +1260,9 @@ internal class TpTest {
                 assertEquals(779, linje2.sats.toLong())
                 assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1274,7 +1274,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid1,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1294,7 +1294,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid2,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1320,8 +1320,8 @@ internal class TpTest {
     fun `nytt meldekort på eksisterende sak`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey1 = UUID.randomUUID().toString()
-        val originalKey2 = UUID.randomUUID().toString()
+        val transactionId1 = UUID.randomUUID().toString()
+        val transactionId2 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val meldeperiode2 = "232460781"
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
@@ -1333,7 +1333,7 @@ internal class TpTest {
                 uid = uid1,
                 sakId = sid,
                 behandlingId = bid,
-                originalKey = originalKey1,
+                originalKey = transactionId1,
                 stønad = StønadTypeDagpenger.DAGPENGER,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
@@ -1351,7 +1351,7 @@ internal class TpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestRuntime.topics.dp.produce(originalKey2) {
+        TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
                 sakId = sid.id,
                 behandlingId = bid.id,
@@ -1385,8 +1385,8 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey2)
-            .has(originalKey2, mottatt)
+            .has(transactionId2)
+            .has(transactionId2, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1398,7 +1398,7 @@ internal class TpTest {
                     uid = uid2,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey2,
+                    originalKey = transactionId2,
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
@@ -1414,8 +1414,8 @@ internal class TpTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey2)
-            .with(originalKey2) {
+            .has(transactionId2)
+            .with(transactionId2) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -1434,9 +1434,9 @@ internal class TpTest {
                     assertEquals(a.delytelseId, b.refDelytelseId)
                 }
             }
-            .get(originalKey2)
+            .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(originalKey2) {
+        TestRuntime.topics.oppdrag.produce(transactionId2) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1450,7 +1450,7 @@ internal class TpTest {
                     uid = uid2,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey2,
+                    originalKey = transactionId2,
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
@@ -1475,8 +1475,8 @@ internal class TpTest {
     fun `endre meldekort på eksisterende sak`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey1 = UUID.randomUUID().toString()
-        val originalKey2 = UUID.randomUUID().toString()
+        val transactionId1 = UUID.randomUUID().toString()
+        val transactionId2 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
         val periodeId = PeriodeId()
@@ -1487,7 +1487,7 @@ internal class TpTest {
                 uid = uid1,
                 sakId = sid,
                 behandlingId = bid,
-                originalKey = originalKey1,
+                originalKey = transactionId1,
                 stønad = StønadTypeDagpenger.DAGPENGER,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
@@ -1506,7 +1506,7 @@ internal class TpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestRuntime.topics.dp.produce(originalKey2) {
+        TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
                 sakId = sid.id,
                 behandlingId = bid.id,
@@ -1534,8 +1534,8 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey2)
-            .has(originalKey2, mottatt)
+            .has(transactionId2)
+            .has(transactionId2, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1547,7 +1547,7 @@ internal class TpTest {
                     uid = uid1,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey2,
+                    originalKey = transactionId2,
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
@@ -1563,8 +1563,8 @@ internal class TpTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey2)
-            .with(originalKey2) {
+            .has(transactionId2)
+            .with(transactionId2) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -1583,9 +1583,9 @@ internal class TpTest {
                 assertEquals(80, førsteLinje.sats.toLong())
                 assertEquals(100, førsteLinje.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey2)
+            .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(originalKey2) {
+        TestRuntime.topics.oppdrag.produce(transactionId2) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1599,7 +1599,7 @@ internal class TpTest {
                     uid = uid1,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey2,
+                    originalKey = transactionId2,
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
@@ -1623,7 +1623,7 @@ internal class TpTest {
     fun `opphør på meldekort`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey1 = UUID.randomUUID().toString()
+        val transactionId1 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
         val periodeId = PeriodeId()
@@ -1634,7 +1634,7 @@ internal class TpTest {
                 uid = uid1,
                 sakId = sid,
                 behandlingId = bid,
-                originalKey = originalKey1,
+                originalKey = transactionId1,
                 stønad = StønadTypeDagpenger.DAGPENGER,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
@@ -1647,7 +1647,7 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.topics.dp.produce(originalKey1) {
+        TestRuntime.topics.dp.produce(transactionId1) {
             Dp.utbetaling(
                 sakId = sid.id,
                 behandlingId = bid.id,
@@ -1666,8 +1666,8 @@ internal class TpTest {
         )
 
         TestRuntime.topics.status.assertThat()
-            .has(originalKey1)
-            .has(originalKey1, mottatt)
+            .has(transactionId1)
+            .has(transactionId1, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1679,7 +1679,7 @@ internal class TpTest {
                     uid = uid1,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey1,
+                    originalKey = transactionId1,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeDagpenger.DAGPENGER,
@@ -1694,8 +1694,8 @@ internal class TpTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey1)
-            .with(originalKey1) {
+            .has(transactionId1)
+            .with(transactionId1) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -1716,9 +1716,9 @@ internal class TpTest {
                 assertEquals(100, førsteLinje.sats.toLong())
                 assertEquals(100, førsteLinje.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey1)
+            .get(transactionId1)
 
-        TestRuntime.topics.oppdrag.produce(originalKey1) {
+        TestRuntime.topics.oppdrag.produce(transactionId1) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1732,7 +1732,7 @@ internal class TpTest {
                     uid = uid1,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey1,
+                    originalKey = transactionId1,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeDagpenger.DAGPENGER,
@@ -1756,7 +1756,7 @@ internal class TpTest {
     fun `3 meldekort med ulike operasjoner`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val uid1 = dpUId(sid.id, "132460781", StønadTypeDagpenger.DAGPENGER)
         val uid2 = dpUId(sid.id, "232460781", StønadTypeDagpenger.DAGPENGER)
         val uid3 = dpUId(sid.id, "132462765", StønadTypeDagpenger.DAGPENGER)
@@ -1769,7 +1769,7 @@ internal class TpTest {
                 uid = uid1,
                 sakId = sid,
                 behandlingId = bid,
-                originalKey = originalKey,
+                originalKey = transactionId,
                 stønad = StønadTypeDagpenger.DAGPENGER,
                 lastPeriodeId = pid1,
                 personident = Personident("12345678910"),
@@ -1787,7 +1787,7 @@ internal class TpTest {
                 uid = uid2,
                 sakId = sid,
                 behandlingId = bid,
-                originalKey = originalKey,
+                originalKey = transactionId,
                 stønad = StønadTypeDagpenger.DAGPENGER,
                 førsteUtbetalingPåSak = false,
                 lastPeriodeId = pid2,
@@ -1807,7 +1807,7 @@ internal class TpTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort("132460781", 2.sep, 13.sep, 600u) +
                         Dp.meldekort("132462765", 30.sep, 10.okt, 600u) // 29-12
@@ -1828,8 +1828,8 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1839,7 +1839,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.UPDATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1860,7 +1860,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.DELETE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1881,7 +1881,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1898,8 +1898,8 @@ internal class TpTest {
                 assertEquals(expected, it)
             }
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -1936,9 +1936,9 @@ internal class TpTest {
                 assertEquals(600, linje3.sats.toLong())
                 assertEquals(600, linje3.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1950,7 +1950,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.UPDATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1971,7 +1971,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.DELETE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -1992,7 +1992,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -2025,22 +2025,22 @@ internal class TpTest {
         val bid1 = BehandlingId("$nextInt")
         val bid2 = BehandlingId("$nextInt")
         val bid3 = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val meldeperiode = "132460781"
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid1.id) {
                 Dp.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
             }
         }
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid2.id) {
                 Dp.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
                 Dp.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
             }
         }
-        TestRuntime.topics.dp.produce(originalKey) {
+        TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid3.id) {
                 Dp.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
                 Dp.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
@@ -2062,8 +2062,8 @@ internal class TpTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -2073,7 +2073,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid3,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -2092,8 +2092,8 @@ internal class TpTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -2125,9 +2125,9 @@ internal class TpTest {
                 assertEquals(300, l3.sats.toLong())
                 assertEquals(300, l3.vedtakssats157.vedtakssats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -2139,7 +2139,7 @@ internal class TpTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid3,
                     fagsystem = Fagsystem.DAGPENGER,
@@ -2173,7 +2173,7 @@ internal class TpTest {
             val bid1 = BehandlingId("$nextInt")
             val bid2 = BehandlingId("$nextInt")
             val bid3 = BehandlingId("$nextInt")
-            val originalKey = "12345678910"
+            val transactionId = "12345678910"
             val meldeperiode1 = "100000000"
             val meldeperiode2 = "200000000"
             val meldeperiode3 = "300000000"
@@ -2181,17 +2181,17 @@ internal class TpTest {
             val uid2 = dpUId(sid2.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
             val uid3 = dpUId(sid3.id, meldeperiode3, StønadTypeDagpenger.DAGPENGER)
 
-            TestRuntime.topics.dp.produce(originalKey) {
+            TestRuntime.topics.dp.produce(transactionId) {
                 Dp.utbetaling(sid1.id, bid1.id) {
                     Dp.meldekort(meldeperiode1, 2.sep, 13.sep, 300u, 300u)
                 }
             }
-            TestRuntime.topics.dp.produce(originalKey) {
+            TestRuntime.topics.dp.produce(transactionId) {
                 Dp.utbetaling(sid2.id, bid2.id) {
                     Dp.meldekort(meldeperiode2, 16.sep, 27.sep, 300u, 300u)
                 }
             }
-            TestRuntime.topics.dp.produce(originalKey) {
+            TestRuntime.topics.dp.produce(transactionId) {
                 Dp.utbetaling(sid3.id, bid3.id) {
                     Dp.meldekort(meldeperiode3, 30.sep, 10.okt, 300u, 300u)
                 }
@@ -2213,10 +2213,10 @@ internal class TpTest {
             )
 
             TestRuntime.topics.status.assertThat()
-                .has(originalKey, 3)
-                .has(originalKey, mottatt1, index = 0)
-                .has(originalKey, mottatt2, index = 1)
-                .has(originalKey, mottatt3, index = 2)
+                .has(transactionId, 3)
+                .has(transactionId, mottatt1, index = 0)
+                .has(transactionId, mottatt2, index = 1)
+                .has(transactionId, mottatt3, index = 2)
 
             TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -2226,7 +2226,7 @@ internal class TpTest {
                     val expected = utbetaling(
                         action = Action.CREATE,
                         uid = uid1,
-                        originalKey = originalKey,
+                        originalKey = transactionId,
                         sakId = sid1,
                         behandlingId = bid1,
                         fagsystem = Fagsystem.DAGPENGER,
@@ -2245,7 +2245,7 @@ internal class TpTest {
                     val expected = utbetaling(
                         action = Action.CREATE,
                         uid = uid2,
-                        originalKey = originalKey,
+                        originalKey = transactionId,
                         sakId = sid2,
                         behandlingId = bid2,
                         fagsystem = Fagsystem.DAGPENGER,
@@ -2264,7 +2264,7 @@ internal class TpTest {
                     val expected = utbetaling(
                         action = Action.CREATE,
                         uid = uid3,
-                        originalKey = originalKey,
+                        originalKey = transactionId,
                         sakId = sid3,
                         behandlingId = bid3,
                         fagsystem = Fagsystem.DAGPENGER,
@@ -2281,8 +2281,8 @@ internal class TpTest {
                 }
 
             val assertOppdrag = TestRuntime.topics.oppdrag.assertThat()
-            assertOppdrag.has(originalKey, size = 3)
-                .with(originalKey, index = 0) {
+            assertOppdrag.has(transactionId, size = 3)
+                .with(transactionId, index = 0) {
                     assertEquals("1", it.oppdrag110.kodeAksjon)
                     assertEquals("NY", it.oppdrag110.kodeEndring)
                     assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -2300,7 +2300,7 @@ internal class TpTest {
                     assertEquals(300, l1.sats.toLong())
                     assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
                 }
-                .with(originalKey, index = 1) {
+                .with(transactionId, index = 1) {
                     assertEquals("1", it.oppdrag110.kodeAksjon)
                     assertEquals("NY", it.oppdrag110.kodeEndring)
                     assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -2318,7 +2318,7 @@ internal class TpTest {
                     assertEquals(300, l1.sats.toLong())
                     assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
                 }
-                .with(originalKey, index = 2) {
+                .with(transactionId, index = 2) {
                     assertEquals("1", it.oppdrag110.kodeAksjon)
                     assertEquals("NY", it.oppdrag110.kodeEndring)
                     assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -2336,17 +2336,17 @@ internal class TpTest {
                     assertEquals(300, l1.sats.toLong())
                     assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
                 }
-            val oppdrag1 = assertOppdrag.get(originalKey, index = 0)
-            val oppdrag2 = assertOppdrag.get(originalKey, index = 1)
-            val oppdrag3 = assertOppdrag.get(originalKey, index = 2)
+            val oppdrag1 = assertOppdrag.get(transactionId, index = 0)
+            val oppdrag2 = assertOppdrag.get(transactionId, index = 1)
+            val oppdrag3 = assertOppdrag.get(transactionId, index = 2)
 
-            TestRuntime.topics.oppdrag.produce(originalKey) {
+            TestRuntime.topics.oppdrag.produce(transactionId) {
                 oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
             }
-            TestRuntime.topics.oppdrag.produce(originalKey) {
+            TestRuntime.topics.oppdrag.produce(transactionId) {
                 oppdrag2.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
             }
-            TestRuntime.topics.oppdrag.produce(originalKey) {
+            TestRuntime.topics.oppdrag.produce(transactionId) {
                 oppdrag3.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
             }
 
@@ -2356,7 +2356,7 @@ internal class TpTest {
                     val expected = utbetaling(
                         action = Action.CREATE,
                         uid = uid1,
-                        originalKey = originalKey,
+                        originalKey = transactionId,
                         sakId = sid1,
                         behandlingId = bid1,
                         fagsystem = Fagsystem.DAGPENGER,
@@ -2375,7 +2375,7 @@ internal class TpTest {
                     val expected = utbetaling(
                         action = Action.CREATE,
                         uid = uid2,
-                        originalKey = originalKey,
+                        originalKey = transactionId,
                         sakId = sid2,
                         behandlingId = bid2,
                         fagsystem = Fagsystem.DAGPENGER,
@@ -2394,7 +2394,7 @@ internal class TpTest {
                     val expected = utbetaling(
                         action = Action.CREATE,
                         uid = uid3,
-                        originalKey = originalKey,
+                        originalKey = transactionId,
                         sakId = sid3,
                         behandlingId = bid3,
                         fagsystem = Fagsystem.DAGPENGER,
@@ -2422,11 +2422,11 @@ internal class TpTest {
         fun `simuler 1 meldekort i 1 utbetalinger`() {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
-            val originalKey = UUID.randomUUID().toString()
+            val transactionId = UUID.randomUUID().toString()
             val meldeperiode = "132460781"
             val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
-            TestRuntime.topics.dp.produce(originalKey) {
+            TestRuntime.topics.dp.produce(transactionId) {
                 Dp.utbetaling(sid.id, bid.id, dryrun = true) {
                     Dp.meldekort(
                         meldeperiode = "132460781",
@@ -2446,8 +2446,8 @@ internal class TpTest {
             TestRuntime.topics.saker.assertThat().isEmpty()
             TestRuntime.topics.simulering.assertThat()
                 .hasTotal(1)
-                .has(originalKey)
-                .with(originalKey) {
+                .has(transactionId)
+                .with(transactionId) {
                     assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
                     assertEquals("NY", it.request.oppdrag.kodeEndring)
                     assertEquals("DP", it.request.oppdrag.kodeFagomraade)
@@ -2468,11 +2468,11 @@ internal class TpTest {
         fun `test 1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
-            val originalKey = UUID.randomUUID().toString()
+            val transactionId = UUID.randomUUID().toString()
             val meldeperiode = "132460781"
             val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
-            TestRuntime.topics.dpUtbetalinger.produce(originalKey) {
+            TestRuntime.topics.dpUtbetalinger.produce(transactionId) {
                 Dp.utbetaling(sid.id, bid.id) {
                     Dp.meldekort(
                         meldeperiode = "132460781",
@@ -2496,14 +2496,14 @@ internal class TpTest {
                 )
             )
             TestRuntime.topics.status.assertThat()
-                .has(originalKey)
-                .has(originalKey, mottatt)
+                .has(transactionId)
+                .has(transactionId, mottatt)
 
             TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
             val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-                .has(originalKey)
-                .with(originalKey) {
+                .has(transactionId)
+                .with(transactionId) {
                     assertEquals("1", it.oppdrag110.kodeAksjon)
                     assertEquals("NY", it.oppdrag110.kodeEndring)
                     assertEquals("DP", it.oppdrag110.kodeFagomraade)
@@ -2522,9 +2522,9 @@ internal class TpTest {
                         assertEquals(a.delytelseId, b.refDelytelseId)
                     }
                 }
-                .get(originalKey)
+                .get(transactionId)
 
-            TestRuntime.topics.oppdrag.produce(originalKey) {
+            TestRuntime.topics.oppdrag.produce(transactionId) {
                 oppdrag.apply {
                     mmel = Mmel().apply { alvorlighetsgrad = "00" }
                 }
@@ -2536,7 +2536,7 @@ internal class TpTest {
                     val expected = utbetaling(
                         action = Action.CREATE,
                         uid = uid,
-                        originalKey = originalKey,
+                        originalKey = transactionId,
                         sakId = sid,
                         behandlingId = bid,
                         fagsystem = Fagsystem.DAGPENGER,
