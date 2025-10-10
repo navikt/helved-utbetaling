@@ -182,10 +182,10 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
                 .produce(Topics.status)
 
             result
-                .flatMapKeyAndValue { originalKey, (oppdragToUtbetalinger, _) -> 
+                .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) -> 
                     oppdragToUtbetalinger.map { (oppdrag, utbetalinger) -> 
                         val uids = utbetalinger.map { u -> u.uid.toString() }
-                        KeyValue(oppdrag, PKs(originalKey, uids)) 
+                        KeyValue(oppdrag, PKs(transactionId, uids)) 
                     } 
                 }
                 .produce(Topics.fk)
@@ -237,10 +237,10 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
                 .produce(Topics.status)
 
             result
-                .flatMapKeyAndValue { originalKey, (oppdragToUtbetalinger, _) ->
+                .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
                     oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
                         val uids = utbetalinger.map { u -> u.uid.toString() }
-                        KeyValue(oppdrag, PKs(originalKey, uids))
+                        KeyValue(oppdrag, PKs(transactionId, uids))
                     }
                 }
                 .produce(Topics.fk)
@@ -292,10 +292,10 @@ fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
                 .produce(Topics.status)
 
             result
-                .flatMapKeyAndValue { originalKey, (oppdragToUtbetalinger, _) ->
+                .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
                     oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
                         val uids = utbetalinger.map { u -> u.uid.toString() }
-                        KeyValue(oppdrag, PKs(originalKey, uids))
+                        KeyValue(oppdrag, PKs(transactionId, uids))
                     }
                 }
                 .produce(Topics.fk)
@@ -347,10 +347,10 @@ fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
                 .produce(Topics.status)
 
             result
-                .flatMapKeyAndValue { originalKey, (oppdragToUtbetalinger, _) ->
+                .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
                     oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
                         val uids = utbetalinger.map { u -> u.uid.toString() }
-                        KeyValue(oppdrag, PKs(originalKey, uids))
+                        KeyValue(oppdrag, PKs(transactionId, uids))
                     }
                 }
                 .produce(Topics.fk)

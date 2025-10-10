@@ -31,7 +31,7 @@ data class TsPeriode(
     )
 }
 
-data class TsTuple(val originalKey: String, val dto: TsUtbetaling)
+data class TsTuple(val transactionId: String, val dto: TsUtbetaling)
 
 fun TsTuple.toDomain(uidsPåSak: Set<UtbetalingId>?): Utbetaling {
     if (dto.brukFagområdeTillst && dto.stønad !in stønadstyperForTillst) {
@@ -43,7 +43,7 @@ fun TsTuple.toDomain(uidsPåSak: Set<UtbetalingId>?): Utbetaling {
     }
     return Utbetaling(
         dryrun = dto.dryrun,
-        originalKey = originalKey,
+        originalKey = transactionId,
         fagsystem = dto.fagsystem(),
         uid = UtbetalingId(dto.id),
         action = action,

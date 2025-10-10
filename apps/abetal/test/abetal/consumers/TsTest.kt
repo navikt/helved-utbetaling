@@ -27,10 +27,10 @@ internal class TsTest {
     fun `1 utbetalinger med brukFagområdeTillst = gammel fagområde`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val uid = UtbetalingId(UUID.randomUUID())
 
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid, sid.id, bid.id, brukFagområdeTillst = true) {
                 Ts.periode(7.jun, 18.jun, 1077u)
             }
@@ -48,14 +48,14 @@ internal class TsTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
@@ -73,9 +73,9 @@ internal class TsTest {
                     assertEquals(a.delytelseId, b.refDelytelseId)
                 }
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -87,7 +87,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -111,10 +111,10 @@ internal class TsTest {
     fun `1 utbetalinger med nytt fagområde`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val uid = UtbetalingId(UUID.randomUUID())
 
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid, sid.id, bid.id, brukFagområdeTillst = false) {
                 Ts.periode(7.jun, 18.jun, 1077u)
             }
@@ -132,14 +132,14 @@ internal class TsTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("TILLSTPB", it.oppdrag110.kodeFagomraade)
@@ -157,9 +157,9 @@ internal class TsTest {
                     assertEquals(a.delytelseId, b.refDelytelseId)
                 }
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -171,7 +171,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLSTPB,
@@ -195,10 +195,10 @@ internal class TsTest {
     fun `1 utbetalinger i transaksjon = 1 utbetaling og 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val uid = UtbetalingId(UUID.randomUUID())
 
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid, sid.id, bid.id) {
                 Ts.periode(
                     fom = LocalDate.of(2021, 6, 7),
@@ -220,14 +220,14 @@ internal class TsTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
@@ -245,9 +245,9 @@ internal class TsTest {
                     assertEquals(a.delytelseId, b.refDelytelseId)
                 }
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -259,7 +259,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -283,16 +283,16 @@ internal class TsTest {
     fun `2 utbetalinger i transaksjon = 2 utbetaling og 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val uid1 = UtbetalingId(UUID.randomUUID())
         val uid2 = UtbetalingId(UUID.randomUUID())
 
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid1, sid.id, bid.id) {
                 Ts.periode(7.jun, 20.jun, 1077u)
             }
         }
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid2, sid.id, bid.id) {
                 Ts.periode(7.jul, 20.jul, 2377u)
             }
@@ -311,8 +311,8 @@ internal class TsTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -322,7 +322,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -342,7 +342,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -359,8 +359,8 @@ internal class TsTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
@@ -384,9 +384,9 @@ internal class TsTest {
                 assertEquals("TSTBASISP2-OP", linje2.kodeKlassifik)
                 assertEquals(2377, linje2.sats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -398,7 +398,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -418,7 +418,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -444,12 +444,12 @@ internal class TsTest {
     fun `3 utbetalinger i transaksjon = 3 utbetaling og 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val uid1 = UtbetalingId(UUID.randomUUID())
         val uid2 = UtbetalingId(UUID.randomUUID())
         val uid3 = UtbetalingId(UUID.randomUUID())
 
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid1, sid.id, bid.id) {
                 Ts.periode(
                     fom = LocalDate.of(2021, 6, 7),
@@ -458,7 +458,7 @@ internal class TsTest {
                 )
             }
         }
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid2, sid.id, bid.id) {
                 Ts.periode(
                     fom = LocalDate.of(2021, 7, 7),
@@ -467,7 +467,7 @@ internal class TsTest {
                 )
             }
         }
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid3, sid.id, bid.id) {
                 Ts.periode(
                     fom = LocalDate.of(2021, 8, 7),
@@ -491,8 +491,8 @@ internal class TsTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -502,7 +502,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -522,7 +522,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -542,7 +542,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -559,8 +559,8 @@ internal class TsTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
@@ -591,9 +591,9 @@ internal class TsTest {
                 assertEquals("TSTBASISP2-OP", linje3.kodeKlassifik)
                 assertEquals(3133, linje3.sats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -605,7 +605,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -625,7 +625,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -645,7 +645,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -672,11 +672,11 @@ internal class TsTest {
         val sid = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
         val bid2 = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val uid1 = UtbetalingId(UUID.randomUUID())
         val uid2 = UtbetalingId(UUID.randomUUID())
 
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid1, sid.id, bid1.id) {
                 Ts.periode(
                     fom = LocalDate.of(2021, 6, 7),
@@ -685,7 +685,7 @@ internal class TsTest {
                 )
             }
         }
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid2, sid.id, bid2.id) {
                 Ts.periode(
                     fom = LocalDate.of(2021, 7, 7),
@@ -708,8 +708,8 @@ internal class TsTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -719,7 +719,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid1,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -739,7 +739,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid2,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -756,8 +756,8 @@ internal class TsTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
@@ -781,9 +781,9 @@ internal class TsTest {
                 assertEquals("TSTBASISP2-OP", linje2.kodeKlassifik)
                 assertEquals(779, linje2.sats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -795,7 +795,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid1,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -815,7 +815,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid2,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -841,13 +841,13 @@ internal class TsTest {
     fun `4 utbetalinger i transaksjon med 2 stønader = 4 utbetaling og 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val uid1 = UtbetalingId(UUID.randomUUID())
         val uid2 = UtbetalingId(UUID.randomUUID())
         val uid3 = UtbetalingId(UUID.randomUUID())
         val uid4 = UtbetalingId(UUID.randomUUID())
 
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
                 uid = uid1,
                 sakId = sid.id,
@@ -861,7 +861,7 @@ internal class TsTest {
                 )
             }
         }
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
                 uid = uid2,
                 sakId = sid.id,
@@ -875,7 +875,7 @@ internal class TsTest {
                 )
             }
         }
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
                 uid = uid3,
                 sakId = sid.id,
@@ -890,7 +890,7 @@ internal class TsTest {
 
             }
         }
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
                 uid = uid4,
                 sakId = sid.id,
@@ -921,8 +921,8 @@ internal class TsTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey)
-            .has(originalKey, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -932,7 +932,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -952,7 +952,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -972,7 +972,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -992,7 +992,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid4,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -1008,8 +1008,8 @@ internal class TsTest {
                 assertEquals(expected, it)
             }
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("NY", it.oppdrag110.kodeEndring)
                 assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
@@ -1040,9 +1040,9 @@ internal class TsTest {
                 assertEquals("TSLMASISP2-OP", fjerdeLinje.kodeKlassifik)
                 assertEquals(300, fjerdeLinje.sats.toLong())
             }
-            .get(originalKey)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(originalKey) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1054,7 +1054,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -1074,7 +1074,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -1094,7 +1094,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -1114,7 +1114,7 @@ internal class TsTest {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid4,
-                    originalKey = originalKey,
+                    originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
@@ -1149,8 +1149,8 @@ internal class TsTest {
     fun `endre eksisterende utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey1 = UUID.randomUUID().toString()
-        val originalKey2 = UUID.randomUUID().toString()
+        val transactionId1 = UUID.randomUUID().toString()
+        val transactionId2 = UUID.randomUUID().toString()
         val uid1 = UtbetalingId(UUID.randomUUID())
         val periodeId = PeriodeId()
 
@@ -1160,7 +1160,7 @@ internal class TsTest {
                 uid = uid1,
                 sakId = sid,
                 behandlingId = bid,
-                originalKey = originalKey1,
+                originalKey = transactionId1,
                 stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
@@ -1175,7 +1175,7 @@ internal class TsTest {
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestRuntime.topics.ts.produce(originalKey2) {
+        TestRuntime.topics.ts.produce(transactionId2) {
             Ts.utbetaling(
                 uid = uid1,
                 sakId = sid.id,
@@ -1198,8 +1198,8 @@ internal class TsTest {
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(originalKey2)
-            .has(originalKey2, mottatt)
+            .has(transactionId2)
+            .has(transactionId2, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1211,7 +1211,7 @@ internal class TsTest {
                     uid = uid1,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey2,
+                    originalKey = transactionId2,
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
@@ -1227,8 +1227,8 @@ internal class TsTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey2)
-            .with(originalKey2) {
+            .has(transactionId2)
+            .with(transactionId2) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
                 assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
@@ -1246,9 +1246,9 @@ internal class TsTest {
                 assertEquals("TSTBASISP2-OP", førsteLinje.kodeKlassifik)
                 assertEquals(80, førsteLinje.sats.toLong())
             }
-            .get(originalKey2)
+            .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(originalKey2) {
+        TestRuntime.topics.oppdrag.produce(transactionId2) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1262,7 +1262,7 @@ internal class TsTest {
                     uid = uid1,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey2,
+                    originalKey = transactionId2,
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
@@ -1431,7 +1431,7 @@ internal class TsTest {
     fun `endre eksisterende utbetaling med tom periodelist = opphør`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey1 = UUID.randomUUID().toString()
+        val transactionId1 = UUID.randomUUID().toString()
         val uid1 = UtbetalingId(UUID.randomUUID())
         val periodeId = PeriodeId()
 
@@ -1441,7 +1441,7 @@ internal class TsTest {
                 uid = uid1,
                 sakId = sid,
                 behandlingId = bid,
-                originalKey = originalKey1,
+                originalKey = transactionId1,
                 stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
@@ -1454,7 +1454,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.topics.ts.produce(originalKey1) {
+        TestRuntime.topics.ts.produce(transactionId1) {
             Ts.utbetaling(
                 uid = uid1,
                 sakId = sid.id,
@@ -1476,8 +1476,8 @@ internal class TsTest {
         )
 
         TestRuntime.topics.status.assertThat()
-            .has(originalKey1)
-            .has(originalKey1, mottatt)
+            .has(transactionId1)
+            .has(transactionId1, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1489,7 +1489,7 @@ internal class TsTest {
                     uid = uid1,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey1,
+                    originalKey = transactionId1,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -1504,8 +1504,8 @@ internal class TsTest {
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(originalKey1)
-            .with(originalKey1) {
+            .has(transactionId1)
+            .with(transactionId1) {
                 assertEquals("1", it.oppdrag110.kodeAksjon)
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
                 assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
@@ -1525,9 +1525,9 @@ internal class TsTest {
                 assertEquals("TSTBASISP2-OP", førsteLinje.kodeKlassifik)
                 assertEquals(100, førsteLinje.sats.toLong())
             }
-            .get(originalKey1)
+            .get(transactionId1)
 
-        TestRuntime.topics.oppdrag.produce(originalKey1) {
+        TestRuntime.topics.oppdrag.produce(transactionId1) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1541,7 +1541,7 @@ internal class TsTest {
                     uid = uid1,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = originalKey1,
+                    originalKey = transactionId1,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -1564,10 +1564,10 @@ internal class TsTest {
     fun `simuler utbetaling blir ikke persistert`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val originalKey = UUID.randomUUID().toString()
+        val transactionId = UUID.randomUUID().toString()
         val uid = UtbetalingId(UUID.randomUUID())
 
-        TestRuntime.topics.ts.produce(originalKey) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(uid, sid.id, bid.id, dryrun = true) {
                 Ts.periode(
                     fom = LocalDate.of(2021, 6, 7),
@@ -1585,8 +1585,8 @@ internal class TsTest {
         TestRuntime.topics.saker.assertThat().isEmpty()
         TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
-            .has(originalKey)
-            .with(originalKey) {
+            .has(transactionId)
+            .with(transactionId) {
                 assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
                 assertEquals("NY", it.request.oppdrag.kodeEndring)
                 assertEquals("TILLST", it.request.oppdrag.kodeFagomraade)
