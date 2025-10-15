@@ -1604,6 +1604,78 @@ internal class TsTest {
     }
 
     @Test
+    fun `simuler 4 utbetalinger blir til 1 xml`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val uid2 = UtbetalingId(UUID.randomUUID())
+        val uid3 = UtbetalingId(UUID.randomUUID())
+        val uid4 = UtbetalingId(UUID.randomUUID())
+
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.utbetaling(uid1, sid.id, bid.id, dryrun = true) {
+                Ts.periode(6.jun, 6.jun, 70u)
+            }
+        }
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.utbetaling(uid2, sid.id, bid.id, dryrun = true) {
+                Ts.periode(7.jun, 7.jun, 70u)
+            }
+        }
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.utbetaling(uid3, sid.id, bid.id, dryrun = true) {
+                Ts.periode(6.jun, 6.jun, 140u)
+            }
+        }
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.utbetaling(uid4, sid.id, bid.id, dryrun = true) {
+                Ts.periode(7.jun, 7.jun, 140u)
+            }
+        }
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.saker.assertThat().isEmpty()
+        TestRuntime.topics.simulering.assertThat()
+            .hasTotal(1)
+            .has(transactionId)
+            .with(transactionId) {
+                assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
+                assertEquals("NY", it.request.oppdrag.kodeEndring)
+                assertEquals("TILLST", it.request.oppdrag.kodeFagomraade)
+                assertEquals(sid.id, it.request.oppdrag.fagsystemId)
+                assertEquals("MND", it.request.oppdrag.utbetFrekvens)
+                assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
+                assertEquals("ts", it.request.oppdrag.saksbehId)
+                assertEquals(4, it.request.oppdrag.oppdragslinjes.size)
+                assertNull(it.request.oppdrag.oppdragslinjes[0].refDelytelseId)
+                it.request.oppdrag.oppdragslinjes[0].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(70, it.sats.toLong())
+                }
+                it.request.oppdrag.oppdragslinjes[1].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(70, it.sats.toLong())
+                }
+                it.request.oppdrag.oppdragslinjes[2].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(140, it.sats.toLong())
+                }
+                it.request.oppdrag.oppdragslinjes[3].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(140, it.sats.toLong())
+                }
+            }
+    }
+
+    @Test
     fun `simulering uten endring kaster feil1`() {
         val key = UUID.randomUUID().toString()
         val key2 = UUID.randomUUID().toString()
