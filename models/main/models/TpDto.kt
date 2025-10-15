@@ -2,7 +2,6 @@ package models
 
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
 
 data class TpUtbetaling(
     val dryrun: Boolean = false,
@@ -20,11 +19,13 @@ data class TpPeriode(
     val meldeperiode: String,
     val fom: LocalDate,
     val tom: LocalDate,
+    val betalendeEnhet: NavEnhet? = null,
     val beløp: UInt,
 ) {
     fun into(): Utbetalingsperiode = Utbetalingsperiode(
         fom = fom,
         tom = tom,
+        betalendeEnhet = betalendeEnhet,
         beløp = beløp,
     )
 }
@@ -72,6 +73,7 @@ private fun List<TpPeriode>.toDomain(): List<Utbetalingsperiode> {
                 Utbetalingsperiode(
                     fom = it.first().fom,
                     tom = it.last().tom,
+                    betalendeEnhet = it.last().betalendeEnhet,
                     beløp = it.first().beløp,
                 )
             }
