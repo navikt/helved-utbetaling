@@ -83,7 +83,10 @@ fun Application.utsjekk(
     )
 
     val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
-    val dpUtbetalingerProducer = kafka.createProducer(config.kafka, Topics.utbetalingDp)
+    val aapProducer = kafka.createProducer(config.kafka, Topics.utbetalingAap)
+    val dpProducer = kafka.createProducer(config.kafka, Topics.utbetalingDp)
+    val tpProducer = kafka.createProducer(config.kafka, Topics.utbetalingTp)
+    val tsProducer = kafka.createProducer(config.kafka, Topics.utbetalingTs)
 
     Jdbc.initialize(config.jdbc)
     runBlocking {
@@ -111,6 +114,7 @@ fun Application.utsjekk(
         exception<Throwable> { call, cause ->
             when (cause) {
                 is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse)
+                is models.ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
                 is BadRequestException -> {
                     val msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
                     appLog.debug(msg) // client error
@@ -141,7 +145,7 @@ fun Application.utsjekk(
         authenticate(TokenProvider.AZURE) {
             iverksetting(iverksettingService)
             simulering(simuleringValidator, simulering)
-            simulerBlocking(dpUtbetalingerProducer)
+            simulerBlocking(aapProducer, dpProducer, tpProducer, tsProducer)
             utbetalingRoute(simuleringService, utbetalingService)
             aapMigrator.route(this)
             iverksettingMigrator.route(this)
@@ -153,7 +157,10 @@ fun Application.utsjekk(
     monitor.subscribe(ApplicationStopping) {
         kafka.close()
         oppdragProducer.close()
-        dpUtbetalingerProducer.close()
+        aapProducer.close()
+        dpProducer.close()
+        tpProducer.close()
+        tsProducer.close()
         utbetalingProducer.close()
     }
 }

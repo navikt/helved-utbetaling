@@ -8,23 +8,31 @@ import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withTimeoutOrNull
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.kafka.KafkaProducer
+import models.AapUtbetaling
 import models.DpUtbetaling
+import models.TpUtbetaling
+import models.TsUtbetaling
 import models.Fagsystem
 import models.Simulering
 import models.StatusReply
 import models.UtbetalingId
-import utsjekk.*
+import models.badRequest
+import models.forbidden
+import models.locked
+import models.notFound
+import utsjekk.Config
+import utsjekk.client
 import utsjekk.utbetaling.Utbetaling
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.time.Duration.Companion.seconds
 
 object SimuleringSubscriptions {
 
@@ -75,7 +83,12 @@ class AbetalClient(
     }
 }
 
-fun Route.simulerBlocking(dpUtbetalingerProducer: KafkaProducer<String, DpUtbetaling>) {
+fun Route.simulerBlocking(
+    aapUtbetalingerProducer: KafkaProducer<String, AapUtbetaling>,
+    dpUtbetalingerProducer: KafkaProducer<String, DpUtbetaling>,
+    tpUtbetalingerProducer: KafkaProducer<String, TpUtbetaling>,
+    tsUtbetalingerProducer: KafkaProducer<String, TsUtbetaling>,
+) {
 
     route("/api/simulering/v3") {
         post {
@@ -103,7 +116,70 @@ fun Route.simulerBlocking(dpUtbetalingerProducer: KafkaProducer<String, DpUtbeta
                 }
                 when (result) {
                     is Simulering -> call.respond(result)
-                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result) // TODO: use status.error (ApiError) instead?
+                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+                    null -> call.respond(HttpStatusCode.RequestTimeout)
+                    else -> call.respond(HttpStatusCode.InternalServerError)
+                }
+                SimuleringSubscriptions.unsubscribe(key)
+            }
+
+            suspend fun simulerAap() {
+                val dto = call.receive<AapUtbetaling>()
+                val (sim, status) = SimuleringSubscriptions.subscribe(key)
+
+                aapUtbetalingerProducer.send(key, dto)
+
+                val result = withTimeoutOrNull(30.seconds) { 
+                    select<Any?> {
+                        sim.onAwait { it }
+                        status.onAwait { it }
+                    }
+                }
+                when (result) {
+                    is Simulering -> call.respond(result)
+                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+                    null -> call.respond(HttpStatusCode.RequestTimeout)
+                    else -> call.respond(HttpStatusCode.InternalServerError)
+                }
+                SimuleringSubscriptions.unsubscribe(key)
+            }
+
+            suspend fun simulerTilleggsstønader() {
+                val dto = call.receive<TsUtbetaling>()
+                val (sim, status) = SimuleringSubscriptions.subscribe(key)
+
+                tsUtbetalingerProducer.send(key, dto)
+
+                val result = withTimeoutOrNull(30.seconds) { 
+                    select<Any?> {
+                        sim.onAwait { it }
+                        status.onAwait { it }
+                    }
+                }
+                when (result) {
+                    is Simulering -> call.respond(result)
+                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+                    null -> call.respond(HttpStatusCode.RequestTimeout)
+                    else -> call.respond(HttpStatusCode.InternalServerError)
+                }
+                SimuleringSubscriptions.unsubscribe(key)
+            }
+
+            suspend fun simulerTiltakspenger() {
+                val dto = call.receive<TpUtbetaling>()
+                val (sim, status) = SimuleringSubscriptions.subscribe(key)
+
+                tpUtbetalingerProducer.send(key, dto)
+
+                val result = withTimeoutOrNull(30.seconds) { 
+                    select<Any?> {
+                        sim.onAwait { it }
+                        status.onAwait { it }
+                    }
+                }
+                when (result) {
+                    is Simulering -> call.respond(result)
+                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
@@ -112,6 +188,9 @@ fun Route.simulerBlocking(dpUtbetalingerProducer: KafkaProducer<String, DpUtbeta
 
             when (fagsystem) {
                 Fagsystem.DAGPENGER -> simulerDagpenger()
+                Fagsystem.AAP -> simulerAap()
+                Fagsystem.TILLEGGSSTØNADER -> simulerTilleggsstønader() // de andre fagområdene blir utledet fra DTOen
+                Fagsystem.TILTAKSPENGER -> simulerTiltakspenger()
                 else -> notFound("simulering/v3 for $fagsystem is not implemented yet")
             }
         }
