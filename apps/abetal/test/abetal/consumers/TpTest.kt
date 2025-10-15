@@ -40,6 +40,7 @@ internal class TpTest {
                   "meldeperiode": "2025-08-01/2025-08-14",
                   "fom": "2025-08-01",
                   "tom": "2025-08-14",
+                  "betalendeEnhet": "testEnhet",
                   "beløp": 1000
                 }
               ]
@@ -60,6 +61,7 @@ internal class TpTest {
             assertEquals("15898099536", it.oppdrag110.oppdragGjelderId)
             assertEquals("tp", it.oppdrag110.saksbehId)
             assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
+            assertEquals("testEnhet", it.oppdrag110.oppdragsEnhet120s[0].enhet)
             assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
             val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
             assertNull(førsteLinje.refDelytelseId)
