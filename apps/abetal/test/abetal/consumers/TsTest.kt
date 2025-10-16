@@ -92,6 +92,7 @@ internal class TsTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
+                    periodetype = Periodetype.EN_GANG,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("ts"),
@@ -176,6 +177,7 @@ internal class TsTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLSTPB,
                     lastPeriodeId = it.lastPeriodeId,
+                    periodetype = Periodetype.EN_GANG,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("ts"),
@@ -264,6 +266,7 @@ internal class TsTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
+                    periodetype = Periodetype.EN_GANG,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("ts"),
@@ -327,6 +330,7 @@ internal class TsTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
+                    periodetype = Periodetype.EN_GANG,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("ts"),
@@ -349,6 +353,7 @@ internal class TsTest {
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
+                    periodetype = Periodetype.EN_GANG,
                     beslutterId = Navident("ts"),
                     saksbehandlerId = Navident("ts"),
                     personident = Personident("12345678910")
@@ -402,6 +407,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -422,6 +428,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -506,6 +513,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -525,6 +533,7 @@ internal class TsTest {
                     originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
+                    periodetype = Periodetype.EN_GANG,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -546,6 +555,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -610,6 +620,7 @@ internal class TsTest {
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
+                    periodetype = Periodetype.EN_GANG,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("ts"),
@@ -628,6 +639,7 @@ internal class TsTest {
                     originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
+                    periodetype = Periodetype.EN_GANG,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -648,6 +660,7 @@ internal class TsTest {
                     originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
+                    periodetype = Periodetype.EN_GANG,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -722,6 +735,7 @@ internal class TsTest {
                     originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid1,
+                    periodetype = Periodetype.EN_GANG,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -743,6 +757,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid2,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -798,6 +813,7 @@ internal class TsTest {
                     originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid1,
+                    periodetype = Periodetype.EN_GANG,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -819,6 +835,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid2,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -936,6 +953,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -956,6 +974,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -976,6 +995,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -995,6 +1015,7 @@ internal class TsTest {
                     originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
+                    periodetype = Periodetype.EN_GANG,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
@@ -1058,6 +1079,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -1077,6 +1099,7 @@ internal class TsTest {
                     originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
+                    periodetype = Periodetype.EN_GANG,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
@@ -1097,6 +1120,7 @@ internal class TsTest {
                     originalKey = transactionId,
                     sakId = sid,
                     behandlingId = bid,
+                    periodetype = Periodetype.EN_GANG,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -1118,6 +1142,7 @@ internal class TsTest {
                     sakId = sid,
                     behandlingId = bid,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -1162,6 +1187,7 @@ internal class TsTest {
                 behandlingId = bid,
                 originalKey = transactionId1,
                 stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
+                periodetype = Periodetype.EN_GANG,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
@@ -1215,6 +1241,7 @@ internal class TsTest {
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
+                    periodetype = Periodetype.EN_GANG,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("ts"),
@@ -1265,6 +1292,7 @@ internal class TsTest {
                     originalKey = transactionId2,
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -1283,14 +1311,14 @@ internal class TsTest {
     }
 
     @Test
-    fun `legge til periode på eksisterende utbetaling`() {
+    fun `forlenge periode på eksisterende utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
         val uid1 = UtbetalingId(UUID.randomUUID())
         val periodeId = PeriodeId()
 
-        TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
+        TestRuntime.topics.utbetalinger.produce(uid1.toString()) {
             utbetaling(
                 action = Action.CREATE,
                 uid = uid1,
@@ -1298,15 +1326,15 @@ internal class TsTest {
                 behandlingId = bid,
                 originalKey = UUID.randomUUID().toString(),
                 stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+                periodetype = Periodetype.EN_GANG,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                vedtakstidspunkt = 1.jun.atStartOfDay(),
                 beslutterId = Navident("ts"),
                 saksbehandlerId = Navident("ts"),
                 fagsystem = Fagsystem.TILLEGGSSTØNADER,
             ) {
-                periode(3.feb25, 3.feb25, 1000u, null) + 
-                periode(3.mar25, 3.mar25, 1000u, null)
+                periode(1.jun, 15.jun, 1500u, null)
             }
         }
 
@@ -1316,13 +1344,12 @@ internal class TsTest {
             Ts.utbetaling(
                 uid = uid1,
                 sakId = sid.id,
+                periodetype = Periodetype.EN_GANG,
                 stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
                 behandlingId = bid.id,
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
-                Ts.periode(3.feb25, 3.feb25, 1000u) + 
-                Ts.periode(3.mar25, 3.mar25, 1000u) + 
-                Ts.periode(4.apr25, 4.apr25, 3000u) 
+                Ts.periode(1.jun, 30.jun, 3000u)
             }
         }
 
@@ -1333,7 +1360,7 @@ internal class TsTest {
             Detaljer(
                 ytelse = Fagsystem.TILLEGGSSTØNADER,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 4.apr25, 4.apr25, null, 3000u, "TSBUASIA-OP"),
+                    DetaljerLinje(bid.id, 1.jun, 30.jun, null, 3000u, "TSBUASIA-OP"),
                 )
             )
         )
@@ -1355,15 +1382,14 @@ internal class TsTest {
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                     lastPeriodeId = it.lastPeriodeId,
+                    periodetype = Periodetype.EN_GANG,
                     stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
                     vedtakstidspunkt = it.vedtakstidspunkt,
                     beslutterId = Navident("ts"),
                     saksbehandlerId = Navident("ts"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(3.feb25, 3.feb25, 1000u, null) +
-                    periode(3.mar25, 3.mar25, 1000u, null) +
-                    periode(4.apr25, 4.apr25, 3000u, null)
+                    periode(1.jun, 30.jun, 3000u, null)
                 }
                 assertEquals(expected, it)
             }
@@ -1407,6 +1433,7 @@ internal class TsTest {
                     originalKey = transactionId,
                     førsteUtbetalingPåSak = false,
                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
                     vedtakstidspunkt = it.vedtakstidspunkt,
@@ -1414,9 +1441,293 @@ internal class TsTest {
                     saksbehandlerId = Navident("ts"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(3.feb25, 3.feb25, 1000u, null) +
-                    periode(3.mar25, 3.mar25, 1000u, null) +
-                    periode(4.apr25, 4.apr25, 3000u, null)
+                    periode(1.jun, 30.jun, 3000u, null)
+                }
+                assertEquals(expected, it)
+            }
+
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), size = 2)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid1), index = 0)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid1), index = 1)
+    }
+
+    @Test
+    fun `endre periode på eksisterende utbetaling`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val periodeId = PeriodeId()
+
+        TestRuntime.topics.utbetalinger.produce(uid1.toString()) {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid1,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = UUID.randomUUID().toString(),
+                stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+                periodetype = Periodetype.EN_GANG,
+                lastPeriodeId = periodeId,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 1.jun.atStartOfDay(),
+                beslutterId = Navident("ts"),
+                saksbehandlerId = Navident("ts"),
+                fagsystem = Fagsystem.TILLEGGSSTØNADER,
+            ) {
+                periode(1.jun, 30.jun, 3000u, null)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.utbetaling(
+                uid = uid1,
+                sakId = sid.id,
+                periodetype = Periodetype.EN_GANG,
+                stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+                behandlingId = bid.id,
+                vedtakstidspunkt = 1.jun.atStartOfDay(),
+            ) {
+                Ts.periode(1.jun, 30.jun, 3070u)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(
+                ytelse = Fagsystem.TILLEGGSSTØNADER,
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 1.jun, 30.jun, null, 3070u, "TSBUASIA-OP"),
+                )
+            )
+        )
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .has(transactionId, mottatt)
+
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid1.toString())
+            .with(uid1.toString()) {
+                val expected = utbetaling(
+                    action = Action.UPDATE,
+                    uid = uid1,
+                    sakId = sid,
+                    behandlingId = bid,
+                    originalKey = transactionId,
+                    førsteUtbetalingPåSak = false,
+                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    periodetype = Periodetype.EN_GANG,
+                    stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("ts"),
+                    saksbehandlerId = Navident("ts"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(1.jun, 30.jun, 3070u, null)
+                }
+                assertEquals(expected, it)
+            }
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) {
+                assertEquals("1", it.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", it.oppdrag110.kodeEndring)
+                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, it.oppdrag110.fagsystemId)
+                assertEquals("MND", it.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", it.oppdrag110.saksbehId)
+                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+
+                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
+                assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
+                assertEquals("NY", førsteLinje.kodeEndringLinje)
+                assertEquals(bid.id, førsteLinje.henvisning)
+                assertEquals("TSBUASIA-OP", førsteLinje.kodeKlassifik)
+                assertEquals(3070, førsteLinje.sats.toLong())
+            }
+            .get(transactionId)
+
+        TestRuntime.topics.oppdrag.produce(transactionId) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid1.toString())
+            .with(uid1.toString()) {
+                val expected = utbetaling(
+                    action = Action.UPDATE,
+                    uid = uid1,
+                    sakId = sid,
+                    behandlingId = bid,
+                    originalKey = transactionId,
+                    førsteUtbetalingPåSak = false,
+                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("ts"),
+                    saksbehandlerId = Navident("ts"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(1.jun, 30.jun, 3070u, null)
+                }
+                assertEquals(expected, it)
+            }
+
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), size = 2)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid1), index = 0)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid1), index = 1)
+    }
+    @Test
+    fun `legge til periode på eksisterende utbetaling`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val periodeId = PeriodeId()
+
+        TestRuntime.topics.utbetalinger.produce(uid1.toString()) {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid1,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = UUID.randomUUID().toString(),
+                stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+                periodetype = Periodetype.EN_GANG,
+                lastPeriodeId = periodeId,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 1.jun.atStartOfDay(),
+                beslutterId = Navident("ts"),
+                saksbehandlerId = Navident("ts"),
+                fagsystem = Fagsystem.TILLEGGSSTØNADER,
+            ) {
+                periode(1.jun, 3.jun, 210u, null)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.utbetaling(
+                uid = uid1,
+                sakId = sid.id,
+                periodetype = Periodetype.EN_GANG,
+                stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+                behandlingId = bid.id,
+                vedtakstidspunkt = 1.jun.atStartOfDay(),
+            ) {
+                Ts.periode(1.jun, 3.jun, 210u) +
+                Ts.periode(6.jun, 6.jun, 70u)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(
+                ytelse = Fagsystem.TILLEGGSSTØNADER,
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 6.jun, 6.jun, null, 70u, "TSBUASIA-OP"),
+                )
+            )
+        )
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .has(transactionId, mottatt)
+
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid1.toString())
+            .with(uid1.toString()) {
+                val expected = utbetaling(
+                    action = Action.UPDATE,
+                    uid = uid1,
+                    sakId = sid,
+                    behandlingId = bid,
+                    originalKey = transactionId,
+                    førsteUtbetalingPåSak = false,
+                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    periodetype = Periodetype.EN_GANG,
+                    stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("ts"),
+                    saksbehandlerId = Navident("ts"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(1.jun, 3.jun, 210u, null) +
+                    periode(6.jun, 6.jun, 70u, null)
+                }
+                assertEquals(expected, it)
+            }
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) {
+                assertEquals("1", it.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", it.oppdrag110.kodeEndring)
+                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, it.oppdrag110.fagsystemId)
+                assertEquals("MND", it.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", it.oppdrag110.saksbehId)
+                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+
+                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
+                assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
+                assertEquals("NY", førsteLinje.kodeEndringLinje)
+                assertEquals(bid.id, førsteLinje.henvisning)
+                assertEquals("TSBUASIA-OP", førsteLinje.kodeKlassifik)
+                assertEquals(70, førsteLinje.sats.toLong())
+            }
+            .get(transactionId)
+
+        TestRuntime.topics.oppdrag.produce(transactionId) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid1.toString())
+            .with(uid1.toString()) {
+                val expected = utbetaling(
+                    action = Action.UPDATE,
+                    uid = uid1,
+                    sakId = sid,
+                    behandlingId = bid,
+                    originalKey = transactionId,
+                    førsteUtbetalingPåSak = false,
+                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    periodetype = Periodetype.EN_GANG,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("ts"),
+                    saksbehandlerId = Navident("ts"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(1.jun, 3.jun, 210u, null) +
+                    periode(6.jun, 6.jun, 70u, null)
                 }
                 assertEquals(expected, it)
             }

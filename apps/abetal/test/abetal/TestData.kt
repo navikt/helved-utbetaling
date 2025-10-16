@@ -108,7 +108,7 @@ object Ts {
         vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
         brukFagområdeTillst: Boolean = true,
         stønad: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
-        periodetype: Periodetype = Periodetype.UKEDAG,
+        periodetype: Periodetype = Periodetype.EN_GANG,
         utbetalinger: () -> List<TsPeriode>,
     ): TsUtbetaling = TsUtbetaling(
         dryrun = dryrun,
