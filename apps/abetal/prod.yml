@@ -8,6 +8,13 @@ metadata:
 spec:
   image: {{ image }}
   terminationGracePeriodSeconds: 60
+  preStopHook:
+    exec:
+      # Execute sleep before SIGTERM is sent.
+      # Give 10 sec for the pod to be removed from service endpoints,
+      # ensuring no new traffic hits the app before it closes.
+      # We need this to graceful shutdown kafka streams to solve race-condition in rocksdb
+      command: ["/bin/sh", "-c", "sleep 10"]
   liveness:
     path: /actuator/live
     failureThreshold: 60
