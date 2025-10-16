@@ -88,7 +88,9 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
                                 async { Dao.findSaker(sakId, fagsystem.name) },
                                 async {
                                     val keys = Dao.findOppdrag(sakId, fagsystem.fagområde).map { it.key }
-                                    Dao.findStatusByKeys(keys)
+                                    if (keys.isNotEmpty()) {
+                                        Dao.findStatusByKeys(keys)
+                                    } else emptyList()
                                 }
                             )
 
