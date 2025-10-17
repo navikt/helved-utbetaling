@@ -118,32 +118,42 @@ fun TsUtbetaling.fagsystem(): Fagsystem {
 }
 
 private fun List<TsPeriode>.toDomain(type: Periodetype): List<Utbetalingsperiode> {
-    return this
-        .groupBy { it.beløp }
-        .map { (_, perioder) ->
-            perioder.splitWhen { cur, next ->
-                when (type) {
-                    Periodetype.UKEDAG -> {
-                        val harSammenhengendeDager = cur.tom.plusDays(1).equals(next.fom)
-                        val harSammenhengendeUker = cur.tom.nesteUkedag().equals(next.fom)
-                        !harSammenhengendeUker && !harSammenhengendeDager
-                    }
-                    Periodetype.EN_GANG -> {
-                        false // trengs aldri splittes
-                    }
-                    Periodetype.MND -> { 
-                        val harSammenhengendeDager = cur.tom.plusDays(1).equals(next.fom)
-                        !harSammenhengendeDager
-                    }
-                    else -> badRequest("Har ikke implementert '$type' for tilleggsstønader")
+    return when (type) {
+        Periodetype.EN_GANG -> this.map {
+            Utbetalingsperiode(
+                fom = it.fom,
+                tom = it.tom,
+                beløp = it.beløp,
+            )
+        }
+        Periodetype.UKEDAG -> this.groupBy { it.beløp }
+            .map { (_, perioder) ->
+                perioder.splitWhen { cur, next ->
+                    val harSammenhengendeDager = cur.tom.plusDays(1).equals(next.fom)
+                    val harSammenhengendeUker = cur.tom.nesteUkedag().equals(next.fom)
+                    !harSammenhengendeUker && !harSammenhengendeDager
+                }.map {
+                    Utbetalingsperiode(
+                        fom = it.first().fom,
+                        tom = it.last().tom,
+                        beløp = it.first().beløp,
+                    )
                 }
-            }.map {
-                Utbetalingsperiode(
-                    fom = it.first().fom,
-                    tom = it.last().tom,
-                    beløp = it.first().beløp,
-                )
-            }
-        }.flatten()
+            }.flatten()
+        Periodetype.MND -> this.groupBy { it.beløp }
+            .map { (_, perioder) ->
+                perioder.splitWhen { cur, next ->
+                    val harSammenhengendeDager = cur.tom.plusDays(1).equals(next.fom)
+                    !harSammenhengendeDager
+                }.map {
+                    Utbetalingsperiode(
+                        fom = it.first().fom,
+                        tom = it.last().tom,
+                        beløp = it.first().beløp,
+                    )
+                }
+            }.flatten()
+        else -> badRequest("periodetype '$type' for tilleggsstønader er ikke implementert")
+    }
 }
 
