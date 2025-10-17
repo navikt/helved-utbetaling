@@ -92,7 +92,7 @@ fun Route.simulerBlocking(
 
     route("/api/simulering/v3") {
         post {
-            val key = call.request.headers["Transaction-ID"] ?: UUID.randomUUID().toString()
+            val transactionId = call.request.headers["Transaction-ID"] ?: UUID.randomUUID().toString()
 
             val fagsystem = when (val name = call.client().name) {
                 "azure-token-generator" -> Fagsystem.valueOf(call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator"))
@@ -104,9 +104,9 @@ fun Route.simulerBlocking(
 
             suspend fun simulerDagpenger() {
                 val dto = call.receive<DpUtbetaling>()
-                val (sim, status) = SimuleringSubscriptions.subscribe(key)
+                val (sim, status) = SimuleringSubscriptions.subscribe(transactionId)
 
-                dpUtbetalingerProducer.send(key, dto)
+                dpUtbetalingerProducer.send(transactionId, dto)
 
                 val result = withTimeoutOrNull(30.seconds) { 
                     select<Any?> {
@@ -120,14 +120,14 @@ fun Route.simulerBlocking(
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
-                SimuleringSubscriptions.unsubscribe(key)
+                SimuleringSubscriptions.unsubscribe(transactionId)
             }
 
             suspend fun simulerAap() {
                 val dto = call.receive<AapUtbetaling>()
-                val (sim, status) = SimuleringSubscriptions.subscribe(key)
+                val (sim, status) = SimuleringSubscriptions.subscribe(transactionId)
 
-                aapUtbetalingerProducer.send(key, dto)
+                aapUtbetalingerProducer.send(transactionId, dto)
 
                 val result = withTimeoutOrNull(30.seconds) { 
                     select<Any?> {
@@ -141,14 +141,14 @@ fun Route.simulerBlocking(
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
-                SimuleringSubscriptions.unsubscribe(key)
+                SimuleringSubscriptions.unsubscribe(transactionId)
             }
 
             suspend fun simulerTilleggsstønader() {
                 val dto = call.receive<TsUtbetaling>()
-                val (sim, status) = SimuleringSubscriptions.subscribe(key)
+                val (sim, status) = SimuleringSubscriptions.subscribe(transactionId)
 
-                tsUtbetalingerProducer.send(key, dto)
+                tsUtbetalingerProducer.send(transactionId, dto)
 
                 val result = withTimeoutOrNull(30.seconds) { 
                     select<Any?> {
@@ -162,14 +162,14 @@ fun Route.simulerBlocking(
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
-                SimuleringSubscriptions.unsubscribe(key)
+                SimuleringSubscriptions.unsubscribe(transactionId)
             }
 
             suspend fun simulerTiltakspenger() {
-                val dto = call.receive<TpUtbetaling>()
-                val (sim, status) = SimuleringSubscriptions.subscribe(key)
+                val dtos = call.receive<List<TpUtbetaling>>()
+                val (sim, status) = SimuleringSubscriptions.subscribe(transactionId)
 
-                tpUtbetalingerProducer.send(key, dto)
+                dtos.forEach { dto -> tpUtbetalingerProducer.send(transactionId, dto) }
 
                 val result = withTimeoutOrNull(30.seconds) { 
                     select<Any?> {
@@ -183,7 +183,7 @@ fun Route.simulerBlocking(
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
-                SimuleringSubscriptions.unsubscribe(key)
+                SimuleringSubscriptions.unsubscribe(transactionId)
             }
 
             when (fagsystem) {
