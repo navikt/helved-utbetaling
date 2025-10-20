@@ -21,14 +21,6 @@ enum class Fagsystem(val fagområde: String) {
         fun fromFagområde(fagområde: String) =
             entries.single { it.fagområde == fagområde }
 
-        // fun from(stønad: Stønadstype) = when (stønad) {
-        //     is StønadTypeDagpenger -> DAGPENGER
-        //     is StønadTypeTiltakspenger -> TILTAKSPENGER
-        //     is StønadTypeTilleggsstønader -> TILLEGGSSTØNADER
-        //     is StønadTypeAAP -> AAP
-        //     is StønadTypeHistorisk -> HISTORISK
-        // }
-
         fun from(kode: String) = when (kode) {
             "DP" -> Fagsystem.DAGPENGER
             "TILTPENG" -> Fagsystem.TILTAKSPENGER

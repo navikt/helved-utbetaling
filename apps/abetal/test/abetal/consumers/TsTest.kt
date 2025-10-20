@@ -193,8 +193,8 @@ internal class TsTest {
                 assertEquals(expected, it)
             }
         TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.TILLSTPB), size = 1)
-            .has(SakKey(sid, Fagsystem.TILLSTPB), setOf(uid), index = 0)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), size = 1)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid), index = 0)
     }
 
     @Test
@@ -1197,41 +1197,41 @@ internal class TsTest {
     fun `endre eksisterende utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
-        val transactionId1 = UUID.randomUUID().toString()
-        val transactionId2 = UUID.randomUUID().toString()
-        val uid1 = UtbetalingId(UUID.randomUUID())
+        val transactionId = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
         val periodeId = PeriodeId()
 
-        TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
+        TestRuntime.topics.utbetalinger.produce(uid.toString()) {
             utbetaling(
                 action = Action.CREATE,
-                uid = uid1,
+                uid = uid,
                 sakId = sid,
-                behandlingId = bid,
-                originalKey = transactionId1,
+                behandlingId = BehandlingId("$nextInt"),
+                originalKey = UUID.randomUUID().toString(),
                 stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
                 periodetype = Periodetype.EN_GANG,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                vedtakstidspunkt = 6.jun.atStartOfDay(),
                 beslutterId = Navident("ts"),
                 saksbehandlerId = Navident("ts"),
-                fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                fagsystem = Fagsystem.TILLSTPB,
             ) {
-                periode(3.jun, 14.jun, 100u, null)
+                periode(3.jun, 6.jun, 1000u, null)
             }
         }
 
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
-        TestRuntime.topics.ts.produce(transactionId2) {
+        TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
-                uid = uid1,
+                uid = uid,
                 sakId = sid.id,
                 behandlingId = bid.id,
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+                brukFagområdeTillst = false,
             ) {
-                Ts.periode(3.jun, 14.jun, 80u)
+                Ts.periode(3.jun, 7.jun, 1500u)
             }
         }
 
@@ -1240,29 +1240,29 @@ internal class TsTest {
         val mottatt = StatusReply(
             Status.MOTTATT,
             Detaljer(
-                ytelse = Fagsystem.TILLEGGSSTØNADER,
+                ytelse = Fagsystem.TILLSTPB,
                 linjer = listOf(
-                    DetaljerLinje(bid.id, 3.jun, 14.jun, null, 80u, "TSTBASISP2-OP"),
+                    DetaljerLinje(bid.id, 3.jun, 7.jun, null, 1500u, "TSTBASISP2-OP"),
                 )
             )
         )
         TestRuntime.topics.status.assertThat()
-            .has(transactionId2)
-            .has(transactionId2, mottatt)
+            .has(transactionId)
+            .has(transactionId, mottatt)
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
-            .has(uid1.toString())
-            .with(uid1.toString()) {
+            .has(uid.toString())
+            .with(uid.toString()) {
                 val expected = utbetaling(
                     action = Action.UPDATE,
-                    uid = uid1,
+                    uid = uid,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = transactionId2,
+                    originalKey = transactionId,
                     førsteUtbetalingPåSak = false,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = Fagsystem.TILLSTPB,
                     lastPeriodeId = it.lastPeriodeId,
                     periodetype = Periodetype.EN_GANG,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -1271,17 +1271,17 @@ internal class TsTest {
                     saksbehandlerId = Navident("ts"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(3.jun, 14.jun, 80u, null)
+                    periode(3.jun, 7.jun, 1500u, null)
                 }
                 assertEquals(expected, it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId2)
-            .with(transactionId2) { oppdrag ->
+            .has(transactionId)
+            .with(transactionId) { oppdrag ->
                 assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
                 assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
-                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals("TILLSTPB", oppdrag.oppdrag110.kodeFagomraade)
                 assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
                 assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
                 assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
@@ -1293,29 +1293,29 @@ internal class TsTest {
                     assertEquals("NY", it.kodeEndringLinje)
                     assertEquals(bid.id, it.henvisning)
                     assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
-                    assertEquals(80, it.sats.toLong())
+                    assertEquals(1500, it.sats.toLong())
                     assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
             }
-            .get(transactionId2)
+            .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId2) {
+        TestRuntime.topics.oppdrag.produce(transactionId) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
         }
 
         TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.toString())
-            .with(uid1.toString()) {
+            .has(uid.toString())
+            .with(uid.toString()) {
                 val expected = utbetaling(
                     action = Action.UPDATE,
-                    uid = uid1,
+                    uid = uid,
                     sakId = sid,
                     behandlingId = bid,
-                    originalKey = transactionId2,
+                    originalKey = transactionId,
                     førsteUtbetalingPåSak = false,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = Fagsystem.TILLSTPB,
                     periodetype = Periodetype.EN_GANG,
                     lastPeriodeId = it.lastPeriodeId,
                     stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
@@ -1324,14 +1324,14 @@ internal class TsTest {
                     saksbehandlerId = Navident("ts"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(3.jun, 14.jun, 80u, null)
+                    periode(3.jun, 7.jun, 1500u, null)
                 }
                 assertEquals(expected, it)
             }
 
         TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), size = 2)
-            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid1), index = 0)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid), index = 0)
     }
 
     @Test
