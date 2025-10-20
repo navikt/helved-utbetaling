@@ -137,6 +137,7 @@ private fun oppdragslinje(
         }
         delytelseId = periodeId.toString()
         kodeKlassifik = utbetaling.stønad.klassekode
+        datoKlassifikFom = periode.fom.format()
         datoVedtakFom = periode.fom.format()
         datoVedtakTom = periode.tom.format()
         sats = BigDecimal.valueOf(periode.beløp.toLong())

@@ -234,6 +234,7 @@ class SimuleringTest {
                         <kodeEndringLinje>NY</kodeEndringLinje>
                         <delytelseId>200000233#0</delytelseId>
                         <kodeKlassifik>TSTBASISP4-OP</kodeKlassifik>
+                        <datoKodeKlassifikFom>2024-05-01</kodeKlassifik>
                         <datoVedtakFom>2024-05-01</datoVedtakFom>
                         <datoVedtakTom>2024-05-01</datoVedtakTom>
                         <sats>700</sats>

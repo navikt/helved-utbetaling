@@ -204,6 +204,7 @@ private fun oppdragsLinje150(
         vedtakId = utbetaling.vedtakstidspunkt.toLocalDate().toString()
         delytelseId = periodeId.toString()
         kodeKlassifik = utbetaling.stønad.klassekode
+        datoKlassifikFom = periode.fom.toXMLDate()
         datoVedtakFom = periode.fom.toXMLDate()
         datoVedtakTom = periode.tom.toXMLDate()
         sats = BigDecimal.valueOf(periode.beløp.toLong())

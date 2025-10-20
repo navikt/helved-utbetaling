@@ -216,6 +216,7 @@ private fun oppdragsLinje150(
         vedtakId = utbetalingsperiode.vedtaksdato.toString()
         delytelseId = "$sakIdKomprimert#${utbetalingsperiode.periodeId}"
         kodeKlassifik = utbetalingsperiode.klassifisering
+        datoKlassifikFom = utbetalingsperiode.fom.toXMLDate() 
         datoVedtakFom = utbetalingsperiode.fom.toXMLDate()
         datoVedtakTom = utbetalingsperiode.tom.toXMLDate()
         sats = utbetalingsperiode.sats

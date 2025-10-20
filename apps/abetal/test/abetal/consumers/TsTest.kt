@@ -71,6 +71,8 @@ internal class TsTest {
                     assertEquals("TSTBASISP2-OP", a.kodeKlassifik)
                     assertEquals(1077, a.sats.toLong())
                     assertEquals(a.delytelseId, b.refDelytelseId)
+                    assertEquals(a.datoVedtakFom, a.datoKlassifikFom)
+                    assertEquals(b.datoVedtakFom, b.datoKlassifikFom)
                 }
             }
             .get(transactionId)
@@ -156,6 +158,8 @@ internal class TsTest {
                     assertEquals("TSTBASISP2-OP", a.kodeKlassifik)
                     assertEquals(1077, a.sats.toLong())
                     assertEquals(a.delytelseId, b.refDelytelseId)
+                    assertEquals(a.datoVedtakFom, a.datoKlassifikFom)
+                    assertEquals(b.datoVedtakFom, b.datoKlassifikFom)
                 }
             }
             .get(transactionId)
@@ -245,6 +249,8 @@ internal class TsTest {
                     assertEquals("TSTBASISP2-OP", a.kodeKlassifik)
                     assertEquals(1077, a.sats.toLong())
                     assertEquals(a.delytelseId, b.refDelytelseId)
+                    assertEquals(a.datoVedtakFom, a.datoKlassifikFom)
+                    assertEquals(b.datoVedtakFom, b.datoKlassifikFom)
                 }
             }
             .get(transactionId)
@@ -365,29 +371,33 @@ internal class TsTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("NY", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(2, it.oppdrag110.oppdragsLinje150s.size)
+            .with(transactionId) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
+                assertEquals(2, oppdrag.oppdrag110.oppdragsLinje150s.size)
 
-                val linje1 = it.oppdrag110.oppdragsLinje150s[0]
-                assertNull(linje1.refDelytelseId)
-                assertEquals("NY", linje1.kodeEndringLinje)
-                assertEquals(bid.id, linje1.henvisning)
-                assertEquals("TSTBASISP2-OP", linje1.kodeKlassifik)
-                assertEquals(1077, linje1.sats.toLong())
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(1077, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
 
-                val linje2 = it.oppdrag110.oppdragsLinje150s[1]
-                assertNull(linje2.refDelytelseId)
-                assertEquals("NY", linje2.kodeEndringLinje)
-                assertEquals(bid.id, linje2.henvisning)
-                assertEquals("TSTBASISP2-OP", linje2.kodeKlassifik)
-                assertEquals(2377, linje2.sats.toLong())
+                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(2377, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -570,36 +580,39 @@ internal class TsTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("NY", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(3, it.oppdrag110.oppdragsLinje150s.size)
-
-                val linje1 = it.oppdrag110.oppdragsLinje150s[0]
-                assertNull(linje1.refDelytelseId)
-                assertEquals("NY", linje1.kodeEndringLinje)
-                assertEquals(bid.id, linje1.henvisning)
-                assertEquals("TSTBASISP2-OP", linje1.kodeKlassifik)
-                assertEquals(1077, linje1.sats.toLong())
-
-                val linje2 = it.oppdrag110.oppdragsLinje150s[1]
-                assertNull(linje2.refDelytelseId)
-                assertEquals("NY", linje2.kodeEndringLinje)
-                assertEquals(bid.id, linje2.henvisning)
-                assertEquals("TSTBASISP2-OP", linje2.kodeKlassifik)
-                assertEquals(2377, linje2.sats.toLong())
-
-                val linje3 = it.oppdrag110.oppdragsLinje150s[2]
-                assertNull(linje3.refDelytelseId)
-                assertEquals("NY", linje3.kodeEndringLinje)
-                assertEquals(bid.id, linje3.henvisning)
-                assertEquals("TSTBASISP2-OP", linje3.kodeKlassifik)
-                assertEquals(3133, linje3.sats.toLong())
+            .with(transactionId) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
+                assertEquals(3, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(1077, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(2377, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[2].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(3133, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -772,29 +785,31 @@ internal class TsTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("NY", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(2, it.oppdrag110.oppdragsLinje150s.size)
-
-                val linje1 = it.oppdrag110.oppdragsLinje150s[0]
-                assertNull(linje1.refDelytelseId)
-                assertEquals("NY", linje1.kodeEndringLinje)
-                assertEquals(bid1.id, linje1.henvisning)
-                assertEquals("TSTBASISP2-OP", linje1.kodeKlassifik)
-                assertEquals(553, linje1.sats.toLong())
-
-                val linje2 = it.oppdrag110.oppdragsLinje150s[1]
-                assertNull(linje2.refDelytelseId)
-                assertEquals("NY", linje2.kodeEndringLinje)
-                assertEquals(bid2.id, linje2.henvisning)
-                assertEquals("TSTBASISP2-OP", linje2.kodeKlassifik)
-                assertEquals(779, linje2.sats.toLong())
+            .with(transactionId) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
+                assertEquals(2, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid1.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(553, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid2.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(779, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -1030,36 +1045,44 @@ internal class TsTest {
             }
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("NY", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(4, it.oppdrag110.oppdragsLinje150s.size)
-                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
-                assertNull(førsteLinje.refDelytelseId)
-                assertEquals("NY", førsteLinje.kodeEndringLinje)
-                assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("TSTBASISP2-OP", førsteLinje.kodeKlassifik)
-                assertEquals(1000, førsteLinje.sats.toLong())
-                val andreLinje = it.oppdrag110.oppdragsLinje150s[1]
-                assertEquals("NY", andreLinje.kodeEndringLinje)
-                assertEquals(bid.id, andreLinje.henvisning)
-                assertEquals("TSLMASISP2-OP", andreLinje.kodeKlassifik)
-                assertEquals(100, andreLinje.sats.toLong())
-                val tredjeLinje = it.oppdrag110.oppdragsLinje150s[2]
-                assertEquals("NY", tredjeLinje.kodeEndringLinje)
-                assertEquals(bid.id, tredjeLinje.henvisning)
-                assertEquals("TSTBASISP2-OP", tredjeLinje.kodeKlassifik)
-                assertEquals(600, tredjeLinje.sats.toLong())
-                val fjerdeLinje = it.oppdrag110.oppdragsLinje150s[3]
-                assertEquals("NY", fjerdeLinje.kodeEndringLinje)
-                assertEquals(bid.id, fjerdeLinje.henvisning)
-                assertEquals("TSLMASISP2-OP", fjerdeLinje.kodeKlassifik)
-                assertEquals(300, fjerdeLinje.sats.toLong())
+            .with(transactionId) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
+                assertEquals(4, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(1000, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSLMASISP2-OP", it.kodeKlassifik)
+                    assertEquals(100, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[2].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(600, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[3].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSLMASISP2-OP", it.kodeKlassifik)
+                    assertEquals(300, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -1255,23 +1278,24 @@ internal class TsTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
-            .with(transactionId2) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("ENDR", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
-                assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-
-                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
-                assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
-                assertEquals("NY", førsteLinje.kodeEndringLinje)
-                assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("TSTBASISP2-OP", førsteLinje.kodeKlassifik)
-                assertEquals(80, førsteLinje.sats.toLong())
+            .with(transactionId2) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(periodeId.toString(), oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(periodeId.toString(), it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(80, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId2)
 
@@ -1396,23 +1420,24 @@ internal class TsTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("ENDR", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
-                assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-
-                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
-                assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
-                assertEquals("NY", førsteLinje.kodeEndringLinje)
-                assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("TSBUASIA-OP", førsteLinje.kodeKlassifik)
-                assertEquals(3000, førsteLinje.sats.toLong())
+            .with(transactionId) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(periodeId.toString(), oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(periodeId.toString(), it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSBUASIA-OP", it.kodeKlassifik)
+                    assertEquals(3000, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -1538,23 +1563,24 @@ internal class TsTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("ENDR", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
-                assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-
-                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
-                assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
-                assertEquals("NY", førsteLinje.kodeEndringLinje)
-                assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("TSBUASIA-OP", førsteLinje.kodeKlassifik)
-                assertEquals(3070, førsteLinje.sats.toLong())
+            .with(transactionId) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(periodeId.toString(), oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(periodeId.toString(), it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSBUASIA-OP", it.kodeKlassifik)
+                    assertEquals(3070, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -1681,23 +1707,24 @@ internal class TsTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("ENDR", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
-                assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-
-                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
-                assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
-                assertEquals("NY", førsteLinje.kodeEndringLinje)
-                assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("TSBUASIA-OP", førsteLinje.kodeKlassifik)
-                assertEquals(70, førsteLinje.sats.toLong())
+            .with(transactionId) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(periodeId.toString(), oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(periodeId.toString(), it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSBUASIA-OP", it.kodeKlassifik)
+                    assertEquals(70, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -1816,25 +1843,26 @@ internal class TsTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId1)
-            .with(transactionId1) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("ENDR", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
-                assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-
-                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
-                assertEquals(TkodeStatusLinje.OPPH, førsteLinje.kodeStatusLinje)
-                assertEquals(2.jun, førsteLinje.datoStatusFom.toLocalDate())
-                assertEquals(periodeId.toString(), førsteLinje.refDelytelseId)
-                assertEquals("NY", førsteLinje.kodeEndringLinje)
-                assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("TSTBASISP2-OP", førsteLinje.kodeKlassifik)
-                assertEquals(100, førsteLinje.sats.toLong())
+            .with(transactionId1) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(periodeId.toString(), oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+                    assertEquals(2.jun, it.datoStatusFom.toLocalDate())
+                    assertEquals(periodeId.toString(), it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(100, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId1)
 
@@ -1897,20 +1925,22 @@ internal class TsTest {
         TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
-                assertEquals("NY", it.request.oppdrag.kodeEndring)
-                assertEquals("TILLST", it.request.oppdrag.kodeFagomraade)
-                assertEquals(sid.id, it.request.oppdrag.fagsystemId)
-                assertEquals("MND", it.request.oppdrag.utbetFrekvens)
-                assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
-                assertEquals("ts", it.request.oppdrag.saksbehId)
-                assertEquals(1, it.request.oppdrag.oppdragslinjes.size)
-                assertNull(it.request.oppdrag.oppdragslinjes[0].refDelytelseId)
-                val l1 = it.request.oppdrag.oppdragslinjes[0]
-                assertEquals("NY", l1.kodeEndringLinje)
-                assertEquals("TSTBASISP2-OP", l1.kodeKlassifik)
-                assertEquals(1077, l1.sats.toLong())
+            .with(transactionId) { simulering ->
+                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
+                assertEquals("NY", simulering.request.oppdrag.kodeEndring)
+                assertEquals("TILLST", simulering.request.oppdrag.kodeFagomraade)
+                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
+                assertEquals("MND", simulering.request.oppdrag.utbetFrekvens)
+                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
+                assertEquals("ts", simulering.request.oppdrag.saksbehId)
+                assertEquals(1, simulering.request.oppdrag.oppdragslinjes.size)
+                assertNull(simulering.request.oppdrag.oppdragslinjes[0].refDelytelseId)
+                simulering.request.oppdrag.oppdragslinjes[0].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
+                    assertEquals(1077, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
     }
 
@@ -1953,35 +1983,39 @@ internal class TsTest {
         TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
-                assertEquals("NY", it.request.oppdrag.kodeEndring)
-                assertEquals("TILLST", it.request.oppdrag.kodeFagomraade)
-                assertEquals(sid.id, it.request.oppdrag.fagsystemId)
-                assertEquals("MND", it.request.oppdrag.utbetFrekvens)
-                assertEquals("12345678910", it.request.oppdrag.oppdragGjelderId)
-                assertEquals("ts", it.request.oppdrag.saksbehId)
-                assertEquals(4, it.request.oppdrag.oppdragslinjes.size)
-                assertNull(it.request.oppdrag.oppdragslinjes[0].refDelytelseId)
-                it.request.oppdrag.oppdragslinjes[0].let {
+            .with(transactionId) { simulering ->
+                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
+                assertEquals("NY", simulering.request.oppdrag.kodeEndring)
+                assertEquals("TILLST", simulering.request.oppdrag.kodeFagomraade)
+                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
+                assertEquals("MND", simulering.request.oppdrag.utbetFrekvens)
+                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
+                assertEquals("ts", simulering.request.oppdrag.saksbehId)
+                assertEquals(4, simulering.request.oppdrag.oppdragslinjes.size)
+                assertNull(simulering.request.oppdrag.oppdragslinjes[0].refDelytelseId)
+                simulering.request.oppdrag.oppdragslinjes[0].let {
                     assertEquals("NY", it.kodeEndringLinje)
                     assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
                     assertEquals(70, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
-                it.request.oppdrag.oppdragslinjes[1].let {
+                simulering.request.oppdrag.oppdragslinjes[1].let {
                     assertEquals("NY", it.kodeEndringLinje)
                     assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
                     assertEquals(70, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
-                it.request.oppdrag.oppdragslinjes[2].let {
+                simulering.request.oppdrag.oppdragslinjes[2].let {
                     assertEquals("NY", it.kodeEndringLinje)
                     assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
                     assertEquals(140, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
-                it.request.oppdrag.oppdragslinjes[3].let {
+                simulering.request.oppdrag.oppdragslinjes[3].let {
                     assertEquals("NY", it.kodeEndringLinje)
                     assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
                     assertEquals(140, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
             }
     }
