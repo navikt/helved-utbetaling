@@ -12,6 +12,7 @@ import abetal.okt
 import abetal.periode
 import abetal.sep
 import abetal.toLocalDate
+import abetal.toXMLDate
 import abetal.utbetaling
 import java.time.LocalDate
 import java.util.UUID
@@ -95,6 +96,8 @@ class AapTest {
                     assertEquals("AAPOR", a.kodeKlassifik)
                     assertEquals(553, a.sats.toLong())
                     assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(a.datoVedtakFom, a.datoKlassifikFom)
+                    assertEquals(b.datoVedtakFom, b.datoKlassifikFom)
                     assertEquals(a.delytelseId, b.refDelytelseId)
                 }
             }
@@ -189,19 +192,23 @@ class AapTest {
                 assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
                 assertEquals("kelvin", it.oppdrag110.saksbehId)
                 assertEquals(2, it.oppdrag110.oppdragsLinje150s.size)
-                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
-                assertNull(førsteLinje.refDelytelseId)
-                assertEquals("NY", førsteLinje.kodeEndringLinje)
-                assertEquals(bid.id, førsteLinje.henvisning)
-                assertEquals("AAPOR", førsteLinje.kodeKlassifik)
-                assertEquals(553, førsteLinje.sats.toLong())
-                assertEquals(1077, førsteLinje.vedtakssats157.vedtakssats.toLong())
-                val andreLinje = it.oppdrag110.oppdragsLinje150s[1]
-                assertEquals("NY", andreLinje.kodeEndringLinje)
-                assertEquals(bid.id, andreLinje.henvisning)
-                assertEquals("AAPOR", andreLinje.kodeKlassifik)
-                assertEquals(779, andreLinje.sats.toLong())
-                assertEquals(2377, andreLinje.vedtakssats157.vedtakssats.toLong())
+                it.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(553, it.sats.toLong())
+                    assertEquals(1077, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                it.oppdrag110.oppdragsLinje150s[1].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(779, it.sats.toLong())
+                    assertEquals(2377, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -329,29 +336,35 @@ class AapTest {
                 assertEquals("kelvin", it.oppdrag110.saksbehId)
                 assertEquals(3, it.oppdrag110.oppdragsLinje150s.size)
 
-                val linje1 = it.oppdrag110.oppdragsLinje150s[0]
-                assertNull(linje1.refDelytelseId)
-                assertEquals("NY", linje1.kodeEndringLinje)
-                assertEquals(bid.id, linje1.henvisning)
-                assertEquals("AAPOR", linje1.kodeKlassifik)
-                assertEquals(553, linje1.sats.toLong())
-                assertEquals(1077, linje1.vedtakssats157.vedtakssats.toLong())
+                it.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(553, it.sats.toLong())
+                    assertEquals(1077, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
 
-                val linje2 = it.oppdrag110.oppdragsLinje150s[1]
-                assertNull(linje2.refDelytelseId)
-                assertEquals("NY", linje2.kodeEndringLinje)
-                assertEquals(bid.id, linje2.henvisning)
-                assertEquals("AAPOR", linje2.kodeKlassifik)
-                assertEquals(779, linje2.sats.toLong())
-                assertEquals(2377, linje2.vedtakssats157.vedtakssats.toLong())
+                it.oppdrag110.oppdragsLinje150s[1].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(779, it.sats.toLong())
+                    assertEquals(2377, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
 
-                val linje3 = it.oppdrag110.oppdragsLinje150s[2]
-                assertNull(linje3.refDelytelseId)
-                assertEquals("NY", linje3.kodeEndringLinje)
-                assertEquals(bid.id, linje3.henvisning)
-                assertEquals("AAPOR", linje3.kodeKlassifik)
-                assertEquals(3000, linje3.sats.toLong())
-                assertEquals(3133, linje3.vedtakssats157.vedtakssats.toLong())
+                it.oppdrag110.oppdragsLinje150s[2].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid.id, it.henvisning)
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(3000, it.sats.toLong())
+                    assertEquals(3133, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -687,6 +700,8 @@ class AapTest {
                     assertEquals(200, a.sats.toLong())
                     assertEquals(200, a.vedtakssats157.vedtakssats.toLong())
                     assertEquals(a.delytelseId, b.refDelytelseId)
+                    assertEquals(a.datoVedtakFom, a.datoKlassifikFom)
+                    assertEquals(b.datoVedtakFom, b.datoKlassifikFom)
                 }
             }
             .get(transactionId2)
@@ -829,11 +844,13 @@ class AapTest {
                 assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
                 assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
 
-                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
-                assertEquals("NY", førsteLinje.kodeEndringLinje)
-                assertEquals("AAPOR", førsteLinje.kodeKlassifik)
-                assertEquals(80, førsteLinje.sats.toLong())
-                assertEquals(100, førsteLinje.vedtakssats157.vedtakssats.toLong())
+                it.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(80, it.sats.toLong())
+                    assertEquals(100, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId2)
 
@@ -929,10 +946,12 @@ class AapTest {
             .with(transactionId1) {
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
                 assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                val førsteLinje = it.oppdrag110.oppdragsLinje150s[0]
-                assertEquals(TkodeStatusLinje.OPPH, førsteLinje.kodeStatusLinje)
-                assertEquals(2.jun, førsteLinje.datoStatusFom.toLocalDate())
-                assertEquals("AAPOR", førsteLinje.kodeKlassifik)
+                it.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+                    assertEquals(2.jun, it.datoStatusFom.toLocalDate())
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId1)
 
@@ -1042,13 +1061,13 @@ class AapTest {
                 assertEquals("ENDR", it.oppdrag110.kodeEndring)
                 assertEquals("AAP", it.oppdrag110.kodeFagomraade)
                 assertEquals(3, it.oppdrag110.oppdragsLinje150s.size)
-
-                val linje1 = it.oppdrag110.oppdragsLinje150s[0]
-                assertEquals(pid1.toString(), linje1.refDelytelseId)
-
-                val linje3 = it.oppdrag110.oppdragsLinje150s[2]
-                assertEquals(pid2.toString(), linje3.refDelytelseId)
-                assertEquals(TkodeStatusLinje.OPPH, linje3.kodeStatusLinje)
+                it.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(pid1.toString(), it.refDelytelseId)
+                }
+                it.oppdrag110.oppdragsLinje150s[2].let {
+                    assertEquals(pid2.toString(), it.refDelytelseId)
+                    assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+                }
             }
             .get(transactionId)
 
@@ -1146,37 +1165,43 @@ class AapTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("NY", it.oppdrag110.kodeEndring)
-                assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("kelvin", it.oppdrag110.saksbehId)
-                assertEquals(3, it.oppdrag110.oppdragsLinje150s.size)
-                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-                val l1 = it.oppdrag110.oppdragsLinje150s[0]
-                assertNull(l1.refDelytelseId)
-                assertEquals("NY", l1.kodeEndringLinje)
-                assertEquals(bid1.id, l1.henvisning)
-                assertEquals("AAPOR", l1.kodeKlassifik)
-                assertEquals(300, l1.sats.toLong())
-                assertEquals(300, l1.vedtakssats157.vedtakssats.toLong())
-                val l2 = it.oppdrag110.oppdragsLinje150s[1]
-                assertEquals(l1.delytelseId, l2.refDelytelseId)
-                assertEquals("NY", l2.kodeEndringLinje)
-                assertEquals(bid2.id, l2.henvisning)
-                assertEquals("AAPOR", l2.kodeKlassifik)
-                assertEquals(300, l2.sats.toLong())
-                assertEquals(300, l2.vedtakssats157.vedtakssats.toLong())
-                val l3 = it.oppdrag110.oppdragsLinje150s[2]
-                assertEquals(l2.delytelseId, l3.refDelytelseId)
-                assertEquals("NY", l3.kodeEndringLinje)
-                assertEquals(bid3.id, l3.henvisning)
-                assertEquals("AAPOR", l3.kodeKlassifik)
-                assertEquals(300, l3.sats.toLong())
-                assertEquals(300, l3.vedtakssats157.vedtakssats.toLong())
+            .with(transactionId) { oppdrag -> 
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("AAP", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("kelvin", oppdrag.oppdrag110.saksbehId)
+                assertEquals(3, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                assertNull(oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid1.id, it.henvisning)
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(300, it.sats.toLong())
+                    assertEquals(300, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
+                    assertEquals(oppdrag.oppdrag110.oppdragsLinje150s[0].delytelseId, it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid2.id, it.henvisning)
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(300, it.sats.toLong())
+                    assertEquals(300, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[2].let {
+                    assertEquals(oppdrag.oppdrag110.oppdragsLinje150s[1].delytelseId, it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bid3.id, it.henvisning)
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(300, it.sats.toLong())
+                    assertEquals(300, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
             .get(transactionId)
 
@@ -1316,9 +1341,11 @@ class AapTest {
                 assertEquals("AAP", it.request.oppdrag.kodeFagomraade)
                 assertEquals(sid.id, it.request.oppdrag.fagsystemId)
                 assertEquals("kelvin", it.request.oppdrag.saksbehId)
-                val l1 = it.request.oppdrag.oppdragslinjes[0]
-                assertEquals("AAPOR", l1.kodeKlassifik)
-                assertEquals(553, l1.sats.toLong())
+                it.request.oppdrag.oppdragslinjes[0].let {
+                    assertEquals("AAPOR", it.kodeKlassifik)
+                    assertEquals(553, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
     }
 
