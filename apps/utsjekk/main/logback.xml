@@ -38,5 +38,5 @@
     <logger name="kafka"     level="INFO" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="mq"        level="INFO" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="ws"        level="INFO" additivity="false"><appender-ref ref="json"/></logger>
-    <logger name="secureLog" level="INFO" additivity="false"><appender-ref ref="secureLog"/></logger>
+    <logger name="secureLog" level="DEBUG" additivity="false"><appender-ref ref="secureLog"/></logger>
 </configuration>
