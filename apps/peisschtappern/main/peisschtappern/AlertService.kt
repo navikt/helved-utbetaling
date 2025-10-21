@@ -18,10 +18,14 @@ object AlertService {
     }
 
     private suspend fun addTimer(key: String, oppdrag: Oppdrag) {
+        if (TimerDao.exists(key)) return
+
         val timeout = LocalDateTime.now().plusHours(1)
         val timer = TimerDao(
-            key, timeout, oppdrag.oppdrag110.fagsystemId.trim(), oppdrag.oppdrag110.kodeFagomraade
-                .trim()
+            key, 
+            timeout,
+            oppdrag.oppdrag110.fagsystemId.trim(),
+            oppdrag.oppdrag110.kodeFagomraade.trim()
         )
 
         transaction {
