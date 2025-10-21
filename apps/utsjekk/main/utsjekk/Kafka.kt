@@ -60,7 +60,7 @@ fun createTopology(abetalClient: AbetalClient): Topology = topology {
                                 Status.HOS_OPPDRAG -> utsjekk.utbetaling.Status.SENDT_TIL_OPPDRAG
                                 Status.MOTTATT -> utsjekk.utbetaling.Status.IKKE_PÅBEGYNT
                             }
-                            dao.copy(status = status).update(uid)
+                            dao.copy(status = status).updateIncludingHistory(uid)
 
                             if (status == utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG) {
                                 dao.delete(uid)
