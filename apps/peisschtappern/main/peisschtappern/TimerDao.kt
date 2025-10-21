@@ -50,6 +50,22 @@ data class TimerDao(
             }
         }
 
+        suspend fun exists(key: String): Boolean {
+            val sql = """
+                SELECT 1
+                FROM $TABLE_NAME
+                WHERE record_key = ?
+                LIMIT 1
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, key)
+                timeDaoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().next()
+            }
+        }
+
         suspend fun delete(key: String) {
             val sql = """
                 DELETE FROM $TABLE_NAME
