@@ -4,6 +4,7 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.time.LocalDateTime
 import libs.jdbc.concurrency.transaction
 import libs.xml.XMLMapper
+import libs.utils.appLog
 
 object AlertService {
     private val oppdragMapper = XMLMapper<Oppdrag>()
@@ -18,7 +19,10 @@ object AlertService {
     }
 
     private suspend fun addTimer(key: String, oppdrag: Oppdrag) {
-        if (TimerDao.exists(key)) return
+        if (TimerDao.exists(key)) {
+            appLog.warn("timer for oppdrag with record key $key already present")
+            return
+        }
 
         val timeout = LocalDateTime.now().plusHours(1)
         val timer = TimerDao(
