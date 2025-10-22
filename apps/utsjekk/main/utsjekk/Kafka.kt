@@ -63,7 +63,7 @@ fun createTopology(abetalClient: AbetalClient): Topology = topology {
                             dao.copy(status = status).update(uid)
 
                             // created_at er lik updated_at om det er første oppdrag
-                            if (status == utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG && dao.created_at.compareTo(dao.updated_at) == 0) {
+                            if (status == utsjekk.utbetaling.Status.FEILET_MOT_OPPDRAG && dao.created_at.isEqual(dao.updated_at)) {
                                 dao.delete(uid)
                             }
                         }
