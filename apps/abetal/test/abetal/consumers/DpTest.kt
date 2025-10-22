@@ -149,10 +149,8 @@ internal class DpTest {
     }
 
     @Test
-    fun `simulering uten endring kaster feil1`() {
+    fun `simulering uten endring`() {
         val key = UUID.randomUUID().toString()
-        val key2 = UUID.randomUUID().toString()
-
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val meldeperiode1 = UUID.randomUUID().toString()
@@ -191,12 +189,10 @@ internal class DpTest {
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
 
         TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
-            assertEquals(Status.FEILET, statusReply.status)
-            assertEquals(statusReply.error?.msg , "kan ikke simulere uten endringer")
+            assertEquals(Status.OK, statusReply.status)
         }
 
         TestRuntime.topics.simulering.assertThat().hasNot(key)
-
     }
 
     @Test
