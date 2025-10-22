@@ -33,6 +33,8 @@ subgraph Topologi
 	aap.utbetaling.v1([aap.utbetaling.v1])
 	from-aap.utbetaling.v1-repartition([from-aap.utbetaling.v1-repartition])
 	helved.utbetalinger-aap.v1([helved.utbetalinger-aap.v1])
+	tilleggsstonader.utbetaling.v1([tilleggsstonader.utbetaling.v1])
+	from-tilleggsstonader.utbetaling.v1-repartition([from-tilleggsstonader.utbetaling.v1-repartition])
 	helved.utbetalinger-ts.v1([helved.utbetalinger-ts.v1])
 	helved.utbetalinger-tp.v1([helved.utbetalinger-tp.v1])
 
@@ -133,7 +135,9 @@ subgraph Topologi
 	aap.utbetaling.v1 --> from-aap.utbetaling.v1-repartition
 	helved.utbetalinger-aap.v1 --> aaptuple-leftjoin-saker-repartition
 	from-aap.utbetaling.v1-repartition --> aaptuple-leftjoin-saker-repartition
+	tilleggsstonader.utbetaling.v1 --> from-tilleggsstonader.utbetaling.v1-repartition
 	helved.utbetalinger-ts.v1 --> tstuple-leftjoin-saker-repartition
+	from-tilleggsstonader.utbetaling.v1-repartition --> tstuple-leftjoin-saker-repartition
 	helved.utbetalinger-tp.v1 --> tptuple-leftjoin-saker-repartition
 	helved.oppdrag.v1 --> oppdrag-leftjoin-fks-repartition
     
@@ -177,6 +181,8 @@ style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a
 style aap.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style from-aap.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger-aap.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style tilleggsstonader.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style from-tilleggsstonader.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger-ts.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger-tp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a

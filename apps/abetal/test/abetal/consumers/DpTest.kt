@@ -2542,7 +2542,7 @@ internal class DpTest {
             val meldeperiode = "132460781"
             val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
-            TestRuntime.topics.dpUtbetalinger.produce(transactionId) {
+            TestRuntime.topics.dpIntern.produce(transactionId) {
                 Dp.utbetaling(sid.id, bid.id) {
                     Dp.meldekort(
                         meldeperiode = "132460781",
@@ -2635,7 +2635,7 @@ internal class DpTest {
             val meldeperiode = "132460781"
             val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
-            TestRuntime.topics.dpUtbetalinger.produce(transactionId) {
+            TestRuntime.topics.dpIntern.produce(transactionId) {
                 Dp.utbetaling(sid.id, bid.id) {
                     Dp.meldekort(
                         meldeperiode = "132460781",
