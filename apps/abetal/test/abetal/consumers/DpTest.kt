@@ -64,7 +64,7 @@ internal class DpTest {
         val uid = "26c8ad95-1731-e800-abd5-ba92ec6aad86"
         val transaction1 = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transaction1) { utbet }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
         TestRuntime.topics.status.assertThat().has(transaction1)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid)
@@ -129,7 +129,7 @@ internal class DpTest {
             }""".trimIndent())
         val transaction2 = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transaction2) { dryrun }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
         TestRuntime.topics.simulering.assertThat()
             .has(transaction2)
             .with(transaction2) { simulering ->
@@ -173,10 +173,10 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(1.jan, 2.jan, 100u)
+                periode(1.jan, 2.jan, 100u, 100u)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id, bid.id, dryrun = true) {
@@ -189,7 +189,7 @@ internal class DpTest {
                 )
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
             assertEquals(Status.OK, statusReply.status)
@@ -218,7 +218,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -320,7 +320,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -514,7 +514,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -801,7 +801,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1038,7 +1038,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1226,7 +1226,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1397,7 +1397,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(3.jun, 14.jun, 100u)
+                periode(3.jun, 14.jun, 100u, 100u)
             }
         }
 
@@ -1405,7 +1405,7 @@ internal class DpTest {
             setOf(uid1)
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
@@ -1429,7 +1429,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1562,7 +1562,7 @@ internal class DpTest {
             setOf(uid1)
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
@@ -1580,7 +1580,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1702,7 +1702,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(2.jun, 13.jun, 100u)
+                periode(2.jun, 13.jun, 100u, 100u)
             }
         }
 
@@ -1716,7 +1716,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             status = Status.MOTTATT,
@@ -1838,7 +1838,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(2.sep, 13.sep, 500u) // 1-14
+                periode(2.sep, 13.sep, 500u, 500u) // 1-14
             }
         }
         TestRuntime.topics.utbetalinger.produce(uid2.toString()) {
@@ -1857,7 +1857,7 @@ internal class DpTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(16.sep, 27.sep, 600u) // 15-28
+                periode(16.sep, 27.sep, 600u, 600u) // 15-28
             }
         }
 
@@ -1865,7 +1865,7 @@ internal class DpTest {
             setOf(uid1, uid2)
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -1874,7 +1874,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1911,7 +1911,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(2.sep, 13.sep, 600u)
+                    periode(2.sep, 13.sep, 600u, 600u)
                 }
                 assertEquals(expected, it)
             }
@@ -1932,7 +1932,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(16.sep, 27.sep, 600u)
+                    periode(16.sep, 27.sep, 600u, 600u)
                 }
                 assertEquals(expected, it)
             }
@@ -1953,7 +1953,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(30.sep, 10.okt, 600u)
+                    periode(30.sep, 10.okt, 600u, 600u)
                 }
                 assertEquals(expected, it)
             }
@@ -2024,7 +2024,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(2.sep, 13.sep, 600u)
+                    periode(2.sep, 13.sep, 600u, 600u)
                 }
                 assertEquals(expected, it)
             }
@@ -2045,7 +2045,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(16.sep, 27.sep, 600u)
+                    periode(16.sep, 27.sep, 600u, 600u)
                 }
                 assertEquals(expected, it)
             }
@@ -2066,7 +2066,7 @@ internal class DpTest {
                     saksbehandlerId = Navident("dagpenger"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(30.sep, 10.okt, 600u)
+                    periode(30.sep, 10.okt, 600u, 600u)
                 }
                 assertEquals(expected, it)
             }
@@ -2110,7 +2110,7 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -2265,7 +2265,7 @@ internal class DpTest {
                 }
             }
 
-            TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+            TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
             val mottatt1 = StatusReply(
                 Status.MOTTATT,
@@ -2506,7 +2506,7 @@ internal class DpTest {
                 }
             }
 
-            TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+            TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
             TestRuntime.topics.status.assertThat().isEmpty()
             TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -2554,7 +2554,7 @@ internal class DpTest {
                 }
             }
 
-            TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+            TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
             val mottatt = StatusReply(
                 Status.MOTTATT,
@@ -2647,7 +2647,7 @@ internal class DpTest {
                 }
             }
 
-            TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+            TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
             TestRuntime.topics.status.assertThat().has(transactionId)
             TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
