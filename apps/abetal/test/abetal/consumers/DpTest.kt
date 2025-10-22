@@ -5,14 +5,17 @@ import abetal.TestRuntime
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.kafka.JsonSerde
 import models.*
+import java.time.format.DateTimeFormatter
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -2622,6 +2625,52 @@ internal class DpTest {
             TestRuntime.topics.saker.assertThat()
                 .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
                 .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
+        }
+
+        @Test
+        fun `avstemmingstidspunkt blir satt til i dag kl 10 over 10`() {
+            val sid = SakId("$nextInt")
+            val bid = BehandlingId("$nextInt")
+            val transactionId = UUID.randomUUID().toString()
+            val meldeperiode = "132460781"
+            val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
+
+            TestRuntime.topics.dpUtbetalinger.produce(transactionId) {
+                Dp.utbetaling(sid.id, bid.id) {
+                    Dp.meldekort(
+                        meldeperiode = "132460781",
+                        fom = LocalDate.of(2021, 6, 7),
+                        tom = LocalDate.of(2021, 6, 18),
+                        sats = 1077u,
+                        utbetaltBeløp = 553u,
+                    )
+                }
+            }
+
+            TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+            TestRuntime.topics.status.assertThat().has(transactionId)
+            TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+            val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+                .has(transactionId)
+                .with(transactionId) { oppdrag ->
+                    assertNotNull(oppdrag.oppdrag110.avstemming115)
+                    assertEquals(
+                        LocalDateTime.now().withHour(10).withMinute(10).withSecond(0).withNano(0),
+                        LocalDateTime.parse(oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd(), DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+                    )
+
+                }
+                .get(transactionId)
+
+            TestRuntime.topics.oppdrag.produce(transactionId) {
+                oppdrag.apply {
+                    mmel = Mmel().apply { alvorlighetsgrad = "00" }
+                }
+            }
+
+            TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+            TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
         }
     }
 

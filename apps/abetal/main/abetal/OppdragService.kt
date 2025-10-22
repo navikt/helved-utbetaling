@@ -4,6 +4,7 @@ import models.*
 import no.trygdeetaten.skjema.oppdrag.*
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -13,6 +14,7 @@ import javax.xml.datatype.XMLGregorianCalendar
 
 private val objectFactory = ObjectFactory()
 private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofPattern(pattern))
+private val fixedTime = LocalTime.of(10, 10, 0, 0)
 fun LocalDate.toXMLDate(): XMLGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
 
 object OppdragService {
@@ -99,10 +101,11 @@ object OppdragService {
 }
 
 private fun avstemming115(fagområde: String): Avstemming115 {
+    val todayAtSeven = LocalDateTime.now().with(fixedTime)
     return objectFactory.createAvstemming115().apply {
         kodeKomponent = fagområde
-        nokkelAvstemming = LocalDateTime.now().format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
-        tidspktMelding = LocalDateTime.now().format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        nokkelAvstemming = todayAtSeven.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        tidspktMelding = todayAtSeven.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
     }
 } 
 
