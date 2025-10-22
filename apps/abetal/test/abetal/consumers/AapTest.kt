@@ -1,12 +1,16 @@
 package abetal.consumers
 
+import abetal.AAP_TX_GAP_MS
 import abetal.Aap
 import abetal.SakKey
 import abetal.TestRuntime
+import abetal.aug
 import abetal.aug21
+import abetal.jul
 import abetal.jul21
 import abetal.jun
 import abetal.jun21
+import abetal.meldekort
 import abetal.nextInt
 import abetal.okt
 import abetal.periode
@@ -51,30 +55,19 @@ class AapTest {
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                Aap.meldekort(
-                    meldeperiode = "132460781",
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                )
+                meldekort(meldeperiode, 7.jun, 18.jun, 553u, 1077u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .with(transactionId) {
+                StatusReply(Status.MOTTATT, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun, 18.jun, 553u, 1077u, "AAPOR"),
+                )))
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -126,10 +119,11 @@ class AapTest {
                     saksbehandlerId = Navident("kelvin"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u)
+                    periode(7.jun, 18.jun, 553u, 1077u)
                 }
                 assertEquals(expected, it)
             }
+
         TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.AAP), size = 1)
             .has(SakKey(sid, Fagsystem.AAP), setOf(uid), index = 0)
@@ -147,37 +141,21 @@ class AapTest {
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                Aap.meldekort(
-                    meldeperiode = meldeperiode1,
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                ) + Aap.meldekort(
-                    meldeperiode = meldeperiode2,
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    sats = 2377u,
-                    utbetaltBeløp = 779u,
-                )
+                meldekort(meldeperiode1, 7.jun, 18.jun, 553u, 1077u)
+                meldekort(meldeperiode2, 7.jul, 20.jul, 779u, 2377u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPOR"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .with(transactionId) {
+                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun, 18.jun, 553u, 1077u, "AAPOR"),
+                    DetaljerLinje(bid.id, 7.jul, 20.jul, 779u, 2377u, "AAPOR"),
+                )))
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -235,7 +213,7 @@ class AapTest {
                     saksbehandlerId = Navident("kelvin"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u)
+                    periode(7.jun, 18.jun, 553u, 1077u)
                 }
                 assertEquals(expected, it)
             }
@@ -255,7 +233,7 @@ class AapTest {
                     saksbehandlerId = Navident("kelvin"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u)
+                    periode(8.jul, 19.jul, 779u, 2377u) // fjern surrounding helg
                 }
                 assertEquals(expected, it)
             }
@@ -283,44 +261,23 @@ class AapTest {
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                Aap.meldekort(
-                    meldeperiode = meldeperiode1,
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                ) + Aap.meldekort(
-                    meldeperiode = meldeperiode2,
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    sats = 2377u,
-                    utbetaltBeløp = 779u,
-                ) + Aap.meldekort(
-                    meldeperiode = meldeperiode3,
-                    fom = LocalDate.of(2021, 8, 7),
-                    tom = LocalDate.of(2021, 8, 20),
-                    sats = 3133u,
-                    utbetaltBeløp = 3000u,
-                )
+                meldekort(meldeperiode1, 7.jun, 20.jun, 553u, 1077u)
+                meldekort(meldeperiode2, 8.jul, 19.jul, 779u, 2377u)
+                meldekort(meldeperiode3, 7.aug, 20.aug, 3000u, 3133u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPOR"),
-                    DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "AAPOR"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .with(transactionId) {
+                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun, 18.jun, 1077u, 553u, "AAPOR"),
+                    DetaljerLinje(bid.id, 7.jul, 20.jul, 2377u, 779u, "AAPOR"),
+                    DetaljerLinje(bid.id, 7.aug, 20.aug, 3133u, 3000u, "AAPOR"),
+                )))
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -391,7 +348,7 @@ class AapTest {
                     saksbehandlerId = Navident("kelvin"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u)
+                    periode(7.jun, 20.jun, 553u, 1077u)
                 }
                 assertEquals(expected, it)
             }
@@ -411,7 +368,7 @@ class AapTest {
                     saksbehandlerId = Navident("kelvin"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, 2377u)
+                    periode(8.jul, 19.jul, 779u, 2377u)
                 }
                 assertEquals(expected, it)
             }
@@ -431,7 +388,7 @@ class AapTest {
                     saksbehandlerId = Navident("kelvin"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(LocalDate.of(2021, 8, 9), LocalDate.of(2021, 8, 20), 3000u, 3133u)
+                    periode(7.aug, 20.aug, 3000u, 3133u)
                 }
                 assertEquals(expected, it)
             }
@@ -455,42 +412,25 @@ class AapTest {
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                Aap.meldekort(
-                    meldeperiode = meldeperiode1,
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                )
+                meldekort(meldeperiode1, 7.jun, 20.jun, 553u, 1077u)
             }
         }
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                Aap.meldekort(
-                    meldeperiode = meldeperiode2,
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    sats = 2377u,
-                    utbetaltBeløp = 779u,
-                )
+                meldekort(meldeperiode2, 8.jul, 19.jul, 779u, 2377u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPOR"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .with(transactionId) {
+                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun, 20.jun, 553u, 1077u, "AAPOR"),
+                    DetaljerLinje(bid.id, 8.jul, 19.jul, 779u, 2377u, "AAPOR"),
+                )))
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -533,63 +473,40 @@ class AapTest {
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid1.id) {
-                Aap.meldekort(
-                    meldeperiode = meldeperiode1,
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                )
+                meldekort(meldeperiode1, 7.jun, 20.jun, 553u, 1077u)
             }
         }
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid2.id) {
-                Aap.meldekort(
-                    meldeperiode = meldeperiode1,
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                ) +
-                        Aap.meldekort(
-                            meldeperiode = meldeperiode2,
-                            fom = LocalDate.of(2021, 7, 7),
-                            tom = LocalDate.of(2021, 7, 20),
-                            sats = 2377u,
-                            utbetaltBeløp = 779u,
-                        )
+                meldekort(meldeperiode1, 7.jun, 20.jun, 553u, 1077u)
+                meldekort(meldeperiode2, 8.jul, 19.jul, 779u, 2377u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(
-                    DetaljerLinje(bid1.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"),
-                    DetaljerLinje(bid2.id, 7.jul21, 20.jul21, 2377u, 779u, "AAPOR"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .with(transactionId) {
+                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+                    DetaljerLinje(bid1.id, 7.jun, 18.jun, 553u, 1077u, "AAPOR"),
+                    DetaljerLinje(bid2.id, 8.jul, 19.jul, 779u, 2377u, "AAPOR"),
+                )))
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                assertEquals(2, it.oppdrag110.oppdragsLinje150s.size)
-
-                val linje1 = it.oppdrag110.oppdragsLinje150s[0]
-                assertEquals(bid1.id, linje1.henvisning)
-
-                val linje2 = it.oppdrag110.oppdragsLinje150s[1]
-                assertEquals(bid2.id, linje2.henvisning)
+            .with(transactionId) { oppdrag ->
+                assertEquals("AAP", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(2, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(bid1.id, it.henvisning)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
+                    assertEquals(bid2.id, it.henvisning)
+                }
             }
             .get(transactionId)
 
@@ -634,52 +551,32 @@ class AapTest {
                 saksbehandlerId = Navident("kelvin"),
                 fagsystem = Fagsystem.AAP,
             ) {
-                periode(3.jun, 14.jun, 100u)
+                periode(3.jun, 14.jun, 100u, 100u)
             }
         }
 
-        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP)) {
-            setOf(uid1)
-        }
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.AAP), size = 1)
+            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
 
         TestRuntime.topics.aap.produce(transactionId2) {
-            Aap.utbetaling(
-                sakId = sid.id,
-                behandlingId = bid.id,
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
-            ) {
-                Aap.meldekort(
-                    meldeperiode = meldeperiode1,
-                    fom = 3.jun,
-                    tom = 14.jun,
-                    sats = 100u,
-                    utbetaltBeløp = 100u,
-                ) + Aap.meldekort(
-                    meldeperiode = meldeperiode2,
-                    fom = 17.jun,
-                    tom = 28.jun,
-                    sats = 200u,
-                    utbetaltBeløp = 200u,
-                )
+            Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
+                meldekort(meldeperiode1, 3.jun, 14.jun, 100u, 100u)
+                meldekort(meldeperiode2, 17.jun, 28.jun, 200u, 200u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "AAPOR"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId2)
-            .has(transactionId2, mottatt)
+            .with(transactionId2) {
+                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+                    DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "AAPOR"),
+                )))
+            }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
@@ -736,9 +633,8 @@ class AapTest {
             }
 
         TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 2)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2), index = 1)
+            .has(SakKey(sid, Fagsystem.AAP), size = 1)
+            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2), index = 0)
     }
 
     @Test
@@ -770,42 +666,27 @@ class AapTest {
             }
         }
 
-        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP)) {
-            setOf(uid1)
-        }
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.AAP), size = 1)
+            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
 
         TestRuntime.topics.aap.produce(transactionId2) {
-            Aap.utbetaling(
-                sakId = sid.id,
-                behandlingId = bid.id,
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
-            ) {
-                Aap.meldekort(
-                    meldeperiode = meldeperiode1,
-                    fom = 3.jun,
-                    tom = 14.jun,
-                    sats = 100u,
-                    utbetaltBeløp = 80u,
-                )
+            Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
+                meldekort(meldeperiode1, 3.jun, 14.jun, 80u, 100u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "AAPOR"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId2)
-            .has(transactionId2, mottatt)
+            .with(transactionId2) {
+                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+                    DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "AAPOR"),
+                )))
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -834,17 +715,17 @@ class AapTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
-            .with(transactionId2) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("ENDR", it.oppdrag110.kodeEndring)
-                assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("kelvin", it.oppdrag110.saksbehId)
-                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
-                assertEquals(periodeId.toString(), it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+            .with(transactionId2) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("AAP", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("kelvin", oppdrag.oppdrag110.saksbehId)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                assertEquals(periodeId.toString(), oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
 
-                it.oppdrag110.oppdragsLinje150s[0].let {
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
                     assertEquals("NY", it.kodeEndringLinje)
                     assertEquals("AAPOR", it.kodeKlassifik)
                     assertEquals(80, it.sats.toLong())
@@ -884,7 +765,7 @@ class AapTest {
             }
 
         TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 2)
+            .has(SakKey(sid, Fagsystem.AAP), size = 1)
             .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
     }
 
@@ -912,7 +793,7 @@ class AapTest {
                 saksbehandlerId = Navident("kelvin"),
                 fagsystem = Fagsystem.AAP,
             ) {
-                periode(2.jun, 13.jun, 100u)
+                periode(2.jun, 13.jun, 100u, 100u)
             }
         }
 
@@ -926,20 +807,21 @@ class AapTest {
                 behandlingId = bid.id,
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
             ) {
-                emptyList()
+                
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
-
-        val mottatt = StatusReply(
-            status = Status.MOTTATT,
-            detaljer = Detaljer(Fagsystem.AAP, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "AAPOR")))
-        )
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId1)
-            .has(transactionId1, mottatt)
+            .with(transactionId1) {
+                val expected = StatusReply(
+                    status = Status.MOTTATT,
+                    detaljer = Detaljer(Fagsystem.AAP, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "AAPOR")))
+                )
+                assertEquals(expected, it)
+            }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId1)
@@ -1000,7 +882,7 @@ class AapTest {
                 saksbehandlerId = Navident("kelvin"),
                 fagsystem = Fagsystem.AAP,
             ) {
-                periode(2.sep, 13.sep, 500u) // 1-14
+                periode(2.sep, 13.sep, 500u, 500u)
             }
         }
         TestRuntime.topics.utbetalinger.produce(uid2.toString()) {
@@ -1019,52 +901,48 @@ class AapTest {
                 saksbehandlerId = Navident("kelvin"),
                 fagsystem = Fagsystem.AAP,
             ) {
-                periode(16.sep, 27.sep, 600u) // 15-28
+                periode(16.sep, 27.sep, 600u, 600u)
             }
         }
 
-        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP)) {
-            setOf(uid1, uid2)
-        }
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.AAP), size = 2)
+            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
+            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2), index = 1)
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                Aap.meldekort("132460781", 2.sep, 13.sep, 600u) +
-                        Aap.meldekort("132462765", 30.sep, 10.okt, 600u)
+                meldekort("132460781", 2.sep, 13.sep, 600u, 600u)
+                meldekort("132462765", 30.sep, 10.okt, 600u, 600u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) {
+                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
                     DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "AAPOR"),
                     DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "AAPOR"),
                     DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "AAPOR"),
-                )
-            )
-        )
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .has(transactionId, mottatt)
+                )))
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("ENDR", it.oppdrag110.kodeEndring)
-                assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                assertEquals(3, it.oppdrag110.oppdragsLinje150s.size)
-                it.oppdrag110.oppdragsLinje150s[0].let {
+            .with(transactionId) { oppdrag ->
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("AAP", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(3, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
                     assertEquals(pid1.toString(), it.refDelytelseId)
                 }
-                it.oppdrag110.oppdragsLinje150s[2].let {
+                oppdrag.oppdrag110.oppdragsLinje150s[2].let {
                     assertEquals(pid2.toString(), it.refDelytelseId)
                     assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
                 }
@@ -1078,16 +956,13 @@ class AapTest {
         }
 
         TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .with(uid1.toString()) { assertEquals(Action.UPDATE, it.action) }
-            .has(uid2.toString())
-            .with(uid2.toString()) { assertEquals(Action.DELETE, it.action) }
-            .has(uid3.toString())
-            .with(uid3.toString()) { assertEquals(Action.CREATE, it.action) }
+            .has(uid1.toString()).with(uid1.toString()) { assertEquals(Action.UPDATE, it.action) }
+            .has(uid2.toString()).with(uid2.toString()) { assertEquals(Action.DELETE, it.action) }
+            .has(uid3.toString()).with(uid3.toString()) { assertEquals(Action.CREATE, it.action) }
 
         TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 5)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid3), index = 4)
+            .has(SakKey(sid, Fagsystem.AAP), size = 3)
+            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid3), index = 2)
     }
 
     @Test
@@ -1120,7 +995,7 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1274,7 +1149,7 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat().has(transactionId, 3)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -1318,17 +1193,11 @@ class AapTest {
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id, dryrun = true) {
-                Aap.meldekort(
-                    meldeperiode = "132460781",
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                )
+                meldekort("132460781", 7.jun, 18.jun, 553u, 1077u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -1337,11 +1206,11 @@ class AapTest {
         TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
             .has(transactionId)
-            .with(transactionId) {
-                assertEquals("AAP", it.request.oppdrag.kodeFagomraade)
-                assertEquals(sid.id, it.request.oppdrag.fagsystemId)
-                assertEquals("kelvin", it.request.oppdrag.saksbehId)
-                it.request.oppdrag.oppdragslinjes[0].let {
+            .with(transactionId) { simulering ->
+                assertEquals("AAP", simulering.request.oppdrag.kodeFagomraade)
+                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
+                assertEquals("kelvin", simulering.request.oppdrag.saksbehId)
+                simulering.request.oppdrag.oppdragslinjes[0].let {
                     assertEquals("AAPOR", it.kodeKlassifik)
                     assertEquals(553, it.sats.toLong())
                     assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
@@ -1357,31 +1226,21 @@ class AapTest {
         val meldeperiode = "132460781"
         val uid = aapUId(sid.id, meldeperiode, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
 
-        // TODO: Skulle dette vært aapUtbetalinger topic, tilsvarende som i DP testen?
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                Aap.meldekort(
-                    meldeperiode = "132460781",
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                )
+                meldekort(meldeperiode, 7.jun, 18.jun, 1077u, 553u)
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "AAPOR"))
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .with(transactionId) {
+                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun, 18.jun, 1077u, 553u, "AAPOR"),
+                )))
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 

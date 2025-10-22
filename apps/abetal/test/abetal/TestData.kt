@@ -12,6 +12,7 @@ val Int.jul21: LocalDate get() = LocalDate.of(2021, 7, this)
 val Int.aug21: LocalDate get() = LocalDate.of(2021, 8, this)
 val Int.jun: LocalDate get() = LocalDate.of(2024, 6, this)
 val Int.jul: LocalDate get() = LocalDate.of(2024, 7, this)
+val Int.aug: LocalDate get() = LocalDate.of(2024, 8, this)
 val Int.sep: LocalDate get() = LocalDate.of(2024, 9, this)
 val Int.okt: LocalDate get() = LocalDate.of(2024, 10, this)
 val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
@@ -27,6 +28,21 @@ fun randomUtbetalingId(): UtbetalingId = UtbetalingId(UUID.randomUUID())
 
 fun XMLGregorianCalendar.toLocalDate() = toGregorianCalendar().toZonedDateTime().toLocalDate()
 
+fun MutableList<AapUtbetalingsdag>.meldekort(
+    meldeperiode: String,
+    fom: LocalDate, 
+    tom: LocalDate,
+    utbetaltBeløp: UInt,
+    sats: UInt,
+) {
+    for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
+        val dato = fom.plusDays(i)
+        if (!dato.erHelg()) {
+            add(AapUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp))
+        }
+    }
+}
+
 object Aap {
     fun utbetaling(
         sakId: String = "$nextInt",
@@ -34,14 +50,14 @@ object Aap {
         dryrun: Boolean = false,
         ident: String = "12345678910",
         vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
-        utbetalinger: () -> List<AapUtbetalingsdag>,
+        utbetalinger: MutableList<AapUtbetalingsdag>.() -> Unit,
     ): AapUtbetaling = AapUtbetaling(
         dryrun = dryrun,
         behandlingId = behandlingId,
         sakId = sakId,
         ident = ident,
         vedtakstidspunktet = vedtakstidspunkt,
-        utbetalinger = utbetalinger(),
+        utbetalinger = mutableListOf<AapUtbetalingsdag>().apply(utbetalinger),
     )
 
     fun meldekort(
@@ -173,7 +189,7 @@ fun periode(
     fom: LocalDate,
     tom: LocalDate,
     beløp: UInt = 123u,
-    vedtakssats: UInt? = beløp, // TODO: ingen eller null as default
+    vedtakssats: UInt? = null,
     betalendeEnhet: NavEnhet? = null,
 ) = listOf(
     Utbetalingsperiode(

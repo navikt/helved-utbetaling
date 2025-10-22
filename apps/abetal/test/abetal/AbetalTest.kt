@@ -327,7 +327,7 @@ internal class AbetalTest {
                 saksbehandlerId = Navident("dagpenger"),
                 fagsystem = Fagsystem.DAGPENGER,
             ) {
-                periode(1.jan, 2.jan, 100u)
+                periode(1.jan, 2.jan, 100u, 100u)
             }
         }
 
