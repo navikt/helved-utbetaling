@@ -59,9 +59,7 @@ object AggregateService {
             prev == null || new.perioder != prev.perioder
         }
 
-        if (aggregate.isNotEmpty() && aggregate.none(hasChanges)) {
-            badRequest("kan ikke simulere uten endringer")
-        }
+        if (aggregate.isNotEmpty() && aggregate.none(hasChanges)) return emptyList()
 
         val simuleringer = aggregate
             .filter(hasChanges)
