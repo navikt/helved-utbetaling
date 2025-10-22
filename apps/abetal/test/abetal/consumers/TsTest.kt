@@ -290,6 +290,41 @@ internal class TsTest {
     }
 
     @Test
+    fun `utbetal på intern ts topic`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        TestRuntime.topics.tsIntern.produce(transactionId) {
+            Ts.utbetaling(uid, sid.id, bid.id) {
+                Ts.periode(
+                    fom = LocalDate.of(2021, 6, 7),
+                    tom = LocalDate.of(2021, 6, 18),
+                    beløp = 1077u,
+                )
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.topics.status.assertThat().has(transactionId)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat().has(transactionId).get(transactionId)
+
+        TestRuntime.topics.oppdrag.produce(transactionId) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), size = 1)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid), index = 0)
+    }
+
+    @Test
     fun `2 utbetalinger i transaksjon = 2 utbetaling og 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")

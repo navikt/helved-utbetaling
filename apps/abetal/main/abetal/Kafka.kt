@@ -8,9 +8,17 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import kotlin.time.Duration.Companion.milliseconds
 
+const val AP_TRANSACTION_GAP_MS = 50
+const val TS_TRANSACTION_GAP_MS = 50
+const val TP_TRANSACTION_GAP_MS = 50
+const val DP_TRANSACTION_GAP_MS = 50
+
 object Topics {
     val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
     val aap = Topic("aap.utbetaling.v1", json<AapUtbetaling>())
+    val ts = Topic("tilleggsstonader.utbetaling.v1", json<TsUtbetaling>())
+    // TODO: rename denne til tpUtbetalinger når ts har laget topic
+    val tp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simulering = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
@@ -18,12 +26,9 @@ object Topics {
     val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, UtbetalingId>())
     val pendingUtbetalinger = Topic("helved.pending-utbetalinger.v1", json<Utbetaling>())
     val fk = Topic("helved.fk.v1", Serdes(XmlSerde.xml<Oppdrag>(), JsonSerde.jackson<PKs>()))
-    val dpUtbetalinger = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
-    val aapUtbetalinger = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
-    // TODO: rename denne til tsUtbetalinger når ts har laget topic
-    val ts = Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>())
-    // TODO: rename denne til tsUtbetalinger når ts har laget topic
-    val tp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
+    val dpIntern = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
+    val aapIntern = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
+    val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>())
 }
 
 object Tables {
@@ -136,10 +141,10 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
     return ktable
 }
 
-private val dpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggregate, 50.milliseconds, 50.milliseconds)
-private val aapSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.aapAggregate, 50.milliseconds, 50.milliseconds)
-private val tsSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.tsAggregate, 50.milliseconds, 50.milliseconds)
-private val tpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.tpAggregate, 50.milliseconds, 50.milliseconds)
+private val dpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggregate, DP_TRANSACTION_GAP_MS.milliseconds, DP_TRANSACTION_GAP_MS.milliseconds)
+private val aapSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.aapAggregate, AP_TRANSACTION_GAP_MS.milliseconds, AP_TRANSACTION_GAP_MS.milliseconds)
+private val tsSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.tsAggregate, TS_TRANSACTION_GAP_MS.milliseconds, TS_TRANSACTION_GAP_MS.milliseconds)
+private val tpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.tpAggregate, TP_TRANSACTION_GAP_MS.milliseconds, TP_TRANSACTION_GAP_MS.milliseconds)
 
 /**
  * Dagpenger sender en tykk melding med mange meldeperioder.
@@ -156,16 +161,16 @@ private val tpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.tpAg
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
-        .merge(consume(Topics.dpUtbetalinger)) // vi i team helved må kunne teste samme løype som dp
+        .merge(consume(Topics.dpIntern))
         .map { key, dp -> DpTuple(key, dp) }
         .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
         .flatMapKeyValue(::splitOnMeldeperiode)
         .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
-        .filter { (new, prev) -> !new.isDuplicate(prev) } // TODO: mulig DP ønsker status OK selv om det er duplikat
+        .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 50.milliseconds, "dp-utbetalinger-session") 
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), DP_TRANSACTION_GAP_MS.milliseconds, "dp-utbetalinger-session") 
         .reduce(dpSuppressProcessorSupplier, Stores.dpAggregate.name)  { acc, next -> acc + next }
         .map { aggregate  -> 
             Result.catch { 
@@ -211,7 +216,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     consume(Topics.aap)
         .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
-        .merge(consume(Topics.aapUtbetalinger)) // vi i team helved må kunne teste samme løype som aap
+        .merge(consume(Topics.aapIntern))
         .map { key, aap -> AapTuple(key, aap) }
         .rekey { (_, aap) -> SakKey(SakId(aap.sakId), Fagsystem.AAP) }
         .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
@@ -220,7 +225,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
         .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 50.milliseconds, "aap-utbetalinger-session")
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), AP_TRANSACTION_GAP_MS.milliseconds, "aap-utbetalinger-session")
         .reduce(aapSuppressProcessorSupplier, Stores.aapAggregate.name)  { acc, next -> acc + next }
         .map { aggregate  ->
             Result.catch {
@@ -265,8 +270,8 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
 
 fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     consume(Topics.ts)
-        // .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
-        // .merge(consume(Topics.tsUtbetalinger))
+        .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
+        .merge(consume(Topics.tsIntern))
         .map { key, ts -> TsTuple(key, ts) }
         .rekey { (_, ts) -> SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tstuple-leftjoin-saker")
@@ -275,7 +280,7 @@ fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 50.milliseconds, "ts-utbetalinger-session")
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), TS_TRANSACTION_GAP_MS.milliseconds, "ts-utbetalinger-session")
         .reduce(tsSuppressProcessorSupplier, Stores.tsAggregate.name)  { acc, next -> acc + next }
         .map { aggregate  ->
             Result.catch {
@@ -320,8 +325,8 @@ fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 
 fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     consume(Topics.tp)
-        // .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
-        // .merge(consume(Topics.tsUtbetalinger))
+        // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
+        // .merge(consume(Topics.tpUtbetalinger))
         .map { key, tp -> TpTuple(key, tp) }
         .rekey { (_, tp) -> SakKey(SakId(tp.sakId), Fagsystem.TILTAKSPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
@@ -330,7 +335,7 @@ fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), 50.milliseconds, "tp-utbetalinger-session")
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), TP_TRANSACTION_GAP_MS.milliseconds, "tp-utbetalinger-session")
         .reduce(tpSuppressProcessorSupplier, Stores.tpAggregate.name)  { acc, next -> acc + next }
         .map { aggregate  ->
             Result.catch {

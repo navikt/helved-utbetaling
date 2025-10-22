@@ -9,6 +9,8 @@ import java.util.*
 class TestTopics(private val kafka: StreamsMock) {
     val aap = kafka.testTopic(Topics.aap)
     val dp = kafka.testTopic(Topics.dp)
+    val ts = kafka.testTopic(Topics.ts) 
+    val tp = kafka.testTopic(Topics.tp) 
     val saker = kafka.testTopic(Topics.saker) 
     val utbetalinger = kafka.testTopic(Topics.utbetalinger) 
     val oppdrag = kafka.testTopic(Topics.oppdrag) 
@@ -16,9 +18,8 @@ class TestTopics(private val kafka: StreamsMock) {
     val simulering = kafka.testTopic(Topics.simulering) 
     val pendingUtbetalinger = kafka.testTopic(Topics.pendingUtbetalinger) 
     val fk = kafka.testTopic(Topics.fk) 
-    val dpUtbetalinger = kafka.testTopic(Topics.dpUtbetalinger) 
-    val ts = kafka.testTopic(Topics.ts) 
-    val tp = kafka.testTopic(Topics.tp) 
+    val dpIntern = kafka.testTopic(Topics.dpIntern) 
+    val tsIntern = kafka.testTopic(Topics.tsIntern) 
 }
 
 object TestRuntime {
