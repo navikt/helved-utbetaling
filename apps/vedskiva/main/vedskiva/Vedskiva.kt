@@ -64,11 +64,12 @@ fun vedskiva(
                     appLog.info("Fetched ${it.size} oppdrag between $avstemFom - $avstemTom from peisschtappern")
                 }.filter { dao ->
                     val avstemmingdag: LocalDateTime? = dao.oppdrag?.let { oppdrag ->
-                        val tidspktMelding = oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd()
-                        LocalDateTime.parse(tidspktMelding, formatter)
+                        oppdrag.oppdrag110?.avstemming115?.tidspktMelding?.trimEnd()
+                            ?.let { LocalDateTime.parse(it, formatter) } 
+                            // hvis avstemming115 ikke er med, så setter vi den til i går og krysser fingrene
+                            ?: LocalDateTime.now().minusDays(1) 
                     }
-                    val keep =
-                        avstemmingdag == null || (avstemmingdag >= avstemFom && avstemmingdag <= avstemTom)
+                    val keep = avstemmingdag == null || (avstemmingdag >= avstemFom && avstemmingdag <= avstemTom)
                     if (!keep) appLog.warn("Filter oppdrag not suited for todays avstemming k:${dao.key} p:${dao.partition} o:${dao.offset}")
                     keep
                 }.also {
@@ -88,8 +89,10 @@ fun vedskiva(
                     .groupBy { requireNotNull(it.first().oppdrag).oppdrag110.kodeFagomraade.trimEnd() }
                     .forEach { (fagområde, daos) ->
                         appLog.debug("create oppdragsdatas for $fagområde")
-                        daos.flatten()
-                            .forEach { appLog.debug("oppdragsdata k:${it.key} p:${it.partition} o:${it.offset}") }
+                        daos.flatten().forEach { 
+                            appLog.debug("oppdragsdata k:${it.key} p:${it.partition} o:${it.offset}")
+                        }
+
                         val avstemmingId = AvstemmingService.genererId()
 
                         val oppdragsdatas = daos.flatten().mapNotNull { it.oppdrag }.map { oppdrag ->
@@ -113,7 +116,9 @@ fun vedskiva(
                         }
                         val avstemming = Avstemming(avstemmingId, avstemFom, avstemTom, oppdragsdatas)
                         val messages = AvstemmingService.create(avstemming)
-                        messages.forEach { msg -> avstemmingProducer.send(UUID.randomUUID().toString(), msg, 0) }
+                        messages.forEach { msg -> 
+                            avstemmingProducer.send(UUID.randomUUID().toString(), msg, 0)
+                        }
                         appLog.info("Avstemming for $fagområde completed with avstemmingId: $avstemmingId")
                     }
 
