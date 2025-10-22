@@ -76,8 +76,6 @@ fun Topology.simulering(simuleringService: SimuleringService) {
 private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 
 fun dedupHash(oppdrag: Oppdrag): Int {
-    // avstemmingstidspunkt blir ulikt mellom 2 oppdrag på rappen
-    // oppdrag.oppdrag110.avstemming115 = null
     return mapper.writeValueAsString(oppdrag).hashCode()
 }
 
