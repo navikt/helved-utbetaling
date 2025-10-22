@@ -7,7 +7,7 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.15.3")
     api("org.apache.kafka:kafka-streams:4.1.0")
 
-    implementation("ch.qos.logback:logback-classic:1.5.18")
+    implementation("ch.qos.logback:logback-classic:1.5.20")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.20.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.20.0")
