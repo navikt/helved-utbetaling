@@ -13,6 +13,7 @@ import java.time.LocalDate
 import java.util.*
 import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -1331,6 +1332,173 @@ internal class TsTest {
 
         TestRuntime.topics.saker.assertThat()
             .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), size = 2)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid), index = 0)
+    }
+
+    @Test
+    fun `korriger en korrigering`() {
+        val sid = SakId("$nextInt")
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        // UTGANGSPUNKT
+        val transactionId = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.utbetaling(
+                uid = uid,
+                sakId = sid.id,
+                behandlingId = BehandlingId("$nextInt").id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+                brukFagområdeTillst = false,
+            ) {
+                Ts.periode(1.jun, 30.jun, 1100u)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.topics.status.assertThat().has(transactionId)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        var periodeId1: PeriodeId? = null
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertNotEquals(it.lastPeriodeId, periodeId1)
+                periodeId1 = it.lastPeriodeId
+            }
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) { oppdrag ->
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals(periodeId1.toString(), it.delytelseId)
+                    assertEquals(1100, it.sats.toLong())
+                }
+            }
+            .get(transactionId)
+
+        TestRuntime.topics.oppdrag.produce(transactionId) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertEquals(it.lastPeriodeId, periodeId1)
+            }
+
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), size = 1)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid), index = 0)
+
+
+        // KORRIGER
+        val transactionId2 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId2) {
+            Ts.utbetaling(
+                uid = uid,
+                sakId = sid.id,
+                behandlingId = BehandlingId("$nextInt").id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+                brukFagområdeTillst = false,
+            ) {
+                Ts.periode(1.jun, 30.jun, 1200u)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.topics.status.assertThat().has(transactionId2)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        var periodeId2: PeriodeId? = null
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertNotEquals(it.lastPeriodeId, periodeId1)
+                periodeId2 = it.lastPeriodeId
+            }
+
+        val oppdrag2 = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId2)
+            .with(transactionId2) { oppdrag ->
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(periodeId1.toString(), it.refDelytelseId)
+                    assertEquals(periodeId2.toString(), it.delytelseId)
+                    assertEquals(1200, it.sats.toLong())
+                }
+            }
+            .get(transactionId2)
+
+        TestRuntime.topics.oppdrag.produce(transactionId2) {
+            oppdrag2.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertEquals(periodeId2, it.lastPeriodeId)
+            }
+
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), size = 1)
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid), index = 0)
+
+        // KORRIGER EN KORRIGERING
+        val transactionId3 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId3) {
+            Ts.utbetaling(
+                uid = uid,
+                sakId = sid.id,
+                behandlingId = BehandlingId("$nextInt").id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+                brukFagområdeTillst = false,
+            ) {
+                Ts.periode(1.jun, 30.jun, 1300u)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.topics.status.assertThat().has(transactionId3)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        var periodeId3: PeriodeId? = null
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertNotEquals(it.lastPeriodeId, periodeId1)
+                assertNotEquals(it.lastPeriodeId, periodeId2)
+                periodeId3 = it.lastPeriodeId
+            }
+
+        val oppdrag3 = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId3)
+            .with(transactionId3) { oppdrag ->
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(periodeId2.toString(), it.refDelytelseId)
+                    assertEquals(periodeId3.toString(), it.delytelseId)
+                    assertEquals(1300, it.sats.toLong())
+                }
+            }
+            .get(transactionId3)
+
+        TestRuntime.topics.oppdrag.produce(transactionId3) {
+            oppdrag3.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertEquals(periodeId3, it.lastPeriodeId)
+            }
+
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), size = 1)
             .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid), index = 0)
     }
 
