@@ -147,6 +147,90 @@ class SimuleringRouteTest {
             assertEquals(HttpStatusCode.BadRequest, res.status)
             assertEquals(status, res.body<StatusReply>())
         }
+
+    @Test
+    fun `simuler for tilleggsstønader`() = runTest {
+        val transactionId = UUID.randomUUID().toString()
+
+        val a = async {
+            httpClient.post("/api/simulering/v3") {
+                contentType(ContentType.Application.Json)
+                bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.AZURE_TOKEN_GENERATOR))
+                header("Transaction-ID", transactionId)
+                header("fagsystem", "TILLEGGSSTØNADER")
+                setBody(
+                    listOf(
+                        TsUtbetaling(
+                            dryrun = true,
+                            id = UUID.randomUUID(),
+                            sakId = "sakId",
+                            behandlingId = "1234",
+                            personident = "12345678910",
+                            stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
+                            vedtakstidspunkt = LocalDateTime.now(),
+                            periodetype = Periodetype.EN_GANG,
+                            perioder = listOf(
+                                TsPeriode(
+                                    fom = LocalDate.of(2025, 10, 1),
+                                    tom = LocalDate.of(2025, 10, 31),
+                                    beløp = 573u,
+                                ),
+                            ),
+                        )
+                    )
+                )
+            }
+        }
+
+        val sim = models.v1.Simulering(
+            oppsummeringer = listOf(
+                models.v1.OppsummeringForPeriode(
+                    fom = LocalDate.of(2025, 10, 1),
+                    tom = LocalDate.of(2025, 10, 31),
+                    tidligereUtbetalt = 573,
+                    nyUtbetaling = 573,
+                    totalEtterbetaling = 0,
+                    totalFeilutbetaling = 0,
+                )
+            ),
+            detaljer = models.v1.SimuleringDetaljer(
+                gjelderId = "12345678910",
+                datoBeregnet = LocalDate.now(),
+                totalBeløp = 573,
+                perioder = listOf(
+                    models.v1.Periode(
+                        fom = LocalDate.of(2025, 10, 1),
+                        tom = LocalDate.of(2025, 10, 31),
+                        posteringer = listOf(
+                            models.v1.Postering(
+                                fagområde = models.v1.Fagområde.TILLSTDR,
+                                sakId = SakId("sakId"),
+                                fom = LocalDate.of(2025, 10, 1),
+                                tom = LocalDate.of(2025, 10, 31),
+                                beløp = 573,
+                                type = models.v1.PosteringType.YTELSE,
+                                klassekode = "TSDRASISP3-OP",
+                            )
+                        )
+                    )
+                ),
+            )
+        )
+
+        launch {
+            val subscription = SimuleringSubscriptions.subscriptionEvents.receive()
+            assertEquals(transactionId, subscription)
+
+            TestRuntime.topics.dryrunTs.produce(transactionId) {
+                sim
+            }
+        }
+
+        val res = a.await()
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        assertEquals(sim, res.body<models.v1.Simulering>())
+    }
 }
 
 
