@@ -28,6 +28,7 @@ enum class Table {
     dp,
     tsIntern,
     tpIntern,
+    ts,
 }
 
 data class Dao(

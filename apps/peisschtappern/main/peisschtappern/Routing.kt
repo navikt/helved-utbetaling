@@ -201,6 +201,7 @@ sealed class Channel(
     data object Dp : Channel(Topics.dp, Table.dp, 16)
     data object TsIntern : Channel(Topics.tsIntern, Table.tsIntern, 17)
     data object TpIntern : Channel(Topics.tpIntern, Table.tpIntern, 18)
+    data object Ts : Channel(Topics.ts, Table.ts, 19)
 
     companion object {
         fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel }
