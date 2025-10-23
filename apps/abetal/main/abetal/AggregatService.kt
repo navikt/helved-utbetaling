@@ -2,6 +2,7 @@ package abetal
 
 import libs.kafka.StreamsPair
 import libs.utils.appLog
+import libs.utils.secureLog
 import models.Action
 import models.PeriodeId
 import models.Utbetaling
@@ -67,18 +68,18 @@ object AggregateService {
                 new.validate()
                 when {
                     new.action == Action.DELETE -> {
-                        appLog.info("simuler opphør for $prev")
+                        secureLog.info("simuler opphør for $prev")
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         SimuleringService.delete(prev, prev)
                     }
 
                     prev == null -> {
-                        appLog.info("simuler opprett for $new")
+                        secureLog.info("simuler opprett for $new")
                         SimuleringService.opprett(new)
                     }
 
                     else -> {
-                        appLog.info("simuler endring for $prev -> $new")
+                        secureLog.info("simuler endring for $prev -> $new")
                         SimuleringService.update(new, prev)
                     }
                 }
