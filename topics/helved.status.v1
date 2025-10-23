@@ -33,4 +33,7 @@ spec:
     - team: helved
       application: helved-performance
       access: read
+    - team: tilleggsstonader
+      application: tilleggsstonader-sak
+      access: read
 
