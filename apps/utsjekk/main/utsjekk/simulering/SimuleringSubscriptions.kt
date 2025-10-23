@@ -99,7 +99,7 @@ object SimuleringSubscriptions {
     }
 
     fun complete(key: String, status: StatusReply) {
-        libs.utils.appLog.info("received status for $key")
+        libs.utils.appLog.info("received status ${status.status} for $key")
         statuses[key]?.complete(status)
     }
 }
@@ -236,16 +236,20 @@ fun Route.simulerBlocking(
                     }
                 }
 
+                SimuleringSubscriptions.unsubscribe(transactionId)
+
                 when (result) {
                     is models.v1.Simulering -> {
-                        libs.utils.appLog.info("respond OK with simulation: $result")
+                        libs.utils.appLog.info("respond OK with simulation")
                         call.respond(result)
                     }
-                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+                    is StatusReply -> {
+                        libs.utils.appLog.info("respond $result with simulation")
+                        call.respond(HttpStatusCode.BadRequest, result)
+                    }
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
-                SimuleringSubscriptions.unsubscribe(transactionId)
             }
 
             suspend fun simulerTiltakspenger() {
