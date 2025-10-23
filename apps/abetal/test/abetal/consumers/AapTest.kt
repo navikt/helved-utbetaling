@@ -831,6 +831,7 @@ class AapTest {
                 it.oppdrag110.oppdragsLinje150s[0].let {
                     assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
                     assertEquals(2.jun, it.datoStatusFom.toLocalDate())
+                    assertEquals("ENDR", it.kodeEndringLinje)
                     assertEquals("AAPOR", it.kodeKlassifik)
                     assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
