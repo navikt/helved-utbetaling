@@ -55,7 +55,7 @@ fun Topology.simulering(simuleringService: SimuleringService) {
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunDp) }
                         .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }
-                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILLEGGSSTØNADER }) {
+                .branch({ (_, fagsystem) -> fagsystem.isTilleggsstønader() }) {
                     map { (sim, _) -> sim }
                         .map { Result.catch { intoV1(it) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunTilleggsstønader) }
