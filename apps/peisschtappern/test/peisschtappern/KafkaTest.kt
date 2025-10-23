@@ -35,6 +35,7 @@ class KafkaTest {
                Channel.DpIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.TsIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.TpIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+               Channel.Ts -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
             }
         }
     }
