@@ -43,6 +43,11 @@ enum class PosteringType(val typeKlasse: String) {
     JUSTERING("JUST"),
     TREKK("TREK"),
     MOTPOSTERING("MOTP"),
+;
+
+    companion object {
+        fun from(typeKlasse: String) = entries.singleOrNull { it.typeKlasse == typeKlasse } 
+    }
 }
 
 enum class Fagområde(val fagsystem: Fagsystem) { 
