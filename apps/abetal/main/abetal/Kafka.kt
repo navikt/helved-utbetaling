@@ -113,16 +113,10 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
     val ktable = utbetalinger
         .toStream()
         .rekey { _, utbetaling -> 
-            val fagsystem = when (utbetaling.fagsystem) {
-                Fagsystem.TILLSTPB -> Fagsystem.TILLEGGSSTØNADER
-                Fagsystem.TILLSTLM -> Fagsystem.TILLEGGSSTØNADER
-                Fagsystem.TILLSTBO -> Fagsystem.TILLEGGSSTØNADER
-                Fagsystem.TILLSTDR -> Fagsystem.TILLEGGSSTØNADER
-                Fagsystem.TILLSTRS -> Fagsystem.TILLEGGSSTØNADER
-                Fagsystem.TILLSTRO -> Fagsystem.TILLEGGSSTØNADER
-                Fagsystem.TILLSTRA -> Fagsystem.TILLEGGSSTØNADER
-                Fagsystem.TILLSTFL -> Fagsystem.TILLEGGSSTØNADER
-                else -> utbetaling.fagsystem
+            val fagsystem = if (utbetaling.fagsystem.isTilleggsstønader()) {
+                Fagsystem.TILLEGGSSTØNADER
+            } else {
+                utbetaling.fagsystem
             }
             SakKey(utbetaling.sakId, fagsystem)
         }

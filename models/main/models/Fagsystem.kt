@@ -38,5 +38,19 @@ enum class Fagsystem(val fagområde: String) {
             else -> error("fagområde $kode not implemented")
         }
     }
+
+    fun isTilleggsstønader(): Boolean {
+        return this in listOf(
+            Fagsystem.TILLEGGSSTØNADER,
+            Fagsystem.TILLSTPB,
+            Fagsystem.TILLSTLM,
+            Fagsystem.TILLSTBO,
+            Fagsystem.TILLSTDR,
+            Fagsystem.TILLSTRS,
+            Fagsystem.TILLSTRO,
+            Fagsystem.TILLSTRA,
+            Fagsystem.TILLSTFL,
+        )
+    }
 }
 
