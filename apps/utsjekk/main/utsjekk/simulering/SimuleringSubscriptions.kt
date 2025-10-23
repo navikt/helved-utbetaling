@@ -156,7 +156,7 @@ fun Route.simulerBlocking(
             }
 
             suspend fun simulerDagpenger() {
-                val dto = call.receive<DpUtbetaling>().copy(dryrun = false)
+                val dto = call.receive<DpUtbetaling>().copy(dryrun = true)
                 val (sim, status) = SimuleringSubscriptions.subscribe(transactionId)
 
                 dpUtbetalingerProducer.send(transactionId, dto)
@@ -177,7 +177,7 @@ fun Route.simulerBlocking(
             }
 
             suspend fun simulerAap() {
-                val dto = call.receive<AapUtbetaling>().copy(dryrun = false)
+                val dto = call.receive<AapUtbetaling>().copy(dryrun = true)
                 val (sim, status) = SimuleringSubscriptions.subscribe(transactionId)
 
                 aapUtbetalingerProducer.send(transactionId, dto)
@@ -198,7 +198,7 @@ fun Route.simulerBlocking(
             }
 
             suspend fun simulerTilleggsstønader() {
-                val dtos = call.receive<List<TsUtbetaling>>().map { it.copy(dryrun = false) }
+                val dtos = call.receive<List<TsUtbetaling>>().map { it.copy(dryrun = true) }
                 val (sim, status) = SimuleringSubscriptions.subscribeV1(transactionId)
 
                 dtos.forEach { dto -> tsUtbetalingerProducer.send(transactionId, dto) }
@@ -249,7 +249,7 @@ fun Route.simulerBlocking(
             }
 
             suspend fun simulerTiltakspenger() {
-                val dtos = call.receive<List<TpUtbetaling>>().map { it.copy(dryrun = false) }
+                val dtos = call.receive<List<TpUtbetaling>>().map { it.copy(dryrun = true) }
                 val (sim, status) = SimuleringSubscriptions.subscribeV1(transactionId)
 
                 dtos.forEach { dto -> tpUtbetalingerProducer.send(transactionId, dto) }
