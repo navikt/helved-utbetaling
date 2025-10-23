@@ -132,14 +132,22 @@ fun Route.simulerBlocking(
             val fagsystem = when (val name = call.client().name) {
                 // "azure-token-generator" -> Fagsystem.valueOf(call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator"))
                 "azure-token-generator" -> {
-                    val corrupted = call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator")
-                    val doubleDecoded = String(corrupted.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
-                    Fagsystem.valueOf(doubleDecoded)
+                    val fagsystem = call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator")
+                    try {
+                        Fagsystem.valueOf(fagsystem)
+                    } catch (e: Exception) {
+                        val doubleDecoded = String(fagsystem.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
+                        Fagsystem.valueOf(doubleDecoded)
+                    }
                 }
                 "helved-performance" -> {
-                    val corrupted = call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator")
-                    val doubleDecoded = String(corrupted.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
-                    Fagsystem.valueOf(doubleDecoded)
+                    val fagsystem = call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator")
+                    try {
+                        Fagsystem.valueOf(fagsystem)
+                    } catch (e: Exception) {
+                        val doubleDecoded = String(fagsystem.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
+                        Fagsystem.valueOf(doubleDecoded)
+                    }
                 }
                 // "helved-performance" -> Fagsystem.valueOf(call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator"))
                 "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
