@@ -34,7 +34,7 @@ private fun into(periode: BeregningsPeriode): models.v1.Periode {
                     fom = LocalDate.parse(detaljer.faktiskFom),
                     tom = LocalDate.parse(detaljer.faktiskTom),
                     beløp = detaljer.belop.toDouble().toInt(),
-                    type = requireNotNull(models.v1.PosteringType.from(detaljer.typeKlasse)) { "models.v1.PosteringsType mangler ${detaljer.typeKlasse}" },
+                    type = requireNotNull(models.v1.PosteringType.from(detaljer.typeKlasse.trimEnd())) { "models.v1.PosteringsType mangler ${detaljer.typeKlasse}" },
                     klassekode = detaljer.klassekode.trimEnd(),
                 )
             }
@@ -61,7 +61,7 @@ private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<mo
                             fom = LocalDate.parse(detaljer.faktiskFom),
                             tom = LocalDate.parse(detaljer.faktiskTom),
                             beløp = detaljer.belop.toDouble().toInt(),
-                            type = models.v1.PosteringType.entries.single { it.typeKlasse == detaljer.typeKlasse.trimEnd() },
+                            type = requireNotNull(models.v1.PosteringType.from(detaljer.typeKlasse.trimEnd())) { "models.v1.PosteringsType mangler ${detaljer.typeKlasse}" },
                             klassekode = detaljer.klassekode.trimEnd(),
                         )
                     }
