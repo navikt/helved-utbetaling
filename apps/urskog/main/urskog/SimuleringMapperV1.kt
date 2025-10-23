@@ -34,12 +34,12 @@ private fun into(periode: BeregningsPeriode): models.v1.Periode {
                     fom = LocalDate.parse(detaljer.faktiskFom),
                     tom = LocalDate.parse(detaljer.faktiskTom),
                     beløp = detaljer.belop.toDouble().toInt(),
-                    type = models.v1.PosteringType.valueOf(detaljer.typeKlasse),
-                        klassekode = detaljer.klassekode.trimEnd(),
-                    )
-                }
+                    type = requireNotNull(models.v1.PosteringType.from(detaljer.typeKlasse)) { "models.v1.PosteringsType mangler ${detaljer.typeKlasse}" },
+                    klassekode = detaljer.klassekode.trimEnd(),
+                )
             }
-        )
+        }
+    )
 }
 
 private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<models.v1.OppsummeringForPeriode> {
