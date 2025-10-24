@@ -24,7 +24,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.19.0-alpha")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.15.3")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.15.5")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
 
     testImplementation(kotlin("test")) 
