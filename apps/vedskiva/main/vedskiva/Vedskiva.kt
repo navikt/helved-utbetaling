@@ -117,6 +117,8 @@ fun vedskiva(
                         }
                         val avstemming = Avstemming(avstemmingId, avstemFom, avstemTom, oppdragsdatas)
                         val messages = AvstemmingService.create(avstemming)
+                        // FIXME: hvis forrige iter i forEach gikk bra, men neste feiler. Så har vi allerede sendt ut disse
+                        // Hvordan kan vi gjøre alle forEach (fagområde, daos) atomisk? 
                         messages.forEach { msg -> 
                             avstemmingProducer.send(UUID.randomUUID().toString(), msg, 0)
                         }
