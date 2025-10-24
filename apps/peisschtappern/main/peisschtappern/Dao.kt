@@ -210,6 +210,20 @@ data class Dao(
             }
         }
 
+        suspend fun findPendingUtbetalinger(sakId: String, fagsystem: String): List<Dao> {
+            val sql = """
+                SELECT *
+                FROM pending_utbetalinger
+                WHERE json(record_value) ->> 'fagsystem' = '$fagsystem' AND json(record_value) ->> 'sakId' = '$sakId';
+            """.trimIndent()
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from)
+            }
+        }
+
         suspend fun findDpUtbetalinger(sakId: String): List<Dao> {
             val sql = """
                 SELECT *
