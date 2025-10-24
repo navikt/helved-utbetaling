@@ -74,7 +74,7 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
             get("/{sakId}/{fagsystem}") {
                 val sakId = call.parameters["sakId"]!!
                 val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
-
+                // TODO: Legg til AAP, TS og TP
                 val hendelser: List<Dao> = withContext(Jdbc.context + Dispatchers.IO) {
                     transaction {
                         coroutineScope {
@@ -83,6 +83,7 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
                                     async { Dao.findOppdrag(sakId, fagsystem.fagområde) },
                                     async { Dao.findKvitteringer(sakId, fagsystem.fagområde) },
                                     async { Dao.findUtbetalinger(sakId, fagsystem.name) },
+                                    async { Dao.findPendingUtbetalinger(sakId, fagsystem.name) },
                                     async { Dao.findSimuleringer(sakId, fagsystem.fagområde) },
                                     async { if (fagsystem == Fagsystem.DAGPENGER) Dao.findDpUtbetalinger(sakId) else emptyList() },
                                     async { if (fagsystem === Fagsystem.DAGPENGER) Dao.findDpInternUtbetalinger(sakId) else emptyList() },
