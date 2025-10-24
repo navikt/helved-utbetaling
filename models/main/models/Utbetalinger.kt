@@ -74,6 +74,7 @@ data class Utbetaling(
             return isDuplicate
         }
 
+        appLog.info("uid $uid is changed")
         return isDuplicate
     }
 }
