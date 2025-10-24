@@ -1813,6 +1813,26 @@ internal class DpTest {
     }
 
     @Test
+    fun `opphør uten eksisterende utbetaling`() {
+        TestRuntime.topics.dp.produce(UUID.randomUUID().toString()) {
+            Dp.utbetaling(
+                sakId = "$nextInt",
+                behandlingId = "$nextInt",
+                vedtakstidspunkt = LocalDateTime.now(),
+            ) {
+                emptyList()
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.saker.assertThat().isEmpty()
+    }
+
+    @Test
     fun `3 meldekort med ulike operasjoner`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
