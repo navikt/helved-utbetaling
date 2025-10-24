@@ -10,13 +10,14 @@ import libs.utils.appLog
 import libs.utils.secureLog
 import models.*
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
+        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
@@ -67,7 +68,7 @@ fun vedskiva(
                         oppdrag.oppdrag110?.avstemming115?.tidspktMelding?.trimEnd()
                             ?.let { LocalDateTime.parse(it, formatter) } 
                             // hvis avstemming115 ikke er med, så setter vi den til i går og krysser fingrene
-                            ?: LocalDateTime.now().minusDays(1) 
+                            ?: LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).minusDays(1) 
                     }
                     val keep = avstemmingdag == null || (avstemmingdag >= avstemFom && avstemmingdag <= avstemTom)
                     if (!keep) appLog.warn("Filter oppdrag not suited for todays avstemming k:${dao.key} p:${dao.partition} o:${dao.offset}")
@@ -101,7 +102,7 @@ fun vedskiva(
                                 personident = Personident(oppdrag.oppdrag110.oppdragGjelderId.trimEnd()),
                                 sakId = SakId(oppdrag.oppdrag110.fagsystemId.trimEnd()),
                                 lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
-                                innsendt = oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd().toLocalDateTime(),
+                                innsendt = oppdrag.oppdrag110?.avstemming115?.tidspktMelding?.trimEnd()?.toLocalDateTime() ?: LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).minusDays(1) ,
                                 totalBeløpAllePerioder = oppdrag.oppdrag110.oppdragsLinje150s.sumOf {
                                     it.sats.toLong().toUInt()
                                 },
