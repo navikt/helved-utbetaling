@@ -396,7 +396,7 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<Utbeta
                 Navident("dagpenger"), Navident("dagpenger")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
             else -> toDomain(dpKey, tsUtbetaling, uids, uid)
         }
-        appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
+        appLog.info("rekey from $dpKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
         KeyValue(utbetaling.uid.id.toString(), utbetaling)
     }
 }
@@ -424,7 +424,7 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: AapTuple, uids: Set<Utbet
                 Navident("kelvin"), Navident("kelvin")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
             else -> toDomain(aapKey, aapUtbetaling, uids, uid)
         }
-        appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
+        appLog.info("rekey from $aapKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
         KeyValue(utbetaling.uid.id.toString(), utbetaling)
     }
 }
