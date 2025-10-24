@@ -73,29 +73,30 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
 
             get("/{sakId}/{fagsystem}") {
                 val sakId = call.parameters["sakId"]!!
-                val fagsystem: Fagsystem = Fagsystem.from(call.parameters["fagsystem"]!!)
+                val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
 
                 val hendelser: List<Dao> = withContext(Jdbc.context + Dispatchers.IO) {
                     transaction {
                         coroutineScope {
-                            val deferred: List<Deferred<List<Dao>>> = listOf(
-                                async { Dao.findOppdrag(sakId, fagsystem.fagområde) },
-                                async { Dao.findKvitteringer(sakId, fagsystem.fagområde) },
-                                async { Dao.findUtbetalinger(sakId, fagsystem.name) },
-                                async { Dao.findSimuleringer(sakId, fagsystem.fagområde) },
-                                async { if (fagsystem == Fagsystem.DAGPENGER) Dao.findDpUtbetalinger(sakId) else emptyList()},
-                                async { if (fagsystem === Fagsystem.DAGPENGER) Dao.findDpInternUtbetalinger(sakId) else emptyList()},
-                                async { Dao.findSaker(sakId, fagsystem.name) },
-                                async {
-                                    val keys = Dao.findOppdrag(sakId, fagsystem.fagområde).map { it.key }
-                                    if (keys.isNotEmpty()) {
-                                        Dao.findStatusByKeys(keys)
-                                    } else emptyList()
-                                }
-                            )
+                            fagsystemer.flatMap { fagsystem ->
+                                val deferred: List<Deferred<List<Dao>>> = listOf(
+                                    async { Dao.findOppdrag(sakId, fagsystem.fagområde) },
+                                    async { Dao.findKvitteringer(sakId, fagsystem.fagområde) },
+                                    async { Dao.findUtbetalinger(sakId, fagsystem.name) },
+                                    async { Dao.findSimuleringer(sakId, fagsystem.fagområde) },
+                                    async { if (fagsystem == Fagsystem.DAGPENGER) Dao.findDpUtbetalinger(sakId) else emptyList() },
+                                    async { if (fagsystem === Fagsystem.DAGPENGER) Dao.findDpInternUtbetalinger(sakId) else emptyList() },
+                                    async { Dao.findSaker(sakId, fagsystem.name) },
+                                    async {
+                                        val keys = Dao.findOppdrag(sakId, fagsystem.fagområde).map { it.key }
+                                        if (keys.isNotEmpty()) {
+                                            Dao.findStatusByKeys(keys)
+                                        } else emptyList()
+                                    }
+                                )
 
-                            deferred.awaitAll()
-                                .flatten()
+                                deferred.awaitAll().flatten()
+                            }
                                 .sortedByDescending { it.timestamp_ms }
                         }
                     }
@@ -126,43 +127,46 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
         }
     }
 
-    post("/manuell-kvittering") {
-        val request = call.receive<KvitteringRequest>()
+        post("/manuell-kvittering") {
+            val request = call.receive<KvitteringRequest>()
 
-        try {
-            manuellOppdragService.addKvitteringManuelt(
-                oppdragXml = request.oppdragXml,
-                messageKey = request.messageKey,
-                alvorlighetsgrad = request.alvorlighetsgrad,
-                beskrMelding = request.beskrMelding,
-                kodeMelding = request.kodeMelding
-            )
-            call.respond(HttpStatusCode.OK, "Created kvittering for uid:${request.messageKey} on ${oppdrag.name}")
-        } catch (e: Exception) {
-            val msg = "Failed to create kvittering for uid:${request.messageKey}"
-            appLog.error(msg)
-            secureLog.error(msg, e)
-            call.respond(HttpStatusCode.BadRequest, msg)
+            try {
+                manuellOppdragService.addKvitteringManuelt(
+                    oppdragXml = request.oppdragXml,
+                    messageKey = request.messageKey,
+                    alvorlighetsgrad = request.alvorlighetsgrad,
+                    beskrMelding = request.beskrMelding,
+                    kodeMelding = request.kodeMelding
+                )
+                call.respond(
+                    HttpStatusCode.OK,
+                    "Created kvittering for uid:${request.messageKey} on ${oppdrag.name}"
+                )
+            } catch (e: Exception) {
+                val msg = "Failed to create kvittering for uid:${request.messageKey}"
+                appLog.error(msg)
+                secureLog.error(msg, e)
+                call.respond(HttpStatusCode.BadRequest, msg)
+            }
         }
-    }
 
-    post("/manuell-oppdrag") {
-        val request = call.receive<OppdragRequest>()
+        post("/manuell-oppdrag") {
+            val request = call.receive<OppdragRequest>()
 
-        try {
-            manuellOppdragService.sendOppdragManuelt(
-                oppdragXml = request.oppdragXml,
-                messageKey = request.messageKey
+            try {
+                manuellOppdragService.sendOppdragManuelt(
+                    oppdragXml = request.oppdragXml,
+                    messageKey = request.messageKey
 
-            )
-            call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.messageKey} on ${oppdrag.name}")
-        } catch (e: Exception) {
-            val msg = "Failed to send oppdrag for uid:${request.messageKey}"
-            appLog.error(msg)
-            secureLog.error(msg, e)
-            call.respond(HttpStatusCode.BadRequest, msg)
+                )
+                call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.messageKey} on ${oppdrag.name}")
+            } catch (e: Exception) {
+                val msg = "Failed to send oppdrag for uid:${request.messageKey}"
+                appLog.error(msg)
+                secureLog.error(msg, e)
+                call.respond(HttpStatusCode.BadRequest, msg)
+            }
         }
-    }
 }
 
 data class KvitteringRequest(
