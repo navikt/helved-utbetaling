@@ -74,7 +74,6 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
             get("/{sakId}/{fagsystem}") {
                 val sakId = call.parameters["sakId"]!!
                 val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
-                // TODO: Legg til AAP, TS og TP
                 val hendelser: List<Dao> = withContext(Jdbc.context + Dispatchers.IO) {
                     transaction {
                         coroutineScope {
@@ -85,8 +84,24 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
                                     async { Dao.findUtbetalinger(sakId, fagsystem.name) },
                                     async { Dao.findPendingUtbetalinger(sakId, fagsystem.name) },
                                     async { Dao.findSimuleringer(sakId, fagsystem.fagområde) },
-                                    async { if (fagsystem == Fagsystem.DAGPENGER) Dao.findDpUtbetalinger(sakId) else emptyList() },
-                                    async { if (fagsystem === Fagsystem.DAGPENGER) Dao.findDpInternUtbetalinger(sakId) else emptyList() },
+                                    async {
+                                        when (fagsystem) {
+                                            Fagsystem.AAP -> Dao.findUtbetalinger(sakId, Table.aap)
+                                            Fagsystem.DAGPENGER -> Dao.findUtbetalinger(sakId, Table.dp)
+                                            Fagsystem.TILLEGGSSTØNADER -> Dao.findUtbetalinger(sakId, Table.ts)
+                                            // TODO: Fagsystem.TILTAKSPENGER -> Dao.findUtbetalinger(sakId, Table.tp)
+                                            else -> emptyList()
+                                        }
+                                    },
+                                    async {
+                                        when (fagsystem) {
+                                            Fagsystem.AAP -> Dao.findUtbetalinger(sakId, Table.aapIntern)
+                                            Fagsystem.DAGPENGER -> Dao.findUtbetalinger(sakId, Table.dpIntern)
+                                            Fagsystem.TILLEGGSSTØNADER -> Dao.findUtbetalinger(sakId, Table.tsIntern)
+                                            Fagsystem.TILTAKSPENGER -> Dao.findUtbetalinger(sakId, Table.tpIntern)
+                                            else -> emptyList()
+                                        }
+                                    },
                                     async { Dao.findSaker(sakId, fagsystem.name) },
                                     async {
                                         val keys = Dao.findOppdrag(sakId, fagsystem.fagområde).map { it.key }
@@ -207,6 +222,7 @@ sealed class Channel(
     data object TsIntern : Channel(Topics.tsIntern, Table.tsIntern, 17)
     data object TpIntern : Channel(Topics.tpIntern, Table.tpIntern, 18)
     data object Ts : Channel(Topics.ts, Table.ts, 19)
+    data object AapIntern : Channel(Topics.aapIntern, Table.aapIntern, 20)
 
     companion object {
         fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel }

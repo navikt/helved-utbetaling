@@ -50,7 +50,7 @@ class ApiTest {
 
     @Test
     fun `can query for topics`() = runTest(TestRuntime.context) {
-        save(Channel.Aap)
+        save(Channel.AapIntern)
         save(Channel.Utbetalinger)
         save(Channel.Simuleringer)
 
@@ -60,7 +60,7 @@ class ApiTest {
         }.body<List<Dao>>()
 
         assertEquals(2, result.size)
-        assertTrue(result.map { it.topic_name }.containsAll(listOf(Topics.aap.name, Topics.simuleringer.name)))
+        assertTrue(result.map { it.topic_name }.containsAll(listOf(Topics.aapIntern.name, Topics.simuleringer.name)))
     }
 
     @Test
