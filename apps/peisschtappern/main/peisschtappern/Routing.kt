@@ -209,7 +209,7 @@ sealed class Channel(
     data object Simuleringer : Channel(Topics.simuleringer, Table.simuleringer, 3)
     data object Utbetalinger : Channel(Topics.utbetalinger, Table.utbetalinger, 4)
     data object Saker : Channel(Topics.saker, Table.saker, 5)
-    data object Aap : Channel(Topics.aap, Table.aap, 6)
+    data object AapIntern : Channel(Topics.aapIntern, Table.aapIntern, 6)
     data object DryrunAap : Channel(Topics.dryrunAap, Table.dryrun_aap, 8)
     data object DryrunTp : Channel(Topics.dryrunTp, Table.dryrun_tp, 9)
     data object DryrunTs : Channel(Topics.dryrunTs, Table.dryrun_ts, 10)
@@ -222,7 +222,7 @@ sealed class Channel(
     data object TsIntern : Channel(Topics.tsIntern, Table.tsIntern, 17)
     data object TpIntern : Channel(Topics.tpIntern, Table.tpIntern, 18)
     data object Ts : Channel(Topics.ts, Table.ts, 19)
-    data object AapIntern : Channel(Topics.aapIntern, Table.aapIntern, 20)
+    data object Aap : Channel(Topics.aap, Table.aap, 20)
 
     companion object {
         fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel }
