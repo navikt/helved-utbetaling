@@ -24,6 +24,7 @@ enum class Table {
     status,
     pending_utbetalinger,
     fk,
+    aapIntern,
     dpIntern,
     dp,
     tsIntern,
@@ -224,24 +225,10 @@ data class Dao(
             }
         }
 
-        suspend fun findDpUtbetalinger(sakId: String): List<Dao> {
+        suspend fun findUtbetalinger(sakId: String, table: Table): List<Dao> {
             val sql = """
                 SELECT *
-                FROM dp
-                WHERE json(record_value) ->> 'sakId' = '$sakId';
-            """.trimIndent()
-
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
-            }
-        }
-
-        suspend fun findDpInternUtbetalinger(sakId: String): List<Dao> {
-            val sql = """
-                SELECT *
-                FROM dpintern
+                FROM ${table.name}
                 WHERE json(record_value) ->> 'sakId' = '$sakId';
             """.trimIndent()
 
