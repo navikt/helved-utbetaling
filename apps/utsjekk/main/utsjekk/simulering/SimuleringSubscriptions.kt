@@ -204,49 +204,17 @@ fun Route.simulerBlocking(
                 dtos.forEach { dto -> tsUtbetalingerProducer.send(transactionId, dto) }
 
                 val result = withTimeoutOrNull(30.seconds) { 
-                    coroutineScope {
-                        val finalResult = CompletableDeferred<Any?>()
-                        lateinit var statusJob: Job
-                        lateinit var simJob: Job
-                        simJob = launch {
-                            try {
-                                val simResult = sim.await()
-                                if(finalResult.complete(simResult)) {
-                                    statusJob.cancel()
-                                }
-                            } catch (e: CancellationException) {
-                                // simJob.cancel() was called
-                            } catch (e: Exception) {
-                                finalResult.completeExceptionally(e)
-                            }
-                        }
-                        statusJob = launch {
-                            try {
-                                val statusResult = status.await()
-                                if (statusResult.status == Status.FEILET) { // TODO: lagre siste status uansett
-                                    if(finalResult.complete(statusResult)) {
-                                        simJob.cancel()
-                                    }
-                                }
-                            } catch(e: Exception) {
-                                // let sim continue the race
-                            }
-                        }
-                        finalResult.await() // start the race
+                    select<Any?> {
+                        sim.onAwait { it }
+                        status.onAwait { it }
                     }
                 }
 
                 SimuleringSubscriptions.unsubscribe(transactionId)
 
                 when (result) {
-                    is models.v1.Simulering -> {
-                        libs.utils.appLog.info("respond OK with simulation")
-                        call.respond(result)
-                    }
-                    is StatusReply -> {
-                        libs.utils.appLog.info("respond $result with simulation")
-                        call.respond(HttpStatusCode.BadRequest, result)
-                    }
+                    is models.v1.Simulering -> call.respond(result)
+                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
