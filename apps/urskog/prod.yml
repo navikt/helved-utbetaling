@@ -26,7 +26,7 @@ spec:
   azure:
     application:
       enabled: true
-  terminationGracePeriodSeconds: 60
+  terminationGracePeriodSeconds: 70
   liveness:
     path: /actuator/live
     failureThreshold: 60
