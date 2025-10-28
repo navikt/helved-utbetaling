@@ -102,8 +102,3 @@ spec:
         databases:
           - name: utsjekk
             envVarPrefix: DB
-        flags:
-          - name: "cloudsql.enable_pgaudit"
-            value: "on"
-          - name: "pgaudit.log"
-            value: "write,ddl"
