@@ -33,14 +33,15 @@ RUN apk add --no-cache gcompat libstdc++ snappy snappy-dev
 
 COPY --from=jre /customjre $JAVA_HOME
 COPY apps/*/build/libs/*-all.jar /app.jar
-ENTRYPOINT [                           \
-    "java",                            \
-    "-XX:+UseG1GC",                    \
-    "-XX:MaxRAMPercentage=70.0",       \
-    "-XX:ActiveProcessorCount=2",      \
-    "-XX:+UseStringDeduplication",     \
-    "-XX:+HeapDumpOnOutOfMemoryError", \
-    "-XX:HeapDumpPath=/tmp",           \
-    "-jar",                            \
-    "app.jar"                          \
+ENTRYPOINT [                              \
+    "java",                               \
+    "--enable-native-access=ALL-UNNAMED", \
+    "-XX:+UseG1GC",                       \
+    "-XX:MaxRAMPercentage=70.0",          \
+    "-XX:ActiveProcessorCount=2",         \
+    "-XX:+UseStringDeduplication",        \
+    "-XX:+HeapDumpOnOutOfMemoryError",    \
+    "-XX:HeapDumpPath=/tmp",              \
+    "-jar",                               \
+    "app.jar"                             \
 ]
