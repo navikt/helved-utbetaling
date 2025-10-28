@@ -9,7 +9,7 @@ spec:
   image: {{ image }}
   ingresses:
     - https://peisschtappern.intern.dev.nav.no
-  terminationGracePeriodSeconds: 60
+  terminationGracePeriodSeconds: 70
   liveness:
     path: /actuator/live
   readiness:

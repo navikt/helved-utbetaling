@@ -6,6 +6,7 @@ metadata:
   labels:
     team: helved
 spec:
+  terminationGracePeriodSeconds: 70
   image: {{ image }}
   ingresses:
     - https://utsjekk.intern.dev.nav.no
