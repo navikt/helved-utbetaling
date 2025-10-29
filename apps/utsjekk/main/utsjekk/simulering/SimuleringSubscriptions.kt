@@ -38,8 +38,6 @@ import models.notFound
 import utsjekk.Config
 import utsjekk.client
 import utsjekk.utbetaling.Utbetaling
-import java.net.URLDecoder
-import java.net.URLEncoder
 
 object SimuleringSubscriptions {
 
@@ -210,14 +208,13 @@ fun Route.simulerBlocking(
                     }
                 }
 
-                SimuleringSubscriptions.unsubscribe(transactionId)
-
                 when (result) {
                     is models.v1.Simulering -> call.respond(result)
                     is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
+                SimuleringSubscriptions.unsubscribe(transactionId)
             }
 
             suspend fun simulerTiltakspenger() {
