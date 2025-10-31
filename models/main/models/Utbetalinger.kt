@@ -103,10 +103,16 @@ fun Utbetaling.failOnEmptyPerioder() {
 }
 
 fun Utbetaling.validateLockedFields(other: Utbetaling) {
-    if (sakId != other.sakId) badRequest("cant change immutable field 'sakId'")
-    if (personident != other.personident) badRequest("cant change immutable field 'personident'")
-    if (stønad != other.stønad) badRequest("cant change immutable field")
-    if (periodetype != other.periodetype) badRequest("can't change periodetype", "opprett_en_utbetaling")
+    if (sakId != other.sakId) badRequest("can't change immutable field 'sakId'")
+    if (personident != other.personident) badRequest("can't change immutable field 'personident'")
+    if (stønad != other.stønad) badRequest("can't change immutable field 'stønad'")
+    if (periodetype != other.periodetype) badRequest("can't change immutable field 'periodetype'")
+}
+
+fun Utbetaling.preValidateLockedFields(other: Utbetaling) {
+    if (sakId != other.sakId) badRequest("can't change immutable field 'sakId'")
+    if (personident != other.personident) badRequest("can't change immutable field 'personident'")
+    if (periodetype != other.periodetype) badRequest("can't change immutable field 'periodetype'")
 }
 
 fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
@@ -409,6 +415,10 @@ fun fakeDelete(
     stønad: Stønadstype,
     beslutterId: Navident,
     saksbehandlerId: Navident,
+    personident: Personident,
+    behandlingId: BehandlingId,
+    periodetype: Periodetype,
+    vedtakstidspunkt: LocalDateTime
 ) = Utbetaling(
     dryrun = dryrun,
     originalKey = originalKey,
@@ -417,14 +427,14 @@ fun fakeDelete(
     action = Action.DELETE,
     førsteUtbetalingPåSak = false,
     sakId = sakId,
-    behandlingId = BehandlingId(""),
+    behandlingId = behandlingId,
     lastPeriodeId = PeriodeId(),
-    personident = Personident(""),
-    vedtakstidspunkt = LocalDateTime.now(),
+    personident = personident,
+    vedtakstidspunkt = vedtakstidspunkt,
     stønad = stønad,
     beslutterId = beslutterId,
     saksbehandlerId = saksbehandlerId,
-    periodetype = Periodetype.UKEDAG,
+    periodetype = periodetype,
     avvent = null,
     perioder = listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u)), // placeholder
 )
