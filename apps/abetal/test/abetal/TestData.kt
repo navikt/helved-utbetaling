@@ -133,7 +133,7 @@ object Ts {
         stønad = stønad,
         behandlingId = behandlingId,
         sakId = sakId,
-        personident= ident,
+        personident = ident,
         vedtakstidspunkt = vedtakstidspunkt,
         periodetype = periodetype,
         perioder = utbetalinger(),

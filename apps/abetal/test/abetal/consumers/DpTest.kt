@@ -1684,7 +1684,7 @@ internal class DpTest {
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
+        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGERFERIE)
         val periodeId = PeriodeId()
 
         TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
@@ -1694,7 +1694,7 @@ internal class DpTest {
                 sakId = sid,
                 behandlingId = bid,
                 originalKey = transactionId1,
-                stønad = StønadTypeDagpenger.DAGPENGER,
+                stønad = StønadTypeDagpenger.DAGPENGERFERIE,
                 lastPeriodeId = periodeId,
                 personident = Personident("12345678910"),
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
@@ -1721,7 +1721,7 @@ internal class DpTest {
         val mottatt = StatusReply(
             status = Status.MOTTATT,
             detaljer = Detaljer(Fagsystem.DAGPENGER, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u,
-                "DAGPENGER")))
+                "DAGPENGERFERIE")))
         )
 
         TestRuntime.topics.status.assertThat()
@@ -1741,7 +1741,7 @@ internal class DpTest {
                     originalKey = transactionId1,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.DAGPENGER,
+                    stønad = StønadTypeDagpenger.DAGPENGERFERIE,
                     vedtakstidspunkt = 14.jun.atStartOfDay(),
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
@@ -1770,7 +1770,7 @@ internal class DpTest {
                     assertEquals(periodeId.toString(), it.refDelytelseId)
                     assertEquals("ENDR", it.kodeEndringLinje)
                     assertEquals(bid.id, it.henvisning)
-                    assertEquals("DAGPENGER", it.kodeKlassifik)
+                    assertEquals("DAGPENGERFERIE", it.kodeKlassifik)
                     assertEquals(100, it.sats.toLong())
                     assertEquals(100, it.vedtakssats157.vedtakssats.toLong())
                     assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
@@ -1795,7 +1795,7 @@ internal class DpTest {
                     originalKey = transactionId1,
                     fagsystem = Fagsystem.DAGPENGER,
                     lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.DAGPENGER,
+                    stønad = StønadTypeDagpenger.DAGPENGERFERIE,
                     vedtakstidspunkt = 14.jun.atStartOfDay(),
                     beslutterId = Navident("dagpenger"),
                     saksbehandlerId = Navident("dagpenger"),
