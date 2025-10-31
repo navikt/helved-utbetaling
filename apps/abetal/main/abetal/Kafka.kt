@@ -373,14 +373,20 @@ fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 }
 
 private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
-    val (dpKey, tsUtbetaling) = tuple
-    val dryrun = tsUtbetaling.dryrun
-    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = tsUtbetaling
+    val (dpKey, dpUtbetaling) = tuple
+    val dryrun = dpUtbetaling.dryrun
+    val personident = dpUtbetaling.ident
+    val behandlingId = dpUtbetaling.behandlingId
+    val periodetype = Periodetype.UKEDAG
+    val vedtakstidspunktet = dpUtbetaling.vedtakstidspunktet
+    val beslutterId = dpUtbetaling.beslutter ?: "dagpenger"
+    val saksbehandler = dpUtbetaling.saksbehandler ?: "dagpenger"
+    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling
         .utbetalinger
         .groupBy { it.meldeperiode to it.stønadstype() }
         .map { (group, utbetalinger) ->
             val (meldeperiode, stønadstype) = group
-            dpUId(tsUtbetaling.sakId, meldeperiode, stønadstype) to tsUtbetaling.copy(utbetalinger = utbetalinger)
+            dpUId(dpUtbetaling.sakId, meldeperiode, stønadstype) to dpUtbetaling.copy(utbetalinger = utbetalinger)
         }
         .toMutableList()
 
@@ -392,8 +398,20 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<Utbeta
 
     return utbetalingerPerMeldekort.map { (uid, tsUtbetaling) ->
         val utbetaling = when (tsUtbetaling) {
-            null -> fakeDelete(dryrun, dpKey, sakKey.sakId, uid, Fagsystem.DAGPENGER, StønadTypeDagpenger.DAGPENGER,
-                Navident("dagpenger"), Navident("dagpenger")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
+            null -> fakeDelete(
+                dryrun = dryrun,
+                originalKey = dpKey,
+                sakId = sakKey.sakId,
+                uid = uid,
+                fagsystem = Fagsystem.DAGPENGER,
+                stønad = StønadTypeDagpenger.DAGPENGER, // Dette er en placeholder
+                beslutterId = Navident(beslutterId),
+                saksbehandlerId = Navident(saksbehandler),
+                personident = Personident(personident),
+                behandlingId = BehandlingId(behandlingId),
+                periodetype = periodetype,
+                vedtakstidspunkt = vedtakstidspunktet,
+            ).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
             else -> toDomain(dpKey, tsUtbetaling, uids, uid)
         }
         appLog.info("rekey from $dpKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
@@ -404,6 +422,12 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: DpTuple, uids: Set<Utbeta
 private fun splitOnMeldeperiode(sakKey: SakKey, tuple: AapTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
     val (aapKey, aapUtbetaling) = tuple
     val dryrun = aapUtbetaling.dryrun
+    val personident = aapUtbetaling.ident
+    val behandlingId = aapUtbetaling.behandlingId
+    val periodetype = Periodetype.UKEDAG
+    val vedtakstidspunktet = aapUtbetaling.vedtakstidspunktet
+    val beslutterId = aapUtbetaling.beslutter ?: "kelvin"
+    val saksbehandler = aapUtbetaling.saksbehandler ?: "kelvin"
     val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, AapUtbetaling?>> = aapUtbetaling
         .utbetalinger
         .groupBy { it.meldeperiode }
@@ -420,8 +444,20 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: AapTuple, uids: Set<Utbet
 
     return utbetalingerPerMeldekort.map { (uid, aapUtbetaling) ->
         val utbetaling = when (aapUtbetaling) {
-            null -> fakeDelete(dryrun, aapKey, sakKey.sakId, uid, Fagsystem.AAP, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                Navident("kelvin"), Navident("kelvin")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
+            null -> fakeDelete(
+                dryrun = dryrun,
+                originalKey = aapKey,
+                sakId = sakKey.sakId,
+                uid = uid,
+                fagsystem = Fagsystem.AAP,
+                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+                beslutterId = Navident(beslutterId),
+                saksbehandlerId = Navident(saksbehandler),
+                personident = Personident(personident),
+                behandlingId = BehandlingId(behandlingId),
+                periodetype = periodetype,
+                vedtakstidspunkt = vedtakstidspunktet,
+            ).also { appLog.debug("creating a fake delete to " + "force-trigger a join with existing utbetaling") }
             else -> toDomain(aapKey, aapUtbetaling, uids, uid)
         }
         appLog.info("rekey from $aapKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
@@ -437,6 +473,12 @@ private fun fromTs(sakKey: SakKey, req: TsTuple, uids: Set<UtbetalingId>?): KeyV
 private fun splitOnMeldeperiode(sakKey: SakKey, tuple: TpTuple, uids: Set<UtbetalingId>?): List<KeyValue<String, Utbetaling>> {
     val (tpKey, tpUtbetaling) = tuple
     val dryrun = tpUtbetaling.dryrun
+    val personident = tpUtbetaling.personident
+    val behandlingId = tpUtbetaling.behandlingId
+    val periodetype = Periodetype.UKEDAG
+    val vedtakstidspunktet = tpUtbetaling.vedtakstidspunkt
+    val beslutterId = tpUtbetaling.beslutter ?: "tp"
+    val saksbehandler = tpUtbetaling.saksbehandler ?: "tp"
     val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, TpUtbetaling?>> = tpUtbetaling
         .perioder
         .groupBy { it.meldeperiode }
@@ -453,8 +495,20 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: TpTuple, uids: Set<Utbeta
 
     return utbetalingerPerMeldekort.map { (uid, tpUtbetaling) ->
         val utbetaling = when (tpUtbetaling) {
-            null -> fakeDelete(dryrun, tpKey, sakKey.sakId, uid, Fagsystem.TILTAKSPENGER, StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
-                Navident("tp"), Navident("tp")).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
+            null -> fakeDelete(
+                dryrun = dryrun,
+                originalKey = tpKey,
+                sakId = sakKey.sakId,
+                uid = uid,
+                fagsystem = Fagsystem.TILTAKSPENGER,
+                StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, // Dette er en placeholder
+                beslutterId = Navident(beslutterId),
+                saksbehandlerId = Navident(saksbehandler),
+                personident = Personident(personident),
+                behandlingId = BehandlingId(behandlingId),
+                periodetype = periodetype,
+                vedtakstidspunkt = vedtakstidspunktet,
+            ).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
             else -> tuple.toDomain(uid, uids)
         }
         appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")

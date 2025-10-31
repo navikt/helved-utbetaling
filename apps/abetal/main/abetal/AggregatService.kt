@@ -11,13 +11,17 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.math.BigDecimal
 import javax.xml.datatype.XMLGregorianCalendar
-import models.badRequest
+import models.preValidateLockedFields
 
 object AggregateService {
     fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<Pair<Oppdrag, List<Utbetaling>>> {
+        aggregate.forEach { (new, prev) ->
+            prev?.preValidateLockedFields(new)
+        }
 
         val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> =
-            aggregate.filter { (new, prev) -> prev == null || new.perioder != prev.perioder }.map { (new, prev) ->
+            aggregate.filter { (new, prev) -> prev == null || new.perioder != prev.perioder }.map {
+                (new, prev) ->
                 new.validate()
 
                 when {

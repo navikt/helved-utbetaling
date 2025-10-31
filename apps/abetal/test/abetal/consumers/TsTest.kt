@@ -1990,7 +1990,8 @@ internal class TsTest {
                 beslutterId = Navident("ts"),
                 saksbehandlerId = Navident("ts"),
                 fagsystem = Fagsystem.TILLEGGSSTØNADER,
-            ) {
+                periodetype = Periodetype.EN_GANG
+                ) {
                 periode(2.jun, 13.jun, 100u, null)
             }
         }
@@ -2037,8 +2038,9 @@ internal class TsTest {
                     vedtakstidspunkt = 14.jun.atStartOfDay(),
                     beslutterId = Navident("ts"),
                     saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
+                    personident = Personident("12345678910"),
+                    periodetype = Periodetype.EN_GANG,
+                    ) {
                     periode(2.jun, 13.jun, 100u, null)
                 }
                 assertEquals(expected, it)
@@ -2090,8 +2092,9 @@ internal class TsTest {
                     vedtakstidspunkt = 14.jun.atStartOfDay(),
                     beslutterId = Navident("ts"),
                     saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
+                    personident = Personident("12345678910"),
+                    periodetype = Periodetype.EN_GANG,
+                    ) {
                     periode(2.jun, 13.jun, 100u, null)
                 }
                 assertEquals(expected, it)
@@ -2266,6 +2269,67 @@ internal class TsTest {
 
         TestRuntime.topics.simulering.assertThat().hasNot(key)
 
+    }
+
+    @Test
+    fun `endring av sakId på utbetaling med 2 identiske perioder`() {
+        val sid1 = SakId("$nextInt")
+        val sid2 = SakId("$nextInt")
+        val bid1 = BehandlingId("$nextInt")
+        val bid2 = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+        val periodeId = PeriodeId()
+
+        TestRuntime.topics.utbetalinger.produce("$uid") {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid,
+                sakId = sid1,
+                behandlingId = bid1,
+                originalKey = UUID.randomUUID().toString(),
+                stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
+                periodetype = Periodetype.UKEDAG,
+                lastPeriodeId = periodeId,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 6.jun.atStartOfDay(),
+                beslutterId = Navident("ts"),
+                saksbehandlerId = Navident("ts"),
+                fagsystem = Fagsystem.TILLSTDR,
+            ) {
+                periode(1.jun, 5.jun, 1000u, null) +
+                periode(8.jun, 10.jun, 500u, null)
+            }
+        }
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestRuntime.topics.saker.produce(SakKey(sid1, Fagsystem.TILLSTDR)) { setOf(uid) }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.utbetaling(
+                uid = uid,
+                sakId = sid2.id,
+                behandlingId = bid2.id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+            ) {
+                Ts.periode(1.jun, 5.jun, 1000u) +
+                        Ts.periode(8.jun, 10.jun, 500u)
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        val expectedError = StatusReply(
+            status = Status.FEILET,
+            detaljer = null,
+            error=ApiError(statusCode=400, msg="can't change immutable field 'sakId'", doc="https://helved-docs.ansatt.dev.nav.no/v3/doc/")
+        )
+
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .has(transactionId, expectedError)
     }
 }
 
