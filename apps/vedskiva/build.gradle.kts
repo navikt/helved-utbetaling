@@ -20,7 +20,7 @@ dependencies {
     implementation("org.apache.kafka:kafka-clients:4.1.0")
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.19.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
