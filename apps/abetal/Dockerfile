@@ -17,7 +17,8 @@ RUN jlink \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
-    --compress=zip-fast \
+    # --compress=zip-fast \
+    --compress=2 \
     --output /customjre
 
 FROM alpine:latest AS app
