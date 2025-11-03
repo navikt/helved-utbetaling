@@ -2,7 +2,6 @@
 
 Async betalingsløsning.
 
-
 ## Features
 - Aggregater for å lage atomiske transaksjoner mot Oppdrag
 - Større meldinger bestående av fler utbetalinger
@@ -34,3 +33,32 @@ Async betalingsløsning.
 - Resultatet av joinen kan ikke være null, da har vi en bug.
   
 ![successful-utbetaling-stream](successful-utbetaling-stream.svg)
+
+# Technical
+### Heap Size
+Kafka Streams (RocksDB) trenger eget minne som er uten for JVMen for state store.
+Dette kan vi gjøre ved å f.eks sette `-XX:MaxRAMPercentage=60.0` i `Dockerfile`, 
+dvs at 40% av minnet er tilgjengelig for resten av poden.
+
+### CPU Cores
+Fordi vi har 3 partisjoner på topicsa, trenger vi også 3 stream threads `num.stream.threads`.
+Det betyr også at vi trenger 3 prosessor kjerner for å prosessere i parallell.
+Derfor setter vi `spec.resources.requests.cpu: 3000m` i nais manifestet `prod.yml`.
+Samtidig må vi fortelle JVM at det er 3 kjerner tilgjengelig i `Dockerfile` ved å sette `-XX:ActiveProcessorCount=3`.
+Dette kan være nødvendig når man deployer til kubernetes/sky hvor antall prosessorer kan vise alt mellom 1 og 100000, 
+uavhengig av hva vi har satt i nais-manifestet.
+
+#### Resilience
+Hvis man ønsker resilience må man sette `num.standby.replicas` til 1, men da trenger vi også
+1 standby replica (pod) som har like mye ressurser tilgjengelig. Her er kobinasjonen av partisjoner og stream threads viktig.
+Har man f.eks 2 stream threads, trenger vi 2 replicas med 2 cpuer hver, pluss 2 ekstra standby replikas med 2 cpuer hver.
+Eller man kan ha 1 stream thread per replica og 1 core, da trenger vi totalt 6 replicas, etc.
+Hvis vi tåler nedetid ved feil/restarts, må vi sette `num.standby.replicas` til `0` og vi trenger ikke lenger
+ekstra ressurser for pod, og klarer oss med 3 stream threads og 3 cpu cores.
+
+### Graceful shutdown
+Vi har kafka, ktor og kubernetes vi må ta hensyn til ved shutdown.
+Her har vi satt den lengste timeouten `spec.terminationGracePeriodSeconds: 70`.
+For ktor har vi satt `shutdownTimeout` til `50s` og `shutdownGracePeriod` til `5s`.
+For kafka har vi `45s` timeout. Det er viktig at kafka får minst, ktor i midten og kubernetes lengst, gjerne med litt leeway.
+
