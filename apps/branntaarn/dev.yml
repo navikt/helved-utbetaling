@@ -30,6 +30,10 @@ spec:
         - application: logging
           namespace: nais-system
         - application: peisschtappern
+      external:
+        - host: hooks.slack.com
+          ports:
+            - port: 443
   env:
     - name: PEISSCHTAPPERN_SCOPE
       value: api://dev-gcp.helved.peisschtappern/.default
