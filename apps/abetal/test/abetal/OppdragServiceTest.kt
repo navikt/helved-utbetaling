@@ -710,6 +710,184 @@ class OppdragServiceTest {
             assertEquals(100, it.sats.toLong())
         }
     }
+
+    /** 
+     * 1:   ╭──────╮     ╭──────╮
+     *      │ 100,-│     │ 200,-│
+     *      ╰──────╯     ╰──────╯
+     * 1:   ╭──────╮     ╭──────╮      ╭──────╮
+     *      │ 100,-│     │ 200,-│      │ 300,-│
+     *      ╰──────╯     ╰──────╯      ╰──────╯
+     * Res:                            ╭──────╮
+     *                                 │ 300,-│
+     *                                 ╰──────╯
+     */
+    @Test
+    fun `legg til ny periode med tomrom`() {
+        val sid = SakId("$nextInt")
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        val prev = utbetaling(
+            action = Action.CREATE,
+            uid = uid,
+            sakId = sid,
+            periodetype = Periodetype.UKEDAG,
+        ) {
+            periode(3.jun, 3.jun, 100u) + 
+            periode(1.jul, 1.jul, 200u)
+        }
+
+        val new = utbetaling(
+            action = Action.UPDATE,
+            uid = uid,
+            sakId = sid,
+            periodetype = Periodetype.UKEDAG,
+        ) {
+            periode(3.jun, 3.jun, 100u) + 
+            periode(1.jul, 1.jul, 200u) +
+            periode(1.aug, 1.aug, 300u)
+        }
+
+        val oppdrag = OppdragService.update(new, prev) 
+
+        assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+        assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+        assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+        assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+        oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+            assertEquals(prev.lastPeriodeId.toString(), it.refDelytelseId)
+            assertEquals("NY", it.kodeEndringLinje)
+            assertEquals(new.behandlingId.id, it.henvisning)
+            assertEquals(300, it.sats.toLong())
+        }
+
+    }
+
+    /** 
+     * 1:   ╭──────╮     ╭──────╮     ╭──────╮
+     *      │ 100,-│     │ 200,-│     │ 300,-│
+     *      ╰──────╯     ╰──────╯     ╰──────╯
+     * 1:   ╭──────╮     ╭──────╮          
+     *      │ 100,-│     │ 200,-│          
+     *      ╰──────╯     ╰──────╯          
+     * Res:                      ^
+     *                           ╰ OPPHØR
+     *                                   
+     */
+    @Test
+    fun `opphør på perioder som allerede har tomrom`() {
+        val sid = SakId("$nextInt")
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        val prev = utbetaling(
+            action = Action.CREATE,
+            uid = uid,
+            sakId = sid,
+            periodetype = Periodetype.UKEDAG,
+        ) {
+            periode(3.jun, 3.jun, 100u) + 
+            periode(1.jul, 1.jul, 200u) +
+            periode(1.aug, 1.aug, 300u)
+        }
+
+        val new = utbetaling(
+            action = Action.UPDATE,
+            uid = uid,
+            sakId = sid,
+            periodetype = Periodetype.UKEDAG,
+        ) {
+            periode(3.jun, 3.jun, 100u) + 
+            periode(1.jul, 1.jul, 200u)
+        }
+
+        val oppdrag = OppdragService.update(new, prev) 
+
+        assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+        assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+        assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+        assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+        oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+            assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+            assertEquals(2.jul, it.datoStatusFom.toLocalDate())
+            assertEquals("ENDR", it.kodeEndringLinje)
+            assertEquals(new.behandlingId.id, it.henvisning)
+            assertEquals(1.aug, it.datoVedtakFom.toLocalDate())
+            assertEquals(1.aug, it.datoVedtakTom.toLocalDate())
+            assertEquals(300, it.sats.toLong())
+        }
+
+    }
+
+    /** 
+     * 1:   ╭──────╮     ╭──────╮     ╭──────╮
+     *      │ 100,-│     │ 200,-│     │ 300,-│
+     *      ╰──────╯     ╰──────╯     ╰──────╯
+     * 1:                ╭──────╮     ╭──────╮                  
+     *                   │ 200,-│     │ 300,-│                  
+     *                   ╰──────╯     ╰──────╯                  
+     * Res: ^            ╭──────╮     ╭──────╮
+     *      ╰ OPPHØR     │ 200,-│     │ 300,-│
+     *                   ╰──────╯     ╰──────╯                 
+     */
+    @Test
+    fun `opphør første periode i oppdrag som allerede har tomrom`() {
+        val sid = SakId("$nextInt")
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        val prev = utbetaling(
+            action = Action.CREATE,
+            uid = uid,
+            sakId = sid,
+            periodetype = Periodetype.UKEDAG,
+        ) {
+            periode(3.jun, 3.jun, 100u) + 
+            periode(1.jul, 1.jul, 200u) +
+            periode(1.aug, 1.aug, 300u)
+        }
+
+        val new = utbetaling(
+            action = Action.UPDATE,
+            uid = uid,
+            sakId = sid,
+            periodetype = Periodetype.UKEDAG,
+        ) {
+            periode(1.jul, 1.jul, 200u) + 
+            periode(1.aug, 1.aug, 300u)
+        }
+
+        val oppdrag = OppdragService.update(new, prev) 
+
+        assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+        assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+        assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+        assertEquals(3, oppdrag.oppdrag110.oppdragsLinje150s.size)
+        oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+            assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+            assertEquals(3.jun, it.datoStatusFom.toLocalDate())
+            assertEquals("ENDR", it.kodeEndringLinje)
+            assertEquals(new.behandlingId.id, it.henvisning)
+            assertEquals(1.aug, it.datoVedtakFom.toLocalDate())
+            assertEquals(1.aug, it.datoVedtakTom.toLocalDate())
+            assertEquals(300, it.sats.toLong())
+        }
+        oppdrag.oppdrag110.oppdragsLinje150s[1].let {
+            assertEquals(oppdrag.oppdrag110.oppdragsLinje150s[0].delytelseId, it.refDelytelseId)
+            assertEquals("NY", it.kodeEndringLinje)
+            assertEquals(new.behandlingId.id, it.henvisning)
+            assertEquals(1.jul, it.datoVedtakFom.toLocalDate())
+            assertEquals(1.jul, it.datoVedtakTom.toLocalDate())
+            assertEquals(200, it.sats.toLong())
+        }
+        oppdrag.oppdrag110.oppdragsLinje150s[2].let {
+            assertEquals(oppdrag.oppdrag110.oppdragsLinje150s[1].delytelseId, it.refDelytelseId)
+            assertEquals("NY", it.kodeEndringLinje)
+            assertEquals(new.behandlingId.id, it.henvisning)
+            assertEquals(1.aug, it.datoVedtakFom.toLocalDate())
+            assertEquals(1.aug, it.datoVedtakTom.toLocalDate())
+            assertEquals(300, it.sats.toLong())
+        }
+
+    }
 }
 
 
