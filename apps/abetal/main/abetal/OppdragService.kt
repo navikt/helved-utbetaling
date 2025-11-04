@@ -190,10 +190,6 @@ fun opphørsdato(
     return opphørsdato
 }
 
-fun List<Utbetalingsperiode>.sammeTomrom(prev: List<Utbetalingsperiode>): Boolean {
-    return false
-}
-
 private fun nyeLinjer(
     new: Utbetaling,
     prev: Utbetaling,
@@ -228,7 +224,6 @@ private fun nyeLinjer(
     var sistePeriodeId = prev.lastPeriodeId
     return new.perioder
         .slice(førsteEndringIdx until new.perioder.size)
-        // .filter { if (opphørsdato != null) it.fom >= opphørsdato else true }
         .map { p ->
             val pid = PeriodeId()
             oppdragsLinje150(new, false, p, pid, sistePeriodeId, null).also {

@@ -88,9 +88,15 @@ object OppdragService {
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
             val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.satstype)
-            val opphørslinje = oppdragsLinje150(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
-            if (opphørsdato != null) oppdragsLinje150s.add(opphørslinje)
-            oppdragsLinje150s.addAll(nyeLinjer(new, prev, opphørsdato))
+            val nyeLinjer = nyeLinjer(new, prev, opphørsdato)
+
+            if (skalTilføreOpphørslinje(opphørsdato, nyeLinjer)) {
+                val opphørslinje = oppdragsLinje150(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
+                oppdragsLinje150s.add(opphørslinje)
+            }
+
+            oppdragsLinje150s.addAll(nyeLinjer)
+
         }
         return objectFactory.createOppdrag().apply {
             this.oppdrag110 = oppdrag110
@@ -126,6 +132,18 @@ object OppdragService {
     }
 }
 
+private fun XMLGregorianCalendar.toLocalDate() = toGregorianCalendar().toZonedDateTime().toLocalDate()
+
+private fun skalTilføreOpphørslinje(
+    opphørsdato: LocalDate?,
+    nyeLinjer: List<OppdragsLinje150>,
+): Boolean {
+    if (opphørsdato == null) return false
+    return nyeLinjer.none { linje ->
+        linje.datoVedtakFom.toLocalDate() <= opphørsdato
+    }
+}
+
 private fun avstemming115(fagsystemKode: String): Avstemming115 {
     val todayAtSeven = LocalDateTime.now().with(fixedTime)
     return objectFactory.createAvstemming115().apply {
@@ -140,27 +158,63 @@ fun opphørsdato(
     prev: List<Utbetalingsperiode>,
     satstype: Satstype,
 ): LocalDate? {
-    if (new.first().fom > prev.first().fom) {
-        // Forkorter fom i starten. Må opphøre fra start
-        return prev.first().fom
+    var førsteEndringIdx = prev.zip(new).indexOfFirst { it.first != it.second }
+    when (førsteEndringIdx) {
+        -1 if new.size > prev.size -> førsteEndringIdx = prev.size
+        -1 if prev.size > new.size -> førsteEndringIdx = new.size
     }
+    if (førsteEndringIdx >= prev.size) return null
 
-    // Hvis det finnes et mellomrom må vi opphøre fra starten av mellomrommet
-    // TODO: respekter periodetype
-    val opphørsdato = new
-        .windowed(2)
-        .find {
-            if (satstype != Satstype.VIRKEDAG) {
-                it.first().tom.plusDays(1) < it.last().fom
-            } else {
-                it.first().tom.nesteUkedag() < it.last().fom
-            }
+    val opphørsdato = when {
+
+        /** Siste periode er forkortet, og vi må opphøre ved slutten av den nye perioden
+         * prev: ╭────────────────╮╭──────────────╮
+         *       │                ││              │
+         *       ╰────────────────╯╰──────────────╯
+         * new:  ╭────────────────╮
+         *       │                │
+         *       ╰────────────────╯
+         * res:                    ^
+         *                         ╰ OPPHØR
+         */
+        førsteEndringIdx >= new.size -> {
+            new.last().tom.plusDays(1)
         }
-        ?.first()?.tom?.plusDays(1) // kan sette nesteUkedag ved periodetype.ukedag hvis ønskelig
 
-    // Hvis vi ikke har opphørsdato i et mellomrom kan det hende at den siste perioden i
-    // ny utbetaling er kortere enn siste perioden i eksisterende utbetaling
-    return opphørsdato ?: if (new.last().tom < prev.last().tom) new.last().tom.plusDays(1) else null
+        /** En periode sin fom er forkortet, og vi må sette opphør fra og med forrige fom
+         * prev: ╭────────────────────────────────╮
+         *       │                                │
+         *       ╰────────────────────────────────╯
+         * new:                  ╭────────────────╮
+         *                       │                │
+         *                       ╰────────────────╯
+         * res:  ^
+         *       ╰ OPPHØR
+         */
+        prev[førsteEndringIdx].fom < new[førsteEndringIdx].fom -> {
+            prev[førsteEndringIdx].fom
+        }
+
+        /** En periode sin tom er forkortet, og vi må sette opphør fra og med dagen etter den nye tom
+         *  Dersom nyere perioder forekommer etterpå, kan "nyeLinjer" fjerne opphørsdatoen
+         * prev: ╭────────────────╮╭──────────────╮
+         *       │                ││              │
+         *       ╰────────────────╯╰──────────────╯
+         * new:  ╭────────╮        ╭──────────────╮
+         *       │        │        │              │
+         *       ╰────────╯        ╰──────────────╯
+         * res:            ^
+         *                 ╰ OPPHØR
+         */
+        new[førsteEndringIdx].tom < prev[førsteEndringIdx].tom -> {
+            new[førsteEndringIdx].tom.plusDays(1)
+        }
+
+        else -> {
+            null
+        }
+    }
+    return opphørsdato
 }
 
 private fun nyeLinjer(
@@ -171,8 +225,9 @@ private fun nyeLinjer(
     var førsteEndringIdx = prev.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
 
     when {
+
+        // De(n) nye endringen(e) kommer etter siste eksisterende periode.
         førsteEndringIdx == -1 && new.perioder.size > prev.perioder.size -> {
-            // De(n) nye endringen(e) kommer etter siste eksisterende periode.
             førsteEndringIdx = prev.perioder.size
         }
 
@@ -196,7 +251,6 @@ private fun nyeLinjer(
     var sistePeriodeId = prev.lastPeriodeId
     return new.perioder
         .slice(førsteEndringIdx until new.perioder.size)
-        .filter { if (opphørsdato != null) it.fom >= opphørsdato else true }
         .map { p ->
             val pid = PeriodeId()
             oppdragsLinje150(new, false, p, pid, sistePeriodeId, null).also {
