@@ -2,12 +2,14 @@ package peisschtappern
 
 import libs.kafka.KafkaProducer
 import libs.xml.XMLMapper
+import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.ObjectFactory
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
-class ManuellOppdragService(
-    private val oppdragProducer: KafkaProducer<String, Oppdrag>
+class ManuellEndringService(
+    private val oppdragProducer: KafkaProducer<String, Oppdrag>,
+    private val utbetalingerProducer: KafkaProducer<String, Utbetaling>
 ) {
     fun addKvitteringManuelt(
         oppdragXml: String,
@@ -41,6 +43,19 @@ class ManuellOppdragService(
         val oppdrag = xmlMapper.readValue(oppdragXml)
 
         oppdragProducer.send(messageKey, oppdrag)
+
+        return oppdrag
+    }
+
+    fun flyttPendingTilUtbetalinger(
+        oppdragXml: String,
+        messageKey: String,
+    ): Utbetaling {
+
+        val xmlMapper = XMLMapper<Utbetaling>()
+        val oppdrag = xmlMapper.readValue(oppdragXml)
+
+        utbetalingerProducer.send(messageKey, oppdrag)
 
         return oppdrag
     }
