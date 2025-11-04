@@ -36,7 +36,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     }
 }
 
-fun Route.api(manuellOppdragService: ManuellOppdragService) {
+fun Route.api(manuellEndringService: ManuellEndringService) {
     route("/api") {
         get {
             val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
@@ -73,7 +73,8 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
 
             get("/{sakId}/{fagsystem}") {
                 val sakId = call.parameters["sakId"]!!
-                val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
+                val fagsystemer: List<Fagsystem> =
+                    call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
                 val hendelser: List<Dao> = withContext(Jdbc.context + Dispatchers.IO) {
                     transaction {
                         coroutineScope {
@@ -143,46 +144,66 @@ fun Route.api(manuellOppdragService: ManuellOppdragService) {
         }
     }
 
-        post("/manuell-kvittering") {
-            val request = call.receive<KvitteringRequest>()
+    post("/manuell-kvittering") {
+        val request = call.receive<KvitteringRequest>()
 
-            try {
-                manuellOppdragService.addKvitteringManuelt(
-                    oppdragXml = request.oppdragXml,
-                    messageKey = request.messageKey,
-                    alvorlighetsgrad = request.alvorlighetsgrad,
-                    beskrMelding = request.beskrMelding,
-                    kodeMelding = request.kodeMelding
-                )
-                call.respond(
-                    HttpStatusCode.OK,
-                    "Created kvittering for uid:${request.messageKey} on ${oppdrag.name}"
-                )
-            } catch (e: Exception) {
-                val msg = "Failed to create kvittering for uid:${request.messageKey}"
-                appLog.error(msg)
-                secureLog.error(msg, e)
-                call.respond(HttpStatusCode.BadRequest, msg)
-            }
+        try {
+            manuellEndringService.addKvitteringManuelt(
+                oppdragXml = request.oppdragXml,
+                messageKey = request.messageKey,
+                alvorlighetsgrad = request.alvorlighetsgrad,
+                beskrMelding = request.beskrMelding,
+                kodeMelding = request.kodeMelding
+            )
+            call.respond(
+                HttpStatusCode.OK,
+                "Created kvittering for uid:${request.messageKey} on ${oppdrag.name}"
+            )
+        } catch (e: Exception) {
+            val msg = "Failed to create kvittering for uid:${request.messageKey}"
+            appLog.error(msg)
+            secureLog.error(msg, e)
+            call.respond(HttpStatusCode.BadRequest, msg)
         }
+    }
 
-        post("/manuell-oppdrag") {
-            val request = call.receive<OppdragRequest>()
+    post("/manuell-oppdrag") {
+        val request = call.receive<OppdragRequest>()
 
-            try {
-                manuellOppdragService.sendOppdragManuelt(
-                    oppdragXml = request.oppdragXml,
-                    messageKey = request.messageKey
+        try {
+            manuellEndringService.sendOppdragManuelt(
+                oppdragXml = request.oppdragXml,
+                messageKey = request.messageKey
 
-                )
-                call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.messageKey} on ${oppdrag.name}")
-            } catch (e: Exception) {
-                val msg = "Failed to send oppdrag for uid:${request.messageKey}"
-                appLog.error(msg)
-                secureLog.error(msg, e)
-                call.respond(HttpStatusCode.BadRequest, msg)
-            }
+            )
+            call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.messageKey} on ${oppdrag.name}")
+        } catch (e: Exception) {
+            val msg = "Failed to send oppdrag for uid:${request.messageKey}"
+            appLog.error(msg)
+            secureLog.error(msg, e)
+            call.respond(HttpStatusCode.BadRequest, msg)
         }
+    }
+
+    post("/pending-til-utbetaling") {
+        val request = call.receive<PendingUtbetalingRequest>()
+
+        try {
+            manuellEndringService.flyttPendingTilUtbetalinger(
+                oppdragXml = request.oppdragXml,
+                messageKey = request.messageKey
+            )
+            call.respond(
+                HttpStatusCode.OK, "Moved utbetaling from helved.pending-utbetalinger.v1" +
+                        "for uid:${request.messageKey} on ${oppdrag.name}" + " to helved.utbetalinger.v1"
+            )
+        } catch (e: Exception) {
+            val msg = "Failed to move pending utbetaling for uid:${request.messageKey}"
+            appLog.error(msg)
+            secureLog.error(msg, e)
+            call.respond(HttpStatusCode.BadRequest, msg)
+        }
+    }
 }
 
 data class KvitteringRequest(
@@ -194,6 +215,11 @@ data class KvitteringRequest(
 )
 
 data class OppdragRequest(
+    val messageKey: String,
+    val oppdragXml: String
+)
+
+data class PendingUtbetalingRequest(
     val messageKey: String,
     val oppdragXml: String
 )
