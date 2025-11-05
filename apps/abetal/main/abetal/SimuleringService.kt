@@ -16,7 +16,7 @@ private val rootFactory = ObjectFactory()
 private val objectFactory = no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory()
 private val oppdragFactory = OppdragFactory()
 
-private fun LocalDate.format() = format(DateTimeFormatter.ofPattern("YYYY-MM-dd"))
+private fun LocalDate.format() = format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
 object SimuleringService {
 
