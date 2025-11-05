@@ -1,12 +1,16 @@
 package utsjekk
 
 import java.util.UUID
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.kafka.*
-import libs.utils.*
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
+import libs.kafka.*
+import libs.utils.*
 import models.*
 import models.StatusReply
 import models.kontrakter.oppdrag.OppdragStatus
@@ -95,14 +99,22 @@ fun createTopology(abetalClient: AbetalClient): Topology = topology {
                 }
             }
         }
+
+    // Fordi vi kun har 1 tråd (num.stream.threads) i kafka, kaller vi .complete fra en coroutine
+    val consumerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
     consume(Topics.dryrunDp)
         .forEach { key, dto ->
-            SimuleringSubscriptions.complete(key, dto)
+            consumerScope.launch {
+                SimuleringSubscriptions.complete(key, dto)
+            }
         }
 
     consume(Topics.dryrunTs)
         .forEach { key, dto ->
-            SimuleringSubscriptions.complete(key, dto)
+            consumerScope.launch {
+                SimuleringSubscriptions.complete(key, dto)
+            }
         }
 }
 
