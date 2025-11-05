@@ -60,10 +60,15 @@ object SimuleringService {
             enhets.addAll(enheter(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
-            val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.periodetype)
-            val opphørslinje = oppdragslinje(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato )
-            if (opphørsdato != null) oppdragslinjes.add(opphørslinje)
-            oppdragslinjes.addAll(nyeLinjer(new, prev, opphørsdato))
+            val nyeLinjer = nyeLinjer(new, prev)
+            val opphørsdato = opphørsdato(new.perioder, prev.perioder)
+
+            if (skalTilføreOpphørslinje(opphørsdato, nyeLinjer)) {
+                val opphørslinje = oppdragslinje(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato )
+                oppdragslinjes.add(opphørslinje)
+            }
+
+            oppdragslinjes.addAll(nyeLinjer(new, prev))
         }
         return rootFactory.createSimulerBeregningRequest().apply {
             request = objectFactory.createSimulerBeregningRequest().apply {
@@ -94,6 +99,16 @@ object SimuleringService {
                 this.oppdrag = oppdrag
             }
         }
+    }
+}
+
+private fun skalTilføreOpphørslinje(
+    opphørsdato: LocalDate?,
+    nyeLinjer: List<Oppdragslinje>,
+): Boolean {
+    if (opphørsdato == null) return false
+    return nyeLinjer.none { linje ->
+        linje.datoVedtakFom <= opphørsdato.format()
     }
 }
 
@@ -153,7 +168,6 @@ private fun oppdragslinje(
 private fun nyeLinjer(
     new: Utbetaling,
     prev: Utbetaling,
-    opphørsdato: LocalDate?,
 ): List<Oppdragslinje> {
     var førsteEndringIdx = prev.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
 
@@ -181,7 +195,6 @@ private fun nyeLinjer(
     var sistePeriodeId = prev.lastPeriodeId
     return new.perioder
         .slice(førsteEndringIdx until new.perioder.size)
-        .filter { if (opphørsdato != null) it.fom >= opphørsdato else true }
         .map { p ->
             val pid = PeriodeId()
             oppdragslinje(new, false, p, pid, sistePeriodeId, null).also {
