@@ -43,18 +43,18 @@ Alle de tre er XML-er som sendes til Oppdragssystemet via MQ. Meldingene knyttes
 
 Alle start-, data- og sluttmeldinger inneholder `<aksjon>` som har følgene felter
 
-| Felt         | Type/gyldige verdier  | Beskrivelse                                                                                               |
-|:---------------|:----------------------|:--------------------------------------------------------------------------------------------------------|
-| aksjonType     | START, DATA eller AVSL | Beskriver hvilken av de tre meldingstypene dette er |
-| kildeType      | AVLEV | Vi setter alltid AVLEV |
-| avstemmingType | GRSN | Vi setter alltid GRSN (grensesnittavstemming)|
-| avleverendeKomponentKode | AAP, TILLST, TILTPENG eller DP | Fagområdet vi avstemmer for|
-| mottakendeKomponentKode | OS |Alltid OS (Oppdragssystemet) |
-| underkomponentKode | AAP, TILLST, TILTPENG eller DP | Fagområdet vi avstemmer for. Vet ikke hvorfor vi trenger både `avleverendeKomponentKode` og `underkomponentKode`, som har samme verdi  |
-| nokkelFom | Vi bruker timestamp på formatet YYYY-MM-DD-HH.mm.ss.nnnnnn | Brukes i `select`-en OS gjør for å plukke oppdragene som skal avstemmes. Samme format som `nokkelAvstemming` i oppdrag-XML |
-| nokkelTom | Vi bruker timestamp på formatet YYYY-MM-DD-HH.mm.ss.nnnnnn | Brukes i `select`-en OS gjør for å plukke oppdragene som skal avstemmes. Samme format som `nokkelAvstemming` i oppdrag-XML |
-| avleverendeAvstemmingId | ID på avstemmingen | Det skal være samme ID på tvers av alle meldinger som inngår i en og samme avstemming (på tvers av START-, DATA-, og AVSL-meldingene for en og samme avstemming) |
-| brukerId | AAP, TILLST, TILTPENG eller DP | Fagområdet vi avstemmer for. Vi setter Samme verdi her som i `avleverendeKomponentKode` og `underkomponentKode`|
+| Felt         | Type/gyldige verdier                                       | Beskrivelse                                                                                               |
+|:---------------|:-----------------------------------------------------------|:--------------------------------------------------------------------------------------------------------|
+| aksjonType     | START, DATA eller AVSL                                     | Beskriver hvilken av de tre meldingstypene dette er |
+| kildeType      | AVLEV                                                      | Vi setter alltid AVLEV |
+| avstemmingType | GRSN                                                       | Vi setter alltid GRSN (grensesnittavstemming)|
+| avleverendeKomponentKode | AAP, TILLST, TILTPENG eller DP                             | Fagområdet vi avstemmer for|
+| mottakendeKomponentKode | OS                                                         |Alltid OS (Oppdragssystemet) |
+| underkomponentKode | AAP, TILLST, TILTPENG eller DP                             | Fagområdet vi avstemmer for. Vet ikke hvorfor vi trenger både `avleverendeKomponentKode` og `underkomponentKode`, som har samme verdi  |
+| nokkelFom | Vi bruker timestamp på formatet yyyy-MM-DD-HH.mm.ss.nnnnnn | Brukes i `select`-en OS gjør for å plukke oppdragene som skal avstemmes. Samme format som `nokkelAvstemming` i oppdrag-XML |
+| nokkelTom | Vi bruker timestamp på formatet yyyy-MM-DD-HH.mm.ss.nnnnnn | Brukes i `select`-en OS gjør for å plukke oppdragene som skal avstemmes. Samme format som `nokkelAvstemming` i oppdrag-XML |
+| avleverendeAvstemmingId | ID på avstemmingen                                         | Det skal være samme ID på tvers av alle meldinger som inngår i en og samme avstemming (på tvers av START-, DATA-, og AVSL-meldingene for en og samme avstemming) |
+| brukerId | AAP, TILLST, TILTPENG eller DP                             | Fagområdet vi avstemmer for. Vi setter Samme verdi her som i `avleverendeKomponentKode` og `underkomponentKode`|
 
 
 ### Felter som bare finnes i datamelding
