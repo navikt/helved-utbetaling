@@ -3,16 +3,23 @@ FROM eclipse-temurin:21-jdk-alpine AS jre
 RUN jlink \
     --verbose \
     --module-path $JAVA_HOME/bin/jmods/ \
-    --add-modules java.compiler \
+    --add-modules java.base \
     --add-modules java.desktop \
+    --add-modules java.management \
     --add-modules java.instrument \
     --add-modules java.naming \
+    --add-modules java.net.http \
     --add-modules java.security.jgss \
     --add-modules java.security.sasl \
     --add-modules java.sql \
-    --add-modules jdk.jfr \
-    --add-modules jdk.management \
+    --add-modules java.xml \
+    --add-modules java.xml.crypto \
+    --add-modules jdk.httpserver \
     --add-modules jdk.unsupported \
+    --add-modules jdk.crypto.ec \
+    --add-modules jdk.charsets \
+    --add-modules jdk.xml.dom \
+    --add-modules jdk.management \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
