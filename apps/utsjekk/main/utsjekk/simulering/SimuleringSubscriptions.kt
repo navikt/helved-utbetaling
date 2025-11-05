@@ -16,12 +16,14 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.kafka.KafkaProducer
+import libs.kafka.StateStore
 import models.AapUtbetaling
 import models.DpUtbetaling
 import models.Fagsystem
@@ -121,6 +123,8 @@ fun Route.simulerBlocking(
     dpUtbetalingerProducer: KafkaProducer<String, DpUtbetaling>,
     tpUtbetalingerProducer: KafkaProducer<String, TpUtbetaling>,
     tsUtbetalingerProducer: KafkaProducer<String, TsUtbetaling>,
+    dryrunTsStore: StateStore<String, models.v1.Simulering>, 
+    dryrunDpStore: StateStore<String, Simulering>, 
 ) {
 
     route("/api/simulering/v3") {
@@ -155,19 +159,20 @@ fun Route.simulerBlocking(
 
             suspend fun simulerDagpenger() {
                 val dto = call.receive<DpUtbetaling>().copy(dryrun = true)
-                val (sim, status) = SimuleringSubscriptions.subscribe(transactionId)
-
                 dpUtbetalingerProducer.send(transactionId, dto)
 
                 val result = withTimeoutOrNull(30.seconds) { 
-                    select<Any?> {
-                        sim.onAwait { it }
-                        status.onAwait { it }
+                    while(true) {
+                        val simResult = dryrunDpStore.getOrNull(transactionId)
+                        if (simResult != null) {
+                            return@withTimeoutOrNull simResult
+                        }
+                        delay(500) 
                     }
                 }
                 when (result) {
                     is Simulering -> call.respond(result)
-                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+                    // is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
@@ -197,24 +202,24 @@ fun Route.simulerBlocking(
 
             suspend fun simulerTilleggsstønader() {
                 val dtos = call.receive<List<TsUtbetaling>>().map { it.copy(dryrun = true) }
-                val (sim, status) = SimuleringSubscriptions.subscribeV1(transactionId)
-
                 dtos.forEach { dto -> tsUtbetalingerProducer.send(transactionId, dto) }
 
                 val result = withTimeoutOrNull(30.seconds) { 
-                    select<Any?> {
-                        sim.onAwait { it }
-                        status.onAwait { it }
+                    while(true) {
+                        val simResult = dryrunTsStore.getOrNull(transactionId)
+                        if (simResult != null) {
+                            return@withTimeoutOrNull simResult
+                        }
+                        delay(500) 
                     }
                 }
 
                 when (result) {
                     is models.v1.Simulering -> call.respond(result)
-                    is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+                    // is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
                     null -> call.respond(HttpStatusCode.RequestTimeout)
                     else -> call.respond(HttpStatusCode.InternalServerError)
                 }
-                SimuleringSubscriptions.unsubscribe(transactionId)
             }
 
             suspend fun simulerTiltakspenger() {

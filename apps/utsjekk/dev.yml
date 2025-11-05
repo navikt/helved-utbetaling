@@ -22,8 +22,8 @@ spec:
     path: /actuator/metric
     enabled: true
   replicas:
-    min: 2
-    max: 4
+    min: 3
+    max: 3
     cpuThresholdPercentage: 50
   resources:
     limits:

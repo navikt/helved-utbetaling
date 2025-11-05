@@ -3,6 +3,7 @@ package libs.kafka
 import libs.kafka.stream.ConsumedStream
 import libs.kafka.processor.StateScheduleProcessor
 import org.apache.kafka.streams.kstream.KTable
+import org.apache.kafka.streams.kstream.GlobalKTable
 
 data class Table<K: Any, V: Any>(
     val sourceTopic: Topic<K, V>,
@@ -31,3 +32,8 @@ class KTable<K: Any, V : Any>(
     }
 }
 
+class GlobalKTable<K: Any, V: Any>(
+    val table: Table<K, V>,
+    val internalGlobalKTable: org.apache.kafka.streams.kstream.GlobalKTable<K, V?>,
+) {
+}

@@ -141,11 +141,14 @@ fun Application.utsjekk(
     val aapMigrator = UtbetalingMigrator(utbetalingProducer)
     val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer)
 
+    val dryrunTsStore = kafka.getStore(Stores.dryrunTs)
+    val dryrunDpStore = kafka.getStore(Stores.dryrunDp)
+
     routing {
         authenticate(TokenProvider.AZURE) {
             iverksetting(iverksettingService)
             simulering(simuleringValidator, simulering)
-            simulerBlocking(aapProducer, dpProducer, tpProducer, tsProducer)
+            simulerBlocking(aapProducer, dpProducer, tpProducer, tsProducer, dryrunTsStore, dryrunDpStore)
             utbetalingRoute(simuleringService, utbetalingService)
             aapMigrator.route(this)
             iverksettingMigrator.route(this)
