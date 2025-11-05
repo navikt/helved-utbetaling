@@ -3,6 +3,7 @@ package urskog
 import com.ibm.mq.jms.MQQueue
 import java.net.URI
 import java.net.URL
+import java.util.Properties
 import libs.auth.AzureConfig
 import libs.kafka.StreamsConfig
 import libs.mq.MQConfig
@@ -11,7 +12,17 @@ import libs.ws.SoapConfig
 import libs.ws.StsConfig
 
 data class Config(
-    val kafka: StreamsConfig = StreamsConfig(),
+    val kafka: StreamsConfig = StreamsConfig(
+        additionalProperties = Properties().apply {
+            // Vi har 3 partisjoner, for å ha en standby-replica må vi ha 4 poder.
+            // For å bruke 1 pod, kan vi ikke lenger ha noen standby-replicas
+            this[org.apache.kafka.streams.StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG] = 0
+
+            // Vi har 3 partisjoner, hver trenger en tråd på en egen CPU. 
+            // Derfor trenger i 3000m CPU og -XX:ActiveProcessorCount=3
+            this[org.apache.kafka.streams.StreamsConfig.NUM_STREAM_THREADS_CONFIG] = 3
+        }
+    ),
     val oppdrag: OppdragConfig = OppdragConfig(),
     val mq: MQConfig = MQConfig(
         host = env("MQ_HOSTNAME"),
