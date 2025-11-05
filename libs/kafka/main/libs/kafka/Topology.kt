@@ -13,6 +13,8 @@ import org.apache.kafka.streams.StoreQueryParameters
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.state.QueryableStoreTypes
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
 
 private fun <K: Any, V : Any> nameSupplierFrom(topic: Topic<K, V>): () -> String = { "from-${topic.name}" }
 
@@ -113,6 +115,13 @@ class Topology {
             .stream(table.sourceTopicName, table.sourceTopic.consumed())
             .addProcessor(LogConsumeTopicProcessor<K, V?>(table.sourceTopic))
             .toKTable(table)
+    }
+
+    fun <K: Any, V: Any> globalKTable(table: Table<K, V>, retention: Duration) {
+        builder.globalTable(
+            table.sourceTopicName,
+            materialized(table).withRetention(retention.toJavaDuration())
+        )
     }
 
     fun <K: Any, V : Any> forEach(

@@ -21,6 +21,7 @@ import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.simulering.SimuleringSubscriptions
 import utsjekk.utbetaling.UtbetalingDao
 import utsjekk.utbetaling.UtbetalingId
+import kotlin.time.Duration.Companion.hours
 
 object Topics {
     const val NUM_PARTITIONS = 3
@@ -36,7 +37,25 @@ object Topics {
     val utbetaling = Topic("helved.utbetalinger.v1", json<Utbetaling>())
 }
 
+object Tables {
+    val dryrunTs = Table(Topics.dryrunTs)
+    val dryrunDp = Table(Topics.dryrunDp)
+}
+
+object Stores {
+    val dryrunTs = Store(Tables.dryrunTs)
+    val dryrunDp = Store(Tables.dryrunDp)
+}
+
 fun createTopology(abetalClient: AbetalClient): Topology = topology {
+    globalKTable(Tables.dryrunTs, retention = 1.hours)
+    globalKTable(Tables.dryrunDp, retention = 1.hours)
+    consumeStatus(abetalClient)
+}
+
+fun Topology.consumeStatus(
+    abetalClient: AbetalClient,
+) {
     consume(Topics.status)
         .filterKey { uid ->
             try {
@@ -49,9 +68,9 @@ fun createTopology(abetalClient: AbetalClient): Topology = topology {
         .forEach { key, status ->
             val uid = UtbetalingId(UUID.fromString(key))
 
-            if (status.status == Status.FEILET) {
-                SimuleringSubscriptions.complete(key, status)
-            }
+            // if (status.status == Status.FEILET) {
+            //     SimuleringSubscriptions.complete(key, status)
+            // }
 
             runBlocking {
                 withContext(Jdbc.context) {
@@ -97,23 +116,6 @@ fun createTopology(abetalClient: AbetalClient): Topology = topology {
                         }
                     }
                 }
-            }
-        }
-
-    // Fordi vi kun har 1 tråd (num.stream.threads) i kafka, kaller vi .complete fra en coroutine
-    val consumerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-
-    consume(Topics.dryrunDp)
-        .forEach { key, dto ->
-            consumerScope.launch {
-                SimuleringSubscriptions.complete(key, dto)
-            }
-        }
-
-    consume(Topics.dryrunTs)
-        .forEach { key, dto ->
-            consumerScope.launch {
-                SimuleringSubscriptions.complete(key, dto)
             }
         }
 }

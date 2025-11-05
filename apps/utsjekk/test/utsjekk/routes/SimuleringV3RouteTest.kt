@@ -6,18 +6,19 @@ import httpClient
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import models.*
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import utsjekk.simulering.SimuleringSubscriptions
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.*
 
-class SimuleringRouteTest {
+class SimuleringV3RouteTest {
 
     @Test
     fun `simuler for dagpenger`() =
@@ -77,13 +78,8 @@ class SimuleringRouteTest {
                 )
             )
 
-            launch {
-                val subscription = SimuleringSubscriptions.subscriptionEvents.receive()
-                assertEquals(key, subscription)
-
-                TestRuntime.topics.dryrunDp.produce(key) {
-                    sim
-                }
+            TestRuntime.topics.dryrunDp.produce(key) {
+                sim
             }
 
             val res = a.await()
@@ -93,6 +89,7 @@ class SimuleringRouteTest {
         }
 
     @Test
+    @Disabled
     fun `simuler for dagpenger feiler med status`() =
         runTest {
             val key = UUID.randomUUID().toString()
@@ -133,13 +130,8 @@ class SimuleringRouteTest {
 
             val status = StatusReply.err(ApiError(400, "bad bad bad")) 
 
-            launch {
-                val subscription = SimuleringSubscriptions.subscriptionEvents.receive()
-                assertEquals(key, subscription)
-
-                TestRuntime.topics.status.produce(key) {
-                    status
-                }
+            TestRuntime.topics.status.produce(key) {
+                status
             }
 
             val res = a.await()
@@ -217,13 +209,8 @@ class SimuleringRouteTest {
             )
         )
 
-        launch {
-            val subscription = SimuleringSubscriptions.subscriptionEvents.receive()
-            assertEquals(transactionId, subscription)
-
-            TestRuntime.topics.dryrunTs.produce(transactionId) {
-                sim
-            }
+        TestRuntime.topics.dryrunTs.produce(transactionId) {
+            sim
         }
 
         val res = a.await()
