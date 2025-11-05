@@ -155,7 +155,7 @@ private val xmlMapper: ObjectMapper =
             JavaTimeModule()
                 .addDeserializer(
                     LocalDateTime::class.java,
-                    LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("YYYY-MM-dd'T'HH:mm:ssZ"))
+                    LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"))
                 )
         )
 
