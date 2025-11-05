@@ -2,12 +2,9 @@ package abetal.consumers
 
 import abetal.*
 import abetal.TestRuntime
-import com.fasterxml.jackson.module.kotlin.readValue
-import libs.kafka.JsonSerde
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.*
@@ -2062,7 +2059,7 @@ internal class TsTest {
                     assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
                     assertEquals(2.jun, it.datoStatusFom.toLocalDate())
                     assertEquals(periodeId.toString(), it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals("ENDR", it.kodeEndringLinje)
                     assertEquals(bid.id, it.henvisning)
                     assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
                     assertEquals(100, it.sats.toLong())

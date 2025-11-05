@@ -91,7 +91,7 @@ object SimuleringService {
             enhets.addAll(enheter(new))
             val lastPeriode = new.perioder.maxBy { it.fom }
             val opphør = new.perioder.minBy { it.fom }.fom
-            val oppdragslinje = oppdragslinje(new, false, lastPeriode, prev.lastPeriodeId, null, opphør)
+            val oppdragslinje = oppdragslinje(new, true, lastPeriode, prev.lastPeriodeId, null, opphør)
             oppdragslinjes.add(oppdragslinje)
         }
         return rootFactory.createSimulerBeregningRequest().apply {
