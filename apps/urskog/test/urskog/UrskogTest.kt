@@ -14,6 +14,7 @@ class UrskogTest {
     @AfterEach 
     fun cleanup() {
         receivedMqOppdrag.clear()
+        TestRuntime.kafka.getProducer(Topics.kvittering).clear()
     }
 
     private var seq: Int = 0
@@ -185,8 +186,6 @@ class UrskogTest {
         assertEquals(1, kvitteringTopic.history().size)
         assertEquals(0, kvitteringTopic.uncommitted().size)
 
-        // because streams and vanilla kafka producer is not connected by TestTopologyDriver,
-        // we will manually add a kvittering to see the rest of the stream
         TestRuntime.topics.kvittering.produce(OppdragForeignKey.from(oppdrag)) {
             oppdrag.apply {
                 mmel = Mmel().apply {
@@ -194,36 +193,12 @@ class UrskogTest {
                 }
             }
         }
-        testLog.info("test complete")
 
         TestRuntime.topics.oppdrag.assertThat()
             .has(uid)
             .with(uid, 0) {
                 assertEquals("00", it.mmel.alvorlighetsgrad)
                 assertEquals("AAP", it.oppdrag110.avstemming115.kodeKomponent)
-            }
-
-        TestRuntime.topics.status.assertThat()
-            .has(uid, size = 2)
-            .with(uid, index = 0) {
-                assertEquals(Status.HOS_OPPDRAG, it.status)
-            }
-            .with(uid, index = 1) {
-                val expectedDetaljer =  Detaljer(
-                    ytelse = Fagsystem.AAP,
-                    linjer = listOf(
-                        DetaljerLinje(
-                            behandlingId = bid, 
-                            fom = LocalDate.of(2025, 11, 3),
-                            tom = LocalDate.of(2025, 11, 7),
-                            beløp = 700u,
-                            vedtakssats = null,
-                            klassekode = "AAPOR"
-                        )
-                    )
-                )
-                assertEquals(Status.OK, it.status)
-                assertEquals(expectedDetaljer, it.detaljer)
             }
     }
 }

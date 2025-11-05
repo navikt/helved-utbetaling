@@ -34,6 +34,10 @@ class KafkaProducerFake<K: Any, V>(
         // return CompletableFuture.completedFuture(metadata)
         return producer.send(record, callback)
     }
+
+    fun clear() {
+        producer.clear()
+    }
 }
 
 class KafkaConsumerFake<K: Any, V>(
