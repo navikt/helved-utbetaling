@@ -1,5 +1,6 @@
 FROM eclipse-temurin:21-jdk-alpine AS jre
 # jdeps --print-module-deps --ignore-missing-deps apps/abetal/build/libs/abetal-all.jar
+# explicit add "--add-modules jdk.jcmd" a tool for creating heap dumps
 RUN jlink \
     --verbose \
     --module-path $JAVA_HOME/bin/jmods/ \
@@ -12,7 +13,7 @@ RUN jlink \
     --add-modules java.sql \
     --add-modules java.compiler \
     --add-modules jdk.unsupported \
-    --add-modules jdk.jcmd \ # tool for creating heap dumps, not listed in jdeps
+    --add-modules jdk.jcmd \ 
     --add-modules jdk.jfr \
     --add-modules jdk.management \
     --strip-debug \
