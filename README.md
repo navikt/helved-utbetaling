@@ -1,10 +1,11 @@
 ![img](utbetaling.png)
 
-# Monorepo structure
+# Structure
 ```
 .
 ├── apps/
 │   ├── abetal            # async betaling
+│   ├── branntaarn        # varsel om manglende kvittering
 │   ├── peisschtappern    # database-sink for alle våre topics
 │   ├── simulering        # rest -> soap via proxy
 │   ├── urskog            # økosystem med urgamle teknologier som MQ
@@ -21,11 +22,20 @@
 │   ├── mq                # MQ consumer and producer
 │   ├── tracing           # OpenTelemetry utils
 │   ├── utils             # Common utils like log, result, env, etc
-│   └── ws                # SOAP web-service and STS-proxy clients. 
+│   ├── ws                # SOAP web-service and STS-proxy clients. 
+│   │   
+│   ├── auth-test         # test-utils for auth
+│   ├── jdbc-test         # test-utils for jdbc
+│   ├── kafka-test        # test-utils for kafka
+│   ├── ktor-test         # test-utils for ktor
+│   └── mq-test           # test-utils for mq
 │
 ├── documentasjon/        # intern doc
-├── models/               # gjenbrukbart
-└── topics/               # kafka-topic nais-manifester
+├── models/               # felles modeller
+├── topics/               # nais manifester for kafka topics
+│
+├── Dockerfile.streams    # Dockerfile for kafka streams apper (deprecated)
+└── Dockerfile            # Dockerfile for postgres apper (deprecated)
 ```
 
 ## OpenAPI 3.0
