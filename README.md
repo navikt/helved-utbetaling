@@ -63,6 +63,25 @@ docker stop mq postgres
 docker container prune
 ```
 
+# Heap dump
+### jcmd
+`jcmd` må ligge i pod containeren.
+Avhengig av hvordan man bygger JRE (Java Runtime Environment) så må `jcmd` legges til.
+Ved bruke av `jlink` kan man enkelt legge til `--add-modules jdk.jcmd`.
+
+### opprett heap dump
+Kjør `jcmd` inne i pod containeren:
+> kubectl exec abetal-5f6bfcfb85-f22n9 -- jcmd 1 GC.heap_dump /tmp/dump.hprof
+
+### kopier heap dump
+For å kopiere heap dumpen til din lokale maskin, kjør:
+> kubectl cp abetal-5f6bfcfb85-f22n9:/tmp/dump.hprof ./dump.hprof
+
+### Analyser heap dump
+Installer `Eclipse Memory Analyzer Tool`.
+Man kan lage 2 heap dumps med noen timer mellomrom, da kan dette verktøyet inspisere diffen og enklere finne minnelekasje/minnefeil 
+
+
 # References
 - https://docs.oracle.com/javaee/6/api/javax/jms/Session.html
 - https://pawelpluta.com/optimise-testcontainers-for-better-tests-performance/
