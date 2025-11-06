@@ -12,12 +12,12 @@ RUN jlink \
     --add-modules java.sql \
     --add-modules java.compiler \
     --add-modules jdk.unsupported \
+    --add-modules jdk.jcmd \ # tool for creating heap dumps, not listed in jdeps
     --add-modules jdk.jfr \
     --add-modules jdk.management \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
-    # --compress=zip-fast \
     --compress=2 \
     --output /customjre
 
