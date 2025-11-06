@@ -6,7 +6,7 @@ application {
     mainClass.set("abetal.AbetalKt")
 }
 
-val ktorVersion = "3.3.1"
+val ktorVersion = "3.3.2"
 val libVersion = "3.1.209"
 
 dependencies {
