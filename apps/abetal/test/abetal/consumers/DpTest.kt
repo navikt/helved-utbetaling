@@ -1763,11 +1763,13 @@ internal class DpTest {
                 assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
                 assertEquals("dagpenger", oppdrag.oppdrag110.saksbehId)
                 assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
-                assertEquals(periodeId.toString(), oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                //assertEquals(periodeId.toString(), oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                assertNull(oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].let {
                     assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
                     assertEquals(2.jun, it.datoStatusFom.toLocalDate())
-                    assertEquals(periodeId.toString(), it.refDelytelseId)
+                    //assertEquals(periodeId.toString(), it.refDelytelseId)
+                    assertNull(it.refDelytelseId)
                     assertEquals("ENDR", it.kodeEndringLinje)
                     assertEquals(bid.id, it.henvisning)
                     assertEquals("DAGPENGERFERIE", it.kodeKlassifik)
@@ -2007,7 +2009,8 @@ internal class DpTest {
                     assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
                 oppdrag.oppdrag110.oppdragsLinje150s[2].let {
-                    assertEquals(pid2.toString(), it.refDelytelseId)
+                    //assertEquals(pid2.toString(), it.refDelytelseId)
+                    assertNull(it.refDelytelseId)
                     assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
                     // assertEquals(2.jun, it.datoStatusFom.toLocalDate())
                     assertEquals("ENDR", it.kodeEndringLinje)

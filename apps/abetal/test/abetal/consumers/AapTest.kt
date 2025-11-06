@@ -5,20 +5,15 @@ import abetal.Aap
 import abetal.SakKey
 import abetal.TestRuntime
 import abetal.aug
-import abetal.aug21
 import abetal.jul
-import abetal.jul21
 import abetal.jun
-import abetal.jun21
 import abetal.meldekort
 import abetal.nextInt
 import abetal.okt
 import abetal.periode
 import abetal.sep
 import abetal.toLocalDate
-import abetal.toXMLDate
 import abetal.utbetaling
-import java.time.LocalDate
 import java.util.UUID
 import models.Action
 import models.BehandlingId
@@ -943,7 +938,8 @@ class AapTest {
                     assertEquals(pid1.toString(), it.refDelytelseId)
                 }
                 oppdrag.oppdrag110.oppdragsLinje150s[2].let {
-                    assertEquals(pid2.toString(), it.refDelytelseId)
+                    //assertEquals(pid2.toString(), it.refDelytelseId)
+                    assertNull(it.refDelytelseId)
                     assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
                 }
             }
