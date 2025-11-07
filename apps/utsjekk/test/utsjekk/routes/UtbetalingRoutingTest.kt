@@ -5,6 +5,11 @@ import httpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.*
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.UUID
+import kotlin.test.assertNotNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -15,9 +20,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.*
 import utsjekk.iverksetting.RandomOSURId
-import java.util.UUID
-import java.time.LocalDateTime
-import kotlin.test.assertNotNull
 
 class UtbetalingRoutingTest {
 
@@ -92,6 +94,34 @@ class UtbetalingRoutingTest {
         val actual = oppdragTopic.history().singleOrNull { (key, _) -> key == uid.toString() }?.second
         assertNotNull(actual)
         assertEquals("NY", actual.oppdrag110.kodeEndring)
+    }
+
+    @Test
+    fun `avstemming115 er påkrevd`() = runTest {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+            erFørsteUtbetalingPåSak = true
+        )
+
+        val uid = UUID.randomUUID()
+
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.let {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        assertEquals(0, oppdragTopic.uncommitted().size)
+        val oppdrag = oppdragTopic.history().singleOrNull { (key, _) -> key == uid.toString() }?.second
+        assertNotNull(oppdrag)
+        assertEquals("DP", oppdrag.oppdrag110.avstemming115.kodeKomponent)
+        val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.nokkelAvstemming)
+        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.tidspktMelding)
     }
 
     @Test

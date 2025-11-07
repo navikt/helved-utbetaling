@@ -1,6 +1,10 @@
 package abetal
 
 import abetal.utbetaling
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.test.assertEquals
 import models.*
@@ -887,6 +891,79 @@ class OppdragServiceTest {
             assertEquals(300, it.sats.toLong())
         }
 
+    }
+
+    @Test
+    fun `avstemming115 er påkrevd ved create`() {
+        val new = utbetaling(
+            action = Action.CREATE,
+            uid = UtbetalingId(UUID.randomUUID()),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(1.aug, 1.aug, 300u)
+        }
+
+        val oppdrag = OppdragService.opprett(new)
+
+        assertEquals("AAP", oppdrag.oppdrag110.avstemming115.kodeKomponent)
+        val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.nokkelAvstemming)
+        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.tidspktMelding)
+    }
+
+    @Test
+    fun `avstemming115 er påkrevd ved update`() {
+        val prev = utbetaling(
+            action = Action.CREATE,
+            uid = UtbetalingId(UUID.randomUUID()),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(1.jul, 1.jul, 300u)
+        }
+
+        val new = utbetaling(
+            action = Action.UPDATE,
+            sakId = prev.sakId,
+            uid = UtbetalingId(UUID.randomUUID()),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(1.jul, 1.jul, 300u) +
+            periode(1.aug, 1.aug, 300u)
+        }
+
+        val oppdrag = OppdragService.update(new, prev)
+
+        assertEquals("AAP", oppdrag.oppdrag110.avstemming115.kodeKomponent)
+        val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.nokkelAvstemming)
+        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.tidspktMelding)
+    }
+
+    @Test
+    fun `avstemming115 er påkrevd ved delete`() {
+        val prev = utbetaling(
+            action = Action.CREATE,
+            uid = UtbetalingId(UUID.randomUUID()),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(1.jul, 1.jul, 300u)
+        }
+
+        val new = utbetaling(
+            action = Action.DELETE,
+            sakId = prev.sakId,
+            uid = UtbetalingId(UUID.randomUUID()),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(1.jul, 1.jul, 300u) +
+            periode(1.aug, 1.aug, 300u)
+        }
+
+        val oppdrag = OppdragService.delete(new, prev)
+
+        assertEquals("AAP", oppdrag.oppdrag110.avstemming115.kodeKomponent)
+        val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.nokkelAvstemming)
     }
 }
 

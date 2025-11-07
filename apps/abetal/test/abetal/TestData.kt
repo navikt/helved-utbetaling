@@ -157,7 +157,7 @@ fun utbetaling(
     førsteUtbetalingPåSak: Boolean = true,
     lastPeriodeId: PeriodeId = PeriodeId(),
     periodetype: Periodetype = Periodetype.UKEDAG,
-    stønad: Stønadstype = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING, // TODO: Denen brukes i DP test?
+    stønad: Stønadstype = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
     personident: Personident = Personident(""),
     vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
     beslutterId: Navident = Navident(""),

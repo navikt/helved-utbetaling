@@ -2,17 +2,20 @@ package abetal
 
 import io.ktor.client.request.*
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
-import models.*
-import no.trygdeetaten.skjema.oppdrag.Mmel
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.*
-import org.junit.jupiter.api.Disabled
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.runBlocking
+import models.*
+import no.trygdeetaten.skjema.oppdrag.Mmel
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 internal class AbetalTest {
 
@@ -787,6 +790,37 @@ internal class AbetalTest {
             }
 
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid2.toString())
+    }
+
+    @Test
+    fun `avstemming115 er påkrevd`() {
+        val key = UUID.randomUUID().toString()
+        val meldeperiode = UUID.randomUUID().toString()
+        val sid = SakId("$nextInt")
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER).toString()
+
+        TestRuntime.topics.dp.produce(key) { 
+            Dp.utbetaling(sid.id) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode,
+                    fom = 1.jan,
+                    tom = 2.jan,
+                    sats = 100u,
+                    utbetaltBeløp = 100u,
+                )
+            }
+        }
+
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
+
+        TestRuntime.topics.oppdrag.assertThat()
+            .has(key)
+            .with(key, 0) {
+                assertEquals("DP", it.oppdrag110.avstemming115.kodeKomponent)
+                val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+                assertEquals(todayAtTen, it.oppdrag110.avstemming115.nokkelAvstemming)
+                assertEquals(todayAtTen, it.oppdrag110.avstemming115.tidspktMelding)
+            }
     }
 }
 

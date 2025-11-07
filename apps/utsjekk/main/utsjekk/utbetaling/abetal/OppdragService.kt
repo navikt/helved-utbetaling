@@ -144,11 +144,11 @@ private fun skalTilføreOpphørslinje(
 }
 
 private fun avstemming115(fagsystemKode: String): Avstemming115 {
-    val todayAtSeven = LocalDateTime.now().with(fixedTime)
+    val todayAtTen = LocalDateTime.now().with(fixedTime)
     return objectFactory.createAvstemming115().apply {
         kodeKomponent = fagsystemKode
-        nokkelAvstemming = todayAtSeven.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
-        tidspktMelding = todayAtSeven.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        nokkelAvstemming = todayAtTen.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        tidspktMelding = todayAtTen.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
     }
 } 
 
