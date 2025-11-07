@@ -3,6 +3,7 @@ package urskog
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -13,7 +14,9 @@ import no.trygdeetaten.skjema.oppdrag.*
 
 object TestData {
     private val objectFactory = ObjectFactory()
-    private val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+    // private val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+    private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofPattern(pattern))
+    private val fixedTime = LocalTime.of(10, 10, 0, 0)
 
     fun oppdrag(
         oppdragslinjer: List<OppdragsLinje150>,
@@ -36,10 +39,10 @@ object TestData {
                 this.datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
                 this.saksbehId = saksbehId
                 this.avstemming115 = objectFactory.createAvstemming115().apply {
-                    val avstemmingstidspunkt = avstemmingstidspunkt.truncatedTo(ChronoUnit.HOURS).format(timeFormatter)
-                    nokkelAvstemming = avstemmingstidspunkt
+                    val todayAtTen = LocalDateTime.now().with(fixedTime)
                     kodeKomponent = fagområde
-                    tidspktMelding = avstemmingstidspunkt
+                    nokkelAvstemming = todayAtTen.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+                    tidspktMelding = todayAtTen.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
                 }
                 oppdragsEnhet120(enhet).forEach(oppdragsEnhet120s::add)
                 oppdragsLinje150s.addAll(oppdragslinjer)

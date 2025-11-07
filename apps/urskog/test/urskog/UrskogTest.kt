@@ -5,6 +5,9 @@ import no.trygdeetaten.skjema.oppdrag.Mmel
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.time.toDuration
@@ -55,12 +58,9 @@ class UrskogTest {
             oppdrag.apply {
                 mmel = Mmel().apply {
                     alvorlighetsgrad = "00" // 00/04/08/12
-                    // kodeMelding = "" // FIXME: disse er bare satt ved 04 eller 12
-                    // beskrMelding = "" // FIXME: disse er bare satt ved 04 eller 12
                 }
             }
         }
-        testLog.info("test complete")
 
         TestRuntime.topics.oppdrag.assertThat()
             .has(uid)
@@ -199,6 +199,9 @@ class UrskogTest {
             .with(uid, 0) {
                 assertEquals("00", it.mmel.alvorlighetsgrad)
                 assertEquals("AAP", it.oppdrag110.avstemming115.kodeKomponent)
+                val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+                assertEquals(todayAtTen, it.oppdrag110.avstemming115.nokkelAvstemming)
+                assertEquals(todayAtTen, it.oppdrag110.avstemming115.tidspktMelding)
             }
     }
 }
