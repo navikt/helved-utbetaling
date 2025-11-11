@@ -123,7 +123,9 @@ open class DefaultMQConsumer(
 
     @Synchronized
     fun reconnect() {
-        if (lastReconnect.plusMinutes(1).isAfter(LocalDateTime.now())) return
+        while(lastReconnect.plusMinutes(1).isAfter(LocalDateTime.now())) {
+            Thread.sleep(1000)
+        }
         try {
             runCatching {
                 close() // we dont care if this fails (maybe already closed)
@@ -167,8 +169,6 @@ class DefaultMQ(private val config: MQConfig) : MQ {
         userAuthenticationMQCSP = true
         setIntProperty(JmsConstants.JMS_IBM_ENCODING, CMQC.MQENC_NATIVE)
         setIntProperty(JmsConstants.JMS_IBM_CHARACTER_SET, JmsConstants.CCSID_UTF8)
-        // clientReconnectOptions = WMQConstants.WMQ_CLIENT_RECONNECT_Q_MGR // try to reconnect to the same queuemanager
-        // clientReconnectTimeout = 600 // reconnection attempts for 10 minutes
     }
 
     override val context: JMSContext
