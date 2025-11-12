@@ -36,4 +36,6 @@ spec:
     - team: tilleggsstonader
       application: tilleggsstonader-sak
       access: read
-
+    - team: historisk
+      application: superhelt
+      access: read
