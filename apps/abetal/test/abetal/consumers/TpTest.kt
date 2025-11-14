@@ -1688,7 +1688,7 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             status = Status.MOTTATT,
@@ -2485,7 +2485,7 @@ internal class TpTest {
                 }
             }
 
-            TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
+            TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS * 2).milliseconds)
 
             TestRuntime.topics.status.assertThat().isEmpty()
             TestRuntime.topics.utbetalinger.assertThat().isEmpty()

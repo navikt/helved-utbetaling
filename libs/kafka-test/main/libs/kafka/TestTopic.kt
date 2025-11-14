@@ -46,6 +46,7 @@ sealed interface TestTopic<K: Any, V: Any> {
         fun produce(key: K, value: () -> V) = input.pipeInput(key, value())
         fun produce(key: K, advanceClockMs: Long, value: () -> V) = input.pipeInput(key, value(), Instant.now().plusMillis(advanceClockMs))
         fun tombstone(key: K) = input.pipeInput(key, null)
+        fun tombstone(key: K, advanceClockMs: Long) = input.pipeInput(key, null, Instant.now().plusMillis(advanceClockMs))
         fun assertThat() = output.readAndAssert()
         fun readValue(): V = output.readValue()
     }

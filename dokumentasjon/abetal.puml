@@ -272,10 +272,12 @@ package "Sub-topology: 5" {
 package "Sub-topology: 6" {
 	database "dp-aggregate-store-materialized" <<State Store>> as dp_aggregate_store_materialized
 	database "dp-aggregate-store" <<State Store>> as dp_aggregate_store
+	database "dp-dedup-aggregate" <<State Store>> as dp_dedup_aggregate
 	agent "dp-utbetalinger-session-repartition-source" <<Source>> as dp_utbetalinger_session_repartition_source
 	agent "dp-aggregate-store-reduce" <<Processor>> as dp_aggregate_store_reduce
 	agent "KTABLE-TOSTREAM-0000000051" <<Processor>> as KTABLE_TOSTREAM_0000000051
 	agent "dp-aggregate-store-suppress" <<Processor>> as dp_aggregate_store_suppress
+	agent "dp-aggregate-store-dedup" <<Processor>> as dp_aggregate_store_dedup
 	agent "KSTREAM-KEY-SELECT-0000000052" <<Processor>> as KSTREAM_KEY_SELECT_0000000052
 	agent "KSTREAM-MAPVALUES-0000000053" <<Processor>> as KSTREAM_MAPVALUES_0000000053
 	agent "KSTREAM-BRANCH-0000000054" <<Processor>> as KSTREAM_BRANCH_0000000054
@@ -307,6 +309,7 @@ package "Sub-topology: 6" {
 	dp_utbetalinger_session_repartition --> dp_utbetalinger_session_repartition_source
 	dp_aggregate_store_materialized -- dp_aggregate_store_reduce
 	dp_aggregate_store -- dp_aggregate_store_suppress
+	dp_dedup_aggregate -- dp_aggregate_store_dedup
 	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000059
 	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000062
 	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000065
@@ -317,7 +320,8 @@ package "Sub-topology: 6" {
 	dp_utbetalinger_session_repartition_source --> dp_aggregate_store_reduce
 	dp_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000051
 	KTABLE_TOSTREAM_0000000051 --> dp_aggregate_store_suppress
-	dp_aggregate_store_suppress --> KSTREAM_KEY_SELECT_0000000052
+	dp_aggregate_store_suppress --> dp_aggregate_store_dedup
+	dp_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000052
 	KSTREAM_KEY_SELECT_0000000052 --> KSTREAM_MAPVALUES_0000000053
 	KSTREAM_MAPVALUES_0000000053 --> KSTREAM_BRANCH_0000000054
 	KSTREAM_BRANCH_0000000054 --> KSTREAM_BRANCH_00000000540

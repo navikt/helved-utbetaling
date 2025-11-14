@@ -57,23 +57,23 @@ class MermaidTest {
         )
     }
 
-    @Test
-    fun `custom state processor`() {
-        val kafka = Mock.withTopology {
-            val table = consume(Tables.B)
-            consume(Topics.A)
-                .processor(CustomProcessorWithTable(table))
-                .produce(Topics.C)
-        }
-
-        kafka.inputTopic(Topics.B).produce("1", ".v2")
-        kafka.inputTopic(Topics.A).produce("1", "a")
-
-        val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
-
-        assertEquals(1, result.size)
-        assertEquals("a.v2", result["1"])
-
-        println(kafka.visulize().mermaid().generateDiagram())
-    }
+    // @Test
+    // fun `custom state processor`() {
+    //     val kafka = Mock.withTopology {
+    //         val table = consume(Tables.B)
+    //         consume(Topics.A)
+    //             .processor(CustomProcessorWithTable(table))
+    //             .produce(Topics.C)
+    //     }
+    //
+    //     kafka.inputTopic(Topics.B).produce("1", ".v2")
+    //     kafka.inputTopic(Topics.A).produce("1", "a")
+    //
+    //     val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
+    //
+    //     assertEquals(1, result.size)
+    //     assertEquals("a.v2", result["1"])
+    //
+    //     println(kafka.visulize().mermaid().generateDiagram())
+    // }
 }

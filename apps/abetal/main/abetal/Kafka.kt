@@ -1,6 +1,7 @@
 package abetal
 
 import libs.kafka.*
+import libs.kafka.processor.DedupProcessor
 import libs.kafka.processor.SuppressProcessor
 import models.*
 import libs.utils.appLog
@@ -135,7 +136,6 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
     return ktable
 }
 
-private val dpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds)
 private val aapSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.aapAggregate, AAP_TX_GAP_MS.milliseconds, AAP_TX_GAP_MS.milliseconds)
 private val tsSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.tsAggregate, TS_TX_GAP_MS.milliseconds, TS_TX_GAP_MS.milliseconds)
 private val tpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.tpAggregate, TP_TX_GAP_MS.milliseconds, TP_TX_GAP_MS.milliseconds)
@@ -153,6 +153,9 @@ private val tpSuppressProcessorSupplier = SuppressProcessor.supplier(Stores.tpAg
  * Vi bruker da Oppdraget (requesten) som kafka-key
  */
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
+    val suppress = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds)
+    val dedup = DedupProcessor.supplier(jsonListStreamsPair<Utbetaling>(), DP_TX_GAP_MS.milliseconds, "dp-dedup-aggregate")
+
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
         .merge(consume(Topics.dpIntern))
@@ -165,7 +168,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
         .sessionWindow(Serde.string(), Serde.listStreamsPair(), DP_TX_GAP_MS.milliseconds, "dp-utbetalinger-session") 
-        .reduce(dpSuppressProcessorSupplier, Stores.dpAggregate.name)  { acc, next -> acc + next }
+        .reduce(suppress, dedup, Stores.dpAggregate.name)  { acc, next -> acc + next }
         .map { aggregate  -> 
             Result.catch { 
                 val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })

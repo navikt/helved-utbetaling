@@ -48,6 +48,12 @@ class UrskogTest {
             oppdrag
         }
 
+        TestRuntime.topics.status.assertThat()
+            .has(uid, size = 1)
+            .with(uid, index = 0) {
+                assertEquals(Status.HOS_OPPDRAG, it.status)
+            }
+
         val kvitteringTopic = TestRuntime.kafka.getProducer(Topics.kvittering)
         assertEquals(1, kvitteringTopic.history().size)
         assertEquals(0, kvitteringTopic.uncommitted().size)
@@ -69,11 +75,8 @@ class UrskogTest {
             }
 
         TestRuntime.topics.status.assertThat()
-            .has(uid, size = 2)
+            .has(uid, size = 1)
             .with(uid, index = 0) {
-                assertEquals(Status.HOS_OPPDRAG, it.status)
-            }
-            .with(uid, index = 1) {
                 val expectedDetaljer =  Detaljer(
                     ytelse = Fagsystem.AAP,
                     linjer = listOf(

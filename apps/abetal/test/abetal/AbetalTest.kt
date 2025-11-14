@@ -46,7 +46,7 @@ internal class AbetalTest {
                 )
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -207,7 +207,7 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().has(key)
         val oppdrag = TestRuntime.topics.oppdrag.assertThat().has(key).get(key)
@@ -241,7 +241,7 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .with(key) { assertEquals("NY", it.oppdrag110.kodeEndring) }
@@ -295,7 +295,7 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .with(key) { assertEquals("ENDR", it.oppdrag110.kodeEndring) }
@@ -350,7 +350,7 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -695,7 +695,7 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .with(key) { assertEquals("NY", it.oppdrag110.kodeEndring) }
@@ -739,7 +739,7 @@ internal class AbetalTest {
                 )
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId1)
@@ -769,7 +769,8 @@ internal class AbetalTest {
                 originalDays + newDays
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.oppdrag.assertThat().has(transactionId2)
             .with(transactionId2) { oppdrag2 ->
@@ -811,7 +812,7 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 3).milliseconds)
 
         TestRuntime.topics.oppdrag.assertThat()
             .has(key)

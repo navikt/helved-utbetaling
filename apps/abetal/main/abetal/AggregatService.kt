@@ -50,6 +50,7 @@ object AggregateService {
             }
 
         val kjeder = utbetalingToOppdrag.groupBy { it.first.uid }.map { (_, kjede) -> kjede.reduce { acc, next -> acc + next } }
+
         val oppdrager = kjeder.map { it.second }
         if (oppdrager.isEmpty()) return emptyList()
         val oppdrag = oppdrager.reduce { acc, next -> acc + next }
@@ -106,25 +107,19 @@ data class Oppdrag150(
 )
 
 operator fun Pair<Utbetaling, Oppdrag>.plus(other: Pair<Utbetaling, Oppdrag>): Pair<Utbetaling, Oppdrag> {
-    return (first noe other.first) to (second kjed other.second)
+    return (first fuse other.first) to (second kjed other.second)
 }
 
-infix fun Utbetaling.noe(other: Utbetaling): Utbetaling {
+infix fun Utbetaling.fuse(other: Utbetaling): Utbetaling {
     return this.copy(
-        perioder = (perioder union other.perioder).toList()
-    )
-}
-
-operator fun Utbetaling.plus(other: Utbetaling): Utbetaling {
-    return this.copy(
-        behandlingId = other.behandlingId,
-        perioder = (perioder union other.perioder).toList()
+        // behandlingId = other.behandlingId,
+        perioder = (perioder union other.perioder).toList() // .sortedBy { it.fom }
     )
 }
 
 infix fun Oppdrag.kjed(other: Oppdrag): Oppdrag {
     if (oppdrag110.kodeEndring != "NY") oppdrag110.kodeEndring = other.oppdrag110.kodeEndring
-    val currentOppdrag150s = oppdrag110.oppdragsLinje150s.map { it ->
+    val currentOppdrag150s = oppdrag110.oppdragsLinje150s.map {
         Oppdrag150(
             it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157?.vedtakssats
         )

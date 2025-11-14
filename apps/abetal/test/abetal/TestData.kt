@@ -164,7 +164,7 @@ fun utbetaling(
     saksbehandlerId: Navident = Navident(""),
     avvent: Avvent? = null,
     fagsystem: Fagsystem = Fagsystem.AAP,
-    perioder: () -> List<Utbetalingsperiode>,
+    perioder: () -> List<Utbetalingsperiode> = { emptyList() },
 ) = Utbetaling(
     dryrun = false,
     uid = uid,
@@ -199,6 +199,20 @@ fun periode(
         vedtakssats = vedtakssats,
         betalendeEnhet = betalendeEnhet,
     )
+)
+
+fun utbetalingsperiode(
+    fom: LocalDate,
+    tom: LocalDate,
+    beløp: UInt = 123u,
+    vedtakssats: UInt? = null,
+    betalendeEnhet: NavEnhet? = null,
+) = Utbetalingsperiode(
+    fom = fom,
+    tom = tom,
+    beløp = beløp,
+    vedtakssats = vedtakssats,
+    betalendeEnhet = betalendeEnhet,
 )
 
 val meldeperiode = "2025-08-01-2025-08-14"

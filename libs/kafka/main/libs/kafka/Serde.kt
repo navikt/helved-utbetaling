@@ -27,6 +27,7 @@ object Serde {
     inline fun <reified V: Any> xml() = XmlSerde.xml<V>()
     inline fun <reified V: Any> json() = JsonSerde.jackson<V>()
     inline fun <reified V: Any> listStreamsPair() = JsonSerde.listStreamsPair<V, V?>()
+    inline fun <reified V: Any> streamsPair() = JsonSerde.streamsPair<V, V?>()
     fun string() = StringSerde
 }
 
@@ -35,6 +36,7 @@ fun bytes() = Serdes(StringSerde, ByteArraySerde)
 inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.jackson<V>())
 inline fun <reified V: Any> jsonList() = Serdes(StringSerde, JsonSerde.jacksonList<V>())
 inline fun <reified V: Any> jsonListStreamsPair() = Serdes(StringSerde, JsonSerde.listStreamsPair<V, V?>())
+inline fun <reified V: Any> jsonStreamsPair() = Serdes(StringSerde, JsonSerde.streamsPair<V, V?>())
 inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.xml<V>())
 inline fun <reified V: Any> jaxb() = Serdes(StringSerde, XmlSerde.jaxb<V>())
 inline fun <reified K: Any> jsonString() = Serdes(JsonSerde.jackson<K>(), StringSerde)
@@ -48,8 +50,8 @@ object WindowedStringSerde: StreamSerde<Windowed<String>> {
     private val internalSerde: Serde<Windowed<String>> = WindowedSerdes.sessionWindowedSerdeFrom(String::class.java)
     override fun serializer(): Serializer<Windowed<String>> = internalSerde.serializer()
     override fun deserializer(): Deserializer<Windowed<String>> = internalSerde.deserializer()
-
 }
+
 object StringSerde : StreamSerde<String> {
     private val internalSerde = Serdes.StringSerde()
     override fun serializer(): Serializer<String> = internalSerde.serializer()
@@ -82,6 +84,15 @@ object JsonSerde {
             override fun deserializer(): Deserializer<List<StreamsPair<L, R>>> = JacksonListTypeRefDeserializer(typeRef)
         }
     }
+
+    inline fun <reified L: Any, reified R> streamsPair(): StreamSerde<StreamsPair<L, R>> {
+        val typeRef = object: TypeReference<StreamsPair<L, R>>() {}
+        return object: StreamSerde<StreamsPair<L, R>> {
+            override fun serializer(): Serializer<StreamsPair<L, R>> = JacksonSerializer()
+            override fun deserializer(): Deserializer<StreamsPair<L, R>> = JacksonTypeRefDeserializer(typeRef)
+        }
+    }
+
     inline fun <reified T: Any> jacksonListGenericTypeRef(): StreamSerde<List<T>> {
         val typeRef = object: TypeReference<List<T>>() {}
         return object: StreamSerde<List<T>> {
@@ -121,6 +132,13 @@ class JacksonListDeserializer<T: Any>(private val klass: KClass<T>): Deserialize
 }
 class JacksonListTypeRefDeserializer<T: Any>(private val typeRef: TypeReference<List<T>>): Deserializer<List<T>> {
     override fun deserialize(topic: String, data: ByteArray?): List<T>? {
+        if (data == null) return null
+        return JsonSerde.jackson.readValue(data, typeRef)
+    }
+}
+
+class JacksonTypeRefDeserializer<T: Any>(private val typeRef: TypeReference<T>): Deserializer<T> {
+    override fun deserialize(topic: String, data: ByteArray?): T? {
         if (data == null) return null
         return JsonSerde.jackson.readValue(data, typeRef)
     }

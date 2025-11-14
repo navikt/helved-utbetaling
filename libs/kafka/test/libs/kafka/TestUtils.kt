@@ -92,14 +92,14 @@ internal fun <K : Any, V> TestInputTopic<K, V>.produce(key: K, value: V): TestIn
 internal fun <K : Any, V> TestInputTopic<K, V>.produceTombstone(key: K): TestInputTopic<K, V> =
     pipeInput(key, null).let { this }
 
-class CustomProcessorWithTable(table: KTable<String, String>) :
-    StateProcessor<String, String, String, String>(Named("custom-join"), table.table.stateStoreName) {
-    override fun process(
-        metadata: ProcessorMetadata,
-        store: TimestampedKeyValueStore<String, String>,
-        keyValue: KeyValue<String, String>
-    ): String = "${keyValue.value}${store[keyValue.key].value()}"
-}
+// class CustomProcessorWithTable(table: KTable<String, String>) :
+//     StateProcessor<String, String, String, String>(Named("custom-join"), table.table.stateStoreName) {
+//     override fun process(
+//         metadata: ProcessorMetadata,
+//         store: TimestampedKeyValueStore<String, String>,
+//         keyValue: KeyValue<String, String>
+//     ): String = "${keyValue.value}${store[keyValue.key].value()}"
+// }
 
 open class CustomProcessor : Processor<String, String, String>() {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): String =

@@ -29,7 +29,7 @@ import kotlin.time.toJavaDuration
 class DedupProcessor<K: Any, V: Any> (
     private val stateStoreName: StateStoreName,
     private val retention: Duration,
-    private val hasher: (V) -> Int,
+    private val hasher: (K, V) -> Int,
     private val downstream: (V) -> Unit,
 ): Processor<K, V, K, V> {
     private lateinit var store: TimestampedKeyValueStore<String, V>
@@ -52,7 +52,7 @@ class DedupProcessor<K: Any, V: Any> (
     } 
 
     override fun process(record: Record<K, V>) {
-        val dedupKey = hasher(record.value()).toString()
+        val dedupKey = hasher(record.key(), record.value()).toString()
         val seen = store.get(dedupKey)
         val now = record.timestamp()
         if (seen == null || now - seen.timestamp() > retention.inWholeMilliseconds) {
@@ -75,8 +75,8 @@ class DedupProcessor<K: Any, V: Any> (
             serdes: Serdes<K, V>,
             retention: Duration,
             stateStoreName: StateStoreName,
-            hasher: (V) -> Int = { it.hashCode() },
-            downstream: (V) -> Unit,
+            hasher: (K, V) -> Int = { key, _ -> key.hashCode() },
+            downstream: (V) -> Unit = {},
         ): ProcessorSupplier<K, V, K, V> {
             return object: ProcessorSupplier<K, V, K, V> {
                 override fun stores(): Set<StoreBuilder<*>> = setOf(
