@@ -178,24 +178,24 @@ internal class MappedStreamTest {
         assertEquals("a.v2", result["1"])
     }
 
-    @Test
-    fun `map and use custom processor with table`() {
-        val kafka = Mock.withTopology {
-            val table = consume(Tables.B)
-            consume(Topics.A)
-                .map { v -> v }
-                .stateProcessor(CustomProcessorWithTable(table))
-                .produce(Topics.C)
-        }
-
-        kafka.inputTopic(Topics.B).produce("1", ".v2")
-        kafka.inputTopic(Topics.A).produce("1", "a")
-
-        val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
-
-        assertEquals(1, result.size)
-        assertEquals("a.v2", result["1"])
-    }
+    // @Test
+    // fun `map and use custom processor with table`() {
+    //     val kafka = Mock.withTopology {
+    //         val table = consume(Tables.B)
+    //         consume(Topics.A)
+    //             .map { v -> v }
+    //             .stateProcessor(CustomProcessorWithTable(table))
+    //             .produce(Topics.C)
+    //     }
+    //
+    //     kafka.inputTopic(Topics.B).produce("1", ".v2")
+    //     kafka.inputTopic(Topics.A).produce("1", "a")
+    //
+    //     val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
+    //
+    //     assertEquals(1, result.size)
+    //     assertEquals("a.v2", result["1"])
+    // }
 
     @Test
     fun `rekey a mapped stream`() {

@@ -3,7 +3,7 @@ package libs.kafka.stream
 import libs.kafka.*
 import libs.kafka.processor.*
 import libs.kafka.processor.Processor.Companion.addProcessor
-import libs.kafka.processor.StateProcessor.Companion.addProcessor
+// import libs.kafka.processor.StateProcessor.Companion.addProcessor
 import org.apache.kafka.streams.kstream.Grouped
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.SessionWindowedKStream
@@ -102,8 +102,8 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(processedStream)
     }
 
-    fun <TABLE : Any, U : Any> stateProcessor(processor: StateProcessor<K, TABLE, V, U>): MappedStream<K, U> {
-        val processedStream = stream.addProcessor(processor)
+    fun processor(processor: StateProcessor<K, V, K, V>): MappedStream<K, V> {
+        val processedStream = stream.process(processor.supplier, processor.named.into(), processor.storeName)
         return MappedStream(processedStream)
     }
 

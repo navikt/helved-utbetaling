@@ -75,7 +75,7 @@ fun Topology.simulering(simuleringService: SimuleringService) {
 
 private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 
-fun dedupHash(oppdrag: Oppdrag): Int {
+fun dedupHash(key: String, oppdrag: Oppdrag): Int {
     return mapper.writeValueAsString(oppdrag).hashCode()
 }
 

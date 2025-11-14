@@ -69,6 +69,7 @@ class DedupProcessorTest {
                     serdes = Tables.B.serdes,
                     retention = 10.milliseconds,
                     stateStoreName = "test-dedup-store",
+                    { _, value -> value.hashCode() }
                 ){
                     // no nothing to succeed
                 }
@@ -82,6 +83,28 @@ class DedupProcessorTest {
     }
 
     @Test
+    fun `will dedup if key is same`() {
+        val kafka = Mock.withTopology {
+            consume(Topics.B)
+            .processor(
+                DedupProcessor.supplier(
+                    serdes = Tables.B.serdes,
+                    retention = 10.milliseconds,
+                    stateStoreName = "test-dedup-store",
+                    { key, _ -> key.hashCode() }
+                ){
+                    // no nothing to succeed
+                }
+            ).produce(Topics.C)
+        }
+        kafka.inputTopic(Topics.B).produce("1", "hello")
+        kafka.inputTopic(Topics.B).produce("1", "hello")
+
+        val records = kafka.outputTopic(Topics.C).readRecordsToList()
+        assertEquals(1, records.size)
+    }
+
+    @Test
     fun `will not dedup if error is thrown`() {
         var attempt = 0
         val kafka = Mock.withTopology {
@@ -91,6 +114,7 @@ class DedupProcessorTest {
                     serdes = Tables.B.serdes,
                     retention = 10.milliseconds,
                     stateStoreName = "test-dedup-store",
+                    { _, value -> value.hashCode() }
                 ){
                     if (attempt == 0) {
                         attempt++
