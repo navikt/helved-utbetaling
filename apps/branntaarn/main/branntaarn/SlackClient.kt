@@ -28,7 +28,7 @@ private fun json(brann: Brann, config: Config): String = """{
   "blocks": [
     {
       "type": "header",
-      "text": { "type": "plain_text", "text": "Flink alert :alert: (${config.nais.cluster})", "emoji": true }
+      "text": { "type": "plain_text", "text": "Branntårn alert :alert: (${config.nais.cluster})", "emoji": true }
     },
     {
       "type": "section",
