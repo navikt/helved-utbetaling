@@ -201,3 +201,84 @@ fun periode(
     )
 )
 
+val meldeperiode = "2025-08-01-2025-08-14"
+val dagpengerMeldeperiodeDager = listOf(
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 4),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 5),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 6),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 8),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 9),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 10),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 11),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 12),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 13),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 14),
+        sats = 1000u,
+        utbetaltBeløp = 1000u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    ),
+    DpUtbetalingsdag(
+        meldeperiode = meldeperiode,
+        dato = LocalDate.of(2025, 8, 7),
+        sats = 1000u,
+        utbetaltBeløp = 700u,
+        utbetalingstype = Utbetalingstype.Dagpenger
+    )
+)
+

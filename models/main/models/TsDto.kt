@@ -139,7 +139,10 @@ private fun List<TsPeriode>.toDomain(type: Periodetype): List<Utbetalingsperiode
                         beløp = it.first().beløp,
                     )
                 }
-            }.flatten()
+            }
+            .flatten()
+            .sortedBy { it.fom }
+
         Periodetype.MND -> this.groupBy { it.beløp }
             .map { (_, perioder) ->
                 perioder.splitWhen { cur, next ->
@@ -152,7 +155,10 @@ private fun List<TsPeriode>.toDomain(type: Periodetype): List<Utbetalingsperiode
                         beløp = it.first().beløp,
                     )
                 }
-            }.flatten()
+            }
+            .flatten()
+            .sortedBy { it.fom }
+
         else -> badRequest("periodetype '$type' for tilleggsstønader er ikke implementert")
     }
 }

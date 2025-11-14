@@ -376,7 +376,9 @@ fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetaling
                     vedtakssats = it.last().vedtakssats,
                 )
             }
-        }.flatten()
+        }
+        .flatten()
+        .sortedBy { it.fom }
 }
 
 private fun beløp(perioder: List<Utbetalingsperiode>, periodetype: Periodetype): UInt =
