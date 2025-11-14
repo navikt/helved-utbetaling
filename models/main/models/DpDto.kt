@@ -97,7 +97,9 @@ private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode>
                     vedtakssats = it.first().sats,
                 )
             }
-        }.flatten()
+        }
+        .flatten()
+        .sortedBy { it.fom }
 }
 
 data class DpTuple(val key: String, val value: DpUtbetaling)

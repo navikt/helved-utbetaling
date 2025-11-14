@@ -77,6 +77,8 @@ private fun List<TpPeriode>.toDomain(): List<Utbetalingsperiode> {
                     beløp = it.first().beløp,
                 )
             }
-        }.flatten()
+        }
+        .flatten()
+        .sortedBy { it.fom }
 }
 

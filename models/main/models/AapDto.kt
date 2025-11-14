@@ -78,5 +78,7 @@ private fun perioder(perioder: List<AapUtbetalingsdag>): List<Utbetalingsperiode
                     vedtakssats = it.first().sats,
                 )
             }
-        }.flatten()
+        }
+        .flatten()
+        .sortedBy { it.fom }
 }

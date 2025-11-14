@@ -70,7 +70,7 @@ internal class DpTest {
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid)
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transaction1)
-            .with(transaction1) { oppdrag -> 
+            .with(transaction1) { oppdrag ->
             assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
             assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
             assertEquals("DP", oppdrag.oppdrag110.kodeFagomraade)
@@ -1215,7 +1215,7 @@ internal class DpTest {
                     tom = LocalDate.of(2021, 6, 20),
                     sats = 1077u,
                     utbetaltBeløp = 553u,
-                ) + 
+                ) +
                 Dp.meldekort(
                     meldeperiode = meldeperiode2,
                     fom = LocalDate.of(2021, 7, 7),
@@ -2104,6 +2104,74 @@ internal class DpTest {
     }
 
     @Test
+    fun `skal sortere oppdragslinjer korrekt etter fom-dato`() {
+        val sid = SakId("HV2511101004")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val ident = "14518800192"
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
+
+        val dpUtbetaling = DpUtbetaling(
+            sakId = sid.id,
+            behandlingId = bid.id,
+            ident = ident,
+            utbetalinger = dagpengerMeldeperiodeDager,
+            vedtakstidspunktet = LocalDateTime.now(),
+            saksbehandler = "s-kafka",
+            beslutter = "b-kafka"
+        )
+
+        TestRuntime.topics.dp.produce(transactionId) { dpUtbetaling }
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.status.assertThat().has(transactionId)
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
+                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
+
+                val linjer = oppdrag.oppdrag110.oppdragsLinje150s
+                assertEquals(3, linjer.size)
+
+                val fomDatoer = linjer.map { it.datoVedtakFom.toLocalDate() }
+                val forventetFomDatoer = listOf(
+                    LocalDate.of(2025, 8, 4),
+                    LocalDate.of(2025, 8, 7),
+                    LocalDate.of(2025, 8, 8)
+                )
+
+                assertEquals(forventetFomDatoer, fomDatoer)
+
+            }.get(transactionId)
+
+        TestRuntime.topics.oppdrag.produce(transactionId) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+            .with(uid.toString()) { utbetaling ->
+                val periodeFomDatoer = utbetaling.perioder.map { it.fom }
+                val forventetFomDatoer = listOf(
+                    LocalDate.of(2025, 8, 4),
+                    LocalDate.of(2025, 8, 7),
+                    LocalDate.of(2025, 8, 8)
+                )
+                assertEquals(forventetFomDatoer, periodeFomDatoer)
+                assertEquals(3, utbetaling.perioder.size)
+            }
+
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
+            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
+    }
+
+    @Test
     @Disabled
     fun `en meldeperiode som endres 3 ganger samtidig skal feile`() {
         val sid = SakId("$nextInt")
@@ -2175,7 +2243,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
             .with(transactionId) { oppdrag ->
