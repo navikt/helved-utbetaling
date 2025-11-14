@@ -16,6 +16,9 @@ data class Config(
 
             // this[org.apache.kafka.streams.StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeNextHandler::class.java
             // this[org.apache.kafka.streams.StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessNextHandler::class.java
+
+            this["default.api.timeout.ms"] = "120000"
+            this["retry.backoff.ms"] = "1000"
         }
     ),
 )
