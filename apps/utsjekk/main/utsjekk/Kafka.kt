@@ -109,6 +109,7 @@ fun Topology.consumeStatus(
 
                     if (uDao == null && iDao == null) {
                         // Sjekk om UID finnes i abetal
+                        // TODO: logg uansett, og dropp sjekk mot state store
                         if (abetalClient.exists(uid)) {
                             appLog.info("Mottok status for uid=${uid.id} som håndteres av abetal. Status: $status")
                         } else {

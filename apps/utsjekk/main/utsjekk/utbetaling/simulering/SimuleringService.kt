@@ -36,6 +36,7 @@ class SimuleringService(
             }
         }
 
+        // TODO: bruk v3 simulering i stedet
         val abetalUtbetaling = runCatching {
             abetalClient.utbetaling(uid)
         }.getOrNull()
@@ -64,6 +65,7 @@ class SimuleringService(
             }
         }
 
+        // TODO: bruk v3 simulering i stedet
         val abetalUtbetaling = runCatching {
             abetalClient.utbetaling(uid)
         }.getOrNull()

@@ -20,6 +20,8 @@ class AbetalClient(
     private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
+
+    @Deprecated("ikke gjør kall mot state stores")
     suspend fun utbetaling(uid: UtbetalingId): Utbetaling {
         val response = client.get("${config.abetal.host}/api/utbetalinger${uid.id}") {
             bearerAuth(azure.getClientCredentialsToken(config.abetal.scope).access_token)
@@ -28,6 +30,7 @@ class AbetalClient(
         return response.body()
     }
 
+    @Deprecated("ikke gjør kall mot state stores")
     suspend fun exists(uid: UtbetalingId): Boolean {
         val response = client.get("${config.abetal.host}/api/utbetalinger/${uid.id}") {
             bearerAuth(azure.getClientCredentialsToken(config.abetal.scope).access_token)
