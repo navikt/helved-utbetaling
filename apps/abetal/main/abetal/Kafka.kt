@@ -32,7 +32,7 @@ object Topics {
     val dpIntern = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val aapIntern = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
     val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>())
-    val historisk = Topic("helved.utbetaling.v1", json<HistoriskUtbetaling>())
+    val historisk = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
     // val historisk = Topic("historisk.utbetaling.v1", json<HistoriskUtbetaling>())
     // val historiskIntern = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
 }
