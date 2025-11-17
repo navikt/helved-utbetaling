@@ -14,7 +14,6 @@ data class HistoriskUtbetaling(
     val vedtakstidspunkt: LocalDateTime,
     val periodetype: Periodetype,
     val perioder: List<HistoriskPeriode>,
-    val brukFagområdeTillst: Boolean = false,
     val saksbehandler: String? = null,
     val beslutter: String? = null,
     )
