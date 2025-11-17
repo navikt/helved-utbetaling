@@ -35,7 +35,7 @@ data class HistoriskTuple(val transactionId: String, val dto: HistoriskUtbetalin
 fun HistoriskTuple.toDomain(uidsPåSak: Set<UtbetalingId>?): Utbetaling {
     val (action, perioder) = when (dto.perioder.isEmpty()) {
         true -> Action.DELETE to listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u)) // Dummy-periode for validering
-        false -> Action.CREATE to dto.perioder.toDomain()
+        false -> Action.CREATE to dto.perioder.toDomain(dto.periodetype)
     }
 
     return Utbetaling(
@@ -59,13 +59,48 @@ fun HistoriskTuple.toDomain(uidsPåSak: Set<UtbetalingId>?): Utbetaling {
     )
 }
 
-private fun List<HistoriskPeriode>.toDomain(): List<Utbetalingsperiode> {
-    return this.map {
+private fun List<HistoriskPeriode>.toDomain(type: Periodetype): List<Utbetalingsperiode> {
+    return when (type) {
+        Periodetype.EN_GANG -> this.map {
             Utbetalingsperiode(
                 fom = it.fom,
                 tom = it.tom,
                 beløp = it.beløp,
             )
         }
-}
+        Periodetype.UKEDAG -> this.groupBy { it.beløp }
+            .map { (_, perioder) ->
+                perioder.splitWhen { cur, next ->
+                    val harSammenhengendeDager = cur.tom.plusDays(1).equals(next.fom)
+                    val harSammenhengendeUker = cur.tom.nesteUkedag().equals(next.fom)
+                    !harSammenhengendeUker && !harSammenhengendeDager
+                }.map {
+                    Utbetalingsperiode(
+                        fom = it.first().fom,
+                        tom = it.last().tom,
+                        beløp = it.first().beløp,
+                    )
+                }
+            }
+            .flatten()
+            .sortedBy { it.fom }
 
+        Periodetype.MND -> this.groupBy { it.beløp }
+            .map { (_, perioder) ->
+                perioder.splitWhen { cur, next ->
+                    val harSammenhengendeDager = cur.tom.plusDays(1).equals(next.fom)
+                    !harSammenhengendeDager
+                }.map {
+                    Utbetalingsperiode(
+                        fom = it.first().fom,
+                        tom = it.last().tom,
+                        beløp = it.first().beløp,
+                    )
+                }
+            }
+            .flatten()
+            .sortedBy { it.fom }
+
+        else -> badRequest("periodetype '$type' for historisk er ikke implementert")
+    }
+}
