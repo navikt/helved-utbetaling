@@ -35,8 +35,8 @@ queue "from-tilleggsstonader.utbetaling.v1-repartition" <<topic>> as from_tilleg
 queue "tilleggsstonader.utbetaling.v1" <<topic>> as tilleggsstonader_utbetaling_v1
 queue "helved.utbetalinger-ts.v1" <<topic>> as helved_utbetalinger_ts_v1
 queue "helved.utbetalinger-tp.v1" <<topic>> as helved_utbetalinger_tp_v1
-queue "from-helved.utbetaling.v1-repartition" <<topic>> as from_helved_utbetaling_v1_repartition
-queue "helved.utbetaling.v1" <<topic>> as helved_utbetaling_v1
+queue "from-helved.utbetalinger-historisk.v1-repartition" <<topic>> as from_helved_utbetalinger_historisk_v1_repartition
+queue "helved.utbetalinger-historisk.v1" <<topic>> as helved_utbetalinger_historisk_v1
 package "Sub-topology: 0" {
 	database "helved.utbetalinger.v1-state-store" <<State Store>> as helved_utbetalinger_v1_state_store
 	agent "consume-helved.utbetalinger.v1" <<Source>> as consume_helved_utbetalinger_v1
@@ -702,27 +702,27 @@ package "Sub-topology: 14" {
 	KSTREAM_PROCESSVALUES_0000000242 --> KSTREAM_SINK_0000000243
 }
 package "Sub-topology: 15" {
-	agent "consume-helved.utbetaling.v1" <<Source>> as consume_helved_utbetaling_v1
+	agent "consume-helved.utbetalinger-historisk.v1" <<Source>> as consume_helved_utbetalinger_historisk_v1
 	agent "KSTREAM-PROCESSVALUES-0000000245" <<Processor>> as KSTREAM_PROCESSVALUES_0000000245
 	agent "KSTREAM-FILTER-0000000246" <<Processor>> as KSTREAM_FILTER_0000000246
-	agent "from-helved.utbetaling.v1-repartition-filter" <<Processor>> as from_helved_utbetaling_v1_repartition_filter
-	agent "from-helved.utbetaling.v1-repartition-sink" <<Sink>> as from_helved_utbetaling_v1_repartition_sink
-	helved_utbetaling_v1 --> consume_helved_utbetaling_v1
-	from_helved_utbetaling_v1_repartition <-- from_helved_utbetaling_v1_repartition_sink
-	consume_helved_utbetaling_v1 --> KSTREAM_PROCESSVALUES_0000000245
+	agent "from-helved.utbetalinger-historisk.v1-repartition-filter" <<Processor>> as from_helved_utbetalinger_historisk_v1_repartition_filter
+	agent "from-helved.utbetalinger-historisk.v1-repartition-sink" <<Sink>> as from_helved_utbetalinger_historisk_v1_repartition_sink
+	helved_utbetalinger_historisk_v1 --> consume_helved_utbetalinger_historisk_v1
+	from_helved_utbetalinger_historisk_v1_repartition <-- from_helved_utbetalinger_historisk_v1_repartition_sink
+	consume_helved_utbetalinger_historisk_v1 --> KSTREAM_PROCESSVALUES_0000000245
 	KSTREAM_PROCESSVALUES_0000000245 --> KSTREAM_FILTER_0000000246
-	KSTREAM_FILTER_0000000246 --> from_helved_utbetaling_v1_repartition_filter
-	from_helved_utbetaling_v1_repartition_filter --> from_helved_utbetaling_v1_repartition_sink
+	KSTREAM_FILTER_0000000246 --> from_helved_utbetalinger_historisk_v1_repartition_filter
+	from_helved_utbetalinger_historisk_v1_repartition_filter --> from_helved_utbetalinger_historisk_v1_repartition_sink
 }
 package "Sub-topology: 16" {
-	agent "from-helved.utbetaling.v1-repartition-source" <<Source>> as from_helved_utbetaling_v1_repartition_source
+	agent "from-helved.utbetalinger-historisk.v1-repartition-source" <<Source>> as from_helved_utbetalinger_historisk_v1_repartition_source
 	agent "KSTREAM-MAPVALUES-0000000250" <<Processor>> as KSTREAM_MAPVALUES_0000000250
 	agent "KSTREAM-KEY-SELECT-0000000251" <<Processor>> as KSTREAM_KEY_SELECT_0000000251
 	agent "historisktuple-leftjoin-saker-repartition-filter" <<Processor>> as historisktuple_leftjoin_saker_repartition_filter
 	agent "historisktuple-leftjoin-saker-repartition-sink" <<Sink>> as historisktuple_leftjoin_saker_repartition_sink
-	from_helved_utbetaling_v1_repartition --> from_helved_utbetaling_v1_repartition_source
+	from_helved_utbetalinger_historisk_v1_repartition --> from_helved_utbetalinger_historisk_v1_repartition_source
 	historisktuple_leftjoin_saker_repartition <-- historisktuple_leftjoin_saker_repartition_sink
-	from_helved_utbetaling_v1_repartition_source --> KSTREAM_MAPVALUES_0000000250
+	from_helved_utbetalinger_historisk_v1_repartition_source --> KSTREAM_MAPVALUES_0000000250
 	KSTREAM_MAPVALUES_0000000250 --> KSTREAM_KEY_SELECT_0000000251
 	KSTREAM_KEY_SELECT_0000000251 --> historisktuple_leftjoin_saker_repartition_filter
 	historisktuple_leftjoin_saker_repartition_filter --> historisktuple_leftjoin_saker_repartition_sink

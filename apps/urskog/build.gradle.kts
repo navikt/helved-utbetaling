@@ -32,5 +32,5 @@ dependencies {
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:mq-test"))
-    testImplementation("org.apache.kafka:kafka-streams:4.1.0") // StreamsConfig
+    testImplementation("org.apache.kafka:kafka-streams:4.1.1") // StreamsConfig
 }
