@@ -83,6 +83,7 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
     val kvitteringKTable = consume(Tables.kvittering)
     val oppdragTopic = consume(Topics.oppdrag)
 
+
     val kstore = oppdragTopic
         .filter { oppdrag -> oppdrag.mmel == null }
         .mapKeyAndValue { uid, xml -> OppdragForeignKey.from(xml) to uid }
@@ -91,6 +92,12 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
     kstore.join(kvitteringKTable)
         .filter { (uid, kvitt) -> kvitt?.mmel != null && uid != null }
         .mapKeyAndValue { _, (uid, kvitt) -> uid!! to kvitt!! }
+        .processor(DedupProcessor.supplier(
+            serdes = Topics.oppdrag.serdes,
+            retention = 1.hours,
+            stateStoreName = "dedup-joined-kvittering",
+            hasher = ::dedupHash,
+        ))
         .produce(Topics.oppdrag)
 
     oppdragTopic
