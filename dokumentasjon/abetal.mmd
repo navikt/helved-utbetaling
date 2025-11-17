@@ -40,8 +40,8 @@ subgraph Topologi
 	from-tilleggsstonader.utbetaling.v1-repartition([from-tilleggsstonader.utbetaling.v1-repartition])
 	helved.utbetalinger-ts.v1([helved.utbetalinger-ts.v1])
 	helved.utbetalinger-tp.v1([helved.utbetalinger-tp.v1])
-	helved.utbetaling.v1([helved.utbetaling.v1])
-	from-helved.utbetaling.v1-repartition([from-helved.utbetaling.v1-repartition])
+	helved.utbetalinger-historisk.v1([helved.utbetalinger-historisk.v1])
+	from-helved.utbetalinger-historisk.v1-repartition([from-helved.utbetalinger-historisk.v1-repartition])
 
     %% JOINS
     aap-periode-leftjoin-utbetalinger{leftjoin}
@@ -158,8 +158,8 @@ subgraph Topologi
 	helved.utbetalinger-ts.v1 --> tstuple-leftjoin-saker-repartition
 	from-tilleggsstonader.utbetaling.v1-repartition --> tstuple-leftjoin-saker-repartition
 	helved.utbetalinger-tp.v1 --> tptuple-leftjoin-saker-repartition
-	helved.utbetaling.v1 --> from-helved.utbetaling.v1-repartition
-	from-helved.utbetaling.v1-repartition --> historisktuple-leftjoin-saker-repartition
+	helved.utbetalinger-historisk.v1 --> from-helved.utbetalinger-historisk.v1-repartition
+	from-helved.utbetalinger-historisk.v1-repartition --> historisktuple-leftjoin-saker-repartition
 	helved.oppdrag.v1 --> oppdrag-leftjoin-fks-repartition
     
     %% CUSTOM PROCESS STREAMS
@@ -209,8 +209,8 @@ style tilleggsstonader.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:
 style from-tilleggsstonader.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger-ts.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger-tp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style from-helved.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.utbetalinger-historisk.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style from-helved.utbetalinger-historisk.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.pending-utbetalinger.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1-state-store-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a

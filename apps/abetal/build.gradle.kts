@@ -18,7 +18,7 @@ dependencies {
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.19.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
-    implementation("org.apache.kafka:kafka-streams:4.1.0")
+    implementation("org.apache.kafka:kafka-streams:4.1.1")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
@@ -30,7 +30,7 @@ dependencies {
 
     // TODO: ER det mulig å innkapsulere denne i libs?
     // vanilla producer
-    implementation("org.apache.kafka:kafka-clients:4.1.0")
+    implementation("org.apache.kafka:kafka-clients:4.1.1")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
