@@ -12,8 +12,8 @@ import kotlin.time.Duration.Companion.milliseconds
 
 const val AAP_TX_GAP_MS = 50
 const val TS_TX_GAP_MS = 50
-const val TP_TX_GAP_MS = 50
-const val DP_TX_GAP_MS = 50
+const val TP_TX_GAP_MS = 250
+const val DP_TX_GAP_MS = 250
 const val HISTORISK_TX_GAP_MS = 50
 
 object Topics {
