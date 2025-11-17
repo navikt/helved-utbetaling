@@ -7,12 +7,14 @@ import models.*
 import libs.utils.appLog
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import kotlin.collections.plus
 import kotlin.time.Duration.Companion.milliseconds
 
 const val AAP_TX_GAP_MS = 50
 const val TS_TX_GAP_MS = 50
 const val TP_TX_GAP_MS = 50
 const val DP_TX_GAP_MS = 50
+const val HISTORISK_TX_GAP_MS = 50
 
 object Topics {
     val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
@@ -30,6 +32,8 @@ object Topics {
     val dpIntern = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val aapIntern = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
     val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>())
+    val historisk = Topic("historisk.utbetaling.v1", json<HistoriskUtbetaling>())
+    val historiskIntern = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
 }
 
 object Tables {
@@ -45,6 +49,7 @@ object Stores {
     val aapAggregate = Store("aap-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
     val tsAggregate = Store("ts-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
     val tpAggregate = Store("tp-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val historiskAggregate = Store("historisk-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
 }
 
 fun createTopology(): Topology = topology {
@@ -56,6 +61,7 @@ fun createTopology(): Topology = topology {
     aapStream(utbetalinger, saker)
     tsStream(utbetalinger, saker)
     tpStream(utbetalinger, saker)
+    historiskStream(utbetalinger, saker)
     successfulUtbetalingStream(fks, pendingUtbetalinger)
 }
 
@@ -320,6 +326,64 @@ fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         }
 }
 
+fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
+    val suppress = SuppressProcessor.supplier(Stores.historiskAggregate, HISTORISK_TX_GAP_MS.milliseconds, HISTORISK_TX_GAP_MS.milliseconds)
+    val dedup = DedupProcessor.supplier(jsonListStreamsPair<Utbetaling>(), HISTORISK_TX_GAP_MS.milliseconds, "historisk-dedup-aggregate")
+
+    consume(Topics.historisk)
+        .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
+        .merge(consume(Topics.historiskIntern))
+        .map { key, historisk -> HistoriskTuple(key, historisk) }
+        .rekey { (_, historisk) -> SakKey(SakId(historisk.sakId), Fagsystem.HISTORISK) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "historisktuple-leftjoin-saker")
+        .mapKeyValue(::fromHistorisk)
+        .leftJoin(Serde.string(), Serde.json(), utbetalinger, "historisk-periode-leftjoin-utbetalinger")
+        .filter { (new, prev) -> !new.isDuplicate(prev) }
+        .rekey { new, _ -> new.originalKey }
+        .map { new, prev -> listOf(StreamsPair(new, prev)) }
+        .sessionWindow(Serde.string(), Serde.listStreamsPair(), HISTORISK_TX_GAP_MS.milliseconds, "historisk-utbetalinger-session")
+        .reduce(suppress, dedup, Stores.historiskAggregate.name)  { acc, next -> acc + next }
+        .map { aggregate  ->
+            Result.catch {
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                oppdragToUtbetalinger to simuleringer
+            }
+        }
+        .branch({ it.isOk() }) {
+            val result = map { it -> it.unwrap() }
+
+            result
+                .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.flatMap { agg -> agg.second.map { KeyValue(it.uid.toString(), it) } } }
+                .produce(Topics.pendingUtbetalinger)
+
+            result
+                .flatMap { (_, simuleringer) -> simuleringer }
+                .produce(Topics.simulering)
+
+            val oppdrag = result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
+            oppdrag.produce(Topics.oppdrag)
+            oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
+
+            result
+                .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
+                .map { StatusReply.ok() }
+                .produce(Topics.status)
+
+            result
+                .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
+                    oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
+                        val uids = utbetalinger.map { u -> u.uid.toString() }
+                        KeyValue(oppdrag, PKs(transactionId, uids))
+                    }
+                }
+                .produce(Topics.fk)
+        }
+        .default {
+            map { it -> it.unwrapErr() }.produce(Topics.status)
+        }
+}
+
 fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     consume(Topics.tp)
         // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
@@ -469,6 +533,11 @@ private fun splitOnMeldeperiode(sakKey: SakKey, tuple: AapTuple, uids: Set<Utbet
 }
 
 private fun fromTs(sakKey: SakKey, req: TsTuple, uids: Set<UtbetalingId>?): KeyValue<String, Utbetaling> {
+    val utbetaling = req.toDomain(uids)
+    return KeyValue("${utbetaling.uid}", utbetaling)
+}
+
+private fun fromHistorisk(sakKey: SakKey, req: HistoriskTuple, uids: Set<UtbetalingId>?): KeyValue<String, Utbetaling> {
     val utbetaling = req.toDomain(uids)
     return KeyValue("${utbetaling.uid}", utbetaling)
 }

@@ -90,6 +90,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                                             Fagsystem.AAP -> Dao.findUtbetalinger(sakId, Table.aap)
                                             Fagsystem.DAGPENGER -> Dao.findUtbetalinger(sakId, Table.dp)
                                             Fagsystem.TILLEGGSSTØNADER -> Dao.findUtbetalinger(sakId, Table.ts)
+                                            Fagsystem.HISTORISK -> Dao.findUtbetalinger(sakId, Table.historisk)
                                             // TODO: Fagsystem.TILTAKSPENGER -> Dao.findUtbetalinger(sakId, Table.tp)
                                             else -> emptyList()
                                         }
@@ -100,6 +101,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                                             Fagsystem.DAGPENGER -> Dao.findUtbetalinger(sakId, Table.dpIntern)
                                             Fagsystem.TILLEGGSSTØNADER -> Dao.findUtbetalinger(sakId, Table.tsIntern)
                                             Fagsystem.TILTAKSPENGER -> Dao.findUtbetalinger(sakId, Table.tpIntern)
+                                            Fagsystem.HISTORISK -> Dao.findUtbetalinger(sakId, Table.historiskIntern)
                                             else -> emptyList()
                                         }
                                     },
@@ -249,6 +251,8 @@ sealed class Channel(
     data object TpIntern : Channel(Topics.tpIntern, Table.tpIntern, 18)
     data object Ts : Channel(Topics.ts, Table.ts, 19)
     data object Aap : Channel(Topics.aap, Table.aap, 20)
+    data object Historisk : Channel(Topics.historisk, Table.historisk, 21)
+    data object HistoriskIntern : Channel(Topics.historiskIntern, Table.historiskIntern, 22)
 
     companion object {
         fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel }

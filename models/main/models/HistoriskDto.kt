@@ -1,0 +1,72 @@
+package models
+
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
+
+data class HistoriskUtbetaling(
+    val dryrun: Boolean = false,
+    val id: UUID,
+    val sakId: String,
+    val behandlingId: String,
+    val personident: String,
+    val stønad: StønadTypeHistorisk,
+    val vedtakstidspunkt: LocalDateTime,
+    val periodetype: Periodetype,
+    val perioder: List<HistoriskPeriode>,
+    val brukFagområdeTillst: Boolean = false,
+    val saksbehandler: String? = null,
+    val beslutter: String? = null,
+    )
+
+data class HistoriskPeriode(
+    val fom: LocalDate,
+    val tom: LocalDate,
+    val beløp: UInt,
+) {
+    fun into(): Utbetalingsperiode = Utbetalingsperiode(
+        fom = fom,
+        tom = tom,
+        beløp = beløp,
+    )
+}
+
+data class HistoriskTuple(val transactionId: String, val dto: HistoriskUtbetaling)
+
+fun HistoriskTuple.toDomain(uidsPåSak: Set<UtbetalingId>?): Utbetaling {
+    val (action, perioder) = when (dto.perioder.isEmpty()) {
+        true -> Action.DELETE to listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u)) // Dummy-periode for validering
+        false -> Action.CREATE to dto.perioder.toDomain()
+    }
+
+    return Utbetaling(
+        dryrun = dto.dryrun,
+        originalKey = transactionId,
+        fagsystem = Fagsystem.HISTORISK,
+        uid = UtbetalingId(dto.id),
+        action = action,
+        førsteUtbetalingPåSak = uidsPåSak == null,
+        sakId = SakId(dto.sakId),
+        behandlingId = BehandlingId(dto.behandlingId),
+        lastPeriodeId = PeriodeId(),
+        personident = Personident(dto.personident),
+        vedtakstidspunkt = dto.vedtakstidspunkt,
+        stønad = dto.stønad,
+        beslutterId = dto.beslutter?.let(::Navident) ?: Navident("historisk"),
+        saksbehandlerId = dto.saksbehandler?.let(::Navident) ?: Navident("historisk"),
+        periodetype = dto.periodetype,
+        avvent = null,
+        perioder = perioder,
+    )
+}
+
+private fun List<HistoriskPeriode>.toDomain(): List<Utbetalingsperiode> {
+    return this.map {
+            Utbetalingsperiode(
+                fom = it.fom,
+                tom = it.tom,
+                beløp = it.beløp,
+            )
+        }
+}
+

@@ -30,6 +30,8 @@ enum class Table {
     tsIntern,
     tpIntern,
     ts,
+    historisk,
+    historiskIntern,
 }
 
 data class Dao(

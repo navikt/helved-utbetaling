@@ -33,6 +33,8 @@ object Topics {
     val tpIntern = Topic("helved.utbetalinger-tp.v1", bytes())
     val ts = Topic("tilleggsstonader.utbetaling.v1", bytes())
     val aapIntern = Topic("helved.utbetalinger-aap.v1", bytes())
+    val historisk = Topic("historisk.utbetaling.v1", bytes())
+    val historiskIntern = Topic("helved.utbetalinger-historisk.v1", bytes())
 }
 
 val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())

@@ -1,7 +1,6 @@
 package abetal
 
 import libs.kafka.StreamsPair
-import libs.utils.appLog
 import libs.utils.secureLog
 import models.Action
 import models.PeriodeId

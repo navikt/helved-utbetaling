@@ -271,10 +271,11 @@ sealed interface Stønadstype {
                 .recoverCatching { StønadTypeTilleggsstønader.valueOf(str) }
                 .recoverCatching { StønadTypeTiltakspenger.valueOf(str) }
                 .recoverCatching { StønadTypeAAP.valueOf(str) }
+                .recoverCatching { StønadTypeHistorisk.valueOf(str) }
                 .getOrThrow()
 
         fun fraKode(klassekode: String): Stønadstype =
-            (StønadTypeDagpenger.entries + StønadTypeTiltakspenger.entries + StønadTypeTilleggsstønader.entries + StønadTypeAAP.entries)
+            (StønadTypeDagpenger.entries + StønadTypeTiltakspenger.entries + StønadTypeTilleggsstønader.entries + StønadTypeAAP.entries + StønadTypeHistorisk.entries)
                 .single { it.klassekode == klassekode }
     }
 }
