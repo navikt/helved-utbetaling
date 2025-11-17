@@ -32,9 +32,8 @@ object Topics {
     val dpIntern = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val aapIntern = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
     val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>())
-    val historisk = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
-    // val historisk = Topic("historisk.utbetaling.v1", json<HistoriskUtbetaling>())
-    // val historiskIntern = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
+    val historisk = Topic("historisk.utbetaling.v1", json<HistoriskUtbetaling>())
+    val historiskIntern = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
 }
 
 object Tables {
@@ -333,7 +332,7 @@ fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KT
 
     consume(Topics.historisk)
         .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
-        // .merge(consume(Topics.historiskIntern))
+        .merge(consume(Topics.historiskIntern))
         .map { key, historisk -> HistoriskTuple(key, historisk) }
         .rekey { (_, historisk) -> SakKey(SakId(historisk.sakId), Fagsystem.HISTORISK) }
         .leftJoin(Serde.json(), Serde.json(), saker, "historisktuple-leftjoin-saker")
