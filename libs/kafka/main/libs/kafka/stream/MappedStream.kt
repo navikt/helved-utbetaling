@@ -102,6 +102,12 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(processedStream)
     }
 
+    fun processor(supplier: org.apache.kafka.streams.processor.api.ProcessorSupplier<K, V, K, V>): ConsumedStream<K, V> {
+        // TODO: if supplier uses a state store, we need to add Named
+        val processed = stream.process(supplier)
+        return ConsumedStream(processed)
+    }
+
     fun processor(processor: StateProcessor<K, V, K, V>): MappedStream<K, V> {
         val processedStream = stream.process(processor.supplier, processor.named.into(), processor.storeName)
         return MappedStream(processedStream)

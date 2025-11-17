@@ -25,6 +25,7 @@ subgraph Topologi
     %% STATE STORES
     fk-uid-store[(fk-uid-store)]
 	helved.kvittering.v1-state-store[(helved.kvittering.v1-state-store)]
+	dedup-joined-kvittering[(dedup-joined-kvittering)]
 	dedup-oppdrag-mq[(dedup-oppdrag-mq)]
     
     %% DATABASES
@@ -84,5 +85,6 @@ style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2
 style helved.avstemming.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style fk-uid-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.kvittering.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dedup-joined-kvittering fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style dedup-oppdrag-mq fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 
