@@ -7,7 +7,7 @@ application {
 }
 
 val ktorVersion = "3.2.0"
-val libVersion = "3.1.209"
+val libVersion = "3.1.215"
 
 dependencies {
     implementation(project(":models"))
