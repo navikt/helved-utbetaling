@@ -259,6 +259,15 @@ enum class Periodetype(val satstype: String) {
     EN_GANG("ENG");
 }
 
+enum class Frekvens(val utbetFrekvens: String) {
+    DAG("DAG"),
+    UKE("UKE"),
+    MND("MND"),
+    TOUKER("14DG"),
+    ENG("ENG");
+
+}
+
 sealed interface Stønadstype {
     val name: String
     val klassekode: String

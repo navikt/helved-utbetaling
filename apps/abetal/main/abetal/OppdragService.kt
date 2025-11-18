@@ -17,6 +17,11 @@ private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofP
 private val fixedTime = LocalTime.of(10, 10, 0, 0)
 fun LocalDate.toXMLDate(): XMLGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
 
+fun Fagsystem.utbetFrekvens() = when(this) {
+    Fagsystem.HISTORISK -> "ENG"
+    else -> "MND"
+}
+
 object OppdragService {
     fun opprett(new: Utbetaling): Oppdrag {
         var forrigeId: PeriodeId? = null
@@ -25,11 +30,11 @@ object OppdragService {
             kodeEndring = if(new.førsteUtbetalingPåSak) "NY" else "ENDR"
             kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
-            utbetFrekvens = "MND"
+            utbetFrekvens = new.fagsystem.utbetFrekvens()
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = avstemming115(new.fagsystem.fagområde) 
+            avstemming115 = avstemming115(new.fagsystem)
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             new.perioder.mapIndexed { i, periode ->
@@ -52,11 +57,11 @@ object OppdragService {
             kodeEndring = "ENDR"
             kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
-            utbetFrekvens = "MND"
+            utbetFrekvens = new.fagsystem.utbetFrekvens()
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = avstemming115(new.fagsystem.fagområde) 
+            avstemming115 = avstemming115(new.fagsystem)
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
@@ -85,11 +90,11 @@ object OppdragService {
             kodeEndring = "ENDR"
             kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
-            utbetFrekvens = "MND"
+            utbetFrekvens = new.fagsystem.utbetFrekvens()
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
             saksbehId = new.saksbehandlerId.ident
-            avstemming115 = avstemming115(new.fagsystem.fagområde) 
+            avstemming115 = avstemming115(new.fagsystem)
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val sistePeriode = new.perioder.maxBy { it.fom }
@@ -116,10 +121,15 @@ private fun skalTilføreOpphørslinje(
     }
 }
 
-private fun avstemming115(fagområde: String): Avstemming115 {
+private fun Fagsystem.kodeKomponent() = when(this) {
+    Fagsystem.HISTORISK -> "INFO"
+    else -> this.fagområde
+}
+
+private fun avstemming115(fagsystem: Fagsystem): Avstemming115 {
     val todayAtTen = LocalDateTime.now().with(fixedTime)
     return objectFactory.createAvstemming115().apply {
-        kodeKomponent = fagområde
+        kodeKomponent = fagsystem.kodeKomponent()
         nokkelAvstemming = todayAtTen.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
         tidspktMelding = todayAtTen.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
     }
