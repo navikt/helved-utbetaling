@@ -23,5 +23,6 @@ fun conflict(msg: String, doc: String = "") : Nothing            = throw ApiErro
 fun unprocessable(msg: String, doc: String = "") : Nothing       = throw ApiError(422, msg, "$DOC$doc")
 fun locked(msg: String, doc: String = "") : Nothing              = throw ApiError(423, msg, "$DOC$doc")
 fun internalServerError(msg: String, doc: String = "") : Nothing = throw ApiError(500, msg, "$DOC$doc")
+fun badGateway(msg: String, doc: String = "") : Nothing          = throw ApiError(502, msg, "$DOC$doc")
 fun unavailable(msg: String, doc: String = "") : Nothing         = throw ApiError(503, msg, "$DOC$doc")
 

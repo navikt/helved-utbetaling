@@ -2,6 +2,7 @@ val ktorVersion = "3.3.2"
 val libVersion = "3.1.171"
 
 dependencies {
+    api(project(":models"))
     api(project(":libs:cache"))
     api(project(":libs:http"))
     api(project(":libs:utils"))

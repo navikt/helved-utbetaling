@@ -37,47 +37,54 @@ fun unauthorized(
 fun forbidden(
     msg: String,
     field: String? = null,
-        doc: String = "",
+    doc: String = "",
 ) : Nothing = throw ApiError(403, msg, field, "$DEFAULT_DOC_STR$doc")
 
 fun notFound(
     msg: String,
     field: String? = null,
-        doc: String = "",
+    doc: String = "",
 ) : Nothing = throw ApiError(404, msg, field, "$DEFAULT_DOC_STR$doc")
 
 fun conflict(
     msg: String,
     field: String? = null,
-        doc: String = "",
+    doc: String = "",
 ) : Nothing = throw ApiError(409, msg, field, "$DEFAULT_DOC_STR$doc")
 
 fun unprocessable(
     msg: String,
     field: String? = null,
-        doc: String = "",
+    doc: String = "",
 ) : Nothing = throw ApiError(422, msg, field, "$DEFAULT_DOC_STR$doc")
 
 fun locked(
     msg: String, 
     field: String? = null,
-        doc: String = "",
+    doc: String = "",
 ) : Nothing = throw ApiError(423, msg, field, "$DEFAULT_DOC_STR$doc")
 
 fun internalServerError(
     msg: String, 
     field: String? = null,
-        doc: String = "",
+    doc: String = "",
 ) : Nothing = throw ApiError(500, msg, field, "$DEFAULT_DOC_STR$doc")
 
 fun notImplemented(
     msg: String,
     field: String? = null,
-        doc: String = "",
+    doc: String = "",
 ) : Nothing = throw ApiError(501, msg, field, "$DEFAULT_DOC_STR$doc")
+
+fun badGateway(
+    msg: String, 
+    field: String? = null,
+    doc: String = "",
+) : Nothing = throw ApiError(502, msg, field, "$DEFAULT_DOC_STR$doc")
 
 fun unavailable(
     msg: String, 
     field: String? = null,
-        doc: String = "",
+    doc: String = "",
 ) : Nothing = throw ApiError(503, msg, field, "$DEFAULT_DOC_STR$doc")
+
