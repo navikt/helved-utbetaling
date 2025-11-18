@@ -11,6 +11,7 @@ import java.util.*
 import libs.http.HttpClientFactory
 import libs.utils.Resource
 import libs.utils.logger
+import models.*
 
 val wsLog = logger("ws")
 
@@ -53,14 +54,16 @@ class SoapClient(
 
         return res.tryInto()
     }
+}
 
-    private suspend fun HttpResponse.tryInto(): String {
-        when (status) {
-            HttpStatusCode.InternalServerError, HttpStatusCode.OK -> return bodyAsText()
-            else -> error("Unexpected status code: $status when calling ${request.url}")
-        }
+private suspend fun HttpResponse.tryInto(): String {
+    when (status) {
+        HttpStatusCode.InternalServerError, HttpStatusCode.OK -> return bodyAsText()
+        HttpStatusCode.BadGateway -> badGateway("simulering stengt, tilgjengelig man-fre kl 6-21")
+        else -> error("Unexpected status code: $status when calling ${request.url}")
     }
 }
+
 
 object SoapXml {
     fun envelope(

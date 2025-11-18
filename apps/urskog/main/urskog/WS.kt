@@ -3,10 +3,14 @@ package urskog
 import io.ktor.client.plugins.logging.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
-import libs.utils.secureLog
-import libs.ws.*
+import libs.ws.Fault
+import libs.ws.SoapClient
+import libs.ws.StsClient
+import libs.ws.wsLog
 import libs.xml.XMLMapper
-import models.*
+import models.badRequest
+import models.notFound
+import models.unprocessable
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 

@@ -23,7 +23,7 @@ import utsjekk.utbetaling.UtbetalingsoppdragDto
 
 class SimuleringClient(
     private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL, retries = null),
+    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
     suspend fun simuler(
@@ -47,6 +47,7 @@ class SimuleringClient(
             HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.BadRequest -> badRequest(response.bodyAsText(), "simuleringsresultat")
+            HttpStatusCode.BadGateway -> badGateway(response.bodyAsText(), "utsjekk-simulering")
             HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "utsjekk-simulering")
             else -> error("HTTP ${response.status} feil fra utsjekk-simulering: ${response.bodyAsText()}")
         }
@@ -77,6 +78,7 @@ class SimuleringClient(
             HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.BadRequest -> badRequest(response.bodyAsText(), "simuleringsresultat")
+            HttpStatusCode.BadGateway -> badGateway(response.bodyAsText(), "utsjekk-simulering")
             HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "utsjekk-simulering")
             else -> error("HTTP ${response.status} feil fra utsjekk-simulering: ${response.bodyAsText()}")
         }
