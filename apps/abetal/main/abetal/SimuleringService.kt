@@ -26,7 +26,7 @@ object SimuleringService {
             kodeEndring = if (new.førsteUtbetalingPåSak) "NY" else "ENDR"
             kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
-            utbetFrekvens = "MND"
+            utbetFrekvens = new.fagsystem.utbetFrekvens()
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).format()
             saksbehId = new.saksbehandlerId.ident
@@ -53,7 +53,7 @@ object SimuleringService {
             kodeEndring = "ENDR"
             kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
-            utbetFrekvens = "MND"
+            utbetFrekvens = new.fagsystem.utbetFrekvens()
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).format()
             saksbehId = new.saksbehandlerId.ident
@@ -84,7 +84,7 @@ object SimuleringService {
             kodeEndring = "ENDR"
             kodeFagomraade = new.fagsystem.fagområde
             fagsystemId = new.sakId.id
-            utbetFrekvens = "MND"
+            utbetFrekvens = new.fagsystem.utbetFrekvens()
             oppdragGjelderId = new.personident.ident
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).format()
             saksbehId = new.saksbehandlerId.ident
