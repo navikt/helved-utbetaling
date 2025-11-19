@@ -11,6 +11,7 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
 import libs.utils.Resource
 import libs.ws.SoapException
+import models.ApiError
 import models.kontrakter.felles.Personident
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
@@ -144,12 +145,13 @@ class SimuleringTest {
     fun `can resolve soap fault`() {
         val fault = enFault(errorMessage = "Oppdraget finnes fra før")
 
-        val actual = assertThrows<FinnesFraFør> {
+        val actual = assertThrows<ApiError> {
             TestRuntime().use { runtime ->
                 val simulering = SimuleringService(runtime.config)
                 simulering.json(fault)
             }
         }
+        assertEquals(409, actual.statusCode)
         assertEquals("Utbetaling med SakId/BehandlingId finnes fra før", actual.message)
     }
 
@@ -157,12 +159,13 @@ class SimuleringTest {
     fun `resolver soap-fault person ikke funnet i PDL`() {
         val fault = enFault(errorMessage = "##Navn på person ikke funnet i PDL")
 
-        val actual = assertThrows<IkkeFunnet> {
+        val actual = assertThrows<ApiError> {
             TestRuntime().use { runtime ->
                 val simulering = SimuleringService(runtime.config)
                 simulering.json(fault)
             }
         }
+        assertEquals(404, actual.statusCode)
         assertEquals("Navn på person ikke funnet i PDL", actual.message)
     }
 

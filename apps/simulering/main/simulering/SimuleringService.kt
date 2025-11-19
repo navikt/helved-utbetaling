@@ -14,6 +14,10 @@ import io.ktor.client.plugins.logging.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.utils.secureLog
+import models.notFound
+import models.forbidden
+import models.conflict
+import models.badRequest
 import libs.ws.*
 import simulering.models.rest.rest
 import simulering.models.soap.soap
@@ -95,8 +99,8 @@ class SimuleringService(private val config: Config) {
 
         with(fault.faultstring) {
             when {
-                contains("Personen finnes ikke") -> throw IkkeFunnet(this)
-                contains("ugyldig") -> throw RequestErUgyldigException(this)
+                contains("Personen finnes ikke") -> notFound(this)
+                contains("ugyldig") -> badRequest(this)
                 contains("simulerBeregningFeilUnderBehandling") -> resolveBehandlingFault(fault)
                 contains("Conversion to SOAP failed") -> resolveSoapConversionFailure(fault)
                 else -> soapError(fault)
@@ -109,7 +113,7 @@ class SimuleringService(private val config: Config) {
         val cicsFault = detail["CICSFault"]?.toString() ?: soapError(fault)
 
         if (cicsFault.contains("DFHPI1008")) {
-            throw ServiceUserPermissionException(
+            forbidden(
                 """
                 ConsumerId (service-user) er ikke gyldig for simuleringstjenesten.
                 Det kan ha vært datalast i Oppdragsystemet. 
@@ -127,11 +131,11 @@ class SimuleringService(private val config: Config) {
         val errorMessage = feilUnderBehandling["errorMessage"] as? String ?: soapError(fault)
         with(errorMessage) {
             when {
-                contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> throw IkkeFunnet("SakId ikke funnet")
-                contains("Oppdraget finnes fra før") -> throw FinnesFraFør("Utbetaling med SakId/BehandlingId finnes fra før")
-                contains("Referert vedtak/linje ikke funnet") -> throw IkkeFunnet("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
-                contains("Navn på person ikke funnet i PDL") -> throw IkkeFunnet("Navn på person ikke funnet i PDL")
-                contains("Personen finnes ikke i PDL") -> throw IkkeFunnet("Personen finnes ikke i PDL")
+                contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> notFound("SakId ikke funnet")
+                contains("Oppdraget finnes fra før") -> conflict("Utbetaling med SakId/BehandlingId finnes fra før")
+                contains("Referert vedtak/linje ikke funnet") -> notFound("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
+                contains("Navn på person ikke funnet i PDL") -> notFound("Navn på person ikke funnet i PDL")
+                contains("Personen finnes ikke i PDL") -> notFound("Personen finnes ikke i PDL")
                 else -> soapError(fault)
             }
         }
@@ -157,8 +161,8 @@ private val xmlMapper: ObjectMapper =
                 )
         )
 
-class IkkeFunnet(feilmelding: String) : RuntimeException(feilmelding)
-class FinnesFraFør(feilmelding: String) : RuntimeException(feilmelding)
-class RequestErUgyldigException(feilmelding: String) : RuntimeException(feilmelding)
-class OppdragErStengtException : RuntimeException("Oppdrag/UR er stengt")
-class ServiceUserPermissionException(feilmelding: String) : RuntimeException(feilmelding)
+// class IkkeFunnet(feilmelding: String) : RuntimeException(feilmelding)
+// class FinnesFraFør(feilmelding: String) : RuntimeException(feilmelding)
+// class RequestErUgyldigException(feilmelding: String) : RuntimeException(feilmelding)
+// class OppdragErStengtException : RuntimeException("Oppdrag/UR er stengt")
+// class ServiceUserPermissionException(feilmelding: String) : RuntimeException(feilmelding)
