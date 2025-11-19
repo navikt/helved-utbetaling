@@ -60,13 +60,10 @@ class SimuleringService(private val config: Config) {
             return wrapper.response?.simulering
         } catch (e: Throwable) {
             try {
-                fault(xml)
                 wsLog.error("Feilet deserialisering av simulering", e)
-                // secureLog.error("Feilet deserialisering av simulering", e)
-                throw e
+                fault(xml)
             } catch (e2: Throwable) {
                 wsLog.error("Feilet deserialisering av simulering", e2)
-                // secureLog.error("Feilet deserialisering av simulering", e2)
                 throw e2
             }
         }
@@ -101,6 +98,7 @@ class SimuleringService(private val config: Config) {
             when {
                 contains("Personen finnes ikke") -> notFound(this)
                 contains("ugyldig") -> badRequest(this)
+                contains("Må ha nytt vedtak når Sats/Type/Vedtak-fom endres") -> badRequest(this)
                 contains("simulerBeregningFeilUnderBehandling") -> resolveBehandlingFault(fault)
                 contains("Conversion to SOAP failed") -> resolveSoapConversionFailure(fault)
                 else -> soapError(fault)
