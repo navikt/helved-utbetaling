@@ -20,7 +20,7 @@ dependencies {
 
     implementation("org.apache.kafka:kafka-clients:4.1.1")
 
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.19.0-alpha")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.21.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
 
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
