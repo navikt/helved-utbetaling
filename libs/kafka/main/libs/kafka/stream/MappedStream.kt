@@ -2,8 +2,6 @@ package libs.kafka.stream
 
 import libs.kafka.*
 import libs.kafka.processor.*
-import libs.kafka.processor.Processor.Companion.addProcessor
-// import libs.kafka.processor.StateProcessor.Companion.addProcessor
 import org.apache.kafka.streams.kstream.Grouped
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.SessionWindowedKStream
@@ -19,12 +17,14 @@ class MappedStream<K: Any, V : Any> internal constructor(
     }
 
     fun materialize(store: Store<K, V>): KStore<K, V> {
-        val loggedStream = stream.addProcessor(LogProduceStateStoreProcessor("${store.name}-materialize-log", store.name))
+        val loggedStream = stream.process({LogProduceStateStoreProcessor("${store.name}-materialize-log", store.name)})
         return KStore(store, loggedStream.toTable(Named("${store.name}-materialize").into(), materialized(store)))
     }
 
     fun materialize(table: Table<K, V>): KTable<K, V> {
-        val loggedStream = stream.addProcessor(LogProduceStateStoreProcessor("${table.stateStoreName}-materialize-log", table.stateStoreName))
+        val loggedStream = stream.process(
+            { LogProduceStateStoreProcessor("${table.stateStoreName}-materialize-log", table.stateStoreName) }
+        )
         return KTable(table, loggedStream.toTable(Named("${table.stateStoreName}-materialize").into(), materialized(table)))
     }
 
@@ -97,8 +97,8 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(loggedStream)
     }
 
-    fun <U : Any> processor(processor: Processor<K, V, U>): MappedStream<K, U> {
-        val processedStream = stream.addProcessor(processor)
+    fun <U : Any> processor(processor: Processor<K, V, K, U>): MappedStream<K, U> {
+        val processedStream = stream.process(processor.supplier)
         return MappedStream(processedStream)
     }
 
@@ -136,22 +136,22 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return SessionWindowedStream(Serdes(keySerde, valueSerde), windowedStream)
     }
 
-    fun onEach(onEach: (key: K, value: V, metadata: ProcessorMetadata) -> Unit): MappedStream<K, V> {
-        val peeked = stream
-            .addProcessor(MetadataProcessor())
-            .mapValues ({ _, (kv, metadata) -> 
-                onEach(kv.key, kv.value, metadata)
-                kv.value
-            })
-        return MappedStream(peeked)
-    }
+    // fun onEach(onEach: (key: K, value: V, metadata: ProcessorMetadata) -> Unit): MappedStream<K, V> {
+    //     val peeked = stream
+    //         .process({ MetadataProcessor()})
+    //         .mapValues ({ _, (kv, metadata) -> 
+    //             onEach(kv.key, kv.value, metadata)
+    //             kv.value
+    //         })
+    //     return MappedStream(peeked)
+    // }
 
     fun forEach(mapper: (K, V) -> Unit) {
         stream.foreach(mapper)
     }
 
-    fun forEach(mapper: (V) -> Unit) {
-        stream.foreach({ _, value -> mapper(value) })
-    }
+    // fun forEach(mapper: (V) -> Unit) {
+    //     stream.foreach({ _, value -> mapper(value) })
+    // }
 }
 

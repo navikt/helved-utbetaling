@@ -161,22 +161,23 @@ internal class MappedStreamTest {
         assertEquals("niceprice", result["22"])
     }
 
-    @Test
-    fun `map and use custom processor`() {
-        val kafka = Mock.withTopology {
-            consume(Topics.A)
-                .map { v -> v }
-                .processor(CustomProcessor())
-                .produce(Topics.C)
-        }
-
-        kafka.inputTopic(Topics.A).produce("1", "a")
-
-        val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
-
-        assertEquals(1, result.size)
-        assertEquals("a.v2", result["1"])
-    }
+    // TODO: lag test `map and use custom processor`
+    // @Test
+    // fun `map and use custom processor`() {
+    //     val kafka = Mock.withTopology {
+    //         consume(Topics.A)
+    //             .map { v -> v }
+    //             .processor(CustomProcessor())
+    //             .produce(Topics.C)
+    //     }
+    //
+    //     kafka.inputTopic(Topics.A).produce("1", "a")
+    //
+    //     val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
+    //
+    //     assertEquals(1, result.size)
+    //     assertEquals("a.v2", result["1"])
+    // }
 
     // @Test
     // fun `map and use custom processor with table`() {

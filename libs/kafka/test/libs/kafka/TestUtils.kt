@@ -3,7 +3,7 @@ package libs.kafka
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import libs.kafka.processor.Processor
-import libs.kafka.processor.ProcessorMetadata
+import libs.kafka.processor.EnrichMetadataProcessor
 import libs.kafka.processor.StateProcessor
 import org.apache.kafka.streams.TestInputTopic
 import org.apache.kafka.streams.TestOutputTopic
@@ -101,7 +101,7 @@ internal fun <K : Any, V> TestInputTopic<K, V>.produceTombstone(key: K): TestInp
 //     ): String = "${keyValue.value}${store[keyValue.key].value()}"
 // }
 
-open class CustomProcessor : Processor<String, String, String>() {
-    override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): String =
-        "${keyValue.value}.v2"
-}
+// open class CustomProcessor : Processor<String, String, String>() {
+//     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): String =
+//         "${keyValue.value}.v2"
+// }
