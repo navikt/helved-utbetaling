@@ -3,12 +3,10 @@ package libs.kafka.stream
 import libs.kafka.*
 import libs.kafka.KTable
 import libs.kafka.Named
-import libs.kafka.processor.MetadataProcessor
+import libs.kafka.processor.EnrichMetadataProcessor
 import libs.kafka.processor.Processor
-import libs.kafka.processor.Processor.Companion.addProcessor
-import libs.kafka.processor.ProcessorMetadata
+import libs.kafka.processor.Metadata
 import libs.kafka.processor.StateProcessor
-// import libs.kafka.processor.StateProcessor.Companion.addProcessor
 import org.apache.kafka.streams.kstream.*
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
@@ -57,12 +55,12 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return ConsumedStream(stream.merge(other.stream))
     }
 
-    fun <U : Any> mapWithMetadata(mapper: (V, ProcessorMetadata) -> U): MappedStream<K, U> {
-        val mappedStream = stream
-            .addProcessor(MetadataProcessor())
-            .mapValues ({ (kv, metadata) -> mapper(kv.value, metadata) })
-        return MappedStream(mappedStream)
-    }
+    // fun <U : Any> mapWithMetadata(mapper: (V, ProcessorMetadata) -> U): MappedStream<K, U> {
+    //     val mappedStream = stream
+    //         .process({MetadataProcessor()})
+    //         .mapValues ({ (kv, metadata) -> mapper(kv.value, metadata) })
+    //     return MappedStream(mappedStream)
+    // }
 
     fun <U> mapNotNull(mapper: (K, V) -> U): MappedStream<K, U & Any> {
         val valuedStream = stream
@@ -207,11 +205,12 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return ConsumedStream(stream.repartition(repartition))
     }
 
-    fun <U : Any> processor(processor: Processor<K, V, U>): MappedStream<K, U> {
-        val processorStream = stream.addProcessor(processor)
+    fun <U : Any> processor(processor: Processor<K, V, K, U>): MappedStream<K, U> {
+        val processorStream = stream.process(processor.supplier)
         return MappedStream(processorStream)
     }
 
+    @Deprecated("replaced with processor(libs.kafka.Processor)")
     fun processor(supplier: org.apache.kafka.streams.processor.api.ProcessorSupplier<K, V, K, V>): ConsumedStream<K, V> {
         // TODO: if supplier uses a state store, we need to add Named
         val processed = stream.process(supplier)

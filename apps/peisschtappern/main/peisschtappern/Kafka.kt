@@ -6,6 +6,8 @@ import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.kafka.*
+import libs.kafka.processor.EnrichMetadataProcessor
+import libs.kafka.processor.Processor
 import libs.tracing.Tracing
 import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -51,30 +53,32 @@ private fun Topology.save(
     table: Table,
     commitHash: String,
 ) {
-    forEach(topic) { key, value, metadata ->
-        runBlocking {
-            withContext(Jdbc.context + Dispatchers.IO) {
-                transaction {
-                    if (topic == Topics.oppdrag) {
-                        missingKvitteringHandler(key, value)
+    consume(topic, includeTombstones = true)
+        .processor(Processor{ EnrichMetadataProcessor() })
+        .forEach { key, (value, metadata) ->
+            runBlocking {
+                withContext(Jdbc.context + Dispatchers.IO) {
+                    transaction {
+                        if (topic == Topics.oppdrag) {
+                            missingKvitteringHandler(key, value)
+                        }
+                        Dao(
+                            version = topic.name.substringAfterLast("."),
+                            topic_name = topic.name,
+                            key = key,
+                            value = value?.decodeToString(),
+                            partition = metadata.partition,
+                            offset = metadata.offset,
+                            timestamp_ms = metadata.timestamp,
+                            stream_time_ms = metadata.streamTimeMs,
+                            system_time_ms = metadata.systemTimeMs,
+                            trace_id = Tracing.getCurrentTraceId(),
+                            commit = commitHash, 
+                        ).insert(table)
                     }
-                    Dao(
-                        version = topic.name.substringAfterLast("."),
-                        topic_name = topic.name,
-                        key = key,
-                        value = value?.decodeToString(),
-                        partition = metadata.partition,
-                        offset = metadata.offset,
-                        timestamp_ms = metadata.timestamp,
-                        stream_time_ms = metadata.streamTimeMs,
-                        system_time_ms = metadata.systemTimeMs,
-                        trace_id = Tracing.getCurrentTraceId(),
-                        commit = commitHash, 
-                    ).insert(table)
                 }
             }
         }
-    }
 }
 
 class DefaultKafkaFactory : KafkaFactory {}

@@ -2,6 +2,7 @@ val libVersion = "3.1.215"
 
 dependencies {
     implementation(project(":libs:utils"))
+    implementation(project(":libs:tracing"))
     implementation("no.nav.helved:xml:$libVersion")
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.0")

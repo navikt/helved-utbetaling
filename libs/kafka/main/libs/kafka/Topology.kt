@@ -3,9 +3,8 @@ package libs.kafka
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
 import libs.kafka.processor.LogConsumeTopicProcessor
-import libs.kafka.processor.MetadataProcessor
-import libs.kafka.processor.Processor.Companion.addProcessor
-import libs.kafka.processor.ProcessorMetadata
+import libs.kafka.processor.EnrichMetadataProcessor
+import libs.kafka.processor.Metadata
 import libs.kafka.stream.ConsumedStream
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.KafkaStreams.State.*
@@ -102,18 +101,19 @@ value class Named(private val value: String) {
 class Topology {
     private val builder = StreamsBuilder()
 
-    fun <K: Any, V : Any> consume(topic: Topic<K, V>): ConsumedStream<K, V> {
+    fun <K: Any, V : Any> consume(topic: Topic<K, V>, includeTombstones: Boolean = false): ConsumedStream<K, V> {
         val stream = builder
             .stream(topic.name, topic.consumed())
-            .addProcessor(LogConsumeTopicProcessor<K, V>(topic))
-            .skipTombstone(topic) 
-        return ConsumedStream(stream)
+            .process({ LogConsumeTopicProcessor<K, V>(topic) })
+
+        if (includeTombstones) return ConsumedStream(stream)
+        return ConsumedStream(stream.skipTombstone(topic) )
     }
 
     fun <K: Any, V : Any> consume(table: Table<K, V>): KTable<K, V> {
         return builder
             .stream(table.sourceTopicName, table.sourceTopic.consumed())
-            .addProcessor(LogConsumeTopicProcessor<K, V?>(table.sourceTopic))
+            .process({ LogConsumeTopicProcessor<K, V?>(table.sourceTopic) })
             .toKTable(table)
     }
 
@@ -124,16 +124,16 @@ class Topology {
         )
     }
 
-    fun <K: Any, V : Any> forEach(
-        topic: Topic<K, V>,
-        onEach: (key: K, value: V?, metadata: ProcessorMetadata) -> Unit,
-    ) {
-        builder
-            .stream(topic.name, topic.consumed())
-            .addProcessor(LogConsumeTopicProcessor<K, V>(topic))
-            .addProcessor(MetadataProcessor())
-            .foreach { _, (kv, metadata) -> onEach(kv.key, kv.value, metadata) }
-    }
+    // fun <K: Any, V : Any> forEach(
+    //     topic: Topic<K, V>,
+    //     onEach: (key: K, value: V?, metadata: ProcessorMetadata) -> Unit,
+    // ) {
+    //     builder
+    //         .stream(topic.name, topic.consumed())
+    //         .addProcessor(LogConsumeTopicProcessor<K, V>(topic))
+    //         .addProcessor(MetadataProcessor())
+    //         .foreach { _, (kv, metadata) -> onEach(kv.key, kv.value, metadata) }
+    // }
 
     fun registerInternalTopology(stream: Streams) {
         stream.registerInternalTopology(builder.build())

@@ -4,7 +4,6 @@ package libs.kafka.stream
 
 import libs.kafka.*
 import libs.kafka.processor.Processor
-import libs.kafka.processor.Processor.Companion.addProcessor
 import org.apache.kafka.streams.kstream.KStream
 
 /**
@@ -68,13 +67,13 @@ class JoinedStream<K: Any, L : Any, R> internal constructor(
         return JoinedStream(loggedStream)
     }
 
-    fun <LR : Any> processor(processor: Processor<K, StreamsPair<L, R>, LR>): MappedStream<K, LR> {
-        val processorStream = stream.addProcessor(processor)
+    fun <LR : Any> processor(processor: Processor<K, StreamsPair<L, R>, K, LR>): MappedStream<K, LR> {
+        val processorStream = stream.process(processor.supplier)
         return MappedStream(processorStream)
     }
 
-    fun processor(processor: Processor<K, StreamsPair<L, R>, StreamsPair<L, R>>): JoinedStream<K, L, R> {
-        val processorStream = stream.addProcessor(processor)
+    fun processor(processor: Processor<K, StreamsPair<L, R>, K, StreamsPair<L, R>>): JoinedStream<K, L, R> {
+        val processorStream = stream.process(processor.supplier)
         return JoinedStream(processorStream )
     }
 }

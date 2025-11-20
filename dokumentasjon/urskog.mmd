@@ -12,6 +12,7 @@ subgraph Topologi
 	helved.dryrun-ts.v1([helved.dryrun-ts.v1])
 	helved.dryrun-tp.v1([helved.dryrun-tp.v1])
 	helved.kvittering.v1([helved.kvittering.v1])
+	ktable-helved.kvittering.v1-repartition([ktable-helved.kvittering.v1-repartition])
 	fk-uid-store-materialize-repartition([fk-uid-store-materialize-repartition])
 	helved.oppdrag.v1([helved.oppdrag.v1])
 	helved.avstemming.v1([helved.avstemming.v1])
@@ -60,6 +61,7 @@ subgraph Topologi
 	helved.simuleringer.v1 --> helved.status.v1
 	helved.simuleringer.v1 --> helved.dryrun-tp.v1
 	helved.simuleringer.v1 --> helved.status.v1
+	helved.kvittering.v1 --> ktable-helved.kvittering.v1-repartition
     
     %% CUSTOM PROCESS STREAMS
     
@@ -80,6 +82,7 @@ style helved.dryrun-dp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:
 style helved.dryrun-ts.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.dryrun-tp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.kvittering.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style ktable-helved.kvittering.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style fk-uid-store-materialize-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.avstemming.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
