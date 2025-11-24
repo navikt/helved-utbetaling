@@ -2,8 +2,10 @@ package libs.kafka
 
 import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.TestOutputTopic
+import org.apache.kafka.streams.test.TestRecord
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -14,8 +16,20 @@ class TopicAssertion<K: Any, V : Any> private constructor(topic: TestOutputTopic
         fun <K: Any, V : Any> readAndAssertThat(topic: TestOutputTopic<K, V>) = TopicAssertion(topic)
     }
 
-    private val actuals: List<KeyValue<K, V>> = topic.readKeyValuesToList()
+    private val actuals: List<TestRecord<K, V>> = topic.readRecordsToList()
     private fun valuesForKey(key: K) = actuals.filter { it.key == key }.map { it.value }
+
+    fun hasHeader(key: K, header: Pair<String, String>, index: Int = 0) {
+        val record = actuals.getOrNull(index)
+        assertNotNull(record)
+        println("headers:")
+        record.headers().forEach {
+            println(it)
+        }
+        val actualHeader = record.headers().singleOrNull { it.key() == header.first }
+        assertNotNull(actualHeader)
+        assertEquals(header.second, String(actualHeader.value()))
+    }
 
     fun hasTotal(size: Int) = this.also {
         assertEquals(size, actuals.size)

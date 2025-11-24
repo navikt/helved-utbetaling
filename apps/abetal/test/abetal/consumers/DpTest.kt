@@ -2994,5 +2994,35 @@ internal class DpTest {
         TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
         TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
     }
+
+    @Test
+    fun `fagsystem header is propagated on success`() {
+        val transactionId = UUID.randomUUID().toString()
+        TestRuntime.topics.dp.produce(transactionId) {
+            Dp.utbetaling {
+                Dp.meldekort("132460781", 1.jun, 18.jun, 1077u, 553u)
+            }
+        }
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) { reply -> assertEquals(Status.MOTTATT, reply.status) }
+            .hasHeader(transactionId, FS_KEY to "DAGPENGER")
+    }
+
+    @Test
+    fun `fagsystem header is propagated on error`() {
+        val transactionId = UUID.randomUUID().toString()
+        TestRuntime.topics.dp.produce(transactionId) {
+            Dp.utbetaling(sakId = "too long sak id 123456789012345") {
+                Dp.meldekort("132460781", 1.jun, 18.jun, 1077u, 553u)
+            }
+        }
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) { reply -> assertEquals(Status.FEILET, reply.status) }
+            .hasHeader(transactionId, FS_KEY to "DAGPENGER")
+    }
 }
 

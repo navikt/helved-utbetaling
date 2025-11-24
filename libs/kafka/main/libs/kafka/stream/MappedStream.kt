@@ -113,6 +113,11 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(processedStream)
     }
 
+    fun includeHeader(headerKey: String, headerValue: (V) -> String): MappedStream<K, V> {
+        val enriched = stream.process( { EnrichHeaderProcessor(headerKey, headerValue)} )
+        return MappedStream(enriched)
+    }
+
     fun groupByKey(serdes: Serdes<K, V>, named: String): GroupedStream<K, V> {
         val grouped = stream.groupByKey(Grouped.with(serdes.key, serdes.value).withName(Named(named).toString()))
         return GroupedStream(grouped)

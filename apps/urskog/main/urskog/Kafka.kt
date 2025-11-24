@@ -11,6 +11,8 @@ import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import kotlin.time.Duration.Companion.hours
 
+const val FS_KEY = "fagsystem"
+
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simuleringer = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
@@ -114,6 +116,11 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
                     }
                 )
                 .map { xml -> StatusReply.sendt(xml) }
+                .includeHeader(FS_KEY) { statusReply -> 
+                    statusReply.detaljer
+                        ?.let { detaljer -> detaljer.ytelse.name } 
+                        ?: "ukjent" 
+                }
                 .produce(Topics.status)
         }
         .branch( { o -> o.mmel != null}) {
@@ -124,6 +131,11 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
                 meters.counter("helved_kvitteringer", listOf(tag_fagsystem, tag_status)).increment()
                 meters.counter("helved_utbetalt_beløp", listOf(tag_fagsystem)).increment(kvitt.oppdrag110.oppdragsLinje150s.sumOf{ it.sats.toDouble() })
                 statusReply
+            }
+            .includeHeader(FS_KEY) { statusReply -> 
+                statusReply.detaljer
+                    ?.let { detaljer -> detaljer.ytelse.name } 
+                    ?: "ukjent" 
             }
             .produce(Topics.status)
         }

@@ -53,6 +53,7 @@ class UrskogTest {
             .with(uid, index = 0) {
                 assertEquals(Status.HOS_OPPDRAG, it.status)
             }
+            .hasHeader(uid, FS_KEY to "AAP")
 
         val kvitteringTopic = TestRuntime.kafka.getProducer(Topics.kvittering)
         assertEquals(1, kvitteringTopic.history().size)
@@ -93,6 +94,7 @@ class UrskogTest {
                 assertEquals(Status.OK, it.status)
                 assertEquals(expectedDetaljer, it.detaljer)
             }
+            .hasHeader(uid, FS_KEY to "AAP")
     }
 
     @Test

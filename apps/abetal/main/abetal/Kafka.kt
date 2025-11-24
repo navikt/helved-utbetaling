@@ -16,6 +16,8 @@ const val TP_TX_GAP_MS = 250
 const val DP_TX_GAP_MS = 250
 const val HISTORISK_TX_GAP_MS = 50
 
+const val FS_KEY = "fagsystem"
+
 object Topics {
     val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
     val aap = Topic("aap.utbetaling.v1", json<AapUtbetaling>())
@@ -182,6 +184,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
                 oppdragToUtbetalinger to simuleringer
             }
         }
+        .includeHeader(FS_KEY) { Fagsystem.DAGPENGER.name }
         .branch({ it.isOk() }) {
             val result = map { it -> it.unwrap() }
 
@@ -195,7 +198,9 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 
             val oppdrag = result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
             oppdrag.produce(Topics.oppdrag)
-            oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
+            oppdrag
+                .map { StatusReply.mottatt(it) }
+                .produce(Topics.status)
 
             result
                 .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }

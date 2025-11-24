@@ -1,6 +1,7 @@
 package libs.kafka.stream
 
 import libs.kafka.*
+import libs.kafka.processor.*
 import libs.kafka.KTable
 import libs.kafka.Named
 import libs.kafka.processor.EnrichMetadataProcessor
@@ -225,6 +226,11 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
     fun processor(processor: StateProcessor<K, V, K, V>): MappedStream<K, V> {
         val processedStream = stream.process(processor.supplier, processor.named.into(), processor.storeName)
         return MappedStream(processedStream)
+    }
+
+    fun includeHeader(headerKey: String, headerValue: (V) -> String): ConsumedStream<K, V> {
+        val enriched = stream.process( { EnrichHeaderProcessor(headerKey, headerValue)} )
+        return ConsumedStream(enriched)
     }
 
     fun forEach(mapper: (K, V) -> Unit) {
