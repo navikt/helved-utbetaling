@@ -13,6 +13,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.ApiError
@@ -20,6 +21,11 @@ import utsjekk.DEFAULT_DOC_STR
 import utsjekk.iverksetting.RandomOSURId
 
 class SimuleringRoutingTest {
+
+    @AfterEach
+    fun tearDown() {
+        TestRuntime.simulering.reset()
+    }
 
   @Test
   fun `kan simulere enkel utbetaling`() = runTest {
@@ -38,6 +44,35 @@ class SimuleringRoutingTest {
 
     assertEquals(HttpStatusCode.OK, res.status)
   }
+
+    @Test
+    fun `simulering utenfor åpningstid`() = runTest {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val errorBody = mapOf(
+            "statusCode" to 502,
+            "msg" to "simulering stengt, tilgjengelig man-fre kl 6-21",
+            "doc" to "https://helved-docs.ansatt.dev.nav.no/v3/doc/",
+            "suppressed" to emptyList<String>()
+        )
+
+        TestRuntime.simulering.respondWith(
+            errorBody,
+            HttpStatusCode.BadGateway
+        )
+
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid/simuler") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+        assertEquals(HttpStatusCode.BadGateway, res.status)
+    }
 
   @Test
   fun `can simulate Utbetaling with multiple MND`() = runTest() {

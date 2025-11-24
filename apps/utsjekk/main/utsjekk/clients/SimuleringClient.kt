@@ -41,9 +41,12 @@ class SimuleringClient(
             setBody(utbetaling)
         }
 
+        if (response.status == HttpStatusCode.OK) {
+            return response.body<client.SimuleringResponse>()
+        }
+
         // TODO: Gå gjennom feilmeldinger og responser som sendes til konsument
-        return when (response.status) {
-            HttpStatusCode.OK -> response.body<client.SimuleringResponse>()
+        when (response.status) {
             HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.BadRequest -> badRequest(response.bodyAsText(), "simuleringsresultat")
@@ -73,8 +76,13 @@ class SimuleringClient(
             setBody(request)
         }
 
-        val hentetSimulering = when (response.status) {
-            HttpStatusCode.OK -> response.body<client.SimuleringResponse>()
+        if(response.status == HttpStatusCode.OK) {
+            val hentetSimulering = response.body<client.SimuleringResponse>()
+            val detaljer = SimuleringDetaljer.from(hentetSimulering, simulering.behandlingsinformasjon.fagsystem)
+            return OppsummeringGenerator.lagOppsummering(detaljer)
+        }
+
+        when (response.status) {
             HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.BadRequest -> badRequest(response.bodyAsText(), "simuleringsresultat")
@@ -82,10 +90,6 @@ class SimuleringClient(
             HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "utsjekk-simulering")
             else -> error("HTTP ${response.status} feil fra utsjekk-simulering: ${response.bodyAsText()}")
         }
-
-
-        val detaljer = SimuleringDetaljer.from(hentetSimulering, simulering.behandlingsinformasjon.fagsystem)
-        return OppsummeringGenerator.lagOppsummering(detaljer)
     }
 
     private suspend fun hentUtbetalingsoppdrag(sim: Simulering): Utbetalingsoppdrag {
