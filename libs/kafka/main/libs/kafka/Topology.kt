@@ -3,8 +3,6 @@ package libs.kafka
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
 import libs.kafka.processor.LogConsumeTopicProcessor
-import libs.kafka.processor.EnrichMetadataProcessor
-import libs.kafka.processor.Metadata
 import libs.kafka.stream.ConsumedStream
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.KafkaStreams.State.*
@@ -123,17 +121,6 @@ class Topology {
             materialized(table).withRetention(retention.toJavaDuration())
         )
     }
-
-    // fun <K: Any, V : Any> forEach(
-    //     topic: Topic<K, V>,
-    //     onEach: (key: K, value: V?, metadata: ProcessorMetadata) -> Unit,
-    // ) {
-    //     builder
-    //         .stream(topic.name, topic.consumed())
-    //         .addProcessor(LogConsumeTopicProcessor<K, V>(topic))
-    //         .addProcessor(MetadataProcessor())
-    //         .foreach { _, (kv, metadata) -> onEach(kv.key, kv.value, metadata) }
-    // }
 
     fun registerInternalTopology(stream: Streams) {
         stream.registerInternalTopology(builder.build())
