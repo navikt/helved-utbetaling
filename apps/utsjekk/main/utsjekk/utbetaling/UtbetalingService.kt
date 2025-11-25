@@ -6,6 +6,8 @@ import libs.jdbc.concurrency.transaction
 import libs.utils.Err
 import libs.utils.Result
 import libs.kafka.KafkaProducer
+import models.locked
+import models.notFound
 import utsjekk.*
 import utsjekk.utbetaling.abetal.OppdragService
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -65,7 +67,8 @@ class UtbetalingService(
     suspend fun status(uid: UtbetalingId): Status {
         return withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.findOrNull(uid, history = true)?.status ?: notFound("status for utbetaling", "uid")
+                UtbetalingDao.findOrNull(uid, history = true)?.status
+                    ?: notFound("Fant ikke status for utbetaling med uid $uid")
             }
         }
     }
@@ -79,12 +82,12 @@ class UtbetalingService(
     suspend fun update(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
         val dao = withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
+                UtbetalingDao.findOrNull(uid) ?: notFound("Fant ikke utbetaling med uid $uid")
             }
         }
 
         if (dao.status != Status.OK) {
-            locked("utbetalingen har et pågående oppdrag, vent til dette er ferdig")
+            locked("Utbetalingen har et pågående oppdrag, vent til dette er ferdig")
         }
 
         val existing = dao.data
@@ -111,7 +114,7 @@ class UtbetalingService(
     suspend fun delete(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
         val dao = withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.findOrNull(uid) ?: notFound(msg = "existing utbetaling", field = "uid")
+                UtbetalingDao.findOrNull(uid) ?: notFound("Fant ikke utbetaling med uid $uid")
             }
         }
 

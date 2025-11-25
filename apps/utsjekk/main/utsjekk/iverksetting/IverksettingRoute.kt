@@ -6,7 +6,11 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.ktor.server.util.getOrFail
 import libs.utils.appLog
+import models.ApiError
+import models.DocumentedErrors
+import models.badRequest
 import models.kontrakter.iverksett.IverksettV2Dto
+import models.notFound
 import utsjekk.*
 
 fun Route.iverksetting(iverksettingService: IverksettingService) {
@@ -15,7 +19,7 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
             val dto = try {
                 call.receive<IverksettV2Dto>()
             } catch (ex: Exception) {
-                badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter")
+                badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", "${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling")
             }
 
             appLog.info("Behandler sakId ${dto.sakId} behandlingId ${dto.behandlingId}")
@@ -40,7 +44,7 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
             val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
             val fagsystem = call.fagsystem()
             val status = iverksettingService.utledStatus(fagsystem, sakId, behandlingId, null)
-                ?: notFound("status for sakId $sakId og behandlingId $behandlingId")
+                ?: notFound("Fant ikke status utbetaling med sakId $sakId og behandlingId $behandlingId")
 
             call.respond(HttpStatusCode.OK, status)
         }
@@ -51,7 +55,7 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
             val iverksettingId = call.parameters.getOrFail<String>("iverksettingId").let(::IverksettingId)
             val fagsystem = call.fagsystem()
             val status = iverksettingService.utledStatus(fagsystem, sakId, behandlingId, iverksettingId)
-                ?: notFound("status for sakId $sakId, behandlingId $behandlingId og iverksettingId $iverksettingId")
+                ?: notFound("Fant ikke status utbetaling med sakId $sakId, behandlingId $behandlingId og iverksettingId $iverksettingId")
 
             call.respond(HttpStatusCode.OK, status)
         }

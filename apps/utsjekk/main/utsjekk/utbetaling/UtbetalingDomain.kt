@@ -7,8 +7,10 @@ import java.time.LocalDateTime
 import java.util.Base64
 import java.util.UUID
 import libs.utils.*
+import models.DocumentedErrors
+import models.badRequest
+import models.conflict
 import models.splitWhen
-import utsjekk.*
 import utsjekk.avstemming.nesteUkedag
 
 @JvmInline
@@ -92,27 +94,19 @@ data class Utbetaling(
     }
 
     fun validateLockedFields(other: Utbetaling) {
-        if (sakId != other.sakId) badRequest("cant change immutable field", "sakId")
+        if (sakId != other.sakId) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID)
         // TODO: oppslag mot PDL, se at det fortsatt er samme person, ikke nødvendigvis samme ident
-        if (personident != other.personident) badRequest("cant change immutable field", "personident")
-        if (stønad != other.stønad) badRequest("cant change immutable field", "stønad")
+        if (personident != other.personident) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERSONIDENT)
+        if (stønad != other.stønad) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_STØNAD)
 
         if (satstype != other.satstype) {
-            badRequest(
-                msg = "can't change the flavour of perioder",
-                field = "perioder",
-                doc = "opprett_en_utbetaling",
-            )
+            badRequest("Kan ikke ha forskjellige satstyper")
         }
     }
 
     fun validateEqualityOnDelete(other: Utbetaling) {
         if (perioder != other.perioder) {
-            badRequest(
-                msg = "periodene i utbetalingen samsvarer ikke med det som er lagret hos utsjekk.",
-                field = "utbetaling",
-                doc = "opphor_en_utbetaling",
-            )
+            badRequest("Periodene i utbetalingen samsvarer ikke med det som er lagret hos utsjekk.")
         }
     }
 
@@ -128,11 +122,7 @@ data class Utbetaling(
                     && first.fastsattDagsats == second.fastsattDagsats
         }
         if (ingenEndring) {
-            conflict(
-                msg = "periods already exists",
-                field = "perioder",
-                doc = "opprett_en_utbetaling",
-            )
+            conflict(DocumentedErrors.Async.Utbetaling.MINIMUM_CHANGES)
         }
     }
 }
@@ -316,51 +306,12 @@ enum class StønadTypeHistorisk(override val klassekode: String) : Stønadstype 
     TILSKUDD_SMÅHJELPEMIDLER("HJRIM"),
 }
 
-
-// private fun satstype(fom: LocalDate, tom: LocalDate): Satstype =
-//     when {
-//         fom.dayOfMonth == 1 && tom.plusDays(1) == fom.plusMonths(1) -> Satstype.MND
-//         fom == tom -> if (fom.erHelg()) Satstype.DAG else Satstype.VIRKEDAG
-//         else -> Satstype.ENGANGS
-//     }
-
-// private fun satstype(satstyper: List<Satstype>): Satstype {
-//     if (satstyper.size == 1 && satstyper.none { it == Satstype.MND }) {
-//         return Satstype.ENGANGS
-//     }
-//     if (satstyper.all { it == Satstype.VIRKEDAG }) {
-//         return Satstype.VIRKEDAG
-//     }
-//     if (satstyper.all { it == Satstype.MND }) {
-//         return Satstype.MND
-//     }
-//     if (satstyper.any { it == Satstype.DAG }) {
-//         return Satstype.DAG
-//     }
-//
-//     badRequest(
-//         msg = "inkonsistens blant datoene i periodene.",
-//         doc = "utbetalinger/perioder"
-//     )
-// }
-
 private fun beløp(perioder: List<UtbetalingsperiodeApi>, satstype: Satstype): UInt =
     when (satstype) {
         Satstype.DAG, Satstype.VIRKEDAG, Satstype.MND ->
             perioder.map { it.beløp }.toSet().singleOrNull()
-                ?: badRequest(
-                    msg = "fant fler ulike beløp blant dagene",
-                    field = "beløp",
-                    doc =
-                    "opprett_en_utbetaling"
-                )
+                ?: badRequest("Fant fler ulike beløp blant dagene")
 
         else -> perioder.singleOrNull()?.beløp
-            ?: badRequest(
-                msg =
-                "forventet kun en periode, da sammenslåing av beløp ikke er støttet",
-                field = "beløp",
-                doc =
-                "${DEFAULT_DOC_STR}utbetalinger/perioder"
-            )
+            ?: badRequest("Forventet kun en periode, da sammenslåing av beløp ikke er støttet")
     }

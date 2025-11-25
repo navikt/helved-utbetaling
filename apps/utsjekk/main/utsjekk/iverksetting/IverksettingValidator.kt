@@ -1,10 +1,10 @@
 package utsjekk.iverksetting
 
+import models.badRequest
+import models.conflict
 import models.kontrakter.oppdrag.OppdragStatus
-import utsjekk.badRequest
-import utsjekk.conflict
+import models.locked
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.locked
 
 object IverksettingValidator {
 

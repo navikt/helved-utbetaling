@@ -17,7 +17,7 @@ sealed interface Result<out V, out E> {
                 val msg = "Result.catch failed with an unknown throwable"
                 appLog.error(msg)
                 secureLog.error(msg, e)
-                val error = ApiError(500, msg, DOC)
+                val error = ApiError(500, msg)
                 Err(StatusReply(status = Status.FEILET, error = error))
             }
         }
@@ -44,18 +44,18 @@ sealed interface Result<out V, out E> {
     }
 
     fun unwrapErr(): E = when (this) {
-        is Result.Ok -> error("Called Result.unwrapErr on an Ok")
-        is Result.Err -> error
+        is Ok -> error("Called Result.unwrapErr on an Ok")
+        is Err -> error
     }
 
     fun expect(msg: Any): V = when (this) {
-        is Result.Ok -> value
-        is Result.Err -> error("$msg $error")
+        is Ok -> value
+        is Err -> error("$msg $error")
     }
 
     fun <U> fold(success: (V) -> U, failure: (E) -> U): U = when (this) {
-        is Result.Ok -> success(value)
-        is Result.Err -> failure(error)
+        is Ok -> success(value)
+        is Err -> failure(error)
     }
 }
 

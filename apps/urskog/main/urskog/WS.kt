@@ -8,6 +8,7 @@ import libs.ws.SoapClient
 import libs.ws.StsClient
 import libs.ws.wsLog
 import libs.xml.XMLMapper
+import models.DocumentedErrors
 import models.badRequest
 import models.notFound
 import models.unprocessable
@@ -93,7 +94,7 @@ private fun Fault.panic(): Nothing {
         "Conversion from SOAP failed" -> {
             detail["CICSFault"]?.let { badRequest(it as String) }
         }
-        "Personen finnes ikke"  -> notFound("Personen finnes ikke")
+        "Personen finnes ikke"  -> notFound(DocumentedErrors.Async.Simulering.PERSONEN_FINNES_IKKE)
         else -> panic(this) 
     }
     panic(this) // fallback

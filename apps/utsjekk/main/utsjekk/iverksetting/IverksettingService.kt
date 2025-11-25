@@ -11,7 +11,6 @@ import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.abetal.OppdragService
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import utsjekk.unavailable
 import utsjekk.partition
 import utsjekk.utbetaling.UtbetalingId
 import java.util.UUID

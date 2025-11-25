@@ -1,6 +1,6 @@
 package utsjekk.utbetaling.simulering
 
-import utsjekk.notImplemented
+import models.notImplemented
 import utsjekk.simulering.client
 import utsjekk.utbetaling.FagsystemDto
 import utsjekk.utbetaling.Stønadstype

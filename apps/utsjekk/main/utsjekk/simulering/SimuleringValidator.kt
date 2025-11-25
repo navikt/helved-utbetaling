@@ -2,9 +2,9 @@ package utsjekk.simulering
 
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
+import models.badRequest
+import models.conflict
 import models.kontrakter.oppdrag.OppdragStatus
-import utsjekk.badRequest
-import utsjekk.conflict
 import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.behandlingId

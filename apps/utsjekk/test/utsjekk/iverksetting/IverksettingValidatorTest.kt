@@ -4,12 +4,12 @@ import TestData
 import TestRuntime
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
+import models.ApiError
 import models.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import utsjekk.ApiError
 import utsjekk.utbetaling.UtbetalingId
 import java.time.LocalDateTime
 import java.util.*

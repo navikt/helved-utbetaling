@@ -15,6 +15,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import libs.jdbc.concurrency.transaction
+import models.ApiError
+import models.DocumentedErrors
 import models.StatusReply
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -320,9 +322,9 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
+        val error = res.body<ApiError>()
         assertEquals(error.msg, "inkonsistens blant datoene i periodene.")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        assertEquals(error.doc, "opprett_en_utbetaling")
     }
 
     @Test
@@ -407,10 +409,9 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "periode strekker seg over årsskifte")
-        assertEquals(error.field, "tom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.ENGANGS_OVER_ÅRSSKIFTE.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.ENGANGS_OVER_ÅRSSKIFTE.doc, error.doc)
     }
 
     @Test
@@ -431,10 +432,9 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "fom må være før eller lik tom")
-        assertEquals(error.field, "fom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE.doc, error.doc)
     }
 
     @Test
@@ -456,10 +456,9 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "kan ikke sende inn duplikate perioder")
-        assertEquals(error.field, "fom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER.doc, error.doc)
     }
 
     @Test
@@ -481,10 +480,9 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "kan ikke sende inn duplikate perioder")
-        assertEquals(error.field, "tom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER.doc, error.doc)
     }
 
     @Test
@@ -503,10 +501,9 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "beløp kan ikke være 0")
-        assertEquals(error.field, "beløp")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_BELØP.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_BELØP.doc, error.doc)
     }
 
     @Test
@@ -526,10 +523,9 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "sakId kan være maks 30 tegn langt")
-        assertEquals(error.field, "sakId")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID.doc, error.doc)
     }
 
     @Test
@@ -549,10 +545,9 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "behandlingId kan være maks 30 tegn langt")
-        assertEquals(error.field, "behandlingId")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID.doc, error.doc)
     }
 
     @Test
@@ -610,15 +605,15 @@ class UtbetalingRoutingTest {
 
     @Test
     fun `not found when Utbetaling is missing`() = runTest {
-        val error = httpClient.get("/utbetalinger/${UUID.randomUUID()}") {
+        val uid = UUID.randomUUID()
+        val error = httpClient.get("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.also {
             assertEquals(HttpStatusCode.NotFound, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("Fant ikke utbetaling", error.msg)
-        assertEquals("uid", error.field)
-        assertEquals(DEFAULT_DOC_STR, error.doc)
+        }.body<ApiError>()
+        assertEquals("Fant ikke utbetaling med uid $uid", error.msg)
+        assertEquals(DocumentedErrors.BASE, error.doc)
     }
 
     @Test
@@ -798,10 +793,9 @@ class UtbetalingRoutingTest {
             setBody(updatedUtbetaling)
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("cant change immutable field", error.msg)
-        assertEquals("sakId", error.field)
-        assertEquals(DEFAULT_DOC_STR, error.doc)
+        }.body<ApiError>()
+        assertEquals("Kan ikke endre felt 'sakId'", error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID.doc, error.doc)
     }
 
     @Test
@@ -836,10 +830,9 @@ class UtbetalingRoutingTest {
             setBody(updatedUtbetaling)
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("cant change immutable field", error.msg)
-        assertEquals("personident", error.field)
-        assertEquals(DEFAULT_DOC_STR, error.doc)
+        }.body<ApiError>()
+        assertEquals("Kan ikke endre felt 'personident'", error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERSONIDENT.doc, error.doc)
     }
 
     @Test
@@ -874,10 +867,9 @@ class UtbetalingRoutingTest {
             setBody(updatedUtbetaling)
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("cant change immutable field", error.msg)
-        assertEquals("stønad", error.field)
-        assertEquals(DEFAULT_DOC_STR, error.doc)
+        }.body<ApiError>()
+        assertEquals("Kan ikke endre felt 'stønad'", error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_STØNAD.doc, error.doc)
     }
 
     @Test
@@ -917,10 +909,9 @@ class UtbetalingRoutingTest {
             setBody(updatedUtbetaling)
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("can't change the flavour of perioder", error.msg)
-        assertEquals("perioder", error.field)
-        assertEquals("${DEFAULT_DOC_STR}opprett_en_utbetaling", error.doc)
+        }.body<ApiError>()
+        assertEquals("Kan ikke ha forskjellige satstyper", error.msg)
+        assertEquals(DocumentedErrors.BASE, error.doc)
     }
 
     @Test
@@ -959,10 +950,9 @@ class UtbetalingRoutingTest {
             accept(ContentType.Application.Json)
         }.also {
             assertEquals(HttpStatusCode.NotFound, it.status)
-            val error = it.body<ApiError.Response>()
-            assertEquals("Fant ikke utbetaling", error.msg)
-            assertEquals("uid", error.field)
-            assertEquals(DEFAULT_DOC_STR, error.doc)
+            val error = it.body<ApiError>()
+            assertEquals("Fant ikke utbetaling med uid $uid", error.msg)
+            assertEquals(DocumentedErrors.BASE, error.doc)
         }
     }
 
@@ -1007,10 +997,9 @@ class UtbetalingRoutingTest {
             accept(ContentType.Application.Json)
         }.also {
             assertEquals(HttpStatusCode.NotFound, it.status)
-            val error = it.body<ApiError.Response>()
-            assertEquals("Fant ikke utbetaling", error.msg)
-            assertEquals("uid", error.field)
-            assertEquals(DEFAULT_DOC_STR, error.doc)
+            val error = it.body<ApiError>()
+            assertEquals("Fant ikke utbetaling med uid $uid", error.msg)
+            assertEquals(DocumentedErrors.BASE, error.doc)
         }
     }
 
@@ -1045,10 +1034,9 @@ class UtbetalingRoutingTest {
                 perioder = utbetaling.perioder + UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u) 
             ))
         }.also {
-            val error = it.body<ApiError.Response>()
-            assertEquals("periodene i utbetalingen samsvarer ikke med det som er lagret hos utsjekk.", error.msg)
-            assertEquals("utbetaling", error.field)
-            assertEquals("${DEFAULT_DOC_STR}opphor_en_utbetaling", error.doc)
+            val error = it.body<ApiError>()
+            assertEquals("Periodene i utbetalingen samsvarer ikke med det som er lagret hos utsjekk.", error.msg)
+            assertEquals(DocumentedErrors.BASE, error.doc)
             assertEquals(HttpStatusCode.BadRequest, it.status)
         }
         httpClient.get("/utbetalinger/${uid}") {
@@ -1100,9 +1088,8 @@ class UtbetalingRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "perioder kan ikke være tom")
-        assertEquals(error.field, "perioder")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER.doc, error.doc)
     }
 }

@@ -158,9 +158,3 @@ private val xmlMapper: ObjectMapper =
                     LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"))
                 )
         )
-
-// class IkkeFunnet(feilmelding: String) : RuntimeException(feilmelding)
-// class FinnesFraFør(feilmelding: String) : RuntimeException(feilmelding)
-// class RequestErUgyldigException(feilmelding: String) : RuntimeException(feilmelding)
-// class OppdragErStengtException : RuntimeException("Oppdrag/UR er stengt")
-// class ServiceUserPermissionException(feilmelding: String) : RuntimeException(feilmelding)

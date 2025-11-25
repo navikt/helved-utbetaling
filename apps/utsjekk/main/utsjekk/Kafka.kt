@@ -1,10 +1,6 @@
 package utsjekk
 
 import java.util.UUID
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
@@ -18,7 +14,6 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.common.utils.Utils
 import utsjekk.iverksetting.OppdragResultat
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.simulering.SimuleringSubscriptions
 import utsjekk.utbetaling.UtbetalingDao
 import utsjekk.utbetaling.UtbetalingId
 import kotlin.time.Duration.Companion.hours
