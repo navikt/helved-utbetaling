@@ -794,7 +794,7 @@ class UtbetalingRoutingTest {
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
         }.body<ApiError>()
-        assertEquals("Kan ikke endre felt 'sakId'", error.msg)
+        assertEquals("Kan ikke endre 'sakId'", error.msg)
         assertEquals(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID.doc, error.doc)
     }
 
@@ -831,7 +831,7 @@ class UtbetalingRoutingTest {
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
         }.body<ApiError>()
-        assertEquals("Kan ikke endre felt 'personident'", error.msg)
+        assertEquals("Kan ikke endre 'personident'", error.msg)
         assertEquals(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERSONIDENT.doc, error.doc)
     }
 
@@ -868,7 +868,7 @@ class UtbetalingRoutingTest {
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
         }.body<ApiError>()
-        assertEquals("Kan ikke endre felt 'stønad'", error.msg)
+        assertEquals("Kan ikke endre 'stønad'", error.msg)
         assertEquals(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_STØNAD.doc, error.doc)
     }
 
