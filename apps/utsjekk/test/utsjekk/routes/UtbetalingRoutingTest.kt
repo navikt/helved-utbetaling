@@ -5,23 +5,21 @@ import httpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.test.runTest
+import libs.jdbc.concurrency.transaction
+import models.*
+import models.kontrakter.felles.objectMapper
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+import utsjekk.Topics
+import utsjekk.iverksetting.RandomOSURId
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlin.test.assertNotNull
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
-import libs.jdbc.concurrency.transaction
-import models.ApiError
-import models.DocumentedErrors
-import models.StatusReply
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
-import utsjekk.*
-import utsjekk.iverksetting.RandomOSURId
 
 class UtbetalingRoutingTest {
 
@@ -121,7 +119,8 @@ class UtbetalingRoutingTest {
         val oppdrag = oppdragTopic.history().singleOrNull { (key, _) -> key == uid.toString() }?.second
         assertNotNull(oppdrag)
         assertEquals("DP", oppdrag.oppdrag110.avstemming115.kodeKomponent)
-        val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+        val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0))
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
         assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.nokkelAvstemming)
         assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.tidspktMelding)
     }
@@ -175,6 +174,7 @@ class UtbetalingRoutingTest {
         assertNotNull(actual)
         assertEquals("NY", actual.oppdrag110.kodeEndring)
     }
+
     @Test
     fun `hvis erFørsteUtbetaling lik null på sak og den finnes i basen skal kodeendring være lik ENDR`() = runTest {
         val utbetaling = UtbetalingApi.dagpenger(
@@ -200,12 +200,12 @@ class UtbetalingRoutingTest {
         assertNotNull(oppdrag)
         assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
 
-        val endretUtbetaling = utbetaling.copy(perioder = listOf(utbetaling.perioder[0].copy(beløp=1u)))
+        val endretUtbetaling = utbetaling.copy(perioder = listOf(utbetaling.perioder[0].copy(beløp = 1u)))
         TestRuntime.topics.status.produce(uid.toString()) {
             StatusReply.ok(oppdrag)
         }
         val status = runBlocking {
-                withTimeout(1000L) {
+            withTimeout(1000L) {
                 var status: Status? = null
                 while (status != Status.OK) {
                     httpClient.get("/utbetalinger/$uid/status") {
@@ -983,12 +983,14 @@ class UtbetalingRoutingTest {
         httpClient.delete("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(utbetaling.copy(
-                behandlingId = utbetaling.behandlingId + "ny",
-                vedtakstidspunkt = LocalDateTime.now().plusDays(1),
-                beslutterId = "X654321",
-                saksbehandlerId = "Y654321",
-            ))
+            setBody(
+                utbetaling.copy(
+                    behandlingId = utbetaling.behandlingId + "ny",
+                    vedtakstidspunkt = LocalDateTime.now().plusDays(1),
+                    beslutterId = "X654321",
+                    saksbehandlerId = "Y654321",
+                )
+            )
         }.also {
             assertEquals(HttpStatusCode.NoContent, it.status)
         }
@@ -1030,9 +1032,11 @@ class UtbetalingRoutingTest {
         httpClient.delete("/utbetalinger/$uid") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(utbetaling.copy(
-                perioder = utbetaling.perioder + UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u) 
-            ))
+            setBody(
+                utbetaling.copy(
+                    perioder = utbetaling.perioder + UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u)
+                )
+            )
         }.also {
             val error = it.body<ApiError>()
             assertEquals("Periodene i utbetalingen samsvarer ikke med det som er lagret hos utsjekk.", error.msg)
@@ -1044,7 +1048,7 @@ class UtbetalingRoutingTest {
             accept(ContentType.Application.Json)
         }
     }
-    
+
 
     @Test
     fun `can get UtbetalingStatus`() = runTest() {
@@ -1091,5 +1095,111 @@ class UtbetalingRoutingTest {
         val error = res.body<ApiError>()
         assertEquals(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER.msg, error.msg)
         assertEquals(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER.doc, error.doc)
+    }
+
+    @Test
+    fun `sorterer perioder på fom`() = runTest(TestRuntime.context) {
+        val utbetaling = objectMapper.readValue("""
+            {
+              "sakId": "AS2511250136",
+              "behandlingId": "1",
+              "personident": "15418829955",
+              "vedtakstidspunkt": "2025-10-20T00:00:00",
+              "stønad": "AAP_UNDER_ARBEIDSAVKLARING",
+              "beslutterId": "B22222",
+              "saksbehandlerId": "S11111",
+              "periodeType": "UKEDAG",
+              "perioder": [
+                 {
+                  "fom": "2025-06-02",
+                  "tom": "2025-06-02",
+                  "beløp": 1000,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                },
+                {
+                  "fom": "2025-06-03",
+                  "tom": "2025-06-03",
+                  "beløp": 1000,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                },
+                {
+                  "fom": "2025-06-04",
+                  "tom": "2025-06-04",
+                  "beløp": 900,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                },
+                {
+                  "fom": "2025-06-05",
+                  "tom": "2025-06-05",
+                  "beløp": 800,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                },
+                {
+                  "fom": "2025-06-06",
+                  "tom": "2025-06-06",
+                  "beløp": 1000,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                },
+                {
+                  "fom": "2025-06-09",
+                  "tom": "2025-06-09",
+                  "beløp": 1000,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                },
+                {
+                  "fom": "2025-06-10",
+                  "tom": "2025-06-10",
+                  "beløp": 700,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                },
+                 {
+                  "fom": "2025-06-11",
+                  "tom": "2025-06-11",
+                  "beløp": 700,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                },
+                {
+                  "fom": "2025-06-12",
+                  "tom": "2025-06-12",
+                  "beløp": 1000,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                },
+                {
+                  "fom": "2025-06-13",
+                  "tom": "2025-06-13",
+                  "beløp": 1000,
+                  "betalendeEnhet": null,
+                  "fastsattDagsats": 1000
+                }
+              ],
+              "avvent": null
+            }
+        """.trimIndent(),
+            UtbetalingApi::class.java
+        )
+
+        httpClient.post("/utbetalinger/${UUID.randomUUID()}") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        val producer = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        val history = producer.history()
+
+        history.first().second.oppdrag110.oppdragsLinje150s
+            .sortedBy { Instant.from(it.datoVedtakFom.toGregorianCalendar().toZonedDateTime()) }
+            .windowed(2, 1) { (a, b) ->
+                assertEquals(b.refDelytelseId, a.delytelseId)
+            }
     }
 }

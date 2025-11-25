@@ -89,7 +89,9 @@ data class Utbetaling(
                             }
                         }
                             .map { Utbetalingsperiode.from(it, Satstype.from(dto.periodeType)) }
-                    }.flatten()
+                    }
+                    .flatten()
+                    .sortedBy { it.fom },
             )
     }
 
