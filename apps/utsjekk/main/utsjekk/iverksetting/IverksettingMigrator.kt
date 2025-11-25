@@ -10,8 +10,20 @@ import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
 import libs.utils.appLog
 import libs.utils.secureLog
+import models.Action
+import models.BehandlingId
+import models.Navident
 import models.PeriodeId
+import models.Periodetype
+import models.Personident
+import models.Stønadstype
+import models.UtbetalingId
+import models.Utbetalingsperiode
+import models.badRequest
 import models.kontrakter.oppdrag.OppdragStatus
+import models.locked
+import models.notFound
+import models.notImplemented
 import utsjekk.*
 import utsjekk.iverksetting.resultat.IverksettingResultater
 import java.util.UUID
@@ -90,26 +102,26 @@ class IverksettingMigrator(
         originalKey = iverksetting.iverksettingId?.id ?: iverksetting.behandlingId.id,
         fagsystem = fagsystem,
         uid = req.uid
-            ?.let { models.UtbetalingId(it) } 
-            ?: uid(iverksetting.sakId.id, requireNotNull(req.meldeperiode), models.Stønadstype.fraKode(klassekode), fagsystem),
-        action = models.Action.CREATE, 
+            ?.let { UtbetalingId(it) }
+            ?: uid(iverksetting.sakId.id, requireNotNull(req.meldeperiode), Stønadstype.fraKode(klassekode), fagsystem),
+        action = Action.CREATE,
         førsteUtbetalingPåSak = false,
         sakId = models.SakId(iverksetting.sakId.id),
-        behandlingId = models.BehandlingId(iverksetting.behandlingId.id),
+        behandlingId = BehandlingId(iverksetting.behandlingId.id),
         lastPeriodeId = andeler.mapNotNull { it.periodeId }.maxByOrNull { it }?.let { PeriodeId("${iverksetting.sakId.id}#$it") } ?: error("fant ingen siste periode id for $req"),
-        personident = models.Personident(iverksetting.personident),
+        personident = Personident(iverksetting.personident),
         vedtakstidspunkt = iverksetting.vedtak.vedtakstidspunkt,
-        stønad = models.Stønadstype.fraKode(klassekode),
-        beslutterId = models.Navident(iverksetting.vedtak.beslutterId),
-        saksbehandlerId = models.Navident(iverksetting.vedtak.saksbehandlerId),
-        periodetype = models.Periodetype.UKEDAG,
+        stønad = Stønadstype.fraKode(klassekode),
+        beslutterId = Navident(iverksetting.vedtak.beslutterId),
+        saksbehandlerId = Navident(iverksetting.vedtak.saksbehandlerId),
+        periodetype = Periodetype.UKEDAG,
         avvent = null,
-        perioder = andeler.map { models.Utbetalingsperiode(it.fom, it.tom, it.beløp.toUInt()) },
+        perioder = andeler.map { Utbetalingsperiode(it.fom, it.tom, it.beløp.toUInt()) },
     )
 }
 
-fun uid(sakId: String, meldeperiode: String, stønad: models.Stønadstype, fagsystem: models.Fagsystem): models.UtbetalingId {
-    return models.UtbetalingId(
+fun uid(sakId: String, meldeperiode: String, stønad: Stønadstype, fagsystem: models.Fagsystem): UtbetalingId {
+    return UtbetalingId(
         models.uuid(sakId = models.SakId(sakId),
             fagsystem = fagsystem,
             meldeperiode = meldeperiode,

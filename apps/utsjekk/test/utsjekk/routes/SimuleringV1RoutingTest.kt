@@ -13,11 +13,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
+import models.ApiError
+import models.DocumentedErrors
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import utsjekk.ApiError
-import utsjekk.DEFAULT_DOC_STR
 import utsjekk.iverksetting.RandomOSURId
 
 class SimuleringRoutingTest {
@@ -113,9 +113,9 @@ class SimuleringRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
+        val error = res.body<ApiError>()
         assertEquals(error.msg, "inkonsistens blant datoene i periodene.")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        assertEquals(error.doc, "opprett_en_utbetaling")
     }
 
     @Test
@@ -136,10 +136,9 @@ class SimuleringRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "periode strekker seg over årsskifte")
-        assertEquals(error.field, "tom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.ENGANGS_OVER_ÅRSSKIFTE.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.ENGANGS_OVER_ÅRSSKIFTE.doc, error.doc)
     }
 
     @Test
@@ -160,10 +159,9 @@ class SimuleringRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "fom må være før eller lik tom")
-        assertEquals(error.field, "fom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE.doc, error.doc)
     }
 
     @Test
@@ -185,10 +183,9 @@ class SimuleringRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "kan ikke sende inn duplikate perioder")
-        assertEquals(error.field, "fom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER.doc, error.doc)
     }
 
     @Test
@@ -210,10 +207,9 @@ class SimuleringRoutingTest {
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
-        val error = res.body<ApiError.Response>()
-        assertEquals(error.msg, "kan ikke sende inn duplikate perioder")
-        assertEquals(error.field, "tom")
-        assertEquals(error.doc, "${DEFAULT_DOC_STR}opprett_en_utbetaling")
+        val error = res.body<ApiError>()
+        assertEquals(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER.msg, error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER.doc, error.doc)
     }
 
     @Test
@@ -339,10 +335,9 @@ class SimuleringRoutingTest {
             setBody(updatedUtbetaling)
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("cant change immutable field", error.msg)
-        assertEquals("sakId", error.field)
-        assertEquals(DEFAULT_DOC_STR, error.doc)
+        }.body<ApiError>()
+        assertEquals("Kan ikke endre felt 'sakId'", error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID.doc, error.doc)
     }
 
     @Test
@@ -371,10 +366,9 @@ class SimuleringRoutingTest {
             setBody(updatedUtbetaling)
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("cant change immutable field", error.msg)
-        assertEquals("personident", error.field)
-        assertEquals(DEFAULT_DOC_STR, error.doc)
+        }.body<ApiError>()
+        assertEquals("Kan ikke endre felt 'personident'", error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERSONIDENT.doc, error.doc)
     }
 
     @Test
@@ -403,10 +397,9 @@ class SimuleringRoutingTest {
             setBody(updatedUtbetaling)
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("cant change immutable field", error.msg)
-        assertEquals("stønad", error.field)
-        assertEquals(DEFAULT_DOC_STR, error.doc)
+        }.body<ApiError>()
+        assertEquals("Kan ikke endre felt 'stønad'", error.msg)
+        assertEquals(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_STØNAD.doc, error.doc)
     }
 
     @Test
@@ -440,10 +433,9 @@ class SimuleringRoutingTest {
             setBody(updatedUtbetaling)
         }.also {
             assertEquals(HttpStatusCode.BadRequest, it.status)
-        }.body<ApiError.Response>()
-        assertEquals("can't change the flavour of perioder", error.msg)
-        assertEquals("perioder", error.field)
-        assertEquals("${DEFAULT_DOC_STR}opprett_en_utbetaling", error.doc)
+        }.body<ApiError>()
+        assertEquals("Kan ikke ha forskjellige satstyper", error.msg)
+        assertEquals(DocumentedErrors.BASE, error.doc)
     }
 
     @Test

@@ -3,8 +3,8 @@ package utsjekk.utbetaling.simulering
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
+import models.notFound
 import utsjekk.clients.SimuleringClient
-import utsjekk.notFound
 import utsjekk.utbetaling.FagsystemDto
 import utsjekk.utbetaling.Opphør
 import utsjekk.utbetaling.PeriodeId
@@ -61,7 +61,7 @@ class SimuleringService(
     ): SimuleringApi {
         val dao = withContext(Jdbc.context) {
             transaction {
-                UtbetalingDao.findOrNull(uid)?.data ?: notFound("utbetaling $uid")
+                UtbetalingDao.findOrNull(uid)?.data ?: notFound("Fant ikke utbetaling med uid $uid")
             }
         }
 

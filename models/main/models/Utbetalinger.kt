@@ -1,21 +1,44 @@
 package models
 
 import com.fasterxml.jackson.annotation.JsonCreator
-import java.util.UUID
-import java.util.Base64
+import libs.utils.appLog
+import libs.utils.secureLog
 import java.nio.ByteBuffer
 import java.security.MessageDigest
-import java.time.*
-import kotlin.getOrThrow
-import libs.utils.secureLog
-import libs.utils.appLog
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.Base64
+import java.util.UUID
 
-@JvmInline value class SakId(val id: String) { override fun toString(): String = id }
-@JvmInline value class BehandlingId(val id: String) { override fun toString(): String = id }
-@JvmInline value class NavEnhet(val enhet: String) { override fun toString(): String = enhet }
-@JvmInline value class Personident(val ident: String) { override fun toString(): String = ident }
-@JvmInline value class Navident(val ident: String) { override fun toString(): String = ident }
-@JvmInline value class UtbetalingId(val id: UUID) { override fun toString(): String = id.toString() }
+@JvmInline
+value class SakId(val id: String) {
+    override fun toString(): String = id
+}
+
+@JvmInline
+value class BehandlingId(val id: String) {
+    override fun toString(): String = id
+}
+
+@JvmInline
+value class NavEnhet(val enhet: String) {
+    override fun toString(): String = enhet
+}
+
+@JvmInline
+value class Personident(val ident: String) {
+    override fun toString(): String = ident
+}
+
+@JvmInline
+value class Navident(val ident: String) {
+    override fun toString(): String = ident
+}
+
+@JvmInline
+value class UtbetalingId(val id: UUID) {
+    override fun toString(): String = id.toString()
+}
 
 data class Utbetaling(
     val dryrun: Boolean,
@@ -56,17 +79,17 @@ data class Utbetaling(
         }
 
         val isDuplicate = uid == other.uid
-            && action == other.action 
-            && sakId == other.sakId 
-            && behandlingId == other.behandlingId 
-            && personident == other.personident
-            && vedtakstidspunkt.equals(other.vedtakstidspunkt)
-            && stønad == other.stønad
-            && beslutterId == other.beslutterId
-            && saksbehandlerId == other.saksbehandlerId
-            && periodetype == other.periodetype
-            && avvent == other.avvent
-            && perioder == other.perioder
+                && action == other.action
+                && sakId == other.sakId
+                && behandlingId == other.behandlingId
+                && personident == other.personident
+                && vedtakstidspunkt.equals(other.vedtakstidspunkt)
+                && stønad == other.stønad
+                && beslutterId == other.beslutterId
+                && saksbehandlerId == other.saksbehandlerId
+                && periodetype == other.periodetype
+                && avvent == other.avvent
+                && perioder == other.perioder
 
 
         if (isDuplicate) {
@@ -95,112 +118,90 @@ data class Avvent(
 
 fun Utbetaling.failOnEmptyPerioder() {
     if (perioder.isEmpty()) {
-        badRequest(
-            msg = "perioder kan ikke være tom",
-            doc = "opprett_en_utbetaling"
-        )
+        badRequest(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER)
     }
 }
 
 fun Utbetaling.validateLockedFields(other: Utbetaling) {
-    if (sakId != other.sakId) badRequest("can't change immutable field 'sakId'")
-    if (personident != other.personident) badRequest("can't change immutable field 'personident'")
-    if (stønad != other.stønad) badRequest("can't change immutable field 'stønad'")
-    if (periodetype != other.periodetype) badRequest("can't change immutable field 'periodetype'")
+    if (sakId != other.sakId) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID)
+    if (personident != other.personident) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERSONIDENT)
+    if (stønad != other.stønad) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_STØNAD)
+    if (periodetype != other.periodetype) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERIODETYPE)
 }
 
 fun Utbetaling.preValidateLockedFields(other: Utbetaling) {
-    if (sakId != other.sakId) badRequest("can't change immutable field 'sakId'")
-    if (personident != other.personident) badRequest("can't change immutable field 'personident'")
-    if (periodetype != other.periodetype) badRequest("can't change immutable field 'periodetype'")
+    if (sakId != other.sakId) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID)
+    if (personident != other.personident) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERSONIDENT)
+    if (periodetype != other.periodetype) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERIODETYPE)
 }
 
 fun Utbetaling.validateMinimumChanges(other: Utbetaling) {
     if (perioder.size != other.perioder.size) return
-    val ingenEndring = perioder.sortedBy { it.hashCode() }.zip(other.perioder.sortedBy { it.hashCode() }).all { (l, r) -> l.beløp == r.beløp && l.fom.equals(r.fom) && l.tom.equals(r.tom) && l.vedtakssats == r.vedtakssats }
-    if (ingenEndring) conflict("periods already exists", "opprett_en_utbetaling")
+    val ingenEndring = perioder.sortedBy { it.hashCode() }.zip(other.perioder.sortedBy { it.hashCode() })
+        .all { (l, r) -> l.beløp == r.beløp && l.fom.equals(r.fom) && l.tom.equals(r.tom) && l.vedtakssats == r.vedtakssats }
+    if (ingenEndring) conflict(DocumentedErrors.Async.Utbetaling.MINIMUM_CHANGES)
 }
 
 fun Utbetaling.failOnÅrsskifte() {
     if (periodetype != Periodetype.EN_GANG) return
     if (perioder.minBy { it.fom }.fom.year != perioder.maxBy { it.tom }.tom.year) {
-        badRequest("periode strekker seg over årsskifte", "opprett_en_utbetaling")
+        badRequest(DocumentedErrors.Async.Utbetaling.ENGANGS_OVER_ÅRSSKIFTE)
     }
 }
 
 fun Utbetaling.failOnZeroBeløp() {
     if (perioder.any { it.beløp == 0u }) {
-        badRequest("beløp kan ikke være 0", "opprett_en_utbetaling")
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BELØP)
     }
 }
 
 fun Utbetaling.failOnDuplicatePerioder() {
     val dupFom = perioder.groupBy { it.fom }.any { (_, perioder) -> perioder.size != 1 }
-    if (dupFom) badRequest("kan ikke sende inn duplikate perioder", "opprett_en_utbetaling#Duplikate%20perioder")
+    if (dupFom) badRequest(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER)
     val dupTom = perioder.groupBy { it.tom }.any { (_, perioder) -> perioder.size != 1 }
-    if (dupTom) badRequest("kan ikke sende inn duplikate perioder", "opprett_en_utbetaling#Duplikate%20perioder")
+    if (dupTom) badRequest(DocumentedErrors.Async.Utbetaling.DUPLIKATE_PERIODER)
 }
 
 fun Utbetaling.failOnTomBeforeFom() {
-    if (!perioder.all { it.fom <= it.tom }) badRequest("fom må være før eller lik tom", "opprett_en_utbetaling")
+    if (!perioder.all { it.fom <= it.tom }) badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE)
 }
 
 fun Utbetaling.failOnIllegalFutureUtbetaling() {
     if (stønad is StønadTypeTilleggsstønader) return
-    val isDay = periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG) 
-    val dayIsFuture = perioder.maxBy{ it.tom }.tom.isAfter(LocalDate.now()) 
-    if (isDay && dayIsFuture) badRequest(
-        "fremtidige utbetalinger er ikke støttet for periode dag/ukedag",
-        "opprett_en_utbetaling"
-    )
+    val isDay = periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG)
+    val dayIsFuture = perioder.maxBy { it.tom }.tom.isAfter(LocalDate.now())
+    if (isDay && dayIsFuture) badRequest(DocumentedErrors.Async.Utbetaling.FREMTIDIG_UTBETALING)
 }
 
 fun Utbetaling.failOnTooManyPeriods() {
     if (periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG)) {
         val min = perioder.minBy { it.fom }.fom
         val max = perioder.maxBy { it.tom }.tom
-        val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max)+1 > 1000 
-        if (tooManyPeriods) badRequest("$periodetype støtter maks periode på 1000 dager", "opprett_en_utbetaling")
+        val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max) + 1 > 1000
+        if (tooManyPeriods) badRequest(DocumentedErrors.Async.Utbetaling.FOR_LANG_UTBETALING)
     }
 }
 
 fun Utbetaling.failOnTooLongSakId() {
     if (sakId.id.length > 30) {
-        badRequest("sakId kan være maks 30 tegn langt", "opprett_en_utbetaling")
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
     }
 }
 
 fun Utbetaling.failOnTooLongBehandlingId() {
     if (behandlingId.id.length > 30) {
-        badRequest("behandlingId kan være maks 30 tegn langt", "opprett_en_utbetaling")
-    }
-}
-
-fun Utbetaling.failOnWeekendInPeriodetypeDag() {
-    if (periodetype == Periodetype.UKEDAG) {
-
-        val harHelgedager = perioder.any { periode ->
-            generateSequence(periode.fom) { it.plusDays(1) }
-                .takeWhile { !it.isAfter(periode.tom) }
-                .any { it.erHelg() }
-        }
-
-        if (harHelgedager) {
-            badRequest(
-                msg = "periodetype DAG kan ikke inneholde helgedager (lørdag/søndag)",
-                doc = "opprett_en_utbetaling"
-            )
-        }
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
     }
 }
 
 @JvmInline
-value class PeriodeId (private val id: String) {
+value class PeriodeId(private val id: String) {
     constructor() : this(UUID.randomUUID().toString())
 
-    init { 
+    init {
         toString() // verifiser at encoding blir under 30 tegn
     }
+
     companion object {
         fun decode(encoded: String): PeriodeId {
             try {
@@ -246,7 +247,7 @@ data class Utbetalingsperiode(
     val beløp: UInt,
     val betalendeEnhet: NavEnhet? = null,
     val vedtakssats: UInt? = null,
-) 
+)
 
 fun List<Utbetalingsperiode>.betalendeEnhet(): NavEnhet? {
     return sortedBy { it.tom }.find { it.betalendeEnhet != null }?.betalendeEnhet
@@ -393,10 +394,11 @@ fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetaling
 
 private fun beløp(perioder: List<Utbetalingsperiode>, periodetype: Periodetype): UInt =
     when (periodetype) {
-        Periodetype.DAG, Periodetype.UKEDAG, Periodetype.MND -> perioder.map { it.beløp }.toSet().singleOrNull() ?: 
-            badRequest("fant fler ulike beløp blant dagene", "opprett_en_utbetaling")
-        else -> perioder.singleOrNull()?.beløp ?: 
-            badRequest("forventet kun en periode, da sammenslåing av beløp ikke er støttet", "opprett_en_utbetaling")
+        Periodetype.DAG, Periodetype.UKEDAG, Periodetype.MND -> perioder.map { it.beløp }.toSet().singleOrNull()
+            ?: badRequest("Fant fler ulike beløp blant dagene")
+
+        else -> perioder.singleOrNull()?.beløp
+            ?: badRequest("Forventet kun en periode, da sammenslåing av beløp ikke er støttet")
     }
 
 fun uuid(

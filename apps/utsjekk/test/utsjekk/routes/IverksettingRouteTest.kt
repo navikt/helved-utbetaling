@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.transaction
 import libs.jdbc.*
+import models.DocumentedErrors
 import models.Status
 import models.StatusReply
 import models.kontrakter.felles.Fagsystem
@@ -25,7 +26,6 @@ import models.kontrakter.oppdrag.OppdragStatus
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import utsjekk.DEFAULT_DOC_STR
 import utsjekk.iverksetting.BehandlingId
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.IverksettingId
@@ -173,7 +173,7 @@ class IverksettingRouteTest {
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
         assertEquals(
-            """{"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","field":null,"doc":"$DEFAULT_DOC_STR"}""",
+            """{"statusCode":400,"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","doc":"${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling","system":"HELVED","suppressed":[]}""",
             res.bodyAsText()
         )
     }

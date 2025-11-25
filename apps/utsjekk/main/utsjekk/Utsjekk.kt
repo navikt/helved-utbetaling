@@ -30,6 +30,8 @@ import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.utils.appLog
 import libs.utils.secureLog
+import models.ApiError
+import models.forbidden
 import models.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
 import utsjekk.iverksetting.IverksettingService
@@ -113,20 +115,18 @@ fun Application.utsjekk(
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             when (cause) {
-                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause.asResponse)
-                is models.ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
+                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
                 is BadRequestException -> {
                     val msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
-                    appLog.debug(msg) // client error
-                    secureLog.debug(msg, cause) // client error
-                    val res = ApiError.Response(msg = msg, field = null, doc = DEFAULT_DOC_STR)
+                    appLog.debug(msg)
+                    secureLog.debug(msg, cause)
+                    val res = ApiError(statusCode = 400, msg = msg)
                     call.respond(HttpStatusCode.BadRequest, res)
                 }
                 else -> {
                     val msg = "Ukjent feil, helved er varslet."
                     appLog.error(msg, cause)
-                    // secureLog.error(msg, cause)
-                    val res = ApiError.Response(msg = msg, field = null, doc = "")
+                    val res = ApiError(statusCode = 500, msg = msg)
                     call.respond(HttpStatusCode.InternalServerError, res)
                 }
             }
@@ -174,7 +174,7 @@ fun ApplicationCall.client(): Client =
         ?.split(":")
         ?.last()
         ?.let(::Client)
-        ?: forbidden("missing JWT claim", "azp_name", "kom_i_gang")
+        ?: forbidden("missing JWT claim")
 
 fun ApplicationCall.hasClaim(claim: String): Boolean =
     principal<JWTPrincipal>()?.getClaim(claim, String::class) != null

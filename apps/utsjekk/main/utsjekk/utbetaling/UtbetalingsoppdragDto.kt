@@ -1,9 +1,9 @@
 package utsjekk.utbetaling
 
+import models.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import utsjekk.badRequest
 
 enum class FagsystemDto(val kode: String) {
     DAGPENGER("DP"),
@@ -16,7 +16,7 @@ enum class FagsystemDto(val kode: String) {
         fun from(stønad: Stønadstype): FagsystemDto {
             return FagsystemDto.entries
                 .find { it.name == stønad.asFagsystemStr() }
-                ?: badRequest("$stønad er ukjent fagsystem")
+                ?: badRequest("$stønad tilhører et ukjent fagsystem")
         }
     }
 }

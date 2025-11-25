@@ -1,6 +1,7 @@
 package utsjekk.iverksetting
 
 import TestData
+import models.ApiError
 import models.kontrakter.felles.*
 import models.kontrakter.iverksett.Ferietillegg
 import models.kontrakter.iverksett.ForrigeIverksettingV2Dto
@@ -9,7 +10,6 @@ import models.kontrakter.iverksett.StønadsdataTiltakspengerV2Dto
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import utsjekk.ApiError
 import java.time.LocalDate
 import java.util.*
 
@@ -21,8 +21,7 @@ class IverksettingDtoValidatorTest {
         val ex = assertThrows<ApiError> {
             sakIdTilfredsstillerLengdebegrensning(iverksettDto)
         }
-        assertEquals("lengde må være [1 <= ${GyldigSakId.MAKSLENGDE}]", ex.msg)
-        assertEquals("sakId", ex.field)
+        assertEquals("Sak-ID må være mellom 1 og ${GyldigSakId.MAKSLENGDE} tegn", ex.msg)
         assertEquals(400, ex.statusCode)
     }
 
@@ -33,8 +32,7 @@ class IverksettingDtoValidatorTest {
         val ex = assertThrows<ApiError> {
             behandlingIdTilfredsstillerLengdebegrensning(iverksettDto)
         }
-        assertEquals("lengde må være [1 <= ${GyldigBehandlingId.MAKSLENGDE}]", ex.msg)
-        assertEquals("behandlingId", ex.field)
+        assertEquals("Behandling-ID må være mellom 1 og ${GyldigBehandlingId.MAKSLENGDE} tegn", ex.msg)
         assertEquals(400, ex.statusCode)
     }
 
@@ -59,8 +57,7 @@ class IverksettingDtoValidatorTest {
         val ex = assertThrows<ApiError> {
             fraOgMedKommerFørTilOgMedIUtbetalingsperioder(iverksettDto)
         }
-        assertEquals("fom må være før eller lik tom", ex.msg)
-        assertEquals("fraOgMedDato/tilOgMedDato", ex.field)
+        assertEquals("Tom må være >= fom", ex.msg)
         assertEquals(400, ex.statusCode)
     }
 

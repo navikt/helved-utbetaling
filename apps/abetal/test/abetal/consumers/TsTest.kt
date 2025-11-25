@@ -1,17 +1,14 @@
 package abetal.consumers
 
 import abetal.*
-import abetal.TestRuntime
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
-import java.util.*
-import org.junit.jupiter.api.AfterEach
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNull
+import java.util.UUID
+import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class TsTest {
@@ -1819,6 +1816,7 @@ internal class TsTest {
             .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid1), index = 0)
             .has(SakKey(sid, Fagsystem.TILLEGGSSTØNADER), setOf(uid1), index = 1)
     }
+
     @Test
     fun `legge til periode på eksisterende utbetaling`() {
         val sid = SakId("$nextInt")
@@ -1859,7 +1857,7 @@ internal class TsTest {
                 vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
                 Ts.periode(1.jun, 3.jun, 210u) +
-                Ts.periode(6.jun, 6.jun, 70u)
+                        Ts.periode(6.jun, 6.jun, 70u)
             }
         }
 
@@ -1900,7 +1898,7 @@ internal class TsTest {
                     personident = Personident("12345678910")
                 ) {
                     periode(1.jun, 3.jun, 210u, null) +
-                    periode(6.jun, 6.jun, 70u, null)
+                            periode(6.jun, 6.jun, 70u, null)
                 }
                 assertEquals(expected, it)
             }
@@ -1954,7 +1952,7 @@ internal class TsTest {
                     personident = Personident("12345678910")
                 ) {
                     periode(1.jun, 3.jun, 210u, null) +
-                    periode(6.jun, 6.jun, 70u, null)
+                            periode(6.jun, 6.jun, 70u, null)
                 }
                 assertEquals(expected, it)
             }
@@ -1988,7 +1986,7 @@ internal class TsTest {
                 saksbehandlerId = Navident("ts"),
                 fagsystem = Fagsystem.TILLEGGSSTØNADER,
                 periodetype = Periodetype.EN_GANG
-                ) {
+            ) {
                 periode(2.jun, 13.jun, 100u, null)
             }
         }
@@ -2009,7 +2007,7 @@ internal class TsTest {
         val mottatt = StatusReply(
             status = Status.MOTTATT,
             detaljer = Detaljer(
-                Fagsystem.TILLEGGSSTØNADER, 
+                Fagsystem.TILLEGGSSTØNADER,
                 listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, null, 0u, "TSTBASISP2-OP"))
             )
         )
@@ -2037,7 +2035,7 @@ internal class TsTest {
                     saksbehandlerId = Navident("ts"),
                     personident = Personident("12345678910"),
                     periodetype = Periodetype.EN_GANG,
-                    ) {
+                ) {
                     periode(2.jun, 13.jun, 100u, null)
                 }
                 assertEquals(expected, it)
@@ -2093,7 +2091,7 @@ internal class TsTest {
                     saksbehandlerId = Navident("ts"),
                     personident = Personident("12345678910"),
                     periodetype = Periodetype.EN_GANG,
-                    ) {
+                ) {
                     periode(2.jun, 13.jun, 100u, null)
                 }
                 assertEquals(expected, it)
@@ -2297,7 +2295,7 @@ internal class TsTest {
                 fagsystem = Fagsystem.TILLSTDR,
             ) {
                 periode(1.jun, 5.jun, 1000u, null) +
-                periode(8.jun, 10.jun, 500u, null)
+                        periode(8.jun, 10.jun, 500u, null)
             }
         }
         TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
@@ -2323,7 +2321,7 @@ internal class TsTest {
         val expectedError = StatusReply(
             status = Status.FEILET,
             detaljer = null,
-            error=ApiError(statusCode=400, msg="can't change immutable field 'sakId'", doc="https://helved-docs.ansatt.dev.nav.no/v3/doc/")
+            error = ApiError(400, "Kan ikke endre 'sakId'", DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID.doc)
         )
 
         TestRuntime.topics.status.assertThat()

@@ -1,14 +1,9 @@
 package utsjekk.iverksetting
 
-import models.kontrakter.felles.GyldigBehandlingId
-import models.kontrakter.felles.GyldigSakId
-import models.kontrakter.felles.Satstype
-import models.kontrakter.felles.StønadTypeDagpenger
-import models.kontrakter.iverksett.Ferietillegg
-import models.kontrakter.iverksett.IverksettV2Dto
-import models.kontrakter.iverksett.StønadsdataDagpengerDto
-import utsjekk.badRequest
-import java.time.LocalDate
+import models.DocumentedErrors
+import models.badRequest
+import models.kontrakter.felles.*
+import models.kontrakter.iverksett.*
 import java.time.YearMonth
 
 fun IverksettV2Dto.validate() {
@@ -23,13 +18,13 @@ fun IverksettV2Dto.validate() {
 
 internal fun sakIdTilfredsstillerLengdebegrensning(iverksettDto: IverksettV2Dto) {
     if (iverksettDto.sakId.length !in 1..GyldigSakId.MAKSLENGDE) {
-        badRequest(msg = "lengde må være [1 <= ${GyldigSakId.MAKSLENGDE}]", field = "sakId")
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
     }
 }
 
 internal fun behandlingIdTilfredsstillerLengdebegrensning(iverksettDto: IverksettV2Dto) {
     if (iverksettDto.behandlingId.length !in 1..GyldigBehandlingId.MAKSLENGDE) {
-        badRequest(msg = "lengde må være [1 <= ${GyldigBehandlingId.MAKSLENGDE}]", field = "behandlingId")
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
     }
 }
 
@@ -41,7 +36,7 @@ internal fun fraOgMedKommerFørTilOgMedIUtbetalingsperioder(iverksettDto: Iverks
         }
 
     if (!alleErOk) {
-        badRequest(msg = "fom må være før eller lik tom", field = "fraOgMedDato/tilOgMedDato")
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE)
     }
 }
 
@@ -80,9 +75,7 @@ internal fun utbetalingsperioderSamsvarerMedSatstype(iverksettDto: IverksettV2Dt
             }
 
         if (!(alleTomErSluttenAvMåned && alleFomErStartenAvMåned)) {
-            badRequest(
-                "Det finnes utbetalinger med månedssats der periodene ikke samsvarer med hele måneder",
-            )
+            badRequest("Det finnes utbetalinger med månedssats der periodene ikke samsvarer med hele måneder")
         }
     }
 }
@@ -92,18 +85,14 @@ internal fun iverksettingIdSkalEntenIkkeVæreSattEllerVæreSattForNåværendeOgF
         iverksettDto.forrigeIverksetting != null &&
         iverksettDto.forrigeIverksetting?.iverksettingId == null
     ) {
-        badRequest(
-            "IverksettingId er satt for nåværende iverksetting, men ikke forrige iverksetting",
-        )
+        badRequest("IverksettingId er satt for nåværende iverksetting, men ikke forrige iverksetting")
     }
 
     if (iverksettDto.iverksettingId == null &&
         iverksettDto.forrigeIverksetting != null &&
         iverksettDto.forrigeIverksetting?.iverksettingId != null
     ) {
-        badRequest(
-            "IverksettingId er satt for forrige iverksetting, men ikke nåværende iverksetting",
-        )
+        badRequest("IverksettingId er satt for forrige iverksetting, men ikke nåværende iverksetting")
     }
 }
 
@@ -119,8 +108,6 @@ internal fun ingenUtbetalingsperioderHarStønadstypeEØSOgFerietilleggTilAvdød(
         }
 
     if (ugyldigKombinasjon) {
-        badRequest(
-            "Ferietillegg til avdød er ikke tillatt for stønadstypen ${StønadTypeDagpenger.DAGPENGER_EØS}",
-        )
+        badRequest("Ferietillegg til avdød er ikke tillatt for stønadstypen ${StønadTypeDagpenger.DAGPENGER_EØS}")
     }
 }

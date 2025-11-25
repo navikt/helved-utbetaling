@@ -1,8 +1,8 @@
 package utsjekk.iverksetting.utbetalingsoppdrag
 
+import models.badRequest
 import models.kontrakter.felles.Satstype
 import utsjekk.iverksetting.AndelData
-import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.*

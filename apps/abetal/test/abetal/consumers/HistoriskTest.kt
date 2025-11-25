@@ -20,6 +20,7 @@ import models.ApiError
 import models.BehandlingId
 import models.Detaljer
 import models.DetaljerLinje
+import models.DocumentedErrors
 import models.Fagsystem
 import models.Navident
 import models.PeriodeId
@@ -1593,7 +1594,7 @@ internal class HistoriskTest {
         val expectedError = StatusReply(
             status = Status.FEILET,
             detaljer = null,
-            error=ApiError(statusCode=400, msg="can't change immutable field 'sakId'", doc="https://helved-docs.ansatt.dev.nav.no/v3/doc/")
+            error=ApiError(400, "Kan ikke endre 'sakId'", DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID.doc)
         )
 
         TestRuntime.topics.status.assertThat()

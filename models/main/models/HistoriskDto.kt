@@ -101,6 +101,6 @@ private fun List<HistoriskPeriode>.toDomain(type: Periodetype): List<Utbetalings
             .flatten()
             .sortedBy { it.fom }
 
-        else -> badRequest("periodetype '$type' for historisk er ikke implementert")
+        else -> badRequest("periodetype '$type' for historisk er ikke implementert", doc = "${DocumentedErrors.BASE}/async/api#Historisk")
     }
 }

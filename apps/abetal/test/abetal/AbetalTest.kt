@@ -371,7 +371,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("$nextInt"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -386,7 +386,7 @@ internal class AbetalTest {
         val err = assertThrows<ApiError> {
             utbet.validate()
         }
-        assertEquals("periode strekker seg over årsskifte", err.msg)
+        assertEquals("Engangsutbetalinger kan ikke strekke seg over årsskifte", err.msg)
     }
 
     @Test
@@ -402,7 +402,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("$nextInt"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -416,7 +416,7 @@ internal class AbetalTest {
         val err = assertThrows<ApiError> {
             utbet.validate()
         }
-        assertEquals("sakId kan være maks 30 tegn langt", err.msg)
+        assertEquals("Sak-ID må være mellom 1 og 25 tegn", err.msg)
     }
 
     @Test
@@ -432,7 +432,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("012345678901234567890123456789123"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -446,7 +446,7 @@ internal class AbetalTest {
         val err = assertThrows<ApiError> {
             utbet.validate()
         }
-        assertEquals("behandlingId kan være maks 30 tegn langt", err.msg)
+        assertEquals("Behandling-ID må være mellom 1 og 30 tegn", err.msg)
     }
 
     @Test
@@ -462,7 +462,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("0123456789012345678901234567"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -477,7 +477,7 @@ internal class AbetalTest {
         val err = assertThrows<ApiError> {
             utbet.validate()
         }
-        assertEquals("kan ikke sende inn duplikate perioder", err.msg)
+        assertEquals("Kan ikke sende inn duplikate perioder", err.msg)
     }
 
     @Test
@@ -493,7 +493,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("$nextInt"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -508,7 +508,7 @@ internal class AbetalTest {
         val err = assertThrows<ApiError> {
             utbet.validate()
         }
-        assertEquals("kan ikke sende inn duplikate perioder", err.msg)
+        assertEquals("Kan ikke sende inn duplikate perioder", err.msg)
     }
 
     @Test
@@ -524,7 +524,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("$nextInt"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -538,7 +538,7 @@ internal class AbetalTest {
         val err = assertThrows<ApiError> {
             utbet.validate()
         }
-        assertEquals("fom må være før eller lik tom", err.msg)
+        assertEquals("Tom må være >= fom", err.msg)
     }
 
     @Test
@@ -554,7 +554,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("$nextInt"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -572,7 +572,7 @@ internal class AbetalTest {
         val err = assertThrows<ApiError> {
             utbet.validate()
         }
-        assertEquals("fremtidige utbetalinger er ikke støttet for periode dag/ukedag", err.msg)
+        assertEquals("Fremtidige utbetalinger er ikke støttet for dag/ukedag", err.msg)
     }
 
     @Test
@@ -588,7 +588,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("$nextInt"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -610,7 +610,7 @@ internal class AbetalTest {
         val err = assertThrows<ApiError> {
             utbet.validate()
         }
-        assertEquals("DAG støtter maks periode på 1000 dager", err.msg)
+        assertEquals("Utbetalinger kan ikke strekke seg over 1000 dager", err.msg)
     }
 
     @Test
@@ -627,7 +627,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("$nextInt"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -661,7 +661,7 @@ internal class AbetalTest {
             behandlingId = BehandlingId("$nextInt"),
             lastPeriodeId = PeriodeId(),
             personident = Personident("12345678910"),
-            vedtakstidspunkt = java.time.LocalDateTime.now(),
+            vedtakstidspunkt = LocalDateTime.now(),
             stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
             beslutterId = Navident("123"),
             saksbehandlerId = Navident("123"),
@@ -673,7 +673,7 @@ internal class AbetalTest {
         val err = assertThrows<ApiError> {
             utbet.validate()
         }
-        assertEquals("perioder kan ikke være tom", err.msg)
+        assertEquals("Mangler perioder", err.msg)
     }
 
     @Test

@@ -6,14 +6,15 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import models.DocumentedErrors
+import models.badRequest
 import models.kontrakter.felles.*
 import models.kontrakter.iverksett.Ferietillegg
 import models.kontrakter.oppdrag.OppdragStatus
 import models.kontrakter.oppdrag.Utbetalingsoppdrag
-import utsjekk.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import kotlin.random.Random
 
 @JvmInline
@@ -303,7 +304,7 @@ data class AndelTilkjentYtelse(
 
 data class Periode(val fom: LocalDate, val tom: LocalDate) : Comparable<Periode> {
     init {
-        if (tom < fom) badRequest("Tom-dato $tom før fom-dato $fom er ugyldig")
+        if (tom < fom) badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE)
     }
 
     override fun compareTo(other: Periode): Int {
