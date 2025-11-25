@@ -369,38 +369,6 @@ enum class StønadTypeHistorisk(override val klassekode: String) : Stønadstype 
     TILSKUDD_SMÅHJELPEMIDLER("HJRIM"),
 }
 
-fun List<Utbetalingsperiode>.aggreger(periodetype: Periodetype): List<Utbetalingsperiode> {
-    return sortedBy { it.fom }
-        .groupBy { listOf(it.beløp, it.betalendeEnhet, it.vedtakssats) }
-        .map { (_, perioder) ->
-            perioder.splitWhen { a, b ->
-                when (periodetype) {
-                    Periodetype.UKEDAG -> !a.tom.nesteUkedag().equals(b.fom)
-                    else -> !a.tom.plusDays(1).equals(b.fom)
-                }
-            }.map {
-                Utbetalingsperiode(
-                    fom = it.first().fom,
-                    tom = it.last().tom,
-                    beløp = beløp(it, periodetype),
-                    betalendeEnhet = it.last().betalendeEnhet,
-                    vedtakssats = it.last().vedtakssats,
-                )
-            }
-        }
-        .flatten()
-        .sortedBy { it.fom }
-}
-
-private fun beløp(perioder: List<Utbetalingsperiode>, periodetype: Periodetype): UInt =
-    when (periodetype) {
-        Periodetype.DAG, Periodetype.UKEDAG, Periodetype.MND -> perioder.map { it.beløp }.toSet().singleOrNull()
-            ?: badRequest("Fant fler ulike beløp blant dagene")
-
-        else -> perioder.singleOrNull()?.beløp
-            ?: badRequest("Forventet kun en periode, da sammenslåing av beløp ikke er støttet")
-    }
-
 fun uuid(
     sakId: SakId,
     fagsystem: Fagsystem,
