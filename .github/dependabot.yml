@@ -12,13 +12,17 @@ updates:
 - package-ecosystem: github-actions
   directory: /
   schedule:
-     interval: daily
+     interval: weekly
+  cooldown:
+    default-days: 7
   open-pull-requests-limit: 1 # avoid merge-conflicts on auto-merge
 
 - package-ecosystem: gradle
   directory: /
   schedule:
-    interval: daily
+    interval: weekly
+  cooldown:
+    default-days: 7
   open-pull-requests-limit: 1 # avoid merge-conflicts on auto-merge
   registries:
     - maven-github
@@ -26,5 +30,7 @@ updates:
 - package-ecosystem: docker
   directory: /
   schedule:
-    interval: daily
+    interval: weekly
+  cooldown:
+    default-days: 7
   open-pull-requests-limit: 1 # avoid merge-conflicts on auto-merge
