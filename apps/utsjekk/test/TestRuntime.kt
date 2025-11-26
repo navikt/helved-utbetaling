@@ -1,4 +1,3 @@
-import fakes.AbetalClientFake
 import fakes.AzureFake
 import fakes.OppdragFake
 import fakes.SimuleringFake
@@ -34,13 +33,11 @@ object TestRuntime {
     val azure : AzureFake = AzureFake()
     val oppdrag : OppdragFake = OppdragFake()
     val simulering : SimuleringFake = SimuleringFake()
-    val abetalClient : AbetalClientFake = AbetalClientFake()
     val jdbc : DataSource = Jdbc.initialize(postgres.config)
     val context : CoroutineDatasource = CoroutineDatasource(jdbc)
     val config: Config = Config(
         oppdrag = oppdrag.config,
         simulering = simulering.config,
-        abetal = abetalClient.config,
         azure = azure.config,
         jdbc = postgres.config,
         kafka = kafka.config,

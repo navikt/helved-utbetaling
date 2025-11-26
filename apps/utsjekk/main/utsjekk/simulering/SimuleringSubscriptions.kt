@@ -104,20 +104,6 @@ object SimuleringSubscriptions {
     }
 }
 
-class AbetalClient(
-    private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
-    private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
-) {
-    suspend fun utbetaling(uid: UtbetalingId): Utbetaling {
-        val response = client.get("${config.abetal.host}/api/utbetalinger${uid.id}") {
-            bearerAuth(azure.getClientCredentialsToken(config.abetal.scope).access_token)
-            contentType(ContentType.Application.Json)
-        }
-        return response.body()
-    }
-}
-
 fun Route.simulerBlocking(
     aapUtbetalingerProducer: KafkaProducer<String, AapUtbetaling>,
     dpUtbetalingerProducer: KafkaProducer<String, DpUtbetaling>,

@@ -34,8 +34,8 @@ import models.ApiError
 import models.forbidden
 import models.kontrakter.felles.Fagsystem
 import utsjekk.clients.SimuleringClient
-import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.IverksettingMigrator
+import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.iverksetting
 import utsjekk.simulering.SimuleringValidator
 import utsjekk.simulering.simulerBlocking
@@ -69,9 +69,6 @@ fun Application.utsjekk(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
 ) {
-
-    val abetalClient = AbetalClient(config)
-
     val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
         registry = metrics
@@ -79,7 +76,7 @@ fun Application.utsjekk(
     }
 
     kafka.connect(
-        createTopology(abetalClient),
+        createTopology(),
         config.kafka,
         metrics,
     )
@@ -134,7 +131,7 @@ fun Application.utsjekk(
     }
 
     val simulering = SimuleringClient(config)
-    val simuleringService = SimuleringService(simulering, abetalClient)
+    val simuleringService = SimuleringService(simulering)
     val simuleringValidator = SimuleringValidator(iverksettingService)
 
     val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)

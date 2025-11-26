@@ -60,11 +60,8 @@ fun Application.abetal(
 
     kafka.connect(topology, config.kafka, prometheus)
 
-    val stateStore = kafka.getStore(Stores.utbetalinger)
-
     routing {
         probes(kafka, prometheus)
-        api(stateStore)
     }
 }
 

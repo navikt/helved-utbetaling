@@ -13,7 +13,6 @@ data class Config(
     val azure: AzureConfig = AzureConfig(),
     val oppdrag: OppdragConfig = OppdragConfig(),
     val simulering: SimuleringConfig = SimuleringConfig(),
-    val abetal: AbetalConfig = AbetalConfig()
 )
 
 data class OppdragConfig(
@@ -26,7 +25,3 @@ data class SimuleringConfig(
     val host: URL = env("SIMULERING_HOST", URI("http://utsjekk-simulering").toURL())
 )
 
-data class AbetalConfig(
-    val scope: String = env("ABETAL_SCOPE"),
-    val host: URL = env("ABETAL_HOST", URI("http://abetal").toURL())
-)

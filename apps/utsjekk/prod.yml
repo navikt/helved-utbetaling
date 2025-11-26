@@ -45,8 +45,6 @@ spec:
       value: api://prod-gcp.helved.utsjekk-oppdrag/.default
     - name: SIMULERING_SCOPE
       value: api://prod-gcp.helved.utsjekk-simulering/.default
-    - name: ABETAL_SCOPE
-      value: api://prod-gcp.helved.abetal/.default
     - name: ENV
       value: prod
   azure:
@@ -78,7 +76,6 @@ spec:
           namespace: nais-system
         - application: utsjekk-oppdrag
         - application: utsjekk-simulering
-        - application: abetal
   gcp:
     sqlInstances:
       - type: "POSTGRES_15" #WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade

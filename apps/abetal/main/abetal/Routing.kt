@@ -28,23 +28,3 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     }
 }
 
-/**
-* Gjør oppslag på utbetaling topic via state store.
-* Denne fungerer kun så lenge man har 1 replica,
-* ved 2-3 replicas blir state-storen fordelt og oppslag vil kun treffe mellom 30-100% av gangene 
-*/
-fun Routing.api(stateStore: StateStore<String, Utbetaling>) {
-    route("/api") {
-
-        get("/utbetalinger/{uid}"){
-            when(val uid = call.parameters["uid"]) {
-                null -> call.respond(HttpStatusCode.BadRequest, "path param uid missing")
-                else -> when(val utbetaling = stateStore.getOrNull(uid)){
-                    null -> call.respond(HttpStatusCode.NotFound)
-                    else -> call.respond(utbetaling)
-                }
-            }
-        }
-    }
-}
-
