@@ -19,11 +19,9 @@ import utsjekk.utbetaling.klassekode
 import utsjekk.TokenType
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import utsjekk.AbetalClient
 
 class SimuleringService(
     private val client: SimuleringClient,
-    private val abetalClient: AbetalClient
 ) {
     suspend fun simuler(
         uid: UtbetalingId,
@@ -36,19 +34,10 @@ class SimuleringService(
             }
         }
 
-        // TODO: bruk v3 simulering i stedet
-        val abetalUtbetaling = runCatching {
-            abetalClient.utbetaling(uid)
-        }.getOrNull()
-
-        val oppdrag =
-            if (abetalUtbetaling != null) {
-                utbetalingsoppdrag(uid, abetalUtbetaling, utbetaling)
-            } else if (dao != null) {
-                utbetalingsoppdrag(uid, dao.data, utbetaling)
-            } else {
-                utbetalingsoppdrag(uid, utbetaling)
-            }
+        val oppdrag = when (dao) {
+            null -> utbetalingsoppdrag(uid, utbetaling)
+            else -> utbetalingsoppdrag(uid, dao.data, utbetaling)
+        }
 
         val simulering = client.simuler(oppdrag, token)
         return SimuleringMapper.oppsummering(simulering)
@@ -59,18 +48,11 @@ class SimuleringService(
         new: Utbetaling,
         token: TokenType,
     ): SimuleringApi {
-        val dao = withContext(Jdbc.context) {
+        val existing = withContext(Jdbc.context) {
             transaction {
                 UtbetalingDao.findOrNull(uid)?.data ?: notFound("Fant ikke utbetaling med uid $uid")
             }
         }
-
-        // TODO: bruk v3 simulering i stedet
-        val abetalUtbetaling = runCatching {
-            abetalClient.utbetaling(uid)
-        }.getOrNull()
-
-        val existing = abetalUtbetaling ?: dao
 
         existing.validateLockedFields(new)
 

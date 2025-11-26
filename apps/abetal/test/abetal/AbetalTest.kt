@@ -677,44 +677,6 @@ internal class AbetalTest {
     }
 
     @Test
-    fun `get utbetaling from api`() {
-        val key = UUID.randomUUID().toString()
-        val meldeperiode = UUID.randomUUID().toString()
-        val sid = SakId("$nextInt")
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
-
-        TestRuntime.topics.dp.produce(key) { 
-            Dp.utbetaling(sid.id) {
-                Dp.meldekort(
-                    meldeperiode = meldeperiode,
-                    fom = 1.jan,
-                    tom = 2.jan,
-                    sats = 100u,
-                    utbetaltBeløp = 100u,
-                )
-            }
-        }
-
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .with(key) { assertEquals("NY", it.oppdrag110.kodeEndring) }
-            .get(key)
-        TestRuntime.topics.status.assertThat().has(key)
-        TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
-        TestRuntime.topics.oppdrag.produce(key) { oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } } }
-        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
-        TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
-        val res = runBlocking {
-            TestRuntime.ktor.httpClient.get("/api/utbetalinger/$uid") {
-                accept(ContentType.Application.Json)
-            }
-        }
-
-        assertEquals(HttpStatusCode.OK, res.status)
-    }
-
-    @Test
     fun `send inn kjede med ny meldeperiode på eksisterende sak `() {
         val sakId = SakId("15507598")
         val behandlingId1 = BehandlingId("AZiYMlhDege3YrU10jE4vw==")

@@ -42,9 +42,6 @@ spec:
     application:
       enabled: true
   accessPolicy:
-    inbound:
-      rules:
-        - application: utsjekk
     outbound:
       rules:
         - application: logging

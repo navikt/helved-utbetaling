@@ -42,15 +42,13 @@ object Stores {
     val dryrunDp = Store(Tables.dryrunDp)
 }
 
-fun createTopology(abetalClient: AbetalClient): Topology = topology {
+fun createTopology(): Topology = topology {
     globalKTable(Tables.dryrunTs, retention = 1.hours)
     globalKTable(Tables.dryrunDp, retention = 1.hours)
-    consumeStatus(abetalClient)
+    consumeStatus()
 }
 
-fun Topology.consumeStatus(
-    abetalClient: AbetalClient,
-) {
+fun Topology.consumeStatus() {
     consume(Topics.status)
         .filterKey { uid ->
             try {
@@ -70,8 +68,6 @@ fun Topology.consumeStatus(
             runBlocking {
                 withContext(Jdbc.context) {
                     val uDao = transaction {
-                        // Hvis en UID ikke finnes her, kan det hende den er i abetal (helved.utbetaling.v1)
-                        // TODO: er alltid de som er null irrelevante?
                         UtbetalingDao.findOrNull(uid, history = true)?.also { dao ->
                             val status = when (status.status) {
                                 Status.OK -> utsjekk.utbetaling.Status.OK
@@ -103,13 +99,7 @@ fun Topology.consumeStatus(
                     }
 
                     if (uDao == null && iDao == null) {
-                        // Sjekk om UID finnes i abetal
-                        // TODO: logg uansett, og dropp sjekk mot state store
-                        if (abetalClient.exists(uid)) {
-                            appLog.info("Mottok status for uid=${uid.id} som håndteres av abetal. Status: $status")
-                        } else {
-                            appLog.warn("Både db-tabell utbetaling og iverksettingsresultat mangler rad med uid ${uid.id}. UID finnes heller ikke i abetal. Status: $status")
-                        }
+                        appLog.info("Mottok status $status for uid=${uid.id} som ikke finnes i utsjekk. Denne antas å ligge i abetal")
                     }
                 }
             }
