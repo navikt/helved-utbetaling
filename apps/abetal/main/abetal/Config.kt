@@ -17,8 +17,9 @@ data class Config(
             // this[org.apache.kafka.streams.StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeNextHandler::class.java
             // this[org.apache.kafka.streams.StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessNextHandler::class.java
 
-            this["default.api.timeout.ms"] = "120000"
-            this["retry.backoff.ms"] = "1000"
+            // AdminClient trenger lengre tid ved opprettelse av internal topics
+            this[org.apache.kafka.streams.StreamsConfig.RETRY_BACKOFF_MS_CONFIG] = 5000
+            this[org.apache.kafka.streams.StreamsConfig.RECONNECT_BACKOFF_MS_CONFIG] = 1000
         }
     ),
 )

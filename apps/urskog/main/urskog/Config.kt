@@ -10,6 +10,7 @@ import libs.mq.MQConfig
 import libs.utils.env
 import libs.ws.SoapConfig
 import libs.ws.StsConfig
+import org.apache.kafka.clients.consumer.ConsumerConfig
 
 data class Config(
     val kafka: StreamsConfig = StreamsConfig(
@@ -21,6 +22,10 @@ data class Config(
             // Vi har 3 partisjoner, hver trenger en tråd på en egen CPU. 
             // Derfor trenger i 3000m CPU og -XX:ActiveProcessorCount=3
             this[org.apache.kafka.streams.StreamsConfig.NUM_STREAM_THREADS_CONFIG] = 3
+
+            // AdminClient trenger lengre tid ved opprettelse av internal topics
+            this[org.apache.kafka.streams.StreamsConfig.RETRY_BACKOFF_MS_CONFIG] = 5000
+            this[org.apache.kafka.streams.StreamsConfig.RECONNECT_BACKOFF_MS_CONFIG] = 1000
         }
     ),
     val oppdrag: OppdragConfig = OppdragConfig(),
