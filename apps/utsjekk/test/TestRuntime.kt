@@ -20,7 +20,7 @@ import libs.kafka.StreamsConfig
 
 val httpClient = TestRuntime.ktor.httpClient
 
-class TestTopics(private val kafka: StreamsMock) {
+class TestTopics(kafka: StreamsMock) {
     val oppdrag = kafka.testTopic(Topics.oppdrag) 
     val status = kafka.testTopic(Topics.status)
     val dryrunDp = kafka.testTopic(Topics.dryrunDp)
