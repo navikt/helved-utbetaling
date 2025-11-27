@@ -6,7 +6,7 @@ application {
     mainClass.set("branntaarn.BranntaarnKt")
 }
 
-val ktorVersion = "3.2.0"
+val ktorVersion = "3.3.2"
 val libVersion = "3.1.219"
 
 dependencies {

@@ -10,13 +10,11 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import models.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import utsjekk.simulering.SimuleringSubscriptions
 
 class SimuleringV3RouteTest {
 

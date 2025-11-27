@@ -2,12 +2,12 @@ import fakes.AzureFake
 import fakes.OppdragFake
 import fakes.SimuleringFake
 import io.ktor.client.*
+import java.util.Properties
 import libs.jdbc.*
 import libs.kafka.StreamsMock
 import libs.ktor.*
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.CoroutineDatasource
-import libs.utils.logger
 import utsjekk.Config
 import utsjekk.Topics
 import utsjekk.iverksetting.IverksettingDao
@@ -15,8 +15,8 @@ import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.utbetaling.UtbetalingDao
 import utsjekk.utsjekk
 import javax.sql.DataSource
-
-private val testLog = logger("test")
+import libs.kafka.SslConfig
+import libs.kafka.StreamsConfig
 
 val httpClient = TestRuntime.ktor.httpClient
 
@@ -40,7 +40,14 @@ object TestRuntime {
         simulering = simulering.config,
         azure = azure.config,
         jdbc = postgres.config,
-        kafka = kafka.config,
+        kafka = StreamsConfig(
+            applicationId = "",
+            brokers = "",
+            ssl = SslConfig("", "", ""),
+            additionalProperties = Properties().apply {
+                this["state.dir"] = "build/kafka-streams/state"
+            }
+        ),
     )
     val ktor = KtorRuntime<Config>(
         appName = "utsjekk",
