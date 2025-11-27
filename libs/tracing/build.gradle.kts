@@ -1,4 +1,3 @@
-val libVersion = "3.1.171"
 
 dependencies {
     api(project(":libs:utils"))
