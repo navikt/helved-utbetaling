@@ -65,25 +65,6 @@ class SessionWindowedStream<K: Any, V : Any> internal constructor(
         return ConsumedStream(reducedStream) 
     }
 
-    @Deprecated("use reduce with dedup supplier")
-    fun reduce(
-        suppressSupplier: ProcessorSupplier<Windowed<K>, V, K, V>,
-        storeName: StateStoreName,
-        acc: (V, V) -> V,
-    ): ConsumedStream<K, V> {
-        val materialized = Materialized.`as`<K, V, SessionStore<Bytes, ByteArray>>(Named("$storeName-materialized").toString())
-            .withKeySerde(serdes.key)
-            .withValueSerde(serdes.value)
-
-        val reducedStream = stream
-            .reduce(acc, Named("$storeName-reduce").into(), materialized)
-            .toStream()
-            .process(suppressSupplier, Named("$storeName-suppress").into(), storeName)
-            .selectKey { key, _ -> key }
-
-        return ConsumedStream(reducedStream) 
-    }
-
     fun aggregate(
         store: Store<K, List<V>>,
         named: String,
