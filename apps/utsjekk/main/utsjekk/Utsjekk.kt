@@ -45,6 +45,8 @@ import utsjekk.utbetaling.UtbetalingService
 import utsjekk.utbetaling.simulering.SimuleringService
 import utsjekk.utbetaling.utbetalingRoute
 import java.io.File
+import libs.ktor.CallLog
+import libs.ktor.bodyAsText
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -126,6 +128,18 @@ fun Application.utsjekk(
                     val res = ApiError(statusCode = 500, msg = msg)
                     call.respond(HttpStatusCode.InternalServerError, res)
                 }
+            }
+        }
+    }
+
+    install(CallLog) {
+        exclude { call -> call.request.path().startsWith("/actuator") }
+        log { call ->
+            appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}")
+            if (call.response.status()?.isSuccess() == false) {
+                secureLog.info("""${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}
+${call.bodyAsText()}""".trimIndent()
+                )
             }
         }
     }
