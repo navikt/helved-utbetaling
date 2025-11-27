@@ -211,18 +211,6 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return MappedStream(processorStream)
     }
 
-    @Deprecated("replaced with processor(libs.kafka.Processor)")
-    fun processor(supplier: org.apache.kafka.streams.processor.api.ProcessorSupplier<K, V, K, V>): ConsumedStream<K, V> {
-        // TODO: if supplier uses a state store, we need to add Named
-        val processed = stream.process(supplier)
-        return ConsumedStream(processed)
-    }
-
-    // fun <TABLE : Any, U : Any> processor(processor: StateProcessor<K, TABLE, V, U>): MappedStream<K, U> {
-    //     val processorStream = stream.addProcessor(processor)
-    //     return MappedStream(processorStream)
-    // }
-
     fun processor(processor: StateProcessor<K, V, K, V>): MappedStream<K, V> {
         val processedStream = stream.process(processor.supplier, processor.named.into(), processor.storeName)
         return MappedStream(processedStream)

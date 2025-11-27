@@ -51,6 +51,12 @@ object Stores {
     val tsAggregate        = Store("ts-aggregate-store",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
     val tpAggregate        = Store("tp-aggregate-store",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
     val historiskAggregate = Store("historisk-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+
+    val aapDedup           = Store("aap-dedup-aggregate",       jsonListStreamsPair<Utbetaling>())
+    val dpDedup            = Store("dp-dedup-aggregate",        jsonListStreamsPair<Utbetaling>())
+    val tpDedup            = Store("tp-dedup-aggregate",        jsonListStreamsPair<Utbetaling>())
+    val tsDedup            = Store("ts-dedup-aggregate",        jsonListStreamsPair<Utbetaling>())
+    val historiskDedup     = Store("historisk-dedup-aggregate", jsonListStreamsPair<Utbetaling>())
 }
 
 fun createTopology(): Topology = topology {
@@ -157,7 +163,7 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
  */
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(jsonListStreamsPair<Utbetaling>(), DP_TX_GAP_MS.milliseconds, "dp-dedup-aggregate")
+    val dedup = DedupProcessor.supplier(DP_TX_GAP_MS.milliseconds, Stores.dpDedup)
 
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
@@ -218,7 +224,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 
 fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.aapAggregate, AAP_TX_GAP_MS.milliseconds, AAP_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(jsonListStreamsPair<Utbetaling>(), AAP_TX_GAP_MS.milliseconds, "aap-dedup-aggregate")
+    val dedup = DedupProcessor.supplier(AAP_TX_GAP_MS.milliseconds, Stores.aapDedup)
 
     consume(Topics.aap)
         .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
@@ -279,7 +285,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
 
 fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.tsAggregate, TS_TX_GAP_MS.milliseconds, TS_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(jsonListStreamsPair<Utbetaling>(), TS_TX_GAP_MS.milliseconds, "ts-dedup-aggregate")
+    val dedup = DedupProcessor.supplier(TS_TX_GAP_MS.milliseconds, Stores.tsDedup)
 
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
@@ -340,7 +346,7 @@ fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 
 fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.historiskAggregate, HISTORISK_TX_GAP_MS.milliseconds, HISTORISK_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(jsonListStreamsPair<Utbetaling>(), HISTORISK_TX_GAP_MS.milliseconds, "historisk-dedup-aggregate")
+    val dedup = DedupProcessor.supplier(HISTORISK_TX_GAP_MS.milliseconds, Stores.historiskDedup)
 
     consume(Topics.historisk)
         .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
@@ -398,7 +404,7 @@ fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KT
 
 fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.tpAggregate, TP_TX_GAP_MS.milliseconds, TP_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(jsonListStreamsPair<Utbetaling>(), TP_TX_GAP_MS.milliseconds, "tp-dedup-aggregate")
+    val dedup = DedupProcessor.supplier(TP_TX_GAP_MS.milliseconds, Stores.tpDedup)
 
     consume(Topics.tp)
         // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")

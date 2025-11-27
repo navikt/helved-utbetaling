@@ -34,6 +34,8 @@ internal object Tables {
 
 internal object Stores {
     val F = Store("F", string())
+    val B = Store("B", string())
+    val Dedup = Store("Dedup", string())
 }
 
 internal class Mock : Streams {

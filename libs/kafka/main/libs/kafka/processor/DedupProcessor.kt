@@ -2,6 +2,7 @@ package libs.kafka.processor
 
 import libs.kafka.Serdes
 import libs.kafka.StateStoreName
+import libs.kafka.Store
 import libs.kafka.kafkaLog
 import org.apache.kafka.streams.processor.PunctuationType
 import org.apache.kafka.streams.processor.api.Record
@@ -71,22 +72,22 @@ class DedupProcessor<K: Any, V: Any> (
     }
 
     companion object {
+
         fun <K: Any, V: Any> supplier(
-            serdes: Serdes<K, V>,
             retention: Duration,
-            stateStoreName: StateStoreName,
+            store: Store<K, V>,
             hasher: (K, V) -> Int = { key, _ -> key.hashCode() },
             downstream: (V) -> Unit = {},
         ): ProcessorSupplier<K, V, K, V> {
             return object: ProcessorSupplier<K, V, K, V> {
                 override fun stores(): Set<StoreBuilder<*>> = setOf(
                     Stores.timestampedKeyValueStoreBuilder(
-                        Stores.persistentTimestampedKeyValueStore(stateStoreName),
-                        serdes.key,
-                        serdes.value
+                        Stores.persistentTimestampedKeyValueStore(store.name),
+                        store.serde.key,
+                        store.serde.value
                     )
                 )
-                override fun get(): Processor<K, V, K, V> = DedupProcessor(stateStoreName, retention, hasher,downstream)
+                override fun get(): Processor<K, V, K, V> = DedupProcessor(store.name, retention, hasher, downstream)
             }
         }
     }

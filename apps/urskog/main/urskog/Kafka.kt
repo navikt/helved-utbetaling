@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.runBlocking
 import libs.kafka.*
 import libs.kafka.processor.DedupProcessor
+import libs.kafka.processor.StateProcessor
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
@@ -27,6 +28,8 @@ object Topics {
 
 object Stores {
     val keystore = Store<OppdragForeignKey, String>("fk-uid-store", jsonString())
+    val kvittering = Store("dedup-kvittering", Topics.oppdrag.serdes)
+    val oppdrag = Store("dedup-oppdrag", Topics.oppdrag.serdes)
 }
 
 object Tables {
@@ -77,14 +80,17 @@ fun Topology.simulering(simuleringService: SimuleringService) {
 
 private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 
-fun dedupHash(key: String, oppdrag: Oppdrag): Int {
-    return mapper.writeValueAsString(oppdrag).hashCode()
-}
-
 fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) {
     val kvitteringKTable = consume(Tables.kvittering)
     val oppdragTopic = consume(Topics.oppdrag)
 
+    fun dedupHash(key: String, value: Oppdrag): Int = mapper.writeValueAsString(value).hashCode()
+
+    val dedupKvittering = DedupProcessor.supplier(1.hours, Stores.kvittering, ::dedupHash)
+
+    val dedupOppdrag = DedupProcessor.supplier(1.hours, Stores.oppdrag, ::dedupHash) { xml ->
+        oppdragProducer.send(xml) 
+    }
 
     val kstore = oppdragTopic
         .filter { oppdrag -> oppdrag.mmel == null }
@@ -94,27 +100,13 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
     kstore.join(kvitteringKTable)
         .filter { (uid, kvitt) -> kvitt?.mmel != null && uid != null }
         .mapKeyAndValue { _, (uid, kvitt) -> uid!! to kvitt!! }
-        .processor(DedupProcessor.supplier(
-            serdes = Topics.oppdrag.serdes,
-            retention = 1.hours,
-            stateStoreName = "dedup-joined-kvittering",
-            hasher = ::dedupHash,
-        ))
+        .processor(StateProcessor(dedupKvittering, Named(Stores.kvittering.name), Stores.kvittering.name))
         .produce(Topics.oppdrag)
 
     oppdragTopic
         .branch({ o -> o.mmel == null }) {
             filter { o -> o.mmel == null }
-                .processor(
-                    DedupProcessor.supplier(
-                        Topics.oppdrag.serdes,
-                        1.hours,
-                        "dedup-oppdrag-mq",
-                        ::dedupHash,
-                    ){ xml -> 
-                        oppdragProducer.send(xml) 
-                    }
-                )
+                .processor(StateProcessor(dedupOppdrag, Named(Stores.oppdrag.name), Stores.oppdrag.name))
                 .map { xml -> StatusReply.sendt(xml) }
                 .includeHeader(FS_KEY) { statusReply -> 
                     statusReply.detaljer
