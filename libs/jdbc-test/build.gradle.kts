@@ -2,5 +2,5 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":libs:jdbc"))
     implementation(kotlin("test"))
-    api("org.testcontainers:postgresql:1.21.3")
+    api("org.testcontainers:testcontainers-postgresql:2.0.2")
 }
