@@ -13,6 +13,7 @@ import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.doublereceive.DoubleReceive
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -131,6 +132,8 @@ fun Application.utsjekk(
             }
         }
     }
+
+    install(DoubleReceive)
 
     install(CallLog) {
         exclude { call -> call.request.path().startsWith("/actuator") }
