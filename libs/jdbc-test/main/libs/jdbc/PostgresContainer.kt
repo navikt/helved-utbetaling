@@ -2,7 +2,7 @@ package libs.jdbc
 
 import libs.jdbc.JdbcConfig
 import libs.utils.env
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
 
 class PostgresContainer(appname: String, waitForContainerMs: Long = 30_000) : AutoCloseable {
     private val container = PostgreSQLContainer("postgres:15").apply {
