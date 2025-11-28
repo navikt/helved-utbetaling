@@ -210,7 +210,7 @@ value class PeriodeId(private val id: String) {
                 // ^ les neste 64 og lag en long
                 return PeriodeId(UUID(byteBuffer.long, byteBuffer.long).toString())
             } catch (e: Throwable) {
-                appLog.warn("Klarte ikke dekomprimere UUID: $encoded. Bruker det gamle formatet.")
+                appLog.debug("Klarte ikke dekomprimere UUID: $encoded. Bruker det gamle formatet.")
                 secureLog.warn("Klarte ikke dekomprimere UUID: $encoded. Bruker det gamle formatet.", e)
                 return PeriodeId(encoded)
             }
