@@ -169,7 +169,7 @@ data class IverksettingResultatDao(
                 where.tilkjentytelseforutbetaling?.let { stmt.setString(position++, it.toJson()) }
                 where.oppdragresultat?.let { stmt.setString(position++, it.toJson()) }
                 where.uid?.let { stmt.setObject(position++, it.id) }
-                limit?.let { stmt.setInt(position++, it) }
+                limit?.let { stmt.setInt(position, it) } // position++ if more where parameters is added
 
                 jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())

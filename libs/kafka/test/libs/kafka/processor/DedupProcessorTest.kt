@@ -107,10 +107,11 @@ class DedupProcessorTest {
             )).produce(Topics.C)
         }
         val store = kafka.getStore(Stores.Dedup)
-
         runCatching { kafka.inputTopic(Topics.B).produce("1", "hello") }
+        assertEquals(1, attempt)
         assertNull(store.getOrNull("1"))
         kafka.inputTopic(Topics.B).produce("1", "hello")
+        assertEquals(1, attempt)
         val stateStoreHashedDedupKey = hasher("1", "hello").toString()
         assertEquals("hello", store.getOrNull(stateStoreHashedDedupKey))
         val records = kafka.outputTopic(Topics.C).readRecordsToList()

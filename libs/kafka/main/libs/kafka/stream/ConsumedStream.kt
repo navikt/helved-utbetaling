@@ -197,7 +197,7 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
     fun repartition(
         topic: Topic<K, V>,
         partitions: Int,
-        named: String = "${topic.name}",
+        named: String = topic.name,
     ): ConsumedStream<K, V> {
         val repartition = Repartitioned
             .with(topic.serdes.key, topic.serdes.value)

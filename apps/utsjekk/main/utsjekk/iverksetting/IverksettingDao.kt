@@ -60,7 +60,7 @@ data class IverksettingDao(
                 where.behandlingId?.let { stmt.setString(position++, it.id) }
                 where.sakId?.let { stmt.setString(position++, it.id) }
                 where.iverksettingId?.let { stmt.setString(position++, it.id) }
-                where.fagsystem?.let { stmt.setString(position++, it.name) }
+                where.fagsystem?.let { stmt.setString(position, it.name) } // position++ if more where parameters is added
 
                 jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())
@@ -104,7 +104,7 @@ data class IverksettingDao(
                 where.sakId?.let { stmt.setString(position++, it.id) }
                 where.iverksettingId?.let { stmt.setString(position++, it.id) }
                 where.fagsystem?.let { stmt.setString(position++, it.name) }
-                limit?.let { stmt.setInt(position++, it) }
+                limit?.let { stmt.setInt(position, it) } // position++ if more where parameters is added
 
                 jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())

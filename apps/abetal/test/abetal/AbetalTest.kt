@@ -760,7 +760,6 @@ internal class AbetalTest {
         val key = UUID.randomUUID().toString()
         val meldeperiode = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER).toString()
 
         TestRuntime.topics.dp.produce(key) { 
             Dp.utbetaling(sid.id) {

@@ -56,11 +56,11 @@ private fun Application.simulering() {
 
     routing {
         post("/simuler") {
-            val req = call.receive<UtbetalingsoppdragDto>()
+            // val req = call.receive<UtbetalingsoppdragDto>()
             call.respond(simuleringResponseCode,simuleringResponse)
         }
         post("/simulering") {
-            val req = call.receive<client.SimuleringRequest>()
+            // val req = call.receive<client.SimuleringRequest>()
             call.respond(simuleringResponseCode,simuleringResponse)
         }
     }

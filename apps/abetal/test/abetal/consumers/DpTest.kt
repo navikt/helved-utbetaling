@@ -2813,8 +2813,6 @@ internal class DpTest {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
-        val meldeperiode = "132460781"
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id, dryrun = true) {
