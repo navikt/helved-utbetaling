@@ -6,6 +6,7 @@ import TestData.dto.api.simuleringResponse
 import models.kontrakter.felles.Fagsystem
 import models.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import utsjekk.simulering.TestCaser.etterbetaling
@@ -36,6 +37,7 @@ class SimuleringGeneratorTest {
         /* TODO(): Fiks denne
         *  Her forventer vi at bruker skal få en justering for april hvor ny utbetaling blir 1137 - 1024 = 113
         */
+        assertNotNull(oppsummering)
     }
 
     @Test

@@ -1,6 +1,6 @@
 package libs.utils
 
-public sealed interface Result<out V, out E> {
+sealed interface Result<out V, out E> {
     companion object {
         inline fun <V, reified E> catch(block: () -> V): Result<V, E> {
             return try {
@@ -12,8 +12,8 @@ public sealed interface Result<out V, out E> {
     }
 }
 
-public data class Ok<V>(val value: V): Result<V, Nothing>
-public data class Err<E>(val err: E): Result<Nothing, E>
+data class Ok<V>(val value: V): Result<V, Nothing>
+data class Err<E>(val err: E): Result<Nothing, E>
 
 class ResultException(msg: String): RuntimeException(msg)
 private fun err(msg: String): Nothing = throw ResultException(msg)

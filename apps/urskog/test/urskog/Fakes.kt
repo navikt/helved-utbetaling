@@ -34,19 +34,17 @@ val receivedMqOppdrag = mutableListOf<Oppdrag>()
 
 fun oppdragURFake(): MQ {
     val mapper = XMLMapper<Oppdrag>()
-    lateinit var mq: MQFake 
+    var mq: MQFake? = null 
     val ctx by lazy {
         JMSContextFake {
             val oppdrag = mapper.readValue(it.text)
             receivedMqOppdrag.add(oppdrag)
             val kvittert = oppdrag.apply {
                 mmel = Mmel().apply {
-                    alvorlighetsgrad = "00" // 00/04/08/12
-                    // kodeMelding = ""
-                    // beskrMelding = ""
+                    alvorlighetsgrad = "00"
                 }
             }
-            mq.textMessage(mapper.writeValueAsString(kvittert))
+            mq?.textMessage(mapper.writeValueAsString(kvittert)) ?: error("MQ not initialized")
         }
     }
     mq = MQFake(ctx) 

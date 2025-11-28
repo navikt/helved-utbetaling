@@ -9,6 +9,7 @@ subprojects {
     tasks {
         withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
             compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+            compilerOptions.allWarningsAsErrors.set(true)
         }
 
         withType<JavaCompile>().configureEach {
@@ -41,5 +42,8 @@ allprojects {
 
     kotlin {
         jvmToolchain(21)
+        compilerOptions {
+            extraWarnings.set(true)
+        }
     }
 }

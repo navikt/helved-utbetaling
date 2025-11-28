@@ -22,7 +22,7 @@ class PostgresContainer(appname: String, waitForContainerMs: Long = 30_000) : Au
     }
 
     private fun waitUntilJdbcAvailable(retries: Int, delayMillis: Long) {
-        repeat(retries) { attempt ->
+        repeat(retries) {
             try {
                 java.sql.DriverManager.getConnection(
                     container.jdbcUrl,

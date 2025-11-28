@@ -99,7 +99,7 @@ fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTab
             """.trimEnd()
         }
         .leftJoin(Serde.xml(), Serde.json(), fks, "oppdrag-leftjoin-fks")
-        .flatMapKeyValue { o, info, pks -> 
+        .flatMapKeyValue { _, info, pks -> 
             if (pks == null) {
                 appLog.warn("primary key used to move pending to utbetalinger was null. Oppdraginfo: $info")
                 emptyList()
