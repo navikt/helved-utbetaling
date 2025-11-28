@@ -173,7 +173,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
         .flatMapKeyValue(::splitOnMeldeperiode)
         .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
-        .filter { (new, prev) -> !new.isDuplicate(prev) }
+        .filter { (new, prev) -> !new.isDuplicate(prev) } // todo: må vi ha denne?
         .rekey { new, _ -> new.originalKey }
         .map { new, prev -> listOf(StreamsPair(new, prev)) }
         .sessionWindow(Serde.string(), Serde.listStreamsPair(), DP_TX_GAP_MS.milliseconds, "dp-utbetalinger-session") 
