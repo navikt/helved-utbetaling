@@ -76,7 +76,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, null, uid))
+            setBody(MigrationRequest(sid, bid, iid, null, uid to models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP))
         }
 
         assertEquals(HttpStatusCode.NotFound, res.status)
@@ -111,7 +111,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, null, uid))
+            setBody(MigrationRequest(sid, bid, iid, null, uid to models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP))
         }
 
         assertEquals(HttpStatusCode.Locked, res.status)
@@ -164,7 +164,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, null, uid))
+            setBody(MigrationRequest(sid, bid, iid, null, uid to models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
@@ -172,6 +172,95 @@ class IverksettingMigratorTest {
         assertEquals(0, utbetaling.uncommitted().size)
         val new_uid = models.UtbetalingId(uid)
         val actual = utbetaling.history() .single { (key, _) -> key == new_uid.toString() }.second
+        assertEquals(false, actual.dryrun)
+        assertEquals(iid, actual.originalKey)
+        assertEquals(models.Fagsystem.TILLEGGSSTØNADER, actual.fagsystem)
+        assertEquals(new_uid, actual.uid)
+        assertEquals(models.Action.CREATE, actual.action)
+        assertEquals(false, actual.førsteUtbetalingPåSak)
+        assertEquals(models.SakId(sid), actual.sakId)
+        assertEquals(models.BehandlingId(bid), actual.behandlingId)
+        assertEquals(models.PeriodeId("$sid#$pid"), actual.lastPeriodeId)
+        assertEquals(models.Personident(personident), actual.personident)
+        assertEquals(1.mar.atStartOfDay(), actual.vedtakstidspunkt)
+        assertEquals(models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP, actual.stønad)
+        assertEquals(TestData.DEFAULT_BESLUTTER, actual.beslutterId.ident)
+        assertEquals(TestData.DEFAULT_SAKSBEHANDLER, actual.saksbehandlerId.ident)
+        assertEquals(models.Periodetype.UKEDAG, actual.periodetype)
+        assertEquals(null, actual.avvent)
+        assertEquals(1, actual.perioder.size)
+        assertEquals(500u, actual.perioder[0].beløp)
+        assertEquals(null, actual.perioder[0].vedtakssats)
+        assertEquals(4.feb, actual.perioder[0].fom)
+        assertEquals(4.feb, actual.perioder[0].tom)
+        assertEquals(null, actual.perioder[0].betalendeEnhet)
+    }
+
+    @Test
+    fun `can migrate iverksetting with multiple klassekoder for tilleggsstønader`() = runTest(TestRuntime.context) {
+        val sid = RandomOSURId.generate()
+        val bid = RandomOSURId.generate()
+        val iid = RandomOSURId.generate()
+        val pid = 4L
+        val uid = UUID.randomUUID()
+
+        val personident = transaction {
+            val iv = TestData.dao.iverksetting(
+                mottattTidspunkt = LocalDateTime.now().minusDays(2),
+                iverksetting = TestData.domain.iverksetting(
+                    fagsystem = models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER,
+                    sakId = SakId(sid),
+                    behandlingId = BehandlingId(bid),
+                    iverksettingId = IverksettingId(iid),
+                    vedtakstidspunkt = 1.mar.atStartOfDay(),
+                ),
+            ).also { it.insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID())) }
+
+
+            TestData.dao.iverksettingResultat(
+                fagsystem = models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER, 
+                sakId = SakId(sid),
+                behandlingId = BehandlingId(bid),
+                iverksettingId = IverksettingId(iid),
+                tilkjentYtelse = TestData.domain.enTilkjentYtelse(
+                    listOf(
+                        TestData.domain.enAndelTilkjentYtelse(
+                            beløp = 500,
+                            fom = 4.feb,
+                            tom = 4.feb,
+                            periodeId = pid,
+                            stønadsdata = StønadsdataTilleggsstønader(StønadTypeTilleggsstønader.TILSYN_BARN_AAP)
+                        ),
+                        TestData.domain.enAndelTilkjentYtelse(
+                            beløp = 800,
+                            fom = 1.mar,
+                            tom = 1.mar,
+                            periodeId = pid + 1,
+                            forrigePeriodeId = pid,
+                            stønadsdata = StønadsdataTilleggsstønader(StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE)
+                        )
+                    )
+                ),
+                resultat = OppdragResultat(OppdragStatus.KVITTERT_OK),
+            ).insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID()))
+
+            iv.data.personident
+        }
+
+        val res = httpClient.post("/api/iverksetting/v2/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(MigrationRequest(sid, bid, iid, null, uid to models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP))
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        assertEquals(personident, personident) // unused
+        val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
+        assertEquals(0, utbetaling.uncommitted().size)
+        val new_uid = models.UtbetalingId(uid)
+        val actuals = utbetaling.history().filter { (key, _) -> key == new_uid.toString() }.map { it.second }// .second
+        assertEquals(1, actuals.size)
+        val actual = actuals.first()
         assertEquals(false, actual.dryrun)
         assertEquals(iid, actual.originalKey)
         assertEquals(models.Fagsystem.TILLEGGSSTØNADER, actual.fagsystem)

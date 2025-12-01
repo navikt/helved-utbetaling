@@ -32,9 +32,13 @@ data class MigrationRequest(
     val sakId: String,
     val behandlingId: String,
     val iverksettingId: String?,
-    val meldeperiode: String?, // eller meldekortId
-    val uid: UUID?,
-)
+    val meldeperiode: String?, // meldekortId
+    val uidToStønad: Pair<UUID, models.Stønadstype>?,
+) {
+    init {
+        require(meldeperiode == null || uidToStønad == null) 
+    }
+}
 
 class IverksettingMigrator(
     val iverksettingService: IverksettingService,
@@ -45,7 +49,8 @@ class IverksettingMigrator(
             post {
                 val fagsystem = call.fagsystem()
                 val request = call.receive<MigrationRequest>()
-                if(request.meldeperiode == null && request.uid == null) badRequest("mangler en av: 'meldeperiode' eller 'uid'")
+                if(request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
+                if (request.meldeperiode != null && request.uidToStønad != null) badRequest("mutual exclusive: 'meldeperiode' and 'uidToStønad'")
                 transfer(fagsystem, request)
                 call.respond(HttpStatusCode.OK)
             }
@@ -76,12 +81,13 @@ class IverksettingMigrator(
                     .groupBy { it.stønadsdata.tilKjedenøkkel() }
                     .mapValues { andel -> andel.value.sortedBy { it.fom} }
                     .filter { (nøkkel, _) -> 
-                        if (nøkkel is KjedenøkkelMeldeplikt) {
-                            nøkkel.meldekortId == req.meldeperiode!!
-                        } else true // FIXME:ved fler klassekoder på sak (TILST) blir uid skrevet over så bare siste klassekode i saken blir migrert
+                        when (nøkkel) {
+                            is KjedenøkkelMeldeplikt -> nøkkel.meldekortId == req.meldeperiode!!
+                            is KjedenøkkelStandard -> nøkkel.klassifiseringskode == req.uidToStønad!!.second.klassekode
+                        }
                     }
 
-                andelerByKlassekode.forEach { klassekode, andeler ->
+               andelerByKlassekode.forEach { klassekode, andeler ->
                     appLog.info("forsøker å migrere $klassekode}")
                     val utbet = utbetaling(req, iverksetting, andeler, klassekode.klassifiseringskode, models.Fagsystem.from(fs.kode))
                     val key = utbet.uid.id.toString()
@@ -101,8 +107,8 @@ class IverksettingMigrator(
         dryrun = false,
         originalKey = iverksetting.iverksettingId?.id ?: iverksetting.behandlingId.id,
         fagsystem = fagsystem,
-        uid = req.uid
-            ?.let { UtbetalingId(it) }
+        uid = req.uidToStønad
+            ?.let { UtbetalingId(it.first) }
             ?: uid(iverksetting.sakId.id, requireNotNull(req.meldeperiode), Stønadstype.fraKode(klassekode), fagsystem),
         action = Action.CREATE,
         førsteUtbetalingPåSak = false,
