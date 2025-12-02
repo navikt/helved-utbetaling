@@ -75,7 +75,7 @@ Kvitteringer kommer i form av XML med `<mmel>` i toppen. Resten av XML-en er lik
 * `04`: OK, men med informasjon / varsel som bør ses på. Transaksjonen er uansett godtatt av OS
 * `08`: Feil i validering / funksjonell feil. Transaksjonen er avvist av OS
     * Fiks feil i dataene og send på nytt
-* `12: Teknisk [forbigående feilhos](https://nav-it.slack.com/archives/CKZADNFBP/p1682661207600579?thread_ts=1682491699.828299&cid=CKZADNFBP) OS eller andre de avhenger av (PDL e.l)
+* `12`: Teknisk [forbigående feilhos](https://nav-it.slack.com/archives/CKZADNFBP/p1682661207600579?thread_ts=1682491699.828299&cid=CKZADNFBP) OS eller andre de avhenger av (PDL e.l)
     * Prøv på nytt senere
 
 
@@ -95,11 +95,16 @@ Her er feilkvitteringene vi har sett mest av:
 
 
 * #### Oppdraget finnes fra før (alvorlighetsgrad 08)
+
   Dette skjer dersom vi skal korrigere en sak, men setter `<kodeEndring>NY</kodeEndring>` rett innenfor noden `<oppdrag-110>` . OS vil da tolke det som at vi prøver å opprette saken på nytt. Når man endrer eller legger til noe nytt på eksisterende sak, må man i stedet sette `<kodeEndring>ENDR</kodeEndring>`. [Se doken vår på oppdrag-XML](https://github.com/navikt/helved-utbetaling/blob/main/dokumentasjon/oppdrag_xml.md) for hvordan oppdragene er bygget opp. Det er alltid én `<oppdrag-110>`. Den kan ha flere `<oppdragslinje-150>` som hver representerer en oppdragslinje i OS.
 
     * [Her er en slack-tråd med et eksempel på en sak](https://nav-it.slack.com/archives/C06SJTR2X3L/p1747040121503279) med denne feilen, som skyldtes en optimistisk timeout hos tiltakspenger. De sendte samme oppdrag med fem sekunders mellomrom.
 
     * Denne feilen har også blitt trigget av AAP som sendte flere utbetalinger samtidig. Det trigget et samtidighetsproblem: Vi må si til OS hva som er første utbetaling på en sak. Det gjør vi ved å sette `<kodeEndring>NY</kodeEndring>` på `oppdrag-110` på det oppdraget som faktisk er første utbetaling på saken. Om vi gjør det på to utbetalinger som sendes samtidig på samme sak, så vil OS akseptere den ene men avvise den andre. Problemet er løst ved at AAP sender utbetalinger, innenfor samme sak, i sekvens. Ref Frode: [Frode Lindås: "Har nå lagt ut en fiks for å sørge for sek..."](https://nav-it.slack.com/archives/C06SJTR2X3L/p1748955375346549?thread_ts=1748424655.966809&cid=C06SJTR2X3L)
+ 
+
+* #### Oppdrag finnes fra før også kan trigges av simulering som går i parallell på samme sak.
+  En simulering er et oppdrag med en database rollback i OS. Det betyr at et utbetalingsoppdrag kan feile med `Oppdraget finnes fra før` hvis man samtidig har en pågående simuleringsrequest. Man må vente til simuleringsrequesten har “landet” før man sender utbetalingsoppdraget. I tillegg må et ubetalingsoppdrag være kvittert før man kan simulere videre på den samme saken. Om man simulerer før siste utbetaling er kvittert gir vi statuskode 409 (conflict)
 
 * #### DELYTELSE-ID finnes i oppdragsbasen fra før (alvorlighetsgrad 08)
   Dette betyr at oppdragslinjen finnes fra før i OS. Vi får denne om vi prøver å sende inn samme oppdrag to ganger. Vi fikk den sist i dev 13 juni da vi la samme oppdrag på MQ to ganger i forbindelse med en deploy. Appen la det først på MQ rett før shut down, også ble det lagt på MQ på nytt 8 sekunder senere da appen var oppe igjen. Her er saken og kommentarer vi hadde på det, ink XML-en med kvitteringen: https://github.com/navikt/team-helved/issues/211
