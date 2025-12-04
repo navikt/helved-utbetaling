@@ -42,7 +42,7 @@ data class UtbetalingApi(
         failOnTomBeforeFom()
         failOnIllegalUseOfFastsattDagsats()
         failOnInconsistentPeriodeType()
-        failOnIllegalFutureUtbetaling()
+        //failOnIllegalFutureUtbetaling()
         failOnTooLongPeriods()
         failOnZeroBeløp()
         failOnTooLongSakId()
