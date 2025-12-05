@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 import utsjekk.Topics
 import utsjekk.iverksetting.RandomOSURId
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -1201,5 +1202,28 @@ class UtbetalingRoutingTest {
             .windowed(2, 1) { (a, b) ->
                 assertEquals(b.refDelytelseId, a.delytelseId)
             }
+    }
+
+    @Test
+    fun `i jul må det gå an å utbetale en fremtidig periode`() = runTest {
+        val fremtid = LocalDate.now().plusDays(1)
+
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = fremtid,
+            periodeType = PeriodeType.DAG,
+            perioder = listOf(
+                UtbetalingsperiodeApi(fremtid, fremtid, 1000u)
+            ),
+        )
+
+        val uid = UUID.randomUUID()
+        val res = httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.Created, res.status)
+        assertEquals("/utbetalinger/$uid", res.headers["location"])
     }
 }
