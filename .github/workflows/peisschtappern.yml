@@ -34,7 +34,7 @@ jobs:
 
       - run: ./gradlew apps:${{ github.workflow }}:test apps:${{ github.workflow }}:buildFatJar --continue --no-daemon
 
-      - uses: dorny/test-reporter@v2.2.0
+      - uses: dorny/test-reporter@v2.3.0
         if: success() || failure()
         with:
           name: tests
