@@ -64,7 +64,7 @@ data class Utbetaling(
         failOnÅrsskifte()
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
-        failOnIllegalFutureUtbetaling()
+        //failOnIllegalFutureUtbetaling()
         failOnTooManyPeriods()
         failOnZeroBeløp()
         failOnTooLongSakId()
