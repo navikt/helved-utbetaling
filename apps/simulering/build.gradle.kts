@@ -6,7 +6,7 @@ application {
     mainClass.set("simulering.SimuleringKt")
 }
 
-val ktorVersion = "3.3.2"
+val ktorVersion = "3.3.3"
 val libVersion = "3.1.219"
 
 dependencies {
