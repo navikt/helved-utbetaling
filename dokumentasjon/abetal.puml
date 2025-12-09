@@ -17,8 +17,9 @@ queue "ktable-helved.pending-utbetalinger.v1-repartition" <<topic>> as ktable_he
 queue "helved.pending-utbetalinger.v1" <<topic>> as helved_pending_utbetalinger_v1
 queue "pk-leftjoin-pending-repartition" <<topic>> as pk_leftjoin_pending_repartition
 queue "helved.saker.v1" <<topic>> as helved_saker_v1
-queue "aaptuple-leftjoin-saker-repartition" <<topic>> as aaptuple_leftjoin_saker_repartition
+queue "helved.status.v1" <<topic>> as helved_status_v1
 queue "dptuple-leftjoin-saker-repartition" <<topic>> as dptuple_leftjoin_saker_repartition
+queue "aaptuple-leftjoin-saker-repartition" <<topic>> as aaptuple_leftjoin_saker_repartition
 queue "historisktuple-leftjoin-saker-repartition" <<topic>> as historisktuple_leftjoin_saker_repartition
 queue "tptuple-leftjoin-saker-repartition" <<topic>> as tptuple_leftjoin_saker_repartition
 queue "tstuple-leftjoin-saker-repartition" <<topic>> as tstuple_leftjoin_saker_repartition
@@ -30,7 +31,6 @@ queue "teamdagpenger.utbetaling.v1" <<topic>> as teamdagpenger_utbetaling_v1
 queue "helved.utbetalinger-dp.v1" <<topic>> as helved_utbetalinger_dp_v1
 queue "helved.simuleringer.v1" <<topic>> as helved_simuleringer_v1
 queue "helved.oppdrag.v1" <<topic>> as helved_oppdrag_v1
-queue "helved.status.v1" <<topic>> as helved_status_v1
 queue "from-aap.utbetaling.v1-repartition" <<topic>> as from_aap_utbetaling_v1_repartition
 queue "aap.utbetaling.v1" <<topic>> as aap_utbetaling_v1
 queue "helved.utbetalinger-aap.v1" <<topic>> as helved_utbetalinger_aap_v1
@@ -69,24 +69,24 @@ package "Sub-topology: 1" {
 	agent "ktable-helved.utbetalinger.v1" <<Processor>> as ktable_helved_utbetalinger_v1
 	agent "tp-periode-leftjoin-utbetalinger" <<Processor>> as tp_periode_leftjoin_utbetalinger
 	agent "ts-periode-leftjoin-utbetalinger" <<Processor>> as ts_periode_leftjoin_utbetalinger
-	agent "KSTREAM-FILTER-0000000053" <<Processor>> as KSTREAM_FILTER_0000000053
-	agent "KSTREAM-FILTER-0000000111" <<Processor>> as KSTREAM_FILTER_0000000111
-	agent "KSTREAM-FILTER-0000000169" <<Processor>> as KSTREAM_FILTER_0000000169
-	agent "KSTREAM-FILTER-0000000220" <<Processor>> as KSTREAM_FILTER_0000000220
-	agent "KSTREAM-FILTER-0000000278" <<Processor>> as KSTREAM_FILTER_0000000278
+	agent "KSTREAM-FILTER-0000000060" <<Processor>> as KSTREAM_FILTER_0000000060
+	agent "KSTREAM-FILTER-0000000118" <<Processor>> as KSTREAM_FILTER_0000000118
+	agent "KSTREAM-FILTER-0000000176" <<Processor>> as KSTREAM_FILTER_0000000176
+	agent "KSTREAM-FILTER-0000000227" <<Processor>> as KSTREAM_FILTER_0000000227
+	agent "KSTREAM-FILTER-0000000285" <<Processor>> as KSTREAM_FILTER_0000000285
 	agent "KTABLE-TOSTREAM-0000000014" <<Processor>> as KTABLE_TOSTREAM_0000000014
 	agent "KSTREAM-FILTER-0000000015" <<Processor>> as KSTREAM_FILTER_0000000015
-	agent "KSTREAM-KEY-SELECT-0000000054" <<Processor>> as KSTREAM_KEY_SELECT_0000000054
-	agent "KSTREAM-KEY-SELECT-0000000112" <<Processor>> as KSTREAM_KEY_SELECT_0000000112
-	agent "KSTREAM-KEY-SELECT-0000000170" <<Processor>> as KSTREAM_KEY_SELECT_0000000170
-	agent "KSTREAM-KEY-SELECT-0000000221" <<Processor>> as KSTREAM_KEY_SELECT_0000000221
-	agent "KSTREAM-KEY-SELECT-0000000279" <<Processor>> as KSTREAM_KEY_SELECT_0000000279
+	agent "KSTREAM-KEY-SELECT-0000000061" <<Processor>> as KSTREAM_KEY_SELECT_0000000061
+	agent "KSTREAM-KEY-SELECT-0000000119" <<Processor>> as KSTREAM_KEY_SELECT_0000000119
+	agent "KSTREAM-KEY-SELECT-0000000177" <<Processor>> as KSTREAM_KEY_SELECT_0000000177
+	agent "KSTREAM-KEY-SELECT-0000000228" <<Processor>> as KSTREAM_KEY_SELECT_0000000228
+	agent "KSTREAM-KEY-SELECT-0000000286" <<Processor>> as KSTREAM_KEY_SELECT_0000000286
 	agent "KSTREAM-KEY-SELECT-0000000016" <<Processor>> as KSTREAM_KEY_SELECT_0000000016
-	agent "KSTREAM-MAPVALUES-0000000055" <<Processor>> as KSTREAM_MAPVALUES_0000000055
-	agent "KSTREAM-MAPVALUES-0000000113" <<Processor>> as KSTREAM_MAPVALUES_0000000113
-	agent "KSTREAM-MAPVALUES-0000000171" <<Processor>> as KSTREAM_MAPVALUES_0000000171
-	agent "KSTREAM-MAPVALUES-0000000222" <<Processor>> as KSTREAM_MAPVALUES_0000000222
-	agent "KSTREAM-MAPVALUES-0000000280" <<Processor>> as KSTREAM_MAPVALUES_0000000280
+	agent "KSTREAM-MAPVALUES-0000000062" <<Processor>> as KSTREAM_MAPVALUES_0000000062
+	agent "KSTREAM-MAPVALUES-0000000120" <<Processor>> as KSTREAM_MAPVALUES_0000000120
+	agent "KSTREAM-MAPVALUES-0000000178" <<Processor>> as KSTREAM_MAPVALUES_0000000178
+	agent "KSTREAM-MAPVALUES-0000000229" <<Processor>> as KSTREAM_MAPVALUES_0000000229
+	agent "KSTREAM-MAPVALUES-0000000287" <<Processor>> as KSTREAM_MAPVALUES_0000000287
 	agent "aap-utbetalinger-session-repartition-filter" <<Processor>> as aap_utbetalinger_session_repartition_filter
 	agent "dp-utbetalinger-session-repartition-filter" <<Processor>> as dp_utbetalinger_session_repartition_filter
 	agent "historisk-utbetalinger-session-repartition-filter" <<Processor>> as historisk_utbetalinger_session_repartition_filter
@@ -123,30 +123,30 @@ package "Sub-topology: 1" {
 	ktable_helved_utbetalinger_v1_repartition_source --> ktable_helved_utbetalinger_v1
 	tp_periode_leftjoin_utbetalinger_repartition_source --> tp_periode_leftjoin_utbetalinger
 	ts_periode_leftjoin_utbetalinger_repartition_source --> ts_periode_leftjoin_utbetalinger
-	aap_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000111
-	dp_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000053
-	historisk_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000278
+	aap_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000118
+	dp_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000060
+	historisk_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000285
 	ktable_helved_utbetalinger_v1 --> KTABLE_TOSTREAM_0000000014
-	tp_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000220
-	ts_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000169
-	KSTREAM_FILTER_0000000053 --> KSTREAM_KEY_SELECT_0000000054
-	KSTREAM_FILTER_0000000111 --> KSTREAM_KEY_SELECT_0000000112
-	KSTREAM_FILTER_0000000169 --> KSTREAM_KEY_SELECT_0000000170
-	KSTREAM_FILTER_0000000220 --> KSTREAM_KEY_SELECT_0000000221
-	KSTREAM_FILTER_0000000278 --> KSTREAM_KEY_SELECT_0000000279
+	tp_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000227
+	ts_periode_leftjoin_utbetalinger --> KSTREAM_FILTER_0000000176
+	KSTREAM_FILTER_0000000060 --> KSTREAM_KEY_SELECT_0000000061
+	KSTREAM_FILTER_0000000118 --> KSTREAM_KEY_SELECT_0000000119
+	KSTREAM_FILTER_0000000176 --> KSTREAM_KEY_SELECT_0000000177
+	KSTREAM_FILTER_0000000227 --> KSTREAM_KEY_SELECT_0000000228
+	KSTREAM_FILTER_0000000285 --> KSTREAM_KEY_SELECT_0000000286
 	KTABLE_TOSTREAM_0000000014 --> KSTREAM_FILTER_0000000015
 	KSTREAM_FILTER_0000000015 --> KSTREAM_KEY_SELECT_0000000016
-	KSTREAM_KEY_SELECT_0000000054 --> KSTREAM_MAPVALUES_0000000055
-	KSTREAM_KEY_SELECT_0000000112 --> KSTREAM_MAPVALUES_0000000113
-	KSTREAM_KEY_SELECT_0000000170 --> KSTREAM_MAPVALUES_0000000171
-	KSTREAM_KEY_SELECT_0000000221 --> KSTREAM_MAPVALUES_0000000222
-	KSTREAM_KEY_SELECT_0000000279 --> KSTREAM_MAPVALUES_0000000280
+	KSTREAM_KEY_SELECT_0000000061 --> KSTREAM_MAPVALUES_0000000062
+	KSTREAM_KEY_SELECT_0000000119 --> KSTREAM_MAPVALUES_0000000120
+	KSTREAM_KEY_SELECT_0000000177 --> KSTREAM_MAPVALUES_0000000178
+	KSTREAM_KEY_SELECT_0000000228 --> KSTREAM_MAPVALUES_0000000229
+	KSTREAM_KEY_SELECT_0000000286 --> KSTREAM_MAPVALUES_0000000287
 	KSTREAM_KEY_SELECT_0000000016 --> utbetalinger_groupby_sakkey_repartition_filter
-	KSTREAM_MAPVALUES_0000000055 --> dp_utbetalinger_session_repartition_filter
-	KSTREAM_MAPVALUES_0000000113 --> aap_utbetalinger_session_repartition_filter
-	KSTREAM_MAPVALUES_0000000171 --> ts_utbetalinger_session_repartition_filter
-	KSTREAM_MAPVALUES_0000000222 --> tp_utbetalinger_session_repartition_filter
-	KSTREAM_MAPVALUES_0000000280 --> historisk_utbetalinger_session_repartition_filter
+	KSTREAM_MAPVALUES_0000000062 --> dp_utbetalinger_session_repartition_filter
+	KSTREAM_MAPVALUES_0000000120 --> aap_utbetalinger_session_repartition_filter
+	KSTREAM_MAPVALUES_0000000178 --> ts_utbetalinger_session_repartition_filter
+	KSTREAM_MAPVALUES_0000000229 --> tp_utbetalinger_session_repartition_filter
+	KSTREAM_MAPVALUES_0000000287 --> historisk_utbetalinger_session_repartition_filter
 	aap_utbetalinger_session_repartition_filter --> aap_utbetalinger_session_repartition_sink
 	dp_utbetalinger_session_repartition_filter --> dp_utbetalinger_session_repartition_sink
 	historisk_utbetalinger_session_repartition_filter --> historisk_utbetalinger_session_repartition_sink
@@ -171,95 +171,110 @@ package "Sub-topology: 3" {
 	database "helved.pending-utbetalinger.v1-state-store" <<State Store>> as helved_pending_utbetalinger_v1_state_store
 	agent "pk-leftjoin-pending-repartition-source" <<Source>> as pk_leftjoin_pending_repartition_source
 	agent "pk-leftjoin-pending" <<Processor>> as pk_leftjoin_pending
-	agent "KSTREAM-MAPVALUES-0000000329" <<Processor>> as KSTREAM_MAPVALUES_0000000329
-	agent "KSTREAM-FILTER-0000000330" <<Processor>> as KSTREAM_FILTER_0000000330
-	agent "KSTREAM-PROCESSOR-0000000331" <<Processor>> as KSTREAM_PROCESSOR_0000000331
+	agent "KSTREAM-MAPVALUES-0000000337" <<Processor>> as KSTREAM_MAPVALUES_0000000337
+	agent "KSTREAM-FILTER-0000000338" <<Processor>> as KSTREAM_FILTER_0000000338
+	agent "KSTREAM-PROCESSOR-0000000339" <<Processor>> as KSTREAM_PROCESSOR_0000000339
 	agent "ktable-helved.pending-utbetalinger.v1-repartition-source" <<Source>> as ktable_helved_pending_utbetalinger_v1_repartition_source
-	agent "KSTREAM-SINK-0000000332" <<Sink>> as KSTREAM_SINK_0000000332
+	agent "KSTREAM-SINK-0000000340" <<Sink>> as KSTREAM_SINK_0000000340
 	agent "ktable-helved.pending-utbetalinger.v1" <<Processor>> as ktable_helved_pending_utbetalinger_v1
 	pk_leftjoin_pending_repartition --> pk_leftjoin_pending_repartition_source
 	helved_pending_utbetalinger_v1_state_store -- pk_leftjoin_pending
 	ktable_helved_pending_utbetalinger_v1_repartition --> ktable_helved_pending_utbetalinger_v1_repartition_source
-	helved_utbetalinger_v1 <-- KSTREAM_SINK_0000000332
+	helved_utbetalinger_v1 <-- KSTREAM_SINK_0000000340
 	helved_pending_utbetalinger_v1_state_store -- ktable_helved_pending_utbetalinger_v1
 	pk_leftjoin_pending_repartition_source --> pk_leftjoin_pending
-	pk_leftjoin_pending --> KSTREAM_MAPVALUES_0000000329
-	KSTREAM_MAPVALUES_0000000329 --> KSTREAM_FILTER_0000000330
-	KSTREAM_FILTER_0000000330 --> KSTREAM_PROCESSOR_0000000331
-	KSTREAM_PROCESSOR_0000000331 --> KSTREAM_SINK_0000000332
+	pk_leftjoin_pending --> KSTREAM_MAPVALUES_0000000337
+	KSTREAM_MAPVALUES_0000000337 --> KSTREAM_FILTER_0000000338
+	KSTREAM_FILTER_0000000338 --> KSTREAM_PROCESSOR_0000000339
+	KSTREAM_PROCESSOR_0000000339 --> KSTREAM_SINK_0000000340
 	ktable_helved_pending_utbetalinger_v1_repartition_source --> ktable_helved_pending_utbetalinger_v1
 }
 package "Sub-topology: 4" {
 	database "helved.saker.v1-state-store-materialized" <<State Store>> as helved_saker_v1_state_store_materialized
-	agent "utbetalinger-groupby-sakkey-repartition-source" <<Source>> as utbetalinger_groupby_sakkey_repartition_source
-	agent "aaptuple-leftjoin-saker-repartition-source" <<Source>> as aaptuple_leftjoin_saker_repartition_source
 	agent "dptuple-leftjoin-saker-repartition-source" <<Source>> as dptuple_leftjoin_saker_repartition_source
+	agent "dptuple-leftjoin-saker" <<Processor>> as dptuple_leftjoin_saker
+	agent "KSTREAM-BRANCH-0000000048" <<Processor>> as KSTREAM_BRANCH_0000000048
+	agent "utbetalinger-groupby-sakkey-repartition-source" <<Source>> as utbetalinger_groupby_sakkey_repartition_source
+	agent "KSTREAM-BRANCH-00000000481" <<Processor>> as KSTREAM_BRANCH_00000000481
+	agent "aaptuple-leftjoin-saker-repartition-source" <<Source>> as aaptuple_leftjoin_saker_repartition_source
 	agent "helved.saker.v1-state-store-aggregate" <<Processor>> as helved_saker_v1_state_store_aggregate
 	agent "historisktuple-leftjoin-saker-repartition-source" <<Source>> as historisktuple_leftjoin_saker_repartition_source
 	agent "tptuple-leftjoin-saker-repartition-source" <<Source>> as tptuple_leftjoin_saker_repartition_source
 	agent "tstuple-leftjoin-saker-repartition-source" <<Source>> as tstuple_leftjoin_saker_repartition_source
+	agent "KSTREAM-BRANCH-00000000480" <<Processor>> as KSTREAM_BRANCH_00000000480
+	agent "KSTREAM-KEY-SELECT-0000000050" <<Processor>> as KSTREAM_KEY_SELECT_0000000050
 	agent "KTABLE-TOSTREAM-0000000021" <<Processor>> as KTABLE_TOSTREAM_0000000021
 	agent "aaptuple-leftjoin-saker" <<Processor>> as aaptuple_leftjoin_saker
-	agent "dptuple-leftjoin-saker" <<Processor>> as dptuple_leftjoin_saker
 	agent "historisktuple-leftjoin-saker" <<Processor>> as historisktuple_leftjoin_saker
 	agent "tptuple-leftjoin-saker" <<Processor>> as tptuple_leftjoin_saker
 	agent "tstuple-leftjoin-saker" <<Processor>> as tstuple_leftjoin_saker
 	agent "KSTREAM-FILTER-0000000022" <<Processor>> as KSTREAM_FILTER_0000000022
-	agent "KSTREAM-FLATMAP-0000000048" <<Processor>> as KSTREAM_FLATMAP_0000000048
-	agent "KSTREAM-FLATMAP-0000000106" <<Processor>> as KSTREAM_FLATMAP_0000000106
-	agent "KSTREAM-FLATMAP-0000000215" <<Processor>> as KSTREAM_FLATMAP_0000000215
-	agent "KSTREAM-MAP-0000000164" <<Processor>> as KSTREAM_MAP_0000000164
-	agent "KSTREAM-MAP-0000000273" <<Processor>> as KSTREAM_MAP_0000000273
+	agent "KSTREAM-FLATMAP-0000000055" <<Processor>> as KSTREAM_FLATMAP_0000000055
+	agent "KSTREAM-FLATMAP-0000000113" <<Processor>> as KSTREAM_FLATMAP_0000000113
+	agent "KSTREAM-FLATMAP-0000000222" <<Processor>> as KSTREAM_FLATMAP_0000000222
+	agent "KSTREAM-MAP-0000000171" <<Processor>> as KSTREAM_MAP_0000000171
+	agent "KSTREAM-MAP-0000000280" <<Processor>> as KSTREAM_MAP_0000000280
+	agent "KSTREAM-MAPVALUES-0000000051" <<Processor>> as KSTREAM_MAPVALUES_0000000051
 	agent "KSTREAM-PROCESSOR-0000000023" <<Processor>> as KSTREAM_PROCESSOR_0000000023
+	agent "KSTREAM-PROCESSOR-0000000052" <<Processor>> as KSTREAM_PROCESSOR_0000000052
 	agent "aap-periode-leftjoin-utbetalinger-repartition-filter" <<Processor>> as aap_periode_leftjoin_utbetalinger_repartition_filter
 	agent "dp-periode-leftjoin-utbetalinger-repartition-filter" <<Processor>> as dp_periode_leftjoin_utbetalinger_repartition_filter
 	agent "historisk-periode-leftjoin-utbetalinger-repartition-filter" <<Processor>> as historisk_periode_leftjoin_utbetalinger_repartition_filter
 	agent "tp-periode-leftjoin-utbetalinger-repartition-filter" <<Processor>> as tp_periode_leftjoin_utbetalinger_repartition_filter
 	agent "ts-periode-leftjoin-utbetalinger-repartition-filter" <<Processor>> as ts_periode_leftjoin_utbetalinger_repartition_filter
 	agent "KSTREAM-SINK-0000000024" <<Sink>> as KSTREAM_SINK_0000000024
+	agent "KSTREAM-SINK-0000000053" <<Sink>> as KSTREAM_SINK_0000000053
 	agent "aap-periode-leftjoin-utbetalinger-repartition-sink" <<Sink>> as aap_periode_leftjoin_utbetalinger_repartition_sink
 	agent "dp-periode-leftjoin-utbetalinger-repartition-sink" <<Sink>> as dp_periode_leftjoin_utbetalinger_repartition_sink
 	agent "historisk-periode-leftjoin-utbetalinger-repartition-sink" <<Sink>> as historisk_periode_leftjoin_utbetalinger_repartition_sink
 	agent "tp-periode-leftjoin-utbetalinger-repartition-sink" <<Sink>> as tp_periode_leftjoin_utbetalinger_repartition_sink
 	agent "ts-periode-leftjoin-utbetalinger-repartition-sink" <<Sink>> as ts_periode_leftjoin_utbetalinger_repartition_sink
+	dptuple_leftjoin_saker_repartition --> dptuple_leftjoin_saker_repartition_source
+	helved_saker_v1_state_store_materialized -- dptuple_leftjoin_saker
 	utbetalinger_groupby_sakkey_repartition --> utbetalinger_groupby_sakkey_repartition_source
 	aaptuple_leftjoin_saker_repartition --> aaptuple_leftjoin_saker_repartition_source
-	dptuple_leftjoin_saker_repartition --> dptuple_leftjoin_saker_repartition_source
 	helved_saker_v1_state_store_materialized -- helved_saker_v1_state_store_aggregate
 	historisktuple_leftjoin_saker_repartition --> historisktuple_leftjoin_saker_repartition_source
 	tptuple_leftjoin_saker_repartition --> tptuple_leftjoin_saker_repartition_source
 	tstuple_leftjoin_saker_repartition --> tstuple_leftjoin_saker_repartition_source
 	helved_saker_v1_state_store_materialized -- aaptuple_leftjoin_saker
-	helved_saker_v1_state_store_materialized -- dptuple_leftjoin_saker
 	helved_saker_v1_state_store_materialized -- historisktuple_leftjoin_saker
 	helved_saker_v1_state_store_materialized -- tptuple_leftjoin_saker
 	helved_saker_v1_state_store_materialized -- tstuple_leftjoin_saker
 	helved_saker_v1 <-- KSTREAM_SINK_0000000024
+	helved_status_v1 <-- KSTREAM_SINK_0000000053
 	aap_periode_leftjoin_utbetalinger_repartition <-- aap_periode_leftjoin_utbetalinger_repartition_sink
 	dp_periode_leftjoin_utbetalinger_repartition <-- dp_periode_leftjoin_utbetalinger_repartition_sink
 	historisk_periode_leftjoin_utbetalinger_repartition <-- historisk_periode_leftjoin_utbetalinger_repartition_sink
 	tp_periode_leftjoin_utbetalinger_repartition <-- tp_periode_leftjoin_utbetalinger_repartition_sink
 	ts_periode_leftjoin_utbetalinger_repartition <-- ts_periode_leftjoin_utbetalinger_repartition_sink
-	utbetalinger_groupby_sakkey_repartition_source --> helved_saker_v1_state_store_aggregate
-	aaptuple_leftjoin_saker_repartition_source --> aaptuple_leftjoin_saker
 	dptuple_leftjoin_saker_repartition_source --> dptuple_leftjoin_saker
+	dptuple_leftjoin_saker --> KSTREAM_BRANCH_0000000048
+	KSTREAM_BRANCH_0000000048 --> KSTREAM_BRANCH_00000000480
+	KSTREAM_BRANCH_0000000048 --> KSTREAM_BRANCH_00000000481
+	utbetalinger_groupby_sakkey_repartition_source --> helved_saker_v1_state_store_aggregate
+	KSTREAM_BRANCH_00000000481 --> KSTREAM_KEY_SELECT_0000000050
+	aaptuple_leftjoin_saker_repartition_source --> aaptuple_leftjoin_saker
 	helved_saker_v1_state_store_aggregate --> KTABLE_TOSTREAM_0000000021
 	historisktuple_leftjoin_saker_repartition_source --> historisktuple_leftjoin_saker
 	tptuple_leftjoin_saker_repartition_source --> tptuple_leftjoin_saker
 	tstuple_leftjoin_saker_repartition_source --> tstuple_leftjoin_saker
+	KSTREAM_BRANCH_00000000480 --> KSTREAM_FLATMAP_0000000055
+	KSTREAM_KEY_SELECT_0000000050 --> KSTREAM_MAPVALUES_0000000051
 	KTABLE_TOSTREAM_0000000021 --> KSTREAM_FILTER_0000000022
-	aaptuple_leftjoin_saker --> KSTREAM_FLATMAP_0000000106
-	dptuple_leftjoin_saker --> KSTREAM_FLATMAP_0000000048
-	historisktuple_leftjoin_saker --> KSTREAM_MAP_0000000273
-	tptuple_leftjoin_saker --> KSTREAM_FLATMAP_0000000215
-	tstuple_leftjoin_saker --> KSTREAM_MAP_0000000164
+	aaptuple_leftjoin_saker --> KSTREAM_FLATMAP_0000000113
+	historisktuple_leftjoin_saker --> KSTREAM_MAP_0000000280
+	tptuple_leftjoin_saker --> KSTREAM_FLATMAP_0000000222
+	tstuple_leftjoin_saker --> KSTREAM_MAP_0000000171
 	KSTREAM_FILTER_0000000022 --> KSTREAM_PROCESSOR_0000000023
-	KSTREAM_FLATMAP_0000000048 --> dp_periode_leftjoin_utbetalinger_repartition_filter
-	KSTREAM_FLATMAP_0000000106 --> aap_periode_leftjoin_utbetalinger_repartition_filter
-	KSTREAM_FLATMAP_0000000215 --> tp_periode_leftjoin_utbetalinger_repartition_filter
-	KSTREAM_MAP_0000000164 --> ts_periode_leftjoin_utbetalinger_repartition_filter
-	KSTREAM_MAP_0000000273 --> historisk_periode_leftjoin_utbetalinger_repartition_filter
+	KSTREAM_FLATMAP_0000000055 --> dp_periode_leftjoin_utbetalinger_repartition_filter
+	KSTREAM_FLATMAP_0000000113 --> aap_periode_leftjoin_utbetalinger_repartition_filter
+	KSTREAM_FLATMAP_0000000222 --> tp_periode_leftjoin_utbetalinger_repartition_filter
+	KSTREAM_MAP_0000000171 --> ts_periode_leftjoin_utbetalinger_repartition_filter
+	KSTREAM_MAP_0000000280 --> historisk_periode_leftjoin_utbetalinger_repartition_filter
+	KSTREAM_MAPVALUES_0000000051 --> KSTREAM_PROCESSOR_0000000052
 	KSTREAM_PROCESSOR_0000000023 --> KSTREAM_SINK_0000000024
+	KSTREAM_PROCESSOR_0000000052 --> KSTREAM_SINK_0000000053
 	aap_periode_leftjoin_utbetalinger_repartition_filter --> aap_periode_leftjoin_utbetalinger_repartition_sink
 	dp_periode_leftjoin_utbetalinger_repartition_filter --> dp_periode_leftjoin_utbetalinger_repartition_sink
 	historisk_periode_leftjoin_utbetalinger_repartition_filter --> historisk_periode_leftjoin_utbetalinger_repartition_sink
@@ -283,7 +298,7 @@ package "Sub-topology: 6" {
 	database "helved.fk.v1-state-store" <<State Store>> as helved_fk_v1_state_store
 	agent "oppdrag-leftjoin-fks-repartition-source" <<Source>> as oppdrag_leftjoin_fks_repartition_source
 	agent "oppdrag-leftjoin-fks" <<Processor>> as oppdrag_leftjoin_fks
-	agent "KSTREAM-FLATMAP-0000000324" <<Processor>> as KSTREAM_FLATMAP_0000000324
+	agent "KSTREAM-FLATMAP-0000000332" <<Processor>> as KSTREAM_FLATMAP_0000000332
 	agent "ktable-helved.fk.v1-repartition-source" <<Source>> as ktable_helved_fk_v1_repartition_source
 	agent "pk-leftjoin-pending-repartition-filter" <<Processor>> as pk_leftjoin_pending_repartition_filter
 	agent "ktable-helved.fk.v1" <<Processor>> as ktable_helved_fk_v1
@@ -294,8 +309,8 @@ package "Sub-topology: 6" {
 	helved_fk_v1_state_store -- ktable_helved_fk_v1
 	pk_leftjoin_pending_repartition <-- pk_leftjoin_pending_repartition_sink
 	oppdrag_leftjoin_fks_repartition_source --> oppdrag_leftjoin_fks
-	oppdrag_leftjoin_fks --> KSTREAM_FLATMAP_0000000324
-	KSTREAM_FLATMAP_0000000324 --> pk_leftjoin_pending_repartition_filter
+	oppdrag_leftjoin_fks --> KSTREAM_FLATMAP_0000000332
+	KSTREAM_FLATMAP_0000000332 --> pk_leftjoin_pending_repartition_filter
 	ktable_helved_fk_v1_repartition_source --> ktable_helved_fk_v1
 	pk_leftjoin_pending_repartition_filter --> pk_leftjoin_pending_repartition_sink
 }
@@ -340,116 +355,116 @@ package "Sub-topology: 9" {
 	database "dp-dedup-aggregate" <<State Store>> as dp_dedup_aggregate
 	agent "dp-utbetalinger-session-repartition-source" <<Source>> as dp_utbetalinger_session_repartition_source
 	agent "dp-aggregate-store-reduce" <<Processor>> as dp_aggregate_store_reduce
-	agent "KTABLE-TOSTREAM-0000000060" <<Processor>> as KTABLE_TOSTREAM_0000000060
+	agent "KTABLE-TOSTREAM-0000000067" <<Processor>> as KTABLE_TOSTREAM_0000000067
 	agent "dp-aggregate-store-suppress" <<Processor>> as dp_aggregate_store_suppress
 	agent "dp-aggregate-store-dedup" <<Processor>> as dp_aggregate_store_dedup
-	agent "KSTREAM-KEY-SELECT-0000000061" <<Processor>> as KSTREAM_KEY_SELECT_0000000061
-	agent "KSTREAM-MAPVALUES-0000000062" <<Processor>> as KSTREAM_MAPVALUES_0000000062
-	agent "KSTREAM-PROCESSOR-0000000063" <<Processor>> as KSTREAM_PROCESSOR_0000000063
-	agent "KSTREAM-BRANCH-0000000064" <<Processor>> as KSTREAM_BRANCH_0000000064
-	agent "KSTREAM-BRANCH-00000000641" <<Processor>> as KSTREAM_BRANCH_00000000641
-	agent "KSTREAM-MAPVALUES-0000000066" <<Processor>> as KSTREAM_MAPVALUES_0000000066
-	agent "KSTREAM-FLATMAPVALUES-0000000073" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000073
-	agent "KSTREAM-BRANCH-00000000640" <<Processor>> as KSTREAM_BRANCH_00000000640
-	agent "KSTREAM-FILTER-0000000079" <<Processor>> as KSTREAM_FILTER_0000000079
-	agent "KSTREAM-FLATMAP-0000000067" <<Processor>> as KSTREAM_FLATMAP_0000000067
-	agent "KSTREAM-FLATMAP-0000000083" <<Processor>> as KSTREAM_FLATMAP_0000000083
-	agent "KSTREAM-FLATMAPVALUES-0000000070" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000070
-	agent "KSTREAM-MAPVALUES-0000000076" <<Processor>> as KSTREAM_MAPVALUES_0000000076
-	agent "KSTREAM-MAPVALUES-0000000080" <<Processor>> as KSTREAM_MAPVALUES_0000000080
+	agent "KSTREAM-KEY-SELECT-0000000068" <<Processor>> as KSTREAM_KEY_SELECT_0000000068
+	agent "KSTREAM-MAPVALUES-0000000069" <<Processor>> as KSTREAM_MAPVALUES_0000000069
+	agent "KSTREAM-PROCESSOR-0000000070" <<Processor>> as KSTREAM_PROCESSOR_0000000070
+	agent "KSTREAM-BRANCH-0000000071" <<Processor>> as KSTREAM_BRANCH_0000000071
+	agent "KSTREAM-BRANCH-00000000711" <<Processor>> as KSTREAM_BRANCH_00000000711
+	agent "KSTREAM-MAPVALUES-0000000073" <<Processor>> as KSTREAM_MAPVALUES_0000000073
+	agent "KSTREAM-FLATMAPVALUES-0000000080" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000080
+	agent "KSTREAM-BRANCH-00000000710" <<Processor>> as KSTREAM_BRANCH_00000000710
+	agent "KSTREAM-FILTER-0000000086" <<Processor>> as KSTREAM_FILTER_0000000086
+	agent "KSTREAM-FLATMAP-0000000074" <<Processor>> as KSTREAM_FLATMAP_0000000074
+	agent "KSTREAM-FLATMAP-0000000090" <<Processor>> as KSTREAM_FLATMAP_0000000090
+	agent "KSTREAM-FLATMAPVALUES-0000000077" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000077
+	agent "KSTREAM-MAPVALUES-0000000083" <<Processor>> as KSTREAM_MAPVALUES_0000000083
 	agent "KSTREAM-MAPVALUES-0000000087" <<Processor>> as KSTREAM_MAPVALUES_0000000087
-	agent "KSTREAM-PROCESSOR-0000000068" <<Processor>> as KSTREAM_PROCESSOR_0000000068
-	agent "KSTREAM-PROCESSOR-0000000071" <<Processor>> as KSTREAM_PROCESSOR_0000000071
-	agent "KSTREAM-PROCESSOR-0000000074" <<Processor>> as KSTREAM_PROCESSOR_0000000074
-	agent "KSTREAM-PROCESSOR-0000000077" <<Processor>> as KSTREAM_PROCESSOR_0000000077
+	agent "KSTREAM-MAPVALUES-0000000094" <<Processor>> as KSTREAM_MAPVALUES_0000000094
+	agent "KSTREAM-PROCESSOR-0000000075" <<Processor>> as KSTREAM_PROCESSOR_0000000075
+	agent "KSTREAM-PROCESSOR-0000000078" <<Processor>> as KSTREAM_PROCESSOR_0000000078
 	agent "KSTREAM-PROCESSOR-0000000081" <<Processor>> as KSTREAM_PROCESSOR_0000000081
 	agent "KSTREAM-PROCESSOR-0000000084" <<Processor>> as KSTREAM_PROCESSOR_0000000084
 	agent "KSTREAM-PROCESSOR-0000000088" <<Processor>> as KSTREAM_PROCESSOR_0000000088
-	agent "KSTREAM-SINK-0000000069" <<Sink>> as KSTREAM_SINK_0000000069
-	agent "KSTREAM-SINK-0000000072" <<Sink>> as KSTREAM_SINK_0000000072
-	agent "KSTREAM-SINK-0000000075" <<Sink>> as KSTREAM_SINK_0000000075
-	agent "KSTREAM-SINK-0000000078" <<Sink>> as KSTREAM_SINK_0000000078
+	agent "KSTREAM-PROCESSOR-0000000091" <<Processor>> as KSTREAM_PROCESSOR_0000000091
+	agent "KSTREAM-PROCESSOR-0000000095" <<Processor>> as KSTREAM_PROCESSOR_0000000095
+	agent "KSTREAM-SINK-0000000076" <<Sink>> as KSTREAM_SINK_0000000076
+	agent "KSTREAM-SINK-0000000079" <<Sink>> as KSTREAM_SINK_0000000079
 	agent "KSTREAM-SINK-0000000082" <<Sink>> as KSTREAM_SINK_0000000082
 	agent "KSTREAM-SINK-0000000085" <<Sink>> as KSTREAM_SINK_0000000085
 	agent "KSTREAM-SINK-0000000089" <<Sink>> as KSTREAM_SINK_0000000089
+	agent "KSTREAM-SINK-0000000092" <<Sink>> as KSTREAM_SINK_0000000092
+	agent "KSTREAM-SINK-0000000096" <<Sink>> as KSTREAM_SINK_0000000096
 	dp_utbetalinger_session_repartition --> dp_utbetalinger_session_repartition_source
 	dp_aggregate_store_materialized -- dp_aggregate_store_reduce
 	dp_aggregate_store -- dp_aggregate_store_suppress
 	dp_dedup_aggregate -- dp_aggregate_store_dedup
-	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000069
-	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000072
-	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000075
-	helved_status_v1 <-- KSTREAM_SINK_0000000078
-	helved_status_v1 <-- KSTREAM_SINK_0000000082
-	helved_fk_v1 <-- KSTREAM_SINK_0000000085
+	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000076
+	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000079
+	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000082
+	helved_status_v1 <-- KSTREAM_SINK_0000000085
 	helved_status_v1 <-- KSTREAM_SINK_0000000089
+	helved_fk_v1 <-- KSTREAM_SINK_0000000092
+	helved_status_v1 <-- KSTREAM_SINK_0000000096
 	dp_utbetalinger_session_repartition_source --> dp_aggregate_store_reduce
-	dp_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000060
-	KTABLE_TOSTREAM_0000000060 --> dp_aggregate_store_suppress
+	dp_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000067
+	KTABLE_TOSTREAM_0000000067 --> dp_aggregate_store_suppress
 	dp_aggregate_store_suppress --> dp_aggregate_store_dedup
-	dp_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000061
-	KSTREAM_KEY_SELECT_0000000061 --> KSTREAM_MAPVALUES_0000000062
-	KSTREAM_MAPVALUES_0000000062 --> KSTREAM_PROCESSOR_0000000063
-	KSTREAM_PROCESSOR_0000000063 --> KSTREAM_BRANCH_0000000064
-	KSTREAM_BRANCH_0000000064 --> KSTREAM_BRANCH_00000000640
-	KSTREAM_BRANCH_0000000064 --> KSTREAM_BRANCH_00000000641
-	KSTREAM_BRANCH_00000000641 --> KSTREAM_MAPVALUES_0000000066
-	KSTREAM_MAPVALUES_0000000066 --> KSTREAM_FLATMAPVALUES_0000000073
-	KSTREAM_MAPVALUES_0000000066 --> KSTREAM_FILTER_0000000079
-	KSTREAM_MAPVALUES_0000000066 --> KSTREAM_FLATMAP_0000000067
-	KSTREAM_MAPVALUES_0000000066 --> KSTREAM_FLATMAPVALUES_0000000070
-	KSTREAM_MAPVALUES_0000000066 --> KSTREAM_FLATMAP_0000000083
-	KSTREAM_FLATMAPVALUES_0000000073 --> KSTREAM_MAPVALUES_0000000076
-	KSTREAM_FLATMAPVALUES_0000000073 --> KSTREAM_PROCESSOR_0000000074
-	KSTREAM_BRANCH_00000000640 --> KSTREAM_MAPVALUES_0000000087
-	KSTREAM_FILTER_0000000079 --> KSTREAM_MAPVALUES_0000000080
-	KSTREAM_FLATMAP_0000000067 --> KSTREAM_PROCESSOR_0000000068
-	KSTREAM_FLATMAP_0000000083 --> KSTREAM_PROCESSOR_0000000084
-	KSTREAM_FLATMAPVALUES_0000000070 --> KSTREAM_PROCESSOR_0000000071
-	KSTREAM_MAPVALUES_0000000076 --> KSTREAM_PROCESSOR_0000000077
-	KSTREAM_MAPVALUES_0000000080 --> KSTREAM_PROCESSOR_0000000081
+	dp_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000068
+	KSTREAM_KEY_SELECT_0000000068 --> KSTREAM_MAPVALUES_0000000069
+	KSTREAM_MAPVALUES_0000000069 --> KSTREAM_PROCESSOR_0000000070
+	KSTREAM_PROCESSOR_0000000070 --> KSTREAM_BRANCH_0000000071
+	KSTREAM_BRANCH_0000000071 --> KSTREAM_BRANCH_00000000710
+	KSTREAM_BRANCH_0000000071 --> KSTREAM_BRANCH_00000000711
+	KSTREAM_BRANCH_00000000711 --> KSTREAM_MAPVALUES_0000000073
+	KSTREAM_MAPVALUES_0000000073 --> KSTREAM_FLATMAP_0000000074
+	KSTREAM_MAPVALUES_0000000073 --> KSTREAM_FILTER_0000000086
+	KSTREAM_MAPVALUES_0000000073 --> KSTREAM_FLATMAP_0000000090
+	KSTREAM_MAPVALUES_0000000073 --> KSTREAM_FLATMAPVALUES_0000000080
+	KSTREAM_MAPVALUES_0000000073 --> KSTREAM_FLATMAPVALUES_0000000077
+	KSTREAM_FLATMAPVALUES_0000000080 --> KSTREAM_MAPVALUES_0000000083
+	KSTREAM_FLATMAPVALUES_0000000080 --> KSTREAM_PROCESSOR_0000000081
+	KSTREAM_BRANCH_00000000710 --> KSTREAM_MAPVALUES_0000000094
+	KSTREAM_FILTER_0000000086 --> KSTREAM_MAPVALUES_0000000087
+	KSTREAM_FLATMAP_0000000074 --> KSTREAM_PROCESSOR_0000000075
+	KSTREAM_FLATMAP_0000000090 --> KSTREAM_PROCESSOR_0000000091
+	KSTREAM_FLATMAPVALUES_0000000077 --> KSTREAM_PROCESSOR_0000000078
+	KSTREAM_MAPVALUES_0000000083 --> KSTREAM_PROCESSOR_0000000084
 	KSTREAM_MAPVALUES_0000000087 --> KSTREAM_PROCESSOR_0000000088
-	KSTREAM_PROCESSOR_0000000068 --> KSTREAM_SINK_0000000069
-	KSTREAM_PROCESSOR_0000000071 --> KSTREAM_SINK_0000000072
-	KSTREAM_PROCESSOR_0000000074 --> KSTREAM_SINK_0000000075
-	KSTREAM_PROCESSOR_0000000077 --> KSTREAM_SINK_0000000078
+	KSTREAM_MAPVALUES_0000000094 --> KSTREAM_PROCESSOR_0000000095
+	KSTREAM_PROCESSOR_0000000075 --> KSTREAM_SINK_0000000076
+	KSTREAM_PROCESSOR_0000000078 --> KSTREAM_SINK_0000000079
 	KSTREAM_PROCESSOR_0000000081 --> KSTREAM_SINK_0000000082
 	KSTREAM_PROCESSOR_0000000084 --> KSTREAM_SINK_0000000085
 	KSTREAM_PROCESSOR_0000000088 --> KSTREAM_SINK_0000000089
+	KSTREAM_PROCESSOR_0000000091 --> KSTREAM_SINK_0000000092
+	KSTREAM_PROCESSOR_0000000095 --> KSTREAM_SINK_0000000096
 }
 package "Sub-topology: 10" {
 	agent "consume-aap.utbetaling.v1" <<Source>> as consume_aap_utbetaling_v1
-	agent "KSTREAM-PROCESSOR-0000000091" <<Processor>> as KSTREAM_PROCESSOR_0000000091
-	agent "KSTREAM-FILTER-0000000092" <<Processor>> as KSTREAM_FILTER_0000000092
+	agent "KSTREAM-PROCESSOR-0000000098" <<Processor>> as KSTREAM_PROCESSOR_0000000098
+	agent "KSTREAM-FILTER-0000000099" <<Processor>> as KSTREAM_FILTER_0000000099
 	agent "from-aap.utbetaling.v1-repartition-filter" <<Processor>> as from_aap_utbetaling_v1_repartition_filter
 	agent "from-aap.utbetaling.v1-repartition-sink" <<Sink>> as from_aap_utbetaling_v1_repartition_sink
 	aap_utbetaling_v1 --> consume_aap_utbetaling_v1
 	from_aap_utbetaling_v1_repartition <-- from_aap_utbetaling_v1_repartition_sink
-	consume_aap_utbetaling_v1 --> KSTREAM_PROCESSOR_0000000091
-	KSTREAM_PROCESSOR_0000000091 --> KSTREAM_FILTER_0000000092
-	KSTREAM_FILTER_0000000092 --> from_aap_utbetaling_v1_repartition_filter
+	consume_aap_utbetaling_v1 --> KSTREAM_PROCESSOR_0000000098
+	KSTREAM_PROCESSOR_0000000098 --> KSTREAM_FILTER_0000000099
+	KSTREAM_FILTER_0000000099 --> from_aap_utbetaling_v1_repartition_filter
 	from_aap_utbetaling_v1_repartition_filter --> from_aap_utbetaling_v1_repartition_sink
 }
 package "Sub-topology: 11" {
 	agent "consume-helved.utbetalinger-aap.v1" <<Source>> as consume_helved_utbetalinger_aap_v1
-	agent "KSTREAM-PROCESSOR-0000000097" <<Processor>> as KSTREAM_PROCESSOR_0000000097
-	agent "KSTREAM-FILTER-0000000098" <<Processor>> as KSTREAM_FILTER_0000000098
+	agent "KSTREAM-PROCESSOR-0000000104" <<Processor>> as KSTREAM_PROCESSOR_0000000104
+	agent "KSTREAM-FILTER-0000000105" <<Processor>> as KSTREAM_FILTER_0000000105
 	agent "from-aap.utbetaling.v1-repartition-source" <<Source>> as from_aap_utbetaling_v1_repartition_source
-	agent "KSTREAM-MERGE-0000000099" <<Processor>> as KSTREAM_MERGE_0000000099
-	agent "KSTREAM-MAPVALUES-0000000100" <<Processor>> as KSTREAM_MAPVALUES_0000000100
-	agent "KSTREAM-KEY-SELECT-0000000101" <<Processor>> as KSTREAM_KEY_SELECT_0000000101
+	agent "KSTREAM-MERGE-0000000106" <<Processor>> as KSTREAM_MERGE_0000000106
+	agent "KSTREAM-MAPVALUES-0000000107" <<Processor>> as KSTREAM_MAPVALUES_0000000107
+	agent "KSTREAM-KEY-SELECT-0000000108" <<Processor>> as KSTREAM_KEY_SELECT_0000000108
 	agent "aaptuple-leftjoin-saker-repartition-filter" <<Processor>> as aaptuple_leftjoin_saker_repartition_filter
 	agent "aaptuple-leftjoin-saker-repartition-sink" <<Sink>> as aaptuple_leftjoin_saker_repartition_sink
 	helved_utbetalinger_aap_v1 --> consume_helved_utbetalinger_aap_v1
 	from_aap_utbetaling_v1_repartition --> from_aap_utbetaling_v1_repartition_source
 	aaptuple_leftjoin_saker_repartition <-- aaptuple_leftjoin_saker_repartition_sink
-	consume_helved_utbetalinger_aap_v1 --> KSTREAM_PROCESSOR_0000000097
-	KSTREAM_PROCESSOR_0000000097 --> KSTREAM_FILTER_0000000098
-	KSTREAM_FILTER_0000000098 --> KSTREAM_MERGE_0000000099
-	from_aap_utbetaling_v1_repartition_source --> KSTREAM_MERGE_0000000099
-	KSTREAM_MERGE_0000000099 --> KSTREAM_MAPVALUES_0000000100
-	KSTREAM_MAPVALUES_0000000100 --> KSTREAM_KEY_SELECT_0000000101
-	KSTREAM_KEY_SELECT_0000000101 --> aaptuple_leftjoin_saker_repartition_filter
+	consume_helved_utbetalinger_aap_v1 --> KSTREAM_PROCESSOR_0000000104
+	KSTREAM_PROCESSOR_0000000104 --> KSTREAM_FILTER_0000000105
+	KSTREAM_FILTER_0000000105 --> KSTREAM_MERGE_0000000106
+	from_aap_utbetaling_v1_repartition_source --> KSTREAM_MERGE_0000000106
+	KSTREAM_MERGE_0000000106 --> KSTREAM_MAPVALUES_0000000107
+	KSTREAM_MAPVALUES_0000000107 --> KSTREAM_KEY_SELECT_0000000108
+	KSTREAM_KEY_SELECT_0000000108 --> aaptuple_leftjoin_saker_repartition_filter
 	aaptuple_leftjoin_saker_repartition_filter --> aaptuple_leftjoin_saker_repartition_sink
 }
 package "Sub-topology: 12" {
@@ -458,116 +473,116 @@ package "Sub-topology: 12" {
 	database "aap-dedup-aggregate" <<State Store>> as aap_dedup_aggregate
 	agent "aap-utbetalinger-session-repartition-source" <<Source>> as aap_utbetalinger_session_repartition_source
 	agent "aap-aggregate-store-reduce" <<Processor>> as aap_aggregate_store_reduce
-	agent "KTABLE-TOSTREAM-0000000118" <<Processor>> as KTABLE_TOSTREAM_0000000118
+	agent "KTABLE-TOSTREAM-0000000125" <<Processor>> as KTABLE_TOSTREAM_0000000125
 	agent "aap-aggregate-store-suppress" <<Processor>> as aap_aggregate_store_suppress
 	agent "aap-aggregate-store-dedup" <<Processor>> as aap_aggregate_store_dedup
-	agent "KSTREAM-KEY-SELECT-0000000119" <<Processor>> as KSTREAM_KEY_SELECT_0000000119
-	agent "KSTREAM-MAPVALUES-0000000120" <<Processor>> as KSTREAM_MAPVALUES_0000000120
-	agent "KSTREAM-PROCESSOR-0000000121" <<Processor>> as KSTREAM_PROCESSOR_0000000121
-	agent "KSTREAM-BRANCH-0000000122" <<Processor>> as KSTREAM_BRANCH_0000000122
-	agent "KSTREAM-BRANCH-00000001221" <<Processor>> as KSTREAM_BRANCH_00000001221
-	agent "KSTREAM-MAPVALUES-0000000124" <<Processor>> as KSTREAM_MAPVALUES_0000000124
-	agent "KSTREAM-FLATMAPVALUES-0000000131" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000131
-	agent "KSTREAM-BRANCH-00000001220" <<Processor>> as KSTREAM_BRANCH_00000001220
-	agent "KSTREAM-FILTER-0000000137" <<Processor>> as KSTREAM_FILTER_0000000137
-	agent "KSTREAM-FLATMAP-0000000125" <<Processor>> as KSTREAM_FLATMAP_0000000125
-	agent "KSTREAM-FLATMAP-0000000141" <<Processor>> as KSTREAM_FLATMAP_0000000141
-	agent "KSTREAM-FLATMAPVALUES-0000000128" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000128
-	agent "KSTREAM-MAPVALUES-0000000134" <<Processor>> as KSTREAM_MAPVALUES_0000000134
-	agent "KSTREAM-MAPVALUES-0000000138" <<Processor>> as KSTREAM_MAPVALUES_0000000138
+	agent "KSTREAM-KEY-SELECT-0000000126" <<Processor>> as KSTREAM_KEY_SELECT_0000000126
+	agent "KSTREAM-MAPVALUES-0000000127" <<Processor>> as KSTREAM_MAPVALUES_0000000127
+	agent "KSTREAM-PROCESSOR-0000000128" <<Processor>> as KSTREAM_PROCESSOR_0000000128
+	agent "KSTREAM-BRANCH-0000000129" <<Processor>> as KSTREAM_BRANCH_0000000129
+	agent "KSTREAM-BRANCH-00000001291" <<Processor>> as KSTREAM_BRANCH_00000001291
+	agent "KSTREAM-MAPVALUES-0000000131" <<Processor>> as KSTREAM_MAPVALUES_0000000131
+	agent "KSTREAM-FLATMAPVALUES-0000000138" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000138
+	agent "KSTREAM-BRANCH-00000001290" <<Processor>> as KSTREAM_BRANCH_00000001290
+	agent "KSTREAM-FILTER-0000000144" <<Processor>> as KSTREAM_FILTER_0000000144
+	agent "KSTREAM-FLATMAP-0000000132" <<Processor>> as KSTREAM_FLATMAP_0000000132
+	agent "KSTREAM-FLATMAP-0000000148" <<Processor>> as KSTREAM_FLATMAP_0000000148
+	agent "KSTREAM-FLATMAPVALUES-0000000135" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000135
+	agent "KSTREAM-MAPVALUES-0000000141" <<Processor>> as KSTREAM_MAPVALUES_0000000141
 	agent "KSTREAM-MAPVALUES-0000000145" <<Processor>> as KSTREAM_MAPVALUES_0000000145
-	agent "KSTREAM-PROCESSOR-0000000126" <<Processor>> as KSTREAM_PROCESSOR_0000000126
-	agent "KSTREAM-PROCESSOR-0000000129" <<Processor>> as KSTREAM_PROCESSOR_0000000129
-	agent "KSTREAM-PROCESSOR-0000000132" <<Processor>> as KSTREAM_PROCESSOR_0000000132
-	agent "KSTREAM-PROCESSOR-0000000135" <<Processor>> as KSTREAM_PROCESSOR_0000000135
+	agent "KSTREAM-MAPVALUES-0000000152" <<Processor>> as KSTREAM_MAPVALUES_0000000152
+	agent "KSTREAM-PROCESSOR-0000000133" <<Processor>> as KSTREAM_PROCESSOR_0000000133
+	agent "KSTREAM-PROCESSOR-0000000136" <<Processor>> as KSTREAM_PROCESSOR_0000000136
 	agent "KSTREAM-PROCESSOR-0000000139" <<Processor>> as KSTREAM_PROCESSOR_0000000139
 	agent "KSTREAM-PROCESSOR-0000000142" <<Processor>> as KSTREAM_PROCESSOR_0000000142
 	agent "KSTREAM-PROCESSOR-0000000146" <<Processor>> as KSTREAM_PROCESSOR_0000000146
-	agent "KSTREAM-SINK-0000000127" <<Sink>> as KSTREAM_SINK_0000000127
-	agent "KSTREAM-SINK-0000000130" <<Sink>> as KSTREAM_SINK_0000000130
-	agent "KSTREAM-SINK-0000000133" <<Sink>> as KSTREAM_SINK_0000000133
-	agent "KSTREAM-SINK-0000000136" <<Sink>> as KSTREAM_SINK_0000000136
+	agent "KSTREAM-PROCESSOR-0000000149" <<Processor>> as KSTREAM_PROCESSOR_0000000149
+	agent "KSTREAM-PROCESSOR-0000000153" <<Processor>> as KSTREAM_PROCESSOR_0000000153
+	agent "KSTREAM-SINK-0000000134" <<Sink>> as KSTREAM_SINK_0000000134
+	agent "KSTREAM-SINK-0000000137" <<Sink>> as KSTREAM_SINK_0000000137
 	agent "KSTREAM-SINK-0000000140" <<Sink>> as KSTREAM_SINK_0000000140
 	agent "KSTREAM-SINK-0000000143" <<Sink>> as KSTREAM_SINK_0000000143
 	agent "KSTREAM-SINK-0000000147" <<Sink>> as KSTREAM_SINK_0000000147
+	agent "KSTREAM-SINK-0000000150" <<Sink>> as KSTREAM_SINK_0000000150
+	agent "KSTREAM-SINK-0000000154" <<Sink>> as KSTREAM_SINK_0000000154
 	aap_utbetalinger_session_repartition --> aap_utbetalinger_session_repartition_source
 	aap_aggregate_store_materialized -- aap_aggregate_store_reduce
 	aap_aggregate_store -- aap_aggregate_store_suppress
 	aap_dedup_aggregate -- aap_aggregate_store_dedup
-	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000127
-	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000130
-	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000133
-	helved_status_v1 <-- KSTREAM_SINK_0000000136
-	helved_status_v1 <-- KSTREAM_SINK_0000000140
-	helved_fk_v1 <-- KSTREAM_SINK_0000000143
+	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000134
+	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000137
+	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000140
+	helved_status_v1 <-- KSTREAM_SINK_0000000143
 	helved_status_v1 <-- KSTREAM_SINK_0000000147
+	helved_fk_v1 <-- KSTREAM_SINK_0000000150
+	helved_status_v1 <-- KSTREAM_SINK_0000000154
 	aap_utbetalinger_session_repartition_source --> aap_aggregate_store_reduce
-	aap_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000118
-	KTABLE_TOSTREAM_0000000118 --> aap_aggregate_store_suppress
+	aap_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000125
+	KTABLE_TOSTREAM_0000000125 --> aap_aggregate_store_suppress
 	aap_aggregate_store_suppress --> aap_aggregate_store_dedup
-	aap_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000119
-	KSTREAM_KEY_SELECT_0000000119 --> KSTREAM_MAPVALUES_0000000120
-	KSTREAM_MAPVALUES_0000000120 --> KSTREAM_PROCESSOR_0000000121
-	KSTREAM_PROCESSOR_0000000121 --> KSTREAM_BRANCH_0000000122
-	KSTREAM_BRANCH_0000000122 --> KSTREAM_BRANCH_00000001221
-	KSTREAM_BRANCH_0000000122 --> KSTREAM_BRANCH_00000001220
-	KSTREAM_BRANCH_00000001221 --> KSTREAM_MAPVALUES_0000000124
-	KSTREAM_MAPVALUES_0000000124 --> KSTREAM_FLATMAPVALUES_0000000131
-	KSTREAM_MAPVALUES_0000000124 --> KSTREAM_FLATMAP_0000000125
-	KSTREAM_MAPVALUES_0000000124 --> KSTREAM_FILTER_0000000137
-	KSTREAM_MAPVALUES_0000000124 --> KSTREAM_FLATMAP_0000000141
-	KSTREAM_MAPVALUES_0000000124 --> KSTREAM_FLATMAPVALUES_0000000128
-	KSTREAM_FLATMAPVALUES_0000000131 --> KSTREAM_PROCESSOR_0000000132
-	KSTREAM_FLATMAPVALUES_0000000131 --> KSTREAM_MAPVALUES_0000000134
-	KSTREAM_BRANCH_00000001220 --> KSTREAM_MAPVALUES_0000000145
-	KSTREAM_FILTER_0000000137 --> KSTREAM_MAPVALUES_0000000138
-	KSTREAM_FLATMAP_0000000125 --> KSTREAM_PROCESSOR_0000000126
-	KSTREAM_FLATMAP_0000000141 --> KSTREAM_PROCESSOR_0000000142
-	KSTREAM_FLATMAPVALUES_0000000128 --> KSTREAM_PROCESSOR_0000000129
-	KSTREAM_MAPVALUES_0000000134 --> KSTREAM_PROCESSOR_0000000135
-	KSTREAM_MAPVALUES_0000000138 --> KSTREAM_PROCESSOR_0000000139
+	aap_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000126
+	KSTREAM_KEY_SELECT_0000000126 --> KSTREAM_MAPVALUES_0000000127
+	KSTREAM_MAPVALUES_0000000127 --> KSTREAM_PROCESSOR_0000000128
+	KSTREAM_PROCESSOR_0000000128 --> KSTREAM_BRANCH_0000000129
+	KSTREAM_BRANCH_0000000129 --> KSTREAM_BRANCH_00000001291
+	KSTREAM_BRANCH_0000000129 --> KSTREAM_BRANCH_00000001290
+	KSTREAM_BRANCH_00000001291 --> KSTREAM_MAPVALUES_0000000131
+	KSTREAM_MAPVALUES_0000000131 --> KSTREAM_FILTER_0000000144
+	KSTREAM_MAPVALUES_0000000131 --> KSTREAM_FLATMAP_0000000132
+	KSTREAM_MAPVALUES_0000000131 --> KSTREAM_FLATMAP_0000000148
+	KSTREAM_MAPVALUES_0000000131 --> KSTREAM_FLATMAPVALUES_0000000138
+	KSTREAM_MAPVALUES_0000000131 --> KSTREAM_FLATMAPVALUES_0000000135
+	KSTREAM_FLATMAPVALUES_0000000138 --> KSTREAM_MAPVALUES_0000000141
+	KSTREAM_FLATMAPVALUES_0000000138 --> KSTREAM_PROCESSOR_0000000139
+	KSTREAM_BRANCH_00000001290 --> KSTREAM_MAPVALUES_0000000152
+	KSTREAM_FILTER_0000000144 --> KSTREAM_MAPVALUES_0000000145
+	KSTREAM_FLATMAP_0000000132 --> KSTREAM_PROCESSOR_0000000133
+	KSTREAM_FLATMAP_0000000148 --> KSTREAM_PROCESSOR_0000000149
+	KSTREAM_FLATMAPVALUES_0000000135 --> KSTREAM_PROCESSOR_0000000136
+	KSTREAM_MAPVALUES_0000000141 --> KSTREAM_PROCESSOR_0000000142
 	KSTREAM_MAPVALUES_0000000145 --> KSTREAM_PROCESSOR_0000000146
-	KSTREAM_PROCESSOR_0000000126 --> KSTREAM_SINK_0000000127
-	KSTREAM_PROCESSOR_0000000129 --> KSTREAM_SINK_0000000130
-	KSTREAM_PROCESSOR_0000000132 --> KSTREAM_SINK_0000000133
-	KSTREAM_PROCESSOR_0000000135 --> KSTREAM_SINK_0000000136
+	KSTREAM_MAPVALUES_0000000152 --> KSTREAM_PROCESSOR_0000000153
+	KSTREAM_PROCESSOR_0000000133 --> KSTREAM_SINK_0000000134
+	KSTREAM_PROCESSOR_0000000136 --> KSTREAM_SINK_0000000137
 	KSTREAM_PROCESSOR_0000000139 --> KSTREAM_SINK_0000000140
 	KSTREAM_PROCESSOR_0000000142 --> KSTREAM_SINK_0000000143
 	KSTREAM_PROCESSOR_0000000146 --> KSTREAM_SINK_0000000147
+	KSTREAM_PROCESSOR_0000000149 --> KSTREAM_SINK_0000000150
+	KSTREAM_PROCESSOR_0000000153 --> KSTREAM_SINK_0000000154
 }
 package "Sub-topology: 13" {
 	agent "consume-tilleggsstonader.utbetaling.v1" <<Source>> as consume_tilleggsstonader_utbetaling_v1
-	agent "KSTREAM-PROCESSOR-0000000149" <<Processor>> as KSTREAM_PROCESSOR_0000000149
-	agent "KSTREAM-FILTER-0000000150" <<Processor>> as KSTREAM_FILTER_0000000150
+	agent "KSTREAM-PROCESSOR-0000000156" <<Processor>> as KSTREAM_PROCESSOR_0000000156
+	agent "KSTREAM-FILTER-0000000157" <<Processor>> as KSTREAM_FILTER_0000000157
 	agent "from-tilleggsstonader.utbetaling.v1-repartition-filter" <<Processor>> as from_tilleggsstonader_utbetaling_v1_repartition_filter
 	agent "from-tilleggsstonader.utbetaling.v1-repartition-sink" <<Sink>> as from_tilleggsstonader_utbetaling_v1_repartition_sink
 	tilleggsstonader_utbetaling_v1 --> consume_tilleggsstonader_utbetaling_v1
 	from_tilleggsstonader_utbetaling_v1_repartition <-- from_tilleggsstonader_utbetaling_v1_repartition_sink
-	consume_tilleggsstonader_utbetaling_v1 --> KSTREAM_PROCESSOR_0000000149
-	KSTREAM_PROCESSOR_0000000149 --> KSTREAM_FILTER_0000000150
-	KSTREAM_FILTER_0000000150 --> from_tilleggsstonader_utbetaling_v1_repartition_filter
+	consume_tilleggsstonader_utbetaling_v1 --> KSTREAM_PROCESSOR_0000000156
+	KSTREAM_PROCESSOR_0000000156 --> KSTREAM_FILTER_0000000157
+	KSTREAM_FILTER_0000000157 --> from_tilleggsstonader_utbetaling_v1_repartition_filter
 	from_tilleggsstonader_utbetaling_v1_repartition_filter --> from_tilleggsstonader_utbetaling_v1_repartition_sink
 }
 package "Sub-topology: 14" {
 	agent "consume-helved.utbetalinger-ts.v1" <<Source>> as consume_helved_utbetalinger_ts_v1
-	agent "KSTREAM-PROCESSOR-0000000155" <<Processor>> as KSTREAM_PROCESSOR_0000000155
-	agent "KSTREAM-FILTER-0000000156" <<Processor>> as KSTREAM_FILTER_0000000156
+	agent "KSTREAM-PROCESSOR-0000000162" <<Processor>> as KSTREAM_PROCESSOR_0000000162
+	agent "KSTREAM-FILTER-0000000163" <<Processor>> as KSTREAM_FILTER_0000000163
 	agent "from-tilleggsstonader.utbetaling.v1-repartition-source" <<Source>> as from_tilleggsstonader_utbetaling_v1_repartition_source
-	agent "KSTREAM-MERGE-0000000157" <<Processor>> as KSTREAM_MERGE_0000000157
-	agent "KSTREAM-MAPVALUES-0000000158" <<Processor>> as KSTREAM_MAPVALUES_0000000158
-	agent "KSTREAM-KEY-SELECT-0000000159" <<Processor>> as KSTREAM_KEY_SELECT_0000000159
+	agent "KSTREAM-MERGE-0000000164" <<Processor>> as KSTREAM_MERGE_0000000164
+	agent "KSTREAM-MAPVALUES-0000000165" <<Processor>> as KSTREAM_MAPVALUES_0000000165
+	agent "KSTREAM-KEY-SELECT-0000000166" <<Processor>> as KSTREAM_KEY_SELECT_0000000166
 	agent "tstuple-leftjoin-saker-repartition-filter" <<Processor>> as tstuple_leftjoin_saker_repartition_filter
 	agent "tstuple-leftjoin-saker-repartition-sink" <<Sink>> as tstuple_leftjoin_saker_repartition_sink
 	helved_utbetalinger_ts_v1 --> consume_helved_utbetalinger_ts_v1
 	from_tilleggsstonader_utbetaling_v1_repartition --> from_tilleggsstonader_utbetaling_v1_repartition_source
 	tstuple_leftjoin_saker_repartition <-- tstuple_leftjoin_saker_repartition_sink
-	consume_helved_utbetalinger_ts_v1 --> KSTREAM_PROCESSOR_0000000155
-	KSTREAM_PROCESSOR_0000000155 --> KSTREAM_FILTER_0000000156
-	KSTREAM_FILTER_0000000156 --> KSTREAM_MERGE_0000000157
-	from_tilleggsstonader_utbetaling_v1_repartition_source --> KSTREAM_MERGE_0000000157
-	KSTREAM_MERGE_0000000157 --> KSTREAM_MAPVALUES_0000000158
-	KSTREAM_MAPVALUES_0000000158 --> KSTREAM_KEY_SELECT_0000000159
-	KSTREAM_KEY_SELECT_0000000159 --> tstuple_leftjoin_saker_repartition_filter
+	consume_helved_utbetalinger_ts_v1 --> KSTREAM_PROCESSOR_0000000162
+	KSTREAM_PROCESSOR_0000000162 --> KSTREAM_FILTER_0000000163
+	KSTREAM_FILTER_0000000163 --> KSTREAM_MERGE_0000000164
+	from_tilleggsstonader_utbetaling_v1_repartition_source --> KSTREAM_MERGE_0000000164
+	KSTREAM_MERGE_0000000164 --> KSTREAM_MAPVALUES_0000000165
+	KSTREAM_MAPVALUES_0000000165 --> KSTREAM_KEY_SELECT_0000000166
+	KSTREAM_KEY_SELECT_0000000166 --> tstuple_leftjoin_saker_repartition_filter
 	tstuple_leftjoin_saker_repartition_filter --> tstuple_leftjoin_saker_repartition_sink
 }
 package "Sub-topology: 15" {
@@ -576,98 +591,98 @@ package "Sub-topology: 15" {
 	database "ts-dedup-aggregate" <<State Store>> as ts_dedup_aggregate
 	agent "ts-utbetalinger-session-repartition-source" <<Source>> as ts_utbetalinger_session_repartition_source
 	agent "ts-aggregate-store-reduce" <<Processor>> as ts_aggregate_store_reduce
-	agent "KTABLE-TOSTREAM-0000000176" <<Processor>> as KTABLE_TOSTREAM_0000000176
+	agent "KTABLE-TOSTREAM-0000000183" <<Processor>> as KTABLE_TOSTREAM_0000000183
 	agent "ts-aggregate-store-suppress" <<Processor>> as ts_aggregate_store_suppress
 	agent "ts-aggregate-store-dedup" <<Processor>> as ts_aggregate_store_dedup
-	agent "KSTREAM-KEY-SELECT-0000000177" <<Processor>> as KSTREAM_KEY_SELECT_0000000177
-	agent "KSTREAM-MAPVALUES-0000000178" <<Processor>> as KSTREAM_MAPVALUES_0000000178
-	agent "KSTREAM-PROCESSOR-0000000179" <<Processor>> as KSTREAM_PROCESSOR_0000000179
-	agent "KSTREAM-BRANCH-0000000180" <<Processor>> as KSTREAM_BRANCH_0000000180
-	agent "KSTREAM-BRANCH-00000001801" <<Processor>> as KSTREAM_BRANCH_00000001801
-	agent "KSTREAM-MAPVALUES-0000000182" <<Processor>> as KSTREAM_MAPVALUES_0000000182
-	agent "KSTREAM-FLATMAPVALUES-0000000189" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000189
-	agent "KSTREAM-BRANCH-00000001800" <<Processor>> as KSTREAM_BRANCH_00000001800
-	agent "KSTREAM-FILTER-0000000195" <<Processor>> as KSTREAM_FILTER_0000000195
-	agent "KSTREAM-FLATMAP-0000000183" <<Processor>> as KSTREAM_FLATMAP_0000000183
-	agent "KSTREAM-FLATMAP-0000000199" <<Processor>> as KSTREAM_FLATMAP_0000000199
-	agent "KSTREAM-FLATMAPVALUES-0000000186" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000186
-	agent "KSTREAM-MAPVALUES-0000000192" <<Processor>> as KSTREAM_MAPVALUES_0000000192
-	agent "KSTREAM-MAPVALUES-0000000196" <<Processor>> as KSTREAM_MAPVALUES_0000000196
+	agent "KSTREAM-KEY-SELECT-0000000184" <<Processor>> as KSTREAM_KEY_SELECT_0000000184
+	agent "KSTREAM-MAPVALUES-0000000185" <<Processor>> as KSTREAM_MAPVALUES_0000000185
+	agent "KSTREAM-PROCESSOR-0000000186" <<Processor>> as KSTREAM_PROCESSOR_0000000186
+	agent "KSTREAM-BRANCH-0000000187" <<Processor>> as KSTREAM_BRANCH_0000000187
+	agent "KSTREAM-BRANCH-00000001871" <<Processor>> as KSTREAM_BRANCH_00000001871
+	agent "KSTREAM-MAPVALUES-0000000189" <<Processor>> as KSTREAM_MAPVALUES_0000000189
+	agent "KSTREAM-FLATMAPVALUES-0000000196" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000196
+	agent "KSTREAM-BRANCH-00000001870" <<Processor>> as KSTREAM_BRANCH_00000001870
+	agent "KSTREAM-FILTER-0000000202" <<Processor>> as KSTREAM_FILTER_0000000202
+	agent "KSTREAM-FLATMAP-0000000190" <<Processor>> as KSTREAM_FLATMAP_0000000190
+	agent "KSTREAM-FLATMAP-0000000206" <<Processor>> as KSTREAM_FLATMAP_0000000206
+	agent "KSTREAM-FLATMAPVALUES-0000000193" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000193
+	agent "KSTREAM-MAPVALUES-0000000199" <<Processor>> as KSTREAM_MAPVALUES_0000000199
 	agent "KSTREAM-MAPVALUES-0000000203" <<Processor>> as KSTREAM_MAPVALUES_0000000203
-	agent "KSTREAM-PROCESSOR-0000000184" <<Processor>> as KSTREAM_PROCESSOR_0000000184
-	agent "KSTREAM-PROCESSOR-0000000187" <<Processor>> as KSTREAM_PROCESSOR_0000000187
-	agent "KSTREAM-PROCESSOR-0000000190" <<Processor>> as KSTREAM_PROCESSOR_0000000190
-	agent "KSTREAM-PROCESSOR-0000000193" <<Processor>> as KSTREAM_PROCESSOR_0000000193
+	agent "KSTREAM-MAPVALUES-0000000210" <<Processor>> as KSTREAM_MAPVALUES_0000000210
+	agent "KSTREAM-PROCESSOR-0000000191" <<Processor>> as KSTREAM_PROCESSOR_0000000191
+	agent "KSTREAM-PROCESSOR-0000000194" <<Processor>> as KSTREAM_PROCESSOR_0000000194
 	agent "KSTREAM-PROCESSOR-0000000197" <<Processor>> as KSTREAM_PROCESSOR_0000000197
 	agent "KSTREAM-PROCESSOR-0000000200" <<Processor>> as KSTREAM_PROCESSOR_0000000200
 	agent "KSTREAM-PROCESSOR-0000000204" <<Processor>> as KSTREAM_PROCESSOR_0000000204
-	agent "KSTREAM-SINK-0000000185" <<Sink>> as KSTREAM_SINK_0000000185
-	agent "KSTREAM-SINK-0000000188" <<Sink>> as KSTREAM_SINK_0000000188
-	agent "KSTREAM-SINK-0000000191" <<Sink>> as KSTREAM_SINK_0000000191
-	agent "KSTREAM-SINK-0000000194" <<Sink>> as KSTREAM_SINK_0000000194
+	agent "KSTREAM-PROCESSOR-0000000207" <<Processor>> as KSTREAM_PROCESSOR_0000000207
+	agent "KSTREAM-PROCESSOR-0000000211" <<Processor>> as KSTREAM_PROCESSOR_0000000211
+	agent "KSTREAM-SINK-0000000192" <<Sink>> as KSTREAM_SINK_0000000192
+	agent "KSTREAM-SINK-0000000195" <<Sink>> as KSTREAM_SINK_0000000195
 	agent "KSTREAM-SINK-0000000198" <<Sink>> as KSTREAM_SINK_0000000198
 	agent "KSTREAM-SINK-0000000201" <<Sink>> as KSTREAM_SINK_0000000201
 	agent "KSTREAM-SINK-0000000205" <<Sink>> as KSTREAM_SINK_0000000205
+	agent "KSTREAM-SINK-0000000208" <<Sink>> as KSTREAM_SINK_0000000208
+	agent "KSTREAM-SINK-0000000212" <<Sink>> as KSTREAM_SINK_0000000212
 	ts_utbetalinger_session_repartition --> ts_utbetalinger_session_repartition_source
 	ts_aggregate_store_materialized -- ts_aggregate_store_reduce
 	ts_aggregate_store -- ts_aggregate_store_suppress
 	ts_dedup_aggregate -- ts_aggregate_store_dedup
-	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000185
-	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000188
-	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000191
-	helved_status_v1 <-- KSTREAM_SINK_0000000194
-	helved_status_v1 <-- KSTREAM_SINK_0000000198
-	helved_fk_v1 <-- KSTREAM_SINK_0000000201
+	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000192
+	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000195
+	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000198
+	helved_status_v1 <-- KSTREAM_SINK_0000000201
 	helved_status_v1 <-- KSTREAM_SINK_0000000205
+	helved_fk_v1 <-- KSTREAM_SINK_0000000208
+	helved_status_v1 <-- KSTREAM_SINK_0000000212
 	ts_utbetalinger_session_repartition_source --> ts_aggregate_store_reduce
-	ts_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000176
-	KTABLE_TOSTREAM_0000000176 --> ts_aggregate_store_suppress
+	ts_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000183
+	KTABLE_TOSTREAM_0000000183 --> ts_aggregate_store_suppress
 	ts_aggregate_store_suppress --> ts_aggregate_store_dedup
-	ts_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000177
-	KSTREAM_KEY_SELECT_0000000177 --> KSTREAM_MAPVALUES_0000000178
-	KSTREAM_MAPVALUES_0000000178 --> KSTREAM_PROCESSOR_0000000179
-	KSTREAM_PROCESSOR_0000000179 --> KSTREAM_BRANCH_0000000180
-	KSTREAM_BRANCH_0000000180 --> KSTREAM_BRANCH_00000001801
-	KSTREAM_BRANCH_0000000180 --> KSTREAM_BRANCH_00000001800
-	KSTREAM_BRANCH_00000001801 --> KSTREAM_MAPVALUES_0000000182
-	KSTREAM_MAPVALUES_0000000182 --> KSTREAM_FLATMAPVALUES_0000000189
-	KSTREAM_MAPVALUES_0000000182 --> KSTREAM_FILTER_0000000195
-	KSTREAM_MAPVALUES_0000000182 --> KSTREAM_FLATMAP_0000000183
-	KSTREAM_MAPVALUES_0000000182 --> KSTREAM_FLATMAP_0000000199
-	KSTREAM_MAPVALUES_0000000182 --> KSTREAM_FLATMAPVALUES_0000000186
-	KSTREAM_FLATMAPVALUES_0000000189 --> KSTREAM_MAPVALUES_0000000192
-	KSTREAM_FLATMAPVALUES_0000000189 --> KSTREAM_PROCESSOR_0000000190
-	KSTREAM_BRANCH_00000001800 --> KSTREAM_MAPVALUES_0000000203
-	KSTREAM_FILTER_0000000195 --> KSTREAM_MAPVALUES_0000000196
-	KSTREAM_FLATMAP_0000000183 --> KSTREAM_PROCESSOR_0000000184
-	KSTREAM_FLATMAP_0000000199 --> KSTREAM_PROCESSOR_0000000200
-	KSTREAM_FLATMAPVALUES_0000000186 --> KSTREAM_PROCESSOR_0000000187
-	KSTREAM_MAPVALUES_0000000192 --> KSTREAM_PROCESSOR_0000000193
-	KSTREAM_MAPVALUES_0000000196 --> KSTREAM_PROCESSOR_0000000197
+	ts_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000184
+	KSTREAM_KEY_SELECT_0000000184 --> KSTREAM_MAPVALUES_0000000185
+	KSTREAM_MAPVALUES_0000000185 --> KSTREAM_PROCESSOR_0000000186
+	KSTREAM_PROCESSOR_0000000186 --> KSTREAM_BRANCH_0000000187
+	KSTREAM_BRANCH_0000000187 --> KSTREAM_BRANCH_00000001871
+	KSTREAM_BRANCH_0000000187 --> KSTREAM_BRANCH_00000001870
+	KSTREAM_BRANCH_00000001871 --> KSTREAM_MAPVALUES_0000000189
+	KSTREAM_MAPVALUES_0000000189 --> KSTREAM_FLATMAPVALUES_0000000196
+	KSTREAM_MAPVALUES_0000000189 --> KSTREAM_FILTER_0000000202
+	KSTREAM_MAPVALUES_0000000189 --> KSTREAM_FLATMAP_0000000190
+	KSTREAM_MAPVALUES_0000000189 --> KSTREAM_FLATMAP_0000000206
+	KSTREAM_MAPVALUES_0000000189 --> KSTREAM_FLATMAPVALUES_0000000193
+	KSTREAM_FLATMAPVALUES_0000000196 --> KSTREAM_PROCESSOR_0000000197
+	KSTREAM_FLATMAPVALUES_0000000196 --> KSTREAM_MAPVALUES_0000000199
+	KSTREAM_BRANCH_00000001870 --> KSTREAM_MAPVALUES_0000000210
+	KSTREAM_FILTER_0000000202 --> KSTREAM_MAPVALUES_0000000203
+	KSTREAM_FLATMAP_0000000190 --> KSTREAM_PROCESSOR_0000000191
+	KSTREAM_FLATMAP_0000000206 --> KSTREAM_PROCESSOR_0000000207
+	KSTREAM_FLATMAPVALUES_0000000193 --> KSTREAM_PROCESSOR_0000000194
+	KSTREAM_MAPVALUES_0000000199 --> KSTREAM_PROCESSOR_0000000200
 	KSTREAM_MAPVALUES_0000000203 --> KSTREAM_PROCESSOR_0000000204
-	KSTREAM_PROCESSOR_0000000184 --> KSTREAM_SINK_0000000185
-	KSTREAM_PROCESSOR_0000000187 --> KSTREAM_SINK_0000000188
-	KSTREAM_PROCESSOR_0000000190 --> KSTREAM_SINK_0000000191
-	KSTREAM_PROCESSOR_0000000193 --> KSTREAM_SINK_0000000194
+	KSTREAM_MAPVALUES_0000000210 --> KSTREAM_PROCESSOR_0000000211
+	KSTREAM_PROCESSOR_0000000191 --> KSTREAM_SINK_0000000192
+	KSTREAM_PROCESSOR_0000000194 --> KSTREAM_SINK_0000000195
 	KSTREAM_PROCESSOR_0000000197 --> KSTREAM_SINK_0000000198
 	KSTREAM_PROCESSOR_0000000200 --> KSTREAM_SINK_0000000201
 	KSTREAM_PROCESSOR_0000000204 --> KSTREAM_SINK_0000000205
+	KSTREAM_PROCESSOR_0000000207 --> KSTREAM_SINK_0000000208
+	KSTREAM_PROCESSOR_0000000211 --> KSTREAM_SINK_0000000212
 }
 package "Sub-topology: 16" {
 	agent "consume-helved.utbetalinger-tp.v1" <<Source>> as consume_helved_utbetalinger_tp_v1
-	agent "KSTREAM-PROCESSOR-0000000207" <<Processor>> as KSTREAM_PROCESSOR_0000000207
-	agent "KSTREAM-FILTER-0000000208" <<Processor>> as KSTREAM_FILTER_0000000208
-	agent "KSTREAM-MAPVALUES-0000000209" <<Processor>> as KSTREAM_MAPVALUES_0000000209
-	agent "KSTREAM-KEY-SELECT-0000000210" <<Processor>> as KSTREAM_KEY_SELECT_0000000210
+	agent "KSTREAM-PROCESSOR-0000000214" <<Processor>> as KSTREAM_PROCESSOR_0000000214
+	agent "KSTREAM-FILTER-0000000215" <<Processor>> as KSTREAM_FILTER_0000000215
+	agent "KSTREAM-MAPVALUES-0000000216" <<Processor>> as KSTREAM_MAPVALUES_0000000216
+	agent "KSTREAM-KEY-SELECT-0000000217" <<Processor>> as KSTREAM_KEY_SELECT_0000000217
 	agent "tptuple-leftjoin-saker-repartition-filter" <<Processor>> as tptuple_leftjoin_saker_repartition_filter
 	agent "tptuple-leftjoin-saker-repartition-sink" <<Sink>> as tptuple_leftjoin_saker_repartition_sink
 	helved_utbetalinger_tp_v1 --> consume_helved_utbetalinger_tp_v1
 	tptuple_leftjoin_saker_repartition <-- tptuple_leftjoin_saker_repartition_sink
-	consume_helved_utbetalinger_tp_v1 --> KSTREAM_PROCESSOR_0000000207
-	KSTREAM_PROCESSOR_0000000207 --> KSTREAM_FILTER_0000000208
-	KSTREAM_FILTER_0000000208 --> KSTREAM_MAPVALUES_0000000209
-	KSTREAM_MAPVALUES_0000000209 --> KSTREAM_KEY_SELECT_0000000210
-	KSTREAM_KEY_SELECT_0000000210 --> tptuple_leftjoin_saker_repartition_filter
+	consume_helved_utbetalinger_tp_v1 --> KSTREAM_PROCESSOR_0000000214
+	KSTREAM_PROCESSOR_0000000214 --> KSTREAM_FILTER_0000000215
+	KSTREAM_FILTER_0000000215 --> KSTREAM_MAPVALUES_0000000216
+	KSTREAM_MAPVALUES_0000000216 --> KSTREAM_KEY_SELECT_0000000217
+	KSTREAM_KEY_SELECT_0000000217 --> tptuple_leftjoin_saker_repartition_filter
 	tptuple_leftjoin_saker_repartition_filter --> tptuple_leftjoin_saker_repartition_sink
 }
 package "Sub-topology: 17" {
@@ -676,116 +691,116 @@ package "Sub-topology: 17" {
 	database "tp-dedup-aggregate" <<State Store>> as tp_dedup_aggregate
 	agent "tp-utbetalinger-session-repartition-source" <<Source>> as tp_utbetalinger_session_repartition_source
 	agent "tp-aggregate-store-reduce" <<Processor>> as tp_aggregate_store_reduce
-	agent "KTABLE-TOSTREAM-0000000227" <<Processor>> as KTABLE_TOSTREAM_0000000227
+	agent "KTABLE-TOSTREAM-0000000234" <<Processor>> as KTABLE_TOSTREAM_0000000234
 	agent "tp-aggregate-store-suppress" <<Processor>> as tp_aggregate_store_suppress
 	agent "tp-aggregate-store-dedup" <<Processor>> as tp_aggregate_store_dedup
-	agent "KSTREAM-KEY-SELECT-0000000228" <<Processor>> as KSTREAM_KEY_SELECT_0000000228
-	agent "KSTREAM-MAPVALUES-0000000229" <<Processor>> as KSTREAM_MAPVALUES_0000000229
-	agent "KSTREAM-PROCESSOR-0000000230" <<Processor>> as KSTREAM_PROCESSOR_0000000230
-	agent "KSTREAM-BRANCH-0000000231" <<Processor>> as KSTREAM_BRANCH_0000000231
-	agent "KSTREAM-BRANCH-00000002311" <<Processor>> as KSTREAM_BRANCH_00000002311
-	agent "KSTREAM-MAPVALUES-0000000233" <<Processor>> as KSTREAM_MAPVALUES_0000000233
-	agent "KSTREAM-FLATMAPVALUES-0000000240" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000240
-	agent "KSTREAM-BRANCH-00000002310" <<Processor>> as KSTREAM_BRANCH_00000002310
-	agent "KSTREAM-FILTER-0000000246" <<Processor>> as KSTREAM_FILTER_0000000246
-	agent "KSTREAM-FLATMAP-0000000234" <<Processor>> as KSTREAM_FLATMAP_0000000234
-	agent "KSTREAM-FLATMAP-0000000250" <<Processor>> as KSTREAM_FLATMAP_0000000250
-	agent "KSTREAM-FLATMAPVALUES-0000000237" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000237
-	agent "KSTREAM-MAPVALUES-0000000243" <<Processor>> as KSTREAM_MAPVALUES_0000000243
-	agent "KSTREAM-MAPVALUES-0000000247" <<Processor>> as KSTREAM_MAPVALUES_0000000247
+	agent "KSTREAM-KEY-SELECT-0000000235" <<Processor>> as KSTREAM_KEY_SELECT_0000000235
+	agent "KSTREAM-MAPVALUES-0000000236" <<Processor>> as KSTREAM_MAPVALUES_0000000236
+	agent "KSTREAM-PROCESSOR-0000000237" <<Processor>> as KSTREAM_PROCESSOR_0000000237
+	agent "KSTREAM-BRANCH-0000000238" <<Processor>> as KSTREAM_BRANCH_0000000238
+	agent "KSTREAM-BRANCH-00000002381" <<Processor>> as KSTREAM_BRANCH_00000002381
+	agent "KSTREAM-MAPVALUES-0000000240" <<Processor>> as KSTREAM_MAPVALUES_0000000240
+	agent "KSTREAM-FLATMAPVALUES-0000000247" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000247
+	agent "KSTREAM-BRANCH-00000002380" <<Processor>> as KSTREAM_BRANCH_00000002380
+	agent "KSTREAM-FILTER-0000000253" <<Processor>> as KSTREAM_FILTER_0000000253
+	agent "KSTREAM-FLATMAP-0000000241" <<Processor>> as KSTREAM_FLATMAP_0000000241
+	agent "KSTREAM-FLATMAP-0000000257" <<Processor>> as KSTREAM_FLATMAP_0000000257
+	agent "KSTREAM-FLATMAPVALUES-0000000244" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000244
+	agent "KSTREAM-MAPVALUES-0000000250" <<Processor>> as KSTREAM_MAPVALUES_0000000250
 	agent "KSTREAM-MAPVALUES-0000000254" <<Processor>> as KSTREAM_MAPVALUES_0000000254
-	agent "KSTREAM-PROCESSOR-0000000235" <<Processor>> as KSTREAM_PROCESSOR_0000000235
-	agent "KSTREAM-PROCESSOR-0000000238" <<Processor>> as KSTREAM_PROCESSOR_0000000238
-	agent "KSTREAM-PROCESSOR-0000000241" <<Processor>> as KSTREAM_PROCESSOR_0000000241
-	agent "KSTREAM-PROCESSOR-0000000244" <<Processor>> as KSTREAM_PROCESSOR_0000000244
+	agent "KSTREAM-MAPVALUES-0000000261" <<Processor>> as KSTREAM_MAPVALUES_0000000261
+	agent "KSTREAM-PROCESSOR-0000000242" <<Processor>> as KSTREAM_PROCESSOR_0000000242
+	agent "KSTREAM-PROCESSOR-0000000245" <<Processor>> as KSTREAM_PROCESSOR_0000000245
 	agent "KSTREAM-PROCESSOR-0000000248" <<Processor>> as KSTREAM_PROCESSOR_0000000248
 	agent "KSTREAM-PROCESSOR-0000000251" <<Processor>> as KSTREAM_PROCESSOR_0000000251
 	agent "KSTREAM-PROCESSOR-0000000255" <<Processor>> as KSTREAM_PROCESSOR_0000000255
-	agent "KSTREAM-SINK-0000000236" <<Sink>> as KSTREAM_SINK_0000000236
-	agent "KSTREAM-SINK-0000000239" <<Sink>> as KSTREAM_SINK_0000000239
-	agent "KSTREAM-SINK-0000000242" <<Sink>> as KSTREAM_SINK_0000000242
-	agent "KSTREAM-SINK-0000000245" <<Sink>> as KSTREAM_SINK_0000000245
+	agent "KSTREAM-PROCESSOR-0000000258" <<Processor>> as KSTREAM_PROCESSOR_0000000258
+	agent "KSTREAM-PROCESSOR-0000000262" <<Processor>> as KSTREAM_PROCESSOR_0000000262
+	agent "KSTREAM-SINK-0000000243" <<Sink>> as KSTREAM_SINK_0000000243
+	agent "KSTREAM-SINK-0000000246" <<Sink>> as KSTREAM_SINK_0000000246
 	agent "KSTREAM-SINK-0000000249" <<Sink>> as KSTREAM_SINK_0000000249
 	agent "KSTREAM-SINK-0000000252" <<Sink>> as KSTREAM_SINK_0000000252
 	agent "KSTREAM-SINK-0000000256" <<Sink>> as KSTREAM_SINK_0000000256
+	agent "KSTREAM-SINK-0000000259" <<Sink>> as KSTREAM_SINK_0000000259
+	agent "KSTREAM-SINK-0000000263" <<Sink>> as KSTREAM_SINK_0000000263
 	tp_utbetalinger_session_repartition --> tp_utbetalinger_session_repartition_source
 	tp_aggregate_store_materialized -- tp_aggregate_store_reduce
 	tp_aggregate_store -- tp_aggregate_store_suppress
 	tp_dedup_aggregate -- tp_aggregate_store_dedup
-	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000236
-	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000239
-	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000242
-	helved_status_v1 <-- KSTREAM_SINK_0000000245
-	helved_status_v1 <-- KSTREAM_SINK_0000000249
-	helved_fk_v1 <-- KSTREAM_SINK_0000000252
+	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000243
+	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000246
+	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000249
+	helved_status_v1 <-- KSTREAM_SINK_0000000252
 	helved_status_v1 <-- KSTREAM_SINK_0000000256
+	helved_fk_v1 <-- KSTREAM_SINK_0000000259
+	helved_status_v1 <-- KSTREAM_SINK_0000000263
 	tp_utbetalinger_session_repartition_source --> tp_aggregate_store_reduce
-	tp_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000227
-	KTABLE_TOSTREAM_0000000227 --> tp_aggregate_store_suppress
+	tp_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000234
+	KTABLE_TOSTREAM_0000000234 --> tp_aggregate_store_suppress
 	tp_aggregate_store_suppress --> tp_aggregate_store_dedup
-	tp_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000228
-	KSTREAM_KEY_SELECT_0000000228 --> KSTREAM_MAPVALUES_0000000229
-	KSTREAM_MAPVALUES_0000000229 --> KSTREAM_PROCESSOR_0000000230
-	KSTREAM_PROCESSOR_0000000230 --> KSTREAM_BRANCH_0000000231
-	KSTREAM_BRANCH_0000000231 --> KSTREAM_BRANCH_00000002311
-	KSTREAM_BRANCH_0000000231 --> KSTREAM_BRANCH_00000002310
-	KSTREAM_BRANCH_00000002311 --> KSTREAM_MAPVALUES_0000000233
-	KSTREAM_MAPVALUES_0000000233 --> KSTREAM_FILTER_0000000246
-	KSTREAM_MAPVALUES_0000000233 --> KSTREAM_FLATMAP_0000000250
-	KSTREAM_MAPVALUES_0000000233 --> KSTREAM_FLATMAPVALUES_0000000240
-	KSTREAM_MAPVALUES_0000000233 --> KSTREAM_FLATMAP_0000000234
-	KSTREAM_MAPVALUES_0000000233 --> KSTREAM_FLATMAPVALUES_0000000237
-	KSTREAM_FLATMAPVALUES_0000000240 --> KSTREAM_MAPVALUES_0000000243
-	KSTREAM_FLATMAPVALUES_0000000240 --> KSTREAM_PROCESSOR_0000000241
-	KSTREAM_BRANCH_00000002310 --> KSTREAM_MAPVALUES_0000000254
-	KSTREAM_FILTER_0000000246 --> KSTREAM_MAPVALUES_0000000247
-	KSTREAM_FLATMAP_0000000234 --> KSTREAM_PROCESSOR_0000000235
-	KSTREAM_FLATMAP_0000000250 --> KSTREAM_PROCESSOR_0000000251
-	KSTREAM_FLATMAPVALUES_0000000237 --> KSTREAM_PROCESSOR_0000000238
-	KSTREAM_MAPVALUES_0000000243 --> KSTREAM_PROCESSOR_0000000244
-	KSTREAM_MAPVALUES_0000000247 --> KSTREAM_PROCESSOR_0000000248
+	tp_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000235
+	KSTREAM_KEY_SELECT_0000000235 --> KSTREAM_MAPVALUES_0000000236
+	KSTREAM_MAPVALUES_0000000236 --> KSTREAM_PROCESSOR_0000000237
+	KSTREAM_PROCESSOR_0000000237 --> KSTREAM_BRANCH_0000000238
+	KSTREAM_BRANCH_0000000238 --> KSTREAM_BRANCH_00000002380
+	KSTREAM_BRANCH_0000000238 --> KSTREAM_BRANCH_00000002381
+	KSTREAM_BRANCH_00000002381 --> KSTREAM_MAPVALUES_0000000240
+	KSTREAM_MAPVALUES_0000000240 --> KSTREAM_FILTER_0000000253
+	KSTREAM_MAPVALUES_0000000240 --> KSTREAM_FLATMAP_0000000257
+	KSTREAM_MAPVALUES_0000000240 --> KSTREAM_FLATMAPVALUES_0000000244
+	KSTREAM_MAPVALUES_0000000240 --> KSTREAM_FLATMAPVALUES_0000000247
+	KSTREAM_MAPVALUES_0000000240 --> KSTREAM_FLATMAP_0000000241
+	KSTREAM_FLATMAPVALUES_0000000247 --> KSTREAM_MAPVALUES_0000000250
+	KSTREAM_FLATMAPVALUES_0000000247 --> KSTREAM_PROCESSOR_0000000248
+	KSTREAM_BRANCH_00000002380 --> KSTREAM_MAPVALUES_0000000261
+	KSTREAM_FILTER_0000000253 --> KSTREAM_MAPVALUES_0000000254
+	KSTREAM_FLATMAP_0000000241 --> KSTREAM_PROCESSOR_0000000242
+	KSTREAM_FLATMAP_0000000257 --> KSTREAM_PROCESSOR_0000000258
+	KSTREAM_FLATMAPVALUES_0000000244 --> KSTREAM_PROCESSOR_0000000245
+	KSTREAM_MAPVALUES_0000000250 --> KSTREAM_PROCESSOR_0000000251
 	KSTREAM_MAPVALUES_0000000254 --> KSTREAM_PROCESSOR_0000000255
-	KSTREAM_PROCESSOR_0000000235 --> KSTREAM_SINK_0000000236
-	KSTREAM_PROCESSOR_0000000238 --> KSTREAM_SINK_0000000239
-	KSTREAM_PROCESSOR_0000000241 --> KSTREAM_SINK_0000000242
-	KSTREAM_PROCESSOR_0000000244 --> KSTREAM_SINK_0000000245
+	KSTREAM_MAPVALUES_0000000261 --> KSTREAM_PROCESSOR_0000000262
+	KSTREAM_PROCESSOR_0000000242 --> KSTREAM_SINK_0000000243
+	KSTREAM_PROCESSOR_0000000245 --> KSTREAM_SINK_0000000246
 	KSTREAM_PROCESSOR_0000000248 --> KSTREAM_SINK_0000000249
 	KSTREAM_PROCESSOR_0000000251 --> KSTREAM_SINK_0000000252
 	KSTREAM_PROCESSOR_0000000255 --> KSTREAM_SINK_0000000256
+	KSTREAM_PROCESSOR_0000000258 --> KSTREAM_SINK_0000000259
+	KSTREAM_PROCESSOR_0000000262 --> KSTREAM_SINK_0000000263
 }
 package "Sub-topology: 18" {
 	agent "consume-historisk.utbetaling.v1" <<Source>> as consume_historisk_utbetaling_v1
-	agent "KSTREAM-PROCESSOR-0000000258" <<Processor>> as KSTREAM_PROCESSOR_0000000258
-	agent "KSTREAM-FILTER-0000000259" <<Processor>> as KSTREAM_FILTER_0000000259
+	agent "KSTREAM-PROCESSOR-0000000265" <<Processor>> as KSTREAM_PROCESSOR_0000000265
+	agent "KSTREAM-FILTER-0000000266" <<Processor>> as KSTREAM_FILTER_0000000266
 	agent "from-historisk.utbetaling.v1-repartition-filter" <<Processor>> as from_historisk_utbetaling_v1_repartition_filter
 	agent "from-historisk.utbetaling.v1-repartition-sink" <<Sink>> as from_historisk_utbetaling_v1_repartition_sink
 	historisk_utbetaling_v1 --> consume_historisk_utbetaling_v1
 	from_historisk_utbetaling_v1_repartition <-- from_historisk_utbetaling_v1_repartition_sink
-	consume_historisk_utbetaling_v1 --> KSTREAM_PROCESSOR_0000000258
-	KSTREAM_PROCESSOR_0000000258 --> KSTREAM_FILTER_0000000259
-	KSTREAM_FILTER_0000000259 --> from_historisk_utbetaling_v1_repartition_filter
+	consume_historisk_utbetaling_v1 --> KSTREAM_PROCESSOR_0000000265
+	KSTREAM_PROCESSOR_0000000265 --> KSTREAM_FILTER_0000000266
+	KSTREAM_FILTER_0000000266 --> from_historisk_utbetaling_v1_repartition_filter
 	from_historisk_utbetaling_v1_repartition_filter --> from_historisk_utbetaling_v1_repartition_sink
 }
 package "Sub-topology: 19" {
 	agent "consume-helved.utbetalinger-historisk.v1" <<Source>> as consume_helved_utbetalinger_historisk_v1
-	agent "KSTREAM-PROCESSOR-0000000264" <<Processor>> as KSTREAM_PROCESSOR_0000000264
-	agent "KSTREAM-FILTER-0000000265" <<Processor>> as KSTREAM_FILTER_0000000265
+	agent "KSTREAM-PROCESSOR-0000000271" <<Processor>> as KSTREAM_PROCESSOR_0000000271
+	agent "KSTREAM-FILTER-0000000272" <<Processor>> as KSTREAM_FILTER_0000000272
 	agent "from-historisk.utbetaling.v1-repartition-source" <<Source>> as from_historisk_utbetaling_v1_repartition_source
-	agent "KSTREAM-MERGE-0000000266" <<Processor>> as KSTREAM_MERGE_0000000266
-	agent "KSTREAM-MAPVALUES-0000000267" <<Processor>> as KSTREAM_MAPVALUES_0000000267
-	agent "KSTREAM-KEY-SELECT-0000000268" <<Processor>> as KSTREAM_KEY_SELECT_0000000268
+	agent "KSTREAM-MERGE-0000000273" <<Processor>> as KSTREAM_MERGE_0000000273
+	agent "KSTREAM-MAPVALUES-0000000274" <<Processor>> as KSTREAM_MAPVALUES_0000000274
+	agent "KSTREAM-KEY-SELECT-0000000275" <<Processor>> as KSTREAM_KEY_SELECT_0000000275
 	agent "historisktuple-leftjoin-saker-repartition-filter" <<Processor>> as historisktuple_leftjoin_saker_repartition_filter
 	agent "historisktuple-leftjoin-saker-repartition-sink" <<Sink>> as historisktuple_leftjoin_saker_repartition_sink
 	helved_utbetalinger_historisk_v1 --> consume_helved_utbetalinger_historisk_v1
 	from_historisk_utbetaling_v1_repartition --> from_historisk_utbetaling_v1_repartition_source
 	historisktuple_leftjoin_saker_repartition <-- historisktuple_leftjoin_saker_repartition_sink
-	consume_helved_utbetalinger_historisk_v1 --> KSTREAM_PROCESSOR_0000000264
-	KSTREAM_PROCESSOR_0000000264 --> KSTREAM_FILTER_0000000265
-	KSTREAM_FILTER_0000000265 --> KSTREAM_MERGE_0000000266
-	from_historisk_utbetaling_v1_repartition_source --> KSTREAM_MERGE_0000000266
-	KSTREAM_MERGE_0000000266 --> KSTREAM_MAPVALUES_0000000267
-	KSTREAM_MAPVALUES_0000000267 --> KSTREAM_KEY_SELECT_0000000268
-	KSTREAM_KEY_SELECT_0000000268 --> historisktuple_leftjoin_saker_repartition_filter
+	consume_helved_utbetalinger_historisk_v1 --> KSTREAM_PROCESSOR_0000000271
+	KSTREAM_PROCESSOR_0000000271 --> KSTREAM_FILTER_0000000272
+	KSTREAM_FILTER_0000000272 --> KSTREAM_MERGE_0000000273
+	from_historisk_utbetaling_v1_repartition_source --> KSTREAM_MERGE_0000000273
+	KSTREAM_MERGE_0000000273 --> KSTREAM_MAPVALUES_0000000274
+	KSTREAM_MAPVALUES_0000000274 --> KSTREAM_KEY_SELECT_0000000275
+	KSTREAM_KEY_SELECT_0000000275 --> historisktuple_leftjoin_saker_repartition_filter
 	historisktuple_leftjoin_saker_repartition_filter --> historisktuple_leftjoin_saker_repartition_sink
 }
 package "Sub-topology: 20" {
@@ -794,111 +809,113 @@ package "Sub-topology: 20" {
 	database "historisk-dedup-aggregate" <<State Store>> as historisk_dedup_aggregate
 	agent "historisk-utbetalinger-session-repartition-source" <<Source>> as historisk_utbetalinger_session_repartition_source
 	agent "historisk-aggregate-store-reduce" <<Processor>> as historisk_aggregate_store_reduce
-	agent "KTABLE-TOSTREAM-0000000285" <<Processor>> as KTABLE_TOSTREAM_0000000285
+	agent "KTABLE-TOSTREAM-0000000292" <<Processor>> as KTABLE_TOSTREAM_0000000292
 	agent "historisk-aggregate-store-suppress" <<Processor>> as historisk_aggregate_store_suppress
 	agent "historisk-aggregate-store-dedup" <<Processor>> as historisk_aggregate_store_dedup
-	agent "KSTREAM-KEY-SELECT-0000000286" <<Processor>> as KSTREAM_KEY_SELECT_0000000286
-	agent "KSTREAM-MAPVALUES-0000000287" <<Processor>> as KSTREAM_MAPVALUES_0000000287
-	agent "KSTREAM-BRANCH-0000000288" <<Processor>> as KSTREAM_BRANCH_0000000288
-	agent "KSTREAM-BRANCH-00000002881" <<Processor>> as KSTREAM_BRANCH_00000002881
-	agent "KSTREAM-MAPVALUES-0000000290" <<Processor>> as KSTREAM_MAPVALUES_0000000290
-	agent "KSTREAM-FLATMAPVALUES-0000000297" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000297
-	agent "KSTREAM-BRANCH-00000002880" <<Processor>> as KSTREAM_BRANCH_00000002880
-	agent "KSTREAM-FILTER-0000000303" <<Processor>> as KSTREAM_FILTER_0000000303
-	agent "KSTREAM-FLATMAP-0000000291" <<Processor>> as KSTREAM_FLATMAP_0000000291
-	agent "KSTREAM-FLATMAP-0000000307" <<Processor>> as KSTREAM_FLATMAP_0000000307
-	agent "KSTREAM-FLATMAPVALUES-0000000294" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000294
-	agent "KSTREAM-MAPVALUES-0000000300" <<Processor>> as KSTREAM_MAPVALUES_0000000300
-	agent "KSTREAM-MAPVALUES-0000000304" <<Processor>> as KSTREAM_MAPVALUES_0000000304
-	agent "KSTREAM-MAPVALUES-0000000311" <<Processor>> as KSTREAM_MAPVALUES_0000000311
-	agent "KSTREAM-PROCESSOR-0000000292" <<Processor>> as KSTREAM_PROCESSOR_0000000292
+	agent "KSTREAM-KEY-SELECT-0000000293" <<Processor>> as KSTREAM_KEY_SELECT_0000000293
+	agent "KSTREAM-MAPVALUES-0000000294" <<Processor>> as KSTREAM_MAPVALUES_0000000294
 	agent "KSTREAM-PROCESSOR-0000000295" <<Processor>> as KSTREAM_PROCESSOR_0000000295
-	agent "KSTREAM-PROCESSOR-0000000298" <<Processor>> as KSTREAM_PROCESSOR_0000000298
-	agent "KSTREAM-PROCESSOR-0000000301" <<Processor>> as KSTREAM_PROCESSOR_0000000301
-	agent "KSTREAM-PROCESSOR-0000000305" <<Processor>> as KSTREAM_PROCESSOR_0000000305
-	agent "KSTREAM-PROCESSOR-0000000308" <<Processor>> as KSTREAM_PROCESSOR_0000000308
-	agent "KSTREAM-PROCESSOR-0000000312" <<Processor>> as KSTREAM_PROCESSOR_0000000312
-	agent "KSTREAM-SINK-0000000293" <<Sink>> as KSTREAM_SINK_0000000293
-	agent "KSTREAM-SINK-0000000296" <<Sink>> as KSTREAM_SINK_0000000296
-	agent "KSTREAM-SINK-0000000299" <<Sink>> as KSTREAM_SINK_0000000299
-	agent "KSTREAM-SINK-0000000302" <<Sink>> as KSTREAM_SINK_0000000302
-	agent "KSTREAM-SINK-0000000306" <<Sink>> as KSTREAM_SINK_0000000306
-	agent "KSTREAM-SINK-0000000309" <<Sink>> as KSTREAM_SINK_0000000309
-	agent "KSTREAM-SINK-0000000313" <<Sink>> as KSTREAM_SINK_0000000313
+	agent "KSTREAM-BRANCH-0000000296" <<Processor>> as KSTREAM_BRANCH_0000000296
+	agent "KSTREAM-BRANCH-00000002961" <<Processor>> as KSTREAM_BRANCH_00000002961
+	agent "KSTREAM-MAPVALUES-0000000298" <<Processor>> as KSTREAM_MAPVALUES_0000000298
+	agent "KSTREAM-FLATMAPVALUES-0000000305" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000305
+	agent "KSTREAM-BRANCH-00000002960" <<Processor>> as KSTREAM_BRANCH_00000002960
+	agent "KSTREAM-FILTER-0000000311" <<Processor>> as KSTREAM_FILTER_0000000311
+	agent "KSTREAM-FLATMAP-0000000299" <<Processor>> as KSTREAM_FLATMAP_0000000299
+	agent "KSTREAM-FLATMAP-0000000315" <<Processor>> as KSTREAM_FLATMAP_0000000315
+	agent "KSTREAM-FLATMAPVALUES-0000000302" <<Processor>> as KSTREAM_FLATMAPVALUES_0000000302
+	agent "KSTREAM-MAPVALUES-0000000308" <<Processor>> as KSTREAM_MAPVALUES_0000000308
+	agent "KSTREAM-MAPVALUES-0000000312" <<Processor>> as KSTREAM_MAPVALUES_0000000312
+	agent "KSTREAM-MAPVALUES-0000000319" <<Processor>> as KSTREAM_MAPVALUES_0000000319
+	agent "KSTREAM-PROCESSOR-0000000300" <<Processor>> as KSTREAM_PROCESSOR_0000000300
+	agent "KSTREAM-PROCESSOR-0000000303" <<Processor>> as KSTREAM_PROCESSOR_0000000303
+	agent "KSTREAM-PROCESSOR-0000000306" <<Processor>> as KSTREAM_PROCESSOR_0000000306
+	agent "KSTREAM-PROCESSOR-0000000309" <<Processor>> as KSTREAM_PROCESSOR_0000000309
+	agent "KSTREAM-PROCESSOR-0000000313" <<Processor>> as KSTREAM_PROCESSOR_0000000313
+	agent "KSTREAM-PROCESSOR-0000000316" <<Processor>> as KSTREAM_PROCESSOR_0000000316
+	agent "KSTREAM-PROCESSOR-0000000320" <<Processor>> as KSTREAM_PROCESSOR_0000000320
+	agent "KSTREAM-SINK-0000000301" <<Sink>> as KSTREAM_SINK_0000000301
+	agent "KSTREAM-SINK-0000000304" <<Sink>> as KSTREAM_SINK_0000000304
+	agent "KSTREAM-SINK-0000000307" <<Sink>> as KSTREAM_SINK_0000000307
+	agent "KSTREAM-SINK-0000000310" <<Sink>> as KSTREAM_SINK_0000000310
+	agent "KSTREAM-SINK-0000000314" <<Sink>> as KSTREAM_SINK_0000000314
+	agent "KSTREAM-SINK-0000000317" <<Sink>> as KSTREAM_SINK_0000000317
+	agent "KSTREAM-SINK-0000000321" <<Sink>> as KSTREAM_SINK_0000000321
 	historisk_utbetalinger_session_repartition --> historisk_utbetalinger_session_repartition_source
 	historisk_aggregate_store_materialized -- historisk_aggregate_store_reduce
 	historisk_aggregate_store -- historisk_aggregate_store_suppress
 	historisk_dedup_aggregate -- historisk_aggregate_store_dedup
-	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000293
-	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000296
-	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000299
-	helved_status_v1 <-- KSTREAM_SINK_0000000302
-	helved_status_v1 <-- KSTREAM_SINK_0000000306
-	helved_fk_v1 <-- KSTREAM_SINK_0000000309
-	helved_status_v1 <-- KSTREAM_SINK_0000000313
+	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000301
+	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000304
+	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000307
+	helved_status_v1 <-- KSTREAM_SINK_0000000310
+	helved_status_v1 <-- KSTREAM_SINK_0000000314
+	helved_fk_v1 <-- KSTREAM_SINK_0000000317
+	helved_status_v1 <-- KSTREAM_SINK_0000000321
 	historisk_utbetalinger_session_repartition_source --> historisk_aggregate_store_reduce
-	historisk_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000285
-	KTABLE_TOSTREAM_0000000285 --> historisk_aggregate_store_suppress
+	historisk_aggregate_store_reduce --> KTABLE_TOSTREAM_0000000292
+	KTABLE_TOSTREAM_0000000292 --> historisk_aggregate_store_suppress
 	historisk_aggregate_store_suppress --> historisk_aggregate_store_dedup
-	historisk_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000286
-	KSTREAM_KEY_SELECT_0000000286 --> KSTREAM_MAPVALUES_0000000287
-	KSTREAM_MAPVALUES_0000000287 --> KSTREAM_BRANCH_0000000288
-	KSTREAM_BRANCH_0000000288 --> KSTREAM_BRANCH_00000002880
-	KSTREAM_BRANCH_0000000288 --> KSTREAM_BRANCH_00000002881
-	KSTREAM_BRANCH_00000002881 --> KSTREAM_MAPVALUES_0000000290
-	KSTREAM_MAPVALUES_0000000290 --> KSTREAM_FLATMAPVALUES_0000000297
-	KSTREAM_MAPVALUES_0000000290 --> KSTREAM_FILTER_0000000303
-	KSTREAM_MAPVALUES_0000000290 --> KSTREAM_FLATMAP_0000000291
-	KSTREAM_MAPVALUES_0000000290 --> KSTREAM_FLATMAP_0000000307
-	KSTREAM_MAPVALUES_0000000290 --> KSTREAM_FLATMAPVALUES_0000000294
-	KSTREAM_FLATMAPVALUES_0000000297 --> KSTREAM_MAPVALUES_0000000300
-	KSTREAM_FLATMAPVALUES_0000000297 --> KSTREAM_PROCESSOR_0000000298
-	KSTREAM_BRANCH_00000002880 --> KSTREAM_MAPVALUES_0000000311
-	KSTREAM_FILTER_0000000303 --> KSTREAM_MAPVALUES_0000000304
-	KSTREAM_FLATMAP_0000000291 --> KSTREAM_PROCESSOR_0000000292
-	KSTREAM_FLATMAP_0000000307 --> KSTREAM_PROCESSOR_0000000308
-	KSTREAM_FLATMAPVALUES_0000000294 --> KSTREAM_PROCESSOR_0000000295
-	KSTREAM_MAPVALUES_0000000300 --> KSTREAM_PROCESSOR_0000000301
-	KSTREAM_MAPVALUES_0000000304 --> KSTREAM_PROCESSOR_0000000305
-	KSTREAM_MAPVALUES_0000000311 --> KSTREAM_PROCESSOR_0000000312
-	KSTREAM_PROCESSOR_0000000292 --> KSTREAM_SINK_0000000293
-	KSTREAM_PROCESSOR_0000000295 --> KSTREAM_SINK_0000000296
-	KSTREAM_PROCESSOR_0000000298 --> KSTREAM_SINK_0000000299
-	KSTREAM_PROCESSOR_0000000301 --> KSTREAM_SINK_0000000302
-	KSTREAM_PROCESSOR_0000000305 --> KSTREAM_SINK_0000000306
-	KSTREAM_PROCESSOR_0000000308 --> KSTREAM_SINK_0000000309
-	KSTREAM_PROCESSOR_0000000312 --> KSTREAM_SINK_0000000313
+	historisk_aggregate_store_dedup --> KSTREAM_KEY_SELECT_0000000293
+	KSTREAM_KEY_SELECT_0000000293 --> KSTREAM_MAPVALUES_0000000294
+	KSTREAM_MAPVALUES_0000000294 --> KSTREAM_PROCESSOR_0000000295
+	KSTREAM_PROCESSOR_0000000295 --> KSTREAM_BRANCH_0000000296
+	KSTREAM_BRANCH_0000000296 --> KSTREAM_BRANCH_00000002960
+	KSTREAM_BRANCH_0000000296 --> KSTREAM_BRANCH_00000002961
+	KSTREAM_BRANCH_00000002961 --> KSTREAM_MAPVALUES_0000000298
+	KSTREAM_MAPVALUES_0000000298 --> KSTREAM_FLATMAPVALUES_0000000305
+	KSTREAM_MAPVALUES_0000000298 --> KSTREAM_FILTER_0000000311
+	KSTREAM_MAPVALUES_0000000298 --> KSTREAM_FLATMAP_0000000299
+	KSTREAM_MAPVALUES_0000000298 --> KSTREAM_FLATMAP_0000000315
+	KSTREAM_MAPVALUES_0000000298 --> KSTREAM_FLATMAPVALUES_0000000302
+	KSTREAM_FLATMAPVALUES_0000000305 --> KSTREAM_PROCESSOR_0000000306
+	KSTREAM_FLATMAPVALUES_0000000305 --> KSTREAM_MAPVALUES_0000000308
+	KSTREAM_BRANCH_00000002960 --> KSTREAM_MAPVALUES_0000000319
+	KSTREAM_FILTER_0000000311 --> KSTREAM_MAPVALUES_0000000312
+	KSTREAM_FLATMAP_0000000299 --> KSTREAM_PROCESSOR_0000000300
+	KSTREAM_FLATMAP_0000000315 --> KSTREAM_PROCESSOR_0000000316
+	KSTREAM_FLATMAPVALUES_0000000302 --> KSTREAM_PROCESSOR_0000000303
+	KSTREAM_MAPVALUES_0000000308 --> KSTREAM_PROCESSOR_0000000309
+	KSTREAM_MAPVALUES_0000000312 --> KSTREAM_PROCESSOR_0000000313
+	KSTREAM_MAPVALUES_0000000319 --> KSTREAM_PROCESSOR_0000000320
+	KSTREAM_PROCESSOR_0000000300 --> KSTREAM_SINK_0000000301
+	KSTREAM_PROCESSOR_0000000303 --> KSTREAM_SINK_0000000304
+	KSTREAM_PROCESSOR_0000000306 --> KSTREAM_SINK_0000000307
+	KSTREAM_PROCESSOR_0000000309 --> KSTREAM_SINK_0000000310
+	KSTREAM_PROCESSOR_0000000313 --> KSTREAM_SINK_0000000314
+	KSTREAM_PROCESSOR_0000000316 --> KSTREAM_SINK_0000000317
+	KSTREAM_PROCESSOR_0000000320 --> KSTREAM_SINK_0000000321
 }
 package "Sub-topology: 21" {
 	agent "consume-helved.oppdrag.v1" <<Source>> as consume_helved_oppdrag_v1
-	agent "KSTREAM-PROCESSOR-0000000315" <<Processor>> as KSTREAM_PROCESSOR_0000000315
-	agent "KSTREAM-FILTER-0000000316" <<Processor>> as KSTREAM_FILTER_0000000316
-	agent "KSTREAM-FILTER-0000000317" <<Processor>> as KSTREAM_FILTER_0000000317
-	agent "KSTREAM-KEY-SELECT-0000000318" <<Processor>> as KSTREAM_KEY_SELECT_0000000318
-	agent "KSTREAM-MAPVALUES-0000000319" <<Processor>> as KSTREAM_MAPVALUES_0000000319
+	agent "KSTREAM-PROCESSOR-0000000323" <<Processor>> as KSTREAM_PROCESSOR_0000000323
+	agent "KSTREAM-FILTER-0000000324" <<Processor>> as KSTREAM_FILTER_0000000324
+	agent "KSTREAM-FILTER-0000000325" <<Processor>> as KSTREAM_FILTER_0000000325
+	agent "KSTREAM-KEY-SELECT-0000000326" <<Processor>> as KSTREAM_KEY_SELECT_0000000326
+	agent "KSTREAM-MAPVALUES-0000000327" <<Processor>> as KSTREAM_MAPVALUES_0000000327
 	agent "oppdrag-leftjoin-fks-repartition-filter" <<Processor>> as oppdrag_leftjoin_fks_repartition_filter
 	agent "oppdrag-leftjoin-fks-repartition-sink" <<Sink>> as oppdrag_leftjoin_fks_repartition_sink
 	helved_oppdrag_v1 --> consume_helved_oppdrag_v1
 	oppdrag_leftjoin_fks_repartition <-- oppdrag_leftjoin_fks_repartition_sink
-	consume_helved_oppdrag_v1 --> KSTREAM_PROCESSOR_0000000315
-	KSTREAM_PROCESSOR_0000000315 --> KSTREAM_FILTER_0000000316
-	KSTREAM_FILTER_0000000316 --> KSTREAM_FILTER_0000000317
-	KSTREAM_FILTER_0000000317 --> KSTREAM_KEY_SELECT_0000000318
-	KSTREAM_KEY_SELECT_0000000318 --> KSTREAM_MAPVALUES_0000000319
-	KSTREAM_MAPVALUES_0000000319 --> oppdrag_leftjoin_fks_repartition_filter
+	consume_helved_oppdrag_v1 --> KSTREAM_PROCESSOR_0000000323
+	KSTREAM_PROCESSOR_0000000323 --> KSTREAM_FILTER_0000000324
+	KSTREAM_FILTER_0000000324 --> KSTREAM_FILTER_0000000325
+	KSTREAM_FILTER_0000000325 --> KSTREAM_KEY_SELECT_0000000326
+	KSTREAM_KEY_SELECT_0000000326 --> KSTREAM_MAPVALUES_0000000327
+	KSTREAM_MAPVALUES_0000000327 --> oppdrag_leftjoin_fks_repartition_filter
 	oppdrag_leftjoin_fks_repartition_filter --> oppdrag_leftjoin_fks_repartition_sink
 }
 package "Sub-topology: 22" {
 	agent "consume-helved.saker.v1" <<Source>> as consume_helved_saker_v1
-	agent "KSTREAM-PROCESSOR-0000000334" <<Processor>> as KSTREAM_PROCESSOR_0000000334
-	agent "KSTREAM-PROCESSOR-0000000335" <<Processor>> as KSTREAM_PROCESSOR_0000000335
+	agent "KSTREAM-PROCESSOR-0000000342" <<Processor>> as KSTREAM_PROCESSOR_0000000342
+	agent "KSTREAM-PROCESSOR-0000000343" <<Processor>> as KSTREAM_PROCESSOR_0000000343
 	agent "ktable-helved.saker.v1-repartition-filter" <<Processor>> as ktable_helved_saker_v1_repartition_filter
 	agent "ktable-helved.saker.v1-repartition-sink" <<Sink>> as ktable_helved_saker_v1_repartition_sink
 	helved_saker_v1 --> consume_helved_saker_v1
 	ktable_helved_saker_v1_repartition <-- ktable_helved_saker_v1_repartition_sink
-	consume_helved_saker_v1 --> KSTREAM_PROCESSOR_0000000334
-	KSTREAM_PROCESSOR_0000000334 --> KSTREAM_PROCESSOR_0000000335
-	KSTREAM_PROCESSOR_0000000335 --> ktable_helved_saker_v1_repartition_filter
+	consume_helved_saker_v1 --> KSTREAM_PROCESSOR_0000000342
+	KSTREAM_PROCESSOR_0000000342 --> KSTREAM_PROCESSOR_0000000343
+	KSTREAM_PROCESSOR_0000000343 --> ktable_helved_saker_v1_repartition_filter
 	ktable_helved_saker_v1_repartition_filter --> ktable_helved_saker_v1_repartition_sink
 }
 package "Sub-topology: 23" {

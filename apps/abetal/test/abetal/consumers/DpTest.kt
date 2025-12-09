@@ -1816,8 +1816,9 @@ internal class DpTest {
     }
 
     @Test
-    fun `opphør uten eksisterende utbetaling`() {
-        TestRuntime.topics.dp.produce(UUID.randomUUID().toString()) {
+    fun `utbetaling uten meldeperiode gir status OK`() {
+        val uid = UUID.randomUUID().toString()
+        TestRuntime.topics.dp.produce(uid) {
             Dp.utbetaling(
                 sakId = "$nextInt",
                 behandlingId = "$nextInt",
@@ -1826,9 +1827,11 @@ internal class DpTest {
                 emptyList()
             }
         }
+        val expectedStatus = StatusReply(Status.OK)
 
         TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
-        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.status.assertThat()
+            .has(uid, expectedStatus)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
@@ -2996,9 +2999,14 @@ internal class DpTest {
     @Test
     fun `fagsystem header is propagated on success`() {
         val transactionId = UUID.randomUUID().toString()
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val meldeperiode = "132460781"
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
+
         TestRuntime.topics.dp.produce(transactionId) {
-            Dp.utbetaling {
-                Dp.meldekort("132460781", 1.jun, 18.jun, 1077u, 553u)
+            Dp.utbetaling(sid.id, bid.id) {
+                Dp.meldekort(meldeperiode, 1.jun, 18.jun, 1077u, 553u)
             }
         }
         TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
@@ -3006,6 +3014,10 @@ internal class DpTest {
             .has(transactionId)
             .with(transactionId) { reply -> assertEquals(Status.MOTTATT, reply.status) }
             .hasHeader(transactionId, FS_KEY to "DAGPENGER")
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+        TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
     }
 
     @Test
