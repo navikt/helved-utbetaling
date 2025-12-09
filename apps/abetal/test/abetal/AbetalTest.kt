@@ -1,7 +1,5 @@
 package abetal
 
-import io.ktor.client.request.*
-import io.ktor.http.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -10,7 +8,6 @@ import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.runBlocking
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import org.junit.jupiter.api.Disabled
@@ -542,6 +539,8 @@ internal class AbetalTest {
     }
 
     @Test
+    @Disabled
+    //I forbindelse med jul må det gå an å utbetale en meldeperiode på Dagpenger og AAP før datoene i perioden har passert.
     fun `error ved ulovlig fremtidig utbetaling`() {
         val utbet = Utbetaling(
             dryrun = false,
