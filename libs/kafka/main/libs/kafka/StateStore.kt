@@ -9,10 +9,12 @@ typealias StateStoreName = String
 open class Store<K : Any, V : Any> private constructor(
     private val sourceTable: Table<K, V>?,
     val name: StateStoreName,
-    val serde: Serdes<K, V>
+    val serde: Serdes<K, V>,
+    val traced: Boolean = false,
 ) {
     constructor(sourceTable: Table<K, V>): this(sourceTable, sourceTable.stateStoreName, sourceTable.serdes)
     constructor(name: StateStoreName, serde: Serdes<K, V>): this(null, name, serde)
+    constructor(name: StateStoreName, serde: Serdes<K, V>, traced: Boolean): this(null, name, serde, traced)
 }
 
 class KStore<K : Any, V : Any>(

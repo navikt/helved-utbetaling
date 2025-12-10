@@ -4,6 +4,9 @@ import libs.utils.*
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.*
 import io.opentelemetry.context.*
+import io.opentelemetry.context.propagation.TextMapGetter
+import io.opentelemetry.context.propagation.TextMapSetter
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
@@ -22,8 +25,14 @@ object Tracing {
         return traceparents[key]?.let { propagateSpan(it) } ?: Context.current()
     }
 
-    private fun getTraceparent(): String? {
+    fun getTraceparent(): String? {
         val ctx = Span.current().spanContext
+        if (!ctx.isValid) return null
+        val sampled = if (ctx.traceFlags.isSampled) "01" else "00"
+        return "00-${ctx.traceId}-${ctx.spanId}-$sampled"
+    }
+
+    fun getTraceparent(ctx: SpanContext): String? {
         if (!ctx.isValid) return null
         val sampled = if (ctx.traceFlags.isSampled) "01" else "00"
         return "00-${ctx.traceId}-${ctx.spanId}-$sampled"
@@ -76,4 +85,17 @@ object Tracing {
         val traceId = Span.current().spanContext.traceId
         return traceId
     }
+
+    private val traceContextGetter = object : TextMapGetter<String> {
+        override fun keys(carrier: String): Iterable<String> = Collections.singletonList("traceparent")
+        override fun get(carrier: String?, key: String): String? = if ("traceparent" == key) carrier else null
+    }
+
+    fun contextFromTraceparent(traceparent: String): Context {
+        return GlobalOpenTelemetry
+            .getPropagators()
+            .textMapPropagator
+            .extract(Context.current(), traceparent, traceContextGetter)
+    }
 }
+

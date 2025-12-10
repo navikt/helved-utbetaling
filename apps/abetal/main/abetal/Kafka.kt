@@ -7,6 +7,7 @@ import libs.utils.appLog
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import org.apache.kafka.streams.kstream.Materialized
 import kotlin.time.Duration.Companion.milliseconds
 
 const val AAP_TX_GAP_MS = 50
@@ -38,32 +39,31 @@ object Topics {
 }
 
 object Tables {
-    val utbetalinger = Table(Topics.utbetalinger)
-    val pendingUtbetalinger = Table(Topics.pendingUtbetalinger)
+    val utbetalinger = Table(Topics.utbetalinger, stateStoreName = "${Topics.utbetalinger.name}-state-store-v2")
+    val pendingUtbetalinger = Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v2")
     val saker = Table(Topics.saker)
-    val fk = Table(Topics.fk)
+    val fk = Table(Topics.fk, stateStoreName = "${Topics.fk.name}-state-store-v2")
 }
 
 object Stores {
-    val utbetalinger = Store(Tables.utbetalinger)
-    val dpAggregate        = Store("dp-aggregate-store",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val aapAggregate       = Store("aap-aggregate-store",       Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val tsAggregate        = Store("ts-aggregate-store",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val tpAggregate        = Store("tp-aggregate-store",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val historiskAggregate = Store("historisk-aggregate-store", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val dpAggregate        = Store("dp-aggregate-store-v2",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val aapAggregate       = Store("aap-aggregate-store-v2",       Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val tsAggregate        = Store("ts-aggregate-store-v2",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val tpAggregate        = Store("tp-aggregate-store-v2",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val historiskAggregate = Store("historisk-aggregate-store-v2", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
 
-    val aapDedup           = Store("aap-dedup-aggregate",       jsonListStreamsPair<Utbetaling>())
-    val dpDedup            = Store("dp-dedup-aggregate",        jsonListStreamsPair<Utbetaling>())
-    val tpDedup            = Store("tp-dedup-aggregate",        jsonListStreamsPair<Utbetaling>())
-    val tsDedup            = Store("ts-dedup-aggregate",        jsonListStreamsPair<Utbetaling>())
-    val historiskDedup     = Store("historisk-dedup-aggregate", jsonListStreamsPair<Utbetaling>())
+    val aapDedup           = Store("aap-dedup-aggregate-v2",       jsonListStreamsPair<Utbetaling>())
+    val dpDedup            = Store("dp-dedup-aggregate-v2",        jsonListStreamsPair<Utbetaling>())
+    val tpDedup            = Store("tp-dedup-aggregate-v2",        jsonListStreamsPair<Utbetaling>())
+    val tsDedup            = Store("ts-dedup-aggregate-v2",        jsonListStreamsPair<Utbetaling>())
+    val historiskDedup     = Store("historisk-dedup-aggregate-v2", jsonListStreamsPair<Utbetaling>())
 }
 
 fun createTopology(): Topology = topology {
-    val utbetalinger = consume(Tables.utbetalinger)
-    val pendingUtbetalinger = consume(Tables.pendingUtbetalinger)
+    val utbetalinger = consume(Tables.utbetalinger, materializeWithTrace = true)
+    val pendingUtbetalinger = consume(Tables.pendingUtbetalinger, materializeWithTrace = true)
     val saker = utbetalingToSak(utbetalinger)
-    val fks = consume(Tables.fk)
+    val fks = consume(Tables.fk, materializeWithTrace = true)
     dpStream(utbetalinger, saker)
     aapStream(utbetalinger, saker)
     tsStream(utbetalinger, saker)
@@ -163,93 +163,90 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
  */
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(DP_TX_GAP_MS.milliseconds, Stores.dpDedup)
+    val dedup = DedupProcessor.supplier(DP_TX_GAP_MS.milliseconds, Stores.dpDedup, true)
 
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
         .merge(consume(Topics.dpIntern))
         .map { key, dp -> DpTuple(key, dp) }
-                .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
-                .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
-                .branch({ (dpTuple, saker) -> dpTuple.value.utbetalinger.isEmpty() && saker.isNullOrEmpty() }) {
-                    this.rekey { (dpTuple, _) -> dpTuple.key }
-                        .map { StatusReply.ok() }
-                        .produce(Topics.status)
-                }.default {
-                    this.flatMapKeyAndValue(::splitOnMeldeperiode)
-                    .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
-                    .filter { (new, prev) -> !new.isDuplicate(prev) } // todo: må vi ha denne?
-                    .rekey { new, _ -> new.originalKey }
-                    .map { new, prev -> listOf(StreamsPair(new, prev)) }
-                    .sessionWindow(
-                        Serde.string(),
-                        Serde.listStreamsPair(),
-                        DP_TX_GAP_MS.milliseconds,
-                        "dp-utbetalinger-session"
-                    )
-                    .reduce(suppress, dedup, Stores.dpAggregate.name) { acc, next -> acc + next }
-                    .map { aggregate ->
-                        Result.catch {
-                            val oppdragToUtbetalinger =
-                                AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                            val simuleringer =
-                                AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                            oppdragToUtbetalinger to simuleringer
-                        }
-                    }
-                    .includeHeader(FS_KEY) { Fagsystem.DAGPENGER.name }
-                    .branch({ it.isOk() }) {
-                        val result = map { it -> it.unwrap() }
-
-                        result
-                            .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
-                                oppdragToUtbetalinger.flatMap { agg ->
-                                    agg.second.map {
-                                        KeyValue(
-                                            it.uid.toString(),
-                                            it
-                                        )
-                                    }
-                                }
-                            }
-                            .produce(Topics.pendingUtbetalinger)
-
-                        result
-                            .flatMap { (_, simuleringer) -> simuleringer }
-                            .produce(Topics.simulering)
-
-                        val oppdrag =
-                            result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
-                        oppdrag.produce(Topics.oppdrag)
-                        oppdrag
-                            .map { StatusReply.mottatt(it) }
-                            .produce(Topics.status)
-
-                        result
-                            .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
-                            .map { StatusReply.ok() }
-                            .produce(Topics.status)
-
-                        result
-                            .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
-                                oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
-                                    val uids = utbetalinger.map { u -> u.uid.toString() }
-                                    KeyValue(oppdrag, PKs(transactionId, uids))
-                                }
-                            }
-                            .produce(Topics.fk)
-                    }
-                    .default {
-                        map { it -> it.unwrapErr() }.produce(Topics.status)
+        .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
+        .branch({ (dpTuple, saker) -> dpTuple.value.utbetalinger.isEmpty() && saker.isNullOrEmpty() }) {
+            this.rekey { (dpTuple, _) -> dpTuple.key }
+                .map { StatusReply.ok() }
+                .produce(Topics.status)
+        }.default {
+            this.flatMapKeyAndValue(::splitOnMeldeperiode)
+                .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
+                .rekey { new, _ -> new.originalKey }
+                .map { new, prev -> listOf(StreamsPair(new, prev)) }
+                .sessionWindow(
+                    Serde.string(),
+                    Serde.listStreamsPair(),
+                    DP_TX_GAP_MS.milliseconds,
+                    "dp-utbetalinger-session"
+                )
+                .reduce(suppress, dedup, Stores.dpAggregate.name) { acc, next -> acc + next }
+                .map { aggregate ->
+                    Result.catch {
+                        val oppdragToUtbetalinger =
+                            AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                        val simuleringer =
+                            AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                        oppdragToUtbetalinger to simuleringer
                     }
                 }
+                .includeHeader(FS_KEY) { Fagsystem.DAGPENGER.name }
+                .branch({ it.isOk() }) {
+                    val result = map { it -> it.unwrap() }
+                    result
+                        .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
+                            oppdragToUtbetalinger.flatMap { agg ->
+                                agg.second.map {
+                                    KeyValue(
+                                        it.uid.toString(),
+                                        it
+                                    )
+                                }
+                            }
+                        }
+                        .produce(Topics.pendingUtbetalinger)
+
+                    result
+                        .flatMap { (_, simuleringer) -> simuleringer }
+                        .produce(Topics.simulering)
+
+                    val oppdrag =
+                        result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
+                    oppdrag.produce(Topics.oppdrag)
+                    oppdrag
+                        .map { StatusReply.mottatt(it) }
+                        .produce(Topics.status)
+
+                    result
+                        .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
+                        .map { StatusReply.ok() }
+                        .produce(Topics.status)
+
+                    result
+                        .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
+                            oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
+                                val uids = utbetalinger.map { u -> u.uid.toString() }
+                                KeyValue(oppdrag, PKs(transactionId, uids))
+                            }
+                        }
+                        .produce(Topics.fk)
+                }
+                .default {
+                    map { it -> it.unwrapErr() }.produce(Topics.status)
+                }
+            }
 
 }
 
 fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress =
-        SuppressProcessor.supplier(Stores.aapAggregate, AAP_TX_GAP_MS.milliseconds, AAP_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(AAP_TX_GAP_MS.milliseconds, Stores.aapDedup)
+    val suppress = SuppressProcessor.supplier(Stores.aapAggregate, AAP_TX_GAP_MS.milliseconds, AAP_TX_GAP_MS.milliseconds)
+    val dedup = DedupProcessor.supplier(AAP_TX_GAP_MS.milliseconds, Stores.aapDedup, true)
 
     consume(Topics.aap)
         .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
@@ -319,7 +316,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
 
 fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.tsAggregate, TS_TX_GAP_MS.milliseconds, TS_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(TS_TX_GAP_MS.milliseconds, Stores.tsDedup)
+    val dedup = DedupProcessor.supplier(TS_TX_GAP_MS.milliseconds, Stores.tsDedup, true)
 
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
@@ -388,12 +385,8 @@ fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 }
 
 fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress = SuppressProcessor.supplier(
-        Stores.historiskAggregate,
-        HISTORISK_TX_GAP_MS.milliseconds,
-        HISTORISK_TX_GAP_MS.milliseconds
-    )
-    val dedup = DedupProcessor.supplier(HISTORISK_TX_GAP_MS.milliseconds, Stores.historiskDedup)
+    val suppress = SuppressProcessor.supplier(Stores.historiskAggregate, HISTORISK_TX_GAP_MS.milliseconds, HISTORISK_TX_GAP_MS.milliseconds)
+    val dedup = DedupProcessor.supplier(HISTORISK_TX_GAP_MS.milliseconds, Stores.historiskDedup, true)
 
     consume(Topics.historisk)
         .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
@@ -466,7 +459,7 @@ fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KT
 
 fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.tpAggregate, TP_TX_GAP_MS.milliseconds, TP_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(TP_TX_GAP_MS.milliseconds, Stores.tpDedup)
+    val dedup = DedupProcessor.supplier(TP_TX_GAP_MS.milliseconds, Stores.tpDedup, true)
 
     consume(Topics.tp)
         // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")

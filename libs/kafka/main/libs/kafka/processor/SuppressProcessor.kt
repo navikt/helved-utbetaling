@@ -1,9 +1,6 @@
 package libs.kafka.processor
 
-import libs.kafka.StateStoreName
-import libs.kafka.StreamSerde
-import libs.kafka.StreamsPair
-import libs.kafka.Store
+import libs.kafka.*
 import org.apache.kafka.streams.kstream.Windowed
 import org.apache.kafka.streams.processor.PunctuationType
 import org.apache.kafka.streams.processor.api.Processor
@@ -27,29 +24,18 @@ class SuppressProcessor<K: Any, V: Any>(
             punctuationInterval: Duration,
             inactivityGap: Duration,
         ):ProcessorSupplier<Windowed<K>, List<StreamsPair<V, V?>>, K, List<StreamsPair<V, V?>>> {
-            return supplier(store.serde.key, store.serde.value, punctuationInterval, inactivityGap, store.name)
-        }
-
-        fun <K: Any, V: Any> supplier(
-            keySerde: StreamSerde<Windowed<K>>,
-            valueSerde: StreamSerde<List<StreamsPair<V, V?>>>,
-            punctuationInterval: Duration,
-            inactivityGap: Duration,
-            stateStoreName: StateStoreName,
-        ): ProcessorSupplier<Windowed<K>, List<StreamsPair<V, V?>>, K, List<StreamsPair<V, V?>>> {
             return object: ProcessorSupplier<Windowed<K>, List<StreamsPair<V, V?>>, K, List<StreamsPair<V, V?>>> {
 
                 override fun stores(): Set<StoreBuilder<*>> {
-                    val store = org.apache.kafka.streams.state.Stores.persistentTimestampedKeyValueStore(stateStoreName)
-                    return setOf(org.apache.kafka.streams.state.Stores.timestampedKeyValueStoreBuilder(store, keySerde, valueSerde))
+                    val inner = TracingTimestampedRocksDBStore.supplier(store.name)
+                    return setOf(org.apache.kafka.streams.state.Stores.timestampedKeyValueStoreBuilder(inner, store.serde.key, store.serde.value))
                 }
 
                 override fun get(): Processor<Windowed<K>, List<StreamsPair<V, V?>>, K, List<StreamsPair<V, V?>>> {
-                    return SuppressProcessor(punctuationInterval, inactivityGap, stateStoreName)
+                    return SuppressProcessor(punctuationInterval, inactivityGap, store.name)
                 }
             }
-
-        } 
+        }
     }
 
     private lateinit var bufferStore: TimestampedKeyValueStore<Windowed<K>, List<StreamsPair<V, V?>>>

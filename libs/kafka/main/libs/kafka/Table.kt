@@ -8,7 +8,8 @@ import org.apache.kafka.streams.kstream.GlobalKTable
 data class Table<K: Any, V: Any>(
     val sourceTopic: Topic<K, V>,
     val serdes: Serdes<K, V> = sourceTopic.serdes,
-    val stateStoreName: StateStoreName = "${sourceTopic.name}-state-store"
+    val stateStoreName: StateStoreName = "${sourceTopic.name}-state-store",
+    val tracedStateStore: Boolean = false,
 ) {
     val sourceTopicName: String
         get() = sourceTopic.name

@@ -1,14 +1,14 @@
 package libs.kafka.processor
 
-import libs.kafka.Serdes
 import libs.kafka.StateStoreName
 import libs.kafka.Store
+import libs.kafka.TracingTimestampedRocksDBStore
 import libs.kafka.kafkaLog
 import org.apache.kafka.streams.processor.PunctuationType
-import org.apache.kafka.streams.processor.api.Record
 import org.apache.kafka.streams.processor.api.Processor
 import org.apache.kafka.streams.processor.api.ProcessorContext
 import org.apache.kafka.streams.processor.api.ProcessorSupplier
+import org.apache.kafka.streams.processor.api.Record
 import org.apache.kafka.streams.state.StoreBuilder
 import org.apache.kafka.streams.state.Stores
 import org.apache.kafka.streams.state.TimestampedKeyValueStore
@@ -76,17 +76,18 @@ class DedupProcessor<K: Any, V: Any> (
         fun <K: Any, V: Any> supplier(
             retention: Duration,
             store: Store<K, V>,
+            enableTrace: Boolean,
             hasher: (K, V) -> Int = { key, _ -> key.hashCode() },
             downstream: (V) -> Unit = {},
         ): ProcessorSupplier<K, V, K, V> {
             return object: ProcessorSupplier<K, V, K, V> {
-                override fun stores(): Set<StoreBuilder<*>> = setOf(
-                    Stores.timestampedKeyValueStoreBuilder(
-                        Stores.persistentTimestampedKeyValueStore(store.name),
-                        store.serde.key,
-                        store.serde.value
-                    )
-                )
+                override fun stores(): Set<StoreBuilder<*>> { 
+                    val inner = when (enableTrace) {
+                        true -> TracingTimestampedRocksDBStore.supplier(store.name)
+                        false -> Stores.persistentTimestampedKeyValueStore(store.name)
+                    }
+                    return setOf(Stores.timestampedKeyValueStoreBuilder(inner, store.serde.key, store.serde.value))
+                }
                 override fun get(): Processor<K, V, K, V> = DedupProcessor(store.name, retention, hasher, downstream)
             }
         }
