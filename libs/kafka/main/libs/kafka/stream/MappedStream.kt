@@ -16,9 +16,12 @@ class MappedStream<K: Any, V : Any> internal constructor(
         stream.produceWithLogging(topic)
     }
 
-    fun materialize(store: Store<K, V>): KStore<K, V> {
-        val loggedStream = stream.process({LogProduceStateStoreProcessor("${store.name}-materialize-log", store.name)})
-        return KStore(store, loggedStream.toTable(Named("${store.name}-materialize").into(), materialized(store)))
+    fun materialize(store: Store<K, V>, materializeWithTrace: Boolean = false): KStore<K, V> {
+        val internalKTable = when(materializeWithTrace) {
+            false -> stream.process({LogProduceStateStoreProcessor("${store.name}-materialize-log", store.name)}).toTable(Named("${store.name}-materialize").into(), materialized(store))
+            true -> stream.toTable(Named("${store.name}-materialize").into(), materializedWithTrace(store))
+        }
+        return KStore(store, internalKTable)
     }
 
     fun materialize(table: Table<K, V>): KTable<K, V> {

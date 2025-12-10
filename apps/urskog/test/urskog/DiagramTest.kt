@@ -12,6 +12,9 @@ class DiagramTest {
 
         val uml = TestRuntime.kafka.visulize().uml()
         File("../../dokumentasjon/urskog.puml").apply { writeText(uml) }
+
+        val desc = TestRuntime.kafka.visulize().desc()
+        File("../../dokumentasjon/urskog.desc").apply { writeText(desc) }
     }
 }
 

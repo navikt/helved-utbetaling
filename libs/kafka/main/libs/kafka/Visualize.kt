@@ -7,6 +7,7 @@ import org.apache.kafka.streams.TopologyDescription.*
 class TopologyVisulizer(private val topology: Topology) {
     fun uml() : String = PlantUML.generate(topology)
     fun mermaid(): Mermaid = Mermaid(topology)
+    fun desc(): String = topology.describe().toString()
 }
 
 internal object PlantUML {

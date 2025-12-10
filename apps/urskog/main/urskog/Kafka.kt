@@ -86,9 +86,9 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
 
     fun dedupHash(key: String, value: Oppdrag): Int = mapper.writeValueAsString(value).hashCode()
 
-    val dedupKvittering = DedupProcessor.supplier(1.hours, Stores.kvittering, ::dedupHash)
+    val dedupKvittering = DedupProcessor.supplier(1.hours, Stores.kvittering, false, ::dedupHash)
 
-    val dedupOppdrag = DedupProcessor.supplier(1.hours, Stores.oppdrag, ::dedupHash) { xml ->
+    val dedupOppdrag = DedupProcessor.supplier(1.hours, Stores.oppdrag, false, ::dedupHash) { xml ->
         oppdragProducer.send(xml) 
     }
 
