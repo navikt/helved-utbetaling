@@ -16,7 +16,12 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
 class SimuleringService(private val config: Config) {
-    private val http = HttpClientFactory.new(LogLevel.ALL)
+    private val http = HttpClientFactory.new(
+        logLevel = LogLevel.ALL, 
+        retries = null, 
+        requestTimeoutMs = 120_000, 
+        connectionTimeoutMs = 5000,
+    )
     private val azure = AzureTokenProvider(config.azure)
     private val sts = StsClient(config.simulering.sts, http, proxyAuth = ::getAzureToken)
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
