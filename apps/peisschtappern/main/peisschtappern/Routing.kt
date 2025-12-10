@@ -111,6 +111,26 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                                         if (keys.isNotEmpty()) {
                                             Dao.findStatusByKeys(keys)
                                         } else emptyList()
+                                    },
+                                    async {
+                                        val internTables = when (fagsystem) {
+                                            Fagsystem.AAP -> Table.aapIntern
+                                            Fagsystem.DAGPENGER -> Table.dpIntern
+                                            Fagsystem.TILLEGGSSTØNADER -> Table.tsIntern
+                                            Fagsystem.TILTAKSPENGER -> Table.tpIntern
+                                            Fagsystem.HISTORISK -> Table.historiskIntern
+                                            else -> null
+                                        }
+
+                                        val internalKeys = if (internTables != null) {
+                                            Dao.findUtbetalinger(sakId, internTables).map { it.key }
+                                        } else {
+                                            emptyList()
+                                        }
+
+                                        if (internalKeys.isNotEmpty()) {
+                                            Dao.findStatusByKeys(internalKeys)
+                                        } else emptyList()
                                     }
                                 )
 
