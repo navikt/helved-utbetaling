@@ -30,3 +30,6 @@ spec:
     - team: helved
       application: kafka-cli
       access: readwrite
+    - team: tilleggsstonader
+      application: tilleggsstonader-sak
+      access: read
