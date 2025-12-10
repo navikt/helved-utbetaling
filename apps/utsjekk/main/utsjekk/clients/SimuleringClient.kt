@@ -28,7 +28,12 @@ import utsjekk.utbetaling.UtbetalingsoppdragDto
 
 class SimuleringClient(
     private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
+    private val client: HttpClient = HttpClientFactory.new(
+        logLevel = LogLevel.ALL, 
+        retries = null, 
+        requestTimeoutMs = 120_000, 
+        connectionTimeoutMs = 5000,
+    ),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
     suspend fun simuler(

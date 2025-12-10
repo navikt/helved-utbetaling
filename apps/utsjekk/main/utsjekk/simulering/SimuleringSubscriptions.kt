@@ -147,7 +147,7 @@ fun Route.simulerBlocking(
                 val dto = call.receive<DpUtbetaling>().copy(dryrun = true)
                 dpUtbetalingerProducer.send(transactionId, dto)
 
-                val result = withTimeoutOrNull(30.seconds) { 
+                val result = withTimeoutOrNull(120.seconds) { 
                     while(true) {
                         val simResult = dryrunDpStore.getOrNull(transactionId)
                         if (simResult != null) {
@@ -171,7 +171,7 @@ fun Route.simulerBlocking(
 
                 aapUtbetalingerProducer.send(transactionId, dto)
 
-                val result = withTimeoutOrNull(30.seconds) { 
+                val result = withTimeoutOrNull(120.seconds) { 
                     select<Any?> {
                         sim.onAwait { it }
                         status.onAwait { it }
@@ -190,7 +190,7 @@ fun Route.simulerBlocking(
                 val dtos = call.receive<List<TsUtbetaling>>().map { it.copy(dryrun = true) }
                 dtos.forEach { dto -> tsUtbetalingerProducer.send(transactionId, dto) }
 
-                val result = withTimeoutOrNull(30.seconds) { 
+                val result = withTimeoutOrNull(120.seconds) { 
                     while(true) {
                         val simResult = dryrunTsStore.getOrNull(transactionId)
                         if (simResult != null) {
@@ -214,7 +214,7 @@ fun Route.simulerBlocking(
 
                 dtos.forEach { dto -> tpUtbetalingerProducer.send(transactionId, dto) }
 
-                val result = withTimeoutOrNull(30.seconds) { 
+                val result = withTimeoutOrNull(120.seconds) { 
                     select<Any?> {
                         sim.onAwait { it }
                         status.onAwait { it }
