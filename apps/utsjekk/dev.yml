@@ -43,8 +43,6 @@ spec:
     pool: nav-dev
     streams: true
   env:
-    - name: OPPDRAG_SCOPE
-      value: api://dev-gcp.helved.utsjekk-oppdrag/.default
     - name: SIMULERING_SCOPE
       value: api://dev-gcp.helved.utsjekk-simulering/.default
     - name: ENV
@@ -83,7 +81,6 @@ spec:
       rules:
         - application: logging
           namespace: nais-system
-        - application: utsjekk-oppdrag
         - application: utsjekk-simulering
   gcp:
     sqlInstances:

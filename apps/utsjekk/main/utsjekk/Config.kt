@@ -11,13 +11,7 @@ data class Config(
     val jdbc: JdbcConfig = JdbcConfig(),
     val kafka: StreamsConfig = StreamsConfig(),
     val azure: AzureConfig = AzureConfig(),
-    val oppdrag: OppdragConfig = OppdragConfig(),
     val simulering: SimuleringConfig = SimuleringConfig(),
-)
-
-data class OppdragConfig(
-    val scope: String = env("OPPDRAG_SCOPE"),
-    val host: URL = env("OPPDRAG_HOST", URI("http://utsjekk-oppdrag").toURL())
 )
 
 data class SimuleringConfig(

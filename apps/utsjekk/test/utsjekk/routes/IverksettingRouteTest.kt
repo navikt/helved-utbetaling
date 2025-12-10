@@ -99,15 +99,6 @@ class IverksettingRouteTest {
             ),
         )
 
-        val oppdragId = OppdragIdDto(
-            fagsystem = Fagsystem.TILLEGGSSTØNADER,
-            sakId = dto.sakId,
-            behandlingId = dto.behandlingId,
-            iverksettingId = dto.iverksettingId,
-        )
-
-        TestRuntime.oppdrag.iverksettRespondWith(oppdragId, HttpStatusCode.Created)
-
         httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
