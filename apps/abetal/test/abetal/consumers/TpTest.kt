@@ -2512,5 +2512,51 @@ internal class TpTest {
                     }
                 }
         }
-    }
+
+        @Test
+        fun `betalendeEnhet mapping skal gi riktig oppdragsEnhet120`() {
+            val json = """
+            {
+              "dryrun": false,
+              "sakId": "HV2511260231",
+              "behandlingId": "1",
+              "personident": "30436818684",
+              "saksbehandler": "s-kafka",
+              "beslutter": "b-kafka",
+              "vedtakstidspunkt": "2025-09-29T14:00:00.000000Z",
+              "stønad": "GRUPPE_AMO",
+              "perioder": [
+                  {
+                  "meldeperiode": "20250630-20250711",
+                  "fom": "2025-06-30",
+                  "tom": "2025-06-30",
+                  "beløp": 1000,
+                  "utbetaltBeløp": 1000,
+                  "betalendeEnhet": "1234"
+                }
+              ]
+            }
+            """.trimIndent()
+
+            val utbet = JsonSerde.jackson.readValue<TpUtbetaling>(json)
+            val transactionId = UUID.randomUUID().toString()
+
+            TestRuntime.topics.tp.produce(transactionId) { utbet }
+            TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
+
+            TestRuntime.topics.oppdrag.assertThat()
+                .has(transactionId)
+                .with(transactionId) { oppdrag ->
+                    val enheter = oppdrag.oppdrag110.oppdragsEnhet120s
+                    assertEquals(2, enheter.size)
+
+                    val bos = enheter.find { it.typeEnhet == "BOS" }
+                    val beh = enheter.find { it.typeEnhet == "BEH" }
+                    assertEquals("1234", bos?.enhet)
+                    assertEquals("8020", beh?.enhet)
+                }
+        }
+}
+
+
 
