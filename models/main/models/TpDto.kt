@@ -19,12 +19,14 @@ data class TpPeriode(
     val meldeperiode: String,
     val fom: LocalDate,
     val tom: LocalDate,
+    val barnetillegg: Boolean = false,
     val betalendeEnhet: NavEnhet? = null,
     val beløp: UInt,
 ) {
     fun into(): Utbetalingsperiode = Utbetalingsperiode(
         fom = fom,
         tom = tom,
+        barnetillegg = barnetillegg,
         betalendeEnhet = betalendeEnhet,
         beløp = beløp,
     )
@@ -73,6 +75,7 @@ private fun List<TpPeriode>.toDomain(): List<Utbetalingsperiode> {
                 Utbetalingsperiode(
                     fom = it.first().fom,
                     tom = it.last().tom,
+                    barnetillegg = it.last().barnetillegg,
                     betalendeEnhet = it.last().betalendeEnhet,
                     beløp = it.first().beløp,
                 )
