@@ -245,6 +245,7 @@ data class Utbetalingsperiode(
     val fom: LocalDate,
     val tom: LocalDate,
     val beløp: UInt,
+    val barnetillegg: Boolean = false,
     val betalendeEnhet: NavEnhet? = null,
     val vedtakssats: UInt? = null,
 )
