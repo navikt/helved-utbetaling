@@ -18,6 +18,8 @@ import java.time.Instant
 import java.util.*
 
 private const val TRACE_CONTEXT_W3C_LEN = 55
+private const val VERSION_FLAG_LEN = 1
+private const val V1_FLAG: Byte = 1
 
 class TracingTimestampedRocksDBStore(
     private val inner: RocksDBTimestampedStore,
@@ -35,21 +37,27 @@ class TracingTimestampedRocksDBStore(
     }
 
     private fun wrapValueWithTrace(value: ByteArray, trace: ByteArray): ByteArray {
-        val combined = Arrays.copyOf(value, value.size + TRACE_CONTEXT_W3C_LEN)
-        System.arraycopy(trace, 0, combined, value.size, TRACE_CONTEXT_W3C_LEN)
+        val combined = Arrays.copyOf(value, value.size + VERSION_FLAG_LEN + TRACE_CONTEXT_W3C_LEN)
+        combined[value.size] = V1_FLAG;
+        System.arraycopy(trace, 0, combined, value.size + VERSION_FLAG_LEN, TRACE_CONTEXT_W3C_LEN)
         return combined
     }
 
     private fun unwrapValueWithTrace(valueAndTrace: ByteArray?): Pair<ByteArray?, ByteArray?> {
         if (valueAndTrace == null) return null to null
-        if (valueAndTrace.size < TRACE_CONTEXT_W3C_LEN) return valueAndTrace to null
-        val payloadSize = valueAndTrace.size - TRACE_CONTEXT_W3C_LEN
-        val payload = ByteArray(payloadSize)
-        val traceSize = TRACE_CONTEXT_W3C_LEN
-        val trace = ByteArray(TRACE_CONTEXT_W3C_LEN)
-        System.arraycopy(valueAndTrace, 0, payload, 0, payloadSize)
-        System.arraycopy(valueAndTrace, payloadSize, trace, 0, traceSize)
-        return payload to trace
+        val totalTraceLen = VERSION_FLAG_LEN + TRACE_CONTEXT_W3C_LEN;
+        if (valueAndTrace.size < totalTraceLen) return valueAndTrace to null
+        val flagIndex = valueAndTrace.size - TRACE_CONTEXT_W3C_LEN - VERSION_FLAG_LEN
+        if (valueAndTrace[flagIndex] == V1_FLAG) {
+            val payloadSize = valueAndTrace.size - totalTraceLen
+            val payload = ByteArray(payloadSize)
+            val trace = ByteArray(TRACE_CONTEXT_W3C_LEN)
+            System.arraycopy(valueAndTrace, 0, payload, 0, payloadSize)
+            System.arraycopy(valueAndTrace, flagIndex + VERSION_FLAG_LEN, trace, 0, TRACE_CONTEXT_W3C_LEN)
+            return payload to trace
+        } else {
+            return valueAndTrace to null
+        }
     }
 
     override fun get(key: Bytes): ByteArray? {
