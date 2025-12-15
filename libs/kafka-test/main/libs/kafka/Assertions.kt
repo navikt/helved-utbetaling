@@ -43,6 +43,11 @@ class TopicAssertion<K: Any, V : Any> private constructor(topic: TestOutputTopic
         assertEquals(value, valuesForKey(key).getOrNull(index))
     }
 
+    fun has(key: K, index: Int = 0, size: Int = 1, value: V) = this.also {
+        has(key, size)
+        assertEquals(value, valuesForKey(key).getOrNull(index))
+    }
+
     fun with(key: K, index: Int = 0, value: (V) -> Unit) = this.also {
         val actual = valuesForKey(key).getOrNull(index) ?: fail("no record found for key $key")
         value(actual)

@@ -1,5 +1,4 @@
 package abetal
-
 import libs.kafka.*
 import libs.kafka.processor.DedupProcessor
 import libs.kafka.processor.SuppressProcessor
@@ -10,11 +9,11 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.streams.kstream.Materialized
 import kotlin.time.Duration.Companion.milliseconds
 
-const val AAP_TX_GAP_MS = 50
-const val TS_TX_GAP_MS = 50
-const val TP_TX_GAP_MS = 250
-const val DP_TX_GAP_MS = 250
-const val HISTORISK_TX_GAP_MS = 50
+const val AAP_TX_GAP_MS = 1000
+const val TS_TX_GAP_MS = 1000
+const val TP_TX_GAP_MS = 1000
+const val DP_TX_GAP_MS = 1000
+const val HISTORISK_TX_GAP_MS = 1000
 
 const val FS_KEY = "fagsystem"
 
