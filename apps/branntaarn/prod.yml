@@ -38,6 +38,6 @@ spec:
     - name: PEISSCHTAPPERN_SCOPE
       value: api://prod-gcp.helved.peisschtappern/.default
     - name: PEISEN_HOST
-      value: https://peisen.intern.nav.no/
+      value: https://peisen.intern.nav.no
   envFrom:
     - secret: slack-webhook
