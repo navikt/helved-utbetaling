@@ -153,6 +153,292 @@ internal class DpTest {
     }
 
     @Test
+    fun `tombstone one utbetaling then resend meldeperioder`() {
+        val sid = "AZps2"
+        val abid = "AZrupr"
+        val auid = dpUId(sid, "132733037", StønadTypeDagpenger.DAGPENGER)
+        val atid = "a19aeea6-bf92-7a7a-a2c0-d22dfde2c60c"
+
+        val buid = dpUId(sid, "132733485", StønadTypeDagpenger.DAGPENGER)
+        val bbid = "AZruzh"
+        val btid = "b19aeece-1848-79bb-bda5-369b7a16ec67"
+
+        val cbid = "AZsfGC"
+        val cuid = dpUId(sid, "132735021", StønadTypeDagpenger.DAGPENGER)
+        val ctid = "c19b1f18-2199-7395-b8f3-82c497ce2941"
+
+        val a = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$abid","ident":"12345678910","vedtakstidspunktet":"2025-12-05T14:57:21.107354","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        TestRuntime.topics.dp.produce(atid) { a }
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
+        TestRuntime.topics.status.assertThat()
+            .has(key = atid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
+                DetaljerLinje(abid, LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 13), 911u, 364u, "DAGPENGER"),
+                DetaljerLinje(abid, LocalDate.of(2025, 11, 14), LocalDate.of(2025, 11, 14), 911u, 366u, "DAGPENGER"),
+            ))))
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(auid.toString())
+            .with(auid.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = auid,
+                    originalKey = atid,
+                    sakId = SakId(sid),
+                    behandlingId = BehandlingId(abid),
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 13), 364u, 911u) +
+                    periode(LocalDate.of(2025, 11, 14), LocalDate.of(2025, 11, 14), 366u, 911u)
+                }
+                assertEquals(expected, it)
+            }
+        val aoppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(atid)
+            .with(atid) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("DP", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", oppdrag.oppdrag110.saksbehId)
+                assertEquals(2, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(abid, it.henvisning)
+                    assertEquals("DAGPENGER", it.kodeKlassifik)
+                    assertEquals(364, it.sats.toLong())
+                    assertEquals(911, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(abid, it.henvisning)
+                    assertEquals("DAGPENGER", it.kodeKlassifik)
+                    assertEquals(366, it.sats.toLong())
+                    assertEquals(911, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+            }
+            .get(atid)
+        TestRuntime.topics.oppdrag.produce(atid) {
+            aoppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().has(auid.toString())
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
+            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
+                assertEquals(it, setOf(auid))
+            }
+
+        val b = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$bbid","ident":"12345678910","vedtakstidspunktet":"2025-12-08T07:09:38.510701","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        TestRuntime.topics.dp.produce(btid) { b }
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
+        TestRuntime.topics.status.assertThat()
+            .has(key = btid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
+                DetaljerLinje(bbid, LocalDate.of(2025, 11, 17), LocalDate.of(2025, 11, 28), 911u, 911u, "DAGPENGER"),
+            ))))
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(buid.toString())
+            .with(buid.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = buid,
+                    originalKey = btid,
+                    sakId = SakId(sid),
+                    førsteUtbetalingPåSak = false,
+                    behandlingId = BehandlingId(bbid),
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(LocalDate.of(2025, 11, 17), LocalDate.of(2025, 11, 28), 911u, 911u)
+                }
+                assertEquals(expected, it)
+            }
+        val boppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(btid)
+            .with(btid) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("DP", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", oppdrag.oppdrag110.saksbehId)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(bbid, it.henvisning)
+                    assertEquals("DAGPENGER", it.kodeKlassifik)
+                    assertEquals(911, it.sats.toLong())
+                    assertEquals(911, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+            }
+            .get(btid)
+        TestRuntime.topics.oppdrag.produce(btid) {
+            boppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().has(buid.toString())
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
+            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
+                assertEquals(it, setOf(auid, buid))
+            }
+
+        val c = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$cbid","ident":"12345678910","vedtakstidspunktet":"2025-12-15T09:26:40.032951","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-01","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-02","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-03","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-04","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-05","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-08","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-09","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-10","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-11","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-12","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        TestRuntime.topics.dp.produce(ctid) { c }
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
+        TestRuntime.topics.status.assertThat()
+            .has(key = ctid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
+                DetaljerLinje(cbid, LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 12), 911u, 911u, "DAGPENGER"),
+            ))))
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(cuid.toString())
+            .with(cuid.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = cuid,
+                    originalKey = ctid,
+                    sakId = SakId(sid),
+                    behandlingId = BehandlingId(cbid),
+                    førsteUtbetalingPåSak = false,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 12), 911u, 911u)
+                }
+                assertEquals(expected, it)
+            }
+        val coppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(ctid)
+            .with(ctid) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("DP", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", oppdrag.oppdrag110.saksbehId)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(cbid, it.henvisning)
+                    assertEquals("DAGPENGER", it.kodeKlassifik)
+                    assertEquals(911, it.sats.toLong())
+                    assertEquals(911, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+            }
+            .get(ctid)
+        TestRuntime.topics.oppdrag.produce(ctid) {
+            coppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
+            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
+                assertEquals(it, setOf(auid, buid, cuid))
+            }
+
+
+        val dtid = "d19b1f18-2199-7395-b8f3-82c497ce2941"
+        TestRuntime.topics.dp.produce(dtid) { c }
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
+        TestRuntime.topics.status.assertThat()
+            .has(key = dtid, index = 0, size = 1, value = StatusReply(Status.OK, null))
+        TestRuntime.topics.utbetalinger.tombstone(cuid.toString())
+
+        val etid = "e19b1f18-2199-7395-b8f3-82c497ce2941"
+        TestRuntime.topics.dp.produce(etid) { c }
+        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
+        TestRuntime.topics.status.assertThat()
+            .has(key = etid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
+                DetaljerLinje(cbid, LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 12), 911u, 911u, "DAGPENGER"),
+            ))))
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(cuid.toString())
+            .with(cuid.toString()) {
+                val expected = utbetaling(
+                    action = Action.CREATE,
+                    uid = cuid,
+                    originalKey = etid,
+                    sakId = SakId(sid),
+                    behandlingId = BehandlingId(cbid),
+                    førsteUtbetalingPåSak = false,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    lastPeriodeId = it.lastPeriodeId,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
+                    vedtakstidspunkt = it.vedtakstidspunkt,
+                    beslutterId = Navident("dagpenger"),
+                    saksbehandlerId = Navident("dagpenger"),
+                    personident = Personident("12345678910")
+                ) {
+                    periode(LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 12), 911u, 911u)
+                }
+                assertEquals(expected, it)
+            }
+        val eoppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(etid)
+            .with(etid) { oppdrag ->
+                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals("DP", oppdrag.oppdrag110.kodeFagomraade)
+                assertEquals(sid, oppdrag.oppdrag110.fagsystemId)
+                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
+                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
+                assertEquals("dagpenger", oppdrag.oppdrag110.saksbehId)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertNull(it.refDelytelseId)
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertEquals(cbid, it.henvisning)
+                    assertEquals("DAGPENGER", it.kodeKlassifik)
+                    assertEquals(911, it.sats.toLong())
+                    assertEquals(911, it.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
+            }
+            .get(etid)
+        TestRuntime.topics.oppdrag.produce(etid) {
+            eoppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
+        TestRuntime.topics.saker.assertThat()
+            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
+            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
+                assertEquals(it, setOf(auid, buid, cuid))
+            }
+        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+    }
+
+    @Test
     fun `AZp88bgreqOOlzsEuxzpzw==`() {
         val sid = "AZps"
         val abid = "AZrupr"

@@ -190,17 +190,17 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
     }
 
     post("/manuell-oppdrag") {
-        val request = call.receive<OppdragRequest>()
+        val request = call.receive<KeyValueRequest>()
 
         try {
             manuellEndringService.sendOppdragManuelt(
-                oppdragXml = request.oppdragXml,
-                messageKey = request.messageKey
+                oppdragXml = request.value,
+                messageKey = request.key
 
             )
-            call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.messageKey} on ${oppdrag.name}")
+            call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.key} on ${oppdrag.name}")
         } catch (e: Exception) {
-            val msg = "Failed to send oppdrag for uid:${request.messageKey}"
+            val msg = "Failed to send oppdrag for uid:${request.key}"
             appLog.error(msg)
             secureLog.error(msg, e)
             call.respond(HttpStatusCode.BadRequest, msg)
@@ -208,22 +208,38 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
     }
 
     post("/pending-til-utbetaling") {
-        val request = call.receive<PendingUtbetalingRequest>()
+        val request = call.receive<KeyValueRequest>()
 
         try {
             manuellEndringService.flyttPendingTilUtbetalinger(
-                oppdragXml = request.oppdragXml,
-                messageKey = request.messageKey
+                oppdragXml = request.value,
+                messageKey = request.key
             )
             call.respond(
                 HttpStatusCode.OK, "Moved utbetaling from helved.pending-utbetalinger.v1" +
-                        "for uid:${request.messageKey} on ${oppdrag.name}" + " to helved.utbetalinger.v1"
+                        "for uid:${request.key} on ${oppdrag.name}" + " to helved.utbetalinger.v1"
             )
         } catch (e: Exception) {
-            val msg = "Failed to move pending utbetaling for uid:${request.messageKey}"
+            val msg = "Failed to move pending utbetaling for uid:${request.key}"
             appLog.error(msg)
             secureLog.error(msg, e)
             call.respond(HttpStatusCode.BadRequest, msg)
+        }
+    }
+
+    post("/tombstone-utbetaling") {
+        val request = call.receive<TombstoneRequest>()
+        when (manuellEndringService.tombstoneUtbetaling(request.key)) {
+            true -> call.respond("Tombstoned utbetaling with kafka key ${request.key}")
+            false -> call.respond(HttpStatusCode.UnprocessableEntity, "Failed to tombstone utbetaling with kafka key ${request.key}")
+        }
+    }
+
+    post("/resend-dagpenger") {
+        val req = call.receive<KeyValueRequest>()
+        when (manuellEndringService.rekjørDagpenger(req.key, req.value)) {
+            true -> call.respond("Dagpenge utbetaling rekjørt for key ${req.key}")
+            false -> call.respond(HttpStatusCode.UnprocessableEntity, "Feilet rekjøring av dagpenge utbetaling")
         }
     }
 }
@@ -236,15 +252,12 @@ data class KvitteringRequest(
     val kodeMelding: String?,
 )
 
-data class OppdragRequest(
-    val messageKey: String,
-    val oppdragXml: String
+data class KeyValueRequest(
+    val key: String,
+    val value: String
 )
 
-data class PendingUtbetalingRequest(
-    val messageKey: String,
-    val oppdragXml: String
-)
+data class TombstoneRequest(val key: String)
 
 sealed class Channel(
     val topic: Topic<String, ByteArray>,

@@ -20,24 +20,33 @@ open class KafkaProducer<K: Any, V>(
     private val producer: Producer<K, V>,
 ): AutoCloseable {
 
-    fun send(key: K, value: V) {
-        send(ProducerRecord<K, V>(topic.name, key, value))
+    fun send(key: K, value: V): Boolean {
+        return send(ProducerRecord<K, V>(topic.name, key, value))
     }
 
     fun send(key: K, value: V?, partition: Int) {
         send(ProducerRecord<K, V>(topic.name, partition, key, value))
     }
 
-    private fun send(record: ProducerRecord<K, V>) {
+    fun tombstone(key: K): Boolean {
+        return send(ProducerRecord<K, V>(topic.name, key, null))
+    }
+
+    private fun send(record: ProducerRecord<K, V>): Boolean {
+        var res = false
         producer.send(record) { md, err ->
             when (err) {
-                null -> kafkaLog.trace("produce ${topic.name}", kv("key", record.key()), kv("topic", topic.name), kv("partition", md.partition()), kv("offset", md.offset())) 
+                null -> {
+                    kafkaLog.trace("produce ${topic.name}", kv("key", record.key()), kv("topic", topic.name), kv("partition", md.partition()), kv("offset", md.offset())) 
+                    res = true
+                }
                 else -> {
                     kafkaLog.error("Failed to produce record for ${record.key()} on ${topic.name}:${md.partition()}")
                     secureLog.error("Failed to produce record for ${record.key()} on ${topic.name}:${md.partition()}", err)
                 }
             }
         }.get()
+        return res
     }
 
     override fun close() = producer.close()
