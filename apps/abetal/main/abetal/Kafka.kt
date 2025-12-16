@@ -9,11 +9,11 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.streams.kstream.Materialized
 import kotlin.time.Duration.Companion.milliseconds
 
-const val AAP_TX_GAP_MS = 1000
-const val TS_TX_GAP_MS = 1000
-const val TP_TX_GAP_MS = 1000
-const val DP_TX_GAP_MS = 1000
-const val HISTORISK_TX_GAP_MS = 1000
+const val AAP_TX_GAP_MS = 5000
+const val TS_TX_GAP_MS = 5000
+const val TP_TX_GAP_MS = 5000
+const val DP_TX_GAP_MS = 5000
+const val HISTORISK_TX_GAP_MS = 5000
 
 const val FS_KEY = "fagsystem"
 
@@ -175,23 +175,34 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
                 .map { StatusReply.ok() }
                 .produce(Topics.status)
         }.default {
-            this.flatMapKeyAndValue(::splitOnMeldeperiode)
+            this
+                .flatMapKeyAndValue(::splitOnMeldeperiode)
                 .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
-                .rekey { new, _ -> new.originalKey }
-                .map { new, prev -> listOf(StreamsPair(new, prev)) }
+                .log { key, left, right -> info("left joined $key, match: ${right != null}") }
+                .rekey { new, _ -> 
+                    kafkaLog.info("rekey back to ${new.originalKey}")
+                    new.originalKey
+                }
+                .map { key, new, prev -> 
+                    kafkaLog.info("left joined $key, match: ${prev != null}")
+                    listOf(StreamsPair(new, prev))
+                }
                 .sessionWindow(
                     Serde.string(),
                     Serde.listStreamsPair(),
                     DP_TX_GAP_MS.milliseconds,
                     "dp-utbetalinger-session"
                 )
-                .reduce(suppress, dedup, Stores.dpAggregate.name) { acc, next -> acc + next }
-                .map { aggregate ->
+                .reduce(suppress, dedup, Stores.dpAggregate.name) { acc, next -> 
+                    val newAcc = acc + next
+                    kafkaLog.info("reduced from ${acc.size} -> ${newAcc.size}")
+                    newAcc
+                }
+                .map { key, aggregate ->
+                    kafkaLog.info("Aggregate complete for key $key with ${aggregate.size} pairs")
                     Result.catch {
-                        val oppdragToUtbetalinger =
-                            AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                        val simuleringer =
-                            AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                        val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
                         oppdragToUtbetalinger to simuleringer
                     }
                 }
@@ -202,10 +213,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
                         .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
                             oppdragToUtbetalinger.flatMap { agg ->
                                 agg.second.map {
-                                    KeyValue(
-                                        it.uid.toString(),
-                                        it
-                                    )
+                                    KeyValue(it.uid.toString(), it)
                                 }
                             }
                         }

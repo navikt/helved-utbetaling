@@ -1,5 +1,6 @@
 package abetal.consumers
 
+import abetal.HISTORISK_TX_GAP_MS
 import abetal.Historisk
 import abetal.SakKey
 import abetal.TestRuntime
@@ -66,7 +67,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat().has(transactionId)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -103,7 +104,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -290,7 +291,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -517,7 +518,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -693,7 +694,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.historisk.produce(transactionId) {
             Historisk.utbetaling(
@@ -706,7 +707,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -833,7 +834,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.historisk.produce(transactionId) {
             Historisk.utbetaling(
@@ -848,7 +849,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -976,7 +977,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.historisk.produce(transactionId) {
             Historisk.utbetaling(
@@ -991,7 +992,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1130,7 +1131,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             status = Status.MOTTATT,
@@ -1256,7 +1257,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.historisk.produce(transactionId) {
             Historisk.utbetaling(
@@ -1272,7 +1273,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1391,7 +1392,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -1449,7 +1450,7 @@ internal class HistoriskTest {
                 Historisk.periode(7.jun, 7.jun, 140u)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -1519,7 +1520,7 @@ internal class HistoriskTest {
                 periode(1.jan, 2.jan, 100u, null)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.historisk.produce(key) {
             Historisk.utbetaling(uid1, sid.id, bid.id, dryrun = true) {
@@ -1530,7 +1531,7 @@ internal class HistoriskTest {
                 )
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
             assertEquals(Status.OK, statusReply.status)
@@ -1571,11 +1572,11 @@ internal class HistoriskTest {
                         periode(8.jun, 10.jun, 500u, null)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.saker.produce(SakKey(sid1, Fagsystem.HISTORISK)) { setOf(uid) }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.historisk.produce(transactionId) {
             Historisk.utbetaling(
@@ -1589,7 +1590,7 @@ internal class HistoriskTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((HISTORISK_TX_GAP_MS * 2).milliseconds)
 
         val expectedError = StatusReply(
             status = Status.FEILET,

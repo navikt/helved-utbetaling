@@ -35,5 +35,6 @@ class Log(name: String) {
 
     companion object {
         val secure: Log by lazy { Log("secureLog") }
+        val kafka: Log by lazy { Log("kafka") }
     }
 }

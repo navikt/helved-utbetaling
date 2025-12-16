@@ -95,6 +95,11 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(loggedStream)
     }
 
+    fun log(logger: Log.(K, V) -> Unit): MappedStream<K, V> {
+        val loggedStream = stream.peek ({ key, value -> logger.invoke(Log.kafka, key, value) })
+        return MappedStream(loggedStream)
+    }
+
     fun secureLogWithKey(log: Log.(K, V) -> Unit): MappedStream<K, V> {
         val loggedStream = stream.peek ({ key, value -> log.invoke(Log.secure, key, value) })
         return MappedStream(loggedStream)

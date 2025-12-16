@@ -61,7 +61,6 @@ class TracingTimestampedRocksDBStore(
     }
 
     override fun get(key: Bytes): ByteArray? {
-        kafkaLog.info("state store get, store name: ${name()}")
         val spanName = "${inner.name()} state-store-get"
         val startTs = Instant.now()
 
@@ -101,8 +100,6 @@ class TracingTimestampedRocksDBStore(
         }
     }
     override fun put(key: Bytes, value: ByteArray?) {
-        kafkaLog.info("state store put, store name: ${name()}")
-
         if (value == null) {
             delete(key)
             return
@@ -127,7 +124,6 @@ class TracingTimestampedRocksDBStore(
         )
     }
     override fun putIfAbsent(key: Bytes, value: ByteArray): ByteArray? {
-        kafkaLog.info("state store putIfAbsent, store name: ${name()}")
         val spanName = "${inner.name()} state-store-put"
         var returned: ByteArray? = null
 
