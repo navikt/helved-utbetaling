@@ -183,10 +183,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
                     kafkaLog.info("rekey back to ${new.originalKey}")
                     new.originalKey
                 }
-                .map { key, new, prev -> 
-                    kafkaLog.info("left joined $key, match: ${prev != null}")
-                    listOf(StreamsPair(new, prev))
-                }
+                .map { key, new, prev -> listOf(StreamsPair(new, prev)) }
                 .sessionWindow(
                     Serde.string(),
                     Serde.listStreamsPair(),
