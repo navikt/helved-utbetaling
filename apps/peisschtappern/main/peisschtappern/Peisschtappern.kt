@@ -25,7 +25,10 @@ import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
+import libs.kafka.Topic
+import libs.kafka.json
 import libs.utils.*
+import models.DpUtbetaling
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -87,7 +90,8 @@ fun Application.peisschtappern(
 
     val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, oppdrag)
     val utbetalingProducer = kafkaFactory.createProducer(config.kafka, utbetalinger)
-    val manuellEndringService = ManuellEndringService(oppdragsdataProducer, utbetalingProducer)
+    val dpProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>()))
+    val manuellEndringService = ManuellEndringService(oppdragsdataProducer, utbetalingProducer, dpProducer)
 
     routing {
         probes(kafka, prometheus)

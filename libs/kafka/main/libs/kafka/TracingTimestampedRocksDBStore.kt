@@ -100,8 +100,14 @@ class TracingTimestampedRocksDBStore(
             }
         }
     }
-    override fun put(key: Bytes, value: ByteArray) {
+    override fun put(key: Bytes, value: ByteArray?) {
         kafkaLog.info("state store put, store name: ${name()}")
+
+        if (value == null) {
+            delete(key)
+            return
+        }
+
         val spanName = "${inner.name()} state-store-put"
 
         Tracing.startSpan(
