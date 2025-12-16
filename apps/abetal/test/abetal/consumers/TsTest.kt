@@ -31,7 +31,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -118,7 +118,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -209,7 +209,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -300,7 +300,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat().has(transactionId)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -337,7 +337,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -524,7 +524,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -751,7 +751,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -968,7 +968,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1251,7 +1251,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
@@ -1265,7 +1265,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1383,7 +1383,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat().has(transactionId)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1437,7 +1437,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat().has(transactionId2)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1490,7 +1490,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat().has(transactionId3)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1559,7 +1559,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
@@ -1574,7 +1574,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1702,7 +1702,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
@@ -1717,7 +1717,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1845,7 +1845,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
@@ -1861,7 +1861,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -2002,7 +2002,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             status = Status.MOTTATT,
@@ -2119,7 +2119,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -2177,7 +2177,7 @@ internal class TsTest {
                 Ts.periode(7.jun, 7.jun, 140u)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -2247,7 +2247,7 @@ internal class TsTest {
                 periode(1.jan, 2.jan, 100u, null)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.ts.produce(key) {
             Ts.utbetaling(uid1, sid.id, bid.id, dryrun = true) {
@@ -2258,7 +2258,7 @@ internal class TsTest {
                 )
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
             assertEquals(Status.OK, statusReply.status)
@@ -2298,11 +2298,11 @@ internal class TsTest {
                         periode(8.jun, 10.jun, 500u, null)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.saker.produce(SakKey(sid1, Fagsystem.TILLSTDR)) { setOf(uid) }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.ts.produce(transactionId) {
             Ts.utbetaling(
@@ -2316,7 +2316,7 @@ internal class TsTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime(1001.milliseconds)
+        TestRuntime.kafka.advanceWallClockTime((TS_TX_GAP_MS * 2).milliseconds)
 
         val expectedError = StatusReply(
             status = Status.FEILET,

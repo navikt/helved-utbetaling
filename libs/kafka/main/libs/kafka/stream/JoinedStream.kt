@@ -62,6 +62,11 @@ class JoinedStream<K: Any, L : Any, R> internal constructor(
         return JoinedStream(loggedStream)
     }
 
+    fun log(log: Log.(K, L, R) -> Unit): JoinedStream<K, L, R> {
+        val loggedStream = stream.peek ({ key, (left, right) -> log(Log.kafka, key, left, right) })
+        return JoinedStream(loggedStream)
+    }
+
     fun secureLogWithKey(log: Log.(K, L, R) -> Unit): JoinedStream<K, L, R> {
         val loggedStream = stream.peek ({ key, (left, right) -> log(Log.secure, key, left, right) })
         return JoinedStream(loggedStream)

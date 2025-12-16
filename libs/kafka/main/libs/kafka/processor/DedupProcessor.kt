@@ -44,7 +44,7 @@ class DedupProcessor<K: Any, V: Any> (
             while (iter.hasNext()) {
                 val entry = iter.next()
                 if (now - entry.value.timestamp() > retention.inWholeMilliseconds) {
-                    kafkaLog.debug("dedup reset key=${entry.key}")
+                    kafkaLog.info("dedup reset key=${entry.key}")
                     store.delete(entry.key) 
                 }
             }
@@ -60,14 +60,14 @@ class DedupProcessor<K: Any, V: Any> (
             try {
                 downstream(record.value())
                 store.put(dedupKey, ValueAndTimestamp.make(record.value(), now))
-                kafkaLog.debug("dedup allow key=${record.key()} value.hash=${record.value().hashCode()}")
+                kafkaLog.info("dedup allow key=${record.key()} value.hash=${record.value().hashCode()}")
                 context.forward(record)
             } catch (e: Exception) {
                 kafkaLog.warn("downstream failed, dedup will retry key=${record.key()} value.hash=${record.value().hashCode()}")
                 throw e
             }
         } else {
-            kafkaLog.debug("dedup deny key=${record.key()} value.hash=${record.value().hashCode()}")
+            kafkaLog.info("dedup deny key=${record.key()} value.hash=${record.value().hashCode()}")
         }
     }
 

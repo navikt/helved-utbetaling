@@ -14,6 +14,8 @@ Topologies:
   Sub-topology: 1
     Source: aap-periode-leftjoin-utbetalinger-repartition-source (topics: [aap-periode-leftjoin-utbetalinger-repartition])
       --> aap-periode-leftjoin-utbetalinger
+    Source: dp-periode-leftjoin-utbetalinger-repartition-source (topics: [dp-periode-leftjoin-utbetalinger-repartition])
+      --> dp-periode-leftjoin-utbetalinger
     Source: historisk-periode-leftjoin-utbetalinger-repartition-source (topics: [historisk-periode-leftjoin-utbetalinger-repartition])
       --> historisk-periode-leftjoin-utbetalinger
     Source: ktable-helved.utbetalinger.v1-repartition-source (topics: [ktable-helved.utbetalinger.v1-repartition])
@@ -23,91 +25,92 @@ Topologies:
     Source: ts-periode-leftjoin-utbetalinger-repartition-source (topics: [ts-periode-leftjoin-utbetalinger-repartition])
       --> ts-periode-leftjoin-utbetalinger
     Processor: aap-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
-      --> KSTREAM-FILTER-0000000114
+      --> KSTREAM-FILTER-0000000115
       <-- aap-periode-leftjoin-utbetalinger-repartition-source
-    Source: dp-periode-leftjoin-utbetalinger-repartition-source (topics: [dp-periode-leftjoin-utbetalinger-repartition])
-      --> dp-periode-leftjoin-utbetalinger
+    Processor: dp-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
+      --> KSTREAM-PEEK-0000000057
+      <-- dp-periode-leftjoin-utbetalinger-repartition-source
     Processor: historisk-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
-      --> KSTREAM-FILTER-0000000281
+      --> KSTREAM-FILTER-0000000282
       <-- historisk-periode-leftjoin-utbetalinger-repartition-source
     Processor: ktable-helved.utbetalinger.v1 (stores: [helved.utbetalinger.v1-state-store-v2])
       --> KTABLE-TOSTREAM-0000000012
       <-- ktable-helved.utbetalinger.v1-repartition-source
     Processor: tp-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
-      --> KSTREAM-FILTER-0000000223
+      --> KSTREAM-FILTER-0000000224
       <-- tp-periode-leftjoin-utbetalinger-repartition-source
     Processor: ts-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
-      --> KSTREAM-FILTER-0000000172
+      --> KSTREAM-FILTER-0000000173
       <-- ts-periode-leftjoin-utbetalinger-repartition-source
-    Processor: KSTREAM-FILTER-0000000114 (stores: [])
-      --> KSTREAM-KEY-SELECT-0000000115
+    Processor: KSTREAM-FILTER-0000000115 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000116
       <-- aap-periode-leftjoin-utbetalinger
-    Processor: KSTREAM-FILTER-0000000172 (stores: [])
-      --> KSTREAM-KEY-SELECT-0000000173
+    Processor: KSTREAM-FILTER-0000000173 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000174
       <-- ts-periode-leftjoin-utbetalinger
-    Processor: KSTREAM-FILTER-0000000223 (stores: [])
-      --> KSTREAM-KEY-SELECT-0000000224
+    Processor: KSTREAM-FILTER-0000000224 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000225
       <-- tp-periode-leftjoin-utbetalinger
-    Processor: KSTREAM-FILTER-0000000281 (stores: [])
-      --> KSTREAM-KEY-SELECT-0000000282
+    Processor: KSTREAM-FILTER-0000000282 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000283
       <-- historisk-periode-leftjoin-utbetalinger
+    Processor: KSTREAM-PEEK-0000000057 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000058
+      <-- dp-periode-leftjoin-utbetalinger
     Processor: KTABLE-TOSTREAM-0000000012 (stores: [])
       --> KSTREAM-FILTER-0000000013
       <-- ktable-helved.utbetalinger.v1
-    Processor: dp-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
-      --> KSTREAM-KEY-SELECT-0000000057
-      <-- dp-periode-leftjoin-utbetalinger-repartition-source
     Processor: KSTREAM-FILTER-0000000013 (stores: [])
       --> KSTREAM-KEY-SELECT-0000000014
       <-- KTABLE-TOSTREAM-0000000012
-    Processor: KSTREAM-KEY-SELECT-0000000057 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000058
-      <-- dp-periode-leftjoin-utbetalinger
-    Processor: KSTREAM-KEY-SELECT-0000000115 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000116
-      <-- KSTREAM-FILTER-0000000114
-    Processor: KSTREAM-KEY-SELECT-0000000173 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000174
-      <-- KSTREAM-FILTER-0000000172
-    Processor: KSTREAM-KEY-SELECT-0000000224 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000225
-      <-- KSTREAM-FILTER-0000000223
-    Processor: KSTREAM-KEY-SELECT-0000000282 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000283
-      <-- KSTREAM-FILTER-0000000281
+    Processor: KSTREAM-KEY-SELECT-0000000058 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000059
+      <-- KSTREAM-PEEK-0000000057
+    Processor: KSTREAM-KEY-SELECT-0000000116 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000117
+      <-- KSTREAM-FILTER-0000000115
+    Processor: KSTREAM-KEY-SELECT-0000000174 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000175
+      <-- KSTREAM-FILTER-0000000173
+    Processor: KSTREAM-KEY-SELECT-0000000225 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000226
+      <-- KSTREAM-FILTER-0000000224
+    Processor: KSTREAM-KEY-SELECT-0000000283 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000284
+      <-- KSTREAM-FILTER-0000000282
     Processor: KSTREAM-KEY-SELECT-0000000014 (stores: [])
       --> utbetalinger-groupby-sakkey-repartition-filter
       <-- KSTREAM-FILTER-0000000013
-    Processor: KSTREAM-MAPVALUES-0000000058 (stores: [])
+    Processor: KSTREAM-MAPVALUES-0000000059 (stores: [])
       --> dp-utbetalinger-session-repartition-filter
-      <-- KSTREAM-KEY-SELECT-0000000057
-    Processor: KSTREAM-MAPVALUES-0000000116 (stores: [])
+      <-- KSTREAM-KEY-SELECT-0000000058
+    Processor: KSTREAM-MAPVALUES-0000000117 (stores: [])
       --> aap-utbetalinger-session-repartition-filter
-      <-- KSTREAM-KEY-SELECT-0000000115
-    Processor: KSTREAM-MAPVALUES-0000000174 (stores: [])
+      <-- KSTREAM-KEY-SELECT-0000000116
+    Processor: KSTREAM-MAPVALUES-0000000175 (stores: [])
       --> ts-utbetalinger-session-repartition-filter
-      <-- KSTREAM-KEY-SELECT-0000000173
-    Processor: KSTREAM-MAPVALUES-0000000225 (stores: [])
+      <-- KSTREAM-KEY-SELECT-0000000174
+    Processor: KSTREAM-MAPVALUES-0000000226 (stores: [])
       --> tp-utbetalinger-session-repartition-filter
-      <-- KSTREAM-KEY-SELECT-0000000224
-    Processor: KSTREAM-MAPVALUES-0000000283 (stores: [])
+      <-- KSTREAM-KEY-SELECT-0000000225
+    Processor: KSTREAM-MAPVALUES-0000000284 (stores: [])
       --> historisk-utbetalinger-session-repartition-filter
-      <-- KSTREAM-KEY-SELECT-0000000282
+      <-- KSTREAM-KEY-SELECT-0000000283
     Processor: aap-utbetalinger-session-repartition-filter (stores: [])
       --> aap-utbetalinger-session-repartition-sink
-      <-- KSTREAM-MAPVALUES-0000000116
+      <-- KSTREAM-MAPVALUES-0000000117
     Processor: dp-utbetalinger-session-repartition-filter (stores: [])
       --> dp-utbetalinger-session-repartition-sink
-      <-- KSTREAM-MAPVALUES-0000000058
+      <-- KSTREAM-MAPVALUES-0000000059
     Processor: historisk-utbetalinger-session-repartition-filter (stores: [])
       --> historisk-utbetalinger-session-repartition-sink
-      <-- KSTREAM-MAPVALUES-0000000283
+      <-- KSTREAM-MAPVALUES-0000000284
     Processor: tp-utbetalinger-session-repartition-filter (stores: [])
       --> tp-utbetalinger-session-repartition-sink
-      <-- KSTREAM-MAPVALUES-0000000225
+      <-- KSTREAM-MAPVALUES-0000000226
     Processor: ts-utbetalinger-session-repartition-filter (stores: [])
       --> ts-utbetalinger-session-repartition-sink
-      <-- KSTREAM-MAPVALUES-0000000174
+      <-- KSTREAM-MAPVALUES-0000000175
     Processor: utbetalinger-groupby-sakkey-repartition-filter (stores: [])
       --> utbetalinger-groupby-sakkey-repartition-sink
       <-- KSTREAM-KEY-SELECT-0000000014
@@ -140,21 +143,21 @@ Topologies:
     Source: pk-leftjoin-pending-repartition-source (topics: [pk-leftjoin-pending-repartition])
       --> pk-leftjoin-pending
     Processor: pk-leftjoin-pending (stores: [helved.pending-utbetalinger.v1-state-store-v2])
-      --> KSTREAM-MAPVALUES-0000000333
+      --> KSTREAM-MAPVALUES-0000000334
       <-- pk-leftjoin-pending-repartition-source
-    Processor: KSTREAM-MAPVALUES-0000000333 (stores: [])
-      --> KSTREAM-FILTER-0000000334
+    Processor: KSTREAM-MAPVALUES-0000000334 (stores: [])
+      --> KSTREAM-FILTER-0000000335
       <-- pk-leftjoin-pending
-    Processor: KSTREAM-FILTER-0000000334 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000335
-      <-- KSTREAM-MAPVALUES-0000000333
-    Processor: KSTREAM-PROCESSOR-0000000335 (stores: [])
-      --> KSTREAM-SINK-0000000336
-      <-- KSTREAM-FILTER-0000000334
+    Processor: KSTREAM-FILTER-0000000335 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000336
+      <-- KSTREAM-MAPVALUES-0000000334
+    Processor: KSTREAM-PROCESSOR-0000000336 (stores: [])
+      --> KSTREAM-SINK-0000000337
+      <-- KSTREAM-FILTER-0000000335
     Source: ktable-helved.pending-utbetalinger.v1-repartition-source (topics: [ktable-helved.pending-utbetalinger.v1-repartition])
       --> ktable-helved.pending-utbetalinger.v1
-    Sink: KSTREAM-SINK-0000000336 (topic: helved.utbetalinger.v1)
-      <-- KSTREAM-PROCESSOR-0000000335
+    Sink: KSTREAM-SINK-0000000337 (topic: helved.utbetalinger.v1)
+      <-- KSTREAM-PROCESSOR-0000000336
     Processor: ktable-helved.pending-utbetalinger.v1 (stores: [helved.pending-utbetalinger.v1-state-store-v2])
       --> none
       <-- ktable-helved.pending-utbetalinger.v1-repartition-source
@@ -194,16 +197,16 @@ Topologies:
       --> KSTREAM-FILTER-0000000020
       <-- helved.saker.v1-state-store-aggregate
     Processor: aaptuple-leftjoin-saker (stores: [helved.saker.v1-state-store-materialized])
-      --> KSTREAM-FLATMAP-0000000109
+      --> KSTREAM-FLATMAP-0000000110
       <-- aaptuple-leftjoin-saker-repartition-source
     Processor: historisktuple-leftjoin-saker (stores: [helved.saker.v1-state-store-materialized])
-      --> KSTREAM-MAP-0000000276
+      --> KSTREAM-MAP-0000000277
       <-- historisktuple-leftjoin-saker-repartition-source
     Processor: tptuple-leftjoin-saker (stores: [helved.saker.v1-state-store-materialized])
-      --> KSTREAM-FLATMAP-0000000218
+      --> KSTREAM-FLATMAP-0000000219
       <-- tptuple-leftjoin-saker-repartition-source
     Processor: tstuple-leftjoin-saker (stores: [helved.saker.v1-state-store-materialized])
-      --> KSTREAM-MAP-0000000167
+      --> KSTREAM-MAP-0000000168
       <-- tstuple-leftjoin-saker-repartition-source
     Processor: KSTREAM-FILTER-0000000020 (stores: [])
       --> KSTREAM-PROCESSOR-0000000021
@@ -211,16 +214,16 @@ Topologies:
     Processor: KSTREAM-FLATMAP-0000000052 (stores: [])
       --> dp-periode-leftjoin-utbetalinger-repartition-filter
       <-- KSTREAM-BRANCH-00000000450
-    Processor: KSTREAM-FLATMAP-0000000109 (stores: [])
+    Processor: KSTREAM-FLATMAP-0000000110 (stores: [])
       --> aap-periode-leftjoin-utbetalinger-repartition-filter
       <-- aaptuple-leftjoin-saker
-    Processor: KSTREAM-FLATMAP-0000000218 (stores: [])
+    Processor: KSTREAM-FLATMAP-0000000219 (stores: [])
       --> tp-periode-leftjoin-utbetalinger-repartition-filter
       <-- tptuple-leftjoin-saker
-    Processor: KSTREAM-MAP-0000000167 (stores: [])
+    Processor: KSTREAM-MAP-0000000168 (stores: [])
       --> ts-periode-leftjoin-utbetalinger-repartition-filter
       <-- tstuple-leftjoin-saker
-    Processor: KSTREAM-MAP-0000000276 (stores: [])
+    Processor: KSTREAM-MAP-0000000277 (stores: [])
       --> historisk-periode-leftjoin-utbetalinger-repartition-filter
       <-- historisktuple-leftjoin-saker
     Processor: KSTREAM-MAPVALUES-0000000048 (stores: [])
@@ -234,19 +237,19 @@ Topologies:
       <-- KSTREAM-MAPVALUES-0000000048
     Processor: aap-periode-leftjoin-utbetalinger-repartition-filter (stores: [])
       --> aap-periode-leftjoin-utbetalinger-repartition-sink
-      <-- KSTREAM-FLATMAP-0000000109
+      <-- KSTREAM-FLATMAP-0000000110
     Processor: dp-periode-leftjoin-utbetalinger-repartition-filter (stores: [])
       --> dp-periode-leftjoin-utbetalinger-repartition-sink
       <-- KSTREAM-FLATMAP-0000000052
     Processor: historisk-periode-leftjoin-utbetalinger-repartition-filter (stores: [])
       --> historisk-periode-leftjoin-utbetalinger-repartition-sink
-      <-- KSTREAM-MAP-0000000276
+      <-- KSTREAM-MAP-0000000277
     Processor: tp-periode-leftjoin-utbetalinger-repartition-filter (stores: [])
       --> tp-periode-leftjoin-utbetalinger-repartition-sink
-      <-- KSTREAM-FLATMAP-0000000218
+      <-- KSTREAM-FLATMAP-0000000219
     Processor: ts-periode-leftjoin-utbetalinger-repartition-filter (stores: [])
       --> ts-periode-leftjoin-utbetalinger-repartition-sink
-      <-- KSTREAM-MAP-0000000167
+      <-- KSTREAM-MAP-0000000168
     Sink: KSTREAM-SINK-0000000022 (topic: helved.saker.v1)
       <-- KSTREAM-PROCESSOR-0000000021
     Sink: KSTREAM-SINK-0000000050 (topic: helved.status.v1)
@@ -278,16 +281,16 @@ Topologies:
     Source: oppdrag-leftjoin-fks-repartition-source (topics: [oppdrag-leftjoin-fks-repartition])
       --> oppdrag-leftjoin-fks
     Processor: oppdrag-leftjoin-fks (stores: [helved.fk.v1-state-store-v2])
-      --> KSTREAM-FLATMAP-0000000328
+      --> KSTREAM-FLATMAP-0000000329
       <-- oppdrag-leftjoin-fks-repartition-source
-    Processor: KSTREAM-FLATMAP-0000000328 (stores: [])
+    Processor: KSTREAM-FLATMAP-0000000329 (stores: [])
       --> pk-leftjoin-pending-repartition-filter
       <-- oppdrag-leftjoin-fks
     Source: ktable-helved.fk.v1-repartition-source (topics: [ktable-helved.fk.v1-repartition])
       --> ktable-helved.fk.v1
     Processor: pk-leftjoin-pending-repartition-filter (stores: [])
       --> pk-leftjoin-pending-repartition-sink
-      <-- KSTREAM-FLATMAP-0000000328
+      <-- KSTREAM-FLATMAP-0000000329
     Processor: ktable-helved.fk.v1 (stores: [helved.fk.v1-state-store-v2])
       --> none
       <-- ktable-helved.fk.v1-repartition-source
@@ -339,136 +342,136 @@ Topologies:
     Source: dp-utbetalinger-session-repartition-source (topics: [dp-utbetalinger-session-repartition])
       --> dp-aggregate-store-v2-reduce
     Processor: dp-aggregate-store-v2-reduce (stores: [dp-aggregate-store-v2-materialized])
-      --> KTABLE-TOSTREAM-0000000063
+      --> KTABLE-TOSTREAM-0000000064
       <-- dp-utbetalinger-session-repartition-source
-    Processor: KTABLE-TOSTREAM-0000000063 (stores: [])
+    Processor: KTABLE-TOSTREAM-0000000064 (stores: [])
       --> dp-aggregate-store-v2-suppress
       <-- dp-aggregate-store-v2-reduce
     Processor: dp-aggregate-store-v2-suppress (stores: [dp-aggregate-store-v2])
       --> dp-aggregate-store-v2-dedup
-      <-- KTABLE-TOSTREAM-0000000063
+      <-- KTABLE-TOSTREAM-0000000064
     Processor: dp-aggregate-store-v2-dedup (stores: [dp-dedup-aggregate-v2])
-      --> KSTREAM-KEY-SELECT-0000000064
+      --> KSTREAM-KEY-SELECT-0000000065
       <-- dp-aggregate-store-v2-suppress
-    Processor: KSTREAM-KEY-SELECT-0000000064 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000065
+    Processor: KSTREAM-KEY-SELECT-0000000065 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000066
       <-- dp-aggregate-store-v2-dedup
-    Processor: KSTREAM-MAPVALUES-0000000065 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000066
-      <-- KSTREAM-KEY-SELECT-0000000064
-    Processor: KSTREAM-PROCESSOR-0000000066 (stores: [])
-      --> KSTREAM-BRANCH-0000000067
-      <-- KSTREAM-MAPVALUES-0000000065
-    Processor: KSTREAM-BRANCH-0000000067 (stores: [])
-      --> KSTREAM-BRANCH-00000000671, KSTREAM-BRANCH-00000000670
-      <-- KSTREAM-PROCESSOR-0000000066
-    Processor: KSTREAM-BRANCH-00000000671 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000069
-      <-- KSTREAM-BRANCH-0000000067
-    Processor: KSTREAM-MAPVALUES-0000000069 (stores: [])
-      --> KSTREAM-FLATMAPVALUES-0000000076, KSTREAM-FLATMAP-0000000070, KSTREAM-FILTER-0000000082, KSTREAM-FLATMAPVALUES-0000000073, KSTREAM-FLATMAP-0000000086
-      <-- KSTREAM-BRANCH-00000000671
-    Processor: KSTREAM-FLATMAPVALUES-0000000076 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000077, KSTREAM-MAPVALUES-0000000079
-      <-- KSTREAM-MAPVALUES-0000000069
-    Processor: KSTREAM-BRANCH-00000000670 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000090
-      <-- KSTREAM-BRANCH-0000000067
-    Processor: KSTREAM-FILTER-0000000082 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000083
-      <-- KSTREAM-MAPVALUES-0000000069
-    Processor: KSTREAM-FLATMAP-0000000070 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000071
-      <-- KSTREAM-MAPVALUES-0000000069
-    Processor: KSTREAM-FLATMAP-0000000086 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000087
-      <-- KSTREAM-MAPVALUES-0000000069
-    Processor: KSTREAM-FLATMAPVALUES-0000000073 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000074
-      <-- KSTREAM-MAPVALUES-0000000069
-    Processor: KSTREAM-MAPVALUES-0000000079 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000080
-      <-- KSTREAM-FLATMAPVALUES-0000000076
-    Processor: KSTREAM-MAPVALUES-0000000083 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000084
-      <-- KSTREAM-FILTER-0000000082
-    Processor: KSTREAM-MAPVALUES-0000000090 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000091
-      <-- KSTREAM-BRANCH-00000000670
-    Processor: KSTREAM-PROCESSOR-0000000071 (stores: [])
-      --> KSTREAM-SINK-0000000072
-      <-- KSTREAM-FLATMAP-0000000070
-    Processor: KSTREAM-PROCESSOR-0000000074 (stores: [])
-      --> KSTREAM-SINK-0000000075
-      <-- KSTREAM-FLATMAPVALUES-0000000073
-    Processor: KSTREAM-PROCESSOR-0000000077 (stores: [])
-      --> KSTREAM-SINK-0000000078
-      <-- KSTREAM-FLATMAPVALUES-0000000076
-    Processor: KSTREAM-PROCESSOR-0000000080 (stores: [])
-      --> KSTREAM-SINK-0000000081
-      <-- KSTREAM-MAPVALUES-0000000079
-    Processor: KSTREAM-PROCESSOR-0000000084 (stores: [])
-      --> KSTREAM-SINK-0000000085
-      <-- KSTREAM-MAPVALUES-0000000083
-    Processor: KSTREAM-PROCESSOR-0000000087 (stores: [])
-      --> KSTREAM-SINK-0000000088
-      <-- KSTREAM-FLATMAP-0000000086
-    Processor: KSTREAM-PROCESSOR-0000000091 (stores: [])
-      --> KSTREAM-SINK-0000000092
-      <-- KSTREAM-MAPVALUES-0000000090
-    Sink: KSTREAM-SINK-0000000072 (topic: helved.pending-utbetalinger.v1)
-      <-- KSTREAM-PROCESSOR-0000000071
-    Sink: KSTREAM-SINK-0000000075 (topic: helved.simuleringer.v1)
-      <-- KSTREAM-PROCESSOR-0000000074
-    Sink: KSTREAM-SINK-0000000078 (topic: helved.oppdrag.v1)
-      <-- KSTREAM-PROCESSOR-0000000077
-    Sink: KSTREAM-SINK-0000000081 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000080
-    Sink: KSTREAM-SINK-0000000085 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000084
-    Sink: KSTREAM-SINK-0000000088 (topic: helved.fk.v1)
-      <-- KSTREAM-PROCESSOR-0000000087
-    Sink: KSTREAM-SINK-0000000092 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000091
+    Processor: KSTREAM-MAPVALUES-0000000066 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000067
+      <-- KSTREAM-KEY-SELECT-0000000065
+    Processor: KSTREAM-PROCESSOR-0000000067 (stores: [])
+      --> KSTREAM-BRANCH-0000000068
+      <-- KSTREAM-MAPVALUES-0000000066
+    Processor: KSTREAM-BRANCH-0000000068 (stores: [])
+      --> KSTREAM-BRANCH-00000000680, KSTREAM-BRANCH-00000000681
+      <-- KSTREAM-PROCESSOR-0000000067
+    Processor: KSTREAM-BRANCH-00000000681 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000070
+      <-- KSTREAM-BRANCH-0000000068
+    Processor: KSTREAM-MAPVALUES-0000000070 (stores: [])
+      --> KSTREAM-FLATMAPVALUES-0000000077, KSTREAM-FILTER-0000000083, KSTREAM-FLATMAP-0000000071, KSTREAM-FLATMAP-0000000087, KSTREAM-FLATMAPVALUES-0000000074
+      <-- KSTREAM-BRANCH-00000000681
+    Processor: KSTREAM-FLATMAPVALUES-0000000077 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000078, KSTREAM-MAPVALUES-0000000080
+      <-- KSTREAM-MAPVALUES-0000000070
+    Processor: KSTREAM-BRANCH-00000000680 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000091
+      <-- KSTREAM-BRANCH-0000000068
+    Processor: KSTREAM-FILTER-0000000083 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000084
+      <-- KSTREAM-MAPVALUES-0000000070
+    Processor: KSTREAM-FLATMAP-0000000071 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000072
+      <-- KSTREAM-MAPVALUES-0000000070
+    Processor: KSTREAM-FLATMAP-0000000087 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000088
+      <-- KSTREAM-MAPVALUES-0000000070
+    Processor: KSTREAM-FLATMAPVALUES-0000000074 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000075
+      <-- KSTREAM-MAPVALUES-0000000070
+    Processor: KSTREAM-MAPVALUES-0000000080 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000081
+      <-- KSTREAM-FLATMAPVALUES-0000000077
+    Processor: KSTREAM-MAPVALUES-0000000084 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000085
+      <-- KSTREAM-FILTER-0000000083
+    Processor: KSTREAM-MAPVALUES-0000000091 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000092
+      <-- KSTREAM-BRANCH-00000000680
+    Processor: KSTREAM-PROCESSOR-0000000072 (stores: [])
+      --> KSTREAM-SINK-0000000073
+      <-- KSTREAM-FLATMAP-0000000071
+    Processor: KSTREAM-PROCESSOR-0000000075 (stores: [])
+      --> KSTREAM-SINK-0000000076
+      <-- KSTREAM-FLATMAPVALUES-0000000074
+    Processor: KSTREAM-PROCESSOR-0000000078 (stores: [])
+      --> KSTREAM-SINK-0000000079
+      <-- KSTREAM-FLATMAPVALUES-0000000077
+    Processor: KSTREAM-PROCESSOR-0000000081 (stores: [])
+      --> KSTREAM-SINK-0000000082
+      <-- KSTREAM-MAPVALUES-0000000080
+    Processor: KSTREAM-PROCESSOR-0000000085 (stores: [])
+      --> KSTREAM-SINK-0000000086
+      <-- KSTREAM-MAPVALUES-0000000084
+    Processor: KSTREAM-PROCESSOR-0000000088 (stores: [])
+      --> KSTREAM-SINK-0000000089
+      <-- KSTREAM-FLATMAP-0000000087
+    Processor: KSTREAM-PROCESSOR-0000000092 (stores: [])
+      --> KSTREAM-SINK-0000000093
+      <-- KSTREAM-MAPVALUES-0000000091
+    Sink: KSTREAM-SINK-0000000073 (topic: helved.pending-utbetalinger.v1)
+      <-- KSTREAM-PROCESSOR-0000000072
+    Sink: KSTREAM-SINK-0000000076 (topic: helved.simuleringer.v1)
+      <-- KSTREAM-PROCESSOR-0000000075
+    Sink: KSTREAM-SINK-0000000079 (topic: helved.oppdrag.v1)
+      <-- KSTREAM-PROCESSOR-0000000078
+    Sink: KSTREAM-SINK-0000000082 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000081
+    Sink: KSTREAM-SINK-0000000086 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000085
+    Sink: KSTREAM-SINK-0000000089 (topic: helved.fk.v1)
+      <-- KSTREAM-PROCESSOR-0000000088
+    Sink: KSTREAM-SINK-0000000093 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000092
 
   Sub-topology: 10
     Source: consume-aap.utbetaling.v1 (topics: [aap.utbetaling.v1])
-      --> KSTREAM-PROCESSOR-0000000094
-    Processor: KSTREAM-PROCESSOR-0000000094 (stores: [])
-      --> KSTREAM-FILTER-0000000095
+      --> KSTREAM-PROCESSOR-0000000095
+    Processor: KSTREAM-PROCESSOR-0000000095 (stores: [])
+      --> KSTREAM-FILTER-0000000096
       <-- consume-aap.utbetaling.v1
-    Processor: KSTREAM-FILTER-0000000095 (stores: [])
+    Processor: KSTREAM-FILTER-0000000096 (stores: [])
       --> from-aap.utbetaling.v1-repartition-filter
-      <-- KSTREAM-PROCESSOR-0000000094
+      <-- KSTREAM-PROCESSOR-0000000095
     Processor: from-aap.utbetaling.v1-repartition-filter (stores: [])
       --> from-aap.utbetaling.v1-repartition-sink
-      <-- KSTREAM-FILTER-0000000095
+      <-- KSTREAM-FILTER-0000000096
     Sink: from-aap.utbetaling.v1-repartition-sink (topic: from-aap.utbetaling.v1-repartition)
       <-- from-aap.utbetaling.v1-repartition-filter
 
   Sub-topology: 11
     Source: consume-helved.utbetalinger-aap.v1 (topics: [helved.utbetalinger-aap.v1])
-      --> KSTREAM-PROCESSOR-0000000100
-    Processor: KSTREAM-PROCESSOR-0000000100 (stores: [])
-      --> KSTREAM-FILTER-0000000101
+      --> KSTREAM-PROCESSOR-0000000101
+    Processor: KSTREAM-PROCESSOR-0000000101 (stores: [])
+      --> KSTREAM-FILTER-0000000102
       <-- consume-helved.utbetalinger-aap.v1
-    Processor: KSTREAM-FILTER-0000000101 (stores: [])
-      --> KSTREAM-MERGE-0000000102
-      <-- KSTREAM-PROCESSOR-0000000100
+    Processor: KSTREAM-FILTER-0000000102 (stores: [])
+      --> KSTREAM-MERGE-0000000103
+      <-- KSTREAM-PROCESSOR-0000000101
     Source: from-aap.utbetaling.v1-repartition-source (topics: [from-aap.utbetaling.v1-repartition])
-      --> KSTREAM-MERGE-0000000102
-    Processor: KSTREAM-MERGE-0000000102 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000103
-      <-- from-aap.utbetaling.v1-repartition-source, KSTREAM-FILTER-0000000101
-    Processor: KSTREAM-MAPVALUES-0000000103 (stores: [])
-      --> KSTREAM-KEY-SELECT-0000000104
-      <-- KSTREAM-MERGE-0000000102
-    Processor: KSTREAM-KEY-SELECT-0000000104 (stores: [])
+      --> KSTREAM-MERGE-0000000103
+    Processor: KSTREAM-MERGE-0000000103 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000104
+      <-- from-aap.utbetaling.v1-repartition-source, KSTREAM-FILTER-0000000102
+    Processor: KSTREAM-MAPVALUES-0000000104 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000105
+      <-- KSTREAM-MERGE-0000000103
+    Processor: KSTREAM-KEY-SELECT-0000000105 (stores: [])
       --> aaptuple-leftjoin-saker-repartition-filter
-      <-- KSTREAM-MAPVALUES-0000000103
+      <-- KSTREAM-MAPVALUES-0000000104
     Processor: aaptuple-leftjoin-saker-repartition-filter (stores: [])
       --> aaptuple-leftjoin-saker-repartition-sink
-      <-- KSTREAM-KEY-SELECT-0000000104
+      <-- KSTREAM-KEY-SELECT-0000000105
     Sink: aaptuple-leftjoin-saker-repartition-sink (topic: aaptuple-leftjoin-saker-repartition)
       <-- aaptuple-leftjoin-saker-repartition-filter
 
@@ -476,136 +479,136 @@ Topologies:
     Source: aap-utbetalinger-session-repartition-source (topics: [aap-utbetalinger-session-repartition])
       --> aap-aggregate-store-v2-reduce
     Processor: aap-aggregate-store-v2-reduce (stores: [aap-aggregate-store-v2-materialized])
-      --> KTABLE-TOSTREAM-0000000121
+      --> KTABLE-TOSTREAM-0000000122
       <-- aap-utbetalinger-session-repartition-source
-    Processor: KTABLE-TOSTREAM-0000000121 (stores: [])
+    Processor: KTABLE-TOSTREAM-0000000122 (stores: [])
       --> aap-aggregate-store-v2-suppress
       <-- aap-aggregate-store-v2-reduce
     Processor: aap-aggregate-store-v2-suppress (stores: [aap-aggregate-store-v2])
       --> aap-aggregate-store-v2-dedup
-      <-- KTABLE-TOSTREAM-0000000121
+      <-- KTABLE-TOSTREAM-0000000122
     Processor: aap-aggregate-store-v2-dedup (stores: [aap-dedup-aggregate-v2])
-      --> KSTREAM-KEY-SELECT-0000000122
+      --> KSTREAM-KEY-SELECT-0000000123
       <-- aap-aggregate-store-v2-suppress
-    Processor: KSTREAM-KEY-SELECT-0000000122 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000123
+    Processor: KSTREAM-KEY-SELECT-0000000123 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000124
       <-- aap-aggregate-store-v2-dedup
-    Processor: KSTREAM-MAPVALUES-0000000123 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000124
-      <-- KSTREAM-KEY-SELECT-0000000122
-    Processor: KSTREAM-PROCESSOR-0000000124 (stores: [])
-      --> KSTREAM-BRANCH-0000000125
-      <-- KSTREAM-MAPVALUES-0000000123
-    Processor: KSTREAM-BRANCH-0000000125 (stores: [])
-      --> KSTREAM-BRANCH-00000001251, KSTREAM-BRANCH-00000001250
-      <-- KSTREAM-PROCESSOR-0000000124
-    Processor: KSTREAM-BRANCH-00000001251 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000127
-      <-- KSTREAM-BRANCH-0000000125
-    Processor: KSTREAM-MAPVALUES-0000000127 (stores: [])
-      --> KSTREAM-FLATMAPVALUES-0000000134, KSTREAM-FLATMAP-0000000128, KSTREAM-FILTER-0000000140, KSTREAM-FLATMAP-0000000144, KSTREAM-FLATMAPVALUES-0000000131
-      <-- KSTREAM-BRANCH-00000001251
-    Processor: KSTREAM-FLATMAPVALUES-0000000134 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000135, KSTREAM-MAPVALUES-0000000137
-      <-- KSTREAM-MAPVALUES-0000000127
-    Processor: KSTREAM-BRANCH-00000001250 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000148
-      <-- KSTREAM-BRANCH-0000000125
-    Processor: KSTREAM-FILTER-0000000140 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000141
-      <-- KSTREAM-MAPVALUES-0000000127
-    Processor: KSTREAM-FLATMAP-0000000128 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000129
-      <-- KSTREAM-MAPVALUES-0000000127
-    Processor: KSTREAM-FLATMAP-0000000144 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000145
-      <-- KSTREAM-MAPVALUES-0000000127
-    Processor: KSTREAM-FLATMAPVALUES-0000000131 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000132
-      <-- KSTREAM-MAPVALUES-0000000127
-    Processor: KSTREAM-MAPVALUES-0000000137 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000138
-      <-- KSTREAM-FLATMAPVALUES-0000000134
-    Processor: KSTREAM-MAPVALUES-0000000141 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000142
-      <-- KSTREAM-FILTER-0000000140
-    Processor: KSTREAM-MAPVALUES-0000000148 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000149
-      <-- KSTREAM-BRANCH-00000001250
-    Processor: KSTREAM-PROCESSOR-0000000129 (stores: [])
-      --> KSTREAM-SINK-0000000130
-      <-- KSTREAM-FLATMAP-0000000128
-    Processor: KSTREAM-PROCESSOR-0000000132 (stores: [])
-      --> KSTREAM-SINK-0000000133
-      <-- KSTREAM-FLATMAPVALUES-0000000131
-    Processor: KSTREAM-PROCESSOR-0000000135 (stores: [])
-      --> KSTREAM-SINK-0000000136
-      <-- KSTREAM-FLATMAPVALUES-0000000134
-    Processor: KSTREAM-PROCESSOR-0000000138 (stores: [])
-      --> KSTREAM-SINK-0000000139
-      <-- KSTREAM-MAPVALUES-0000000137
-    Processor: KSTREAM-PROCESSOR-0000000142 (stores: [])
-      --> KSTREAM-SINK-0000000143
-      <-- KSTREAM-MAPVALUES-0000000141
-    Processor: KSTREAM-PROCESSOR-0000000145 (stores: [])
-      --> KSTREAM-SINK-0000000146
-      <-- KSTREAM-FLATMAP-0000000144
-    Processor: KSTREAM-PROCESSOR-0000000149 (stores: [])
-      --> KSTREAM-SINK-0000000150
-      <-- KSTREAM-MAPVALUES-0000000148
-    Sink: KSTREAM-SINK-0000000130 (topic: helved.pending-utbetalinger.v1)
-      <-- KSTREAM-PROCESSOR-0000000129
-    Sink: KSTREAM-SINK-0000000133 (topic: helved.simuleringer.v1)
-      <-- KSTREAM-PROCESSOR-0000000132
-    Sink: KSTREAM-SINK-0000000136 (topic: helved.oppdrag.v1)
-      <-- KSTREAM-PROCESSOR-0000000135
-    Sink: KSTREAM-SINK-0000000139 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000138
-    Sink: KSTREAM-SINK-0000000143 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000142
-    Sink: KSTREAM-SINK-0000000146 (topic: helved.fk.v1)
-      <-- KSTREAM-PROCESSOR-0000000145
-    Sink: KSTREAM-SINK-0000000150 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000149
+    Processor: KSTREAM-MAPVALUES-0000000124 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000125
+      <-- KSTREAM-KEY-SELECT-0000000123
+    Processor: KSTREAM-PROCESSOR-0000000125 (stores: [])
+      --> KSTREAM-BRANCH-0000000126
+      <-- KSTREAM-MAPVALUES-0000000124
+    Processor: KSTREAM-BRANCH-0000000126 (stores: [])
+      --> KSTREAM-BRANCH-00000001261, KSTREAM-BRANCH-00000001260
+      <-- KSTREAM-PROCESSOR-0000000125
+    Processor: KSTREAM-BRANCH-00000001261 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000128
+      <-- KSTREAM-BRANCH-0000000126
+    Processor: KSTREAM-MAPVALUES-0000000128 (stores: [])
+      --> KSTREAM-FLATMAPVALUES-0000000135, KSTREAM-FLATMAP-0000000129, KSTREAM-FILTER-0000000141, KSTREAM-FLATMAP-0000000145, KSTREAM-FLATMAPVALUES-0000000132
+      <-- KSTREAM-BRANCH-00000001261
+    Processor: KSTREAM-FLATMAPVALUES-0000000135 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000138, KSTREAM-PROCESSOR-0000000136
+      <-- KSTREAM-MAPVALUES-0000000128
+    Processor: KSTREAM-BRANCH-00000001260 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000149
+      <-- KSTREAM-BRANCH-0000000126
+    Processor: KSTREAM-FILTER-0000000141 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000142
+      <-- KSTREAM-MAPVALUES-0000000128
+    Processor: KSTREAM-FLATMAP-0000000129 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000130
+      <-- KSTREAM-MAPVALUES-0000000128
+    Processor: KSTREAM-FLATMAP-0000000145 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000146
+      <-- KSTREAM-MAPVALUES-0000000128
+    Processor: KSTREAM-FLATMAPVALUES-0000000132 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000133
+      <-- KSTREAM-MAPVALUES-0000000128
+    Processor: KSTREAM-MAPVALUES-0000000138 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000139
+      <-- KSTREAM-FLATMAPVALUES-0000000135
+    Processor: KSTREAM-MAPVALUES-0000000142 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000143
+      <-- KSTREAM-FILTER-0000000141
+    Processor: KSTREAM-MAPVALUES-0000000149 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000150
+      <-- KSTREAM-BRANCH-00000001260
+    Processor: KSTREAM-PROCESSOR-0000000130 (stores: [])
+      --> KSTREAM-SINK-0000000131
+      <-- KSTREAM-FLATMAP-0000000129
+    Processor: KSTREAM-PROCESSOR-0000000133 (stores: [])
+      --> KSTREAM-SINK-0000000134
+      <-- KSTREAM-FLATMAPVALUES-0000000132
+    Processor: KSTREAM-PROCESSOR-0000000136 (stores: [])
+      --> KSTREAM-SINK-0000000137
+      <-- KSTREAM-FLATMAPVALUES-0000000135
+    Processor: KSTREAM-PROCESSOR-0000000139 (stores: [])
+      --> KSTREAM-SINK-0000000140
+      <-- KSTREAM-MAPVALUES-0000000138
+    Processor: KSTREAM-PROCESSOR-0000000143 (stores: [])
+      --> KSTREAM-SINK-0000000144
+      <-- KSTREAM-MAPVALUES-0000000142
+    Processor: KSTREAM-PROCESSOR-0000000146 (stores: [])
+      --> KSTREAM-SINK-0000000147
+      <-- KSTREAM-FLATMAP-0000000145
+    Processor: KSTREAM-PROCESSOR-0000000150 (stores: [])
+      --> KSTREAM-SINK-0000000151
+      <-- KSTREAM-MAPVALUES-0000000149
+    Sink: KSTREAM-SINK-0000000131 (topic: helved.pending-utbetalinger.v1)
+      <-- KSTREAM-PROCESSOR-0000000130
+    Sink: KSTREAM-SINK-0000000134 (topic: helved.simuleringer.v1)
+      <-- KSTREAM-PROCESSOR-0000000133
+    Sink: KSTREAM-SINK-0000000137 (topic: helved.oppdrag.v1)
+      <-- KSTREAM-PROCESSOR-0000000136
+    Sink: KSTREAM-SINK-0000000140 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000139
+    Sink: KSTREAM-SINK-0000000144 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000143
+    Sink: KSTREAM-SINK-0000000147 (topic: helved.fk.v1)
+      <-- KSTREAM-PROCESSOR-0000000146
+    Sink: KSTREAM-SINK-0000000151 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000150
 
   Sub-topology: 13
     Source: consume-tilleggsstonader.utbetaling.v1 (topics: [tilleggsstonader.utbetaling.v1])
-      --> KSTREAM-PROCESSOR-0000000152
-    Processor: KSTREAM-PROCESSOR-0000000152 (stores: [])
-      --> KSTREAM-FILTER-0000000153
+      --> KSTREAM-PROCESSOR-0000000153
+    Processor: KSTREAM-PROCESSOR-0000000153 (stores: [])
+      --> KSTREAM-FILTER-0000000154
       <-- consume-tilleggsstonader.utbetaling.v1
-    Processor: KSTREAM-FILTER-0000000153 (stores: [])
+    Processor: KSTREAM-FILTER-0000000154 (stores: [])
       --> from-tilleggsstonader.utbetaling.v1-repartition-filter
-      <-- KSTREAM-PROCESSOR-0000000152
+      <-- KSTREAM-PROCESSOR-0000000153
     Processor: from-tilleggsstonader.utbetaling.v1-repartition-filter (stores: [])
       --> from-tilleggsstonader.utbetaling.v1-repartition-sink
-      <-- KSTREAM-FILTER-0000000153
+      <-- KSTREAM-FILTER-0000000154
     Sink: from-tilleggsstonader.utbetaling.v1-repartition-sink (topic: from-tilleggsstonader.utbetaling.v1-repartition)
       <-- from-tilleggsstonader.utbetaling.v1-repartition-filter
 
   Sub-topology: 14
     Source: consume-helved.utbetalinger-ts.v1 (topics: [helved.utbetalinger-ts.v1])
-      --> KSTREAM-PROCESSOR-0000000158
-    Processor: KSTREAM-PROCESSOR-0000000158 (stores: [])
-      --> KSTREAM-FILTER-0000000159
+      --> KSTREAM-PROCESSOR-0000000159
+    Processor: KSTREAM-PROCESSOR-0000000159 (stores: [])
+      --> KSTREAM-FILTER-0000000160
       <-- consume-helved.utbetalinger-ts.v1
-    Processor: KSTREAM-FILTER-0000000159 (stores: [])
-      --> KSTREAM-MERGE-0000000160
-      <-- KSTREAM-PROCESSOR-0000000158
+    Processor: KSTREAM-FILTER-0000000160 (stores: [])
+      --> KSTREAM-MERGE-0000000161
+      <-- KSTREAM-PROCESSOR-0000000159
     Source: from-tilleggsstonader.utbetaling.v1-repartition-source (topics: [from-tilleggsstonader.utbetaling.v1-repartition])
-      --> KSTREAM-MERGE-0000000160
-    Processor: KSTREAM-MERGE-0000000160 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000161
-      <-- from-tilleggsstonader.utbetaling.v1-repartition-source, KSTREAM-FILTER-0000000159
-    Processor: KSTREAM-MAPVALUES-0000000161 (stores: [])
-      --> KSTREAM-KEY-SELECT-0000000162
-      <-- KSTREAM-MERGE-0000000160
-    Processor: KSTREAM-KEY-SELECT-0000000162 (stores: [])
+      --> KSTREAM-MERGE-0000000161
+    Processor: KSTREAM-MERGE-0000000161 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000162
+      <-- from-tilleggsstonader.utbetaling.v1-repartition-source, KSTREAM-FILTER-0000000160
+    Processor: KSTREAM-MAPVALUES-0000000162 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000163
+      <-- KSTREAM-MERGE-0000000161
+    Processor: KSTREAM-KEY-SELECT-0000000163 (stores: [])
       --> tstuple-leftjoin-saker-repartition-filter
-      <-- KSTREAM-MAPVALUES-0000000161
+      <-- KSTREAM-MAPVALUES-0000000162
     Processor: tstuple-leftjoin-saker-repartition-filter (stores: [])
       --> tstuple-leftjoin-saker-repartition-sink
-      <-- KSTREAM-KEY-SELECT-0000000162
+      <-- KSTREAM-KEY-SELECT-0000000163
     Sink: tstuple-leftjoin-saker-repartition-sink (topic: tstuple-leftjoin-saker-repartition)
       <-- tstuple-leftjoin-saker-repartition-filter
 
@@ -613,116 +616,116 @@ Topologies:
     Source: ts-utbetalinger-session-repartition-source (topics: [ts-utbetalinger-session-repartition])
       --> ts-aggregate-store-v2-reduce
     Processor: ts-aggregate-store-v2-reduce (stores: [ts-aggregate-store-v2-materialized])
-      --> KTABLE-TOSTREAM-0000000179
+      --> KTABLE-TOSTREAM-0000000180
       <-- ts-utbetalinger-session-repartition-source
-    Processor: KTABLE-TOSTREAM-0000000179 (stores: [])
+    Processor: KTABLE-TOSTREAM-0000000180 (stores: [])
       --> ts-aggregate-store-v2-suppress
       <-- ts-aggregate-store-v2-reduce
     Processor: ts-aggregate-store-v2-suppress (stores: [ts-aggregate-store-v2])
       --> ts-aggregate-store-v2-dedup
-      <-- KTABLE-TOSTREAM-0000000179
+      <-- KTABLE-TOSTREAM-0000000180
     Processor: ts-aggregate-store-v2-dedup (stores: [ts-dedup-aggregate-v2])
-      --> KSTREAM-KEY-SELECT-0000000180
+      --> KSTREAM-KEY-SELECT-0000000181
       <-- ts-aggregate-store-v2-suppress
-    Processor: KSTREAM-KEY-SELECT-0000000180 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000181
+    Processor: KSTREAM-KEY-SELECT-0000000181 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000182
       <-- ts-aggregate-store-v2-dedup
-    Processor: KSTREAM-MAPVALUES-0000000181 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000182
-      <-- KSTREAM-KEY-SELECT-0000000180
-    Processor: KSTREAM-PROCESSOR-0000000182 (stores: [])
-      --> KSTREAM-BRANCH-0000000183
-      <-- KSTREAM-MAPVALUES-0000000181
-    Processor: KSTREAM-BRANCH-0000000183 (stores: [])
-      --> KSTREAM-BRANCH-00000001830, KSTREAM-BRANCH-00000001831
-      <-- KSTREAM-PROCESSOR-0000000182
-    Processor: KSTREAM-BRANCH-00000001831 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000185
-      <-- KSTREAM-BRANCH-0000000183
-    Processor: KSTREAM-MAPVALUES-0000000185 (stores: [])
-      --> KSTREAM-FLATMAP-0000000202, KSTREAM-FLATMAPVALUES-0000000189, KSTREAM-FILTER-0000000198, KSTREAM-FLATMAPVALUES-0000000192, KSTREAM-FLATMAP-0000000186
-      <-- KSTREAM-BRANCH-00000001831
-    Processor: KSTREAM-FLATMAPVALUES-0000000192 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000195, KSTREAM-PROCESSOR-0000000193
-      <-- KSTREAM-MAPVALUES-0000000185
-    Processor: KSTREAM-BRANCH-00000001830 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000206
-      <-- KSTREAM-BRANCH-0000000183
-    Processor: KSTREAM-FILTER-0000000198 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000199
-      <-- KSTREAM-MAPVALUES-0000000185
-    Processor: KSTREAM-FLATMAP-0000000186 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000187
-      <-- KSTREAM-MAPVALUES-0000000185
-    Processor: KSTREAM-FLATMAP-0000000202 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000203
-      <-- KSTREAM-MAPVALUES-0000000185
-    Processor: KSTREAM-FLATMAPVALUES-0000000189 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000190
-      <-- KSTREAM-MAPVALUES-0000000185
-    Processor: KSTREAM-MAPVALUES-0000000195 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000196
-      <-- KSTREAM-FLATMAPVALUES-0000000192
-    Processor: KSTREAM-MAPVALUES-0000000199 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000200
-      <-- KSTREAM-FILTER-0000000198
-    Processor: KSTREAM-MAPVALUES-0000000206 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000207
-      <-- KSTREAM-BRANCH-00000001830
-    Processor: KSTREAM-PROCESSOR-0000000187 (stores: [])
-      --> KSTREAM-SINK-0000000188
-      <-- KSTREAM-FLATMAP-0000000186
-    Processor: KSTREAM-PROCESSOR-0000000190 (stores: [])
-      --> KSTREAM-SINK-0000000191
-      <-- KSTREAM-FLATMAPVALUES-0000000189
-    Processor: KSTREAM-PROCESSOR-0000000193 (stores: [])
-      --> KSTREAM-SINK-0000000194
-      <-- KSTREAM-FLATMAPVALUES-0000000192
-    Processor: KSTREAM-PROCESSOR-0000000196 (stores: [])
-      --> KSTREAM-SINK-0000000197
-      <-- KSTREAM-MAPVALUES-0000000195
-    Processor: KSTREAM-PROCESSOR-0000000200 (stores: [])
-      --> KSTREAM-SINK-0000000201
-      <-- KSTREAM-MAPVALUES-0000000199
-    Processor: KSTREAM-PROCESSOR-0000000203 (stores: [])
-      --> KSTREAM-SINK-0000000204
-      <-- KSTREAM-FLATMAP-0000000202
-    Processor: KSTREAM-PROCESSOR-0000000207 (stores: [])
-      --> KSTREAM-SINK-0000000208
-      <-- KSTREAM-MAPVALUES-0000000206
-    Sink: KSTREAM-SINK-0000000188 (topic: helved.pending-utbetalinger.v1)
-      <-- KSTREAM-PROCESSOR-0000000187
-    Sink: KSTREAM-SINK-0000000191 (topic: helved.simuleringer.v1)
-      <-- KSTREAM-PROCESSOR-0000000190
-    Sink: KSTREAM-SINK-0000000194 (topic: helved.oppdrag.v1)
-      <-- KSTREAM-PROCESSOR-0000000193
-    Sink: KSTREAM-SINK-0000000197 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000196
-    Sink: KSTREAM-SINK-0000000201 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000200
-    Sink: KSTREAM-SINK-0000000204 (topic: helved.fk.v1)
-      <-- KSTREAM-PROCESSOR-0000000203
-    Sink: KSTREAM-SINK-0000000208 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000207
+    Processor: KSTREAM-MAPVALUES-0000000182 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000183
+      <-- KSTREAM-KEY-SELECT-0000000181
+    Processor: KSTREAM-PROCESSOR-0000000183 (stores: [])
+      --> KSTREAM-BRANCH-0000000184
+      <-- KSTREAM-MAPVALUES-0000000182
+    Processor: KSTREAM-BRANCH-0000000184 (stores: [])
+      --> KSTREAM-BRANCH-00000001841, KSTREAM-BRANCH-00000001840
+      <-- KSTREAM-PROCESSOR-0000000183
+    Processor: KSTREAM-BRANCH-00000001841 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000186
+      <-- KSTREAM-BRANCH-0000000184
+    Processor: KSTREAM-MAPVALUES-0000000186 (stores: [])
+      --> KSTREAM-FILTER-0000000199, KSTREAM-FLATMAPVALUES-0000000193, KSTREAM-FLATMAP-0000000203, KSTREAM-FLATMAP-0000000187, KSTREAM-FLATMAPVALUES-0000000190
+      <-- KSTREAM-BRANCH-00000001841
+    Processor: KSTREAM-FLATMAPVALUES-0000000193 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000196, KSTREAM-PROCESSOR-0000000194
+      <-- KSTREAM-MAPVALUES-0000000186
+    Processor: KSTREAM-BRANCH-00000001840 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000207
+      <-- KSTREAM-BRANCH-0000000184
+    Processor: KSTREAM-FILTER-0000000199 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000200
+      <-- KSTREAM-MAPVALUES-0000000186
+    Processor: KSTREAM-FLATMAP-0000000187 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000188
+      <-- KSTREAM-MAPVALUES-0000000186
+    Processor: KSTREAM-FLATMAP-0000000203 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000204
+      <-- KSTREAM-MAPVALUES-0000000186
+    Processor: KSTREAM-FLATMAPVALUES-0000000190 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000191
+      <-- KSTREAM-MAPVALUES-0000000186
+    Processor: KSTREAM-MAPVALUES-0000000196 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000197
+      <-- KSTREAM-FLATMAPVALUES-0000000193
+    Processor: KSTREAM-MAPVALUES-0000000200 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000201
+      <-- KSTREAM-FILTER-0000000199
+    Processor: KSTREAM-MAPVALUES-0000000207 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000208
+      <-- KSTREAM-BRANCH-00000001840
+    Processor: KSTREAM-PROCESSOR-0000000188 (stores: [])
+      --> KSTREAM-SINK-0000000189
+      <-- KSTREAM-FLATMAP-0000000187
+    Processor: KSTREAM-PROCESSOR-0000000191 (stores: [])
+      --> KSTREAM-SINK-0000000192
+      <-- KSTREAM-FLATMAPVALUES-0000000190
+    Processor: KSTREAM-PROCESSOR-0000000194 (stores: [])
+      --> KSTREAM-SINK-0000000195
+      <-- KSTREAM-FLATMAPVALUES-0000000193
+    Processor: KSTREAM-PROCESSOR-0000000197 (stores: [])
+      --> KSTREAM-SINK-0000000198
+      <-- KSTREAM-MAPVALUES-0000000196
+    Processor: KSTREAM-PROCESSOR-0000000201 (stores: [])
+      --> KSTREAM-SINK-0000000202
+      <-- KSTREAM-MAPVALUES-0000000200
+    Processor: KSTREAM-PROCESSOR-0000000204 (stores: [])
+      --> KSTREAM-SINK-0000000205
+      <-- KSTREAM-FLATMAP-0000000203
+    Processor: KSTREAM-PROCESSOR-0000000208 (stores: [])
+      --> KSTREAM-SINK-0000000209
+      <-- KSTREAM-MAPVALUES-0000000207
+    Sink: KSTREAM-SINK-0000000189 (topic: helved.pending-utbetalinger.v1)
+      <-- KSTREAM-PROCESSOR-0000000188
+    Sink: KSTREAM-SINK-0000000192 (topic: helved.simuleringer.v1)
+      <-- KSTREAM-PROCESSOR-0000000191
+    Sink: KSTREAM-SINK-0000000195 (topic: helved.oppdrag.v1)
+      <-- KSTREAM-PROCESSOR-0000000194
+    Sink: KSTREAM-SINK-0000000198 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000197
+    Sink: KSTREAM-SINK-0000000202 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000201
+    Sink: KSTREAM-SINK-0000000205 (topic: helved.fk.v1)
+      <-- KSTREAM-PROCESSOR-0000000204
+    Sink: KSTREAM-SINK-0000000209 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000208
 
   Sub-topology: 16
     Source: consume-helved.utbetalinger-tp.v1 (topics: [helved.utbetalinger-tp.v1])
-      --> KSTREAM-PROCESSOR-0000000210
-    Processor: KSTREAM-PROCESSOR-0000000210 (stores: [])
-      --> KSTREAM-FILTER-0000000211
+      --> KSTREAM-PROCESSOR-0000000211
+    Processor: KSTREAM-PROCESSOR-0000000211 (stores: [])
+      --> KSTREAM-FILTER-0000000212
       <-- consume-helved.utbetalinger-tp.v1
-    Processor: KSTREAM-FILTER-0000000211 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000212
-      <-- KSTREAM-PROCESSOR-0000000210
-    Processor: KSTREAM-MAPVALUES-0000000212 (stores: [])
-      --> KSTREAM-KEY-SELECT-0000000213
-      <-- KSTREAM-FILTER-0000000211
-    Processor: KSTREAM-KEY-SELECT-0000000213 (stores: [])
+    Processor: KSTREAM-FILTER-0000000212 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000213
+      <-- KSTREAM-PROCESSOR-0000000211
+    Processor: KSTREAM-MAPVALUES-0000000213 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000214
+      <-- KSTREAM-FILTER-0000000212
+    Processor: KSTREAM-KEY-SELECT-0000000214 (stores: [])
       --> tptuple-leftjoin-saker-repartition-filter
-      <-- KSTREAM-MAPVALUES-0000000212
+      <-- KSTREAM-MAPVALUES-0000000213
     Processor: tptuple-leftjoin-saker-repartition-filter (stores: [])
       --> tptuple-leftjoin-saker-repartition-sink
-      <-- KSTREAM-KEY-SELECT-0000000213
+      <-- KSTREAM-KEY-SELECT-0000000214
     Sink: tptuple-leftjoin-saker-repartition-sink (topic: tptuple-leftjoin-saker-repartition)
       <-- tptuple-leftjoin-saker-repartition-filter
 
@@ -730,136 +733,136 @@ Topologies:
     Source: tp-utbetalinger-session-repartition-source (topics: [tp-utbetalinger-session-repartition])
       --> tp-aggregate-store-v2-reduce
     Processor: tp-aggregate-store-v2-reduce (stores: [tp-aggregate-store-v2-materialized])
-      --> KTABLE-TOSTREAM-0000000230
+      --> KTABLE-TOSTREAM-0000000231
       <-- tp-utbetalinger-session-repartition-source
-    Processor: KTABLE-TOSTREAM-0000000230 (stores: [])
+    Processor: KTABLE-TOSTREAM-0000000231 (stores: [])
       --> tp-aggregate-store-v2-suppress
       <-- tp-aggregate-store-v2-reduce
     Processor: tp-aggregate-store-v2-suppress (stores: [tp-aggregate-store-v2])
       --> tp-aggregate-store-v2-dedup
-      <-- KTABLE-TOSTREAM-0000000230
+      <-- KTABLE-TOSTREAM-0000000231
     Processor: tp-aggregate-store-v2-dedup (stores: [tp-dedup-aggregate-v2])
-      --> KSTREAM-KEY-SELECT-0000000231
+      --> KSTREAM-KEY-SELECT-0000000232
       <-- tp-aggregate-store-v2-suppress
-    Processor: KSTREAM-KEY-SELECT-0000000231 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000232
+    Processor: KSTREAM-KEY-SELECT-0000000232 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000233
       <-- tp-aggregate-store-v2-dedup
-    Processor: KSTREAM-MAPVALUES-0000000232 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000233
-      <-- KSTREAM-KEY-SELECT-0000000231
-    Processor: KSTREAM-PROCESSOR-0000000233 (stores: [])
-      --> KSTREAM-BRANCH-0000000234
-      <-- KSTREAM-MAPVALUES-0000000232
-    Processor: KSTREAM-BRANCH-0000000234 (stores: [])
-      --> KSTREAM-BRANCH-00000002340, KSTREAM-BRANCH-00000002341
-      <-- KSTREAM-PROCESSOR-0000000233
-    Processor: KSTREAM-BRANCH-00000002341 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000236
-      <-- KSTREAM-BRANCH-0000000234
-    Processor: KSTREAM-MAPVALUES-0000000236 (stores: [])
-      --> KSTREAM-FLATMAP-0000000253, KSTREAM-FLATMAPVALUES-0000000243, KSTREAM-FLATMAP-0000000237, KSTREAM-FILTER-0000000249, KSTREAM-FLATMAPVALUES-0000000240
-      <-- KSTREAM-BRANCH-00000002341
-    Processor: KSTREAM-FLATMAPVALUES-0000000243 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000246, KSTREAM-PROCESSOR-0000000244
-      <-- KSTREAM-MAPVALUES-0000000236
-    Processor: KSTREAM-BRANCH-00000002340 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000257
-      <-- KSTREAM-BRANCH-0000000234
-    Processor: KSTREAM-FILTER-0000000249 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000250
-      <-- KSTREAM-MAPVALUES-0000000236
-    Processor: KSTREAM-FLATMAP-0000000237 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000238
-      <-- KSTREAM-MAPVALUES-0000000236
-    Processor: KSTREAM-FLATMAP-0000000253 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000254
-      <-- KSTREAM-MAPVALUES-0000000236
-    Processor: KSTREAM-FLATMAPVALUES-0000000240 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000241
-      <-- KSTREAM-MAPVALUES-0000000236
-    Processor: KSTREAM-MAPVALUES-0000000246 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000247
-      <-- KSTREAM-FLATMAPVALUES-0000000243
-    Processor: KSTREAM-MAPVALUES-0000000250 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000251
-      <-- KSTREAM-FILTER-0000000249
-    Processor: KSTREAM-MAPVALUES-0000000257 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000258
-      <-- KSTREAM-BRANCH-00000002340
-    Processor: KSTREAM-PROCESSOR-0000000238 (stores: [])
-      --> KSTREAM-SINK-0000000239
-      <-- KSTREAM-FLATMAP-0000000237
-    Processor: KSTREAM-PROCESSOR-0000000241 (stores: [])
-      --> KSTREAM-SINK-0000000242
-      <-- KSTREAM-FLATMAPVALUES-0000000240
-    Processor: KSTREAM-PROCESSOR-0000000244 (stores: [])
-      --> KSTREAM-SINK-0000000245
-      <-- KSTREAM-FLATMAPVALUES-0000000243
-    Processor: KSTREAM-PROCESSOR-0000000247 (stores: [])
-      --> KSTREAM-SINK-0000000248
-      <-- KSTREAM-MAPVALUES-0000000246
-    Processor: KSTREAM-PROCESSOR-0000000251 (stores: [])
-      --> KSTREAM-SINK-0000000252
-      <-- KSTREAM-MAPVALUES-0000000250
-    Processor: KSTREAM-PROCESSOR-0000000254 (stores: [])
-      --> KSTREAM-SINK-0000000255
-      <-- KSTREAM-FLATMAP-0000000253
-    Processor: KSTREAM-PROCESSOR-0000000258 (stores: [])
-      --> KSTREAM-SINK-0000000259
-      <-- KSTREAM-MAPVALUES-0000000257
-    Sink: KSTREAM-SINK-0000000239 (topic: helved.pending-utbetalinger.v1)
-      <-- KSTREAM-PROCESSOR-0000000238
-    Sink: KSTREAM-SINK-0000000242 (topic: helved.simuleringer.v1)
-      <-- KSTREAM-PROCESSOR-0000000241
-    Sink: KSTREAM-SINK-0000000245 (topic: helved.oppdrag.v1)
-      <-- KSTREAM-PROCESSOR-0000000244
-    Sink: KSTREAM-SINK-0000000248 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000247
-    Sink: KSTREAM-SINK-0000000252 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000251
-    Sink: KSTREAM-SINK-0000000255 (topic: helved.fk.v1)
-      <-- KSTREAM-PROCESSOR-0000000254
-    Sink: KSTREAM-SINK-0000000259 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000258
+    Processor: KSTREAM-MAPVALUES-0000000233 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000234
+      <-- KSTREAM-KEY-SELECT-0000000232
+    Processor: KSTREAM-PROCESSOR-0000000234 (stores: [])
+      --> KSTREAM-BRANCH-0000000235
+      <-- KSTREAM-MAPVALUES-0000000233
+    Processor: KSTREAM-BRANCH-0000000235 (stores: [])
+      --> KSTREAM-BRANCH-00000002351, KSTREAM-BRANCH-00000002350
+      <-- KSTREAM-PROCESSOR-0000000234
+    Processor: KSTREAM-BRANCH-00000002351 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000237
+      <-- KSTREAM-BRANCH-0000000235
+    Processor: KSTREAM-MAPVALUES-0000000237 (stores: [])
+      --> KSTREAM-FLATMAPVALUES-0000000244, KSTREAM-FLATMAP-0000000254, KSTREAM-FLATMAPVALUES-0000000241, KSTREAM-FLATMAP-0000000238, KSTREAM-FILTER-0000000250
+      <-- KSTREAM-BRANCH-00000002351
+    Processor: KSTREAM-FLATMAPVALUES-0000000244 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000247, KSTREAM-PROCESSOR-0000000245
+      <-- KSTREAM-MAPVALUES-0000000237
+    Processor: KSTREAM-BRANCH-00000002350 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000258
+      <-- KSTREAM-BRANCH-0000000235
+    Processor: KSTREAM-FILTER-0000000250 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000251
+      <-- KSTREAM-MAPVALUES-0000000237
+    Processor: KSTREAM-FLATMAP-0000000238 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000239
+      <-- KSTREAM-MAPVALUES-0000000237
+    Processor: KSTREAM-FLATMAP-0000000254 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000255
+      <-- KSTREAM-MAPVALUES-0000000237
+    Processor: KSTREAM-FLATMAPVALUES-0000000241 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000242
+      <-- KSTREAM-MAPVALUES-0000000237
+    Processor: KSTREAM-MAPVALUES-0000000247 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000248
+      <-- KSTREAM-FLATMAPVALUES-0000000244
+    Processor: KSTREAM-MAPVALUES-0000000251 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000252
+      <-- KSTREAM-FILTER-0000000250
+    Processor: KSTREAM-MAPVALUES-0000000258 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000259
+      <-- KSTREAM-BRANCH-00000002350
+    Processor: KSTREAM-PROCESSOR-0000000239 (stores: [])
+      --> KSTREAM-SINK-0000000240
+      <-- KSTREAM-FLATMAP-0000000238
+    Processor: KSTREAM-PROCESSOR-0000000242 (stores: [])
+      --> KSTREAM-SINK-0000000243
+      <-- KSTREAM-FLATMAPVALUES-0000000241
+    Processor: KSTREAM-PROCESSOR-0000000245 (stores: [])
+      --> KSTREAM-SINK-0000000246
+      <-- KSTREAM-FLATMAPVALUES-0000000244
+    Processor: KSTREAM-PROCESSOR-0000000248 (stores: [])
+      --> KSTREAM-SINK-0000000249
+      <-- KSTREAM-MAPVALUES-0000000247
+    Processor: KSTREAM-PROCESSOR-0000000252 (stores: [])
+      --> KSTREAM-SINK-0000000253
+      <-- KSTREAM-MAPVALUES-0000000251
+    Processor: KSTREAM-PROCESSOR-0000000255 (stores: [])
+      --> KSTREAM-SINK-0000000256
+      <-- KSTREAM-FLATMAP-0000000254
+    Processor: KSTREAM-PROCESSOR-0000000259 (stores: [])
+      --> KSTREAM-SINK-0000000260
+      <-- KSTREAM-MAPVALUES-0000000258
+    Sink: KSTREAM-SINK-0000000240 (topic: helved.pending-utbetalinger.v1)
+      <-- KSTREAM-PROCESSOR-0000000239
+    Sink: KSTREAM-SINK-0000000243 (topic: helved.simuleringer.v1)
+      <-- KSTREAM-PROCESSOR-0000000242
+    Sink: KSTREAM-SINK-0000000246 (topic: helved.oppdrag.v1)
+      <-- KSTREAM-PROCESSOR-0000000245
+    Sink: KSTREAM-SINK-0000000249 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000248
+    Sink: KSTREAM-SINK-0000000253 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000252
+    Sink: KSTREAM-SINK-0000000256 (topic: helved.fk.v1)
+      <-- KSTREAM-PROCESSOR-0000000255
+    Sink: KSTREAM-SINK-0000000260 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000259
 
   Sub-topology: 18
     Source: consume-historisk.utbetaling.v1 (topics: [historisk.utbetaling.v1])
-      --> KSTREAM-PROCESSOR-0000000261
-    Processor: KSTREAM-PROCESSOR-0000000261 (stores: [])
-      --> KSTREAM-FILTER-0000000262
+      --> KSTREAM-PROCESSOR-0000000262
+    Processor: KSTREAM-PROCESSOR-0000000262 (stores: [])
+      --> KSTREAM-FILTER-0000000263
       <-- consume-historisk.utbetaling.v1
-    Processor: KSTREAM-FILTER-0000000262 (stores: [])
+    Processor: KSTREAM-FILTER-0000000263 (stores: [])
       --> from-historisk.utbetaling.v1-repartition-filter
-      <-- KSTREAM-PROCESSOR-0000000261
+      <-- KSTREAM-PROCESSOR-0000000262
     Processor: from-historisk.utbetaling.v1-repartition-filter (stores: [])
       --> from-historisk.utbetaling.v1-repartition-sink
-      <-- KSTREAM-FILTER-0000000262
+      <-- KSTREAM-FILTER-0000000263
     Sink: from-historisk.utbetaling.v1-repartition-sink (topic: from-historisk.utbetaling.v1-repartition)
       <-- from-historisk.utbetaling.v1-repartition-filter
 
   Sub-topology: 19
     Source: consume-helved.utbetalinger-historisk.v1 (topics: [helved.utbetalinger-historisk.v1])
-      --> KSTREAM-PROCESSOR-0000000267
-    Processor: KSTREAM-PROCESSOR-0000000267 (stores: [])
-      --> KSTREAM-FILTER-0000000268
+      --> KSTREAM-PROCESSOR-0000000268
+    Processor: KSTREAM-PROCESSOR-0000000268 (stores: [])
+      --> KSTREAM-FILTER-0000000269
       <-- consume-helved.utbetalinger-historisk.v1
-    Processor: KSTREAM-FILTER-0000000268 (stores: [])
-      --> KSTREAM-MERGE-0000000269
-      <-- KSTREAM-PROCESSOR-0000000267
+    Processor: KSTREAM-FILTER-0000000269 (stores: [])
+      --> KSTREAM-MERGE-0000000270
+      <-- KSTREAM-PROCESSOR-0000000268
     Source: from-historisk.utbetaling.v1-repartition-source (topics: [from-historisk.utbetaling.v1-repartition])
-      --> KSTREAM-MERGE-0000000269
-    Processor: KSTREAM-MERGE-0000000269 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000270
-      <-- from-historisk.utbetaling.v1-repartition-source, KSTREAM-FILTER-0000000268
-    Processor: KSTREAM-MAPVALUES-0000000270 (stores: [])
-      --> KSTREAM-KEY-SELECT-0000000271
-      <-- KSTREAM-MERGE-0000000269
-    Processor: KSTREAM-KEY-SELECT-0000000271 (stores: [])
+      --> KSTREAM-MERGE-0000000270
+    Processor: KSTREAM-MERGE-0000000270 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000271
+      <-- from-historisk.utbetaling.v1-repartition-source, KSTREAM-FILTER-0000000269
+    Processor: KSTREAM-MAPVALUES-0000000271 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000272
+      <-- KSTREAM-MERGE-0000000270
+    Processor: KSTREAM-KEY-SELECT-0000000272 (stores: [])
       --> historisktuple-leftjoin-saker-repartition-filter
-      <-- KSTREAM-MAPVALUES-0000000270
+      <-- KSTREAM-MAPVALUES-0000000271
     Processor: historisktuple-leftjoin-saker-repartition-filter (stores: [])
       --> historisktuple-leftjoin-saker-repartition-sink
-      <-- KSTREAM-KEY-SELECT-0000000271
+      <-- KSTREAM-KEY-SELECT-0000000272
     Sink: historisktuple-leftjoin-saker-repartition-sink (topic: historisktuple-leftjoin-saker-repartition)
       <-- historisktuple-leftjoin-saker-repartition-filter
 
@@ -867,134 +870,134 @@ Topologies:
     Source: historisk-utbetalinger-session-repartition-source (topics: [historisk-utbetalinger-session-repartition])
       --> historisk-aggregate-store-v2-reduce
     Processor: historisk-aggregate-store-v2-reduce (stores: [historisk-aggregate-store-v2-materialized])
-      --> KTABLE-TOSTREAM-0000000288
+      --> KTABLE-TOSTREAM-0000000289
       <-- historisk-utbetalinger-session-repartition-source
-    Processor: KTABLE-TOSTREAM-0000000288 (stores: [])
+    Processor: KTABLE-TOSTREAM-0000000289 (stores: [])
       --> historisk-aggregate-store-v2-suppress
       <-- historisk-aggregate-store-v2-reduce
     Processor: historisk-aggregate-store-v2-suppress (stores: [historisk-aggregate-store-v2])
       --> historisk-aggregate-store-v2-dedup
-      <-- KTABLE-TOSTREAM-0000000288
+      <-- KTABLE-TOSTREAM-0000000289
     Processor: historisk-aggregate-store-v2-dedup (stores: [historisk-dedup-aggregate-v2])
-      --> KSTREAM-KEY-SELECT-0000000289
+      --> KSTREAM-KEY-SELECT-0000000290
       <-- historisk-aggregate-store-v2-suppress
-    Processor: KSTREAM-KEY-SELECT-0000000289 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000290
+    Processor: KSTREAM-KEY-SELECT-0000000290 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000291
       <-- historisk-aggregate-store-v2-dedup
-    Processor: KSTREAM-MAPVALUES-0000000290 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000291
-      <-- KSTREAM-KEY-SELECT-0000000289
-    Processor: KSTREAM-PROCESSOR-0000000291 (stores: [])
-      --> KSTREAM-BRANCH-0000000292
-      <-- KSTREAM-MAPVALUES-0000000290
-    Processor: KSTREAM-BRANCH-0000000292 (stores: [])
-      --> KSTREAM-BRANCH-00000002920, KSTREAM-BRANCH-00000002921
-      <-- KSTREAM-PROCESSOR-0000000291
-    Processor: KSTREAM-BRANCH-00000002921 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000294
-      <-- KSTREAM-BRANCH-0000000292
-    Processor: KSTREAM-MAPVALUES-0000000294 (stores: [])
-      --> KSTREAM-FLATMAPVALUES-0000000301, KSTREAM-FILTER-0000000307, KSTREAM-FLATMAP-0000000295, KSTREAM-FLATMAP-0000000311, KSTREAM-FLATMAPVALUES-0000000298
-      <-- KSTREAM-BRANCH-00000002921
-    Processor: KSTREAM-FLATMAPVALUES-0000000301 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000304, KSTREAM-PROCESSOR-0000000302
-      <-- KSTREAM-MAPVALUES-0000000294
-    Processor: KSTREAM-BRANCH-00000002920 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000315
-      <-- KSTREAM-BRANCH-0000000292
-    Processor: KSTREAM-FILTER-0000000307 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000308
-      <-- KSTREAM-MAPVALUES-0000000294
-    Processor: KSTREAM-FLATMAP-0000000295 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000296
-      <-- KSTREAM-MAPVALUES-0000000294
-    Processor: KSTREAM-FLATMAP-0000000311 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000312
-      <-- KSTREAM-MAPVALUES-0000000294
-    Processor: KSTREAM-FLATMAPVALUES-0000000298 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000299
-      <-- KSTREAM-MAPVALUES-0000000294
-    Processor: KSTREAM-MAPVALUES-0000000304 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000305
-      <-- KSTREAM-FLATMAPVALUES-0000000301
-    Processor: KSTREAM-MAPVALUES-0000000308 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000309
-      <-- KSTREAM-FILTER-0000000307
-    Processor: KSTREAM-MAPVALUES-0000000315 (stores: [])
-      --> KSTREAM-PROCESSOR-0000000316
-      <-- KSTREAM-BRANCH-00000002920
-    Processor: KSTREAM-PROCESSOR-0000000296 (stores: [])
-      --> KSTREAM-SINK-0000000297
-      <-- KSTREAM-FLATMAP-0000000295
-    Processor: KSTREAM-PROCESSOR-0000000299 (stores: [])
-      --> KSTREAM-SINK-0000000300
-      <-- KSTREAM-FLATMAPVALUES-0000000298
-    Processor: KSTREAM-PROCESSOR-0000000302 (stores: [])
-      --> KSTREAM-SINK-0000000303
-      <-- KSTREAM-FLATMAPVALUES-0000000301
-    Processor: KSTREAM-PROCESSOR-0000000305 (stores: [])
-      --> KSTREAM-SINK-0000000306
-      <-- KSTREAM-MAPVALUES-0000000304
-    Processor: KSTREAM-PROCESSOR-0000000309 (stores: [])
-      --> KSTREAM-SINK-0000000310
-      <-- KSTREAM-MAPVALUES-0000000308
-    Processor: KSTREAM-PROCESSOR-0000000312 (stores: [])
-      --> KSTREAM-SINK-0000000313
-      <-- KSTREAM-FLATMAP-0000000311
-    Processor: KSTREAM-PROCESSOR-0000000316 (stores: [])
-      --> KSTREAM-SINK-0000000317
-      <-- KSTREAM-MAPVALUES-0000000315
-    Sink: KSTREAM-SINK-0000000297 (topic: helved.pending-utbetalinger.v1)
-      <-- KSTREAM-PROCESSOR-0000000296
-    Sink: KSTREAM-SINK-0000000300 (topic: helved.simuleringer.v1)
-      <-- KSTREAM-PROCESSOR-0000000299
-    Sink: KSTREAM-SINK-0000000303 (topic: helved.oppdrag.v1)
-      <-- KSTREAM-PROCESSOR-0000000302
-    Sink: KSTREAM-SINK-0000000306 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000305
-    Sink: KSTREAM-SINK-0000000310 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000309
-    Sink: KSTREAM-SINK-0000000313 (topic: helved.fk.v1)
-      <-- KSTREAM-PROCESSOR-0000000312
-    Sink: KSTREAM-SINK-0000000317 (topic: helved.status.v1)
-      <-- KSTREAM-PROCESSOR-0000000316
+    Processor: KSTREAM-MAPVALUES-0000000291 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000292
+      <-- KSTREAM-KEY-SELECT-0000000290
+    Processor: KSTREAM-PROCESSOR-0000000292 (stores: [])
+      --> KSTREAM-BRANCH-0000000293
+      <-- KSTREAM-MAPVALUES-0000000291
+    Processor: KSTREAM-BRANCH-0000000293 (stores: [])
+      --> KSTREAM-BRANCH-00000002930, KSTREAM-BRANCH-00000002931
+      <-- KSTREAM-PROCESSOR-0000000292
+    Processor: KSTREAM-BRANCH-00000002931 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000295
+      <-- KSTREAM-BRANCH-0000000293
+    Processor: KSTREAM-MAPVALUES-0000000295 (stores: [])
+      --> KSTREAM-FLATMAPVALUES-0000000302, KSTREAM-FILTER-0000000308, KSTREAM-FLATMAP-0000000296, KSTREAM-FLATMAP-0000000312, KSTREAM-FLATMAPVALUES-0000000299
+      <-- KSTREAM-BRANCH-00000002931
+    Processor: KSTREAM-FLATMAPVALUES-0000000302 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000305, KSTREAM-PROCESSOR-0000000303
+      <-- KSTREAM-MAPVALUES-0000000295
+    Processor: KSTREAM-BRANCH-00000002930 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000316
+      <-- KSTREAM-BRANCH-0000000293
+    Processor: KSTREAM-FILTER-0000000308 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000309
+      <-- KSTREAM-MAPVALUES-0000000295
+    Processor: KSTREAM-FLATMAP-0000000296 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000297
+      <-- KSTREAM-MAPVALUES-0000000295
+    Processor: KSTREAM-FLATMAP-0000000312 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000313
+      <-- KSTREAM-MAPVALUES-0000000295
+    Processor: KSTREAM-FLATMAPVALUES-0000000299 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000300
+      <-- KSTREAM-MAPVALUES-0000000295
+    Processor: KSTREAM-MAPVALUES-0000000305 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000306
+      <-- KSTREAM-FLATMAPVALUES-0000000302
+    Processor: KSTREAM-MAPVALUES-0000000309 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000310
+      <-- KSTREAM-FILTER-0000000308
+    Processor: KSTREAM-MAPVALUES-0000000316 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000317
+      <-- KSTREAM-BRANCH-00000002930
+    Processor: KSTREAM-PROCESSOR-0000000297 (stores: [])
+      --> KSTREAM-SINK-0000000298
+      <-- KSTREAM-FLATMAP-0000000296
+    Processor: KSTREAM-PROCESSOR-0000000300 (stores: [])
+      --> KSTREAM-SINK-0000000301
+      <-- KSTREAM-FLATMAPVALUES-0000000299
+    Processor: KSTREAM-PROCESSOR-0000000303 (stores: [])
+      --> KSTREAM-SINK-0000000304
+      <-- KSTREAM-FLATMAPVALUES-0000000302
+    Processor: KSTREAM-PROCESSOR-0000000306 (stores: [])
+      --> KSTREAM-SINK-0000000307
+      <-- KSTREAM-MAPVALUES-0000000305
+    Processor: KSTREAM-PROCESSOR-0000000310 (stores: [])
+      --> KSTREAM-SINK-0000000311
+      <-- KSTREAM-MAPVALUES-0000000309
+    Processor: KSTREAM-PROCESSOR-0000000313 (stores: [])
+      --> KSTREAM-SINK-0000000314
+      <-- KSTREAM-FLATMAP-0000000312
+    Processor: KSTREAM-PROCESSOR-0000000317 (stores: [])
+      --> KSTREAM-SINK-0000000318
+      <-- KSTREAM-MAPVALUES-0000000316
+    Sink: KSTREAM-SINK-0000000298 (topic: helved.pending-utbetalinger.v1)
+      <-- KSTREAM-PROCESSOR-0000000297
+    Sink: KSTREAM-SINK-0000000301 (topic: helved.simuleringer.v1)
+      <-- KSTREAM-PROCESSOR-0000000300
+    Sink: KSTREAM-SINK-0000000304 (topic: helved.oppdrag.v1)
+      <-- KSTREAM-PROCESSOR-0000000303
+    Sink: KSTREAM-SINK-0000000307 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000306
+    Sink: KSTREAM-SINK-0000000311 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000310
+    Sink: KSTREAM-SINK-0000000314 (topic: helved.fk.v1)
+      <-- KSTREAM-PROCESSOR-0000000313
+    Sink: KSTREAM-SINK-0000000318 (topic: helved.status.v1)
+      <-- KSTREAM-PROCESSOR-0000000317
 
   Sub-topology: 21
     Source: consume-helved.oppdrag.v1 (topics: [helved.oppdrag.v1])
-      --> KSTREAM-PROCESSOR-0000000319
-    Processor: KSTREAM-PROCESSOR-0000000319 (stores: [])
-      --> KSTREAM-FILTER-0000000320
-      <-- consume-helved.oppdrag.v1
-    Processor: KSTREAM-FILTER-0000000320 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000320
+    Processor: KSTREAM-PROCESSOR-0000000320 (stores: [])
       --> KSTREAM-FILTER-0000000321
-      <-- KSTREAM-PROCESSOR-0000000319
+      <-- consume-helved.oppdrag.v1
     Processor: KSTREAM-FILTER-0000000321 (stores: [])
-      --> KSTREAM-KEY-SELECT-0000000322
-      <-- KSTREAM-FILTER-0000000320
-    Processor: KSTREAM-KEY-SELECT-0000000322 (stores: [])
-      --> KSTREAM-MAPVALUES-0000000323
+      --> KSTREAM-FILTER-0000000322
+      <-- KSTREAM-PROCESSOR-0000000320
+    Processor: KSTREAM-FILTER-0000000322 (stores: [])
+      --> KSTREAM-KEY-SELECT-0000000323
       <-- KSTREAM-FILTER-0000000321
-    Processor: KSTREAM-MAPVALUES-0000000323 (stores: [])
+    Processor: KSTREAM-KEY-SELECT-0000000323 (stores: [])
+      --> KSTREAM-MAPVALUES-0000000324
+      <-- KSTREAM-FILTER-0000000322
+    Processor: KSTREAM-MAPVALUES-0000000324 (stores: [])
       --> oppdrag-leftjoin-fks-repartition-filter
-      <-- KSTREAM-KEY-SELECT-0000000322
+      <-- KSTREAM-KEY-SELECT-0000000323
     Processor: oppdrag-leftjoin-fks-repartition-filter (stores: [])
       --> oppdrag-leftjoin-fks-repartition-sink
-      <-- KSTREAM-MAPVALUES-0000000323
+      <-- KSTREAM-MAPVALUES-0000000324
     Sink: oppdrag-leftjoin-fks-repartition-sink (topic: oppdrag-leftjoin-fks-repartition)
       <-- oppdrag-leftjoin-fks-repartition-filter
 
   Sub-topology: 22
     Source: consume-helved.saker.v1 (topics: [helved.saker.v1])
-      --> KSTREAM-PROCESSOR-0000000338
-    Processor: KSTREAM-PROCESSOR-0000000338 (stores: [])
       --> KSTREAM-PROCESSOR-0000000339
-      <-- consume-helved.saker.v1
     Processor: KSTREAM-PROCESSOR-0000000339 (stores: [])
+      --> KSTREAM-PROCESSOR-0000000340
+      <-- consume-helved.saker.v1
+    Processor: KSTREAM-PROCESSOR-0000000340 (stores: [])
       --> ktable-helved.saker.v1-repartition-filter
-      <-- KSTREAM-PROCESSOR-0000000338
+      <-- KSTREAM-PROCESSOR-0000000339
     Processor: ktable-helved.saker.v1-repartition-filter (stores: [])
       --> ktable-helved.saker.v1-repartition-sink
-      <-- KSTREAM-PROCESSOR-0000000339
+      <-- KSTREAM-PROCESSOR-0000000340
     Sink: ktable-helved.saker.v1-repartition-sink (topic: ktable-helved.saker.v1-repartition)
       <-- ktable-helved.saker.v1-repartition-filter
 
