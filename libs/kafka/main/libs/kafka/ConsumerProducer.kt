@@ -22,19 +22,24 @@ fun partition(key: String, numberOfPartitions: Int = 3): Int {
     return Utils.toPositive(hash) % numberOfPartitions 
 }
 
+const val NUM_OF_PARTITION = 3
+
 open class KafkaProducer<K: Any, V>(
     private val topic: Topic<K, V & Any>,
     private val producer: Producer<K, V>,
 ): AutoCloseable {
 
-    fun send(key: K, value: V, numberOfPartitions: Int = 3): Boolean {
+    fun send(key: K, value: V): Boolean {
         if (key is String) {
-            val partition = partition(key as String, numberOfPartitions)
+            val partition = partition(key as String, NUM_OF_PARTITION)
             return send(ProducerRecord<K, V>(topic.name, partition, key, value))
         } else {
-            kafkaLog.error("key $key was not string, and we cannot calculate partition. Usingn default", key)
+            kafkaLog.warn("key $key was not string, and we cannot calculate partition. Usingn default", key)
             return send(ProducerRecord<K, V>(topic.name, key, value))
         }
+    }
+    fun send(key: K, value: V, partition: Int): Boolean {
+        return send(ProducerRecord<K, V>(topic.name, partition, key, value))
     }
 
     fun tombstone(key: K, numberOfPartitions: Int = 3): Boolean {
@@ -42,7 +47,7 @@ open class KafkaProducer<K: Any, V>(
             val partition = partition(key as String, numberOfPartitions)
             return send(ProducerRecord<K, V>(topic.name, partition, key, null))
         } else {
-            kafkaLog.error("key $key was not string, and we cannot calculate partition. Usingn default", key)
+            kafkaLog.warn("key $key was not string, and we cannot calculate partition. Usingn default", key)
             return send(ProducerRecord<K, V>(topic.name, key, null))
         }
     }
