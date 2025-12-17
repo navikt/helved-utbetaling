@@ -8,6 +8,7 @@ import org.apache.kafka.streams.processor.StateStore
 import org.apache.kafka.streams.processor.StateStoreContext
 import org.apache.kafka.streams.query.Position
 import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier
+import org.apache.kafka.streams.state.KeyValueIterator
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.Stores
 import org.apache.kafka.streams.state.TimestampedBytesStore
@@ -147,14 +148,29 @@ class TracingTimestampedRocksDBStore(
         }
     }
 
+    override fun all(): KeyValueIterator<Bytes, ByteArray> = TracingKeyValueIterator(inner.all())
+    override fun range(from: Bytes, to: Bytes): KeyValueIterator<Bytes, ByteArray> = TracingKeyValueIterator(inner.range(from, to))
+
+    inner class TracingKeyValueIterator(
+        private val innerIter: KeyValueIterator<Bytes, ByteArray>
+    ): KeyValueIterator<Bytes, ByteArray> {
+        override fun hasNext() = innerIter.hasNext()
+        override fun next(): KeyValue<Bytes, ByteArray> {
+            val next = innerIter.next()
+            val (unwrappedValue, _) = unwrapValueWithTrace(next.value)
+            return KeyValue(next.key, unwrappedValue)
+        }
+        override fun close() = innerIter.close()
+        override fun peekNextKey() = innerIter.peekNextKey()
+        override fun remove() = innerIter.remove()
+    }
+
     override fun name(): String = inner.name()
     override fun init(context: StateStoreContext, root: StateStore) = inner.init(context, root)
     override fun flush() = inner.flush()
     override fun close() = inner.close()
     override fun persistent() = inner.persistent()
     override fun isOpen() = inner.isOpen()
-    override fun range(from: Bytes, to: Bytes) = inner.range(from, to)
-    override fun all() = inner.all()
     override fun approximateNumEntries() = inner.approximateNumEntries()
     override fun putAll(entries: List<KeyValue<Bytes, ByteArray>>) = inner.putAll(entries)
     override fun delete(key: Bytes) = inner.delete(key)
