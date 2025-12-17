@@ -110,6 +110,11 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(loggedStream)
     }
 
+    fun peek(peek: (K, V, Metadata) -> Unit): MappedStream<K, V> {
+        val peeked = stream.process({ PeekMetadataProcessor(peek) })
+        return MappedStream(peeked)
+    }
+
     fun secureLogWithKey(log: Log.(K, V) -> Unit): MappedStream<K, V> {
         val loggedStream = stream.peek ({ key, value -> log.invoke(Log.secure, key, value) })
         return MappedStream(loggedStream)

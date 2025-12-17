@@ -34,9 +34,9 @@ spec:
     periodSeconds: 1
   readiness:
     path: /actuator/ready
-    failureThreshold: 60
-    initialDelay: 1
-    periodSeconds: 1
+    failureThreshold: 120
+    initialDelay: 10
+    periodSeconds: 5
   prometheus:
     path: /actuator/metric
     enabled: true
@@ -48,7 +48,7 @@ spec:
       memory: 1600Mi
     requests:
       memory: 800Mi
-      cpu: 300m
+      cpu: 3000m
   observability:
     autoInstrumentation:
       enabled: true

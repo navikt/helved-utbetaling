@@ -27,6 +27,7 @@ interface Streams : AutoCloseable, KafkaFactory {
 
 class KafkaStreams : Streams {
     private var initiallyStarted: Boolean = false
+    private val restoreListener = RestoreListener()
 
     private lateinit var internalStreams: org.apache.kafka.streams.KafkaStreams
     private lateinit var internalTopology: org.apache.kafka.streams.Topology
@@ -41,12 +42,15 @@ class KafkaStreams : Streams {
     internalStreams = KafkaStreams(internalTopology, config.streamsProperties())
     internalStreams.setUncaughtExceptionHandler(UncaughtHandler())
     internalStreams.setStateListener { state, _ -> if (state == RUNNING) initiallyStarted = true }
-    internalStreams.setGlobalStateRestoreListener(RestoreListener())
+    internalStreams.setGlobalStateRestoreListener(restoreListener)
     internalStreams.start()
     KafkaStreamsMetrics(internalStreams).bindTo(registry)
 }
 
-override fun ready(): Boolean = initiallyStarted && internalStreams.state() in listOf(CREATED, REBALANCING, RUNNING)
+override fun ready(): Boolean { 
+    val state = internalStreams.state()
+    return initiallyStarted && state == RUNNING && !restoreListener.isRestoring()
+}
 override fun live(): Boolean = initiallyStarted && internalStreams.state() != ERROR
 override fun visulize(): TopologyVisulizer = TopologyVisulizer(internalTopology)
 override fun close() = close(45_000)
@@ -108,6 +112,15 @@ class Topology {
         return ConsumedStream(stream.skipTombstone(topic) )
     }
 
+    fun <K: Any, V : Any> mock(topic: Topic<K, V>, includeTombstones: Boolean = false): ConsumedStream<K, V> {
+        val stream = builder
+            .stream(topic.name, topic.consumed("mock-${topic.name}"))
+            .process({ LogConsumeTopicProcessor<K, V>(topic) })
+
+        if (includeTombstones) return ConsumedStream(stream)
+        return ConsumedStream(stream.skipTombstone(topic) )
+    }
+
     fun <K: Any, V : Any> consume(table: Table<K, V>, materializeWithTrace: Boolean = false): KTable<K, V> {
         return builder
             .stream(table.sourceTopicName, table.sourceTopic.consumed())
@@ -115,11 +128,27 @@ class Topology {
             .toKTable(table, materializeWithTrace)
     }
 
-    fun <K: Any, V: Any> globalKTable(table: Table<K, V>, retention: Duration) {
-        builder.globalTable(
+    fun <K: Any, V: Any> globalKTable(
+        table: Table<K, V>,
+        retention: Duration? = null,
+        materializeWithTrace: Boolean = false,
+    ): GlobalKTable<K, V> {
+        if (retention == null) {
+            return GlobalKTable(table, builder.globalTable(
+                table.sourceTopicName,
+                when (materializeWithTrace) {
+                    true -> materializedWithTrace(table)
+                    false -> materialized(table)
+                }
+            ))
+        }
+        return GlobalKTable(table, builder.globalTable(
             table.sourceTopicName,
-            materialized(table).withRetention(retention.toJavaDuration())
-        )
+            when (materializeWithTrace) {
+                true -> materializedWithTrace(table).withRetention(retention.toJavaDuration())
+                false -> materialized(table).withRetention(retention.toJavaDuration())
+            }
+        ))
     }
 
     fun registerInternalTopology(stream: Streams) {
