@@ -161,7 +161,7 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
  * Vi bruker da Oppdraget (requesten) som kafka-key
  */
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds)
+    val suppress = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds, false)
     val dedup = DedupProcessor.supplier(DP_TX_GAP_MS.milliseconds, Stores.dpDedup, false)
 
     consume(Topics.dp)
@@ -250,7 +250,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 }
 
 fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress = SuppressProcessor.supplier(Stores.aapAggregate, AAP_TX_GAP_MS.milliseconds, AAP_TX_GAP_MS.milliseconds)
+    val suppress = SuppressProcessor.supplier(Stores.aapAggregate, AAP_TX_GAP_MS.milliseconds, AAP_TX_GAP_MS.milliseconds, false)
     val dedup = DedupProcessor.supplier(AAP_TX_GAP_MS.milliseconds, Stores.aapDedup, false)
 
     consume(Topics.aap)
@@ -320,7 +320,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
 }
 
 fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress = SuppressProcessor.supplier(Stores.tsAggregate, TS_TX_GAP_MS.milliseconds, TS_TX_GAP_MS.milliseconds)
+    val suppress = SuppressProcessor.supplier(Stores.tsAggregate, TS_TX_GAP_MS.milliseconds, TS_TX_GAP_MS.milliseconds, false)
     val dedup = DedupProcessor.supplier(TS_TX_GAP_MS.milliseconds, Stores.tsDedup, false)
 
     consume(Topics.ts)
@@ -390,7 +390,7 @@ fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 }
 
 fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress = SuppressProcessor.supplier(Stores.historiskAggregate, HISTORISK_TX_GAP_MS.milliseconds, HISTORISK_TX_GAP_MS.milliseconds)
+    val suppress = SuppressProcessor.supplier(Stores.historiskAggregate, HISTORISK_TX_GAP_MS.milliseconds, HISTORISK_TX_GAP_MS.milliseconds, false)
     val dedup = DedupProcessor.supplier(HISTORISK_TX_GAP_MS.milliseconds, Stores.historiskDedup, false)
 
     consume(Topics.historisk)
@@ -463,7 +463,7 @@ fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KT
 }
 
 fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress = SuppressProcessor.supplier(Stores.tpAggregate, TP_TX_GAP_MS.milliseconds, TP_TX_GAP_MS.milliseconds)
+    val suppress = SuppressProcessor.supplier(Stores.tpAggregate, TP_TX_GAP_MS.milliseconds, TP_TX_GAP_MS.milliseconds, false)
     val dedup = DedupProcessor.supplier(TP_TX_GAP_MS.milliseconds, Stores.tpDedup, false)
 
     consume(Topics.tp)

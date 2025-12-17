@@ -7,6 +7,7 @@ import org.apache.kafka.streams.processor.api.Processor
 import org.apache.kafka.streams.processor.api.ProcessorContext
 import org.apache.kafka.streams.processor.api.ProcessorSupplier
 import org.apache.kafka.streams.state.StoreBuilder
+import org.apache.kafka.streams.state.Stores
 import org.apache.kafka.streams.state.TimestampedKeyValueStore
 import org.apache.kafka.streams.state.ValueAndTimestamp
 import kotlin.time.Duration
@@ -23,11 +24,15 @@ class SuppressProcessor<K: Any, V: Any>(
             store: Store<Windowed<K>, List<StreamsPair<V, V?>>>,
             punctuationInterval: Duration,
             inactivityGap: Duration,
+            enableTrace: Boolean,
         ):ProcessorSupplier<Windowed<K>, List<StreamsPair<V, V?>>, K, List<StreamsPair<V, V?>>> {
             return object: ProcessorSupplier<Windowed<K>, List<StreamsPair<V, V?>>, K, List<StreamsPair<V, V?>>> {
 
                 override fun stores(): Set<StoreBuilder<*>> {
-                    val inner = TracingKeyValueStore.supplier(store.name)
+                    val inner = when (enableTrace) {
+                        true -> TracingKeyValueStore.supplier(store.name)
+                        false -> Stores.persistentTimestampedKeyValueStore(store.name)
+                    }
                     return setOf(org.apache.kafka.streams.state.Stores.timestampedKeyValueStoreBuilder(inner, store.serde.key, store.serde.value))
                 }
 
