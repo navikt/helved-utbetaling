@@ -2,7 +2,7 @@ package libs.kafka.processor
 
 import libs.kafka.StateStoreName
 import libs.kafka.Store
-import libs.kafka.TracingTimestampedRocksDBStore
+import libs.kafka.TracingKeyValueStore
 import libs.kafka.kafkaLog
 import org.apache.kafka.streams.processor.PunctuationType
 import org.apache.kafka.streams.processor.api.Processor
@@ -83,7 +83,7 @@ class DedupProcessor<K: Any, V: Any> (
             return object: ProcessorSupplier<K, V, K, V> {
                 override fun stores(): Set<StoreBuilder<*>> { 
                     val inner = when (enableTrace) {
-                        true -> TracingTimestampedRocksDBStore.supplier(store.name)
+                        true -> TracingKeyValueStore.supplier(store.name)
                         false -> Stores.persistentTimestampedKeyValueStore(store.name)
                     }
                     return setOf(Stores.timestampedKeyValueStoreBuilder(inner, store.serde.key, store.serde.value))

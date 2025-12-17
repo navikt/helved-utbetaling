@@ -38,24 +38,24 @@ object Topics {
 }
 
 object Tables {
-    val utbetalinger = Table(Topics.utbetalinger, stateStoreName = "${Topics.utbetalinger.name}-state-store-v2")
-    val pendingUtbetalinger = Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v2")
+    val utbetalinger = Table(Topics.utbetalinger, stateStoreName = "${Topics.utbetalinger.name}-state-store-v3")
+    val pendingUtbetalinger = Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v3")
     val saker = Table(Topics.saker)
-    val fk = Table(Topics.fk, stateStoreName = "${Topics.fk.name}-state-store-v2")
+    val fk = Table(Topics.fk, stateStoreName = "${Topics.fk.name}-state-store-v3")
 }
 
 object Stores {
-    val dpAggregate        = Store("dp-aggregate-store-v2",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val aapAggregate       = Store("aap-aggregate-store-v2",       Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val tsAggregate        = Store("ts-aggregate-store-v2",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val tpAggregate        = Store("tp-aggregate-store-v2",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val historiskAggregate = Store("historisk-aggregate-store-v2", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val dpAggregate        = Store("dp-aggregate-store-v3",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val aapAggregate       = Store("aap-aggregate-store-v3",       Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val tsAggregate        = Store("ts-aggregate-store-v3",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val tpAggregate        = Store("tp-aggregate-store-v3",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val historiskAggregate = Store("historisk-aggregate-store-v3", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
 
-    val aapDedup           = Store("aap-dedup-aggregate-v2",       jsonListStreamsPair<Utbetaling>())
-    val dpDedup            = Store("dp-dedup-aggregate-v2",        jsonListStreamsPair<Utbetaling>())
-    val tpDedup            = Store("tp-dedup-aggregate-v2",        jsonListStreamsPair<Utbetaling>())
-    val tsDedup            = Store("ts-dedup-aggregate-v2",        jsonListStreamsPair<Utbetaling>())
-    val historiskDedup     = Store("historisk-dedup-aggregate-v2", jsonListStreamsPair<Utbetaling>())
+    val aapDedup           = Store("aap-dedup-aggregate-v3",       jsonListStreamsPair<Utbetaling>())
+    val dpDedup            = Store("dp-dedup-aggregate-v3",        jsonListStreamsPair<Utbetaling>())
+    val tpDedup            = Store("tp-dedup-aggregate-v3",        jsonListStreamsPair<Utbetaling>())
+    val tsDedup            = Store("ts-dedup-aggregate-v3",        jsonListStreamsPair<Utbetaling>())
+    val historiskDedup     = Store("historisk-dedup-aggregate-v3", jsonListStreamsPair<Utbetaling>())
 }
 
 fun createTopology(): Topology = topology {

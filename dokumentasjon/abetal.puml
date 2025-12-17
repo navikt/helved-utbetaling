@@ -54,7 +54,7 @@ package "Sub-topology: 0" {
 	ktable_helved_utbetalinger_v1_repartition_filter --> ktable_helved_utbetalinger_v1_repartition_sink
 }
 package "Sub-topology: 1" {
-	database "helved.utbetalinger.v1-state-store-v2" <<State Store>> as helved_utbetalinger_v1_state_store_v2
+	database "helved.utbetalinger.v1-state-store-v3" <<State Store>> as helved_utbetalinger_v1_state_store_v3
 	agent "aap-periode-leftjoin-utbetalinger-repartition-source" <<Source>> as aap_periode_leftjoin_utbetalinger_repartition_source
 	agent "dp-uid-repartition-source" <<Source>> as dp_uid_repartition_source
 	agent "historisk-periode-leftjoin-utbetalinger-repartition-source" <<Source>> as historisk_periode_leftjoin_utbetalinger_repartition_source
@@ -103,12 +103,12 @@ package "Sub-topology: 1" {
 	ktable_helved_utbetalinger_v1_repartition --> ktable_helved_utbetalinger_v1_repartition_source
 	tp_periode_leftjoin_utbetalinger_repartition --> tp_periode_leftjoin_utbetalinger_repartition_source
 	ts_periode_leftjoin_utbetalinger_repartition --> ts_periode_leftjoin_utbetalinger_repartition_source
-	helved_utbetalinger_v1_state_store_v2 -- aap_periode_leftjoin_utbetalinger
-	helved_utbetalinger_v1_state_store_v2 -- dp_periode_leftjoin_utbetalinger
-	helved_utbetalinger_v1_state_store_v2 -- historisk_periode_leftjoin_utbetalinger
-	helved_utbetalinger_v1_state_store_v2 -- ktable_helved_utbetalinger_v1
-	helved_utbetalinger_v1_state_store_v2 -- tp_periode_leftjoin_utbetalinger
-	helved_utbetalinger_v1_state_store_v2 -- ts_periode_leftjoin_utbetalinger
+	helved_utbetalinger_v1_state_store_v3 -- aap_periode_leftjoin_utbetalinger
+	helved_utbetalinger_v1_state_store_v3 -- dp_periode_leftjoin_utbetalinger
+	helved_utbetalinger_v1_state_store_v3 -- historisk_periode_leftjoin_utbetalinger
+	helved_utbetalinger_v1_state_store_v3 -- ktable_helved_utbetalinger_v1
+	helved_utbetalinger_v1_state_store_v3 -- tp_periode_leftjoin_utbetalinger
+	helved_utbetalinger_v1_state_store_v3 -- ts_periode_leftjoin_utbetalinger
 	aap_utbetalinger_session_repartition <-- aap_utbetalinger_session_repartition_sink
 	dp_utbetalinger_session_repartition <-- dp_utbetalinger_session_repartition_sink
 	historisk_utbetalinger_session_repartition <-- historisk_utbetalinger_session_repartition_sink
@@ -164,7 +164,7 @@ package "Sub-topology: 2" {
 	ktable_helved_pending_utbetalinger_v1_repartition_filter --> ktable_helved_pending_utbetalinger_v1_repartition_sink
 }
 package "Sub-topology: 3" {
-	database "helved.pending-utbetalinger.v1-state-store-v2" <<State Store>> as helved_pending_utbetalinger_v1_state_store_v2
+	database "helved.pending-utbetalinger.v1-state-store-v3" <<State Store>> as helved_pending_utbetalinger_v1_state_store_v3
 	agent "pk-leftjoin-pending-repartition-source" <<Source>> as pk_leftjoin_pending_repartition_source
 	agent "pk-leftjoin-pending" <<Processor>> as pk_leftjoin_pending
 	agent "KSTREAM-MAPVALUES-0000000334" <<Processor>> as KSTREAM_MAPVALUES_0000000334
@@ -174,10 +174,10 @@ package "Sub-topology: 3" {
 	agent "KSTREAM-SINK-0000000337" <<Sink>> as KSTREAM_SINK_0000000337
 	agent "ktable-helved.pending-utbetalinger.v1" <<Processor>> as ktable_helved_pending_utbetalinger_v1
 	pk_leftjoin_pending_repartition --> pk_leftjoin_pending_repartition_source
-	helved_pending_utbetalinger_v1_state_store_v2 -- pk_leftjoin_pending
+	helved_pending_utbetalinger_v1_state_store_v3 -- pk_leftjoin_pending
 	ktable_helved_pending_utbetalinger_v1_repartition --> ktable_helved_pending_utbetalinger_v1_repartition_source
 	helved_utbetalinger_v1 <-- KSTREAM_SINK_0000000337
-	helved_pending_utbetalinger_v1_state_store_v2 -- ktable_helved_pending_utbetalinger_v1
+	helved_pending_utbetalinger_v1_state_store_v3 -- ktable_helved_pending_utbetalinger_v1
 	pk_leftjoin_pending_repartition_source --> pk_leftjoin_pending
 	pk_leftjoin_pending --> KSTREAM_MAPVALUES_0000000334
 	KSTREAM_MAPVALUES_0000000334 --> KSTREAM_FILTER_0000000335
@@ -289,7 +289,7 @@ package "Sub-topology: 5" {
 	ktable_helved_fk_v1_repartition_filter --> ktable_helved_fk_v1_repartition_sink
 }
 package "Sub-topology: 6" {
-	database "helved.fk.v1-state-store-v2" <<State Store>> as helved_fk_v1_state_store_v2
+	database "helved.fk.v1-state-store-v3" <<State Store>> as helved_fk_v1_state_store_v3
 	agent "oppdrag-leftjoin-fks-repartition-source" <<Source>> as oppdrag_leftjoin_fks_repartition_source
 	agent "oppdrag-leftjoin-fks" <<Processor>> as oppdrag_leftjoin_fks
 	agent "KSTREAM-FLATMAP-0000000329" <<Processor>> as KSTREAM_FLATMAP_0000000329
@@ -298,9 +298,9 @@ package "Sub-topology: 6" {
 	agent "ktable-helved.fk.v1" <<Processor>> as ktable_helved_fk_v1
 	agent "pk-leftjoin-pending-repartition-sink" <<Sink>> as pk_leftjoin_pending_repartition_sink
 	oppdrag_leftjoin_fks_repartition --> oppdrag_leftjoin_fks_repartition_source
-	helved_fk_v1_state_store_v2 -- oppdrag_leftjoin_fks
+	helved_fk_v1_state_store_v3 -- oppdrag_leftjoin_fks
 	ktable_helved_fk_v1_repartition --> ktable_helved_fk_v1_repartition_source
-	helved_fk_v1_state_store_v2 -- ktable_helved_fk_v1
+	helved_fk_v1_state_store_v3 -- ktable_helved_fk_v1
 	pk_leftjoin_pending_repartition <-- pk_leftjoin_pending_repartition_sink
 	oppdrag_leftjoin_fks_repartition_source --> oppdrag_leftjoin_fks
 	oppdrag_leftjoin_fks --> KSTREAM_FLATMAP_0000000329
@@ -344,14 +344,14 @@ package "Sub-topology: 8" {
 	dptuple_leftjoin_saker_repartition_filter --> dptuple_leftjoin_saker_repartition_sink
 }
 package "Sub-topology: 9" {
-	database "dp-aggregate-store-v2-materialized" <<State Store>> as dp_aggregate_store_v2_materialized
-	database "dp-aggregate-store-v2" <<State Store>> as dp_aggregate_store_v2
-	database "dp-dedup-aggregate-v2" <<State Store>> as dp_dedup_aggregate_v2
+	database "dp-aggregate-store-v3-materialized" <<State Store>> as dp_aggregate_store_v3_materialized
+	database "dp-aggregate-store-v3" <<State Store>> as dp_aggregate_store_v3
+	database "dp-dedup-aggregate-v3" <<State Store>> as dp_dedup_aggregate_v3
 	agent "dp-utbetalinger-session-repartition-source" <<Source>> as dp_utbetalinger_session_repartition_source
-	agent "dp-aggregate-store-v2-reduce" <<Processor>> as dp_aggregate_store_v2_reduce
+	agent "dp-aggregate-store-v3-reduce" <<Processor>> as dp_aggregate_store_v3_reduce
 	agent "KTABLE-TOSTREAM-0000000064" <<Processor>> as KTABLE_TOSTREAM_0000000064
-	agent "dp-aggregate-store-v2-suppress" <<Processor>> as dp_aggregate_store_v2_suppress
-	agent "dp-aggregate-store-v2-dedup" <<Processor>> as dp_aggregate_store_v2_dedup
+	agent "dp-aggregate-store-v3-suppress" <<Processor>> as dp_aggregate_store_v3_suppress
+	agent "dp-aggregate-store-v3-dedup" <<Processor>> as dp_aggregate_store_v3_dedup
 	agent "KSTREAM-KEY-SELECT-0000000065" <<Processor>> as KSTREAM_KEY_SELECT_0000000065
 	agent "KSTREAM-MAPVALUES-0000000066" <<Processor>> as KSTREAM_MAPVALUES_0000000066
 	agent "KSTREAM-PROCESSOR-0000000067" <<Processor>> as KSTREAM_PROCESSOR_0000000067
@@ -382,9 +382,9 @@ package "Sub-topology: 9" {
 	agent "KSTREAM-SINK-0000000089" <<Sink>> as KSTREAM_SINK_0000000089
 	agent "KSTREAM-SINK-0000000093" <<Sink>> as KSTREAM_SINK_0000000093
 	dp_utbetalinger_session_repartition --> dp_utbetalinger_session_repartition_source
-	dp_aggregate_store_v2_materialized -- dp_aggregate_store_v2_reduce
-	dp_aggregate_store_v2 -- dp_aggregate_store_v2_suppress
-	dp_dedup_aggregate_v2 -- dp_aggregate_store_v2_dedup
+	dp_aggregate_store_v3_materialized -- dp_aggregate_store_v3_reduce
+	dp_aggregate_store_v3 -- dp_aggregate_store_v3_suppress
+	dp_dedup_aggregate_v3 -- dp_aggregate_store_v3_dedup
 	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000073
 	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000076
 	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000079
@@ -392,11 +392,11 @@ package "Sub-topology: 9" {
 	helved_status_v1 <-- KSTREAM_SINK_0000000086
 	helved_fk_v1 <-- KSTREAM_SINK_0000000089
 	helved_status_v1 <-- KSTREAM_SINK_0000000093
-	dp_utbetalinger_session_repartition_source --> dp_aggregate_store_v2_reduce
-	dp_aggregate_store_v2_reduce --> KTABLE_TOSTREAM_0000000064
-	KTABLE_TOSTREAM_0000000064 --> dp_aggregate_store_v2_suppress
-	dp_aggregate_store_v2_suppress --> dp_aggregate_store_v2_dedup
-	dp_aggregate_store_v2_dedup --> KSTREAM_KEY_SELECT_0000000065
+	dp_utbetalinger_session_repartition_source --> dp_aggregate_store_v3_reduce
+	dp_aggregate_store_v3_reduce --> KTABLE_TOSTREAM_0000000064
+	KTABLE_TOSTREAM_0000000064 --> dp_aggregate_store_v3_suppress
+	dp_aggregate_store_v3_suppress --> dp_aggregate_store_v3_dedup
+	dp_aggregate_store_v3_dedup --> KSTREAM_KEY_SELECT_0000000065
 	KSTREAM_KEY_SELECT_0000000065 --> KSTREAM_MAPVALUES_0000000066
 	KSTREAM_MAPVALUES_0000000066 --> KSTREAM_PROCESSOR_0000000067
 	KSTREAM_PROCESSOR_0000000067 --> KSTREAM_BRANCH_0000000068
@@ -462,14 +462,14 @@ package "Sub-topology: 11" {
 	aaptuple_leftjoin_saker_repartition_filter --> aaptuple_leftjoin_saker_repartition_sink
 }
 package "Sub-topology: 12" {
-	database "aap-aggregate-store-v2-materialized" <<State Store>> as aap_aggregate_store_v2_materialized
-	database "aap-aggregate-store-v2" <<State Store>> as aap_aggregate_store_v2
-	database "aap-dedup-aggregate-v2" <<State Store>> as aap_dedup_aggregate_v2
+	database "aap-aggregate-store-v3-materialized" <<State Store>> as aap_aggregate_store_v3_materialized
+	database "aap-aggregate-store-v3" <<State Store>> as aap_aggregate_store_v3
+	database "aap-dedup-aggregate-v3" <<State Store>> as aap_dedup_aggregate_v3
 	agent "aap-utbetalinger-session-repartition-source" <<Source>> as aap_utbetalinger_session_repartition_source
-	agent "aap-aggregate-store-v2-reduce" <<Processor>> as aap_aggregate_store_v2_reduce
+	agent "aap-aggregate-store-v3-reduce" <<Processor>> as aap_aggregate_store_v3_reduce
 	agent "KTABLE-TOSTREAM-0000000122" <<Processor>> as KTABLE_TOSTREAM_0000000122
-	agent "aap-aggregate-store-v2-suppress" <<Processor>> as aap_aggregate_store_v2_suppress
-	agent "aap-aggregate-store-v2-dedup" <<Processor>> as aap_aggregate_store_v2_dedup
+	agent "aap-aggregate-store-v3-suppress" <<Processor>> as aap_aggregate_store_v3_suppress
+	agent "aap-aggregate-store-v3-dedup" <<Processor>> as aap_aggregate_store_v3_dedup
 	agent "KSTREAM-KEY-SELECT-0000000123" <<Processor>> as KSTREAM_KEY_SELECT_0000000123
 	agent "KSTREAM-MAPVALUES-0000000124" <<Processor>> as KSTREAM_MAPVALUES_0000000124
 	agent "KSTREAM-PROCESSOR-0000000125" <<Processor>> as KSTREAM_PROCESSOR_0000000125
@@ -500,9 +500,9 @@ package "Sub-topology: 12" {
 	agent "KSTREAM-SINK-0000000147" <<Sink>> as KSTREAM_SINK_0000000147
 	agent "KSTREAM-SINK-0000000151" <<Sink>> as KSTREAM_SINK_0000000151
 	aap_utbetalinger_session_repartition --> aap_utbetalinger_session_repartition_source
-	aap_aggregate_store_v2_materialized -- aap_aggregate_store_v2_reduce
-	aap_aggregate_store_v2 -- aap_aggregate_store_v2_suppress
-	aap_dedup_aggregate_v2 -- aap_aggregate_store_v2_dedup
+	aap_aggregate_store_v3_materialized -- aap_aggregate_store_v3_reduce
+	aap_aggregate_store_v3 -- aap_aggregate_store_v3_suppress
+	aap_dedup_aggregate_v3 -- aap_aggregate_store_v3_dedup
 	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000131
 	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000134
 	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000137
@@ -510,11 +510,11 @@ package "Sub-topology: 12" {
 	helved_status_v1 <-- KSTREAM_SINK_0000000144
 	helved_fk_v1 <-- KSTREAM_SINK_0000000147
 	helved_status_v1 <-- KSTREAM_SINK_0000000151
-	aap_utbetalinger_session_repartition_source --> aap_aggregate_store_v2_reduce
-	aap_aggregate_store_v2_reduce --> KTABLE_TOSTREAM_0000000122
-	KTABLE_TOSTREAM_0000000122 --> aap_aggregate_store_v2_suppress
-	aap_aggregate_store_v2_suppress --> aap_aggregate_store_v2_dedup
-	aap_aggregate_store_v2_dedup --> KSTREAM_KEY_SELECT_0000000123
+	aap_utbetalinger_session_repartition_source --> aap_aggregate_store_v3_reduce
+	aap_aggregate_store_v3_reduce --> KTABLE_TOSTREAM_0000000122
+	KTABLE_TOSTREAM_0000000122 --> aap_aggregate_store_v3_suppress
+	aap_aggregate_store_v3_suppress --> aap_aggregate_store_v3_dedup
+	aap_aggregate_store_v3_dedup --> KSTREAM_KEY_SELECT_0000000123
 	KSTREAM_KEY_SELECT_0000000123 --> KSTREAM_MAPVALUES_0000000124
 	KSTREAM_MAPVALUES_0000000124 --> KSTREAM_PROCESSOR_0000000125
 	KSTREAM_PROCESSOR_0000000125 --> KSTREAM_BRANCH_0000000126
@@ -580,14 +580,14 @@ package "Sub-topology: 14" {
 	tstuple_leftjoin_saker_repartition_filter --> tstuple_leftjoin_saker_repartition_sink
 }
 package "Sub-topology: 15" {
-	database "ts-aggregate-store-v2-materialized" <<State Store>> as ts_aggregate_store_v2_materialized
-	database "ts-aggregate-store-v2" <<State Store>> as ts_aggregate_store_v2
-	database "ts-dedup-aggregate-v2" <<State Store>> as ts_dedup_aggregate_v2
+	database "ts-aggregate-store-v3-materialized" <<State Store>> as ts_aggregate_store_v3_materialized
+	database "ts-aggregate-store-v3" <<State Store>> as ts_aggregate_store_v3
+	database "ts-dedup-aggregate-v3" <<State Store>> as ts_dedup_aggregate_v3
 	agent "ts-utbetalinger-session-repartition-source" <<Source>> as ts_utbetalinger_session_repartition_source
-	agent "ts-aggregate-store-v2-reduce" <<Processor>> as ts_aggregate_store_v2_reduce
+	agent "ts-aggregate-store-v3-reduce" <<Processor>> as ts_aggregate_store_v3_reduce
 	agent "KTABLE-TOSTREAM-0000000180" <<Processor>> as KTABLE_TOSTREAM_0000000180
-	agent "ts-aggregate-store-v2-suppress" <<Processor>> as ts_aggregate_store_v2_suppress
-	agent "ts-aggregate-store-v2-dedup" <<Processor>> as ts_aggregate_store_v2_dedup
+	agent "ts-aggregate-store-v3-suppress" <<Processor>> as ts_aggregate_store_v3_suppress
+	agent "ts-aggregate-store-v3-dedup" <<Processor>> as ts_aggregate_store_v3_dedup
 	agent "KSTREAM-KEY-SELECT-0000000181" <<Processor>> as KSTREAM_KEY_SELECT_0000000181
 	agent "KSTREAM-MAPVALUES-0000000182" <<Processor>> as KSTREAM_MAPVALUES_0000000182
 	agent "KSTREAM-PROCESSOR-0000000183" <<Processor>> as KSTREAM_PROCESSOR_0000000183
@@ -618,9 +618,9 @@ package "Sub-topology: 15" {
 	agent "KSTREAM-SINK-0000000205" <<Sink>> as KSTREAM_SINK_0000000205
 	agent "KSTREAM-SINK-0000000209" <<Sink>> as KSTREAM_SINK_0000000209
 	ts_utbetalinger_session_repartition --> ts_utbetalinger_session_repartition_source
-	ts_aggregate_store_v2_materialized -- ts_aggregate_store_v2_reduce
-	ts_aggregate_store_v2 -- ts_aggregate_store_v2_suppress
-	ts_dedup_aggregate_v2 -- ts_aggregate_store_v2_dedup
+	ts_aggregate_store_v3_materialized -- ts_aggregate_store_v3_reduce
+	ts_aggregate_store_v3 -- ts_aggregate_store_v3_suppress
+	ts_dedup_aggregate_v3 -- ts_aggregate_store_v3_dedup
 	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000189
 	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000192
 	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000195
@@ -628,11 +628,11 @@ package "Sub-topology: 15" {
 	helved_status_v1 <-- KSTREAM_SINK_0000000202
 	helved_fk_v1 <-- KSTREAM_SINK_0000000205
 	helved_status_v1 <-- KSTREAM_SINK_0000000209
-	ts_utbetalinger_session_repartition_source --> ts_aggregate_store_v2_reduce
-	ts_aggregate_store_v2_reduce --> KTABLE_TOSTREAM_0000000180
-	KTABLE_TOSTREAM_0000000180 --> ts_aggregate_store_v2_suppress
-	ts_aggregate_store_v2_suppress --> ts_aggregate_store_v2_dedup
-	ts_aggregate_store_v2_dedup --> KSTREAM_KEY_SELECT_0000000181
+	ts_utbetalinger_session_repartition_source --> ts_aggregate_store_v3_reduce
+	ts_aggregate_store_v3_reduce --> KTABLE_TOSTREAM_0000000180
+	KTABLE_TOSTREAM_0000000180 --> ts_aggregate_store_v3_suppress
+	ts_aggregate_store_v3_suppress --> ts_aggregate_store_v3_dedup
+	ts_aggregate_store_v3_dedup --> KSTREAM_KEY_SELECT_0000000181
 	KSTREAM_KEY_SELECT_0000000181 --> KSTREAM_MAPVALUES_0000000182
 	KSTREAM_MAPVALUES_0000000182 --> KSTREAM_PROCESSOR_0000000183
 	KSTREAM_PROCESSOR_0000000183 --> KSTREAM_BRANCH_0000000184
@@ -680,14 +680,14 @@ package "Sub-topology: 16" {
 	tptuple_leftjoin_saker_repartition_filter --> tptuple_leftjoin_saker_repartition_sink
 }
 package "Sub-topology: 17" {
-	database "tp-aggregate-store-v2-materialized" <<State Store>> as tp_aggregate_store_v2_materialized
-	database "tp-aggregate-store-v2" <<State Store>> as tp_aggregate_store_v2
-	database "tp-dedup-aggregate-v2" <<State Store>> as tp_dedup_aggregate_v2
+	database "tp-aggregate-store-v3-materialized" <<State Store>> as tp_aggregate_store_v3_materialized
+	database "tp-aggregate-store-v3" <<State Store>> as tp_aggregate_store_v3
+	database "tp-dedup-aggregate-v3" <<State Store>> as tp_dedup_aggregate_v3
 	agent "tp-utbetalinger-session-repartition-source" <<Source>> as tp_utbetalinger_session_repartition_source
-	agent "tp-aggregate-store-v2-reduce" <<Processor>> as tp_aggregate_store_v2_reduce
+	agent "tp-aggregate-store-v3-reduce" <<Processor>> as tp_aggregate_store_v3_reduce
 	agent "KTABLE-TOSTREAM-0000000231" <<Processor>> as KTABLE_TOSTREAM_0000000231
-	agent "tp-aggregate-store-v2-suppress" <<Processor>> as tp_aggregate_store_v2_suppress
-	agent "tp-aggregate-store-v2-dedup" <<Processor>> as tp_aggregate_store_v2_dedup
+	agent "tp-aggregate-store-v3-suppress" <<Processor>> as tp_aggregate_store_v3_suppress
+	agent "tp-aggregate-store-v3-dedup" <<Processor>> as tp_aggregate_store_v3_dedup
 	agent "KSTREAM-KEY-SELECT-0000000232" <<Processor>> as KSTREAM_KEY_SELECT_0000000232
 	agent "KSTREAM-MAPVALUES-0000000233" <<Processor>> as KSTREAM_MAPVALUES_0000000233
 	agent "KSTREAM-PROCESSOR-0000000234" <<Processor>> as KSTREAM_PROCESSOR_0000000234
@@ -718,9 +718,9 @@ package "Sub-topology: 17" {
 	agent "KSTREAM-SINK-0000000256" <<Sink>> as KSTREAM_SINK_0000000256
 	agent "KSTREAM-SINK-0000000260" <<Sink>> as KSTREAM_SINK_0000000260
 	tp_utbetalinger_session_repartition --> tp_utbetalinger_session_repartition_source
-	tp_aggregate_store_v2_materialized -- tp_aggregate_store_v2_reduce
-	tp_aggregate_store_v2 -- tp_aggregate_store_v2_suppress
-	tp_dedup_aggregate_v2 -- tp_aggregate_store_v2_dedup
+	tp_aggregate_store_v3_materialized -- tp_aggregate_store_v3_reduce
+	tp_aggregate_store_v3 -- tp_aggregate_store_v3_suppress
+	tp_dedup_aggregate_v3 -- tp_aggregate_store_v3_dedup
 	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000240
 	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000243
 	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000246
@@ -728,11 +728,11 @@ package "Sub-topology: 17" {
 	helved_status_v1 <-- KSTREAM_SINK_0000000253
 	helved_fk_v1 <-- KSTREAM_SINK_0000000256
 	helved_status_v1 <-- KSTREAM_SINK_0000000260
-	tp_utbetalinger_session_repartition_source --> tp_aggregate_store_v2_reduce
-	tp_aggregate_store_v2_reduce --> KTABLE_TOSTREAM_0000000231
-	KTABLE_TOSTREAM_0000000231 --> tp_aggregate_store_v2_suppress
-	tp_aggregate_store_v2_suppress --> tp_aggregate_store_v2_dedup
-	tp_aggregate_store_v2_dedup --> KSTREAM_KEY_SELECT_0000000232
+	tp_utbetalinger_session_repartition_source --> tp_aggregate_store_v3_reduce
+	tp_aggregate_store_v3_reduce --> KTABLE_TOSTREAM_0000000231
+	KTABLE_TOSTREAM_0000000231 --> tp_aggregate_store_v3_suppress
+	tp_aggregate_store_v3_suppress --> tp_aggregate_store_v3_dedup
+	tp_aggregate_store_v3_dedup --> KSTREAM_KEY_SELECT_0000000232
 	KSTREAM_KEY_SELECT_0000000232 --> KSTREAM_MAPVALUES_0000000233
 	KSTREAM_MAPVALUES_0000000233 --> KSTREAM_PROCESSOR_0000000234
 	KSTREAM_PROCESSOR_0000000234 --> KSTREAM_BRANCH_0000000235
@@ -798,14 +798,14 @@ package "Sub-topology: 19" {
 	historisktuple_leftjoin_saker_repartition_filter --> historisktuple_leftjoin_saker_repartition_sink
 }
 package "Sub-topology: 20" {
-	database "historisk-aggregate-store-v2-materialized" <<State Store>> as historisk_aggregate_store_v2_materialized
-	database "historisk-aggregate-store-v2" <<State Store>> as historisk_aggregate_store_v2
-	database "historisk-dedup-aggregate-v2" <<State Store>> as historisk_dedup_aggregate_v2
+	database "historisk-aggregate-store-v3-materialized" <<State Store>> as historisk_aggregate_store_v3_materialized
+	database "historisk-aggregate-store-v3" <<State Store>> as historisk_aggregate_store_v3
+	database "historisk-dedup-aggregate-v3" <<State Store>> as historisk_dedup_aggregate_v3
 	agent "historisk-utbetalinger-session-repartition-source" <<Source>> as historisk_utbetalinger_session_repartition_source
-	agent "historisk-aggregate-store-v2-reduce" <<Processor>> as historisk_aggregate_store_v2_reduce
+	agent "historisk-aggregate-store-v3-reduce" <<Processor>> as historisk_aggregate_store_v3_reduce
 	agent "KTABLE-TOSTREAM-0000000289" <<Processor>> as KTABLE_TOSTREAM_0000000289
-	agent "historisk-aggregate-store-v2-suppress" <<Processor>> as historisk_aggregate_store_v2_suppress
-	agent "historisk-aggregate-store-v2-dedup" <<Processor>> as historisk_aggregate_store_v2_dedup
+	agent "historisk-aggregate-store-v3-suppress" <<Processor>> as historisk_aggregate_store_v3_suppress
+	agent "historisk-aggregate-store-v3-dedup" <<Processor>> as historisk_aggregate_store_v3_dedup
 	agent "KSTREAM-KEY-SELECT-0000000290" <<Processor>> as KSTREAM_KEY_SELECT_0000000290
 	agent "KSTREAM-MAPVALUES-0000000291" <<Processor>> as KSTREAM_MAPVALUES_0000000291
 	agent "KSTREAM-PROCESSOR-0000000292" <<Processor>> as KSTREAM_PROCESSOR_0000000292
@@ -836,9 +836,9 @@ package "Sub-topology: 20" {
 	agent "KSTREAM-SINK-0000000314" <<Sink>> as KSTREAM_SINK_0000000314
 	agent "KSTREAM-SINK-0000000318" <<Sink>> as KSTREAM_SINK_0000000318
 	historisk_utbetalinger_session_repartition --> historisk_utbetalinger_session_repartition_source
-	historisk_aggregate_store_v2_materialized -- historisk_aggregate_store_v2_reduce
-	historisk_aggregate_store_v2 -- historisk_aggregate_store_v2_suppress
-	historisk_dedup_aggregate_v2 -- historisk_aggregate_store_v2_dedup
+	historisk_aggregate_store_v3_materialized -- historisk_aggregate_store_v3_reduce
+	historisk_aggregate_store_v3 -- historisk_aggregate_store_v3_suppress
+	historisk_dedup_aggregate_v3 -- historisk_aggregate_store_v3_dedup
 	helved_pending_utbetalinger_v1 <-- KSTREAM_SINK_0000000298
 	helved_simuleringer_v1 <-- KSTREAM_SINK_0000000301
 	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000304
@@ -846,11 +846,11 @@ package "Sub-topology: 20" {
 	helved_status_v1 <-- KSTREAM_SINK_0000000311
 	helved_fk_v1 <-- KSTREAM_SINK_0000000314
 	helved_status_v1 <-- KSTREAM_SINK_0000000318
-	historisk_utbetalinger_session_repartition_source --> historisk_aggregate_store_v2_reduce
-	historisk_aggregate_store_v2_reduce --> KTABLE_TOSTREAM_0000000289
-	KTABLE_TOSTREAM_0000000289 --> historisk_aggregate_store_v2_suppress
-	historisk_aggregate_store_v2_suppress --> historisk_aggregate_store_v2_dedup
-	historisk_aggregate_store_v2_dedup --> KSTREAM_KEY_SELECT_0000000290
+	historisk_utbetalinger_session_repartition_source --> historisk_aggregate_store_v3_reduce
+	historisk_aggregate_store_v3_reduce --> KTABLE_TOSTREAM_0000000289
+	KTABLE_TOSTREAM_0000000289 --> historisk_aggregate_store_v3_suppress
+	historisk_aggregate_store_v3_suppress --> historisk_aggregate_store_v3_dedup
+	historisk_aggregate_store_v3_dedup --> KSTREAM_KEY_SELECT_0000000290
 	KSTREAM_KEY_SELECT_0000000290 --> KSTREAM_MAPVALUES_0000000291
 	KSTREAM_MAPVALUES_0000000291 --> KSTREAM_PROCESSOR_0000000292
 	KSTREAM_PROCESSOR_0000000292 --> KSTREAM_BRANCH_0000000293
