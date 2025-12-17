@@ -4,6 +4,7 @@ import libs.kafka.*
 import libs.kafka.processor.*
 import org.apache.kafka.streams.kstream.Grouped
 import org.apache.kafka.streams.kstream.KStream
+import org.apache.kafka.streams.kstream.Repartitioned
 import org.apache.kafka.streams.kstream.SessionWindowedKStream
 import org.apache.kafka.streams.kstream.SessionWindows
 import kotlin.time.Duration
@@ -58,6 +59,15 @@ class MappedStream<K: Any, V : Any> internal constructor(
     ): JoinedStream<K, V, U?> {
         val joinedStream = stream.leftJoin(named, serdes, right, ::StreamsPair)
         return JoinedStream(joinedStream)
+    }
+
+    fun repartition(
+        keySerde: StreamSerde<K>,
+        valueSerde: StreamSerde<V>,
+        named: String,
+    ): MappedStream<K, V> {
+        val rep = Repartitioned.with(keySerde, valueSerde).withName(Named(named).toString())
+        return MappedStream(stream.repartition(rep))
     }
 
     fun <U : Any> flatMap(mapper: (V) -> Iterable<U>): MappedStream<K, U> {
