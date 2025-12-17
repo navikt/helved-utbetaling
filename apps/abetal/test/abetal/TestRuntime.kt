@@ -39,7 +39,7 @@ object TestRuntime {
             abetal(
                 config = config, 
                 kafka = kafka, 
-                topology = kafka.append(createTopology()) {
+                topology = kafka.append(createTopology(kafka)) {
                     consume(Tables.saker)
                 }
             )

@@ -3,6 +3,7 @@ package libs.kafka
 import libs.utils.env
 import java.util.Properties
 import org.apache.kafka.clients.CommonClientConfigs
+import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.streams.StreamsConfig
@@ -38,6 +39,10 @@ data class StreamsConfig(
 
         // Default is 'INFO' but <record-e2e-latency-*> is recorded in 'DEBUG'
         this[StreamsConfig.METRICS_RECORDING_LEVEL_CONFIG] = "INFO"
+
+        // speed up restoration
+        this[StreamsConfig.restoreConsumerPrefix(ConsumerConfig.FETCH_MAX_BYTES_CONFIG)] = 52428800 // 50 MB
+        this[StreamsConfig.restoreConsumerPrefix(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG)] = 10485760 // 10 MB
 
         /*
          * Enable exactly onces semantics:

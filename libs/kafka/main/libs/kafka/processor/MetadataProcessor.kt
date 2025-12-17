@@ -49,24 +49,26 @@ class EnrichMetadataProcessor<K: Any, V>(
     }
 }
 
-//internal class MetadataProcessor<T : Any>(
-//    topic: Topic<T>,
-//) : Processor<T?, Pair<KeyValue<String, T?>, ProcessorMetadata>>(
-//    "from-${topic.name}-enrich-metadata",
-//) {
-//    override fun process(
-//        metadata: ProcessorMetadata,
-//        keyValue: KeyValue<String, T?>,
-//    ): Pair<KeyValue<String, T?>, ProcessorMetadata> =
-//        keyValue to metadata
-//}
+class PeekMetadataProcessor<K: Any, V>(
+    private val peek: (K, V, Metadata) -> Unit,
+): Processor<K, V, K, V> {
+    private lateinit var context: ProcessorContext<K, V>
 
-// internal class MetadataProcessor<K: Any, V>(): Processor<K, V, Pair<KeyValue<K, V>, ProcessorMetadata>>() {
-//     override fun process(
-//         metadata: ProcessorMetadata,
-//         keyValue: KeyValue<K, V>,
-//     ): Pair<KeyValue<K, V>, ProcessorMetadata> {
-//         return keyValue to metadata 
-//     } 
-//
-// }
+    override fun init(ctx: ProcessorContext<K, V>) {
+        context = ctx
+    }
+
+    override fun process(record: Record<K, V>) {
+        val recordMeta = context.recordMetadata()!!.get()
+        val metadata = Metadata(
+            topic = recordMeta.topic() ?: "",
+            partition = recordMeta.partition(),
+            offset = recordMeta.offset(),
+            timestamp = record.timestamp(),
+            systemTimeMs = context.currentSystemTimeMs(),
+            streamTimeMs = context.currentStreamTimeMs(),
+        )
+        peek(record.key(), record.value(), metadata)
+        context.forward(record)
+    }
+}

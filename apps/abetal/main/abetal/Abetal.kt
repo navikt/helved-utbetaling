@@ -38,7 +38,7 @@ fun main() {
 fun Application.abetal(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    topology: Topology = createTopology(),
+    topology: Topology = createTopology(kafka),
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
