@@ -8,7 +8,7 @@ subgraph Topologi
     helved.utbetalinger.v1([helved.utbetalinger.v1])
 	ktable-helved.utbetalinger.v1-repartition([ktable-helved.utbetalinger.v1-repartition])
 	aap-periode-leftjoin-utbetalinger-repartition([aap-periode-leftjoin-utbetalinger-repartition])
-	dp-periode-leftjoin-utbetalinger-repartition([dp-periode-leftjoin-utbetalinger-repartition])
+	dp-uid-repartition([dp-uid-repartition])
 	historisk-periode-leftjoin-utbetalinger-repartition([historisk-periode-leftjoin-utbetalinger-repartition])
 	tp-periode-leftjoin-utbetalinger-repartition([tp-periode-leftjoin-utbetalinger-repartition])
 	ts-periode-leftjoin-utbetalinger-repartition([ts-periode-leftjoin-utbetalinger-repartition])
@@ -98,7 +98,7 @@ subgraph Topologi
     aap-periode-leftjoin-utbetalinger-repartition --> aap-periode-leftjoin-utbetalinger
 	helved.utbetalinger.v1-state-store-v2 --> aap-periode-leftjoin-utbetalinger
 	aap-periode-leftjoin-utbetalinger --> aap-utbetalinger-session-repartition
-	dp-periode-leftjoin-utbetalinger-repartition --> dp-periode-leftjoin-utbetalinger
+	dp-uid-repartition --> dp-periode-leftjoin-utbetalinger
 	helved.utbetalinger.v1-state-store-v2 --> dp-periode-leftjoin-utbetalinger
 	dp-periode-leftjoin-utbetalinger --> dp-utbetalinger-session-repartition
 	historisk-periode-leftjoin-utbetalinger-repartition --> historisk-periode-leftjoin-utbetalinger
@@ -116,7 +116,7 @@ subgraph Topologi
 	dptuple-leftjoin-saker-repartition --> dptuple-leftjoin-saker
 	helved.saker.v1-state-store-materialized --> dptuple-leftjoin-saker
 	dptuple-leftjoin-saker --> helved.status.v1
-	dptuple-leftjoin-saker --> dp-periode-leftjoin-utbetalinger-repartition
+	dptuple-leftjoin-saker --> dp-uid-repartition
 	aaptuple-leftjoin-saker-repartition --> aaptuple-leftjoin-saker
 	helved.saker.v1-state-store-materialized --> aaptuple-leftjoin-saker
 	aaptuple-leftjoin-saker --> aap-periode-leftjoin-utbetalinger-repartition
@@ -144,12 +144,12 @@ subgraph Topologi
 
     %% REPARTITION STREAMS
     aap-periode-leftjoin-utbetalinger-repartition --> |rekey| aap-utbetalinger-session-repartition
-	dp-periode-leftjoin-utbetalinger-repartition --> |rekey| dp-utbetalinger-session-repartition
+	dp-uid-repartition --> |rekey| dp-utbetalinger-session-repartition
 	historisk-periode-leftjoin-utbetalinger-repartition --> |rekey| historisk-utbetalinger-session-repartition
 	ktable-helved.utbetalinger.v1-repartition --> |rekey| utbetalinger-groupby-sakkey-repartition
 	tp-periode-leftjoin-utbetalinger-repartition --> |rekey| tp-utbetalinger-session-repartition
 	ts-periode-leftjoin-utbetalinger-repartition --> |rekey| ts-utbetalinger-session-repartition
-	dptuple-leftjoin-saker-repartition --> |rekey| dp-periode-leftjoin-utbetalinger-repartition
+	dptuple-leftjoin-saker-repartition --> |rekey| dp-uid-repartition
 	aaptuple-leftjoin-saker-repartition --> |rekey| aap-periode-leftjoin-utbetalinger-repartition
 	historisktuple-leftjoin-saker-repartition --> |rekey| historisk-periode-leftjoin-utbetalinger-repartition
 	tptuple-leftjoin-saker-repartition --> |rekey| tp-periode-leftjoin-utbetalinger-repartition
@@ -191,7 +191,7 @@ end
 style helved.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style ktable-helved.utbetalinger.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style aap-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dp-uid-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style historisk-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style tp-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style ts-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a

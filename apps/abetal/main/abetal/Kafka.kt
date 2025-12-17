@@ -177,6 +177,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         }.default {
             this
                 .flatMapKeyAndValue(::splitOnMeldeperiode)
+                .repartition(Serde.string(), Serde.json(), "dp-uid-repartition")
                 .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
                 .log { key, left, right -> info("left joined $key, match: ${right != null}") }
                 .rekey { new, _ -> 
@@ -258,7 +259,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
         .map { key, aap -> AapTuple(key, aap) }
         .rekey { (_, aap) -> SakKey(SakId(aap.sakId), Fagsystem.AAP) }
         .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
-        .flatMapKeyValue(::splitOnMeldeperiode)
+        .flatMapKeyValue(::splitOnMeldeperiode) // TODO: manual repartition
         .leftJoin(Serde.string(), Serde.json(), utbetalinger, "aap-periode-leftjoin-utbetalinger")
         .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { new, _ -> new.originalKey }
@@ -471,7 +472,7 @@ fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         .map { key, tp -> TpTuple(key, tp) }
         .rekey { (_, tp) -> SakKey(SakId(tp.sakId), Fagsystem.TILTAKSPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
-        .flatMapKeyValue(::splitOnMeldeperiode)
+        .flatMapKeyValue(::splitOnMeldeperiode) // TODO: manual repartition
         .leftJoin(Serde.string(), Serde.json(), utbetalinger, "tp-periode-leftjoin-utbetalinger")
         .filter { (new, prev) -> !new.isDuplicate(prev) }
         .rekey { new, _ -> new.originalKey }

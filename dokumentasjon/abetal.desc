@@ -14,7 +14,7 @@ Topologies:
   Sub-topology: 1
     Source: aap-periode-leftjoin-utbetalinger-repartition-source (topics: [aap-periode-leftjoin-utbetalinger-repartition])
       --> aap-periode-leftjoin-utbetalinger
-    Source: dp-periode-leftjoin-utbetalinger-repartition-source (topics: [dp-periode-leftjoin-utbetalinger-repartition])
+    Source: dp-uid-repartition-source (topics: [dp-uid-repartition])
       --> dp-periode-leftjoin-utbetalinger
     Source: historisk-periode-leftjoin-utbetalinger-repartition-source (topics: [historisk-periode-leftjoin-utbetalinger-repartition])
       --> historisk-periode-leftjoin-utbetalinger
@@ -29,7 +29,7 @@ Topologies:
       <-- aap-periode-leftjoin-utbetalinger-repartition-source
     Processor: dp-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
       --> KSTREAM-PEEK-0000000057
-      <-- dp-periode-leftjoin-utbetalinger-repartition-source
+      <-- dp-uid-repartition-source
     Processor: historisk-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
       --> KSTREAM-FILTER-0000000282
       <-- historisk-periode-leftjoin-utbetalinger-repartition-source
@@ -212,7 +212,7 @@ Topologies:
       --> KSTREAM-PROCESSOR-0000000021
       <-- KTABLE-TOSTREAM-0000000019
     Processor: KSTREAM-FLATMAP-0000000052 (stores: [])
-      --> dp-periode-leftjoin-utbetalinger-repartition-filter
+      --> dp-uid-repartition-filter
       <-- KSTREAM-BRANCH-00000000450
     Processor: KSTREAM-FLATMAP-0000000110 (stores: [])
       --> aap-periode-leftjoin-utbetalinger-repartition-filter
@@ -238,8 +238,8 @@ Topologies:
     Processor: aap-periode-leftjoin-utbetalinger-repartition-filter (stores: [])
       --> aap-periode-leftjoin-utbetalinger-repartition-sink
       <-- KSTREAM-FLATMAP-0000000110
-    Processor: dp-periode-leftjoin-utbetalinger-repartition-filter (stores: [])
-      --> dp-periode-leftjoin-utbetalinger-repartition-sink
+    Processor: dp-uid-repartition-filter (stores: [])
+      --> dp-uid-repartition-sink
       <-- KSTREAM-FLATMAP-0000000052
     Processor: historisk-periode-leftjoin-utbetalinger-repartition-filter (stores: [])
       --> historisk-periode-leftjoin-utbetalinger-repartition-sink
@@ -256,8 +256,8 @@ Topologies:
       <-- KSTREAM-PROCESSOR-0000000049
     Sink: aap-periode-leftjoin-utbetalinger-repartition-sink (topic: aap-periode-leftjoin-utbetalinger-repartition)
       <-- aap-periode-leftjoin-utbetalinger-repartition-filter
-    Sink: dp-periode-leftjoin-utbetalinger-repartition-sink (topic: dp-periode-leftjoin-utbetalinger-repartition)
-      <-- dp-periode-leftjoin-utbetalinger-repartition-filter
+    Sink: dp-uid-repartition-sink (topic: dp-uid-repartition)
+      <-- dp-uid-repartition-filter
     Sink: historisk-periode-leftjoin-utbetalinger-repartition-sink (topic: historisk-periode-leftjoin-utbetalinger-repartition)
       <-- historisk-periode-leftjoin-utbetalinger-repartition-filter
     Sink: tp-periode-leftjoin-utbetalinger-repartition-sink (topic: tp-periode-leftjoin-utbetalinger-repartition)

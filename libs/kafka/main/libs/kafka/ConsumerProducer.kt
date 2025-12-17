@@ -14,22 +14,37 @@ import libs.utils.*
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 import net.logstash.logback.argument.StructuredArguments.kv
+import org.apache.kafka.common.utils.Utils
+
+fun partition(key: String, numberOfPartitions: Int = 3): Int {
+    val bytes = key.toByteArray()
+    val hash = Utils.murmur2(bytes)
+    return Utils.toPositive(hash) % numberOfPartitions 
+}
 
 open class KafkaProducer<K: Any, V>(
     private val topic: Topic<K, V & Any>,
     private val producer: Producer<K, V>,
 ): AutoCloseable {
 
-    fun send(key: K, value: V): Boolean {
-        return send(ProducerRecord<K, V>(topic.name, key, value))
+    fun send(key: K, value: V, numberOfPartitions: Int = 3): Boolean {
+        if (key is String) {
+            val partition = partition(key as String, numberOfPartitions)
+            return send(ProducerRecord<K, V>(topic.name, partition, key, value))
+        } else {
+            kafkaLog.error("key $key was not string, and we cannot calculate partition. Usingn default", key)
+            return send(ProducerRecord<K, V>(topic.name, key, value))
+        }
     }
 
-    fun send(key: K, value: V?, partition: Int) {
-        send(ProducerRecord<K, V>(topic.name, partition, key, value))
-    }
-
-    fun tombstone(key: K): Boolean {
-        return send(ProducerRecord<K, V>(topic.name, key, null))
+    fun tombstone(key: K, numberOfPartitions: Int = 3): Boolean {
+        if (key is String) {
+            val partition = partition(key as String, numberOfPartitions)
+            return send(ProducerRecord<K, V>(topic.name, partition, key, null))
+        } else {
+            kafkaLog.error("key $key was not string, and we cannot calculate partition. Usingn default", key)
+            return send(ProducerRecord<K, V>(topic.name, key, null))
+        }
     }
 
     private fun send(record: ProducerRecord<K, V>): Boolean {
