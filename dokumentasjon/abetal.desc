@@ -24,22 +24,22 @@ Topologies:
       --> tp-periode-leftjoin-utbetalinger
     Source: ts-periode-leftjoin-utbetalinger-repartition-source (topics: [ts-periode-leftjoin-utbetalinger-repartition])
       --> ts-periode-leftjoin-utbetalinger
-    Processor: aap-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
+    Processor: aap-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v3])
       --> KSTREAM-FILTER-0000000115
       <-- aap-periode-leftjoin-utbetalinger-repartition-source
-    Processor: dp-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
+    Processor: dp-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v3])
       --> KSTREAM-PEEK-0000000057
       <-- dp-uid-repartition-source
-    Processor: historisk-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
+    Processor: historisk-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v3])
       --> KSTREAM-FILTER-0000000282
       <-- historisk-periode-leftjoin-utbetalinger-repartition-source
-    Processor: ktable-helved.utbetalinger.v1 (stores: [helved.utbetalinger.v1-state-store-v2])
+    Processor: ktable-helved.utbetalinger.v1 (stores: [helved.utbetalinger.v1-state-store-v3])
       --> KTABLE-TOSTREAM-0000000012
       <-- ktable-helved.utbetalinger.v1-repartition-source
-    Processor: tp-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
+    Processor: tp-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v3])
       --> KSTREAM-FILTER-0000000224
       <-- tp-periode-leftjoin-utbetalinger-repartition-source
-    Processor: ts-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v2])
+    Processor: ts-periode-leftjoin-utbetalinger (stores: [helved.utbetalinger.v1-state-store-v3])
       --> KSTREAM-FILTER-0000000173
       <-- ts-periode-leftjoin-utbetalinger-repartition-source
     Processor: KSTREAM-FILTER-0000000115 (stores: [])
@@ -142,7 +142,7 @@ Topologies:
   Sub-topology: 3
     Source: pk-leftjoin-pending-repartition-source (topics: [pk-leftjoin-pending-repartition])
       --> pk-leftjoin-pending
-    Processor: pk-leftjoin-pending (stores: [helved.pending-utbetalinger.v1-state-store-v2])
+    Processor: pk-leftjoin-pending (stores: [helved.pending-utbetalinger.v1-state-store-v3])
       --> KSTREAM-MAPVALUES-0000000334
       <-- pk-leftjoin-pending-repartition-source
     Processor: KSTREAM-MAPVALUES-0000000334 (stores: [])
@@ -158,7 +158,7 @@ Topologies:
       --> ktable-helved.pending-utbetalinger.v1
     Sink: KSTREAM-SINK-0000000337 (topic: helved.utbetalinger.v1)
       <-- KSTREAM-PROCESSOR-0000000336
-    Processor: ktable-helved.pending-utbetalinger.v1 (stores: [helved.pending-utbetalinger.v1-state-store-v2])
+    Processor: ktable-helved.pending-utbetalinger.v1 (stores: [helved.pending-utbetalinger.v1-state-store-v3])
       --> none
       <-- ktable-helved.pending-utbetalinger.v1-repartition-source
 
@@ -280,7 +280,7 @@ Topologies:
   Sub-topology: 6
     Source: oppdrag-leftjoin-fks-repartition-source (topics: [oppdrag-leftjoin-fks-repartition])
       --> oppdrag-leftjoin-fks
-    Processor: oppdrag-leftjoin-fks (stores: [helved.fk.v1-state-store-v2])
+    Processor: oppdrag-leftjoin-fks (stores: [helved.fk.v1-state-store-v3])
       --> KSTREAM-FLATMAP-0000000329
       <-- oppdrag-leftjoin-fks-repartition-source
     Processor: KSTREAM-FLATMAP-0000000329 (stores: [])
@@ -291,7 +291,7 @@ Topologies:
     Processor: pk-leftjoin-pending-repartition-filter (stores: [])
       --> pk-leftjoin-pending-repartition-sink
       <-- KSTREAM-FLATMAP-0000000329
-    Processor: ktable-helved.fk.v1 (stores: [helved.fk.v1-state-store-v2])
+    Processor: ktable-helved.fk.v1 (stores: [helved.fk.v1-state-store-v3])
       --> none
       <-- ktable-helved.fk.v1-repartition-source
     Sink: pk-leftjoin-pending-repartition-sink (topic: pk-leftjoin-pending-repartition)
@@ -340,22 +340,22 @@ Topologies:
 
   Sub-topology: 9
     Source: dp-utbetalinger-session-repartition-source (topics: [dp-utbetalinger-session-repartition])
-      --> dp-aggregate-store-v2-reduce
-    Processor: dp-aggregate-store-v2-reduce (stores: [dp-aggregate-store-v2-materialized])
+      --> dp-aggregate-store-v3-reduce
+    Processor: dp-aggregate-store-v3-reduce (stores: [dp-aggregate-store-v3-materialized])
       --> KTABLE-TOSTREAM-0000000064
       <-- dp-utbetalinger-session-repartition-source
     Processor: KTABLE-TOSTREAM-0000000064 (stores: [])
-      --> dp-aggregate-store-v2-suppress
-      <-- dp-aggregate-store-v2-reduce
-    Processor: dp-aggregate-store-v2-suppress (stores: [dp-aggregate-store-v2])
-      --> dp-aggregate-store-v2-dedup
+      --> dp-aggregate-store-v3-suppress
+      <-- dp-aggregate-store-v3-reduce
+    Processor: dp-aggregate-store-v3-suppress (stores: [dp-aggregate-store-v3])
+      --> dp-aggregate-store-v3-dedup
       <-- KTABLE-TOSTREAM-0000000064
-    Processor: dp-aggregate-store-v2-dedup (stores: [dp-dedup-aggregate-v2])
+    Processor: dp-aggregate-store-v3-dedup (stores: [dp-dedup-aggregate-v3])
       --> KSTREAM-KEY-SELECT-0000000065
-      <-- dp-aggregate-store-v2-suppress
+      <-- dp-aggregate-store-v3-suppress
     Processor: KSTREAM-KEY-SELECT-0000000065 (stores: [])
       --> KSTREAM-MAPVALUES-0000000066
-      <-- dp-aggregate-store-v2-dedup
+      <-- dp-aggregate-store-v3-dedup
     Processor: KSTREAM-MAPVALUES-0000000066 (stores: [])
       --> KSTREAM-PROCESSOR-0000000067
       <-- KSTREAM-KEY-SELECT-0000000065
@@ -477,22 +477,22 @@ Topologies:
 
   Sub-topology: 12
     Source: aap-utbetalinger-session-repartition-source (topics: [aap-utbetalinger-session-repartition])
-      --> aap-aggregate-store-v2-reduce
-    Processor: aap-aggregate-store-v2-reduce (stores: [aap-aggregate-store-v2-materialized])
+      --> aap-aggregate-store-v3-reduce
+    Processor: aap-aggregate-store-v3-reduce (stores: [aap-aggregate-store-v3-materialized])
       --> KTABLE-TOSTREAM-0000000122
       <-- aap-utbetalinger-session-repartition-source
     Processor: KTABLE-TOSTREAM-0000000122 (stores: [])
-      --> aap-aggregate-store-v2-suppress
-      <-- aap-aggregate-store-v2-reduce
-    Processor: aap-aggregate-store-v2-suppress (stores: [aap-aggregate-store-v2])
-      --> aap-aggregate-store-v2-dedup
+      --> aap-aggregate-store-v3-suppress
+      <-- aap-aggregate-store-v3-reduce
+    Processor: aap-aggregate-store-v3-suppress (stores: [aap-aggregate-store-v3])
+      --> aap-aggregate-store-v3-dedup
       <-- KTABLE-TOSTREAM-0000000122
-    Processor: aap-aggregate-store-v2-dedup (stores: [aap-dedup-aggregate-v2])
+    Processor: aap-aggregate-store-v3-dedup (stores: [aap-dedup-aggregate-v3])
       --> KSTREAM-KEY-SELECT-0000000123
-      <-- aap-aggregate-store-v2-suppress
+      <-- aap-aggregate-store-v3-suppress
     Processor: KSTREAM-KEY-SELECT-0000000123 (stores: [])
       --> KSTREAM-MAPVALUES-0000000124
-      <-- aap-aggregate-store-v2-dedup
+      <-- aap-aggregate-store-v3-dedup
     Processor: KSTREAM-MAPVALUES-0000000124 (stores: [])
       --> KSTREAM-PROCESSOR-0000000125
       <-- KSTREAM-KEY-SELECT-0000000123
@@ -614,22 +614,22 @@ Topologies:
 
   Sub-topology: 15
     Source: ts-utbetalinger-session-repartition-source (topics: [ts-utbetalinger-session-repartition])
-      --> ts-aggregate-store-v2-reduce
-    Processor: ts-aggregate-store-v2-reduce (stores: [ts-aggregate-store-v2-materialized])
+      --> ts-aggregate-store-v3-reduce
+    Processor: ts-aggregate-store-v3-reduce (stores: [ts-aggregate-store-v3-materialized])
       --> KTABLE-TOSTREAM-0000000180
       <-- ts-utbetalinger-session-repartition-source
     Processor: KTABLE-TOSTREAM-0000000180 (stores: [])
-      --> ts-aggregate-store-v2-suppress
-      <-- ts-aggregate-store-v2-reduce
-    Processor: ts-aggregate-store-v2-suppress (stores: [ts-aggregate-store-v2])
-      --> ts-aggregate-store-v2-dedup
+      --> ts-aggregate-store-v3-suppress
+      <-- ts-aggregate-store-v3-reduce
+    Processor: ts-aggregate-store-v3-suppress (stores: [ts-aggregate-store-v3])
+      --> ts-aggregate-store-v3-dedup
       <-- KTABLE-TOSTREAM-0000000180
-    Processor: ts-aggregate-store-v2-dedup (stores: [ts-dedup-aggregate-v2])
+    Processor: ts-aggregate-store-v3-dedup (stores: [ts-dedup-aggregate-v3])
       --> KSTREAM-KEY-SELECT-0000000181
-      <-- ts-aggregate-store-v2-suppress
+      <-- ts-aggregate-store-v3-suppress
     Processor: KSTREAM-KEY-SELECT-0000000181 (stores: [])
       --> KSTREAM-MAPVALUES-0000000182
-      <-- ts-aggregate-store-v2-dedup
+      <-- ts-aggregate-store-v3-dedup
     Processor: KSTREAM-MAPVALUES-0000000182 (stores: [])
       --> KSTREAM-PROCESSOR-0000000183
       <-- KSTREAM-KEY-SELECT-0000000181
@@ -731,22 +731,22 @@ Topologies:
 
   Sub-topology: 17
     Source: tp-utbetalinger-session-repartition-source (topics: [tp-utbetalinger-session-repartition])
-      --> tp-aggregate-store-v2-reduce
-    Processor: tp-aggregate-store-v2-reduce (stores: [tp-aggregate-store-v2-materialized])
+      --> tp-aggregate-store-v3-reduce
+    Processor: tp-aggregate-store-v3-reduce (stores: [tp-aggregate-store-v3-materialized])
       --> KTABLE-TOSTREAM-0000000231
       <-- tp-utbetalinger-session-repartition-source
     Processor: KTABLE-TOSTREAM-0000000231 (stores: [])
-      --> tp-aggregate-store-v2-suppress
-      <-- tp-aggregate-store-v2-reduce
-    Processor: tp-aggregate-store-v2-suppress (stores: [tp-aggregate-store-v2])
-      --> tp-aggregate-store-v2-dedup
+      --> tp-aggregate-store-v3-suppress
+      <-- tp-aggregate-store-v3-reduce
+    Processor: tp-aggregate-store-v3-suppress (stores: [tp-aggregate-store-v3])
+      --> tp-aggregate-store-v3-dedup
       <-- KTABLE-TOSTREAM-0000000231
-    Processor: tp-aggregate-store-v2-dedup (stores: [tp-dedup-aggregate-v2])
+    Processor: tp-aggregate-store-v3-dedup (stores: [tp-dedup-aggregate-v3])
       --> KSTREAM-KEY-SELECT-0000000232
-      <-- tp-aggregate-store-v2-suppress
+      <-- tp-aggregate-store-v3-suppress
     Processor: KSTREAM-KEY-SELECT-0000000232 (stores: [])
       --> KSTREAM-MAPVALUES-0000000233
-      <-- tp-aggregate-store-v2-dedup
+      <-- tp-aggregate-store-v3-dedup
     Processor: KSTREAM-MAPVALUES-0000000233 (stores: [])
       --> KSTREAM-PROCESSOR-0000000234
       <-- KSTREAM-KEY-SELECT-0000000232
@@ -868,22 +868,22 @@ Topologies:
 
   Sub-topology: 20
     Source: historisk-utbetalinger-session-repartition-source (topics: [historisk-utbetalinger-session-repartition])
-      --> historisk-aggregate-store-v2-reduce
-    Processor: historisk-aggregate-store-v2-reduce (stores: [historisk-aggregate-store-v2-materialized])
+      --> historisk-aggregate-store-v3-reduce
+    Processor: historisk-aggregate-store-v3-reduce (stores: [historisk-aggregate-store-v3-materialized])
       --> KTABLE-TOSTREAM-0000000289
       <-- historisk-utbetalinger-session-repartition-source
     Processor: KTABLE-TOSTREAM-0000000289 (stores: [])
-      --> historisk-aggregate-store-v2-suppress
-      <-- historisk-aggregate-store-v2-reduce
-    Processor: historisk-aggregate-store-v2-suppress (stores: [historisk-aggregate-store-v2])
-      --> historisk-aggregate-store-v2-dedup
+      --> historisk-aggregate-store-v3-suppress
+      <-- historisk-aggregate-store-v3-reduce
+    Processor: historisk-aggregate-store-v3-suppress (stores: [historisk-aggregate-store-v3])
+      --> historisk-aggregate-store-v3-dedup
       <-- KTABLE-TOSTREAM-0000000289
-    Processor: historisk-aggregate-store-v2-dedup (stores: [historisk-dedup-aggregate-v2])
+    Processor: historisk-aggregate-store-v3-dedup (stores: [historisk-dedup-aggregate-v3])
       --> KSTREAM-KEY-SELECT-0000000290
-      <-- historisk-aggregate-store-v2-suppress
+      <-- historisk-aggregate-store-v3-suppress
     Processor: KSTREAM-KEY-SELECT-0000000290 (stores: [])
       --> KSTREAM-MAPVALUES-0000000291
-      <-- historisk-aggregate-store-v2-dedup
+      <-- historisk-aggregate-store-v3-dedup
     Processor: KSTREAM-MAPVALUES-0000000291 (stores: [])
       --> KSTREAM-PROCESSOR-0000000292
       <-- KSTREAM-KEY-SELECT-0000000290

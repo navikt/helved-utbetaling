@@ -105,7 +105,7 @@ internal fun <K: Any, V : Any> materialized(
 internal fun <K: Any, V : Any> materializedWithTrace(
     store: Store<K, V>,
 ): Materialized<K, V?, KeyValueStore<Bytes, ByteArray>> {
-    val traceStoreSupplier = TracingTimestampedRocksDBStore.supplier(store.name)
+    val traceStoreSupplier = TracingKeyValueStore.supplier(store.name)
     return Materialized.`as`<K, V>(traceStoreSupplier)
         .withKeySerde(store.serde.key)
         .withValueSerde(store.serde.value)
@@ -122,7 +122,7 @@ internal fun <K: Any, V : Any> materialized(table: Table<K, V>): Materialized<K,
 * This will materialize the value and the traceparent
 */
 internal fun <K: Any, V : Any> materializedWithTrace(table: Table<K, V>): Materialized<K, V?, KeyValueStore<Bytes, ByteArray>> {
-    val traceStoreSupplier = TracingTimestampedRocksDBStore.supplier(table.stateStoreName)
+    val traceStoreSupplier = TracingKeyValueStore.supplier(table.stateStoreName)
     return Materialized.`as`<K, V>(traceStoreSupplier)
         .withKeySerde(table.sourceTopic.serdes.key)
         .withValueSerde(table.sourceTopic.serdes.value)

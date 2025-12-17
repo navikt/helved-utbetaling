@@ -27,7 +27,7 @@ class SuppressProcessor<K: Any, V: Any>(
             return object: ProcessorSupplier<Windowed<K>, List<StreamsPair<V, V?>>, K, List<StreamsPair<V, V?>>> {
 
                 override fun stores(): Set<StoreBuilder<*>> {
-                    val inner = TracingTimestampedRocksDBStore.supplier(store.name)
+                    val inner = TracingKeyValueStore.supplier(store.name)
                     return setOf(org.apache.kafka.streams.state.Stores.timestampedKeyValueStoreBuilder(inner, store.serde.key, store.serde.value))
                 }
 
@@ -63,8 +63,9 @@ class SuppressProcessor<K: Any, V: Any>(
 
             if (wallClockTime > emissionTimeThreshold) {
                 val latestAggregate = valueAndTimestamp.value() 
-                val lastestRecordTimestamp = valueAndTimestamp.timestamp()
-                context.forward(org.apache.kafka.streams.processor.api.Record(windowedKey.key(), latestAggregate, lastestRecordTimestamp))
+                val lastestRecordTimestamp = valueAndTimestamp.timestamp()//.coerceAtLeast(0L)
+                val validTimestamp = if (lastestRecordTimestamp < 0) wallClockTime else lastestRecordTimestamp
+                context.forward(org.apache.kafka.streams.processor.api.Record(windowedKey.key(), latestAggregate, validTimestamp))
                 windowsToEmit.add(windowedKey)
             }
         }

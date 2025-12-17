@@ -66,25 +66,25 @@ subgraph Topologi
     
     
     %% STATE STORES
-    helved.utbetalinger.v1-state-store-v2[(helved.utbetalinger.v1-state-store-v2)]
-	helved.pending-utbetalinger.v1-state-store-v2[(helved.pending-utbetalinger.v1-state-store-v2)]
+    helved.utbetalinger.v1-state-store-v3[(helved.utbetalinger.v1-state-store-v3)]
+	helved.pending-utbetalinger.v1-state-store-v3[(helved.pending-utbetalinger.v1-state-store-v3)]
 	helved.saker.v1-state-store-materialized[(helved.saker.v1-state-store-materialized)]
-	helved.fk.v1-state-store-v2[(helved.fk.v1-state-store-v2)]
-	dp-aggregate-store-v2-materialized[(dp-aggregate-store-v2-materialized)]
-	dp-aggregate-store-v2[(dp-aggregate-store-v2)]
-	dp-dedup-aggregate-v2[(dp-dedup-aggregate-v2)]
-	aap-aggregate-store-v2-materialized[(aap-aggregate-store-v2-materialized)]
-	aap-aggregate-store-v2[(aap-aggregate-store-v2)]
-	aap-dedup-aggregate-v2[(aap-dedup-aggregate-v2)]
-	ts-aggregate-store-v2-materialized[(ts-aggregate-store-v2-materialized)]
-	ts-aggregate-store-v2[(ts-aggregate-store-v2)]
-	ts-dedup-aggregate-v2[(ts-dedup-aggregate-v2)]
-	tp-aggregate-store-v2-materialized[(tp-aggregate-store-v2-materialized)]
-	tp-aggregate-store-v2[(tp-aggregate-store-v2)]
-	tp-dedup-aggregate-v2[(tp-dedup-aggregate-v2)]
-	historisk-aggregate-store-v2-materialized[(historisk-aggregate-store-v2-materialized)]
-	historisk-aggregate-store-v2[(historisk-aggregate-store-v2)]
-	historisk-dedup-aggregate-v2[(historisk-dedup-aggregate-v2)]
+	helved.fk.v1-state-store-v3[(helved.fk.v1-state-store-v3)]
+	dp-aggregate-store-v3-materialized[(dp-aggregate-store-v3-materialized)]
+	dp-aggregate-store-v3[(dp-aggregate-store-v3)]
+	dp-dedup-aggregate-v3[(dp-dedup-aggregate-v3)]
+	aap-aggregate-store-v3-materialized[(aap-aggregate-store-v3-materialized)]
+	aap-aggregate-store-v3[(aap-aggregate-store-v3)]
+	aap-dedup-aggregate-v3[(aap-dedup-aggregate-v3)]
+	ts-aggregate-store-v3-materialized[(ts-aggregate-store-v3-materialized)]
+	ts-aggregate-store-v3[(ts-aggregate-store-v3)]
+	ts-dedup-aggregate-v3[(ts-dedup-aggregate-v3)]
+	tp-aggregate-store-v3-materialized[(tp-aggregate-store-v3-materialized)]
+	tp-aggregate-store-v3[(tp-aggregate-store-v3)]
+	tp-dedup-aggregate-v3[(tp-dedup-aggregate-v3)]
+	historisk-aggregate-store-v3-materialized[(historisk-aggregate-store-v3-materialized)]
+	historisk-aggregate-store-v3[(historisk-aggregate-store-v3)]
+	historisk-dedup-aggregate-v3[(historisk-dedup-aggregate-v3)]
 	helved.saker.v1-state-store[(helved.saker.v1-state-store)]
     
     %% DATABASES
@@ -96,22 +96,22 @@ subgraph Topologi
     
     %% JOIN STREAMS
     aap-periode-leftjoin-utbetalinger-repartition --> aap-periode-leftjoin-utbetalinger
-	helved.utbetalinger.v1-state-store-v2 --> aap-periode-leftjoin-utbetalinger
+	helved.utbetalinger.v1-state-store-v3 --> aap-periode-leftjoin-utbetalinger
 	aap-periode-leftjoin-utbetalinger --> aap-utbetalinger-session-repartition
 	dp-uid-repartition --> dp-periode-leftjoin-utbetalinger
-	helved.utbetalinger.v1-state-store-v2 --> dp-periode-leftjoin-utbetalinger
+	helved.utbetalinger.v1-state-store-v3 --> dp-periode-leftjoin-utbetalinger
 	dp-periode-leftjoin-utbetalinger --> dp-utbetalinger-session-repartition
 	historisk-periode-leftjoin-utbetalinger-repartition --> historisk-periode-leftjoin-utbetalinger
-	helved.utbetalinger.v1-state-store-v2 --> historisk-periode-leftjoin-utbetalinger
+	helved.utbetalinger.v1-state-store-v3 --> historisk-periode-leftjoin-utbetalinger
 	historisk-periode-leftjoin-utbetalinger --> historisk-utbetalinger-session-repartition
 	tp-periode-leftjoin-utbetalinger-repartition --> tp-periode-leftjoin-utbetalinger
-	helved.utbetalinger.v1-state-store-v2 --> tp-periode-leftjoin-utbetalinger
+	helved.utbetalinger.v1-state-store-v3 --> tp-periode-leftjoin-utbetalinger
 	tp-periode-leftjoin-utbetalinger --> tp-utbetalinger-session-repartition
 	ts-periode-leftjoin-utbetalinger-repartition --> ts-periode-leftjoin-utbetalinger
-	helved.utbetalinger.v1-state-store-v2 --> ts-periode-leftjoin-utbetalinger
+	helved.utbetalinger.v1-state-store-v3 --> ts-periode-leftjoin-utbetalinger
 	ts-periode-leftjoin-utbetalinger --> ts-utbetalinger-session-repartition
 	pk-leftjoin-pending-repartition --> pk-leftjoin-pending
-	helved.pending-utbetalinger.v1-state-store-v2 --> pk-leftjoin-pending
+	helved.pending-utbetalinger.v1-state-store-v3 --> pk-leftjoin-pending
 	pk-leftjoin-pending --> helved.utbetalinger.v1
 	dptuple-leftjoin-saker-repartition --> dptuple-leftjoin-saker
 	helved.saker.v1-state-store-materialized --> dptuple-leftjoin-saker
@@ -130,7 +130,7 @@ subgraph Topologi
 	helved.saker.v1-state-store-materialized --> tstuple-leftjoin-saker
 	tstuple-leftjoin-saker --> ts-periode-leftjoin-utbetalinger-repartition
 	oppdrag-leftjoin-fks-repartition --> oppdrag-leftjoin-fks
-	helved.fk.v1-state-store-v2 --> oppdrag-leftjoin-fks
+	helved.fk.v1-state-store-v3 --> oppdrag-leftjoin-fks
 	oppdrag-leftjoin-fks --> pk-leftjoin-pending-repartition
 
     %% TABLE STREAMS
@@ -230,24 +230,24 @@ style historisk.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, co
 style from-historisk.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger-historisk.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style ktable-helved.saker.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.utbetalinger.v1-state-store-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.pending-utbetalinger.v1-state-store-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.utbetalinger.v1-state-store-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.pending-utbetalinger.v1-state-store-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1-state-store-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.fk.v1-state-store-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-aggregate-store-v2-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-aggregate-store-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-dedup-aggregate-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style aap-aggregate-store-v2-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style aap-aggregate-store-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style aap-dedup-aggregate-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style ts-aggregate-store-v2-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style ts-aggregate-store-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style ts-dedup-aggregate-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style tp-aggregate-store-v2-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style tp-aggregate-store-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style tp-dedup-aggregate-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style historisk-aggregate-store-v2-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style historisk-aggregate-store-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style historisk-dedup-aggregate-v2 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.fk.v1-state-store-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dp-aggregate-store-v3-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dp-aggregate-store-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style dp-dedup-aggregate-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style aap-aggregate-store-v3-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style aap-aggregate-store-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style aap-dedup-aggregate-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style ts-aggregate-store-v3-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style ts-aggregate-store-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style ts-dedup-aggregate-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style tp-aggregate-store-v3-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style tp-aggregate-store-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style tp-dedup-aggregate-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style historisk-aggregate-store-v3-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style historisk-aggregate-store-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style historisk-dedup-aggregate-v3 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1-state-store fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 
