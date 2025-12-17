@@ -38,31 +38,31 @@ object Topics {
 }
 
 object Tables {
-    val utbetalinger = Table(Topics.utbetalinger, stateStoreName = "${Topics.utbetalinger.name}-state-store-v3")
-    val pendingUtbetalinger = Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v3")
+    val utbetalinger = Table(Topics.utbetalinger, stateStoreName = "${Topics.utbetalinger.name}-state-store-v4")
+    val pendingUtbetalinger = Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v4")
     val saker = Table(Topics.saker)
-    val fk = Table(Topics.fk, stateStoreName = "${Topics.fk.name}-state-store-v3")
+    val fk = Table(Topics.fk, stateStoreName = "${Topics.fk.name}-state-store-v4")
 }
 
 object Stores {
-    val dpAggregate        = Store("dp-aggregate-store-v3",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val aapAggregate       = Store("aap-aggregate-store-v3",       Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val tsAggregate        = Store("ts-aggregate-store-v3",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val tpAggregate        = Store("tp-aggregate-store-v3",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val historiskAggregate = Store("historisk-aggregate-store-v3", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val dpAggregate        = Store("dp-aggregate-store-v4",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val aapAggregate       = Store("aap-aggregate-store-v4",       Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val tsAggregate        = Store("ts-aggregate-store-v4",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val tpAggregate        = Store("tp-aggregate-store-v4",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
+    val historiskAggregate = Store("historisk-aggregate-store-v4", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
 
-    val aapDedup           = Store("aap-dedup-aggregate-v3",       jsonListStreamsPair<Utbetaling>())
-    val dpDedup            = Store("dp-dedup-aggregate-v3",        jsonListStreamsPair<Utbetaling>())
-    val tpDedup            = Store("tp-dedup-aggregate-v3",        jsonListStreamsPair<Utbetaling>())
-    val tsDedup            = Store("ts-dedup-aggregate-v3",        jsonListStreamsPair<Utbetaling>())
-    val historiskDedup     = Store("historisk-dedup-aggregate-v3", jsonListStreamsPair<Utbetaling>())
+    val aapDedup           = Store("aap-dedup-aggregate-v4",       jsonListStreamsPair<Utbetaling>())
+    val dpDedup            = Store("dp-dedup-aggregate-v4",        jsonListStreamsPair<Utbetaling>())
+    val tpDedup            = Store("tp-dedup-aggregate-v4",        jsonListStreamsPair<Utbetaling>())
+    val tsDedup            = Store("ts-dedup-aggregate-v4",        jsonListStreamsPair<Utbetaling>())
+    val historiskDedup     = Store("historisk-dedup-aggregate-v4", jsonListStreamsPair<Utbetaling>())
 }
 
 fun createTopology(): Topology = topology {
-    val utbetalinger = consume(Tables.utbetalinger, materializeWithTrace = true)
-    val pendingUtbetalinger = consume(Tables.pendingUtbetalinger, materializeWithTrace = true)
+    val utbetalinger = consume(Tables.utbetalinger, materializeWithTrace = false)
+    val pendingUtbetalinger = consume(Tables.pendingUtbetalinger, materializeWithTrace = false)
     val saker = utbetalingToSak(utbetalinger)
-    val fks = consume(Tables.fk, materializeWithTrace = true)
+    val fks = consume(Tables.fk, materializeWithTrace = false)
     dpStream(utbetalinger, saker)
     aapStream(utbetalinger, saker)
     tsStream(utbetalinger, saker)
@@ -162,7 +162,7 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
  */
 fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(DP_TX_GAP_MS.milliseconds, Stores.dpDedup, true)
+    val dedup = DedupProcessor.supplier(DP_TX_GAP_MS.milliseconds, Stores.dpDedup, false)
 
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
@@ -251,7 +251,7 @@ fun Topology.dpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 
 fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.aapAggregate, AAP_TX_GAP_MS.milliseconds, AAP_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(AAP_TX_GAP_MS.milliseconds, Stores.aapDedup, true)
+    val dedup = DedupProcessor.supplier(AAP_TX_GAP_MS.milliseconds, Stores.aapDedup, false)
 
     consume(Topics.aap)
         .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
@@ -321,7 +321,7 @@ fun Topology.aapStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<S
 
 fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.tsAggregate, TS_TX_GAP_MS.milliseconds, TS_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(TS_TX_GAP_MS.milliseconds, Stores.tsDedup, true)
+    val dedup = DedupProcessor.supplier(TS_TX_GAP_MS.milliseconds, Stores.tsDedup, false)
 
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
@@ -391,7 +391,7 @@ fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 
 fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.historiskAggregate, HISTORISK_TX_GAP_MS.milliseconds, HISTORISK_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(HISTORISK_TX_GAP_MS.milliseconds, Stores.historiskDedup, true)
+    val dedup = DedupProcessor.supplier(HISTORISK_TX_GAP_MS.milliseconds, Stores.historiskDedup, false)
 
     consume(Topics.historisk)
         .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
@@ -464,7 +464,7 @@ fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KT
 
 fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
     val suppress = SuppressProcessor.supplier(Stores.tpAggregate, TP_TX_GAP_MS.milliseconds, TP_TX_GAP_MS.milliseconds)
-    val dedup = DedupProcessor.supplier(TP_TX_GAP_MS.milliseconds, Stores.tpDedup, true)
+    val dedup = DedupProcessor.supplier(TP_TX_GAP_MS.milliseconds, Stores.tpDedup, false)
 
     consume(Topics.tp)
         // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
