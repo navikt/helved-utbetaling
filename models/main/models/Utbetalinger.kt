@@ -294,10 +294,18 @@ enum class StønadTypeDagpenger(override val klassekode: String) : Stønadstype 
     DAGPENGER("DAGPENGER"),
     DAGPENGERFERIE("DAGPENGERFERIE"),
 
-    ARBEIDSSØKER_ORDINÆR(""), // bakoverkomaptibel enn så lenge
-    PERMITTERING_ORDINÆR(""), // bakoverkomaptibel enn så lenge
-    PERMITTERING_FISKEINDUSTRI(""), // bakoverkomaptibel enn så lenge
-    EØS("");
+    ARBEIDSSØKER_ORDINÆR(""),                          // bakoverkomaptibel enn så lenge
+    PERMITTERING_ORDINÆR(""),                          // bakoverkomaptibel enn så lenge
+    PERMITTERING_FISKEINDUSTRI(""),                    // bakoverkomaptibel enn så lenge
+    EØS(""),                                           // bakoverkomaptibel enn så lenge
+    ARBEIDSSØKER_ORDINÆR_FERIETILLEGG(""),             // bakoverkomaptibel enn så lenge
+    PERMITTERING_ORDINÆR_FERIETILLEGG(""),             // bakoverkomaptibel enn så lenge
+    PERMITTERING_FISKEINDUSTRI_FERIETILLEGG(""),       // bakoverkomaptibel enn så lenge
+    EØS_FERIETILLEGG(""),                              // bakoverkomaptibel enn så lenge
+    ARBEIDSSØKER_ORDINÆR_FERIETILLEGG_AVDØD(""),       // bakoverkomaptibel enn så lenge
+    PERMITTERING_ORDINÆR_FERIETILLEGG_AVDØD(""),       // bakoverkomaptibel enn så lenge
+    PERMITTERING_FISKEINDUSTRI_FERIETILLEGG_AVDØD(""), // bakoverkomaptibel enn så lenge
+    EØS_FERIETILLEGG_AVDØD(""),                        // bakoverkomaptibel enn så lenge
 }
 
 enum class StønadTypeTiltakspenger(override val klassekode: String) : Stønadstype {
