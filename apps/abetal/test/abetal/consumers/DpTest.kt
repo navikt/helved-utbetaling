@@ -2523,7 +2523,6 @@ internal class DpTest {
         )
 
         TestRuntime.topics.dp.produce(transactionId) { dpUtbetaling }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
         TestRuntime.topics.status.assertThat().has(transactionId)
@@ -2730,8 +2729,6 @@ internal class DpTest {
             dto(sid, bid, meldeperiode)
         }
 
-        TestRuntime.kafka.advanceWallClockTime((fagsystem.transactionGapMs() * 2).milliseconds)
-
         val expectedStatus = StatusReply(Status.MOTTATT, Detaljer(fagsystem, listOf(expectedDetaljer(bid)))) 
         TestRuntime.topics.status.assertThat()
             .has(transactionId.toString(), size = 1)
@@ -2786,14 +2783,6 @@ internal class DpTest {
         }
 
         return oppdrag
-    }
-
-    fun Fagsystem.transactionGapMs(): Int = when {
-        this == Fagsystem.DAGPENGER -> DP_TX_GAP_MS
-        this == Fagsystem.TILTAKSPENGER -> TP_TX_GAP_MS
-        this == Fagsystem.AAP -> AAP_TX_GAP_MS
-        this.isTilleggsstønader() -> TS_TX_GAP_MS
-        else -> TODO("${this}.transactionGapMs()")
     }
 
     @Test

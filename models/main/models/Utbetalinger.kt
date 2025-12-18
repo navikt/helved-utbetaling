@@ -367,6 +367,7 @@ enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
 
 enum class StønadTypeHistorisk(override val klassekode: String) : Stønadstype {
     TILSKUDD_SMÅHJELPEMIDLER("HJRIM"),
+    ARBEIDSSØKER_ORDINÆR("")
 }
 
 fun uuid(
