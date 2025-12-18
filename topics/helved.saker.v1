@@ -15,6 +15,9 @@ spec:
       application: abetal
       access: readwrite
     - team: helved
+      application: utsjekk
+      access: readwrite
+    - team: helved
       application: peisschtappern
       access: read
     - team: helved
