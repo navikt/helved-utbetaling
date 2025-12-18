@@ -151,9 +151,6 @@ fun Topology.dpStream(
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
 ) {
-    // val suppress = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds, false)
-    // val dedup = DedupProcessor.supplier(DP_TX_GAP_MS.milliseconds, Stores.dpDedup, false)
-
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
         .merge(consume(Topics.dpIntern))
@@ -175,8 +172,10 @@ fun Topology.dpStream(
                 .map { key, value ->
                     Result.catch {
                         val store = kafka.getStore(Stores.utbetalinger)
+                        kafkaLog.info("trying to join ${value.size} utbetalinger")
                         val aggregate = value.map { new ->
                             val prev = store.getOrNull(new.uid.toString())
+                            kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
                             StreamsPair(new, prev)
                         }
                         val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
