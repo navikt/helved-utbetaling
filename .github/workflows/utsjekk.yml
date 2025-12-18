@@ -10,6 +10,7 @@ on:
       - '.github/workflows/utsjekk.yml'
       - 'build.gradle.kts'
       - 'Dockerfile'
+      - 'models/**'
 
 jobs:
   build:
