@@ -184,16 +184,6 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return JoinedStream(joinedStream)
     }
 
-    fun secureLog(log: Log.(V) -> Unit): ConsumedStream<K, V> {
-        val loggedStream = stream.peek ({ _, value -> log(Log.secure, value) })
-        return ConsumedStream(loggedStream)
-    }
-
-    fun secureLogWithKey(log: Log.(K, V) -> Unit): ConsumedStream<K, V> {
-        val loggedStream = stream.peek ({ key, value -> log(Log.secure, key, value) })
-        return ConsumedStream(loggedStream)
-    }
-
     fun repartition(
         topic: Topic<K, V>,
         partitions: Int,

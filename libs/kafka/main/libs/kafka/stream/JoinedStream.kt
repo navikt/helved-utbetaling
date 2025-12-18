@@ -3,6 +3,7 @@
 package libs.kafka.stream
 
 import libs.kafka.*
+import libs.kafka.processor.PeekMetadataProcessor
 import libs.kafka.processor.Processor
 import org.apache.kafka.streams.kstream.KStream
 
@@ -57,19 +58,9 @@ class JoinedStream<K: Any, L : Any, R> internal constructor(
         return BranchedMappedStream(branchedStream).branch(predicate, consumed)
     }
 
-    fun secureLog(log: Log.(L, R) -> Unit): JoinedStream<K, L, R> {
-        val loggedStream = stream.peek ({ _, (left, right) -> log(Log.secure, left, right) })
-        return JoinedStream(loggedStream)
-    }
-
-    fun log(log: Log.(K, L, R) -> Unit): JoinedStream<K, L, R> {
-        val loggedStream = stream.peek ({ key, (left, right) -> log(Log.kafka, key, left, right) })
-        return JoinedStream(loggedStream)
-    }
-
-    fun secureLogWithKey(log: Log.(K, L, R) -> Unit): JoinedStream<K, L, R> {
-        val loggedStream = stream.peek ({ key, (left, right) -> log(Log.secure, key, left, right) })
-        return JoinedStream(loggedStream)
+    fun peek(peek: (K, L, R) -> Unit): JoinedStream<K, L, R> {
+        val peekedStream = stream.peek ({ key, (left, right) -> peek(key, left, right) })
+        return JoinedStream(peekedStream)
     }
 
     fun <LR : Any> processor(processor: Processor<K, StreamsPair<L, R>, K, LR>): MappedStream<K, LR> {
