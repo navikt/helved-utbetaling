@@ -75,6 +75,11 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(flattenedStream)
     }
 
+    fun <U : Any> flatMap(mapper: (K, V) -> Iterable<U>): MappedStream<K, U> {
+        val flattenedStream = stream.flatMapValues ({ key, value -> mapper(key, value) })
+        return MappedStream(flattenedStream)
+    }
+
     fun <K2: Any, U : Any> flatMapKeyAndValue(mapper: (K, V) -> Iterable<KeyValue<K2, U>>): MappedStream<K2, U> {
         val fusedStream = stream.flatMap ({ key, value -> mapper(key, value).map { it.toInternalKeyValue() } })
         return MappedStream(fusedStream)
@@ -100,24 +105,9 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return BranchedMappedStream(branchedStream).branch(predicate, consumed)
     }
 
-    fun secureLog(logger: Log.(V) -> Unit): MappedStream<K, V> {
-        val loggedStream = stream.peek ({ _, value -> logger.invoke(Log.secure, value) })
-        return MappedStream(loggedStream)
-    }
-
-    fun log(logger: Log.(K, V) -> Unit): MappedStream<K, V> {
-        val loggedStream = stream.peek ({ key, value -> logger.invoke(Log.kafka, key, value) })
-        return MappedStream(loggedStream)
-    }
-
     fun peek(peek: (K, V, Metadata) -> Unit): MappedStream<K, V> {
         val peeked = stream.process({ PeekMetadataProcessor(peek) })
         return MappedStream(peeked)
-    }
-
-    fun secureLogWithKey(log: Log.(K, V) -> Unit): MappedStream<K, V> {
-        val loggedStream = stream.peek ({ key, value -> log.invoke(Log.secure, key, value) })
-        return MappedStream(loggedStream)
     }
 
     fun <U : Any> processor(processor: Processor<K, V, K, U>): MappedStream<K, U> {

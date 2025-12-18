@@ -186,29 +186,6 @@ internal class JoinedStreamTest {
     }
 
     @Test
-    fun `join and secure log with key`() {
-        val kafka = Mock.withTopology {
-            consume(Topics.A)
-                .filter { it != "humbug" }
-                .join(Topics.A, consume(Tables.B))
-                .secureLogWithKey { key, left, right -> info("$key$left$right") }
-        }
-        kafka.inputTopic(Topics.B).produce("1", "humbug").produce("2", "humbug")
-        kafka.inputTopic(Topics.A).produce("1", "sauce").produce("2", "price")
-    }
-
-    @Test
-    fun `left join and secure log with key`() {
-        val kafka = Mock.withTopology {
-            consume(Topics.A)
-                .filter { it != "humbug" }
-                .leftJoin(Topics.A, consume(Tables.B))
-                .secureLogWithKey { key, left, right -> info("$key$left$right") }
-        }
-        kafka.inputTopic(Topics.A).produce("1", "sauce").produce("2", "price")
-    }
-
-    @Test
     fun `filter a mapped joined stream`() {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)

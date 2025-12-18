@@ -1501,6 +1501,7 @@ internal class DpTest {
     }
 
     @Test
+    @Disabled // har ikke session window lengre
     fun `2 meldekort i 2 utbetalinger blir til 2 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
@@ -1688,6 +1689,7 @@ internal class DpTest {
     }
 
     @Test
+    @Disabled // har ikke session window lengre
     // TODO: Se TODO på Oppdrag.plus(other: Oppdrag) i AggregatService ()
     fun `2 meldekort med 2 behandlinger for samme person blir til 2 utbetalinger med 1 oppdrag`() {
         val sid = SakId("$nextInt")

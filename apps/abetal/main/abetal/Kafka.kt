@@ -11,11 +11,11 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.streams.kstream.Materialized
 import kotlin.time.Duration.Companion.milliseconds
 
-const val AAP_TX_GAP_MS = 5000
-const val TS_TX_GAP_MS = 5000
-const val TP_TX_GAP_MS = 5000
-const val DP_TX_GAP_MS = 5000
-const val HISTORISK_TX_GAP_MS = 5000
+const val AAP_TX_GAP_MS = 500
+const val TS_TX_GAP_MS = 500
+const val TP_TX_GAP_MS = 500
+const val DP_TX_GAP_MS = 500
+const val HISTORISK_TX_GAP_MS = 500
 
 const val FS_KEY = "fagsystem"
 
@@ -167,8 +167,8 @@ fun Topology.dpStream(
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
 ) {
-    val suppress = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds, false)
-    val dedup = DedupProcessor.supplier(DP_TX_GAP_MS.milliseconds, Stores.dpDedup, false)
+    // val suppress = SuppressProcessor.supplier(Stores.dpAggregate, DP_TX_GAP_MS.milliseconds, DP_TX_GAP_MS.milliseconds, false)
+    // val dedup = DedupProcessor.supplier(DP_TX_GAP_MS.milliseconds, Stores.dpDedup, false)
 
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
@@ -176,9 +176,9 @@ fun Topology.dpStream(
         .map { key, dp -> DpTuple(key, dp) }
         .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
-        .log { key, _, saker ->
+        .peek { key, _, saker ->
             val bytes = key.toString().toByteArray()
-            info("joined with saker on key:$key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}. Uids: $saker")
+            kafkaLog.info("joined with saker on key:$key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}. Uids: $saker")
         }
         .branch({ (dpTuple, saker) -> dpTuple.value.utbetalinger.isEmpty() && saker.isNullOrEmpty() }) {
             this.rekey { (dpTuple, _) -> dpTuple.key }
@@ -186,53 +186,67 @@ fun Topology.dpStream(
                 .produce(Topics.status)
         }.default {
             this
-                .flatMapKeyAndValue(::splitOnMeldeperiode)
-                .peek{ key, value, meta -> 
-                    kafkaLog.info("before repartition key:$key partition:${meta.partition} offset:${meta.offset}") 
-                }
-                .repartition(Serde.string(), Serde.json(), "dp-uid-repartition")
-                .peek{ key, value, meta -> 
-                    val bytes = key.toByteArray()
-                    kafkaLog.info("before left-join key:$key partition:${meta.partition} offset:${meta.offset} key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}") 
-                }
-                .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
-                .log { key, left, right -> 
-                    if (right == null) {
-                        val store = kafka.getStore(Store(Tables.utbetalinger))
-                        val existingInStore = store.getOrNull(key) != null
-                        val expectedPartition = partition(key, 3)
-                        warn(
-                            "left join miss: key:$key. InStore=$existingInStore" +
-                            "expected partition: $expectedPartition" +
-                            "Hint: ${if (existingInStore) "PARTITION_MISMATCH - Check your Serdes/Partitions!" else "DATA_MISSING - Check your Producers/Restoration!"}"
-                        )
-                    }
-                    info("left joined $key, match: ${right != null}") 
-                }
-                .rekey { new, _ -> 
-                    kafkaLog.info("rekey back to ${new.originalKey}")
-                    new.originalKey
-                }
-                .map { key, new, prev -> listOf(StreamsPair(new, prev)) }
-                .sessionWindow(
-                    Serde.string(),
-                    Serde.listStreamsPair(),
-                    DP_TX_GAP_MS.milliseconds,
-                    "dp-utbetalinger-session"
-                )
-                .reduce(suppress, dedup, Stores.dpAggregate.name) { acc, next -> 
-                    val newAcc = acc + next
-                    kafkaLog.info("reduced from ${acc.size} -> ${newAcc.size}")
-                    newAcc
-                }
-                .map { key, aggregate ->
-                    kafkaLog.info("Aggregate complete for key $key with ${aggregate.size} pairs")
+                .map(::splitOnMeldeperiode) // rename toDomain
+                .rekey { _, dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
+                .map { key, value ->
                     Result.catch {
+                        val store = kafka.getStore(Store(Tables.utbetalinger))
+                        val aggregate = value.map { new ->
+                            val prev = store.getOrNull(new.uid.toString())
+                            StreamsPair(new, prev)
+                        }
                         val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
                         val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
                         oppdragToUtbetalinger to simuleringer
                     }
                 }
+                // .peek{ key, value, meta -> 
+                //     kafkaLog.info("before repartition key:$key partition:${meta.partition} offset:${meta.offset}") 
+                // }
+                // .repartition(Serde.string(), Serde.json(), "dp-uid-repartition")
+                // .peek{ key, value, meta -> 
+                //     val bytes = key.toByteArray()
+                //     kafkaLog.info("before left-join key:$key partition:${meta.partition} offset:${meta.offset} key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}") 
+                // }
+                // .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
+
+                // .peek { key, left, right -> 
+                //     if (right == null) {
+                //         val store = kafka.getStore(Store(Tables.utbetalinger))
+                //         val existingInStore = store.getOrNull(key) != null
+                //         val expectedPartition = partition(key, 3)
+                //         kafkaLog.warn(
+                //             "left join miss: key:$key. InStore=$existingInStore" +
+                //             "expected partition: $expectedPartition" +
+                //             "Hint: ${if (existingInStore) "PARTITION_MISMATCH - Check your Serdes/Partitions!" else "DATA_MISSING - Check your Producers/Restoration!"}"
+                //         )
+                //     }
+                //     kafkaLog.info("left joined $key, match: ${right != null}") 
+                // }
+                // .rekey { new, _ -> 
+                //     kafkaLog.info("rekey back to ${new.originalKey}")
+                //     new.originalKey
+                // }
+                // .map { key, new, prev -> listOf(StreamsPair(new, prev)) }
+                // .sessionWindow(
+                //     Serde.string(),
+                //     Serde.listStreamsPair(),
+                //     DP_TX_GAP_MS.milliseconds,
+                //     "dp-utbetalinger-session"
+                // )
+                // .reduce(suppress, dedup, Stores.dpAggregate.name) { acc, next -> 
+                //     val newAcc = acc + next
+                //     kafkaLog.info("reduced from ${acc.size} -> ${newAcc.size}")
+                //     newAcc
+                // }
+                // .map { key, aggregate ->
+                //     kafkaLog.info("Aggregate complete for key $key with ${aggregate.size} pairs")
+                //     Result.catch {
+                //         val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                //         val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                //         oppdragToUtbetalinger to simuleringer
+                //     }
+                // }
                 .includeHeader(FS_KEY) { Fagsystem.DAGPENGER.name }
                 .branch({ it.isOk() }) {
                     val result = map { it -> it.unwrap() }
@@ -292,9 +306,9 @@ fun Topology.aapStream(
         .map { key, aap -> AapTuple(key, aap) }
         .rekey { (_, aap) -> SakKey(SakId(aap.sakId), Fagsystem.AAP) }
         .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
-        .log { key, _, saker ->
+        .peek { key, _, saker ->
             val bytes = key.toString().toByteArray()
-            info("joined with saker on key:$key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}. Uids: $saker")
+            kafkaLog.info("joined with saker on key:$key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}. Uids: $saker")
         }
         .flatMapKeyValue(::splitOnMeldeperiode) // TODO: manual repartition
         .peek{ key, _, meta -> 
@@ -302,18 +316,18 @@ fun Topology.aapStream(
             kafkaLog.info("before left-join key:$key partition:${meta.partition} offset:${meta.offset} key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}") 
         }
         .leftJoin(Serde.string(), Serde.json(), utbetalinger, "aap-periode-leftjoin-utbetalinger")
-        .log { key, _, right -> 
+        .peek { key, _, right -> 
             if (right == null) {
                 val store = kafka.getStore(Store(Tables.utbetalinger))
                 val existingInStore = store.getOrNull(key) != null
                 val expectedPartition = partition(key, 3)
-                warn(
-                    "left join miss: key:$key. InStore=$existingInStore" +
-                    "expected partition: $expectedPartition" +
+                kafkaLog.warn(
+                    "left join miss: key:$key. InStore=$existingInStore " +
+                    "expected partition: $expectedPartition " +
                     "Hint: ${if (existingInStore) "PARTITION_MISMATCH - Check your Serdes/Partitions!" else "DATA_MISSING - Check your Producers/Restoration!"}"
                 )
             }
-            info("left joined $key, match: ${right != null}") 
+            kafkaLog.info("left joined $key, match: ${right != null}") 
         }
         .rekey { new, _ -> 
             kafkaLog.info("rekey back to ${new.originalKey}")
@@ -596,7 +610,7 @@ fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
 private fun splitOnMeldeperiode(
     sakKey: SakKey,
     streamsPair: StreamsPair<DpTuple, Set<UtbetalingId>?>,
-): List<KeyValue<String, Utbetaling>> {
+): List<Utbetaling> {
     val (tuple, uids) = streamsPair
     val (dpKey, dpUtbetaling) = tuple
     val dryrun = dpUtbetaling.dryrun
@@ -641,7 +655,8 @@ private fun splitOnMeldeperiode(
             else -> toDomain(dpKey, tsUtbetaling, uids, uid)
         }
         appLog.info("rekey from $dpKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
-        KeyValue(utbetaling.uid.id.toString(), utbetaling)
+        utbetaling
+        // KeyValue(utbetaling.uid.id.toString(), utbetaling)
     }
 }
 

@@ -8,12 +8,10 @@ subgraph Topologi
     helved.utbetalinger.v1([helved.utbetalinger.v1])
 	ktable-helved.utbetalinger.v1-repartition([ktable-helved.utbetalinger.v1-repartition])
 	aap-periode-leftjoin-utbetalinger-repartition([aap-periode-leftjoin-utbetalinger-repartition])
-	dp-periode-leftjoin-utbetalinger-repartition([dp-periode-leftjoin-utbetalinger-repartition])
 	historisk-periode-leftjoin-utbetalinger-repartition([historisk-periode-leftjoin-utbetalinger-repartition])
 	tp-periode-leftjoin-utbetalinger-repartition([tp-periode-leftjoin-utbetalinger-repartition])
 	ts-periode-leftjoin-utbetalinger-repartition([ts-periode-leftjoin-utbetalinger-repartition])
 	aap-utbetalinger-session-repartition([aap-utbetalinger-session-repartition])
-	dp-utbetalinger-session-repartition([dp-utbetalinger-session-repartition])
 	historisk-utbetalinger-session-repartition([historisk-utbetalinger-session-repartition])
 	tp-utbetalinger-session-repartition([tp-utbetalinger-session-repartition])
 	ts-utbetalinger-session-repartition([ts-utbetalinger-session-repartition])
@@ -28,15 +26,14 @@ subgraph Topologi
 	tstuple-leftjoin-saker-repartition([tstuple-leftjoin-saker-repartition])
 	helved.saker.v1([helved.saker.v1])
 	helved.status.v1([helved.status.v1])
-	dp-uid-repartition([dp-uid-repartition])
+	helved.simuleringer.v1([helved.simuleringer.v1])
+	helved.oppdrag.v1([helved.oppdrag.v1])
 	helved.fk.v1([helved.fk.v1])
 	ktable-helved.fk.v1-repartition([ktable-helved.fk.v1-repartition])
 	oppdrag-leftjoin-fks-repartition([oppdrag-leftjoin-fks-repartition])
 	teamdagpenger.utbetaling.v1([teamdagpenger.utbetaling.v1])
 	from-teamdagpenger.utbetaling.v1-repartition([from-teamdagpenger.utbetaling.v1-repartition])
 	helved.utbetalinger-dp.v1([helved.utbetalinger-dp.v1])
-	helved.simuleringer.v1([helved.simuleringer.v1])
-	helved.oppdrag.v1([helved.oppdrag.v1])
 	aap.utbetaling.v1([aap.utbetaling.v1])
 	from-aap.utbetaling.v1-repartition([from-aap.utbetaling.v1-repartition])
 	helved.utbetalinger-aap.v1([helved.utbetalinger-aap.v1])
@@ -51,7 +48,6 @@ subgraph Topologi
 
     %% JOINS
     aap-periode-leftjoin-utbetalinger{leftjoin}
-	dp-periode-leftjoin-utbetalinger{leftjoin}
 	historisk-periode-leftjoin-utbetalinger{leftjoin}
 	tp-periode-leftjoin-utbetalinger{leftjoin}
 	ts-periode-leftjoin-utbetalinger{leftjoin}
@@ -71,9 +67,6 @@ subgraph Topologi
 	helved.pending-utbetalinger.v1-state-store-v4[(helved.pending-utbetalinger.v1-state-store-v4)]
 	helved.saker.v1-state-store-materialized[(helved.saker.v1-state-store-materialized)]
 	helved.fk.v1-state-store-v4[(helved.fk.v1-state-store-v4)]
-	dp-aggregate-store-v4-materialized[(dp-aggregate-store-v4-materialized)]
-	dp-aggregate-store-v4[(dp-aggregate-store-v4)]
-	dp-dedup-aggregate-v4[(dp-dedup-aggregate-v4)]
 	aap-aggregate-store-v4-materialized[(aap-aggregate-store-v4-materialized)]
 	aap-aggregate-store-v4[(aap-aggregate-store-v4)]
 	aap-dedup-aggregate-v4[(aap-dedup-aggregate-v4)]
@@ -99,9 +92,6 @@ subgraph Topologi
     aap-periode-leftjoin-utbetalinger-repartition --> aap-periode-leftjoin-utbetalinger
 	helved.utbetalinger.v1-state-store-v4 --> aap-periode-leftjoin-utbetalinger
 	aap-periode-leftjoin-utbetalinger --> aap-utbetalinger-session-repartition
-	dp-periode-leftjoin-utbetalinger-repartition --> dp-periode-leftjoin-utbetalinger
-	helved.utbetalinger.v1-state-store-v4 --> dp-periode-leftjoin-utbetalinger
-	dp-periode-leftjoin-utbetalinger --> dp-utbetalinger-session-repartition
 	historisk-periode-leftjoin-utbetalinger-repartition --> historisk-periode-leftjoin-utbetalinger
 	helved.utbetalinger.v1-state-store-v4 --> historisk-periode-leftjoin-utbetalinger
 	historisk-periode-leftjoin-utbetalinger --> historisk-utbetalinger-session-repartition
@@ -116,8 +106,11 @@ subgraph Topologi
 	pk-leftjoin-pending --> helved.utbetalinger.v1
 	dptuple-leftjoin-saker-repartition --> dptuple-leftjoin-saker
 	helved.saker.v1-state-store-materialized --> dptuple-leftjoin-saker
-	dptuple-leftjoin-saker --> dp-uid-repartition
+	dptuple-leftjoin-saker --> helved.fk.v1
 	dptuple-leftjoin-saker --> helved.status.v1
+	dptuple-leftjoin-saker --> helved.oppdrag.v1
+	dptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
+	dptuple-leftjoin-saker --> helved.simuleringer.v1
 	aaptuple-leftjoin-saker-repartition --> aaptuple-leftjoin-saker
 	helved.saker.v1-state-store-materialized --> aaptuple-leftjoin-saker
 	aaptuple-leftjoin-saker --> aap-periode-leftjoin-utbetalinger-repartition
@@ -145,12 +138,10 @@ subgraph Topologi
 
     %% REPARTITION STREAMS
     aap-periode-leftjoin-utbetalinger-repartition --> |rekey| aap-utbetalinger-session-repartition
-	dp-periode-leftjoin-utbetalinger-repartition --> |rekey| dp-utbetalinger-session-repartition
 	historisk-periode-leftjoin-utbetalinger-repartition --> |rekey| historisk-utbetalinger-session-repartition
 	ktable-helved.utbetalinger.v1-repartition --> |rekey| utbetalinger-groupby-sakkey-repartition
 	tp-periode-leftjoin-utbetalinger-repartition --> |rekey| tp-utbetalinger-session-repartition
 	ts-periode-leftjoin-utbetalinger-repartition --> |rekey| ts-utbetalinger-session-repartition
-	dptuple-leftjoin-saker-repartition --> |rekey| dp-uid-repartition
 	aaptuple-leftjoin-saker-repartition --> |rekey| aap-periode-leftjoin-utbetalinger-repartition
 	historisktuple-leftjoin-saker-repartition --> |rekey| historisk-periode-leftjoin-utbetalinger-repartition
 	tptuple-leftjoin-saker-repartition --> |rekey| tp-periode-leftjoin-utbetalinger-repartition
@@ -164,7 +155,6 @@ subgraph Topologi
 	teamdagpenger.utbetaling.v1 --> from-teamdagpenger.utbetaling.v1-repartition
 	helved.utbetalinger-dp.v1 --> dptuple-leftjoin-saker-repartition
 	from-teamdagpenger.utbetaling.v1-repartition --> dptuple-leftjoin-saker-repartition
-	dp-uid-repartition --> dp-periode-leftjoin-utbetalinger-repartition
 	aap.utbetaling.v1 --> from-aap.utbetaling.v1-repartition
 	helved.utbetalinger-aap.v1 --> aaptuple-leftjoin-saker-repartition
 	from-aap.utbetaling.v1-repartition --> aaptuple-leftjoin-saker-repartition
@@ -193,12 +183,10 @@ end
 style helved.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style ktable-helved.utbetalinger.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style aap-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style historisk-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style tp-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style ts-periode-leftjoin-utbetalinger-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style aap-utbetalinger-session-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-utbetalinger-session-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style historisk-utbetalinger-session-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style tp-utbetalinger-session-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style ts-utbetalinger-session-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
@@ -213,15 +201,14 @@ style tptuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-wi
 style tstuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-uid-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.simuleringer.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.fk.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style ktable-helved.fk.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style oppdrag-leftjoin-fks-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style teamdagpenger.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style from-teamdagpenger.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger-dp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.simuleringer.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style aap.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style from-aap.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger-aap.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
@@ -237,9 +224,6 @@ style helved.utbetalinger.v1-state-store-v4 fill:#78369f, stroke:#2a204a, stroke
 style helved.pending-utbetalinger.v1-state-store-v4 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1-state-store-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.fk.v1-state-store-v4 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-aggregate-store-v4-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-aggregate-store-v4 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style dp-dedup-aggregate-v4 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style aap-aggregate-store-v4-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style aap-aggregate-store-v4 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style aap-dedup-aggregate-v4 fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a

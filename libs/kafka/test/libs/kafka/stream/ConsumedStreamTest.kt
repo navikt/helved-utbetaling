@@ -128,42 +128,6 @@ internal class ConsumedStreamTest {
     // }
 
     @Test
-    fun `secure log`() {
-        val kafka = Mock.withTopology {
-            consume(Topics.A)
-                .secureLog {
-                    info("test message $it")
-                }
-        }
-
-        kafka.inputTopic(Topics.A).produce("1", "something")
-    }
-
-    @Test
-    fun `secure log with structured arguments`() {
-        val kafka = Mock.withTopology {
-            consume(Topics.A)
-                .secureLog {
-                    info("test message $it", StructuredArguments.kv("test", "hey"))
-                }
-        }
-
-        kafka.inputTopic(Topics.A).produce("1", "something")
-    }
-
-    @Test
-    fun `secure log with key`() {
-        val kafka = Mock.withTopology {
-            consume(Topics.A)
-                .secureLogWithKey { key, value ->
-                    info("test message $key $value")
-                }
-        }
-
-        kafka.inputTopic(Topics.A).produce("1", "something")
-    }
-
-    @Test
     fun `filter on key`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
