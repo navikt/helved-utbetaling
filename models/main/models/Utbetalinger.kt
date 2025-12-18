@@ -292,8 +292,12 @@ sealed interface Stønadstype {
 
 enum class StønadTypeDagpenger(override val klassekode: String) : Stønadstype {
     DAGPENGER("DAGPENGER"),
-    DAGPENGERFERIE("DAGPENGERFERIE")
+    DAGPENGERFERIE("DAGPENGERFERIE"),
 
+    ARBEIDSSØKER_ORDINÆR(""), // bakoverkomaptibel enn så lenge
+    PERMITTERING_ORDINÆR(""), // bakoverkomaptibel enn så lenge
+    PERMITTERING_FISKEINDUSTRI(""), // bakoverkomaptibel enn så lenge
+    EØS("");
 }
 
 enum class StønadTypeTiltakspenger(override val klassekode: String) : Stønadstype {
@@ -367,7 +371,6 @@ enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
 
 enum class StønadTypeHistorisk(override val klassekode: String) : Stønadstype {
     TILSKUDD_SMÅHJELPEMIDLER("HJRIM"),
-    ARBEIDSSØKER_ORDINÆR("")
 }
 
 fun uuid(
