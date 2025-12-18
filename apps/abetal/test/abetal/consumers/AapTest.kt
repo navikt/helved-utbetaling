@@ -1,6 +1,5 @@
 package abetal.consumers
 
-import abetal.AAP_TX_GAP_MS
 import abetal.Aap
 import abetal.SakKey
 import abetal.Stores

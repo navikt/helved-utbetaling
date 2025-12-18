@@ -5,12 +5,6 @@ import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
-const val AAP_TX_GAP_MS = 500 // alle disse kan fjernes
-const val TS_TX_GAP_MS = 500
-const val TP_TX_GAP_MS = 500
-const val DP_TX_GAP_MS = 500
-const val HISTORISK_TX_GAP_MS = 500
-
 const val FS_KEY = "fagsystem"
 
 object Topics {
@@ -158,8 +152,7 @@ fun Topology.dpStream(
         .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
         .peek { key, _, saker ->
-            val bytes = key.toString().toByteArray()
-            kafkaLog.info("joined with saker on key:$key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}. Uids: $saker")
+            kafkaLog.info("joined with saker on key:$key. Uids: $saker")
         }
         .branch({ (dpTuple, saker) -> dpTuple.value.utbetalinger.isEmpty() && saker.isNullOrEmpty() }) {
             this.rekey { (dpTuple, _) -> dpTuple.key }

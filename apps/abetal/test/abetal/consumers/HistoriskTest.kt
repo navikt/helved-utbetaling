@@ -1,6 +1,5 @@
 package abetal.consumers
 
-import abetal.HISTORISK_TX_GAP_MS
 import abetal.Historisk
 import abetal.SakKey
 import abetal.TestRuntime

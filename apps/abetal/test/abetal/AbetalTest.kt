@@ -765,8 +765,6 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 3).milliseconds)
-
         TestRuntime.topics.oppdrag.assertThat()
             .has(key)
             .with(key, 0) {
