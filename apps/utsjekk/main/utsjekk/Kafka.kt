@@ -30,11 +30,13 @@ object Topics {
     val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>())
     val utbetalingTp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
     val utbetaling = Topic("helved.utbetalinger.v1", json<Utbetaling>())
+    val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, models.UtbetalingId>())
 }
 
 object Tables {
     val dryrunTs = Table(Topics.dryrunTs)
     val dryrunDp = Table(Topics.dryrunDp)
+    val saker = Table(Topics.saker)
 }
 
 object Stores {
@@ -46,6 +48,41 @@ fun createTopology(): Topology = topology {
     globalKTable(Tables.dryrunTs, retention = 1.hours)
     globalKTable(Tables.dryrunDp, retention = 1.hours)
     consumeStatus()
+    utbetalingToSak()
+}
+
+data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
+
+/**
+ * Hver gang helved.utbetalinger.v1 blir produsert til
+ * akkumulerer vi uids (UtbetalingID) for saken og erstatter aggregatet på helved.saker.v1.
+ * Dette gjør at vi kan holde på alle aktive uids for en sakid per fagsystem.
+ * Slettede utbetalinger fjernes fra lista.
+ * Hvis lista er tom men ikke null betyr det at det ikke er første utbetaling på sak.
+ */
+fun Topology.utbetalingToSak(): KTable<SakKey, Set<models.UtbetalingId>> {
+    val ktable = consume(Topics.utbetaling)
+        .rekey { _, utbetaling ->
+            val fagsystem = if (utbetaling.fagsystem.isTilleggsstønader()) {
+                Fagsystem.TILLEGGSSTØNADER
+            } else {
+                utbetaling.fagsystem
+            }
+            SakKey(utbetaling.sakId, fagsystem)
+        }
+        .groupByKey(Serde.json(), Serde.json(), "utbetalinger-groupby-sakkey")
+        .aggregate(Tables.saker) { _, utbetaling, uids ->
+            when (utbetaling.action) {
+                Action.DELETE -> uids - utbetaling.uid
+                else -> uids + utbetaling.uid
+            }
+        }
+
+    ktable
+        .toStream()
+        .produce(Topics.saker)
+
+    return ktable
 }
 
 fun Topology.consumeStatus() {
@@ -105,6 +142,7 @@ fun Topology.consumeStatus() {
             }
         }
 }
+
 
 fun partition(key: String): Int {
     val bytes = key.toByteArray()

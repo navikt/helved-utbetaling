@@ -3,6 +3,7 @@ package abetal.consumers
 import abetal.AAP_TX_GAP_MS
 import abetal.Aap
 import abetal.SakKey
+import abetal.Stores
 import abetal.TestRuntime
 import abetal.aug
 import abetal.jul
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.Test
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -54,7 +56,6 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
@@ -118,10 +119,6 @@ class AapTest {
                 }
                 assertEquals(expected, it)
             }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 1)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid), index = 0)
     }
 
     @Test
@@ -141,7 +138,6 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
@@ -232,14 +228,6 @@ class AapTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 2)
-            .with(SakKey(sid, Fagsystem.AAP), index = 0) {
-                assertEquals(it, setOf(uid1))
-            }
-            .with(SakKey(sid, Fagsystem.AAP), index = 1) {
-                assertEquals(it, setOf(uid1, uid2))
-            }
     }
 
     @Test
@@ -261,8 +249,6 @@ class AapTest {
                 meldekort(meldeperiode3, 7.aug, 20.aug, 3000u, 3133u)
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
@@ -388,14 +374,10 @@ class AapTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 3)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2), index = 1)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2, uid3), index = 2)
     }
 
     @Test
+    @Disabled // støtter ikke lengre sessionWindows
     fun `2 meldekort i 2 utbetalinger blir til 2 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
@@ -415,8 +397,6 @@ class AapTest {
                 meldekort(meldeperiode2, 8.jul, 19.jul, 779u, 2377u)
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
@@ -448,14 +428,10 @@ class AapTest {
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
             .has(uid2.id.toString())
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 2)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1))
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2), index = 1)
     }
 
     @Test
+    @Disabled // støtter ikke lengre sessionWindows
     fun `2 meldekort med 2 behandlinger for samme person blir til 2 utbetalinger med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
@@ -477,8 +453,6 @@ class AapTest {
                 meldekort(meldeperiode2, 8.jul, 19.jul, 779u, 2377u)
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
@@ -514,11 +488,6 @@ class AapTest {
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
             .has(uid2.id.toString())
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 2)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1))
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2), index = 1)
     }
 
     @Test
@@ -549,12 +518,9 @@ class AapTest {
                 periode(3.jun, 14.jun, 100u, 100u)
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 1)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP)) {
+            setOf(uid1)
+        }
 
         TestRuntime.topics.aap.produce(transactionId2) {
             Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
@@ -562,8 +528,6 @@ class AapTest {
                 meldekort(meldeperiode2, 17.jun, 28.jun, 200u, 200u)
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId2)
@@ -626,10 +590,6 @@ class AapTest {
                 }
                 assertEquals(expected, it)
             }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 1)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2), index = 0)
     }
 
     @Test
@@ -660,12 +620,9 @@ class AapTest {
                 periode(3.jun, 14.jun, 100u)
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 1)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP)) {
+            setOf(uid1)
+        }
 
         TestRuntime.topics.aap.produce(transactionId2) {
             Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
@@ -673,7 +630,6 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId2)
@@ -758,10 +714,6 @@ class AapTest {
                 }
                 assertEquals(expected, it)
             }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 1)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
     }
 
     @Test
@@ -806,7 +758,6 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId1)
@@ -844,10 +795,6 @@ class AapTest {
                 assertEquals(Action.DELETE, it.action)
                 assertEquals(uid1, it.uid)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 2)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(), index = 1)
 
     }
 
@@ -899,13 +846,10 @@ class AapTest {
                 periode(16.sep, 27.sep, 600u, 600u)
             }
         }
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP)) {
+            setOf(uid1, uid2)
+        }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 2)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2), index = 1)
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
@@ -914,7 +858,6 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
@@ -955,10 +898,6 @@ class AapTest {
             .has(uid1.toString()).with(uid1.toString()) { assertEquals(Action.UPDATE, it.action) }
             .has(uid2.toString()).with(uid2.toString()) { assertEquals(Action.DELETE, it.action) }
             .has(uid3.toString()).with(uid3.toString()) { assertEquals(Action.CREATE, it.action) }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 3)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid3), index = 2)
     }
 
     @Test
@@ -991,7 +930,6 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1105,11 +1043,6 @@ class AapTest {
                 }
                 assertEquals(expected, it)
             }
-
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 1)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid), index = 0)
     }
 
     @Test
@@ -1145,7 +1078,6 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat().has(transactionId, 3)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -1174,11 +1106,6 @@ class AapTest {
             .has(uid1.toString())
             .has(uid2.toString())
             .has(uid3.toString())
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid1, Fagsystem.AAP))
-            .has(SakKey(sid2, Fagsystem.AAP))
-            .has(SakKey(sid3, Fagsystem.AAP))
     }
 
     @Test
@@ -1193,12 +1120,10 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.saker.assertThat().isEmpty()
         TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
             .has(transactionId)
@@ -1228,7 +1153,6 @@ class AapTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((AAP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
@@ -1256,9 +1180,5 @@ class AapTest {
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.AAP), size = 1)
-            .has(SakKey(sid, Fagsystem.AAP), setOf(uid), index = 0)
     }
 }

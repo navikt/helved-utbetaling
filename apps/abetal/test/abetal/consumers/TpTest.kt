@@ -48,7 +48,6 @@ internal class TpTest {
         val uid = "db4aea1c-a343-54d1-504f-5ab063a5fc16"
         val transaction1 = UUID.randomUUID().toString()
         TestRuntime.topics.tp.produce(transaction1) { utbet }
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
         TestRuntime.topics.status.assertThat().has(transaction1)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid)
@@ -100,7 +99,6 @@ internal class TpTest {
             }""".trimIndent())
         val transaction2 = UUID.randomUUID().toString()
         TestRuntime.topics.tp.produce(transaction2) { dryrun }
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
         TestRuntime.topics.simulering.assertThat()
             .has(transaction2)
             .with(transaction2) { simulering ->
@@ -147,7 +145,6 @@ internal class TpTest {
                 periode(1.jan, 2.jan, 100u, 100u)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id, bid.id, dryrun = true) {
@@ -160,7 +157,6 @@ internal class TpTest {
                 )
             }
         }
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
             assertEquals(Status.OK, statusReply.status)
@@ -189,8 +185,6 @@ internal class TpTest {
                 )
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -259,9 +253,6 @@ internal class TpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
     }
 
     @Test
@@ -292,7 +283,6 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -430,14 +420,6 @@ internal class TpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(uid1))
-            }
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 1) {
-                assertEquals(it, setOf(uid1, uid2))
-            }
     }
 
     @Test
@@ -486,7 +468,6 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -721,20 +702,6 @@ internal class TpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 4)
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(uid1))
-            }
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 1) {
-                assertEquals(it, setOf(uid1, uid2))
-            }
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 2) {
-                assertEquals(it, setOf(uid1, uid2, uid3))
-            }
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 3) {
-                assertEquals(it, setOf(uid1, uid2, uid3, uid4))
-            }
     }
 
     @Test
@@ -773,7 +740,6 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -962,11 +928,6 @@ internal class TpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 3)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2, uid3), index = 2)
     }
 
     @Test
@@ -1011,7 +972,6 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1151,10 +1111,6 @@ internal class TpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1))
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
     }
 
     @Test
@@ -1199,7 +1155,6 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1339,10 +1294,6 @@ internal class TpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1))
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
     }
 
     @Test
@@ -1378,7 +1329,6 @@ internal class TpTest {
             setOf(uid1)
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
@@ -1402,7 +1352,6 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1496,10 +1445,6 @@ internal class TpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
     }
 
     @Test
@@ -1535,7 +1480,6 @@ internal class TpTest {
             setOf(uid1)
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
@@ -1553,7 +1497,6 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1647,9 +1590,6 @@ internal class TpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
     }
 
     @Test
@@ -1679,6 +1619,9 @@ internal class TpTest {
                 periode(2.jun, 13.jun, 100u, 100u)
             }
         }
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid1)
+        }
 
         TestRuntime.topics.dp.produce(transactionId1) {
             Dp.utbetaling(
@@ -1689,8 +1632,6 @@ internal class TpTest {
                 emptyList()
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             status = Status.MOTTATT,
@@ -1782,10 +1723,6 @@ internal class TpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(), index = 1)
 
     }
 
@@ -1842,7 +1779,6 @@ internal class TpTest {
             setOf(uid1, uid2)
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -1851,7 +1787,6 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -2049,13 +1984,6 @@ internal class TpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 5)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2, uid3), index = 3)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid3), index = 4)
     }
 
     @Test
@@ -2088,7 +2016,6 @@ internal class TpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -2204,9 +2131,6 @@ internal class TpTest {
             }
 
 
-                TestRuntime.topics.saker.assertThat()
-                    .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
-                    .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
             }
 
         // Dette støtter vi ikke lengre
@@ -2243,7 +2167,6 @@ internal class TpTest {
                 }
             }
 
-            TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
             val mottatt1 = StatusReply(
                 Status.MOTTATT,
@@ -2460,13 +2383,6 @@ internal class TpTest {
                     }
                     assertEquals(expected, it)
                 }
-            TestRuntime.topics.saker.assertThat()
-                .has(SakKey(sid1, Fagsystem.DAGPENGER))
-                .has(SakKey(sid1, Fagsystem.DAGPENGER), setOf(uid1))
-                .has(SakKey(sid2, Fagsystem.DAGPENGER))
-                .has(SakKey(sid2, Fagsystem.DAGPENGER), setOf(uid2))
-                .has(SakKey(sid3, Fagsystem.DAGPENGER))
-                .has(SakKey(sid3, Fagsystem.DAGPENGER), setOf(uid3))
         }
 
         @Test
@@ -2487,12 +2403,10 @@ internal class TpTest {
                 }
             }
 
-            TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS * 2).milliseconds)
 
             TestRuntime.topics.status.assertThat().isEmpty()
             TestRuntime.topics.utbetalinger.assertThat().isEmpty()
             TestRuntime.topics.oppdrag.assertThat().isEmpty()
-            TestRuntime.topics.saker.assertThat().isEmpty()
             TestRuntime.topics.simulering.assertThat()
                 .hasTotal(1)
                 .has(transactionId)
@@ -2544,7 +2458,6 @@ internal class TpTest {
             val transactionId = UUID.randomUUID().toString()
 
             TestRuntime.topics.tp.produce(transactionId) { utbet }
-            TestRuntime.kafka.advanceWallClockTime((TP_TX_GAP_MS + 1).milliseconds)
 
             TestRuntime.topics.oppdrag.assertThat()
                 .has(transactionId)

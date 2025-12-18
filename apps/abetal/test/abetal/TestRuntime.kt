@@ -40,7 +40,7 @@ object TestRuntime {
                 config = config, 
                 kafka = kafka, 
                 topology = kafka.append(createTopology(kafka)) {
-                    consume(Tables.saker)
+                    // consume(Tables.saker)
                 }
             )
         },

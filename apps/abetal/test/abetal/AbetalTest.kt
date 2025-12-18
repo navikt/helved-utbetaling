@@ -43,7 +43,6 @@ internal class AbetalTest {
                 )
             }
         }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -128,7 +127,7 @@ internal class AbetalTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.saker.assertThat().isEmpty()
+        // TestRuntime.topics.saker.assertThat().isEmpty()
 
         //
         // SIMULATE A KVITTERING REKEYED JOINED AND PRODUCED TO OPPDRAG
@@ -175,14 +174,14 @@ internal class AbetalTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .with(SakKey(sid, Fagsystem.DAGPENGER)) {
-                assertEquals(it, setOf(uid1))
-            }
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 1) {
-                assertEquals(it, setOf(uid1, uid2))
-            }
+        // TestRuntime.topics.saker.assertThat()
+        //     .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
+        //     .with(SakKey(sid, Fagsystem.DAGPENGER)) {
+        //         assertEquals(it, setOf(uid1))
+        //     }
+        //     .with(SakKey(sid, Fagsystem.DAGPENGER), index = 1) {
+        //         assertEquals(it, setOf(uid1, uid2))
+        //     }
     }
 
     @Test
@@ -204,18 +203,17 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().has(key)
         val oppdrag = TestRuntime.topics.oppdrag.assertThat().has(key).get(key)
-        TestRuntime.topics.saker.assertThat().isEmpty()
+        // TestRuntime.topics.saker.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
         TestRuntime.topics.oppdrag.produce(key) { oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } } }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER))
-            .with(SakKey(sid, Fagsystem.DAGPENGER)) {
-                assertEquals(uid, it.single())
-            }
+        // TestRuntime.topics.saker.assertThat()
+        //     .has(SakKey(sid, Fagsystem.DAGPENGER))
+        //     .with(SakKey(sid, Fagsystem.DAGPENGER)) {
+        //         assertEquals(uid, it.single())
+        //     }
 
     }
 
@@ -238,8 +236,6 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
-
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .with(key) { assertEquals("NY", it.oppdrag110.kodeEndring) }
             .get(key)
@@ -248,37 +244,40 @@ internal class AbetalTest {
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
         TestRuntime.topics.oppdrag.produce(key) { oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } } }
         TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
-        TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
+        // TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
     }
 
     @Test
     fun `setter andre utbetaling på sak til ENDR`() {
         val key = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
         val meldeperiode1 = UUID.randomUUID().toString()
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
-
         val meldeperiode2 = UUID.randomUUID().toString()
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.utbetalinger.produce("$uid1") {
-            utbetaling(
-                action = Action.CREATE,
-                uid = uid1,
-                sakId = sid,
-                behandlingId = bid,
-                originalKey = key,
-                stønad = StønadTypeDagpenger.DAGPENGER,
-                personident = Personident("12345678910"),
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
-                beslutterId = Navident("dagpenger"),
-                saksbehandlerId = Navident("dagpenger"),
-                fagsystem = Fagsystem.DAGPENGER,
-            ) {
-                periode(1.jan, 2.jan, 100u)
+        TestRuntime.topics.dp.produce(key) { 
+            Dp.utbetaling(sid.id) {
+                Dp.meldekort(
+                    meldeperiode = meldeperiode1,
+                    fom = 1.jan,
+                    tom = 2.jan,
+                    sats = 100u,
+                    utbetaltBeløp = 100u,
+                )
             }
         }
+        TestRuntime.topics.status.assertThat().has(key)
+
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid1)
+        }
+        val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
+            .with(key, 0) { assertEquals("NY", it.oppdrag110.kodeEndring) }
+            .get(key)
+        TestRuntime.topics.oppdrag.produce(key) { oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" }}}
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid1.toString())
 
         TestRuntime.topics.dp.produce(key) { 
             Dp.utbetaling(sid.id) {
@@ -292,17 +291,15 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
+    val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+        .with(key, 0) { assertEquals("ENDR", it.oppdrag110.kodeEndring) }
+        .get(key)
 
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .with(key) { assertEquals("ENDR", it.oppdrag110.kodeEndring) }
-            .get(key)
         TestRuntime.topics.status.assertThat().has(key)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid2.toString())
         TestRuntime.topics.oppdrag.produce(key) { oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } } }
         TestRuntime.topics.utbetalinger.assertThat().has(uid2.toString())
-        TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER), 3)
     }
 
     @Test
@@ -346,8 +343,6 @@ internal class AbetalTest {
                 )
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -700,15 +695,15 @@ internal class AbetalTest {
                 )
             }
         }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
-
         val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId1)
             .get(transactionId1)
         TestRuntime.topics.oppdrag.produce(transactionId1) { oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } } }
 
         TestRuntime.topics.utbetalinger.assertThat().has(uid1.toString())
-        TestRuntime.topics.saker.assertThat().has(SakKey(sakId, Fagsystem.DAGPENGER))
+        TestRuntime.topics.saker.produce(SakKey(sakId, Fagsystem.DAGPENGER)) {
+            setOf(uid1)
+        }
 
         TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
@@ -730,8 +725,6 @@ internal class AbetalTest {
                 originalDays + newDays
             }
         }
-
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.oppdrag.assertThat().has(transactionId2)
             .with(transactionId2) { oppdrag2 ->
