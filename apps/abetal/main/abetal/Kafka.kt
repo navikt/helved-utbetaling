@@ -1,17 +1,11 @@
 package abetal
 import libs.kafka.*
-import libs.kafka.processor.DedupProcessor
-import libs.kafka.processor.EnrichMetadataProcessor
-import libs.kafka.processor.Processor
-import libs.kafka.processor.SuppressProcessor
 import libs.utils.appLog
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import org.apache.kafka.streams.kstream.Materialized
-import kotlin.time.Duration.Companion.milliseconds
 
-const val AAP_TX_GAP_MS = 500
+const val AAP_TX_GAP_MS = 500 // alle disse kan fjernes
 const val TS_TX_GAP_MS = 500
 const val TP_TX_GAP_MS = 500
 const val DP_TX_GAP_MS = 500
@@ -47,29 +41,19 @@ object Tables {
 }
 
 object Stores {
-    val dpAggregate        = Store("dp-aggregate-store-v4",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val aapAggregate       = Store("aap-aggregate-store-v4",       Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val tsAggregate        = Store("ts-aggregate-store-v4",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val tpAggregate        = Store("tp-aggregate-store-v4",        Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-    val historiskAggregate = Store("historisk-aggregate-store-v4", Serdes(WindowedStringSerde, JsonSerde.listStreamsPair<Utbetaling, Utbetaling?>()))
-
-    val aapDedup           = Store("aap-dedup-aggregate-v4",       jsonListStreamsPair<Utbetaling>())
-    val dpDedup            = Store("dp-dedup-aggregate-v4",        jsonListStreamsPair<Utbetaling>())
-    val tpDedup            = Store("tp-dedup-aggregate-v4",        jsonListStreamsPair<Utbetaling>())
-    val tsDedup            = Store("ts-dedup-aggregate-v4",        jsonListStreamsPair<Utbetaling>())
-    val historiskDedup     = Store("historisk-dedup-aggregate-v4", jsonListStreamsPair<Utbetaling>())
+    val utbetalinger = Store(Tables.utbetalinger)
 }
 
 fun createTopology(kafka: Streams): Topology = topology {
-    val utbetalinger = consume(Tables.utbetalinger, materializeWithTrace = false)
+    val utbetalinger = globalKTable(Tables.utbetalinger, materializeWithTrace = false)
     val pendingUtbetalinger = consume(Tables.pendingUtbetalinger, materializeWithTrace = false)
-    val saker = utbetalingToSak(utbetalinger)
+    val saker = consume(Tables.saker)
     val fks = consume(Tables.fk, materializeWithTrace = false)
     dpStream(utbetalinger, saker, kafka)
     aapStream(utbetalinger, saker, kafka)
-    tsStream(utbetalinger, saker)
-    tpStream(utbetalinger, saker)
-    historiskStream(utbetalinger, saker)
+    tsStream(utbetalinger, saker, kafka)
+    tpStream(utbetalinger, saker, kafka)
+    historiskStream(utbetalinger, saker, kafka)
     successfulUtbetalingStream(fks, pendingUtbetalinger)
 }
 
@@ -118,37 +102,37 @@ fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTab
 }
 
 /**
+ * TODO: Flytt i en egen applikasjon eller gjenbruk en som ikke leser fra helved.utbetalinger.v1
  * Hver gang helved.utbetalinger.v1 blir produsert til
  * akkumulerer vi uids (UtbetalingID) for saken og erstatter aggregatet på helved.saker.v1.
  * Dette gjør at vi kan holde på alle aktive uids for en sakid per fagsystem.
  * Slettede utbetalinger fjernes fra lista.
  * Hvis lista er tom men ikke null betyr det at det ikke er første utbetaling på sak.
  */
-fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Set<UtbetalingId>> {
-    val ktable = utbetalinger
-        .toStream()
-        .rekey { _, utbetaling ->
-            val fagsystem = if (utbetaling.fagsystem.isTilleggsstønader()) {
-                Fagsystem.TILLEGGSSTØNADER
-            } else {
-                utbetaling.fagsystem
-            }
-            SakKey(utbetaling.sakId, fagsystem)
-        }
-        .groupByKey(Serde.json(), Serde.json(), "utbetalinger-groupby-sakkey")
-        .aggregate(Tables.saker) { _, utbetaling, uids ->
-            when (utbetaling.action) {
-                Action.DELETE -> uids - utbetaling.uid
-                else -> uids + utbetaling.uid
-            }
-        }
-
-    ktable
-        .toStream()
-        .produce(Topics.saker)
-
-    return ktable
-}
+// fun Topology.utbetalingToSak(utbetalinger: GlobalKTable<String, Utbetaling>): KTable<SakKey, Set<UtbetalingId>> {
+//     val ktable = consume(Topics.utbetalinger)
+//         .rekey { _, utbetaling ->
+//             val fagsystem = if (utbetaling.fagsystem.isTilleggsstønader()) {
+//                 Fagsystem.TILLEGGSSTØNADER
+//             } else {
+//                 utbetaling.fagsystem
+//             }
+//             SakKey(utbetaling.sakId, fagsystem)
+//         }
+//         .groupByKey(Serde.json(), Serde.json(), "utbetalinger-groupby-sakkey")
+//         .aggregate(Tables.saker) { _, utbetaling, uids ->
+//             when (utbetaling.action) {
+//                 Action.DELETE -> uids - utbetaling.uid
+//                 else -> uids + utbetaling.uid
+//             }
+//         }
+//
+//     ktable
+//         .toStream()
+//         .produce(Topics.saker)
+//
+//     return ktable
+// }
 
 /**
  * Dagpenger sender en tykk melding med mange meldeperioder.
@@ -163,7 +147,7 @@ fun utbetalingToSak(utbetalinger: KTable<String, Utbetaling>): KTable<SakKey, Se
  * Vi bruker da Oppdraget (requesten) som kafka-key
  */
 fun Topology.dpStream(
-    utbetalinger: KTable<String, Utbetaling>,
+    utbetalinger: GlobalKTable<String, Utbetaling>,
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
 ) {
@@ -190,7 +174,7 @@ fun Topology.dpStream(
                 .rekey { _, dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
                 .map { key, value ->
                     Result.catch {
-                        val store = kafka.getStore(Store(Tables.utbetalinger))
+                        val store = kafka.getStore(Stores.utbetalinger)
                         val aggregate = value.map { new ->
                             val prev = store.getOrNull(new.uid.toString())
                             StreamsPair(new, prev)
@@ -200,53 +184,6 @@ fun Topology.dpStream(
                         oppdragToUtbetalinger to simuleringer
                     }
                 }
-                // .peek{ key, value, meta -> 
-                //     kafkaLog.info("before repartition key:$key partition:${meta.partition} offset:${meta.offset}") 
-                // }
-                // .repartition(Serde.string(), Serde.json(), "dp-uid-repartition")
-                // .peek{ key, value, meta -> 
-                //     val bytes = key.toByteArray()
-                //     kafkaLog.info("before left-join key:$key partition:${meta.partition} offset:${meta.offset} key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}") 
-                // }
-                // .leftJoin(Serde.string(), Serde.json(), utbetalinger, "dp-periode-leftjoin-utbetalinger")
-
-                // .peek { key, left, right -> 
-                //     if (right == null) {
-                //         val store = kafka.getStore(Store(Tables.utbetalinger))
-                //         val existingInStore = store.getOrNull(key) != null
-                //         val expectedPartition = partition(key, 3)
-                //         kafkaLog.warn(
-                //             "left join miss: key:$key. InStore=$existingInStore" +
-                //             "expected partition: $expectedPartition" +
-                //             "Hint: ${if (existingInStore) "PARTITION_MISMATCH - Check your Serdes/Partitions!" else "DATA_MISSING - Check your Producers/Restoration!"}"
-                //         )
-                //     }
-                //     kafkaLog.info("left joined $key, match: ${right != null}") 
-                // }
-                // .rekey { new, _ -> 
-                //     kafkaLog.info("rekey back to ${new.originalKey}")
-                //     new.originalKey
-                // }
-                // .map { key, new, prev -> listOf(StreamsPair(new, prev)) }
-                // .sessionWindow(
-                //     Serde.string(),
-                //     Serde.listStreamsPair(),
-                //     DP_TX_GAP_MS.milliseconds,
-                //     "dp-utbetalinger-session"
-                // )
-                // .reduce(suppress, dedup, Stores.dpAggregate.name) { acc, next -> 
-                //     val newAcc = acc + next
-                //     kafkaLog.info("reduced from ${acc.size} -> ${newAcc.size}")
-                //     newAcc
-                // }
-                // .map { key, aggregate ->
-                //     kafkaLog.info("Aggregate complete for key $key with ${aggregate.size} pairs")
-                //     Result.catch {
-                //         val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                //         val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                //         oppdragToUtbetalinger to simuleringer
-                //     }
-                // }
                 .includeHeader(FS_KEY) { Fagsystem.DAGPENGER.name }
                 .branch({ it.isOk() }) {
                     val result = map { it -> it.unwrap() }
@@ -293,13 +230,10 @@ fun Topology.dpStream(
 }
 
 fun Topology.aapStream(
-    utbetalinger: KTable<String, Utbetaling>,
+    utbetalinger: GlobalKTable<String, Utbetaling>,
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
 ) {
-    val suppress = SuppressProcessor.supplier(Stores.aapAggregate, AAP_TX_GAP_MS.milliseconds, AAP_TX_GAP_MS.milliseconds, false)
-    val dedup = DedupProcessor.supplier(AAP_TX_GAP_MS.milliseconds, Stores.aapDedup, false)
-
     consume(Topics.aap)
         .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
         .merge(consume(Topics.aapIntern))
@@ -310,39 +244,15 @@ fun Topology.aapStream(
             val bytes = key.toString().toByteArray()
             kafkaLog.info("joined with saker on key:$key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}. Uids: $saker")
         }
-        .flatMapKeyValue(::splitOnMeldeperiode) // TODO: manual repartition
-        .peek{ key, _, meta -> 
-            val bytes = key.toByteArray()
-            kafkaLog.info("before left-join key:$key partition:${meta.partition} offset:${meta.offset} key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}") 
-        }
-        .leftJoin(Serde.string(), Serde.json(), utbetalinger, "aap-periode-leftjoin-utbetalinger")
-        .peek { key, _, right -> 
-            if (right == null) {
-                val store = kafka.getStore(Store(Tables.utbetalinger))
-                val existingInStore = store.getOrNull(key) != null
-                val expectedPartition = partition(key, 3)
-                kafkaLog.warn(
-                    "left join miss: key:$key. InStore=$existingInStore " +
-                    "expected partition: $expectedPartition " +
-                    "Hint: ${if (existingInStore) "PARTITION_MISMATCH - Check your Serdes/Partitions!" else "DATA_MISSING - Check your Producers/Restoration!"}"
-                )
-            }
-            kafkaLog.info("left joined $key, match: ${right != null}") 
-        }
-        .rekey { new, _ -> 
-            kafkaLog.info("rekey back to ${new.originalKey}")
-            new.originalKey
-        }
-        .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), AAP_TX_GAP_MS.milliseconds, "aap-utbetalinger-session")
-        .reduce(suppress, dedup, Stores.aapAggregate.name) { acc, next -> 
-            val newAcc = acc + next
-            kafkaLog.info("reduced from ${acc.size} -> ${newAcc.size}")
-            newAcc
-        }
-        .map { key, aggregate ->
-            kafkaLog.info("Aggregate complete for key $key with ${aggregate.size} pairs")
+        .map(::splitOnMeldeperiode) // rename toDomain
+        .rekey { _, dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
+        .map { value ->
             Result.catch {
+                val store = kafka.getStore(Stores.utbetalinger)
+                val aggregate = value.map { new ->
+                    val prev = store.getOrNull(new.uid.toString())
+                    StreamsPair(new, prev)
+                }
                 val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
                 val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
                 oppdragToUtbetalinger to simuleringer
@@ -356,10 +266,7 @@ fun Topology.aapStream(
                 .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
                     oppdragToUtbetalinger.flatMap { agg ->
                         agg.second.map {
-                            KeyValue(
-                                it.uid.toString(),
-                                it
-                            )
+                            KeyValue(it.uid.toString(), it)
                         }
                     }
                 }
@@ -394,25 +301,24 @@ fun Topology.aapStream(
         }
 }
 
-fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress = SuppressProcessor.supplier(Stores.tsAggregate, TS_TX_GAP_MS.milliseconds, TS_TX_GAP_MS.milliseconds, false)
-    val dedup = DedupProcessor.supplier(TS_TX_GAP_MS.milliseconds, Stores.tsDedup, false)
-
+fun Topology.tsStream(
+    utbetalinger: GlobalKTable<String, Utbetaling>,
+    saker: KTable<SakKey, Set<UtbetalingId>>,
+    kafka: Streams,
+) {
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
         .merge(consume(Topics.tsIntern))
         .map { key, ts -> TsTuple(key, ts) }
         .rekey { (_, ts) -> SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tstuple-leftjoin-saker")
-        .mapKeyValue(::fromTs)
-        .leftJoin(Serde.string(), Serde.json(), utbetalinger, "ts-periode-leftjoin-utbetalinger")
-        .filter { (new, prev) -> !new.isDuplicate(prev) }
-        .rekey { new, _ -> new.originalKey }
-        .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), TS_TX_GAP_MS.milliseconds, "ts-utbetalinger-session")
-        .reduce(suppress, dedup, Stores.tsAggregate.name) { acc, next -> acc + next }
-        .map { aggregate ->
+        .map { ts, uids -> ts.toDomain(uids)}
+        .rekey { dto -> dto.originalKey } // alle har samme uid, skal ikke være 0 pga branch over
+        .map { new ->
             Result.catch {
+                val store = kafka.getStore(Stores.utbetalinger)
+                val prev = store.getOrNull(new.uid.toString())
+                val aggregate = listOf(StreamsPair(new, prev))
                 val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
                 val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
                 oppdragToUtbetalinger to simuleringer
@@ -464,30 +370,24 @@ fun Topology.tsStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<Sa
         }
 }
 
-fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress = SuppressProcessor.supplier(Stores.historiskAggregate, HISTORISK_TX_GAP_MS.milliseconds, HISTORISK_TX_GAP_MS.milliseconds, false)
-    val dedup = DedupProcessor.supplier(HISTORISK_TX_GAP_MS.milliseconds, Stores.historiskDedup, false)
-
+fun Topology.historiskStream(
+    utbetalinger: GlobalKTable<String, Utbetaling>,
+    saker: KTable<SakKey, Set<UtbetalingId>>,
+    kafka: Streams,
+) {
     consume(Topics.historisk)
         .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
         .merge(consume(Topics.historiskIntern))
         .map { key, historisk -> HistoriskTuple(key, historisk) }
         .rekey { (_, historisk) -> SakKey(SakId(historisk.sakId), Fagsystem.HISTORISK) }
         .leftJoin(Serde.json(), Serde.json(), saker, "historisktuple-leftjoin-saker")
-        .mapKeyValue(::fromHistorisk)
-        .leftJoin(Serde.string(), Serde.json(), utbetalinger, "historisk-periode-leftjoin-utbetalinger")
-        .filter { (new, prev) -> !new.isDuplicate(prev) }
-        .rekey { new, _ -> new.originalKey }
-        .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(
-            Serde.string(),
-            Serde.listStreamsPair(),
-            HISTORISK_TX_GAP_MS.milliseconds,
-            "historisk-utbetalinger-session"
-        )
-        .reduce(suppress, dedup, Stores.historiskAggregate.name) { acc, next -> acc + next }
-        .map { aggregate ->
+        .map { ts, uids -> ts.toDomain(uids)}
+        .rekey { dto -> dto.originalKey } // alle har samme uid, skal ikke være 0 pga branch over
+        .map { new ->
             Result.catch {
+                val store = kafka.getStore(Stores.utbetalinger)
+                val prev = store.getOrNull(new.uid.toString())
+                val aggregate = listOf(StreamsPair(new, prev))
                 val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
                 val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
                 oppdragToUtbetalinger to simuleringer
@@ -537,25 +437,26 @@ fun Topology.historiskStream(utbetalinger: KTable<String, Utbetaling>, saker: KT
         }
 }
 
-fun Topology.tpStream(utbetalinger: KTable<String, Utbetaling>, saker: KTable<SakKey, Set<UtbetalingId>>) {
-    val suppress = SuppressProcessor.supplier(Stores.tpAggregate, TP_TX_GAP_MS.milliseconds, TP_TX_GAP_MS.milliseconds, false)
-    val dedup = DedupProcessor.supplier(TP_TX_GAP_MS.milliseconds, Stores.tpDedup, false)
-
+fun Topology.tpStream(
+    utbetalinger: GlobalKTable<String, Utbetaling>,
+    saker: KTable<SakKey, Set<UtbetalingId>>,
+    kafka: Streams,
+) {
     consume(Topics.tp)
         // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
         // .merge(consume(Topics.tpUtbetalinger))
         .map { key, tp -> TpTuple(key, tp) }
         .rekey { (_, tp) -> SakKey(SakId(tp.sakId), Fagsystem.TILTAKSPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
-        .flatMapKeyValue(::splitOnMeldeperiode) // TODO: manual repartition
-        .leftJoin(Serde.string(), Serde.json(), utbetalinger, "tp-periode-leftjoin-utbetalinger")
-        .filter { (new, prev) -> !new.isDuplicate(prev) }
-        .rekey { new, _ -> new.originalKey }
-        .map { new, prev -> listOf(StreamsPair(new, prev)) }
-        .sessionWindow(Serde.string(), Serde.listStreamsPair(), TP_TX_GAP_MS.milliseconds, "tp-utbetalinger-session")
-        .reduce(suppress, dedup, Stores.tpAggregate.name) { acc, next -> acc + next }
-        .map { aggregate ->
+        .map(::splitOnMeldeperiode) // TODO: manual repartition
+        .rekey { dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
+        .map { value ->
             Result.catch {
+                val store = kafka.getStore(Stores.utbetalinger)
+                val aggregate = value.map { new ->
+                    val prev = store.getOrNull(new.uid.toString())
+                    StreamsPair(new, prev)
+                }
                 val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
                 val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
                 oppdragToUtbetalinger to simuleringer
@@ -654,7 +555,7 @@ private fun splitOnMeldeperiode(
 
             else -> toDomain(dpKey, tsUtbetaling, uids, uid)
         }
-        appLog.info("rekey from $dpKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
+        // appLog.info("rekey from $dpKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
         utbetaling
         // KeyValue(utbetaling.uid.id.toString(), utbetaling)
     }
@@ -664,7 +565,7 @@ private fun splitOnMeldeperiode(
     sakKey: SakKey,
     tuple: AapTuple,
     uids: Set<UtbetalingId>?
-): List<KeyValue<String, Utbetaling>> {
+): List<Utbetaling> {
     val (aapKey, aapUtbetaling) = tuple
     val dryrun = aapUtbetaling.dryrun
     val personident = aapUtbetaling.ident
@@ -708,26 +609,17 @@ private fun splitOnMeldeperiode(
 
             else -> toDomain(aapKey, aapUtbetaling, uids, uid)
         }
-        appLog.info("rekey from $aapKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
-        KeyValue(utbetaling.uid.id.toString(), utbetaling)
+        // appLog.info("rekey from $aapKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
+        // KeyValue(utbetaling.uid.id.toString(), utbetaling)
+        utbetaling
     }
-}
-
-private fun fromTs(sakKey: SakKey, req: TsTuple, uids: Set<UtbetalingId>?): KeyValue<String, Utbetaling> {
-    val utbetaling = req.toDomain(uids)
-    return KeyValue("${utbetaling.uid}", utbetaling)
-}
-
-private fun fromHistorisk(sakKey: SakKey, req: HistoriskTuple, uids: Set<UtbetalingId>?): KeyValue<String, Utbetaling> {
-    val utbetaling = req.toDomain(uids)
-    return KeyValue("${utbetaling.uid}", utbetaling)
 }
 
 private fun splitOnMeldeperiode(
     sakKey: SakKey,
     tuple: TpTuple,
     uids: Set<UtbetalingId>?
-): List<KeyValue<String, Utbetaling>> {
+): List<Utbetaling> {
     val (tpKey, tpUtbetaling) = tuple
     val dryrun = tpUtbetaling.dryrun
     val personident = tpUtbetaling.personident
@@ -770,7 +662,8 @@ private fun splitOnMeldeperiode(
             else -> tuple.toDomain(uid, uids)
         }
         appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
-        KeyValue(utbetaling.uid.id.toString(), utbetaling)
+        // KeyValue(utbetaling.uid.id.toString(), utbetaling)
+        utbetaling
     }
 }
 

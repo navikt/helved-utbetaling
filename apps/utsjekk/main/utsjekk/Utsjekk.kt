@@ -29,6 +29,7 @@ import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
+import libs.kafka.Topology
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.ApiError
@@ -71,6 +72,7 @@ fun main() {
 fun Application.utsjekk(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
+    topology: Topology = createTopology(),
 ) {
     val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
@@ -79,7 +81,7 @@ fun Application.utsjekk(
     }
 
     kafka.connect(
-        createTopology(),
+        topology,
         config.kafka,
         metrics,
     )

@@ -65,7 +65,6 @@ internal class DpTest {
         val uid = "26c8ad95-1731-e800-abd5-ba92ec6aad86"
         val transaction1 = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transaction1) { utbet }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat().has(transaction1)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid)
@@ -130,7 +129,6 @@ internal class DpTest {
             }""".trimIndent())
         val transaction2 = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transaction2) { dryrun }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.simulering.assertThat()
             .has(transaction2)
             .with(transaction2) { simulering ->
@@ -169,7 +167,6 @@ internal class DpTest {
 
         val a = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$abid","ident":"12345678910","vedtakstidspunktet":"2025-12-05T14:57:21.107354","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
         TestRuntime.topics.dp.produce(atid) { a }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(key = atid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
                 DetaljerLinje(abid, LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 13), 911u, 364u, "DAGPENGER"),
@@ -233,15 +230,12 @@ internal class DpTest {
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(auid.toString())
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
-            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(auid))
-            }
+        TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
+            setOf(auid)
+        }
 
         val b = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$bbid","ident":"12345678910","vedtakstidspunktet":"2025-12-08T07:09:38.510701","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
         TestRuntime.topics.dp.produce(btid) { b }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(key = btid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
                 DetaljerLinje(bbid, LocalDate.of(2025, 11, 17), LocalDate.of(2025, 11, 28), 911u, 911u, "DAGPENGER"),
@@ -296,15 +290,12 @@ internal class DpTest {
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(buid.toString())
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
-            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(auid, buid))
-            }
+        TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
+            setOf(auid, buid)
+        }
 
         val c = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$cbid","ident":"12345678910","vedtakstidspunktet":"2025-12-15T09:26:40.032951","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-01","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-02","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-03","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-04","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-05","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-08","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-09","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-10","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-11","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-12","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
         TestRuntime.topics.dp.produce(ctid) { c }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(key = ctid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
                 DetaljerLinje(cbid, LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 12), 911u, 911u, "DAGPENGER"),
@@ -359,23 +350,18 @@ internal class DpTest {
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
-            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(auid, buid, cuid))
-            }
-
+        TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
+            setOf(auid, buid, cuid)
+        }
 
         val dtid = "d19b1f18-2199-7395-b8f3-82c497ce2941"
         TestRuntime.topics.dp.produce(dtid) { c }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(key = dtid, index = 0, size = 1, value = StatusReply(Status.OK, null))
         TestRuntime.topics.utbetalinger.tombstone(cuid.toString())
 
         val etid = "e19b1f18-2199-7395-b8f3-82c497ce2941"
         TestRuntime.topics.dp.produce(etid) { c }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(key = etid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
                 DetaljerLinje(cbid, LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 12), 911u, 911u, "DAGPENGER"),
@@ -430,11 +416,6 @@ internal class DpTest {
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
-            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(auid, buid, cuid))
-            }
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
     }
 
@@ -455,7 +436,6 @@ internal class DpTest {
 
         val a = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$abid","ident":"12345678910","vedtakstidspunktet":"2025-12-05T14:57:21.107354","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
         TestRuntime.topics.dp.produce(atid) { a }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(key = atid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
                 DetaljerLinje(abid, LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 13), 911u, 364u, "DAGPENGER"),
@@ -519,15 +499,12 @@ internal class DpTest {
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(auid.toString())
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
-            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(auid))
-            }
+        TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
+            setOf(auid)
+        }
 
         val b = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$bbid","ident":"12345678910","vedtakstidspunktet":"2025-12-08T07:09:38.510701","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
         TestRuntime.topics.dp.produce(btid) { b }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(key = btid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
                 DetaljerLinje(bbid, LocalDate.of(2025, 11, 17), LocalDate.of(2025, 11, 28), 911u, 911u, "DAGPENGER"),
@@ -582,15 +559,12 @@ internal class DpTest {
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(buid.toString())
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
-            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(auid, buid))
-            }
+        TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
+            setOf(auid, buid)
+        }
 
         val c = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$cbid","ident":"12345678910","vedtakstidspunktet":"2025-12-15T09:26:40.032951","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-01","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-02","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-03","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-04","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-05","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-08","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-09","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-10","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-11","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-12","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
         TestRuntime.topics.dp.produce(ctid) { c }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(key = ctid, index = 0, size = 1, value = StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.DAGPENGER, linjer = listOf(
                 DetaljerLinje(cbid, LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 12), 911u, 911u, "DAGPENGER"),
@@ -645,11 +619,6 @@ internal class DpTest {
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(SakId(sid), Fagsystem.DAGPENGER), size = 1)
-            .with(SakKey(SakId(sid), Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(auid, buid, cuid))
-            }
 
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
     }
@@ -679,7 +648,6 @@ internal class DpTest {
                 periode(1.jan, 2.jan, 100u, 100u)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id, bid.id, dryrun = true) {
@@ -692,7 +660,6 @@ internal class DpTest {
                 )
             }
         }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
             assertEquals(Status.OK, statusReply.status)
@@ -721,7 +688,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -790,9 +756,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
     }
 
     @Test
@@ -823,7 +786,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -961,14 +923,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(uid1))
-            }
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 1) {
-                assertEquals(it, setOf(uid1, uid2))
-            }
     }
 
     @Test
@@ -1017,7 +971,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1252,20 +1205,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 4)
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 0) {
-                assertEquals(it, setOf(uid1))
-            }
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 1) {
-                assertEquals(it, setOf(uid1, uid2))
-            }
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 2) {
-                assertEquals(it, setOf(uid1, uid2, uid3))
-            }
-            .with(SakKey(sid, Fagsystem.DAGPENGER), index = 3) {
-                assertEquals(it, setOf(uid1, uid2, uid3, uid4))
-            }
     }
 
     @Test
@@ -1304,7 +1243,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1493,11 +1431,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 3)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2, uid3), index = 2)
     }
 
     @Test
@@ -1542,7 +1475,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1681,11 +1613,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1))
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
     }
 
     @Test
@@ -1731,7 +1658,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -1870,11 +1796,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1))
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
     }
 
     @Test
@@ -1910,7 +1831,6 @@ internal class DpTest {
             setOf(uid1)
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
@@ -1934,7 +1854,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -2027,11 +1946,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
     }
 
     @Test
@@ -2067,7 +1981,6 @@ internal class DpTest {
             setOf(uid1)
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.dp.produce(transactionId2) {
             Dp.utbetaling(
@@ -2085,7 +1998,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -2177,10 +2089,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
     }
 
     @Test
@@ -2210,6 +2118,9 @@ internal class DpTest {
                 periode(2.jun, 13.jun, 100u, 100u)
             }
         }
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid1)
+        }
 
         TestRuntime.topics.dp.produce(transactionId1) {
             Dp.utbetaling(
@@ -2221,7 +2132,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             status = Status.MOTTATT,
@@ -2312,10 +2222,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(), index = 1)
 
     }
 
@@ -2333,13 +2239,11 @@ internal class DpTest {
         }
         val expectedStatus = StatusReply(Status.OK)
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(uid, expectedStatus)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.saker.assertThat().isEmpty()
     }
 
     @Test
@@ -2390,8 +2294,10 @@ internal class DpTest {
                 periode(16.sep, 27.sep, 600u, 600u) // 15-28
             }
         }
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid1, uid2)
+        }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
@@ -2400,7 +2306,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -2597,14 +2502,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 5)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1), index = 0)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 1)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2), index = 2)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2, uid3), index = 3)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid3), index = 4)
     }
 
     @Test
@@ -2669,10 +2566,6 @@ internal class DpTest {
                 assertEquals(forventetFomDatoer, periodeFomDatoer)
                 assertEquals(3, utbetaling.perioder.size)
             }
-
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
     }
 
     @Test
@@ -2705,7 +2598,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -2818,11 +2710,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-
-
-            TestRuntime.topics.saker.assertThat()
-                .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
-                .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
         }
 
     fun <V: Any> sendUtbetaling(
@@ -2894,9 +2781,9 @@ internal class DpTest {
                 assertEquals(utbetaling, actual)
             }
 
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, fagsystem), size = 1)
-            .has(SakKey(sid, fagsystem), setOf(uid), index = 0)
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid)
+        }
 
         return oppdrag
     }
@@ -3094,7 +2981,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt1 = StatusReply(
             Status.MOTTATT,
@@ -3306,13 +3192,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid1, Fagsystem.DAGPENGER))
-            .has(SakKey(sid1, Fagsystem.DAGPENGER), setOf(uid1))
-            .has(SakKey(sid2, Fagsystem.DAGPENGER))
-            .has(SakKey(sid2, Fagsystem.DAGPENGER), setOf(uid2))
-            .has(SakKey(sid3, Fagsystem.DAGPENGER))
-            .has(SakKey(sid3, Fagsystem.DAGPENGER), setOf(uid3))
     }
 
     @Test
@@ -3333,12 +3212,10 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.saker.assertThat().isEmpty()
         TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
             .has(transactionId)
@@ -3381,7 +3258,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
 
         val mottatt = StatusReply(
             Status.MOTTATT,
@@ -3449,9 +3325,6 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.saker.assertThat()
-            .has(SakKey(sid, Fagsystem.DAGPENGER), size = 1)
-            .has(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid), index = 0)
     }
 
     @Test
@@ -3474,7 +3347,6 @@ internal class DpTest {
             }
         }
 
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat().has(transactionId)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -3497,7 +3369,6 @@ internal class DpTest {
         }
 
         TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
-        TestRuntime.topics.saker.assertThat().has(SakKey(sid, Fagsystem.DAGPENGER))
     }
 
     @Test
@@ -3513,7 +3384,6 @@ internal class DpTest {
                 Dp.meldekort(meldeperiode, 1.jun, 18.jun, 1077u, 553u)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
             .with(transactionId) { reply -> assertEquals(Status.MOTTATT, reply.status) }
@@ -3532,7 +3402,6 @@ internal class DpTest {
                 Dp.meldekort("132460781", 1.jun, 18.jun, 1077u, 553u)
             }
         }
-        TestRuntime.kafka.advanceWallClockTime((DP_TX_GAP_MS * 2).milliseconds)
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
             .with(transactionId) { reply -> assertEquals(Status.FEILET, reply.status) }
