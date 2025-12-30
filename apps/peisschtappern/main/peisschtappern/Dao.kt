@@ -5,7 +5,7 @@ import libs.jdbc.map
 import libs.utils.logger
 import libs.utils.secureLog
 import java.sql.ResultSet
-import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.currentCoroutineContext
 
 private val daoLog = logger("dao")
 
@@ -56,7 +56,7 @@ data class Dao(
                 LIMIT $limit 
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 stmt.setString(1, key)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
@@ -88,7 +88,7 @@ data class Dao(
                 LIMIT $limit 
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
@@ -128,7 +128,7 @@ data class Dao(
                 LIMIT $limit 
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
@@ -137,23 +137,14 @@ data class Dao(
 
         suspend fun findOppdrag(sakId: String, fagsystem: String): List<Dao> {
             val sql = """
-                SELECT *
-                FROM oppdrag
-                WHERE
-                    (xpath(
-                            '//ns2:oppdrag/oppdrag-110/fagsystemId/text()',
-                            record_value::xml,
-                            ARRAY[ARRAY['ns2', 'http://www.trygdeetaten.no/skjema/oppdrag']]
-                     ))[1]::text = '$sakId'
-                  AND
-                    (xpath(
-                            '//ns2:oppdrag/oppdrag-110/kodeFagomraade/text()',
-                            record_value::xml,
-                            ARRAY[ARRAY['ns2', 'http://www.trygdeetaten.no/skjema/oppdrag']]
-                     ))[1]::text = '$fagsystem';
+                SELECT * 
+                FROM oppdrag 
+                WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, sakId)
+                stmt.setString(2, fagsystem)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery()?.map(::from) ?: emptyList()
@@ -167,7 +158,7 @@ data class Dao(
                 WHERE record_key IN (${keys.joinToString { "'$it'" }});
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
@@ -176,23 +167,14 @@ data class Dao(
 
         suspend fun findKvitteringer(sakId: String, fagsystem: String): List<Dao> {
             val sql = """
-                SELECT *
-                FROM kvittering
-                WHERE
-                    (xpath(
-                            '//ns2:oppdrag/oppdrag-110/fagsystemId/text()',
-                            record_value::xml,
-                            ARRAY[ARRAY['ns2', 'http://www.trygdeetaten.no/skjema/oppdrag']]
-                     ))[1]::text = '$sakId'
-                  AND
-                    (xpath(
-                            '//ns2:oppdrag/oppdrag-110/kodeFagomraade/text()',
-                            record_value::xml,
-                            ARRAY[ARRAY['ns2', 'http://www.trygdeetaten.no/skjema/oppdrag']]
-                     ))[1]::text = '$fagsystem';
+                SELECT * 
+                FROM kvittering 
+                WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, sakId)
+                stmt.setString(2, fagsystem)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
@@ -201,12 +183,14 @@ data class Dao(
 
         suspend fun findUtbetalinger(sakId: String, fagsystem: String): List<Dao> {
             val sql = """
-                SELECT *
-                FROM utbetalinger
-                WHERE json(record_value) ->> 'fagsystem' = '$fagsystem' AND json(record_value) ->> 'sakId' = '$sakId';
+                SELECT * 
+                FROM utbetalinger 
+                WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, sakId)
+                stmt.setString(2, fagsystem)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
@@ -215,12 +199,14 @@ data class Dao(
 
         suspend fun findPendingUtbetalinger(sakId: String, fagsystem: String): List<Dao> {
             val sql = """
-                SELECT *
-                FROM pending_utbetalinger
-                WHERE json(record_value) ->> 'fagsystem' = '$fagsystem' AND json(record_value) ->> 'sakId' = '$sakId';
+                SELECT * 
+                FROM pending_utbetalinger 
+                WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, sakId)
+                stmt.setString(2, fagsystem)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
@@ -234,7 +220,7 @@ data class Dao(
                 WHERE json(record_value) ->> 'sakId' = '$sakId';
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
@@ -245,21 +231,12 @@ data class Dao(
             val sql = """
                 SELECT *
                 FROM simuleringer
-                WHERE
-                  (xpath(
-                     '/ns3:simulerBeregningRequest/request/oppdrag/kodeFagomraade/text()',
-                     record_value::xml,
-                     ARRAY[ARRAY['ns3', 'http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt']]
-                  ))[1]::text = '$fagsystem'
-                AND
-                  (xpath(
-                     '/ns3:simulerBeregningRequest/request/oppdrag/fagsystemId/text()',
-                     record_value::xml,
-                     ARRAY[ARRAY['ns3', 'http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt']]
-                  ))[1]::text = '$sakId';
+                WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, sakId)
+                stmt.setString(2, fagsystem)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
@@ -274,7 +251,7 @@ data class Dao(
                     AND json(record_key) ->> 'fagsystem' = '$fagsystem';
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
@@ -299,7 +276,7 @@ data class Dao(
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """.trimIndent()
 
-        coroutineContext.connection.prepareStatement(sql).use { stmt ->
+        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, version)
             stmt.setString(2, topic_name)
             stmt.setString(3, key)
