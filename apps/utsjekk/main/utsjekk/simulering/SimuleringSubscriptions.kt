@@ -31,6 +31,7 @@ import models.Simulering
 import models.Status
 import models.StatusReply
 import models.TpUtbetaling
+import models.TsDto
 import models.TsUtbetaling
 import models.UtbetalingId
 import models.badRequest
@@ -108,7 +109,7 @@ fun Route.simulerBlocking(
     aapUtbetalingerProducer: KafkaProducer<String, AapUtbetaling>,
     dpUtbetalingerProducer: KafkaProducer<String, DpUtbetaling>,
     tpUtbetalingerProducer: KafkaProducer<String, TpUtbetaling>,
-    tsUtbetalingerProducer: KafkaProducer<String, TsUtbetaling>,
+    tsUtbetalingerProducer: KafkaProducer<String, TsDto>,
     dryrunTsStore: StateStore<String, models.v1.Simulering>, 
     dryrunDpStore: StateStore<String, Simulering>, 
 ) {
@@ -187,8 +188,8 @@ fun Route.simulerBlocking(
             }
 
             suspend fun simulerTilleggsstønader() {
-                val dtos = call.receive<List<TsUtbetaling>>().map { it.copy(dryrun = true) }
-                dtos.forEach { dto -> tsUtbetalingerProducer.send(transactionId, dto) }
+                val dto = call.receive<TsDto>().copy(dryrun = true)
+                tsUtbetalingerProducer.send(transactionId, dto)
 
                 val result = withTimeoutOrNull(120.seconds) { 
                     while(true) {

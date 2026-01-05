@@ -27,7 +27,7 @@ object Topics {
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<models.v1.Simulering>())
     val utbetalingDp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val utbetalingAap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
-    val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>())
+    val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
     val utbetalingTp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
     val utbetaling = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, models.UtbetalingId>())
