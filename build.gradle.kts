@@ -3,8 +3,8 @@
 // might not be needed when ktor 3.3.4 or newer is released
 buildscript {
     repositories {
-        mavenCentral()
         maven("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
+        mavenCentral()
     }
     configurations.all {
         resolutionStrategy.eachDependency {
@@ -53,8 +53,8 @@ subprojects {
 
 allprojects {
     repositories {
-        mavenCentral()
         maven("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
+        mavenCentral()
     }
 
     kotlin {
