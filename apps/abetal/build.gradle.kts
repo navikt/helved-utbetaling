@@ -27,9 +27,6 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.0")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
-
-    // TODO: ER det mulig å innkapsulere denne i libs?
-    // vanilla producer
     implementation("org.apache.kafka:kafka-clients:4.1.1")
 
     testImplementation(kotlin("test"))
