@@ -1,12 +1,11 @@
 package libs.kafka.stream
 
 import libs.kafka.*
-import libs.kafka.processor.*
 import libs.kafka.KTable
 import libs.kafka.Named
-import libs.kafka.processor.EnrichMetadataProcessor
+import libs.kafka.processor.EnrichHeaderProcessor
+import libs.kafka.processor.LogAndAuditProduceTopicProcessor
 import libs.kafka.processor.Processor
-import libs.kafka.processor.Metadata
 import libs.kafka.processor.StateProcessor
 import org.apache.kafka.streams.kstream.*
 import kotlin.time.Duration
@@ -16,11 +15,13 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
     private val stream: KStream<K, V>,
 ) {
     fun produce(topic: Topic<K, V>) {
-        stream.produceWithLogging(topic)
+        val logAudStream = stream.process({LogAndAuditProduceTopicProcessor(topic)})
+        logAudStream.to(topic.name, topic.produced())
     }
 
     fun produce(topic: Topic<K, V>, id: Int) {
-        stream.produceWithLogging(topic)
+        val logAudStream = stream.process({LogAndAuditProduceTopicProcessor(topic)})
+        logAudStream.to(topic.name, topic.produced())
     }
 
     fun <K2: Any> rekey(selectKeyFromValue: (V) -> K2): ConsumedStream<K2, V> {

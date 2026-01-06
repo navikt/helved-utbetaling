@@ -6,8 +6,7 @@ import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.kafka.*
-import libs.kafka.processor.EnrichMetadataProcessor
-import libs.kafka.processor.Processor
+import libs.kafka.processor.*
 import libs.tracing.Tracing
 import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -48,6 +47,22 @@ fun createTopology(config: Config): Topology = topology {
         .forEach { save(it.topic, it.table, config.image.commitHash()) }
 }
 
+data class AuditMetadata (
+    val timestamp: Long,
+    val streamTimeMs: Long,
+    val systemTimeMs: Long,
+) {
+    companion object {
+        fun parse(metadata: Metadata): AuditMetadata {
+            val ts = metadata.headers[AUD_TIMESTAMP_MS]?.toLongOrNull() ?: metadata.timestamp
+            val st = metadata.headers[AUD_STREAM_TIME_MS]?.toLongOrNull() ?: metadata.streamTimeMs
+            val sy = metadata.headers[AUD_SYSTEM_TIME_MS]?.toLongOrNull() ?: metadata.systemTimeMs
+
+            return AuditMetadata(ts, st, sy)
+        }
+    }
+}
+
 private fun Topology.save(
     topic: Topic<String, ByteArray>,
     table: Table,
@@ -62,6 +77,7 @@ private fun Topology.save(
                         if (topic == Topics.oppdrag) {
                             missingKvitteringHandler(key, value)
                         }
+                        val aud = AuditMetadata.parse(metadata) 
                         Dao(
                             version = topic.name.substringAfterLast("."),
                             topic_name = topic.name,
@@ -69,9 +85,9 @@ private fun Topology.save(
                             value = value?.decodeToString(),
                             partition = metadata.partition,
                             offset = metadata.offset,
-                            timestamp_ms = metadata.timestamp,
-                            stream_time_ms = metadata.streamTimeMs,
-                            system_time_ms = metadata.systemTimeMs,
+                            timestamp_ms = aud.timestamp,
+                            stream_time_ms = aud.streamTimeMs,
+                            system_time_ms = aud.systemTimeMs,
                             trace_id = Tracing.getCurrentTraceId(),
                             commit = commitHash, 
                         ).insert(table)

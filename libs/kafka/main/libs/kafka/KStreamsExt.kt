@@ -3,20 +3,13 @@
 package libs.kafka
 
 import libs.kafka.processor.LogProduceTableProcessor
-import libs.kafka.processor.LogProduceTopicProcessor
 import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.kstream.Joined
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Materialized
 import org.apache.kafka.streams.kstream.Repartitioned
 import org.apache.kafka.streams.state.KeyValueStore
-import org.apache.kafka.streams.state.Stores
-import org.apache.kafka.streams.state.internals.RocksDBKeyValueBytesStoreSupplier
 import org.apache.kafka.streams.kstream.KTable as _KTable
-
-internal fun <K: Any, V : Any> KStream<K, V>.produceWithLogging(topic: Topic<K, V>) {
-    return process({LogProduceTopicProcessor(topic)}).to(topic.name, topic.produced())
-}
 
 internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.leftJoin(
     left: Topic<K, L>,

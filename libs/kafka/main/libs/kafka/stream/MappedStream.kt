@@ -1,12 +1,10 @@
 package libs.kafka.stream
 
 import libs.kafka.*
+import libs.kafka.KTable
+import libs.kafka.Named
 import libs.kafka.processor.*
-import org.apache.kafka.streams.kstream.Grouped
-import org.apache.kafka.streams.kstream.KStream
-import org.apache.kafka.streams.kstream.Repartitioned
-import org.apache.kafka.streams.kstream.SessionWindowedKStream
-import org.apache.kafka.streams.kstream.SessionWindows
+import org.apache.kafka.streams.kstream.*
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
@@ -14,7 +12,8 @@ class MappedStream<K: Any, V : Any> internal constructor(
     private val stream: KStream<K, V>,
 ) {
     fun produce(topic: Topic<K, V>) {
-        stream.produceWithLogging(topic)
+        val logAudStream = stream.process({LogAndAuditProduceTopicProcessor(topic)})
+        logAudStream.to(topic.name, topic.produced())
     }
 
     fun materialize(store: Store<K, V>, materializeWithTrace: Boolean = false): KStore<K, V> {

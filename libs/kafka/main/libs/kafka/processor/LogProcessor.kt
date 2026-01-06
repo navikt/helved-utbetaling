@@ -1,18 +1,15 @@
 package libs.kafka.processor
 
-import libs.kafka.KeyValue
-import libs.kafka.Table
-import libs.kafka.kafkaLog
 import libs.kafka.StateStoreName
+import libs.kafka.Table
 import libs.kafka.Topic
+import libs.kafka.kafkaLog
 import libs.utils.secureLog
 import net.logstash.logback.argument.StructuredArguments.kv
-import org.apache.kafka.common.header.Headers
+import org.apache.kafka.common.header.internals.RecordHeader
 import org.apache.kafka.streams.processor.api.Processor
 import org.apache.kafka.streams.processor.api.ProcessorContext
 import org.apache.kafka.streams.processor.api.Record
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 internal class LogConsumeTopicProcessor<K: Any, V>(
     private val topic: Topic<K, V & Any>,
@@ -100,6 +97,7 @@ internal class LogProduceTableProcessor<K: Any, V>(
     }
 }
 
+@Deprecated("does not audit", replaceWith = ReplaceWith("LogAndAuditProduceTopicProcessor"))
 internal class LogProduceTopicProcessor<K: Any, V> internal constructor(
     private val topic: Topic<K, V & Any>,
 ) : Processor<K, V, K, V> {
@@ -129,3 +127,40 @@ internal class LogProduceTopicProcessor<K: Any, V> internal constructor(
     }
 }
 
+const val AUD_TIMESTAMP_MS = "x-ts"
+const val AUD_STREAM_TIME_MS = "x-st"
+const val AUD_SYSTEM_TIME_MS = "x-sy"
+
+internal class LogAndAuditProduceTopicProcessor<K: Any, V> internal constructor(
+    private val topic: Topic<K, V & Any>,
+) : Processor<K, V, K, V> {
+    private lateinit var context: ProcessorContext<K, V>
+
+    override fun init(ctx: ProcessorContext<K, V>) {
+        context = ctx
+    }
+
+    override fun process(record: Record<K, V>) {
+        val metadata = context.recordMetadata().orElse(null)
+
+        val openMsg = "produce ${record.key()} on ${topic.name}"
+        val secureMsg = "produce ${record.key()} on ${topic.name} with ${record.value()}"
+        val kvKey = kv("key", record.key())
+        val kvSrcTopic = kv("source_topic", metadata?.topic() ?: "")
+        val kvTopic = kv("topic", topic.name)
+        val kvPartition = kv("partition", metadata?.partition() ?: "")
+
+        kafkaLog.trace (openMsg, kvKey, kvSrcTopic, kvTopic, kvPartition)
+        secureLog.trace(secureMsg, kvKey, kvSrcTopic, kvTopic, kvPartition)
+
+        fun replaceHeader(key: String, time: Long) {
+            record.headers().remove(key)
+            record.headers().add(RecordHeader(key, time.toString().toByteArray(Charsets.UTF_8)))
+        }
+
+        replaceHeader(AUD_TIMESTAMP_MS, record.timestamp())
+        replaceHeader(AUD_STREAM_TIME_MS, context.currentStreamTimeMs())
+        replaceHeader(AUD_SYSTEM_TIME_MS, context.currentSystemTimeMs())
+        context.forward(record)
+    }
+}

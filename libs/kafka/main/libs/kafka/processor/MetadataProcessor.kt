@@ -1,16 +1,8 @@
 package libs.kafka.processor
 
-import libs.kafka.KeyValue
-import libs.kafka.Named
-import libs.kafka.Topic
-import org.apache.kafka.common.header.internals.RecordHeader
-import org.apache.kafka.common.header.Headers
-import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.processor.api.Processor
-import org.apache.kafka.streams.processor.api.Record
 import org.apache.kafka.streams.processor.api.ProcessorContext
-import org.apache.kafka.streams.processor.api.ProcessorSupplier
-import kotlin.jvm.optionals.getOrNull
+import org.apache.kafka.streams.processor.api.Record
 
 /**
  * @param timestamp: The current timestamp in the producers environment
@@ -24,6 +16,7 @@ data class Metadata(
     val timestamp: Long,
     val systemTimeMs: Long,
     val streamTimeMs: Long,
+    val headers: Map<String, String> = emptyMap(),
 )
 
 class EnrichMetadataProcessor<K: Any, V>(
@@ -35,14 +28,16 @@ class EnrichMetadataProcessor<K: Any, V>(
     }
 
     override fun process(record: Record<K, V>) {
-        val recordMeta = context.recordMetadata()!!.get()
+        val recordMeta = context.recordMetadata().orElse(null)
+
         val metadata = Metadata(
-            topic = recordMeta.topic() ?: "",
-            partition = recordMeta.partition(),
-            offset = recordMeta.offset(),
+            topic = recordMeta?.topic() ?: "",
+            partition = recordMeta?.partition() ?: -1,
+            offset = recordMeta?.offset() ?: -1,
             timestamp = record.timestamp(),
             systemTimeMs = context.currentSystemTimeMs(),
             streamTimeMs = context.currentStreamTimeMs(),
+            headers = record.headers().associate { it.key() to String(it.value(), Charsets.UTF_8) }
         )
         val newValue = record.value() to metadata
         context.forward(record.withValue(newValue))
@@ -59,11 +54,11 @@ class PeekMetadataProcessor<K: Any, V>(
     }
 
     override fun process(record: Record<K, V>) {
-        val recordMeta = context.recordMetadata()!!.get()
+        val recordMeta = context.recordMetadata().orElse(null)
         val metadata = Metadata(
-            topic = recordMeta.topic() ?: "",
-            partition = recordMeta.partition(),
-            offset = recordMeta.offset(),
+            topic = recordMeta?.topic() ?: "",
+            partition = recordMeta?.partition() ?: -1,
+            offset = recordMeta?.offset() ?: -1,
             timestamp = record.timestamp(),
             systemTimeMs = context.currentSystemTimeMs(),
             streamTimeMs = context.currentStreamTimeMs(),
