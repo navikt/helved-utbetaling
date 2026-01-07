@@ -136,7 +136,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
                                 deferred.awaitAll().flatten()
                             }
-                                .sortedByDescending { it.timestamp_ms }
+                                .sortedByDescending { it.system_time_ms }
                         }
                     }
                 }
