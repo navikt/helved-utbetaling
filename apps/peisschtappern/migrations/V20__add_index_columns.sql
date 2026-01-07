@@ -19,10 +19,6 @@ ALTER TABLE utbetalinger
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (record_value::jsonb ->> 'sakId') STORED,
     ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (record_value::jsonb ->> 'fagsystem') STORED;
 
-ALTER TABLE pending_utbetalinger
-    ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (record_value::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (record_value::jsonb ->> 'fagsystem') STORED;
-
 ALTER TABLE simuleringer
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (
         get_xml_field(record_value, '/ns3:simulerBeregningRequest/request/oppdrag/fagsystemId/text()',ARRAY [ARRAY ['ns3', 'http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt']])
@@ -121,3 +117,4 @@ CREATE INDEX kvittering_lookup_idx ON kvittering(sak_id, fagsystem);
 CREATE INDEX simuleringer_lookup_idx ON simuleringer(sak_id, fagsystem);
 CREATE INDEX utbetalinger_lookup_idx ON utbetalinger(sak_id, fagsystem);
 CREATE INDEX pending_utbetalinger_lookup_idx ON pending_utbetalinger(sak_id, fagsystem);
+
