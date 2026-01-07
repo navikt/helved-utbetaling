@@ -3,6 +3,7 @@ package models
 import com.fasterxml.jackson.annotation.JsonIgnore
 import models.kontrakter.felles.GyldigBehandlingId
 import models.kontrakter.felles.GyldigSakId
+import no.trygdeetaten.skjema.oppdrag.Mmel
 
 object DocumentedErrors {
     const val BASE = "https://helved-docs.ansatt.dev.nav.no"
@@ -72,6 +73,14 @@ object DocumentedErrors {
             MINIMUM_CHANGES(
                 "Ingen reell endring",
                 "$URL/kom_i_gang/endre_utbetaling#minimum-changes"
+            ),
+            UTBETALING_FINNES_IKKE(
+                "Utbetalingen finnes ikke",
+                "$URL/kom_i_gang/endre_utbetaling#utbetaling-finnes-ikke"
+            ),
+            UTBETALING_FINNES_ALLEREDE(
+                "Utbetalingen finnes allerede",
+                "$URL/kom_i_gang/opprett_utbetaling#utbetaling-finnes-allerede"
             )
         }
 
@@ -125,7 +134,9 @@ fun conflict(error: DocumentedErrors.Async): Nothing = throw ApiError(409, error
 
 fun unprocessable(msg: String, doc: String? = null): Nothing = throw ApiError(422, msg, doc ?: DocumentedErrors.BASE)
 fun locked(msg: String, doc: String? = null): Nothing = throw ApiError(423, msg, doc ?: DocumentedErrors.BASE)
-fun internalServerError(msg: String, doc: String? = null): Nothing = throw ApiError(500, msg, doc ?: DocumentedErrors.BASE)
+fun internalServerError(msg: String, doc: String? = null): Nothing =
+    throw ApiError(500, msg, doc ?: DocumentedErrors.BASE)
+
 fun notImplemented(msg: String, doc: String? = null): Nothing = throw ApiError(501, msg, doc ?: DocumentedErrors.BASE)
 fun badGateway(msg: String, doc: String? = null): Nothing = throw ApiError(502, msg, doc ?: DocumentedErrors.BASE)
 
@@ -136,3 +147,23 @@ fun unauthorized(msg: String): Nothing = throw ApiError(
     msg = msg,
     doc = DocumentedErrors.BASE + "async/kom_i_gang/oppsett",
 )
+
+fun Mmel.apiError(code: Int): ApiError {
+    return with(this.beskrMelding) {
+        when {
+            contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> ApiError(
+                statusCode = 404,
+                msg = DocumentedErrors.Async.Utbetaling.UTBETALING_FINNES_IKKE.msg,
+                doc = DocumentedErrors.Async.Utbetaling.UTBETALING_FINNES_IKKE.doc,
+                system = System.OSUR
+            )
+            contains("Oppdraget finnes fra før") -> ApiError(
+                statusCode = 409,
+                msg = DocumentedErrors.Async.Utbetaling.UTBETALING_FINNES_ALLEREDE.msg,
+                doc = DocumentedErrors.Async.Utbetaling.UTBETALING_FINNES_ALLEREDE.doc,
+                system = System.OSUR
+            )
+            else -> ApiError(statusCode = code, msg = this, system = System.OSUR)
+        }
+    }
+}

@@ -125,8 +125,7 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
                 statusReply
             }
             .includeHeader(FS_KEY) { statusReply -> 
-                statusReply.detaljer
-                    ?.let { detaljer -> detaljer.ytelse.name } 
+                statusReply.detaljer?.ytelse?.name
                     ?: "ukjent" 
             }
             .produce(Topics.status)
@@ -144,11 +143,10 @@ private fun statusReply(o: Oppdrag): StatusReply {
         null -> StatusReply(Status.OK) // TODO: denne kan skape feil hvis statusReply blir kalt fra et sted som ikke har kvittering
         else -> when (o.mmel.alvorlighetsgrad) {
             "00" -> StatusReply.ok(o)
-            "04" -> StatusReply.ok(o, ApiError(200, o.mmel.beskrMelding))
-            "08" -> StatusReply.err(o, ApiError(400, o.mmel.beskrMelding))
-            "12" -> StatusReply.err(o, ApiError(500, o.mmel.beskrMelding))
+            "04" -> StatusReply.ok(o, o.mmel.apiError(200))
+            "08" -> StatusReply.err(o, o.mmel.apiError(400))
+            "12" -> StatusReply.err(o, o.mmel.apiError(500))
             else -> StatusReply.err(o, ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute."))
         }
     }
 }
-
