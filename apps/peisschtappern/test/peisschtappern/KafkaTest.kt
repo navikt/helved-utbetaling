@@ -50,7 +50,7 @@ class KafkaTest {
             val byteArray = if (case.channel.topic == Topics.oppdrag) {
                 TestData.oppdragXml.toByteArray()
             } else {
-                "content for ${case.channel.table.name}".toByteArray()
+                """{"sakId": "123"}""".toByteArray()
 
             }
             case.testTopic.produce(key) {

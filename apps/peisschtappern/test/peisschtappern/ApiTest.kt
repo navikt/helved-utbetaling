@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Disabled
 import kotlin.test.*
 
 class ApiTest {
+
     @Test
     fun `can query with limit`() = runTest(TestRuntime.context) {
         save(Channel.Aap)
@@ -193,7 +194,7 @@ class ApiTest {
     private suspend fun save(
         channel: Channel,
         key: String = UUID.randomUUID().toString(),
-        value: String = UUID.randomUUID().toString(),
+        value: String = """{ "sakId": "123" }""",
         timestamp: Long = Instant.now().toEpochMilli(),
         commitHash: String = "test",
     ) {
