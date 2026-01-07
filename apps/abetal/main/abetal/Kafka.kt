@@ -10,7 +10,7 @@ const val FS_KEY = "fagsystem"
 object Topics {
     val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
     val aap = Topic("aap.utbetaling.v1", json<AapUtbetaling>())
-    val ts = Topic("tilleggsstonader.utbetaling.v1", json<TsUtbetaling>())
+    val ts = Topic("tilleggsstonader.utbetaling.v1", json<TsDto>())
     // TODO: rename denne til tpUtbetalinger når ts har laget topic
     val tp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
@@ -22,7 +22,7 @@ object Topics {
     val fk = Topic("helved.fk.v1", Serdes(XmlSerde.xml<Oppdrag>(), JsonSerde.jackson<PKs>()))
     val dpIntern = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val aapIntern = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
-    val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>())
+    val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
     val historisk = Topic("historisk.utbetaling.v1", json<HistoriskUtbetaling>())
     val historiskIntern = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
 }
@@ -305,12 +305,16 @@ fun Topology.tsStream(
         .rekey { (_, ts) -> SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tstuple-leftjoin-saker")
         .map { ts, uids -> ts.toDomain(uids)}
-        .rekey { dto -> dto.originalKey } // alle har samme uid, skal ikke være 0 pga branch over
-        .map { new ->
+        .rekey { dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
+        .map { utbetalinger ->
             Result.catch {
                 val store = kafka.getStore(Stores.utbetalinger)
-                val prev = store.getOrNull(new.uid.toString())
-                val aggregate = listOf(StreamsPair(new, prev))
+                kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
+                val aggregate = utbetalinger.map { new -> 
+                    val prev = store.getOrNull(new.uid.toString())
+                    kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
+                    StreamsPair(new, prev)
+                }
                 val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
                 val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
                 oppdragToUtbetalinger to simuleringer
@@ -324,10 +328,7 @@ fun Topology.tsStream(
                 .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
                     oppdragToUtbetalinger.flatMap { agg ->
                         agg.second.map {
-                            KeyValue(
-                                it.uid.toString(),
-                                it
-                            )
+                            KeyValue(it.uid.toString(), it)
                         }
                     }
                 }
