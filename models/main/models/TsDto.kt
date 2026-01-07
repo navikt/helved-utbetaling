@@ -4,19 +4,23 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-data class TsUtbetaling(
+data class TsDto(
     val dryrun: Boolean = false,
-    val id: UUID,
     val sakId: String,
     val behandlingId: String,
     val personident: String,
-    val stønad: StønadTypeTilleggsstønader,
     val vedtakstidspunkt: LocalDateTime,
     val periodetype: Periodetype,
-    val perioder: List<TsPeriode>,
-    val brukFagområdeTillst: Boolean = false,
     val saksbehandler: String? = null,
     val beslutter: String? = null,
+    val utbetalinger: List<TsUtbetaling>,
+)
+
+data class TsUtbetaling(
+    val id: UUID,
+    val stønad: StønadTypeTilleggsstønader,
+    val perioder: List<TsPeriode>,
+    val brukFagområdeTillst: Boolean = false,
 )
 
 data class TsPeriode(
@@ -31,35 +35,37 @@ data class TsPeriode(
     )
 }
 
-data class TsTuple(val transactionId: String, val dto: TsUtbetaling)
+data class TsTuple(val transactionId: String, val dto: TsDto)
 
-fun TsTuple.toDomain(uidsPåSak: Set<UtbetalingId>?): Utbetaling {
-    if (dto.brukFagområdeTillst && dto.stønad !in stønadstyperForTillst) {
-        badRequest("Fant stønadstype ${dto.stønad} ved bruk av fagområde TILLST. Tillater bare en av: $stønadstyperForTillst")
+fun TsTuple.toDomain(uidsPåSak: Set<UtbetalingId>?): List<Utbetaling> {
+    return dto.utbetalinger.map { utbetaling ->
+        if (utbetaling.brukFagområdeTillst && utbetaling.stønad !in stønadstyperForTillst) {
+            badRequest("Fant stønadstype ${utbetaling.stønad} ved bruk av fagområde TILLST. Tillater bare en av: $stønadstyperForTillst")
+        }
+        val (action, perioder) = when (utbetaling.perioder.isEmpty()) {
+            true -> Action.DELETE to listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u))
+            false -> Action.CREATE to utbetaling.perioder.toDomain(dto.periodetype)
+        }
+        Utbetaling(
+            dryrun = dto.dryrun,
+            originalKey = transactionId,
+            fagsystem = utbetaling.fagsystem(),
+            uid = UtbetalingId(utbetaling.id),
+            action = action,
+            førsteUtbetalingPåSak = uidsPåSak == null,
+            sakId = SakId(dto.sakId),
+            behandlingId = BehandlingId(dto.behandlingId),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident(dto.personident),
+            vedtakstidspunkt = dto.vedtakstidspunkt,
+            stønad = utbetaling.stønad,
+            beslutterId = dto.beslutter?.let(::Navident) ?: Navident("ts"),
+            saksbehandlerId = dto.saksbehandler?.let(::Navident) ?: Navident("ts"),
+            periodetype = dto.periodetype,
+            avvent = null,
+            perioder = perioder,
+        )
     }
-    val (action, perioder) = when (dto.perioder.isEmpty()) {
-        true -> Action.DELETE to listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u))
-        false -> Action.CREATE to dto.perioder.toDomain(dto.periodetype)
-    }
-    return Utbetaling(
-        dryrun = dto.dryrun,
-        originalKey = transactionId,
-        fagsystem = dto.fagsystem(),
-        uid = UtbetalingId(dto.id),
-        action = action,
-        førsteUtbetalingPåSak = uidsPåSak == null,
-        sakId = SakId(dto.sakId),
-        behandlingId = BehandlingId(dto.behandlingId),
-        lastPeriodeId = PeriodeId(),
-        personident = Personident(dto.personident),
-        vedtakstidspunkt = dto.vedtakstidspunkt,
-        stønad = dto.stønad,
-        beslutterId = dto.beslutter?.let(::Navident) ?: Navident("ts"),
-        saksbehandlerId = dto.saksbehandler?.let(::Navident) ?: Navident("ts"),
-        periodetype = dto.periodetype,
-        avvent = null,
-        perioder = perioder,
-    )
 }
 
 /**

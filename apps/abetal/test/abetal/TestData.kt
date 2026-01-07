@@ -115,29 +115,37 @@ object Dp {
 }
 
 object Ts {
-    fun utbetaling(
-        uid: UtbetalingId,
+    fun dto(
         sakId: String = "$nextInt",
         behandlingId: String = "$nextInt",
         dryrun: Boolean = false,
         ident: String = "12345678910",
         vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
-        brukFagområdeTillst: Boolean = true,
-        stønad: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
         periodetype: Periodetype = Periodetype.EN_GANG,
-        utbetalinger: () -> List<TsPeriode>,
-    ): TsUtbetaling = TsUtbetaling(
+        utbetalinger: () -> List<TsUtbetaling>,
+    ): TsDto = TsDto(
         dryrun = dryrun,
-        brukFagområdeTillst = brukFagområdeTillst,
-        id = uid.id,
-        stønad = stønad,
-        behandlingId = behandlingId,
         sakId = sakId,
+        behandlingId = behandlingId,
         personident = ident,
         vedtakstidspunkt = vedtakstidspunkt,
         periodetype = periodetype,
-        perioder = utbetalinger(),
+        saksbehandler = null,
+        beslutter = null,
+        utbetalinger = utbetalinger(),
     )
+
+    fun utbetaling(
+        uid: UtbetalingId,
+        brukFagområdeTillst: Boolean = true,
+        stønad: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
+        perioder: () -> List<TsPeriode>,
+    ): List<TsUtbetaling> = listOf(TsUtbetaling(
+        id = uid.id,
+        stønad = stønad,
+        perioder = perioder(),
+        brukFagområdeTillst = brukFagområdeTillst,
+    ))
 
     fun periode(
         fom: LocalDate,

@@ -27,8 +27,10 @@ internal class TsTest {
         val uid = UtbetalingId(UUID.randomUUID())
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid, sid.id, bid.id, brukFagområdeTillst = true) {
-                Ts.periode(7.jun, 18.jun, 1077u)
+            Ts.dto(sid.id, bid.id) {
+                Ts.utbetaling(uid, brukFagområdeTillst = true) {
+                    Ts.periode(7.jun, 18.jun, 1077u)
+                }
             }
         }
 
@@ -110,8 +112,10 @@ internal class TsTest {
         val uid = UtbetalingId(UUID.randomUUID())
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid, sid.id, bid.id, brukFagområdeTillst = false) {
-                Ts.periode(7.jun, 18.jun, 1077u)
+            Ts.dto(sid.id, bid.id) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    Ts.periode(7.jun, 18.jun, 1077u)
+                }
             }
         }
 
@@ -193,12 +197,14 @@ internal class TsTest {
         val uid = UtbetalingId(UUID.randomUUID())
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid, sid.id, bid.id) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    beløp = 1077u,
-                )
+            Ts.dto(sid.id, bid.id) {
+                Ts.utbetaling(uid) {
+                    Ts.periode(
+                        fom = LocalDate.of(2021, 6, 7),
+                        tom = LocalDate.of(2021, 6, 18),
+                        beløp = 1077u,
+                    )
+                }
             }
         }
 
@@ -280,12 +286,14 @@ internal class TsTest {
         val uid = UtbetalingId(UUID.randomUUID())
 
         TestRuntime.topics.tsIntern.produce(transactionId) {
-            Ts.utbetaling(uid, sid.id, bid.id) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    beløp = 1077u,
-                )
+            Ts.dto(sid.id, bid.id) {
+                Ts.utbetaling(uid) {
+                    Ts.periode(
+                        fom = LocalDate.of(2021, 6, 7),
+                        tom = LocalDate.of(2021, 6, 18),
+                        beløp = 1077u,
+                    )
+                }
             }
         }
 
@@ -313,13 +321,17 @@ internal class TsTest {
         val uid2 = UtbetalingId(UUID.randomUUID())
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid1, sid.id, bid.id) {
-                Ts.periode(7.jun, 20.jun, 1077u)
+            Ts.dto(sid.id, bid.id) {
+                Ts.utbetaling(uid1) {
+                    Ts.periode(7.jun, 20.jun, 1077u)
+                }
             }
         }
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid2, sid.id, bid.id) {
-                Ts.periode(7.jul, 20.jul, 2377u)
+            Ts.dto(sid.id, bid.id) {
+                Ts.utbetaling(uid2) {
+                    Ts.periode(7.jul, 20.jul, 2377u)
+                }
             }
         }
 
@@ -479,30 +491,36 @@ internal class TsTest {
         val uid3 = UtbetalingId(UUID.randomUUID())
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid1, sid.id, bid.id) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
-                    beløp = 1077u,
-                )
+            Ts.dto(sid.id, bid.id) {
+                Ts.utbetaling(uid1) {
+                    Ts.periode(
+                        fom = LocalDate.of(2021, 6, 7),
+                        tom = LocalDate.of(2021, 6, 20),
+                        beløp = 1077u,
+                    )
+                }
             }
         }
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid2, sid.id, bid.id) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    beløp = 2377u,
-                )
+            Ts.dto(sid.id, bid.id) {
+                Ts.utbetaling(uid2) {
+                    Ts.periode(
+                        fom = LocalDate.of(2021, 7, 7),
+                        tom = LocalDate.of(2021, 7, 20),
+                        beløp = 2377u,
+                    )
+                }
             }
         }
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid3, sid.id, bid.id) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 8, 7),
-                    tom = LocalDate.of(2021, 8, 20),
-                    beløp = 3133u,
-                )
+            Ts.dto(sid.id, bid.id) {
+                Ts.utbetaling(uid3) {
+                    Ts.periode(
+                        fom = LocalDate.of(2021, 8, 7),
+                        tom = LocalDate.of(2021, 8, 20),
+                        beløp = 3133u,
+                    )
+                }
             }
         }
 
@@ -710,21 +728,25 @@ internal class TsTest {
         val uid2 = UtbetalingId(UUID.randomUUID())
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid1, sid.id, bid1.id) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
-                    beløp = 553u,
-                )
+            Ts.dto(sid.id, bid1.id) {
+                Ts.utbetaling(uid1) {
+                    Ts.periode(
+                        fom = LocalDate.of(2021, 6, 7),
+                        tom = LocalDate.of(2021, 6, 20),
+                        beløp = 553u,
+                    )
+                }
             }
         }
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid2, sid.id, bid2.id) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    beløp = 779u,
-                )
+            Ts.dto(sid.id, bid1.id) {
+                Ts.utbetaling(uid2) {
+                    Ts.periode(
+                        fom = LocalDate.of(2021, 7, 7),
+                        tom = LocalDate.of(2021, 7, 20),
+                        beløp = 779u,
+                    )
+                }
             }
         }
 
@@ -872,316 +894,6 @@ internal class TsTest {
     }
 
     @Test
-    @Disabled // støtter ikke sessionWindow lenger
-    fun `4 utbetalinger i transaksjon med 2 stønader = 4 utbetaling og 1 oppdrag`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val uid1 = UtbetalingId(UUID.randomUUID())
-        val uid2 = UtbetalingId(UUID.randomUUID())
-        val uid3 = UtbetalingId(UUID.randomUUID())
-        val uid4 = UtbetalingId(UUID.randomUUID())
-
-        TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid1,
-                sakId = sid.id,
-                behandlingId = bid.id,
-                stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
-            ) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    beløp = 1000u,
-                )
-            }
-        }
-        TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid2,
-                sakId = sid.id,
-                behandlingId = bid.id,
-                stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
-            ) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    beløp = 100u,
-                )
-            }
-        }
-        TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid3,
-                sakId = sid.id,
-                behandlingId = bid.id,
-                stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
-            ) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    beløp = 600u,
-                )
-
-            }
-        }
-        TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid4,
-                sakId = sid.id,
-                behandlingId = bid.id,
-                stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
-            ) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    beløp = 300u,
-                )
-
-            }
-        }
-
-
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.TILLEGGSSTØNADER,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, null, 1000u, "TSTBASISP2-OP"),
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, null, 100u, "TSLMASISP2-OP"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, null, 600u, "TSTBASISP2-OP"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, null, 300u, "TSLMASISP2-OP"),
-                )
-            )
-        )
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .has(transactionId, mottatt)
-
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-
-        TestRuntime.topics.pendingUtbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .with(uid1.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid1,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("ts"),
-                    saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 1000u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid2.toString())
-            .with(uid2.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("ts"),
-                    saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 100u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid3.id.toString())
-            .with(uid3.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid3,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("ts"),
-                    saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 600u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid4.id.toString())
-            .with(uid4.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid4,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    periodetype = Periodetype.EN_GANG,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("ts"),
-                    saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 300u, null)
-                }
-                assertEquals(expected, it)
-            }
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) { oppdrag ->
-                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
-                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
-                assertEquals("TILLST", oppdrag.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
-                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", oppdrag.oppdrag110.saksbehId)
-                assertEquals(4, oppdrag.oppdrag110.oppdragsLinje150s.size)
-                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
-                    assertEquals(1000, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("TSLMASISP2-OP", it.kodeKlassifik)
-                    assertEquals(100, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                oppdrag.oppdrag110.oppdragsLinje150s[2].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
-                    assertEquals(600, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                oppdrag.oppdrag110.oppdragsLinje150s[3].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("TSLMASISP2-OP", it.kodeKlassifik)
-                    assertEquals(300, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-            }
-            .get(transactionId)
-
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .with(uid1.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid1,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("ts"),
-                    saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 1000u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid2.toString())
-            .with(uid2.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    periodetype = Periodetype.EN_GANG,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("ts"),
-                    saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 100u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid3.id.toString())
-            .with(uid3.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid3,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    periodetype = Periodetype.EN_GANG,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("ts"),
-                    saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 600u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid4.id.toString())
-            .with(uid4.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid4,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("ts"),
-                    saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 300u, null)
-                }
-                assertEquals(expected, it)
-            }
-    }
-
-    @Test
     fun `endre eksisterende utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
@@ -1214,14 +926,14 @@ internal class TsTest {
 
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid,
+            Ts.dto(
                 sakId = sid.id,
                 behandlingId = bid.id,
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
-                brukFagområdeTillst = false,
             ) {
-                Ts.periode(3.jun, 7.jun, 1500u)
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    Ts.periode(3.jun, 7.jun, 1500u)
+                }
             }
         }
 
@@ -1328,14 +1040,14 @@ internal class TsTest {
         // UTGANGSPUNKT
         val transactionId = UUID.randomUUID().toString()
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid,
+            Ts.dto(
                 sakId = sid.id,
                 behandlingId = BehandlingId("$nextInt").id,
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
-                brukFagområdeTillst = false,
             ) {
-                Ts.periode(1.jun, 30.jun, 1100u)
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    Ts.periode(1.jun, 30.jun, 1100u)
+                }
             }
         }
 
@@ -1378,14 +1090,14 @@ internal class TsTest {
         // KORRIGER
         val transactionId2 = UUID.randomUUID().toString()
         TestRuntime.topics.ts.produce(transactionId2) {
-            Ts.utbetaling(
-                uid = uid,
+            Ts.dto(
                 sakId = sid.id,
                 behandlingId = BehandlingId("$nextInt").id,
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
-                brukFagområdeTillst = false,
             ) {
-                Ts.periode(1.jun, 30.jun, 1200u)
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    Ts.periode(1.jun, 30.jun, 1200u)
+                }
             }
         }
 
@@ -1427,14 +1139,14 @@ internal class TsTest {
         // KORRIGER EN KORRIGERING
         val transactionId3 = UUID.randomUUID().toString()
         TestRuntime.topics.ts.produce(transactionId3) {
-            Ts.utbetaling(
-                uid = uid,
+            Ts.dto(
                 sakId = sid.id,
                 behandlingId = BehandlingId("$nextInt").id,
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
-                brukFagområdeTillst = false,
             ) {
-                Ts.periode(1.jun, 30.jun, 1300u)
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    Ts.periode(1.jun, 30.jun, 1300u)
+                }
             }
         }
 
@@ -1508,15 +1220,16 @@ internal class TsTest {
 
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid1,
+            Ts.dto(
                 sakId = sid.id,
                 periodetype = Periodetype.EN_GANG,
-                stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
                 behandlingId = bid.id,
                 vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
-                Ts.periode(1.jun, 30.jun, 3000u)
+                Ts.utbetaling(uid1, stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP) { // tillst=false ?
+                    Ts.periode(1.jun, 30.jun, 3000u)
+                }
+                
             }
         }
 
@@ -1648,15 +1361,15 @@ internal class TsTest {
 
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid1,
+            Ts.dto(
                 sakId = sid.id,
                 periodetype = Periodetype.EN_GANG,
-                stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
                 behandlingId = bid.id,
                 vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
-                Ts.periode(1.jun, 30.jun, 3070u)
+                Ts.utbetaling(uid = uid1, stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP) { // tillst=tru3?
+                    Ts.periode(1.jun, 30.jun, 3070u)
+                }
             }
         }
 
@@ -1788,16 +1501,16 @@ internal class TsTest {
 
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid1,
+            Ts.dto(
                 sakId = sid.id,
                 periodetype = Periodetype.EN_GANG,
-                stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
                 behandlingId = bid.id,
                 vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
-                Ts.periode(1.jun, 3.jun, 210u) +
-                        Ts.periode(6.jun, 6.jun, 70u)
+                Ts.utbetaling(uid1, stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP) { // tillst=true?=
+                    Ts.periode(1.jun, 3.jun, 210u) +
+                            Ts.periode(6.jun, 6.jun, 70u)
+                }
             }
         }
 
@@ -1927,13 +1640,12 @@ internal class TsTest {
         }
 
         TestRuntime.topics.ts.produce(transactionId1) {
-            Ts.utbetaling(
-                uid = uid1,
+            Ts.dto(
                 sakId = sid.id,
                 behandlingId = bid.id,
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
             ) {
-                emptyList()
+                Ts.utbetaling(uid = uid1) { emptyList() }
             }
         }
 
@@ -2040,12 +1752,14 @@ internal class TsTest {
         val uid = UtbetalingId(UUID.randomUUID())
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid, sid.id, bid.id, dryrun = true) {
-                Ts.periode(
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    beløp = 1077u,
-                )
+            Ts.dto(sid.id, bid.id, dryrun = true) {
+                Ts.utbetaling(uid) {
+                    Ts.periode(
+                        fom = LocalDate.of(2021, 6, 7),
+                        tom = LocalDate.of(2021, 6, 18),
+                        beløp = 1077u,
+                    )
+                }
             }
         }
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.TILLEGGSSTØNADER)) {
@@ -2090,23 +1804,31 @@ internal class TsTest {
         val uid4 = UtbetalingId(UUID.randomUUID())
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid1, sid.id, bid.id, dryrun = true) {
-                Ts.periode(6.jun, 6.jun, 70u)
+            Ts.dto(sid.id, bid.id, dryrun = true) {
+                Ts.utbetaling(uid1) {
+                    Ts.periode(6.jun, 6.jun, 70u)
+                }
             }
         }
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid2, sid.id, bid.id, dryrun = true) {
-                Ts.periode(7.jun, 7.jun, 70u)
+            Ts.dto(sid.id, bid.id, dryrun = true) {
+                Ts.utbetaling(uid2) {
+                    Ts.periode(7.jun, 7.jun, 70u)
+                }
             }
         }
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid3, sid.id, bid.id, dryrun = true) {
-                Ts.periode(6.jun, 6.jun, 140u)
+            Ts.dto(sid.id, bid.id, dryrun = true) {
+                Ts.utbetaling(uid3) {
+                    Ts.periode(6.jun, 6.jun, 140u)
+                }
             }
         }
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(uid4, sid.id, bid.id, dryrun = true) {
-                Ts.periode(7.jun, 7.jun, 140u)
+            Ts.dto(sid.id, bid.id, dryrun = true) {
+                Ts.utbetaling(uid4) {
+                    Ts.periode(7.jun, 7.jun, 140u)
+                }
             }
         }
 
@@ -2179,12 +1901,10 @@ internal class TsTest {
         }
 
         TestRuntime.topics.ts.produce(key) {
-            Ts.utbetaling(uid1, sid.id, bid.id, dryrun = true) {
-                Ts.periode(
-                    fom = 1.jan,
-                    tom = 2.jan,
-                    beløp = 100u,
-                )
+            Ts.dto(sid.id, bid.id, dryrun = true) {
+                Ts.utbetaling(uid1) {
+                    Ts.periode(fom = 1.jan, tom = 2.jan, beløp = 100u)
+                }
             }
         }
 
@@ -2231,14 +1951,15 @@ internal class TsTest {
 
 
         TestRuntime.topics.ts.produce(transactionId) {
-            Ts.utbetaling(
-                uid = uid,
+            Ts.dto(
                 sakId = sid2.id,
                 behandlingId = bid2.id,
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
             ) {
-                Ts.periode(1.jun, 5.jun, 1000u) +
-                        Ts.periode(8.jun, 10.jun, 500u)
+                Ts.utbetaling(uid) {
+                    Ts.periode(1.jun, 5.jun, 1000u) +
+                            Ts.periode(8.jun, 10.jun, 500u)
+                }
             }
         }
 

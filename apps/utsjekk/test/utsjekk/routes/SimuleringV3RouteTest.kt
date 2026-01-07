@@ -15,6 +15,7 @@ import models.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import utsjekk.Topics
 
 class SimuleringV3RouteTest {
 
@@ -141,6 +142,42 @@ class SimuleringV3RouteTest {
     @Test
     fun `simuler for tilleggsstønader`() = runTest {
         val transactionId = UUID.randomUUID().toString()
+        val dto = TsDto(
+            dryrun = true,
+            sakId = "sakId",
+            behandlingId = "1234",
+            personident = "12345678910",
+            vedtakstidspunkt = LocalDateTime.now(),
+            periodetype = Periodetype.EN_GANG,
+            saksbehandler = null,
+            beslutter = null,
+            utbetalinger = listOf(
+                TsUtbetaling(
+                    id = UUID.randomUUID(),
+                    stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
+                    brukFagområdeTillst = false,
+                    perioder = listOf(
+                        TsPeriode(
+                            fom = LocalDate.of(2025, 10, 1),
+                            tom = LocalDate.of(2025, 10, 31),
+                            beløp = 573u,
+                        ),
+                    ),
+                ),
+                TsUtbetaling(
+                    id = UUID.randomUUID(),
+                    stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
+                    brukFagområdeTillst = false,
+                    perioder = listOf(
+                        TsPeriode(
+                            fom = LocalDate.of(2025, 11, 1),
+                            tom = LocalDate.of(2025, 11, 30),
+                            beløp = 574u,
+                        ),
+                    ),
+                )
+            )
+        )
 
         val a = async {
             httpClient.post("/api/simulering/v3") {
@@ -148,29 +185,10 @@ class SimuleringV3RouteTest {
                 bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.AZURE_TOKEN_GENERATOR))
                 header("Transaction-ID", transactionId)
                 header("fagsystem", "TILLEGGSSTØNADER")
-                setBody(
-                    listOf(
-                        TsUtbetaling(
-                            dryrun = true,
-                            id = UUID.randomUUID(),
-                            sakId = "sakId",
-                            behandlingId = "1234",
-                            personident = "12345678910",
-                            stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
-                            vedtakstidspunkt = LocalDateTime.now(),
-                            periodetype = Periodetype.EN_GANG,
-                            perioder = listOf(
-                                TsPeriode(
-                                    fom = LocalDate.of(2025, 10, 1),
-                                    tom = LocalDate.of(2025, 10, 31),
-                                    beløp = 573u,
-                                ),
-                            ),
-                        )
-                    )
-                )
+                setBody(dto)
             }
         }
+
 
         val sim = models.v1.Simulering(
             oppsummeringer = listOf(
@@ -179,6 +197,14 @@ class SimuleringV3RouteTest {
                     tom = LocalDate.of(2025, 10, 31),
                     tidligereUtbetalt = 573,
                     nyUtbetaling = 573,
+                    totalEtterbetaling = 0,
+                    totalFeilutbetaling = 0,
+                ),
+                models.v1.OppsummeringForPeriode(
+                    fom = LocalDate.of(2025, 11, 1),
+                    tom = LocalDate.of(2025, 11, 30),
+                    tidligereUtbetalt = 574,
+                    nyUtbetaling = 574,
                     totalEtterbetaling = 0,
                     totalFeilutbetaling = 0,
                 )
@@ -202,6 +228,21 @@ class SimuleringV3RouteTest {
                                 klassekode = "TSDRASISP3-OP",
                             )
                         )
+                    ),
+                    models.v1.Periode(
+                        fom = LocalDate.of(2025, 11, 1),
+                        tom = LocalDate.of(2025, 11, 30),
+                        posteringer = listOf(
+                            models.v1.Postering(
+                                fagområde = models.v1.Fagområde.TILLSTDR,
+                                sakId = SakId("sakId"),
+                                fom = LocalDate.of(2025, 11, 1),
+                                tom = LocalDate.of(2025, 11, 30),
+                                beløp = 574,
+                                type = models.v1.PosteringType.YTELSE,
+                                klassekode = "TSDRASISP3-OP",
+                            )
+                        )
                     )
                 ),
             )
@@ -212,6 +253,11 @@ class SimuleringV3RouteTest {
         }
 
         val res = a.await()
+
+        val tsTopic = TestRuntime.kafka.getProducer(Topics.utbetalingTs)
+        assertEquals(0, tsTopic.uncommitted().size)
+        val actual = tsTopic.history().singleOrNull { (key, _) -> key == transactionId }?.second
+        assertEquals(dto, actual)
 
         assertEquals(HttpStatusCode.OK, res.status)
         assertEquals(sim, res.body<models.v1.Simulering>())
