@@ -1,0 +1,14 @@
+create index avstemming_system_time_ms_idx on avstemming (system_time_ms DESC);
+create index oppdrag_system_time_ms_idx on oppdrag (system_time_ms DESC);
+create index oppdragsdata_system_time_ms_idx on oppdragsdata (system_time_ms DESC);
+create index dryrun_aap_system_time_ms_idx on dryrun_aap (system_time_ms DESC);
+create index dryrun_tp_system_time_ms_idx on dryrun_tp (system_time_ms DESC);
+create index dryrun_ts_system_time_ms_idx on dryrun_ts (system_time_ms DESC);
+create index dryrun_dp_system_time_ms_idx on dryrun_dp (system_time_ms DESC);
+create index kvittering_system_time_ms_idx on kvittering (system_time_ms DESC);
+create index simuleringer_system_time_ms_idx on simuleringer (system_time_ms DESC);
+create index utbetalinger_system_time_ms_idx on utbetalinger (system_time_ms DESC);
+create index saker_system_time_ms_idx on saker (system_time_ms DESC);
+create index aap_system_time_ms_idx on aap (system_time_ms DESC);
+create index tp_system_time_ms_idx on tp (system_time_ms DESC);
+create index tpIntern_system_time_ms_idx on tpIntern (system_time_ms DESC);

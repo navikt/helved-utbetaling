@@ -52,7 +52,7 @@ data class Dao(
             val sql = """
                 SELECT * FROM ${table.name} 
                 WHERE record_key = ? 
-                ORDER BY timestamp_ms DESC 
+                ORDER BY system_time_ms DESC 
                 LIMIT $limit 
             """.trimIndent()
 
@@ -75,8 +75,8 @@ data class Dao(
             val whereClause = if (key != null || value != null || fom != null || tom != null) {
                 val keyQuery = if (key != null) " (" + key.joinToString(" OR ") { "record_key like '%$it%'" } + ") AND" else ""
                 val valueQuery = if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") AND" else ""
-                val fomQuery = if (fom != null) " timestamp_ms > $fom AND" else ""
-                val tomQuery = if (tom != null) " timestamp_ms < $tom AND" else ""
+                val fomQuery = if (fom != null) " system_time_ms > $fom AND" else ""
+                val tomQuery = if (tom != null) " system_time_ms < $tom AND" else ""
                 val query = "WHERE$keyQuery$valueQuery$fomQuery$tomQuery"
                 query.removeSuffix(" AND").removeSuffix(" ")
             } else ""
@@ -84,7 +84,7 @@ data class Dao(
             val sql = """
                 SELECT * FROM ${table.name} 
                 $whereClause
-                ORDER BY timestamp_ms DESC 
+                ORDER BY system_time_ms DESC
                 LIMIT $limit 
             """.trimIndent()
 
@@ -109,8 +109,8 @@ data class Dao(
                     if (key != null) " (" + key.joinToString(" OR ") { "record_key like '%$it%'" } + ") AND" else ""
                 val valueQuery =
                     if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") AND" else ""
-                val fomQuery = if (fom != null) " timestamp_ms > $fom AND" else ""
-                val tomQuery = if (tom != null) " timestamp_ms < $tom AND" else ""
+                val fomQuery = if (fom != null) " system_time_ms > $fom AND" else ""
+                val tomQuery = if (tom != null) " system_time_ms < $tom AND" else ""
                 val traceIdQuery = if (traceId != null) " trace_id = '$traceId' AND" else ""
                 val query = "WHERE$keyQuery$valueQuery$fomQuery$tomQuery$traceIdQuery"
                 query.removeSuffix(" AND").removeSuffix(" ")
@@ -124,7 +124,7 @@ data class Dao(
                 SELECT * FROM (
                     $unionQuery
                 ) data
-                ORDER BY timestamp_ms DESC 
+                ORDER BY system_time_ms DESC 
                 LIMIT $limit 
             """.trimIndent()
 
