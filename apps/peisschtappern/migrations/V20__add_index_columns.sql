@@ -40,10 +40,6 @@ ALTER TABLE kvittering
         get_xml_field(record_value, '//ns2:oppdrag/oppdrag-110/kodeFagomraade/text()', ARRAY [ARRAY ['ns2', 'http://www.trygdeetaten.no/skjema/oppdrag']])
         ) STORED;
 
-ALTER TABLE utbetalinger
-    ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
-
 ALTER TABLE pending_utbetalinger
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
     ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
