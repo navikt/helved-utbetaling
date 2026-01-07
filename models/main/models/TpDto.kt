@@ -4,11 +4,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 data class TpUtbetaling(
-    val dryrun: Boolean = false,
     val sakId: String,
     val behandlingId: String,
+    val dryrun: Boolean = false,
     val personident: String,
-    val stønad: StønadTypeTiltakspenger,
     val vedtakstidspunkt: LocalDateTime,
     val perioder: List<TpPeriode>,
     val saksbehandler: String? = null,
@@ -21,7 +20,8 @@ data class TpPeriode(
     val tom: LocalDate,
     val betalendeEnhet: NavEnhet? = null,
     val beløp: UInt,
-) {
+    val stønad: StønadTypeTiltakspenger,
+    ) {
     fun into(): Utbetalingsperiode = Utbetalingsperiode(
         fom = fom,
         tom = tom,
@@ -30,34 +30,39 @@ data class TpPeriode(
     )
 }
 
-data class TpTuple(val transactionId: String, val dto: TpUtbetaling)
+data class TpTuple(val key: String, val dto: TpUtbetaling)
 
 fun tpUId(sakId: String, meldeperiode: String, stønad: StønadTypeTiltakspenger): UtbetalingId {
     return UtbetalingId(uuid(SakId(sakId), Fagsystem.TILTAKSPENGER, meldeperiode, stønad))
 }
 
-fun TpTuple.toDomain(
-    uid: UtbetalingId,
+fun toDomain(
+    key: String,
+    value: TpUtbetaling,
     uidsPåSak: Set<UtbetalingId>?,
+    uid: UtbetalingId,
 ): Utbetaling {
+    val stønad = value.perioder.first().stønad
+    require(value.perioder.all { it.stønad == stønad })
+
     return Utbetaling(
-        dryrun = dto.dryrun,
-        originalKey = transactionId,
+        dryrun = value.dryrun,
+        originalKey = key,
         fagsystem = Fagsystem.TILTAKSPENGER,
         uid = uid,
         action = Action.CREATE,
         førsteUtbetalingPåSak = uidsPåSak == null,
-        sakId = SakId(dto.sakId),
-        behandlingId = BehandlingId(dto.behandlingId),
+        sakId = SakId(value.sakId),
+        behandlingId = BehandlingId(value.behandlingId),
         lastPeriodeId = PeriodeId(),
-        personident = Personident(dto.personident),
-        vedtakstidspunkt = dto.vedtakstidspunkt,
-        stønad = dto.stønad,
-        beslutterId = dto.beslutter?.let(::Navident) ?: Navident("ts"),
-        saksbehandlerId = dto.saksbehandler?.let(::Navident) ?: Navident("ts"),
+        personident = Personident(value.personident),
+        vedtakstidspunkt = value.vedtakstidspunkt,
+        stønad = stønad,
+        beslutterId = value.beslutter?.let(::Navident) ?: Navident("tp"),
+        saksbehandlerId = value.saksbehandler?.let(::Navident) ?: Navident("tp"),
         periodetype = Periodetype.UKEDAG,
         avvent = null,
-        perioder = dto.perioder.toDomain(),
+        perioder = value.perioder.toDomain(),
     )
 }
 
