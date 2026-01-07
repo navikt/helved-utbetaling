@@ -114,6 +114,39 @@ object Dp {
     }
 }
 
+object Tp {
+    fun utbetaling(
+        sakId: String = "$nextInt",
+        behandlingId: String = "$nextInt",
+        dryrun: Boolean = false,
+        personident: String = "12345678910",
+        vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
+        saksbehandler: String? = null,
+        beslutter: String? = null,
+        perioder: () -> List<TpPeriode>,
+    ): TpUtbetaling = TpUtbetaling(
+        sakId = sakId,
+        behandlingId = behandlingId,
+        dryrun = dryrun,
+        personident = personident,
+        vedtakstidspunkt = vedtakstidspunkt,
+        perioder = perioder(),
+        saksbehandler = saksbehandler,
+        beslutter = beslutter,
+    )
+
+    fun periode(
+        meldeperiode: String,
+        fom: LocalDate,
+        tom: LocalDate,
+        beløp: UInt,
+        betalendeEnhet: NavEnhet? = null,
+        stønad: StønadTypeTiltakspenger = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
+        ): List<TpPeriode> {
+        return listOf(TpPeriode(meldeperiode, fom, tom, betalendeEnhet, beløp, stønad))
+    }
+}
+
 object Ts {
     fun dto(
         sakId: String = "$nextInt",

@@ -441,7 +441,7 @@ fun Topology.tpStream(
         .map { key, tp -> TpTuple(key, tp) }
         .rekey { (_, tp) -> SakKey(SakId(tp.sakId), Fagsystem.TILTAKSPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
-        .map(::splitOnMeldeperiode) // TODO: manual repartition
+        .map { key, tuple, ids -> splitOnTpMeldeperiode(key, tuple, ids)  }
         .rekey { dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
         .map { value ->
             Result.catch {
@@ -608,10 +608,10 @@ private fun splitOnMeldeperiode(
     }
 }
 
-private fun splitOnMeldeperiode(
+private fun splitOnTpMeldeperiode(
     sakKey: SakKey,
     tuple: TpTuple,
-    uids: Set<UtbetalingId>?
+    uids: Set<UtbetalingId>?,
 ): List<Utbetaling> {
     val (tpKey, tpUtbetaling) = tuple
     val dryrun = tpUtbetaling.dryrun
@@ -623,9 +623,10 @@ private fun splitOnMeldeperiode(
     val saksbehandler = tpUtbetaling.saksbehandler ?: "tp"
     val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, TpUtbetaling?>> = tpUtbetaling
         .perioder
-        .groupBy { it.meldeperiode }
-        .map { (meldeperiode, utbetalinger) ->
-            tpUId(tpUtbetaling.sakId, meldeperiode, tpUtbetaling.stønad) to tpUtbetaling.copy(perioder = utbetalinger)
+        .groupBy { it.meldeperiode to it.stønad }
+        .map { (group, utbetalinger) ->
+            val (meldeperiode, stønad) = group
+            tpUId(tpUtbetaling.sakId, meldeperiode, stønad) to tpUtbetaling.copy(perioder = utbetalinger)
         }
         .toMutableList()
 
@@ -652,7 +653,7 @@ private fun splitOnMeldeperiode(
                 vedtakstidspunkt = vedtakstidspunktet,
             ).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
 
-            else -> tuple.toDomain(uid, uids)
+            else -> toDomain(tpKey, tpUtbetaling, uids, uid)
         }
         appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
         // KeyValue(utbetaling.uid.id.toString(), utbetaling)
