@@ -42,75 +42,75 @@ ALTER TABLE pending_utbetalinger
 
 ALTER TABLE aap
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE aapIntern
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE dp
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE dpIntern
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE ts
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE tsIntern
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE tp
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE tpIntern
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE historisk
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE historiskIntern
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE fk
-    ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN sak_id TEXT,
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE status
-    ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN sak_id TEXT,
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE avstemming
-    ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN sak_id TEXT,
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE dryrun_aap
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE dryrun_tp
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE dryrun_ts
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE dryrun_dp
     ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_value, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN fagsystem TEXT;
 
 ALTER TABLE saker
-    ADD COLUMN sak_id TEXT GENERATED ALWAYS AS (NULLIF(record_key, '')::jsonb ->> 'sakId') STORED,
-    ADD COLUMN fagsystem TEXT GENERATED ALWAYS AS (NULLIF(record_key, '')::jsonb ->> 'fagsystem') STORED;
+    ADD COLUMN sak_id TEXT,
+    ADD COLUMN fagsystem TEXT;
 
 CREATE INDEX oppdrag_lookup_idx ON oppdrag(sak_id, fagsystem);
 CREATE INDEX kvittering_lookup_idx ON kvittering(sak_id, fagsystem);
