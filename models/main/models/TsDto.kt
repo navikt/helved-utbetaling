@@ -27,11 +27,13 @@ data class TsPeriode(
     val fom: LocalDate,
     val tom: LocalDate,
     val beløp: UInt,
+    val betalendeEnhet: NavEnhet? = null,
 ) {
     fun into(): Utbetalingsperiode = Utbetalingsperiode(
         fom = fom,
         tom = tom,
         beløp = beløp,
+        betalendeEnhet = betalendeEnhet,
     )
 }
 
@@ -69,56 +71,94 @@ fun TsTuple.toDomain(uidsPåSak: Set<UtbetalingId>?): List<Utbetaling> {
 }
 
 /**
-* For å støtte tidligere saker som brukte fagområde TILLST,
-* må vi fortsette å bruke Fagområde TILLST, det vil være feil
-* å bruke TILLST på andre stønadstyper.
-* Vi klarer ikke håndheve dette for nye saker men ser det
-* lite sansynlig at det vil skje.
-*/
+ * For å støtte tidligere saker som brukte fagområde TILLST,
+ * må vi fortsette å bruke Fagområde TILLST, det vil være feil
+ * å bruke TILLST på andre stønadstyper.
+ * Vi klarer ikke håndheve dette for nye saker men ser det
+ * lite sansynlig at det vil skje.
+ */
 private val stønadstyperForTillst = listOf(
     StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
     StønadTypeTilleggsstønader.TILSYN_BARN_AAP,
     StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE,
+
     StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER,
     StønadTypeTilleggsstønader.LÆREMIDLER_AAP,
     StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE,
+
     StønadTypeTilleggsstønader.BOUTGIFTER_AAP,
     StønadTypeTilleggsstønader.BOUTGIFTER_ENSLIG_FORSØRGER,
     StønadTypeTilleggsstønader.BOUTGIFTER_ETTERLATTE,
-) 
+
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ARBEIDSFORBEREDENDE, // ARBFORB - TSDRAFT-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ARBEIDSRETTET_REHAB, // ARBRRHDAG - TSDRARREHABAGDAG-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ARBEIDSTRENING, // ARBTREN - TSDRATTT2-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_AVKLARING, // AVKLARAG - TSDRAAG-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_DIGITAL_JOBBKLUBB, // DIGIOPPARB - TSDRDIGJK-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ENKELTPLASS_AMO, // ENKELAMO - TSDREPAMO-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ENKELTPLASS_FAG_YRKE_HOYERE_UTD, // ENKFAGYRKE - TSDREPVGSHOY-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_FORSØK_OPPLÆRINGSTILTAK_LENGER_VARIGHET, // FORSOPPLEV - TSDRFOLV
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_GRUPPE_AMO, // GRUPPEAMO - TSDRGRAMO-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_GRUPPE_FAG_YRKE_HOYERE_UTD, // GRUFAGYRKE - TSDRGRVGSHOY-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_HØYERE_UTDANNING, // HOYEREUTD - TSDRHOYUTD-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_INDIVIDUELL_JOBBSTØTTE, // INDJOBSTOT - TSDRIPS-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_INDIVIDUELL_JOBBSTØTTE_UNG, // IPSUNG - TSDRIPSUNG-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_JOBBKLUBB, // JOBBK - TSDRJB2009-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_OPPFØLGING, // INDOPPFAG - TSDROPPFAG2-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_NAV, // UTVAOONAV - TSDRUTVAVKLOPPF-OP
+    StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_OPPLÆRING, // UTVOPPFOPL - TSDRUTVOPPFOPPL-OP
+)
 
 /**
-* Tilleggsstønader har fler fagområder fordi man ikke skal kunne motregne
-* uavhengige stønadstyper mot hverandre.
-*/
+ * Tilleggsstønader har fler fagområder fordi man ikke skal kunne motregne
+ * uavhengige stønadstyper mot hverandre.
+ */
 fun TsUtbetaling.fagsystem(): Fagsystem {
     return when (brukFagområdeTillst) {
         true -> Fagsystem.TILLEGGSSTØNADER
         else -> when (stønad) {
-            StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER       -> Fagsystem.TILLSTPB
-            StønadTypeTilleggsstønader.TILSYN_BARN_AAP                    -> Fagsystem.TILLSTPB
-            StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE             -> Fagsystem.TILLSTPB
-            StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER        -> Fagsystem.TILLSTLM
-            StønadTypeTilleggsstønader.LÆREMIDLER_AAP                     -> Fagsystem.TILLSTLM
-            StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE              -> Fagsystem.TILLSTLM
-            StønadTypeTilleggsstønader.BOUTGIFTER_AAP                     -> Fagsystem.TILLSTBO
-            StønadTypeTilleggsstønader.BOUTGIFTER_ENSLIG_FORSØRGER        -> Fagsystem.TILLSTBO
-            StønadTypeTilleggsstønader.BOUTGIFTER_ETTERLATTE              -> Fagsystem.TILLSTBO
-            StønadTypeTilleggsstønader.DAGLIG_REISE_ENSLIG_FORSØRGET      -> Fagsystem.TILLSTDR
-            StønadTypeTilleggsstønader.DAGLIG_REISE_AAP                   -> Fagsystem.TILLSTDR
-            StønadTypeTilleggsstønader.DAGLIG_REISE_ETTERLATTE            -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER -> Fagsystem.TILLSTPB
+            StønadTypeTilleggsstønader.TILSYN_BARN_AAP -> Fagsystem.TILLSTPB
+            StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE -> Fagsystem.TILLSTPB
+            StønadTypeTilleggsstønader.LÆREMIDLER_ENSLIG_FORSØRGER -> Fagsystem.TILLSTLM
+            StønadTypeTilleggsstønader.LÆREMIDLER_AAP -> Fagsystem.TILLSTLM
+            StønadTypeTilleggsstønader.LÆREMIDLER_ETTERLATTE -> Fagsystem.TILLSTLM
+            StønadTypeTilleggsstønader.BOUTGIFTER_AAP -> Fagsystem.TILLSTBO
+            StønadTypeTilleggsstønader.BOUTGIFTER_ENSLIG_FORSØRGER -> Fagsystem.TILLSTBO
+            StønadTypeTilleggsstønader.BOUTGIFTER_ETTERLATTE -> Fagsystem.TILLSTBO
+            StønadTypeTilleggsstønader.DAGLIG_REISE_ENSLIG_FORSØRGET -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_AAP -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_ETTERLATTE -> Fagsystem.TILLSTDR
             StønadTypeTilleggsstønader.REISE_TIL_SAMLING_ENSLIG_FORSØRGER -> Fagsystem.TILLSTRS
-            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_AAP              -> Fagsystem.TILLSTRS
-            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_ETTERLATTE       -> Fagsystem.TILLSTRS
-            StønadTypeTilleggsstønader.REISE_OPPSTART_ENSLIG_FORSØRGET    -> Fagsystem.TILLSTRO
-            StønadTypeTilleggsstønader.REISE_OPPSTART_AAP                 -> Fagsystem.TILLSTRO
-            StønadTypeTilleggsstønader.REISE_OPPSTART_ETTERLATTE          -> Fagsystem.TILLSTRO
-            StønadTypeTilleggsstønader.REIS_ARBEID_ENSLIG_FORSØRGER       -> Fagsystem.TILLSTRA 
-            StønadTypeTilleggsstønader.REIS_ARBEID_AAP                    -> Fagsystem.TILLSTRA
-            StønadTypeTilleggsstønader.REIS_ARBEID_ETTERLATTE             -> Fagsystem.TILLSTRA
-            StønadTypeTilleggsstønader.FLYTTING_ENSLIG_FORSØRGER          -> Fagsystem.TILLSTFL
-            StønadTypeTilleggsstønader.FLYTTING_AAP                       -> Fagsystem.TILLSTFL
-            StønadTypeTilleggsstønader.FLYTTING_ETTERLATTE                -> Fagsystem.TILLSTFL
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_AAP -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_ETTERLATTE -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_OPPSTART_ENSLIG_FORSØRGET -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_AAP -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_ETTERLATTE -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REIS_ARBEID_ENSLIG_FORSØRGER -> Fagsystem.TILLSTRA
+            StønadTypeTilleggsstønader.REIS_ARBEID_AAP -> Fagsystem.TILLSTRA
+            StønadTypeTilleggsstønader.REIS_ARBEID_ETTERLATTE -> Fagsystem.TILLSTRA
+            StønadTypeTilleggsstønader.FLYTTING_ENSLIG_FORSØRGER -> Fagsystem.TILLSTFL
+            StønadTypeTilleggsstønader.FLYTTING_AAP -> Fagsystem.TILLSTFL
+            StønadTypeTilleggsstønader.FLYTTING_ETTERLATTE -> Fagsystem.TILLSTFL
+
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ARBEIDSFORBEREDENDE -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ARBEIDSRETTET_REHAB -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ARBEIDSTRENING -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_AVKLARING -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_DIGITAL_JOBBKLUBB -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ENKELTPLASS_AMO -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ENKELTPLASS_FAG_YRKE_HOYERE_UTD -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_FORSØK_OPPLÆRINGSTILTAK_LENGER_VARIGHET -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_GRUPPE_AMO -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_GRUPPE_FAG_YRKE_HOYERE_UTD -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_HØYERE_UTDANNING -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_INDIVIDUELL_JOBBSTØTTE -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_INDIVIDUELL_JOBBSTØTTE_UNG -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_JOBBKLUBB -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_OPPFØLGING -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_NAV -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_OPPLÆRING -> Fagsystem.TILLSTDR
         }
     }
 }
@@ -130,8 +170,10 @@ private fun List<TsPeriode>.toDomain(type: Periodetype): List<Utbetalingsperiode
                 fom = it.fom,
                 tom = it.tom,
                 beløp = it.beløp,
+                betalendeEnhet = it.betalendeEnhet,
             )
         }
+
         Periodetype.UKEDAG -> this.groupBy { it.beløp }
             .map { (_, perioder) ->
                 perioder.splitWhen { cur, next ->
@@ -143,6 +185,7 @@ private fun List<TsPeriode>.toDomain(type: Periodetype): List<Utbetalingsperiode
                         fom = it.first().fom,
                         tom = it.last().tom,
                         beløp = it.first().beløp,
+                        betalendeEnhet = it.first().betalendeEnhet,
                     )
                 }
             }
@@ -159,6 +202,7 @@ private fun List<TsPeriode>.toDomain(type: Periodetype): List<Utbetalingsperiode
                         fom = it.first().fom,
                         tom = it.last().tom,
                         beløp = it.first().beløp,
+                        betalendeEnhet = it.first().betalendeEnhet,
                     )
                 }
             }
