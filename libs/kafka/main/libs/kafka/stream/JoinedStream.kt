@@ -3,6 +3,7 @@
 package libs.kafka.stream
 
 import libs.kafka.*
+import libs.kafka.processor.EnrichHeaderProcessor
 import libs.kafka.processor.PeekMetadataProcessor
 import libs.kafka.processor.Processor
 import org.apache.kafka.streams.kstream.KStream
@@ -61,6 +62,11 @@ class JoinedStream<K: Any, L : Any, R> internal constructor(
     fun peek(peek: (K, L, R) -> Unit): JoinedStream<K, L, R> {
         val peekedStream = stream.peek ({ key, (left, right) -> peek(key, left, right) })
         return JoinedStream(peekedStream)
+    }
+
+    fun includeHeader(headerKey: String, headerValue: (StreamsPair<L, R>) -> String): JoinedStream<K, L, R> {
+        val enriched = stream.process( { EnrichHeaderProcessor(headerKey, headerValue)} )
+        return JoinedStream(enriched)
     }
 
     fun <LR : Any> processor(processor: Processor<K, StreamsPair<L, R>, K, LR>): MappedStream<K, LR> {

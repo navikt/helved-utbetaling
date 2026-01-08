@@ -3,6 +3,7 @@ package models
 import libs.utils.secureLog
 import libs.utils.appLog
 
+
 sealed interface Result<out V, out E> {
     data class Ok<V>(val value: V) : Result<V, Nothing>
     data class Err<E>(val error: E) : Result<Nothing, E>
@@ -32,6 +33,8 @@ sealed interface Result<out V, out E> {
         is Ok -> true
         is Err -> false
     }
+
+    fun isErr(): Boolean = !isOk()
 
     fun <U> map(transform: (V) -> U): Result<U, E> = when (this) {
         is Ok -> Ok(transform(value))

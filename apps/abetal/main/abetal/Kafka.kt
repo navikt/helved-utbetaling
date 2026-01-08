@@ -1,4 +1,5 @@
 package abetal
+
 import libs.kafka.*
 import libs.utils.appLog
 import models.*
@@ -43,7 +44,7 @@ fun createTopology(kafka: Streams): Topology = topology {
     val pendingUtbetalinger = consume(Tables.pendingUtbetalinger, materializeWithTrace = false)
     val saker = consume(Tables.saker)
     val fks = consume(Tables.fk, materializeWithTrace = false)
-    dpStream(utbetalinger, saker, kafka)
+    dagpengerStream(utbetalinger, saker, kafka)
     aapStream(utbetalinger, saker, kafka)
     tsStream(utbetalinger, saker, kafka)
     tpStream(utbetalinger, saker, kafka)
@@ -63,10 +64,7 @@ data class PKs(val originalKey: String, val uids: List<String>)
  */
 fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTable<String, Utbetaling>) {
     consume(Topics.oppdrag)
-        .filter {
-            it.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04")
-            // && it.oppdrag110.kodeFagomraade.trimEnd() in listOf("AAP", "DP")
-        }
+        .filter { it.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") }
         .rekey { it.apply { it.mmel = null } }
         .map {
             val last = it.oppdrag110.oppdragsLinje150s.last()
@@ -89,137 +87,11 @@ fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTab
         .leftJoin(Serde.string(), Serde.json(), pending, "pk-leftjoin-pending")
         .mapNotNull { info, pending ->
             if (pending == null) appLog.warn("Fant ikke pending utbetaling. Oppdragsinfo: $info")
-            // requireNotNull(pending) { "Fant ikke pending utbetaling. Oppdragsinfo: $info" }
             pending
         }
         .produce(Topics.utbetalinger)
 }
 
-/**
- * TODO: Flytt i en egen applikasjon eller gjenbruk en som ikke leser fra helved.utbetalinger.v1
- * Hver gang helved.utbetalinger.v1 blir produsert til
- * akkumulerer vi uids (UtbetalingID) for saken og erstatter aggregatet på helved.saker.v1.
- * Dette gjør at vi kan holde på alle aktive uids for en sakid per fagsystem.
- * Slettede utbetalinger fjernes fra lista.
- * Hvis lista er tom men ikke null betyr det at det ikke er første utbetaling på sak.
- */
-// fun Topology.utbetalingToSak(utbetalinger: GlobalKTable<String, Utbetaling>): KTable<SakKey, Set<UtbetalingId>> {
-//     val ktable = consume(Topics.utbetalinger)
-//         .rekey { _, utbetaling ->
-//             val fagsystem = if (utbetaling.fagsystem.isTilleggsstønader()) {
-//                 Fagsystem.TILLEGGSSTØNADER
-//             } else {
-//                 utbetaling.fagsystem
-//             }
-//             SakKey(utbetaling.sakId, fagsystem)
-//         }
-//         .groupByKey(Serde.json(), Serde.json(), "utbetalinger-groupby-sakkey")
-//         .aggregate(Tables.saker) { _, utbetaling, uids ->
-//             when (utbetaling.action) {
-//                 Action.DELETE -> uids - utbetaling.uid
-//                 else -> uids + utbetaling.uid
-//             }
-//         }
-//
-//     ktable
-//         .toStream()
-//         .produce(Topics.saker)
-//
-//     return ktable
-// }
-
-/**
- * Dagpenger sender en tykk melding med mange meldeperioder.
- * Disse splittes opp i separate utbetalinger og vi utleder en deterministisk uid basert på meldeperioden.
- * For å finne ut om utbetalingene er ny, endret, slettet, må vi joine med saker for å finne alle tidligere utbetalinger.
- * Aggregatet slår sammen utbetalingene / oppdragene og lager èn oppdrag per sak (forventer bare 1 sak om gangen men fler er støttet).
- * Hele oppdraget med alle utbetalingene blir enten OK eller FAILED.
- * Status og oppdrag bruker ikke uid som kafka-key men den orginale keyen som kommer fra Topics.dp.
- * Dette gjør det enklere for konsumentene å korrelere innsendt request med statuser.
- * Til slutt lagrer vi en liste med primary keys på foreign-key topicet som senere brukes
- * til å enten skippe eller persistere utbetalinger (setter de fra pending til aktuell).
- * Vi bruker da Oppdraget (requesten) som kafka-key
- */
-fun Topology.dpStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
-    saker: KTable<SakKey, Set<UtbetalingId>>,
-    kafka: Streams,
-) {
-    consume(Topics.dp)
-        .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
-        .merge(consume(Topics.dpIntern))
-        .map { key, dp -> DpTuple(key, dp) }
-        .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
-        .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
-        .peek { key, _, saker ->
-            kafkaLog.info("joined with saker on key:$key. Uids: $saker")
-        }
-        .branch({ (dpTuple, saker) -> dpTuple.value.utbetalinger.isEmpty() && saker.isNullOrEmpty() }) {
-            this.rekey { (dpTuple, _) -> dpTuple.key }
-                .map { StatusReply.ok() }
-                .produce(Topics.status)
-        }.default {
-            this
-                .map(::splitOnMeldeperiode) // rename toDomain
-                .rekey { _, dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
-                .map { key, value ->
-                    Result.catch {
-                        val store = kafka.getStore(Stores.utbetalinger)
-                        kafkaLog.info("trying to join ${value.size} utbetalinger")
-                        val aggregate = value.map { new ->
-                            val prev = store.getOrNull(new.uid.toString())
-                            kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
-                            StreamsPair(new, prev)
-                        }
-                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                        val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                        oppdragToUtbetalinger to simuleringer
-                    }
-                }
-                .includeHeader(FS_KEY) { Fagsystem.DAGPENGER.name }
-                .branch({ it.isOk() }) {
-                    val result = map { it -> it.unwrap() }
-                    result
-                        .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
-                            oppdragToUtbetalinger.flatMap { agg ->
-                                agg.second.map {
-                                    KeyValue(it.uid.toString(), it)
-                                }
-                            }
-                        }
-                        .produce(Topics.pendingUtbetalinger)
-
-                    result
-                        .flatMap { (_, simuleringer) -> simuleringer }
-                        .produce(Topics.simulering)
-
-                    val oppdrag =
-                        result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
-                    oppdrag.produce(Topics.oppdrag)
-                    oppdrag
-                        .map { StatusReply.mottatt(it) }
-                        .produce(Topics.status)
-
-                    result
-                        .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
-                        .map { StatusReply.ok() }
-                        .produce(Topics.status)
-
-                    result
-                        .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
-                            oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
-                                val uids = utbetalinger.map { u -> u.uid.toString() }
-                                KeyValue(oppdrag, PKs(transactionId, uids))
-                            }
-                        }
-                        .produce(Topics.fk)
-                }
-                .default {
-                    map { it -> it.unwrapErr() }.produce(Topics.status)
-                }
-            }
-
-}
 
 fun Topology.aapStream(
     utbetalinger: GlobalKTable<String, Utbetaling>,
@@ -503,59 +375,6 @@ fun Topology.tpStream(
 
 private fun splitOnMeldeperiode(
     sakKey: SakKey,
-    streamsPair: StreamsPair<DpTuple, Set<UtbetalingId>?>,
-): List<Utbetaling> {
-    val (tuple, uids) = streamsPair
-    val (dpKey, dpUtbetaling) = tuple
-    val dryrun = dpUtbetaling.dryrun
-    val personident = dpUtbetaling.ident
-    val behandlingId = dpUtbetaling.behandlingId
-    val periodetype = Periodetype.UKEDAG
-    val vedtakstidspunktet = dpUtbetaling.vedtakstidspunktet
-    val beslutterId = dpUtbetaling.beslutter ?: "dagpenger"
-    val saksbehandler = dpUtbetaling.saksbehandler ?: "dagpenger"
-    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling
-        .utbetalinger
-        .groupBy { it.meldeperiode to it.stønadstype() }
-        .map { (group, utbetalinger) ->
-            val (meldeperiode, stønadstype) = group
-            dpUId(dpUtbetaling.sakId, meldeperiode, stønadstype) to dpUtbetaling.copy(utbetalinger = utbetalinger)
-        }
-        .toMutableList()
-
-    if (uids != null) {
-        val dpUids = utbetalingerPerMeldekort.map { (dpUid, _) -> dpUid }
-        val missingMeldeperioder = uids.filter { it !in dpUids }.map { it to null }
-        utbetalingerPerMeldekort.addAll(missingMeldeperioder)
-    }
-
-    return utbetalingerPerMeldekort.map { (uid, tsUtbetaling) ->
-        val utbetaling = when (tsUtbetaling) {
-            null -> fakeDelete(
-                dryrun = dryrun,
-                originalKey = dpKey,
-                sakId = sakKey.sakId,
-                uid = uid,
-                fagsystem = Fagsystem.DAGPENGER,
-                stønad = StønadTypeDagpenger.DAGPENGER, // Dette er en placeholder
-                beslutterId = Navident(beslutterId),
-                saksbehandlerId = Navident(saksbehandler),
-                personident = Personident(personident),
-                behandlingId = BehandlingId(behandlingId),
-                periodetype = periodetype,
-                vedtakstidspunkt = vedtakstidspunktet,
-            ).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
-
-            else -> toDomain(dpKey, tsUtbetaling, uids, uid)
-        }
-        // appLog.info("rekey from $dpKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
-        utbetaling
-        // KeyValue(utbetaling.uid.id.toString(), utbetaling)
-    }
-}
-
-private fun splitOnMeldeperiode(
-    sakKey: SakKey,
     tuple: AapTuple,
     uids: Set<UtbetalingId>?
 ): List<Utbetaling> {
@@ -584,7 +403,7 @@ private fun splitOnMeldeperiode(
     }
 
     return utbetalingerPerMeldekort.map { (uid, aapUtbetaling) ->
-        val utbetaling = when (aapUtbetaling) {
+        when (aapUtbetaling) {
             null -> fakeDelete(
                 dryrun = dryrun,
                 originalKey = aapKey,
@@ -602,9 +421,6 @@ private fun splitOnMeldeperiode(
 
             else -> toDomain(aapKey, aapUtbetaling, uids, uid)
         }
-        // appLog.info("rekey from $aapKey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
-        // KeyValue(utbetaling.uid.id.toString(), utbetaling)
-        utbetaling
     }
 }
 
@@ -637,7 +453,7 @@ private fun splitOnTpMeldeperiode(
     }
 
     return utbetalingerPerMeldekort.map { (uid, tpUtbetaling) ->
-        val utbetaling = when (tpUtbetaling) {
+        when (tpUtbetaling) {
             null -> fakeDelete(
                 dryrun = dryrun,
                 originalKey = tpKey,
@@ -655,9 +471,6 @@ private fun splitOnTpMeldeperiode(
 
             else -> toDomain(tpKey, tpUtbetaling, uids, uid)
         }
-        appLog.debug("rekey to ${utbetaling.uid.id} and left join with ${Topics.utbetalinger.name}")
-        // KeyValue(utbetaling.uid.id.toString(), utbetaling)
-        utbetaling
     }
 }
 
