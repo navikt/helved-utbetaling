@@ -1,5 +1,6 @@
 package models
 
+import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -22,12 +23,8 @@ enum class Utbetalingstype {
 
 fun DpUtbetalingsdag.stønadstype(): StønadTypeDagpenger {
     return when (utbetalingstype) {
-        Utbetalingstype.Dagpenger -> {
-            StønadTypeDagpenger.DAGPENGER
-        }
-        Utbetalingstype.DagpengerFerietillegg -> {
-            StønadTypeDagpenger.DAGPENGERFERIE
-        }
+        Utbetalingstype.Dagpenger -> StønadTypeDagpenger.DAGPENGER
+        Utbetalingstype.DagpengerFerietillegg -> StønadTypeDagpenger.DAGPENGERFERIE
     }
 }
 
@@ -47,37 +44,8 @@ data class DpUtbetalingsdag(
 }
 
 fun dpUId(sakId: String, meldeperiode: String, stønad: StønadTypeDagpenger): UtbetalingId {
-    return UtbetalingId(uuid(SakId(sakId), Fagsystem.DAGPENGER, meldeperiode, stønad))
-}
-
-fun toDomain(
-    key: String,
-    value: DpUtbetaling,
-    uidsPåSak: Set<UtbetalingId>?,
-    uid: UtbetalingId,
-): Utbetaling {
-    val stønad = value.utbetalinger.first().stønadstype()
-    require(value.utbetalinger.all { it.stønadstype() == stønad })
-
-    return Utbetaling(
-        dryrun = value.dryrun,
-        originalKey = key,
-        fagsystem = Fagsystem.DAGPENGER,
-        uid = uid,
-        action = Action.CREATE,
-        førsteUtbetalingPåSak = uidsPåSak == null,
-        sakId = SakId(value.sakId),
-        behandlingId = BehandlingId(value.behandlingId),
-        lastPeriodeId = PeriodeId(),
-        personident = Personident(value.ident),
-        vedtakstidspunkt = value.vedtakstidspunktet,
-        stønad = stønad,
-        beslutterId = value.beslutter?.let(::Navident) ?: Navident("dagpenger"),
-        saksbehandlerId = value.saksbehandler?.let(::Navident) ?: Navident("dagpenger"),
-        periodetype = Periodetype.UKEDAG,
-        avvent = null,
-        perioder = perioder(value.utbetalinger), //.map { it.into() },
-    )
+    val uuid = uuid(SakId(sakId), Fagsystem.DAGPENGER, meldeperiode, stønad)
+    return UtbetalingId(uuid) 
 }
 
 private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode> {
@@ -102,4 +70,86 @@ private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode>
         .sortedBy { it.fom }
 }
 
-data class DpTuple(val key: String, val value: DpUtbetaling)
+object DpDto {
+    fun splitToDomain(
+        sakId: SakId,
+        originalKey: String,
+        dpUtbetaling: DpUtbetaling,
+        uids: Set<UtbetalingId>?,
+    ): List<Utbetaling> {
+        val dryrun = dpUtbetaling.dryrun
+        val personident = dpUtbetaling.ident
+        val behandlingId = dpUtbetaling.behandlingId
+        val periodetype = Periodetype.UKEDAG
+        val vedtakstidspunktet = dpUtbetaling.vedtakstidspunktet
+        val beslutterId = dpUtbetaling.beslutter ?: "dagpenger"
+        val saksbehandler = dpUtbetaling.saksbehandler ?: "dagpenger"
+        val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling
+            .utbetalinger
+            .groupBy { it.meldeperiode to it.stønadstype() }
+            .map { (group, utbetalinger) ->
+                val (meldeperiode, stønadstype) = group
+                dpUId(dpUtbetaling.sakId, meldeperiode, stønadstype) to dpUtbetaling.copy(utbetalinger = utbetalinger)
+            }
+            .toMutableList()
+
+        if (uids != null) {
+            val dpUids = utbetalingerPerMeldekort.map { (dpUid, _) -> dpUid }
+            val missingMeldeperioder = uids.filter { it !in dpUids }.map { it to null }
+            utbetalingerPerMeldekort.addAll(missingMeldeperioder)
+        }
+
+        return utbetalingerPerMeldekort.map { (uid, utbet) ->
+            when (utbet) {
+                null -> fakeDelete(
+                    dryrun = dryrun,
+                    originalKey = originalKey,
+                    sakId = sakId,
+                    uid = uid,
+                    fagsystem = Fagsystem.DAGPENGER,
+                    stønad = StønadTypeDagpenger.DAGPENGER,
+                    beslutterId = Navident(beslutterId),
+                    saksbehandlerId = Navident(saksbehandler),
+                    personident = Personident(personident),
+                    behandlingId = BehandlingId(behandlingId),
+                    periodetype = periodetype,
+                    vedtakstidspunkt = vedtakstidspunktet,
+                ).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
+
+                else -> utbetaling(originalKey, utbet, uids, uid)
+            }
+        }
+    }
+
+    private fun utbetaling(
+        key: String,
+        value: DpUtbetaling,
+        uidsPåSak: Set<UtbetalingId>?,
+        uid: UtbetalingId,
+    ): Utbetaling {
+        val stønad = value.utbetalinger.first().stønadstype()
+        require(value.utbetalinger.all { it.stønadstype() == stønad })
+
+        return Utbetaling(
+            dryrun = value.dryrun,
+            originalKey = key,
+            fagsystem = Fagsystem.DAGPENGER,
+            uid = uid,
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = uidsPåSak == null,
+            sakId = SakId(value.sakId),
+            behandlingId = BehandlingId(value.behandlingId),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident(value.ident),
+            vedtakstidspunkt = value.vedtakstidspunktet,
+            stønad = stønad,
+            beslutterId = value.beslutter?.let(::Navident) ?: Navident("dagpenger"),
+            saksbehandlerId = value.saksbehandler?.let(::Navident) ?: Navident("dagpenger"),
+            periodetype = Periodetype.UKEDAG,
+            avvent = null,
+            perioder = perioder(value.utbetalinger),
+        )
+    }
+}
+
+

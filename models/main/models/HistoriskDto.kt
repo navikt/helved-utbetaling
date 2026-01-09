@@ -16,7 +16,40 @@ data class HistoriskUtbetaling(
     val perioder: List<HistoriskPeriode>,
     val saksbehandler: String? = null,
     val beslutter: String? = null,
-    )
+) {
+    companion object {
+        fun toDomain(
+            originalKey: String,
+            dto: HistoriskUtbetaling,
+            uidsPåSak: Set<UtbetalingId>?,
+        ): Utbetaling {
+            val (action, perioder) = when (dto.perioder.isEmpty()) {
+                true -> Action.DELETE to listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u)) // Dummy-periode for validering
+                false -> Action.CREATE to dto.perioder.toDomain(dto.periodetype)
+            }
+
+            return Utbetaling(
+                dryrun = dto.dryrun,
+                originalKey = originalKey,
+                fagsystem = Fagsystem.HISTORISK,
+                uid = UtbetalingId(dto.id),
+                action = action,
+                førsteUtbetalingPåSak = uidsPåSak == null,
+                sakId = SakId(dto.sakId),
+                behandlingId = BehandlingId(dto.behandlingId),
+                lastPeriodeId = PeriodeId(),
+                personident = Personident(dto.personident),
+                vedtakstidspunkt = dto.vedtakstidspunkt,
+                stønad = dto.stønad,
+                beslutterId = dto.beslutter?.let(::Navident) ?: Navident("historisk"),
+                saksbehandlerId = dto.saksbehandler?.let(::Navident) ?: Navident("historisk"),
+                periodetype = dto.periodetype,
+                avvent = null,
+                perioder = perioder,
+            )
+        }
+    }
+}
 
 data class HistoriskPeriode(
     val fom: LocalDate,
@@ -27,35 +60,6 @@ data class HistoriskPeriode(
         fom = fom,
         tom = tom,
         beløp = beløp,
-    )
-}
-
-data class HistoriskTuple(val transactionId: String, val dto: HistoriskUtbetaling)
-
-fun HistoriskTuple.toDomain(uidsPåSak: Set<UtbetalingId>?): Utbetaling {
-    val (action, perioder) = when (dto.perioder.isEmpty()) {
-        true -> Action.DELETE to listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u)) // Dummy-periode for validering
-        false -> Action.CREATE to dto.perioder.toDomain(dto.periodetype)
-    }
-
-    return Utbetaling(
-        dryrun = dto.dryrun,
-        originalKey = transactionId,
-        fagsystem = Fagsystem.HISTORISK,
-        uid = UtbetalingId(dto.id),
-        action = action,
-        førsteUtbetalingPåSak = uidsPåSak == null,
-        sakId = SakId(dto.sakId),
-        behandlingId = BehandlingId(dto.behandlingId),
-        lastPeriodeId = PeriodeId(),
-        personident = Personident(dto.personident),
-        vedtakstidspunkt = dto.vedtakstidspunkt,
-        stønad = dto.stønad,
-        beslutterId = dto.beslutter?.let(::Navident) ?: Navident("historisk"),
-        saksbehandlerId = dto.saksbehandler?.let(::Navident) ?: Navident("historisk"),
-        periodetype = dto.periodetype,
-        avvent = null,
-        perioder = perioder,
     )
 }
 

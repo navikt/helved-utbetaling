@@ -1,6 +1,7 @@
 package abetal
 
 import libs.kafka.*
+import libs.kafka.stream.MappedStream
 import libs.utils.appLog
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
@@ -44,7 +45,7 @@ fun createTopology(kafka: Streams): Topology = topology {
     val pendingUtbetalinger = consume(Tables.pendingUtbetalinger, materializeWithTrace = false)
     val saker = consume(Tables.saker)
     val fks = consume(Tables.fk, materializeWithTrace = false)
-    dagpengerStream(utbetalinger, saker, kafka)
+    dpStream(utbetalinger, saker, kafka)
     aapStream(utbetalinger, saker, kafka)
     tsStream(utbetalinger, saker, kafka)
     tpStream(utbetalinger, saker, kafka)
@@ -54,6 +55,235 @@ fun createTopology(kafka: Streams): Topology = topology {
 
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
 data class PKs(val originalKey: String, val uids: List<String>)
+data class AapTuple(val key: String, val value: AapUtbetaling)
+data class DpTuple(val key: String, val value: DpUtbetaling)
+data class TsTuple(val key: String, val value: TsDto)
+data class HistoriskTuple(val key: String, val value: HistoriskUtbetaling)
+data class TpTuple(val key: String, val value: TpUtbetaling)
+
+
+/**
+ * Dagpenger sender hele saken sin hver gang, som inneholder en eller fler meldeperioder.
+ * Hos oss er en meldeperiode for en stønadstype = en utbetaling. 
+ * Dvs at fler stønadstyper innenfor en meldeperiode blir til forskjellige utbetalinger.
+ * Alle utbetalingene blir så transformert til Oppdrag eller Simulering (dryrun).
+ * Fordi en utbetaling blir til ett oppdrag/simulering blir oppdrag/simulering akkumulert til ett.
+ * Aggregatet som nå er ett oppdrag/simulering blir sendt til Oppdrag UR.
+ * Alle utbetalingene som ligger i oppdraget/simuleringen legges på pending-utbetalinger. 
+ * Ved suksess flyttes pending-utbetalinger til utbetalinger, 
+ */
+fun Topology.dpStream(
+    utbetalinger: GlobalKTable<String, Utbetaling>,
+    saker: KTable<SakKey, Set<UtbetalingId>>,
+    kafka: Streams,
+) {
+    consume(Topics.dp)
+        .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
+        .merge(consume(Topics.dpIntern))
+        .map { key, dp -> DpTuple(key, dp) }
+        .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
+        .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
+        .includeHeader(FS_KEY) { Fagsystem.DAGPENGER.name }
+        .branch(Guard::ifNoMeldeperiode, Guard::replyOk)
+        .default {
+            this
+                .map { sakKey, (req, uids) -> DpDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
+                .rekey { _, dtos -> dtos.first().originalKey }
+                .map { _, utbetalinger ->
+                    Result.catch {
+                        val store = kafka.getStore(Stores.utbetalinger)  
+                        kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
+                        val aggregate = utbetalinger.map { new ->
+                            val prev = store.getOrNull(new.uid.toString())
+                            kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
+                            StreamsPair(new, prev)
+                        }
+                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                        val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                        oppdragToUtbetalinger to simuleringer
+                    }
+                }
+                .branch(Result<*, *>::isErr, ::replyError) 
+                .default {
+                    val result = this.map { it.unwrap() }
+                    result.saveUtbetalingerAsPending()
+                    result.sendSimulering()
+                    result.sendOppdrag()
+                    result.replyOkIfIdempotent()
+                    result.savePendingUids()
+                }
+        }
+}
+
+fun Topology.aapStream(
+    utbetalinger: GlobalKTable<String, Utbetaling>,
+    saker: KTable<SakKey, Set<UtbetalingId>>,
+    kafka: Streams,
+) {
+    consume(Topics.aap)
+        .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
+        .merge(consume(Topics.aapIntern))
+        .map { key, aap -> AapTuple(key, aap) }
+        .rekey { (_, aap) -> SakKey(SakId(aap.sakId), Fagsystem.AAP) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
+        .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
+        .includeHeader(FS_KEY) { Fagsystem.AAP.name }
+        .map { sakKey, req, uids -> AapDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
+        .rekey { _, dtos -> dtos.first().originalKey }
+        .map { value ->
+            Result.catch {
+                val store = kafka.getStore(Stores.utbetalinger)
+                val aggregate = value.map { new ->
+                    val prev = store.getOrNull(new.uid.toString())
+                    StreamsPair(new, prev)
+                }
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                oppdragToUtbetalinger to simuleringer
+            }
+        }
+        .branch(Result<*, *>::isErr, ::replyError) 
+        .default {
+            val result = this.map { it.unwrap() }
+            result.saveUtbetalingerAsPending()
+            result.sendSimulering()
+            result.sendOppdrag()
+            result.replyOkIfIdempotent()
+            result.savePendingUids()
+        }
+}
+
+fun Topology.tsStream(
+    utbetalinger: GlobalKTable<String, Utbetaling>,
+    saker: KTable<SakKey, Set<UtbetalingId>>,
+    kafka: Streams,
+) {
+    consume(Topics.ts)
+        .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
+        .merge(consume(Topics.tsIntern))
+        .map { key, ts -> TsTuple(key, ts) }
+        .rekey { (_, ts) -> SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "tstuple-leftjoin-saker")
+        .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
+        .includeHeader(FS_KEY) { Fagsystem.TILLEGGSSTØNADER.name }
+        .map { req, uids -> TsDto.toDomain(req.key, req.value, uids)}
+        .rekey { dtos -> dtos.first().originalKey }
+        .map { utbetalinger ->
+            Result.catch {
+                val store = kafka.getStore(Stores.utbetalinger)
+                kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
+                val aggregate = utbetalinger.map { new -> 
+                    val prev = store.getOrNull(new.uid.toString())
+                    kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
+                    StreamsPair(new, prev)
+                }
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                oppdragToUtbetalinger to simuleringer
+            }
+        }
+        .branch(Result<*, *>::isErr, ::replyError) 
+        .default {
+            val result = this.map { it.unwrap() }
+            result.saveUtbetalingerAsPending()
+            result.sendSimulering()
+            result.sendOppdrag()
+            result.replyOkIfIdempotent()
+            result.savePendingUids()
+        }
+}
+
+fun Topology.tpStream(
+    utbetalinger: GlobalKTable<String, Utbetaling>,
+    saker: KTable<SakKey, Set<UtbetalingId>>,
+    kafka: Streams,
+) {
+    consume(Topics.tp)
+        // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
+        // .merge(consume(Topics.tpUtbetalinger))
+        .map { key, tp -> TpTuple(key, tp) }
+        .rekey { (_, tp) -> SakKey(SakId(tp.sakId), Fagsystem.TILTAKSPENGER) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
+        .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
+        .includeHeader(FS_KEY) { Fagsystem.TILTAKSPENGER.name }
+        .map { sakKey, req, ids -> TpDto.splitToDomain(sakKey.sakId, req.key, req.value, ids)  }
+        .rekey { dtos -> dtos.first().originalKey }
+        .map { value ->
+            Result.catch {
+                val store = kafka.getStore(Stores.utbetalinger)
+                val aggregate = value.map { new ->
+                    val prev = store.getOrNull(new.uid.toString())
+                    StreamsPair(new, prev)
+                }
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                oppdragToUtbetalinger to simuleringer
+            }
+        }
+        .branch(Result<*, *>::isErr, ::replyError) 
+        .default {
+            val result = this.map { it.unwrap() }
+            result.saveUtbetalingerAsPending()
+            result.sendSimulering()
+            result.sendOppdrag()
+            result.replyOkIfIdempotent()
+            result.savePendingUids()
+        }
+}
+
+fun Topology.historiskStream(
+    utbetalinger: GlobalKTable<String, Utbetaling>,
+    saker: KTable<SakKey, Set<UtbetalingId>>,
+    kafka: Streams,
+) {
+    consume(Topics.historisk)
+        .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
+        .merge(consume(Topics.historiskIntern))
+        .map { key, historisk -> HistoriskTuple(key, historisk) }
+        .rekey { (_, historisk) -> SakKey(SakId(historisk.sakId), Fagsystem.HISTORISK) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "historisktuple-leftjoin-saker")
+        .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
+        .includeHeader(FS_KEY) { Fagsystem.HISTORISK.name }
+        .map { req, uids -> HistoriskUtbetaling.toDomain(req.key, req.value, uids)}
+        .rekey { dto -> dto.originalKey }
+        .map { new ->
+            Result.catch {
+                val store = kafka.getStore(Stores.utbetalinger)
+                val prev = store.getOrNull(new.uid.toString())
+                val aggregate = listOf(StreamsPair(new, prev))
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                oppdragToUtbetalinger to simuleringer
+            }
+        }
+        .branch(Result<*, *>::isErr, ::replyError) 
+        .default {
+            val result = this.map { it.unwrap() }
+            result.saveUtbetalingerAsPending()
+            result.sendSimulering()
+            result.sendOppdrag()
+            result.replyOkIfIdempotent()
+            result.savePendingUids()
+        }
+}
+
+/**
+ * Dagpenger har ikke alltid meldeperioder, 
+ * da avbryter vi og svarer med OK med en gang.
+ **/
+private object Guard {
+    fun ifNoMeldeperiode(pair: StreamsPair<DpTuple, Set<UtbetalingId>?>): Boolean {
+        val (utbetalinger, saker) = pair.left.value.utbetalinger to pair.right
+        return utbetalinger.isEmpty() && saker.isNullOrEmpty()
+    }
+
+    fun replyOk(branch: MappedStream<SakKey, StreamsPair<DpTuple, Set<UtbetalingId>?>>) {
+        branch.rekey { (dpTuple, _) -> dpTuple.key }
+            .map { StatusReply.ok() }
+            .produce(Topics.status)
+    }
+}
 
 /**
  * Vi må vente med å lagre helved.utbetalinger.v1 til vi har fått en positiv kvittering.
@@ -92,385 +322,51 @@ fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTab
         .produce(Topics.utbetalinger)
 }
 
+typealias Aggregate = Pair<List<Pair<Oppdrag, List<Utbetaling>>>, List<SimulerBeregningRequest>>
 
-fun Topology.aapStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
-    saker: KTable<SakKey, Set<UtbetalingId>>,
-    kafka: Streams,
-) {
-    consume(Topics.aap)
-        .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
-        .merge(consume(Topics.aapIntern))
-        .map { key, aap -> AapTuple(key, aap) }
-        .rekey { (_, aap) -> SakKey(SakId(aap.sakId), Fagsystem.AAP) }
-        .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
-        .peek { key, _, saker ->
-            val bytes = key.toString().toByteArray()
-            kafkaLog.info("joined with saker on key:$key bytes: ${bytes.joinToString(","){ it.toString() } } length: ${bytes.size}. Uids: $saker")
-        }
-        .map(::splitOnMeldeperiode) // rename toDomain
-        .rekey { _, dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
-        .map { value ->
-            Result.catch {
-                val store = kafka.getStore(Stores.utbetalinger)
-                val aggregate = value.map { new ->
-                    val prev = store.getOrNull(new.uid.toString())
-                    StreamsPair(new, prev)
-                }
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                oppdragToUtbetalinger to simuleringer
+private fun replyError(branch: MappedStream<String, Result<Aggregate, StatusReply>>) {
+    branch
+        .map { it.unwrapErr() }
+        .produce(Topics.status)
+}
+
+private fun MappedStream<String, Aggregate>.replyOkIfIdempotent() {
+    this
+        .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
+        .map { StatusReply.ok() }
+        .produce(Topics.status)
+}
+
+private fun MappedStream<String, Aggregate>.sendOppdrag() {
+    val oppdrag = this.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
+    oppdrag.produce(Topics.oppdrag)
+    oppdrag.map(StatusReply::mottatt).produce(Topics.status)
+}
+
+private fun MappedStream<String, Aggregate>.sendSimulering() {
+    this
+        .flatMap { (_, simuleringer) -> simuleringer }
+        .produce(Topics.simulering)
+}
+
+private fun MappedStream<String, Aggregate>.saveUtbetalingerAsPending() {
+    this
+        .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
+            oppdragToUtbetalinger.flatMap { agg -> 
+                agg.second.map { KeyValue(it.uid.toString(), it) } 
             }
         }
-        .includeHeader(FS_KEY) { Fagsystem.AAP.name }
-        .branch({ it.isOk() }) {
-            val result = map { it -> it.unwrap() }
-
-            result
-                .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
-                    oppdragToUtbetalinger.flatMap { agg ->
-                        agg.second.map {
-                            KeyValue(it.uid.toString(), it)
-                        }
-                    }
-                }
-                .produce(Topics.pendingUtbetalinger)
-
-            result
-                .flatMap { (_, simuleringer) -> simuleringer }
-                .produce(Topics.simulering)
-
-            val oppdrag = result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
-            oppdrag.produce(Topics.oppdrag)
-            oppdrag
-                .map { StatusReply.mottatt(it) }
-                .produce(Topics.status)
-
-            result
-                .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
-                .map { StatusReply.ok() }
-                .produce(Topics.status)
-
-            result
-                .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
-                    oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
-                        val uids = utbetalinger.map { u -> u.uid.toString() }
-                        KeyValue(oppdrag, PKs(transactionId, uids))
-                    }
-                }
-                .produce(Topics.fk)
-        }
-        .default {
-            map { it -> it.unwrapErr() }.produce(Topics.status)
-        }
+        .produce(Topics.pendingUtbetalinger)
 }
 
-fun Topology.tsStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
-    saker: KTable<SakKey, Set<UtbetalingId>>,
-    kafka: Streams,
-) {
-    consume(Topics.ts)
-        .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
-        .merge(consume(Topics.tsIntern))
-        .map { key, ts -> TsTuple(key, ts) }
-        .rekey { (_, ts) -> SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER) }
-        .leftJoin(Serde.json(), Serde.json(), saker, "tstuple-leftjoin-saker")
-        .map { ts, uids -> ts.toDomain(uids)}
-        .rekey { dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
-        .map { utbetalinger ->
-            Result.catch {
-                val store = kafka.getStore(Stores.utbetalinger)
-                kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
-                val aggregate = utbetalinger.map { new -> 
-                    val prev = store.getOrNull(new.uid.toString())
-                    kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
-                    StreamsPair(new, prev)
-                }
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                oppdragToUtbetalinger to simuleringer
+private fun MappedStream<String, Aggregate>.savePendingUids() {
+    this
+        .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
+            oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
+                val uids = utbetalinger.map { u -> u.uid.toString() }
+                KeyValue(oppdrag, PKs(transactionId, uids))
             }
         }
-        .includeHeader(FS_KEY) { Fagsystem.TILLEGGSSTØNADER.name }
-        .branch({ it.isOk() }) {
-            val result = map { it -> it.unwrap() }
-
-            result
-                .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
-                    oppdragToUtbetalinger.flatMap { agg ->
-                        agg.second.map {
-                            KeyValue(it.uid.toString(), it)
-                        }
-                    }
-                }
-                .produce(Topics.pendingUtbetalinger)
-
-            result
-                .flatMap { (_, simuleringer) -> simuleringer }
-                .produce(Topics.simulering)
-
-            val oppdrag = result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
-            oppdrag.produce(Topics.oppdrag)
-            oppdrag
-                .map { StatusReply.mottatt(it) }
-                .produce(Topics.status)
-
-            result
-                .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
-                .map { StatusReply.ok() }
-                .produce(Topics.status)
-
-            result
-                .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
-                    oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
-                        val uids = utbetalinger.map { u -> u.uid.toString() }
-                        KeyValue(oppdrag, PKs(transactionId, uids))
-                    }
-                }
-                .produce(Topics.fk)
-        }
-        .default {
-            map { it -> it.unwrapErr() }.produce(Topics.status)
-        }
-}
-
-fun Topology.historiskStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
-    saker: KTable<SakKey, Set<UtbetalingId>>,
-    kafka: Streams,
-) {
-    consume(Topics.historisk)
-        .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
-        .merge(consume(Topics.historiskIntern))
-        .map { key, historisk -> HistoriskTuple(key, historisk) }
-        .rekey { (_, historisk) -> SakKey(SakId(historisk.sakId), Fagsystem.HISTORISK) }
-        .leftJoin(Serde.json(), Serde.json(), saker, "historisktuple-leftjoin-saker")
-        .map { ts, uids -> ts.toDomain(uids)}
-        .rekey { dto -> dto.originalKey } // alle har samme uid, skal ikke være 0 pga branch over
-        .map { new ->
-            Result.catch {
-                val store = kafka.getStore(Stores.utbetalinger)
-                val prev = store.getOrNull(new.uid.toString())
-                val aggregate = listOf(StreamsPair(new, prev))
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                oppdragToUtbetalinger to simuleringer
-            }
-        }
-        .includeHeader(FS_KEY) { Fagsystem.HISTORISK.name }
-        .branch({ it.isOk() }) {
-            val result = map { it -> it.unwrap() }
-
-            result
-                .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
-                    oppdragToUtbetalinger.flatMap { agg ->
-                        agg.second.map {
-                            KeyValue(
-                                it.uid.toString(),
-                                it
-                            )
-                        }
-                    }
-                }
-                .produce(Topics.pendingUtbetalinger)
-
-            result
-                .flatMap { (_, simuleringer) -> simuleringer }
-                .produce(Topics.simulering)
-
-            val oppdrag = result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
-            oppdrag.produce(Topics.oppdrag)
-            oppdrag.map { StatusReply.mottatt(it) }.produce(Topics.status)
-
-            result
-                .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
-                .map { StatusReply.ok() }
-                .produce(Topics.status)
-
-            result
-                .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
-                    oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
-                        val uids = utbetalinger.map { u -> u.uid.toString() }
-                        KeyValue(oppdrag, PKs(transactionId, uids))
-                    }
-                }
-                .produce(Topics.fk)
-        }
-        .default {
-            map { it -> it.unwrapErr() }.produce(Topics.status)
-        }
-}
-
-fun Topology.tpStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
-    saker: KTable<SakKey, Set<UtbetalingId>>,
-    kafka: Streams,
-) {
-    consume(Topics.tp)
-        // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
-        // .merge(consume(Topics.tpUtbetalinger))
-        .map { key, tp -> TpTuple(key, tp) }
-        .rekey { (_, tp) -> SakKey(SakId(tp.sakId), Fagsystem.TILTAKSPENGER) }
-        .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
-        .map { key, tuple, ids -> splitOnTpMeldeperiode(key, tuple, ids)  }
-        .rekey { dtos -> dtos.first().originalKey } // alle har samme uid, skal ikke være 0 pga branch over
-        .map { value ->
-            Result.catch {
-                val store = kafka.getStore(Stores.utbetalinger)
-                val aggregate = value.map { new ->
-                    val prev = store.getOrNull(new.uid.toString())
-                    StreamsPair(new, prev)
-                }
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                oppdragToUtbetalinger to simuleringer
-            }
-        }
-        .includeHeader(FS_KEY) { Fagsystem.TILTAKSPENGER.name }
-        .branch({ it.isOk() }) {
-            val result = map { it -> it.unwrap() }
-
-            result
-                .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
-                    oppdragToUtbetalinger.flatMap { agg ->
-                        agg.second.map {
-                            KeyValue(
-                                it.uid.toString(),
-                                it
-                            )
-                        }
-                    }
-                }
-                .produce(Topics.pendingUtbetalinger)
-
-            result
-                .flatMap { (_, simuleringer) -> simuleringer }
-                .produce(Topics.simulering)
-
-            val oppdrag = result.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
-            oppdrag.produce(Topics.oppdrag)
-            oppdrag
-                .map { StatusReply.mottatt(it) }
-                .produce(Topics.status)
-
-            result
-                .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
-                .map { StatusReply.ok() }
-                .produce(Topics.status)
-
-            result
-                .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
-                    oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
-                        val uids = utbetalinger.map { u -> u.uid.toString() }
-                        KeyValue(oppdrag, PKs(transactionId, uids))
-                    }
-                }
-                .produce(Topics.fk)
-        }
-        .default {
-            map { it -> it.unwrapErr() }.produce(Topics.status)
-        }
-}
-
-private fun splitOnMeldeperiode(
-    sakKey: SakKey,
-    tuple: AapTuple,
-    uids: Set<UtbetalingId>?
-): List<Utbetaling> {
-    val (aapKey, aapUtbetaling) = tuple
-    val dryrun = aapUtbetaling.dryrun
-    val personident = aapUtbetaling.ident
-    val behandlingId = aapUtbetaling.behandlingId
-    val periodetype = Periodetype.UKEDAG
-    val vedtakstidspunktet = aapUtbetaling.vedtakstidspunktet
-    val beslutterId = aapUtbetaling.beslutter ?: "kelvin"
-    val saksbehandler = aapUtbetaling.saksbehandler ?: "kelvin"
-    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, AapUtbetaling?>> = aapUtbetaling
-        .utbetalinger
-        .groupBy { it.meldeperiode }
-        .map { (meldeperiode, utbetalinger) ->
-            aapUId(aapUtbetaling.sakId, meldeperiode, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING) to aapUtbetaling.copy(
-                utbetalinger = utbetalinger
-            )
-        }
-        .toMutableList()
-
-    if (uids != null) {
-        val aapUids = utbetalingerPerMeldekort.map { (aapUid, _) -> aapUid }
-        val missingMeldeperioder = uids.filter { it !in aapUids }.map { it to null }
-        utbetalingerPerMeldekort.addAll(missingMeldeperioder)
-    }
-
-    return utbetalingerPerMeldekort.map { (uid, aapUtbetaling) ->
-        when (aapUtbetaling) {
-            null -> fakeDelete(
-                dryrun = dryrun,
-                originalKey = aapKey,
-                sakId = sakKey.sakId,
-                uid = uid,
-                fagsystem = Fagsystem.AAP,
-                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                beslutterId = Navident(beslutterId),
-                saksbehandlerId = Navident(saksbehandler),
-                personident = Personident(personident),
-                behandlingId = BehandlingId(behandlingId),
-                periodetype = periodetype,
-                vedtakstidspunkt = vedtakstidspunktet,
-            ).also { appLog.debug("creating a fake delete to " + "force-trigger a join with existing utbetaling") }
-
-            else -> toDomain(aapKey, aapUtbetaling, uids, uid)
-        }
-    }
-}
-
-private fun splitOnTpMeldeperiode(
-    sakKey: SakKey,
-    tuple: TpTuple,
-    uids: Set<UtbetalingId>?,
-): List<Utbetaling> {
-    val (tpKey, tpUtbetaling) = tuple
-    val dryrun = tpUtbetaling.dryrun
-    val personident = tpUtbetaling.personident
-    val behandlingId = tpUtbetaling.behandlingId
-    val periodetype = Periodetype.UKEDAG
-    val vedtakstidspunktet = tpUtbetaling.vedtakstidspunkt
-    val beslutterId = tpUtbetaling.beslutter ?: "tp"
-    val saksbehandler = tpUtbetaling.saksbehandler ?: "tp"
-    val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, TpUtbetaling?>> = tpUtbetaling
-        .perioder
-        .groupBy { it.meldeperiode to it.stønad }
-        .map { (group, utbetalinger) ->
-            val (meldeperiode, stønad) = group
-            tpUId(tpUtbetaling.sakId, meldeperiode, stønad) to tpUtbetaling.copy(perioder = utbetalinger)
-        }
-        .toMutableList()
-
-    if (uids != null) {
-        val tpUids = utbetalingerPerMeldekort.map { (tpUid, _) -> tpUid }
-        val missingMeldeperioder = uids.filter { it !in tpUids }.map { it to null }
-        utbetalingerPerMeldekort.addAll(missingMeldeperioder)
-    }
-
-    return utbetalingerPerMeldekort.map { (uid, tpUtbetaling) ->
-        when (tpUtbetaling) {
-            null -> fakeDelete(
-                dryrun = dryrun,
-                originalKey = tpKey,
-                sakId = sakKey.sakId,
-                uid = uid,
-                fagsystem = Fagsystem.TILTAKSPENGER,
-                StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, // Dette er en placeholder
-                beslutterId = Navident(beslutterId),
-                saksbehandlerId = Navident(saksbehandler),
-                personident = Personident(personident),
-                behandlingId = BehandlingId(behandlingId),
-                periodetype = periodetype,
-                vedtakstidspunkt = vedtakstidspunktet,
-            ).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
-
-            else -> toDomain(tpKey, tpUtbetaling, uids, uid)
-        }
-    }
+        .produce(Topics.fk)
 }
 
