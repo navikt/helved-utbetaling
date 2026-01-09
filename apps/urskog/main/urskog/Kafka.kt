@@ -110,7 +110,12 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
                 .map { xml -> StatusReply.sendt(xml) }
                 .includeHeader(FS_KEY) { statusReply -> 
                     statusReply.detaljer
-                        ?.let { detaljer -> detaljer.ytelse.name } 
+                        ?.let { detaljer -> 
+                            when (detaljer.ytelse.isTilleggsstønader()) {
+                                true -> Fagsystem.TILLEGGSSTØNADER.name
+                                false -> detaljer.ytelse.name
+                            }
+                        } 
                         ?: "ukjent" 
                 }
                 .produce(Topics.status)
