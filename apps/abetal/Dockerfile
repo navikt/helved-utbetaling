@@ -30,6 +30,7 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 RUN apk add --no-cache gcompat libstdc++ snappy
 
 COPY --from=jre /customjre $JAVA_HOME
+ADD apps/abetal/build/resources/main /migrations
 COPY apps/abetal/build/libs/abetal-all.jar /app.jar
 ENTRYPOINT [                              \
     "java",                               \
