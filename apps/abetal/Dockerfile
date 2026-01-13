@@ -23,6 +23,7 @@ RUN jlink \
     --add-modules jdk.jcmd \ 
     --add-modules jdk.jfr \
     --add-modules jdk.management \
+    --add-modules jdk.naming.dns \
     --add-modules jdk.unsupported \
     --add-modules jdk.xml.dom \
     --strip-debug \
