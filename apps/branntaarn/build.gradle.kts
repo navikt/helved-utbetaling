@@ -15,7 +15,7 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:$libVersion")
 
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.22.0-alpha")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.23.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
 
