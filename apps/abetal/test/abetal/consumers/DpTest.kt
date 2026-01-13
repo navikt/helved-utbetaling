@@ -1,24 +1,26 @@
 package abetal.consumers
 
 import abetal.*
-import abetal.TestRuntime
 import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.test.runTest
+import libs.jdbc.concurrency.transaction
 import libs.kafka.JsonSerde
 import models.*
-import java.time.format.DateTimeFormatter
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
-import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.time.Duration.Companion.milliseconds
 
 internal class DpTest {
 
@@ -3395,6 +3397,118 @@ internal class DpTest {
             .has(transactionId)
             .with(transactionId) { reply -> assertEquals(Status.FEILET, reply.status) }
             .hasHeader(transactionId, FS_KEY to "DAGPENGER")
+    }
+
+    @Test
+    fun `når fks mangler på topic, sjekkes database`() = runTest(TestRuntime.context) {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val meldeperiode = "23987928347"
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
+
+        val oppdrag = TestData.oppdrag(
+            mmel = null,
+            satser = listOf(200),
+            kodeEndring = "NY",
+            avstemmingstidspunkt = LocalDate.now().minusDays(1).atStartOfDay(),
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    kodeEndring = "OPPH",
+                    delytelsesId = "1",
+                    sats = 200,
+                    datoVedtakFom = LocalDate.of(2025, 11, 10),
+                    datoVedtakTom = LocalDate.of(2025, 11, 13),
+                    typeSats = "DAG",
+                    henvisning = UUID.randomUUID().toString().drop(10),
+                )
+            )
+        )
+
+        withContext(TestRuntime.context) {
+            transaction { 
+                DaoFks(listOf(uid.toString())).insert(oppdrag) 
+            }
+        }
+
+        TestRuntime.topics.pendingUtbetalinger.produce(uid.toString()) {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid,
+                originalKey = UUID.randomUUID().toString(),
+                sakId = sid,
+                behandlingId = bid,
+                fagsystem = Fagsystem.DAGPENGER,
+                lastPeriodeId = PeriodeId(),
+                stønad = StønadTypeDagpenger.DAGPENGER,
+                beslutterId = Navident("dagpenger"),
+                saksbehandlerId = Navident("dagpenger"),
+                personident = Personident("12345678910")
+            ) {
+                periode(LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 13), 200u, 200u)
+            }
+        }
+
+        TestRuntime.topics.oppdrag.produce("abc") {
+            oppdrag.mmel = TestData.mmel()
+            oppdrag
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+    }
+
+    @Test
+    fun `når fks finnes på topic, sjekkes ikke databasen`() = runTest(TestRuntime.context) {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val meldeperiode = "23987928347"
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
+
+        val oppdrag = TestData.oppdrag(
+            mmel = null,
+            satser = listOf(200),
+            kodeEndring = "NY",
+            avstemmingstidspunkt = LocalDate.now().minusDays(1).atStartOfDay(),
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    kodeEndring = "OPPH",
+                    delytelsesId = "1",
+                    sats = 200,
+                    datoVedtakFom = LocalDate.of(2025, 11, 10),
+                    datoVedtakTom = LocalDate.of(2025, 11, 13),
+                    typeSats = "DAG",
+                    henvisning = UUID.randomUUID().toString().drop(10),
+                )
+            )
+        )
+
+        TestRuntime.topics.fk.produce(oppdrag) {
+            PKs("abc", listOf(uid.toString()))
+        }
+
+        TestRuntime.topics.pendingUtbetalinger.produce(uid.toString()) {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid,
+                originalKey = UUID.randomUUID().toString(),
+                sakId = sid,
+                behandlingId = bid,
+                fagsystem = Fagsystem.DAGPENGER,
+                lastPeriodeId = PeriodeId(),
+                stønad = StønadTypeDagpenger.DAGPENGER,
+                beslutterId = Navident("dagpenger"),
+                saksbehandlerId = Navident("dagpenger"),
+                personident = Personident("12345678910")
+            ) {
+                periode(LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 13), 200u, 200u)
+            }
+        }
+
+        TestRuntime.topics.oppdrag.produce("abc") {
+            oppdrag.mmel = TestData.mmel()
+            oppdrag
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
     }
 }
 

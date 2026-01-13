@@ -3,10 +3,16 @@ package abetal
 import libs.kafka.StreamsMock
 import libs.ktor.*
 import org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG
+import java.io.File
+import libs.jdbc.Jdbc
+import libs.jdbc.PostgresContainer
+import libs.jdbc.concurrency.CoroutineDatasource
+import libs.jdbc.truncate
+import javax.sql.DataSource
 import org.apache.kafka.streams.state.BuiltInDslStoreSuppliers
 import java.util.*
 
-class TestTopics(private val kafka: StreamsMock) {
+class TestTopics(kafka: StreamsMock) {
     val aap = kafka.testTopic(Topics.aap)
     val dp = kafka.testTopic(Topics.dp)
     val ts = kafka.testTopic(Topics.ts) 
@@ -25,8 +31,12 @@ class TestTopics(private val kafka: StreamsMock) {
 }
 
 object TestRuntime {
+    private val postgres = PostgresContainer("abetal")
+    val jdbc: DataSource = Jdbc.initialize(postgres.config)
+    val context: CoroutineDatasource = CoroutineDatasource(jdbc)
     val kafka: StreamsMock = StreamsMock()
     val config = Config(
+        jdbc = postgres.config.copy(migrations = listOf(File("test/premigrations"), File("migrations"))),
         kafka = kafka.config.copy(additionalProperties = Properties().apply {
             put("state.dir", "build/kafka-streams")
             put("max.task.idle.ms", -1L)
@@ -39,11 +49,13 @@ object TestRuntime {
             abetal(
                 config = config, 
                 kafka = kafka, 
-                topology = kafka.append(createTopology(kafka)) {
-                    // consume(Tables.saker)
-                }
+                topology = createTopology(kafka)
             )
         },
+        onClose = {
+            jdbc.truncate("abetal", DaoFks.TABLE)
+            postgres.close()
+        }
     )
     val topics: TestTopics = TestTopics(kafka)
 }

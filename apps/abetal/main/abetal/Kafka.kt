@@ -1,5 +1,9 @@
 package abetal
 
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.transaction
 import libs.kafka.*
 import libs.kafka.stream.MappedStream
 import libs.utils.appLog
@@ -306,10 +310,23 @@ fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTab
             """.trimEnd()
         }
         .leftJoin(Serde.xml(), Serde.json(), fks, "oppdrag-leftjoin-fks")
-        .flatMapKeyValue { _, info, pks ->
+        .flatMapKeyValue { oppdrag, info, pks ->
             if (pks == null) {
-                appLog.warn("primary key used to move pending to utbetalinger was null. Oppdraginfo: $info")
-                emptyList()
+                appLog.warn("Fant ikke fks på topic, forsøker å se i datbasen. Oppdraginfo: $info")
+                val hashKey = DaoFks.hash(oppdrag)
+                val dao = runBlocking {
+                    withContext(Jdbc.context) {
+                        transaction {
+                            DaoFks.firstOrNull(hashKey)
+                        }
+                    }
+                }
+                if (dao != null) {
+                    dao.uids.map { pk -> KeyValue(pk, info) }
+                } else {
+                    appLog.warn("primary key used to move pending to utbetalinger was null. Oppdraginfo: $info")
+                    emptyList()
+                }
             } else {
                 pks.uids.map { pk -> KeyValue(pk, info) }
             }
@@ -364,6 +381,14 @@ private fun MappedStream<String, Aggregate>.savePendingUids() {
         .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
             oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
                 val uids = utbetalinger.map { u -> u.uid.toString() }
+                val dao = DaoFks(uids)
+                runBlocking {
+                    withContext(Jdbc.context) {
+                        transaction {
+                            dao.insert(oppdrag)
+                        }
+                    }
+                }
                 KeyValue(oppdrag, PKs(transactionId, uids))
             }
         }

@@ -4,6 +4,13 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
+import no.trygdeetaten.skjema.oppdrag.*
+import java.time.format.DateTimeFormatter
+import java.math.BigDecimal
+import javax.xml.datatype.DatatypeFactory
+import java.time.*
+import java.util.GregorianCalendar
 import javax.xml.datatype.XMLGregorianCalendar
 import models.*
 
@@ -369,3 +376,138 @@ val dagpengerMeldeperiodeDager = listOf(
     )
 )
 
+object TestData {
+    private val xmlMapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
+    private val objectFactory = ObjectFactory()
+    private fun LocalDateTime.format() =
+        truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+
+    private fun LocalDate.toXMLDate(): XMLGregorianCalendar =
+        DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
+
+    fun oppdrag(
+        satser: List<Int>,
+        oppdragslinjer: List<OppdragsLinje150> = satser.mapIndexed { idx, sats ->
+            oppdragslinje(
+                delytelsesId = "$idx",                              // periodeId
+                sats = sats.toLong(),                               // beløp
+                datoVedtakFom = LocalDate.of(2025, 11, 3),          // fom
+                datoVedtakTom = LocalDate.of(2025, 11, 7),          // tom
+                typeSats = "DAG",                                   // periodetype
+                henvisning = UUID.randomUUID().toString().drop(10), // behandlingId
+            )
+        },
+        kodeEndring: String = "NY",                                 // NY/ENDR
+        fagområde: String = "AAP",
+        fagsystemId: String = "1",                                  // sakid
+        oppdragGjelderId: String = "12345678910",                   // personident 
+        saksbehId: String = "Z999999",
+        avstemmingstidspunkt: LocalDateTime = LocalDateTime.now(),
+        enhet: String? = null,
+        mmel: Mmel? = mmel(),
+    ) = objectFactory.createOppdrag().apply {
+        this.mmel = mmel
+        this.oppdrag110 = objectFactory.createOppdrag110().apply {
+            this.kodeAksjon = "1"
+            this.kodeEndring = kodeEndring
+            this.kodeFagomraade = fagområde
+            this.fagsystemId = fagsystemId
+            this.utbetFrekvens = "MND"
+            this.oppdragGjelderId = oppdragGjelderId
+            this.datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
+            this.saksbehId = saksbehId
+            this.avstemming115 = objectFactory.createAvstemming115().apply {
+                kodeKomponent = fagområde
+                nokkelAvstemming = avstemmingstidspunkt.format()
+                tidspktMelding = avstemmingstidspunkt.format()
+            }
+            enhet?.let {
+                listOf(
+                    objectFactory.createOppdragsEnhet120().apply {
+                        this.enhet = enhet
+                        this.typeEnhet = "BOS"
+                        this.datoEnhetFom = LocalDate.of(1970, 1, 1).toXMLDate()
+                    },
+                    objectFactory.createOppdragsEnhet120().apply {
+                        this.enhet = "8020"
+                        this.typeEnhet = "BEH"
+                        this.datoEnhetFom = LocalDate.of(1900, 1, 1).toXMLDate()
+                    },
+                )
+            } ?: listOf(
+                objectFactory.createOppdragsEnhet120().apply {
+                    this.enhet = "8020"
+                    this.typeEnhet = "BOS"
+                    this.datoEnhetFom = LocalDate.of(1900, 1, 1).toXMLDate()
+                },
+            ).forEach(oppdragsEnhet120s::add)
+            oppdragsLinje150s.addAll(oppdragslinjer)
+        }
+    }
+
+    fun mmel(
+        alvorlighetsgrad: String = "00", 
+        kodeMelding: String? = null,
+        beskrMelding: String? = null,
+    ): Mmel = Mmel().apply {
+        this.alvorlighetsgrad = alvorlighetsgrad
+        this.kodeMelding = kodeMelding
+        this.beskrMelding = beskrMelding
+    }
+
+    fun oppdragslinje(
+        delytelsesId: String,
+        sats: Long,
+        datoVedtakFom: LocalDate,
+        datoVedtakTom: LocalDate,
+        typeSats: String,                       // DAG/DAG7/MND/ENG
+        henvisning: String,                     // behandlingId
+        refDelytelsesId: String? = null,        // lastPeriodeId
+        kodeEndring: String = "NY",             // NY/ENDR
+        opphør: LocalDate? = null,
+        fagsystemId: String = "1",              // sakId
+        vedtakId: LocalDate = LocalDate.now(),  // vedtakstidspunkt
+        klassekode: String = "AAPOR",
+        saksbehId: String = "Z999999",          // saksbehandler
+        beslutterId: String = "Z999999",        // beslutter
+        utbetalesTilId: String = "12345678910", // personident
+        vedtakssats: Long? = null,              // fastsattDagsats
+    ): OppdragsLinje150 {
+        val attestant = objectFactory.createAttestant180().apply {
+            attestantId = beslutterId
+        }
+
+        return objectFactory.createOppdragsLinje150().apply {
+            kodeEndringLinje = kodeEndring
+            opphør?.let {
+                kodeStatusLinje = TkodeStatusLinje.OPPH
+                datoStatusFom = opphør.toXMLDate()
+            }
+            if (kodeEndring == "ENDR") {
+                refDelytelsesId?.let {
+                    refDelytelseId = refDelytelsesId
+                    refFagsystemId = fagsystemId
+                }
+            }
+            this.vedtakId = vedtakId.toString()
+            this.delytelseId = delytelsesId
+            this.kodeKlassifik = klassekode
+            this.datoVedtakFom = datoVedtakFom.toXMLDate()
+            this.datoVedtakTom = datoVedtakTom.toXMLDate()
+            this.sats = BigDecimal.valueOf(sats)
+            this.fradragTillegg = TfradragTillegg.T
+            this.typeSats = typeSats
+            this.brukKjoreplan = "N"
+            this.saksbehId = saksbehId
+            this.utbetalesTilId = utbetalesTilId
+            this.henvisning = henvisning
+            attestant180s.add(attestant)
+
+            vedtakssats?.let {
+                vedtakssats157 = objectFactory.createVedtakssats157().apply {
+                    this.vedtakssats = BigDecimal.valueOf(vedtakssats)
+                }
+            }
+        }
+    }
+}
