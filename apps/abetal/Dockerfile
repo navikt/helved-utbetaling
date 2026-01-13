@@ -7,7 +7,9 @@ RUN jlink \
     # --add-modules java.base \
     --add-modules java.desktop \
     --add-modules java.instrument \
+    --add-modules java.management \
     --add-modules java.naming \
+    --add-modules java.net.http \
     --add-modules java.security.jgss \
     --add-modules java.security.sasl \
     --add-modules java.sql \
