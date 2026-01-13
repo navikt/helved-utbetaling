@@ -12,6 +12,7 @@ RUN jlink \
     --add-modules java.security.sasl \
     --add-modules java.sql \
     --add-modules java.compiler \
+    --add-modules jdk.crypto.ec \
     --add-modules jdk.unsupported \
     --add-modules jdk.jcmd \ 
     --add-modules jdk.jfr \
