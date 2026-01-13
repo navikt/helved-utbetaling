@@ -49,3 +49,17 @@ spec:
   kafka:
     pool: nav-dev
     streams: true
+  gcp:
+    sqlInstances:
+      - type: "POSTGRES_17"
+        diskAutoresize: true
+        tier: "db-f1-micro"
+        cascadingDelete: false
+        highAvailability: false 
+        pointInTimeRecovery: true
+        maintenance:
+          day: 7
+          hour: 23
+        databases:
+          - name: abetal
+            envVarPrefix: DB

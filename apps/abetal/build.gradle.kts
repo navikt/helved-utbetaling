@@ -12,6 +12,7 @@ val libVersion = "3.1.219"
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:jdbc"))
     implementation(project(":libs:utils"))
 
     implementation("no.nav.helved:xml:$libVersion")
@@ -31,5 +32,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
+    testImplementation(project(":libs:jdbc-test"))
     testImplementation(project(":libs:ktor-test"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
