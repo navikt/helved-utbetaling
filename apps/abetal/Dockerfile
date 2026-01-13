@@ -5,6 +5,8 @@ RUN jlink \
     --verbose \
     --module-path $JAVA_HOME/bin/jmods/ \
     # --add-modules java.base \
+    --add-modules java.base \
+    --add-modules java.compiler \
     --add-modules java.desktop \
     --add-modules java.instrument \
     --add-modules java.management \
@@ -13,12 +15,16 @@ RUN jlink \
     --add-modules java.security.jgss \
     --add-modules java.security.sasl \
     --add-modules java.sql \
-    --add-modules java.compiler \
+    --add-modules java.xml \
+    --add-modules java.xml.crypto \
+    --add-modules jdk.charsets \
     --add-modules jdk.crypto.ec \
-    --add-modules jdk.unsupported \
+    --add-modules jdk.httpserver \
     --add-modules jdk.jcmd \ 
     --add-modules jdk.jfr \
     --add-modules jdk.management \
+    --add-modules jdk.unsupported \
+    --add-modules jdk.xml.dom \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
