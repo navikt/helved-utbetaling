@@ -13,7 +13,11 @@ import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
 import java.time.Instant
 import java.util.UUID
+import libs.kafka.Topic
+import libs.kafka.json
+import libs.kafka.xml
 import libs.xml.XMLMapper
+import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.junit.jupiter.api.Disabled
 import kotlin.test.*
@@ -102,9 +106,9 @@ class ApiTest {
     @Test
     fun `can query for fom, tom and value`() = runTest(TestRuntime.context) {
         val result = TestRuntime.ktor.httpClient.get("/api?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }
+                bearerAuth(TestRuntime.azure.generateToken())
+                accept(ContentType.Application.Json)
+            }
 
         assertEquals(HttpStatusCode.OK, result.status)
     }
@@ -137,7 +141,7 @@ class ApiTest {
         val xmlMapper = XMLMapper<Oppdrag>()
         val initialOppdrag = xmlMapper.readValue(TestData.oppdragXml)
 
-        val oppdragProducer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, oppdrag)
+        val oppdragProducer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Topic("helved.oppdrag.v1", xml<Oppdrag>()))
         oppdragProducer.send("202503271001", initialOppdrag)
 
         val kvitteringRequest = KvitteringRequest(
@@ -215,6 +219,31 @@ class ApiTest {
         transaction {
             dao.insert(channel.table)
         }
+    }
+
+    @Test
+    fun `pending til utbetaling sends json to kafka`() = runTest(TestRuntime.context) {
+        val jsonPayload = """
+            {"dryrun":false,"originalKey":"213ae04f-d3cd-433b-9a71-992905d5043c","fagsystem":"TILLEGGSSTØNADER","uid":"dda57903-7349-4cb2-9d3e-0012e2b28590","action":"DELETE","førsteUtbetalingPåSak":false,"sakId":"200001343","behandlingId":"2259","lastPeriodeId":"200001343#0","personident":"15510060730","vedtakstidspunkt":"2026-01-05T12:59:33.235","stønad":"LÆREMIDLER_AAP","beslutterId":"VL","saksbehandlerId":"VL","periodetype":"UKEDAG","avvent":null,"perioder":[{"fom":"2025-10-15","tom":"2025-10-15","beløp":2703,"betalendeEnhet":null,"vedtakssats":null}]}
+        """.trimIndent()
+
+        val key = "213ae04f-d3cd-433b-9a71-992905d5043c"
+
+        TestRuntime.ktor.httpClient.post("/pending-til-utbetaling") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(KeyValueRequest(key, jsonPayload))
+        }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+
+        val producer =
+            TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Topic("helved.utbetalinger.v1", json<Utbetaling>()))
+        assertEquals(1, producer.history().size)
+
+        val (recordKey, _) = producer.history().last()
+
+        assertEquals(key, recordKey)
     }
 }
 

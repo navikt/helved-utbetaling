@@ -8,10 +8,7 @@ import libs.jdbc.concurrency.transaction
 import libs.kafka.*
 import libs.kafka.processor.*
 import libs.tracing.Tracing
-import models.Utbetaling
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import peisschtappern.AlertService.missingKvitteringHandler
-
 
 object Topics {
     val avstemming = Topic("helved.avstemming.v1", bytes())
@@ -37,9 +34,6 @@ object Topics {
     val historisk = Topic("historisk.utbetaling.v1", bytes())
     val historiskIntern = Topic("helved.utbetalinger-historisk.v1", bytes())
 }
-
-val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
-val utbetalinger = Topic("helved.utbetalinger.v1", xml<Utbetaling>())
 
 fun createTopology(config: Config): Topology = topology {
     Channel.all()

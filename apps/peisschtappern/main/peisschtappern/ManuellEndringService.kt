@@ -52,17 +52,14 @@ class ManuellEndringService(
     }
 
     fun flyttPendingTilUtbetalinger(
-        oppdragXml: String,
-        messageKey: String,
+        key: String,
+        value: String,
     ): Utbetaling {
 
-        // TODO: riktig? Er det ikke json?
-        val xmlMapper = XMLMapper<Utbetaling>()
-        val oppdrag = xmlMapper.readValue(oppdragXml)
+        val utbetaling = JsonSerde.jackson.readValue<Utbetaling>(value)
+        utbetalingerProducer.send(key, utbetaling)
 
-        utbetalingerProducer.send(messageKey, oppdrag)
-
-        return oppdrag
+        return utbetaling
     }
 
     fun tombstoneUtbetaling(key: String) = utbetalingerProducer.tombstone(key)

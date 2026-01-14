@@ -27,8 +27,11 @@ import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.kafka.Topic
 import libs.kafka.json
+import libs.kafka.xml
 import libs.utils.*
 import models.DpUtbetaling
+import models.Utbetaling
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -88,8 +91,8 @@ fun Application.peisschtappern(
         registry = prometheus
     )
 
-    val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, oppdrag)
-    val utbetalingProducer = kafkaFactory.createProducer(config.kafka, utbetalinger)
+    val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.oppdrag.v1", xml<Oppdrag>()))
+    val utbetalingProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger.v1", json<Utbetaling>()))
     val dpProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>()))
     val manuellEndringService = ManuellEndringService(oppdragsdataProducer, utbetalingProducer, dpProducer)
 
