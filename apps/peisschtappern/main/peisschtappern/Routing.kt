@@ -179,7 +179,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             )
             call.respond(
                 HttpStatusCode.OK,
-                "Created kvittering for uid:${request.messageKey} on ${oppdrag.name}"
+                "Created kvittering for uid:${request.messageKey} on ${Topics.oppdrag.name}"
             )
         } catch (e: Exception) {
             val msg = "Failed to create kvittering for uid:${request.messageKey}"
@@ -198,7 +198,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                 messageKey = request.key
 
             )
-            call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.key} on ${oppdrag.name}")
+            call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.key} on ${Topics.oppdrag.name}")
         } catch (e: Exception) {
             val msg = "Failed to send oppdrag for uid:${request.key}"
             appLog.error(msg)
@@ -212,12 +212,12 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
         try {
             manuellEndringService.flyttPendingTilUtbetalinger(
-                oppdragXml = request.value,
-                messageKey = request.key
+                key = request.key,
+                value = request.value
             )
             call.respond(
                 HttpStatusCode.OK, "Moved utbetaling from helved.pending-utbetalinger.v1" +
-                        "for uid:${request.key} on ${oppdrag.name}" + " to helved.utbetalinger.v1"
+                        "for uid:${request.key} on ${Topics.pendingUtbetalinger.name}" + " to ${Topics.utbetalinger.name}"
             )
         } catch (e: Exception) {
             val msg = "Failed to move pending utbetaling for uid:${request.key}"
