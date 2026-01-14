@@ -216,8 +216,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                 value = request.value
             )
             call.respond(
-                HttpStatusCode.OK, "Moved utbetaling from helved.pending-utbetalinger.v1" +
-                        "for uid:${request.key} on ${Topics.pendingUtbetalinger.name}" + " to ${Topics.utbetalinger.name}"
+                HttpStatusCode.OK, "Moved pending utbetaling for uid:${request.key} on ${Topics.pendingUtbetalinger.name}" + " to ${Topics.utbetalinger.name}"
             )
         } catch (e: Exception) {
             val msg = "Failed to move pending utbetaling for uid:${request.key}"
