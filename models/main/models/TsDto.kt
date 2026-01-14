@@ -17,6 +17,7 @@ data class TsDto(
 ) {
     companion object {
         fun toDomain(
+            sakId: SakId,
             originalKey: String,
             tsDto: TsDto,
             uidsPåSak: Set<UtbetalingId>?,
@@ -36,7 +37,7 @@ data class TsDto(
                     uid = UtbetalingId(utbetaling.id),
                     action = action,
                     førsteUtbetalingPåSak = uidsPåSak == null,
-                    sakId = SakId(tsDto.sakId),
+                    sakId = sakId,
                     behandlingId = BehandlingId(tsDto.behandlingId),
                     lastPeriodeId = PeriodeId(),
                     personident = Personident(tsDto.personident),
