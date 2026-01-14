@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.*
-import kotlin.time.Duration.Companion.milliseconds
 
 internal class TsTest {
 
@@ -1973,6 +1972,25 @@ internal class TsTest {
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
             .has(transactionId, expectedError)
+    }
+
+    @Test
+    fun `tom utbetaling svarer OK`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.dto(sid.id, bid.id) {
+                emptyList()
+            }
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) {
+                assertEquals(Status.OK, it.status)
+            }
     }
 }
 

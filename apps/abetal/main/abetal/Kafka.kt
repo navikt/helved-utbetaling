@@ -96,7 +96,7 @@ fun Topology.dpStream(
                 .rekey { _, dtos -> dtos.first().originalKey }
                 .map { _, utbetalinger ->
                     Result.catch {
-                        val store = kafka.getStore(Stores.utbetalinger)  
+                        val store = kafka.getStore(Stores.utbetalinger)
                         kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
                         val aggregate = utbetalinger.map { new ->
                             val prev = store.getOrNull(new.uid.toString())
@@ -108,7 +108,7 @@ fun Topology.dpStream(
                         oppdragToUtbetalinger to simuleringer
                     }
                 }
-                .branch(Result<*, *>::isErr, ::replyError) 
+                .branch(Result<*, *>::isErr, ::replyError)
                 .default {
                     val result = this.map { it.unwrap() }
                     result.saveUtbetalingerAsPending()
@@ -147,7 +147,7 @@ fun Topology.aapStream(
                 oppdragToUtbetalinger to simuleringer
             }
         }
-        .branch(Result<*, *>::isErr, ::replyError) 
+        .branch(Result<*, *>::isErr, ::replyError)
         .default {
             val result = this.map { it.unwrap() }
             result.saveUtbetalingerAsPending()
@@ -171,30 +171,34 @@ fun Topology.tsStream(
         .leftJoin(Serde.json(), Serde.json(), saker, "tstuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
         .includeHeader(FS_KEY) { Fagsystem.TILLEGGSSTØNADER.name }
-        .map { req, uids -> TsDto.toDomain(req.key, req.value, uids)}
-        .rekey { dtos -> dtos.first().originalKey }
-        .map { utbetalinger ->
-            Result.catch {
-                val store = kafka.getStore(Stores.utbetalinger)
-                kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
-                val aggregate = utbetalinger.map { new -> 
-                    val prev = store.getOrNull(new.uid.toString())
-                    kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
-                    StreamsPair(new, prev)
-                }
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                oppdragToUtbetalinger to simuleringer
-            }
-        }
-        .branch(Result<*, *>::isErr, ::replyError) 
+        .branch(Guard::ifNoUtbetalinger, Guard::replyOkTs)
         .default {
-            val result = this.map { it.unwrap() }
-            result.saveUtbetalingerAsPending()
-            result.sendSimulering()
-            result.sendOppdrag()
-            result.replyOkIfIdempotent()
-            result.savePendingUids()
+            this
+                .map { sakKey, (req, uids) -> TsDto.toDomain(sakKey.sakId,req.key, req.value, uids) }
+                .rekey { dtos -> dtos.first().originalKey }
+                .map { utbetalinger ->
+                    Result.catch {
+                        val store = kafka.getStore(Stores.utbetalinger)
+                        kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
+                        val aggregate = utbetalinger.map { new ->
+                            val prev = store.getOrNull(new.uid.toString())
+                            kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
+                            StreamsPair(new, prev)
+                        }
+                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                        val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                        oppdragToUtbetalinger to simuleringer
+                    }
+                }
+                .branch(Result<*, *>::isErr, ::replyError)
+                .default {
+                    val result = this.map { it.unwrap() }
+                    result.saveUtbetalingerAsPending()
+                    result.sendSimulering()
+                    result.sendOppdrag()
+                    result.replyOkIfIdempotent()
+                    result.savePendingUids()
+                }
         }
 }
 
@@ -225,7 +229,7 @@ fun Topology.tpStream(
                 oppdragToUtbetalinger to simuleringer
             }
         }
-        .branch(Result<*, *>::isErr, ::replyError) 
+        .branch(Result<*, *>::isErr, ::replyError)
         .default {
             val result = this.map { it.unwrap() }
             result.saveUtbetalingerAsPending()
@@ -261,7 +265,7 @@ fun Topology.historiskStream(
                 oppdragToUtbetalinger to simuleringer
             }
         }
-        .branch(Result<*, *>::isErr, ::replyError) 
+        .branch(Result<*, *>::isErr, ::replyError)
         .default {
             val result = this.map { it.unwrap() }
             result.saveUtbetalingerAsPending()
@@ -277,6 +281,7 @@ fun Topology.historiskStream(
  * da avbryter vi og svarer med OK med en gang.
  **/
 private object Guard {
+    // Dagpenger
     fun ifNoMeldeperiode(pair: StreamsPair<DpTuple, Set<UtbetalingId>?>): Boolean {
         val (utbetalinger, saker) = pair.left.value.utbetalinger to pair.right
         return utbetalinger.isEmpty() && saker.isNullOrEmpty()
@@ -284,6 +289,18 @@ private object Guard {
 
     fun replyOk(branch: MappedStream<SakKey, StreamsPair<DpTuple, Set<UtbetalingId>?>>) {
         branch.rekey { (dpTuple, _) -> dpTuple.key }
+            .map { StatusReply.ok() }
+            .produce(Topics.status)
+    }
+
+    // Tilleggsstønader
+    fun ifNoUtbetalinger(pair: StreamsPair<TsTuple, Set<UtbetalingId>?>): Boolean {
+        val (utbetalinger, saker) = pair.left.value.utbetalinger to pair.right
+        return utbetalinger.isEmpty() && saker.isNullOrEmpty()
+    }
+
+    fun replyOkTs(branch: MappedStream<SakKey, StreamsPair<TsTuple, Set<UtbetalingId>?>>) {
+        branch.rekey { (tsTuple, _) -> tsTuple.key }
             .map { StatusReply.ok() }
             .produce(Topics.status)
     }
@@ -369,8 +386,8 @@ private fun MappedStream<String, Aggregate>.sendSimulering() {
 private fun MappedStream<String, Aggregate>.saveUtbetalingerAsPending() {
     this
         .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
-            oppdragToUtbetalinger.flatMap { agg -> 
-                agg.second.map { KeyValue(it.uid.toString(), it) } 
+            oppdragToUtbetalinger.flatMap { agg ->
+                agg.second.map { KeyValue(it.uid.toString(), it) }
             }
         }
         .produce(Topics.pendingUtbetalinger)
