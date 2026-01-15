@@ -4,7 +4,6 @@ import TestRuntime
 import models.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import utsjekk.SakKey
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID

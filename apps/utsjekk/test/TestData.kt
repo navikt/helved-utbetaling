@@ -12,7 +12,6 @@ import utsjekk.iverksetting.Periode
 import utsjekk.iverksetting.SakId
 import utsjekk.iverksetting.resultat.IverksettingResultatDao
 import utsjekk.simulering.*
-import utsjekk.utbetaling.*
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
