@@ -79,13 +79,11 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
         saksbehandlerId = Navident(from.saksbehandlerId.ident),
         periodetype = Periodetype.UKEDAG,
         avvent = from.avvent?.let(::avvent),
-        perioder = utbetalingsperioder(from.perioder, req.fom, req.tom),
+        perioder = utbetalingsperioder(from.perioder),
     )
 
     private fun utbetalingsperioder(
-        perioder: List<Utbetalingsperiode>,
-        fom: LocalDate,
-        tom: LocalDate,
+        perioder: List<Utbetalingsperiode>
     ): List<models.Utbetalingsperiode> = perioder.map { 
         models.Utbetalingsperiode(
             fom = it.fom,

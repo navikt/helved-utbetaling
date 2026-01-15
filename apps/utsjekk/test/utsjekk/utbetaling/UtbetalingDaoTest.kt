@@ -3,11 +3,9 @@ package utsjekk.utbetaling
 import TestRuntime
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
-import libs.utils.onFailure
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNotEquals
-import utsjekk.utbetaling.Status
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 

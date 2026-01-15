@@ -1,46 +1,31 @@
 package utsjekk.simulering
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.CancellationException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
-import libs.auth.AzureTokenProvider
-import libs.http.HttpClientFactory
 import libs.kafka.KafkaProducer
 import libs.kafka.StateStore
 import models.AapUtbetaling
 import models.DpUtbetaling
 import models.Fagsystem
 import models.Simulering
-import models.Status
 import models.StatusReply
 import models.TpUtbetaling
 import models.TsDto
-import models.TsUtbetaling
-import models.UtbetalingId
 import models.badRequest
 import models.forbidden
 import models.locked
 import models.notFound
-import utsjekk.Config
 import utsjekk.client
-import utsjekk.utbetaling.Utbetaling
 
 object SimuleringSubscriptions {
 
@@ -87,21 +72,6 @@ object SimuleringSubscriptions {
 
         statuses[key]?.cancel()
         statuses.remove(key)
-    }
-
-    fun complete(key: String, simulering: Simulering) {
-        libs.utils.appLog.info("received sim for $key")
-        subscriptions[key]?.complete(simulering)
-    }
-
-    fun complete(key: String, simulering: models.v1.Simulering) {
-        libs.utils.appLog.info("received sim for $key")
-        subscriptionsV1[key]?.complete(simulering)
-    }
-
-    fun complete(key: String, status: StatusReply) {
-        libs.utils.appLog.info("received status ${status.status} for $key")
-        statuses[key]?.complete(status)
     }
 }
 

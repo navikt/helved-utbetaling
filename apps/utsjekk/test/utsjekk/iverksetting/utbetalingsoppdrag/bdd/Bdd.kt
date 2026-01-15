@@ -26,11 +26,6 @@ object Bdd {
         AndelId.reset()
     }
 
-    //    @Gitt("følgende behandlingsinformasjon")
-    fun <T : WithBehandlingId> følgendeBehandlinger(dataTable: DataTable, parser: (Iterator<String>) -> T) {
-        opprettBehandlingsinformasjon(dataTable, parser)
-    }
-
     //    @Gitt("følgende tilkjente ytelser")
     fun <T : WithBehandlingId> følgendeTilkjenteYtelser(
         dataTable: DataTable,
@@ -68,20 +63,6 @@ object Bdd {
         }
     }
 
-    //    @Når("beregner utbetalingsoppdrag kjøres kastes exception")
-    fun `lagTilkjentYtelseMedUtbetalingsoppdrag kjøres kastes exception`(dataTable: DataTable) {
-//        val throwable = assertThrows<Throwable> { `beregner utbetalingsoppdrag`() }
-//        dataTable.asMaps().let { rader ->
-//            if (rader.size > 1) {
-//                error("Kan maks inneholde en rad")
-//            }
-//            rader.firstOrNull()!!.let { rad ->
-//                assertEquals(rad["Exception"], throwable::class.java.simpleName)
-//                assertTrue(throwable.message!!.contains(rad["Melding"]!!))
-//            }
-//        }
-    }
-
     //    @Så("forvent følgende utbetalingsoppdrag")
     fun <T : WithBehandlingId> forventFølgendeUtbetalingsoppdrag(
         dataTable: DataTable,
@@ -110,16 +91,6 @@ object Bdd {
         val ikkeTommeUtbetalingsoppdrag =
             beregnetUtbetalingsoppdrag.values.map { it.andeler }.filter { it.isNotEmpty() }
         assertEquals(groupByBehandlingId.size, ikkeTommeUtbetalingsoppdrag.size)
-    }
-
-    private fun <T : WithBehandlingId> opprettBehandlingsinformasjon(
-        dataTable: DataTable,
-        parser: (Iterator<String>) -> T,
-    ) {
-        val parsed = dataTable.input.into(parser)
-        parsed.groupBy { it.behandlingId }.map { (behandlingId, _) ->
-            behandlingsinformasjon[behandlingId] = lagBehandlingsinformasjon(behandlingId = behandlingId)
-        }
     }
 
     private fun <T : WithBehandlingId> genererBehandlingsinformasjonForDeSomMangler(

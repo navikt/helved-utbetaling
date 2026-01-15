@@ -4,14 +4,12 @@ import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.util.UUID
-import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.currentCoroutineContext
 import libs.jdbc.*
 import libs.jdbc.concurrency.connection
 import libs.utils.*
 import libs.utils.secureLog
 import models.kontrakter.felles.objectMapper
-import org.intellij.lang.annotations.Language
-import utsjekk.utbetaling.*
 
 enum class DatabaseError {
     Conflict,
@@ -47,7 +45,7 @@ data class UtbetalingDao(
         """.trimIndent()
 
         return tryResult {
-            coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, UUID.randomUUID())
                 stmt.setObject(2, id.id)
                 stmt.setString(3, data.sakId.id)
@@ -84,7 +82,7 @@ data class UtbetalingDao(
         """.trimIndent()
 
         return tryResult {
-            coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
                 stmt.setString(2, status.name)
                 stmt.setObject(3, id.id)
@@ -111,7 +109,7 @@ data class UtbetalingDao(
         """.trimIndent()
 
         return tryResult {
-            coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
                 stmt.setObject(2, id.id)
 
@@ -135,7 +133,7 @@ data class UtbetalingDao(
                 LIMIT 1
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, id.id)
 
                 jdbcLog.debug(sql)
@@ -153,7 +151,7 @@ data class UtbetalingDao(
                 WHERE sak_id = ?
             """.trimIndent()
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, sakId.id)
                 jdbcLog.debug(sql)
                 secureLog.debug(stmt.toString())

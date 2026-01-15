@@ -86,8 +86,8 @@ object OppdragService {
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
             val prev = prev.copy(perioder = prev.perioder.sortedBy { it.fom }) // assure its sorted
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
-            val opphørsdato = opphørsdato(new.perioder, prev.perioder, new.satstype)
-            val nyeLinjer = nyeLinjer(new, prev, opphørsdato)
+            val opphørsdato = opphørsdato(new.perioder, prev.perioder)
+            val nyeLinjer = nyeLinjer(new, prev)
 
             if (skalTilføreOpphørslinje(opphørsdato, nyeLinjer)) {
                 val opphørslinje = oppdragsLinje150(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
@@ -154,8 +154,7 @@ private fun avstemming115(fagsystemKode: String): Avstemming115 {
 
 fun opphørsdato(
     new: List<Utbetalingsperiode>,
-    prev: List<Utbetalingsperiode>,
-    satstype: Satstype,
+    prev: List<Utbetalingsperiode>
 ): LocalDate? {
     var førsteEndringIdx = prev.zip(new).indexOfFirst { it.first != it.second }
     when (førsteEndringIdx) {
@@ -218,8 +217,7 @@ fun opphørsdato(
 
 private fun nyeLinjer(
     new: Utbetaling,
-    prev: Utbetaling,
-    opphørsdato: LocalDate?,
+    prev: Utbetaling
 ): List<OppdragsLinje150> {
     var førsteEndringIdx = prev.perioder.zip(new.perioder).indexOfFirst { it.first != it.second }
 
