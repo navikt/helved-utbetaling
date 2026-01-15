@@ -63,6 +63,19 @@ data class Dao(
                 stmt.executeQuery().map(::from)
             }
         }
+        suspend fun findSingle(offset: Long, table: Table): Dao {
+            val sql = """
+                SELECT * FROM ${table.name} 
+                WHERE record_offset = ? 
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setLong(1, offset)
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from).single()
+            }
+        }
 
         suspend fun find(
             table: Table,
