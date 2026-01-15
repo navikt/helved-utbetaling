@@ -54,6 +54,19 @@ class ApiTest {
     }
 
     @Test
+    fun `get a single message`() = runTest(TestRuntime.context) {
+        val key = UUID.randomUUID().toString()
+        save(Channel.Dp, key = key, offset = 1)
+
+        val result = TestRuntime.ktor.httpClient.get("/api/${Channel.Dp.topic.name}/1") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Dao>()
+
+        assertEquals(key, result.key)
+    }
+
+    @Test
     fun `can query for topics`() = runTest(TestRuntime.context) {
         save(Channel.AapIntern)
         save(Channel.Utbetalinger)
@@ -201,6 +214,7 @@ class ApiTest {
         value: String = """{ "sakId": "123" }""",
         timestamp: Long = Instant.now().toEpochMilli(),
         commitHash: String = "test",
+        offset: Long = 1,
     ) {
         val dao = Dao(
             topic_name = channel.topic.name,
@@ -208,7 +222,7 @@ class ApiTest {
             key = key,
             value = value,
             partition = 0,
-            offset = 1,
+            offset = offset,
             timestamp_ms = timestamp,
             stream_time_ms = timestamp,
             system_time_ms = timestamp,

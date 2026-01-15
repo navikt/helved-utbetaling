@@ -60,6 +60,23 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             call.respond(daos)
         }
 
+        get("{topic}/{offset}") {
+            val channel = checkNotNull(Channel.findOrNull(call.parameters["topic"]!!)) {
+                "Unknown topic ${call.parameters["topic"]}"
+            }
+            val offset = checkNotNull(call.parameters["offset"]?.toLongOrNull()) {
+                "Missing or invalid offset parameter"
+            }
+
+            val dao = withContext(Jdbc.context + Dispatchers.IO) {
+                transaction {
+                    Dao.findSingle(offset, channel.table)
+                }
+            }
+
+            call.respond(dao)
+        }
+
         route("/saker") {
             get {
                 val saker = withContext(Jdbc.context + Dispatchers.IO) {
