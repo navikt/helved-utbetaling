@@ -7,6 +7,7 @@ import libs.jdbc.concurrency.transaction
 import libs.kafka.*
 import libs.kafka.stream.MappedStream
 import libs.utils.appLog
+import libs.utils.secureLog
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -51,7 +52,7 @@ fun createTopology(kafka: Streams): Topology = topology {
     val fks = consume(Tables.fk, materializeWithTrace = false)
     dpStream(utbetalinger, saker, kafka)
     aapStream(utbetalinger, saker, kafka)
-    tsStream(utbetalinger, saker, kafka)
+    tsStream(saker, kafka)
     tpStream(utbetalinger, saker, kafka)
     historiskStream(utbetalinger, saker, kafka)
     successfulUtbetalingStream(fks, pendingUtbetalinger)
@@ -159,25 +160,24 @@ fun Topology.aapStream(
 }
 
 fun Topology.tsStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
 ) {
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
         .merge(consume(Topics.tsIntern))
-        .map { key, ts -> TsTuple(key, ts) }
+        .map { key, ts -> TsTuple(key, ts).also { secureLog.info("TsTuple($key, $ts)") } }
         .rekey { (_, ts) -> SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tstuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
         .includeHeader(FS_KEY) { Fagsystem.TILLEGGSSTØNADER.name }
+        .rekey { tuple, _ -> tuple.key }
         .branch(Guard::ifNoUtbetalinger, Guard::replyOkTs)
         .default {
             this
-                .map { sakKey, (req, uids) -> TsDto.toDomain(sakKey.sakId,req.key, req.value, uids) }
-                .rekey { dtos -> dtos.first().originalKey }
-                .map { utbetalinger ->
+                .map { originalKey, (req, uids)  -> 
                     Result.catch {
+                        val utbetalinger = TsDto.toDomain(SakId(req.value.sakId), req.key, req.value, uids)
                         val store = kafka.getStore(Stores.utbetalinger)
                         kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
                         val aggregate = utbetalinger.map { new ->
@@ -199,7 +199,7 @@ fun Topology.tsStream(
                     result.replyOkIfIdempotent()
                     result.savePendingUids()
                 }
-        }
+    }
 }
 
 fun Topology.tpStream(
@@ -299,9 +299,8 @@ private object Guard {
         return utbetalinger.isEmpty() && saker.isNullOrEmpty()
     }
 
-    fun replyOkTs(branch: MappedStream<SakKey, StreamsPair<TsTuple, Set<UtbetalingId>?>>) {
-        branch.rekey { (tsTuple, _) -> tsTuple.key }
-            .map { StatusReply.ok() }
+    fun replyOkTs(branch: MappedStream<String, StreamsPair<TsTuple, Set<UtbetalingId>?>>) {
+        branch.map { StatusReply.ok() }
             .produce(Topics.status)
     }
 }
