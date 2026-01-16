@@ -261,8 +261,16 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
     post("/resend-dagpenger") {
         val req = call.receive<KeyValueRequest>()
         when (manuellEndringService.rekjørDagpenger(req.key, req.value)) {
-            true -> call.respond("Dagpenge utbetaling rekjørt for key ${req.key}")
+            true -> call.respond("Dagpenger utbetaling rekjørt for key ${req.key}")
             false -> call.respond(HttpStatusCode.UnprocessableEntity, "Feilet rekjøring av dagpenge utbetaling")
+        }
+    }
+
+    post("/resend-tilleggsstonader") {
+        val req = call.receive<KeyValueRequest>()
+        when (manuellEndringService.rekjørTilleggsstonader(req.key, req.value)) {
+            true -> call.respond("Tilleggsstønader utbetaling rekjørt for key ${req.key}")
+            false -> call.respond(HttpStatusCode.UnprocessableEntity, "Feilet rekjøring av tilleggsstønader utbetaling")
         }
     }
 }
