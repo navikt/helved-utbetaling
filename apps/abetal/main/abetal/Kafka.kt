@@ -60,9 +60,15 @@ fun createTopology(kafka: Streams): Topology = topology {
 
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
 data class PKs(val originalKey: String, val uids: List<String>)
+
 data class AapTuple(val key: String, val value: AapUtbetaling)
 data class DpTuple(val key: String, val value: DpUtbetaling)
-data class TsTuple(val key: String, val value: TsDto)
+data class TsTuple(
+    val transactionId: String?, 
+    val dto: TsDto?,
+    val key: String?, 
+    val value: TsDto?
+)
 data class HistoriskTuple(val key: String, val value: HistoriskUtbetaling)
 data class TpTuple(val key: String, val value: TpUtbetaling)
 
@@ -166,18 +172,23 @@ fun Topology.tsStream(
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
         .merge(consume(Topics.tsIntern))
-        .map { key, ts -> TsTuple(key, ts).also { secureLog.info("TsTuple($key, $ts)") } }
-        .rekey { (_, ts) -> SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER) }
+        .map { key, ts -> TsTuple(key, ts, key, ts) }
+        .rekey { (_, dto, _, value) -> 
+            val ts = dto ?: value!!
+            SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER)
+        }
         .leftJoin(Serde.json(), Serde.json(), saker, "tstuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
         .includeHeader(FS_KEY) { Fagsystem.TILLEGGSSTØNADER.name }
-        .rekey { tuple, _ -> tuple.key }
+        .rekey { tuple, _ -> tuple.key ?: tuple.transactionId!! }
         .branch(Guard::ifNoUtbetalinger, Guard::replyOkTs)
         .default {
             this
                 .map { originalKey, (req, uids)  -> 
                     Result.catch {
-                        val utbetalinger = TsDto.toDomain(SakId(req.value.sakId), req.key, req.value, uids)
+                        val dto = req.value ?: req.dto!!
+                        val key = req.key ?: req.transactionId!!
+                        val utbetalinger = TsDto.toDomain(SakId(dto.sakId), key, dto, uids)
                         val store = kafka.getStore(Stores.utbetalinger)
                         kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
                         val aggregate = utbetalinger.map { new ->
@@ -295,7 +306,8 @@ private object Guard {
 
     // Tilleggsstønader
     fun ifNoUtbetalinger(pair: StreamsPair<TsTuple, Set<UtbetalingId>?>): Boolean {
-        val (utbetalinger, saker) = pair.left.value.utbetalinger to pair.right
+        val dto = pair.left.value ?: pair.left.dto!!
+        val (utbetalinger, saker) = dto.utbetalinger to pair.right
         return utbetalinger.isEmpty() && saker.isNullOrEmpty()
     }
 
