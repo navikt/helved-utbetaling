@@ -5,7 +5,7 @@ import libs.kafka.KafkaProducer
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.xml.XMLMapper
 import models.DpUtbetaling
-import models.TsUtbetaling
+import models.TsDto
 import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.ObjectFactory
@@ -15,7 +15,7 @@ class ManuellEndringService(
     private val oppdragProducer: KafkaProducer<String, Oppdrag>,
     private val utbetalingerProducer: KafkaProducer<String, Utbetaling>,
     private val dpProducer: KafkaProducer<String, DpUtbetaling>,
-    private val tsProducer: KafkaProducer<String, TsUtbetaling>
+    private val tsProducer: KafkaProducer<String, TsDto>
 ) {
     fun addKvitteringManuelt(
         oppdragXml: String,
@@ -78,7 +78,7 @@ class ManuellEndringService(
         key: String,
         value: String
     ): Boolean {
-        val ts = JsonSerde.jackson.readValue<TsUtbetaling>(value)
+        val ts = JsonSerde.jackson.readValue<TsDto>(value)
         return tsProducer.send(key, ts)
     }
 }

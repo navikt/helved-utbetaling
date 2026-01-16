@@ -30,7 +30,7 @@ import libs.kafka.json
 import libs.kafka.xml
 import libs.utils.*
 import models.DpUtbetaling
-import models.TsUtbetaling
+import models.TsDto
 import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
@@ -95,7 +95,7 @@ fun Application.peisschtappern(
     val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.oppdrag.v1", xml<Oppdrag>()))
     val utbetalingProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger.v1", json<Utbetaling>()))
     val dpProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>()))
-    val tsProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger-ts.v1", json<TsUtbetaling>()))
+    val tsProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger-ts.v1", json<TsDto>()))
     val manuellEndringService = ManuellEndringService(oppdragsdataProducer, utbetalingProducer, dpProducer, tsProducer)
 
     routing {
