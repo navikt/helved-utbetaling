@@ -87,18 +87,18 @@ subgraph Topologi
 	aaptuple-leftjoin-saker --> helved.simuleringer.v1
 	historisktuple-leftjoin-saker-repartition --> historisktuple-leftjoin-saker
 	helved.saker.v1-state-store --> historisktuple-leftjoin-saker
-	historisktuple-leftjoin-saker --> helved.oppdrag.v1
 	historisktuple-leftjoin-saker --> helved.status.v1
+	historisktuple-leftjoin-saker --> helved.oppdrag.v1
 	historisktuple-leftjoin-saker --> helved.pending-utbetalinger.v1
-	historisktuple-leftjoin-saker --> helved.fk.v1
 	historisktuple-leftjoin-saker --> helved.simuleringer.v1
+	historisktuple-leftjoin-saker --> helved.fk.v1
 	tptuple-leftjoin-saker-repartition --> tptuple-leftjoin-saker
 	helved.saker.v1-state-store --> tptuple-leftjoin-saker
-	tptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
+	tptuple-leftjoin-saker --> helved.simuleringer.v1
 	tptuple-leftjoin-saker --> helved.status.v1
 	tptuple-leftjoin-saker --> helved.oppdrag.v1
+	tptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 	tptuple-leftjoin-saker --> helved.fk.v1
-	tptuple-leftjoin-saker --> helved.simuleringer.v1
 	oppdrag-leftjoin-fks-repartition --> oppdrag-leftjoin-fks
 	helved.fk.v1-state-store-v4 --> oppdrag-leftjoin-fks
 	oppdrag-leftjoin-fks --> pk-leftjoin-pending-repartition
