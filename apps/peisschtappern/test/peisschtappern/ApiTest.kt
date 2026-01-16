@@ -58,7 +58,7 @@ class ApiTest {
         val key = UUID.randomUUID().toString()
         save(Channel.Dp, key = key, offset = 1)
 
-        val result = TestRuntime.ktor.httpClient.get("/api/${Channel.Dp.topic.name}/1") {
+        val result = TestRuntime.ktor.httpClient.get("/api/${Channel.Dp.topic.name}/0/1") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<Dao>()

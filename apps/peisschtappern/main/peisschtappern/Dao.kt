@@ -63,17 +63,18 @@ data class Dao(
                 stmt.executeQuery().map(::from)
             }
         }
-        suspend fun findSingle(offset: Long, table: Table): Dao {
+        suspend fun findSingle(partition: Int, offset: Long, table: Table): Dao? {
             val sql = """
                 SELECT * FROM ${table.name} 
-                WHERE record_offset = ? 
+                WHERE record_partition = ? AND record_offset = ? 
             """.trimIndent()
 
             return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                stmt.setLong(1, offset)
+                stmt.setInt(1, partition)
+                stmt.setLong(2, offset)
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from).single()
+                stmt.executeQuery().map(::from).singleOrNull()
             }
         }
 
