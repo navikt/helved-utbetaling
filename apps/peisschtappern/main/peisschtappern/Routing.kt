@@ -267,10 +267,19 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
     }
 
     post("/resend-tilleggsstonader") {
-        val req = call.receive<KeyValueRequest>()
-        when (manuellEndringService.rekjørTilleggsstonader(req.key, req.value)) {
-            true -> call.respond("Tilleggsstønader utbetaling rekjørt for key ${req.key}")
-            false -> call.respond(HttpStatusCode.UnprocessableEntity, "Feilet rekjøring av tilleggsstønader utbetaling")
+        try {
+            val req = call.receive<KeyValueRequest>()
+            secureLog.info("Payload detaljer: key=${req.key}, value=${req.value}")
+            when (manuellEndringService.rekjørTilleggsstonader(req.key, req.value)) {
+                true -> call.respond("Tilleggsstønader utbetaling rekjørt for key ${req.key}")
+                false -> call.respond(
+                    HttpStatusCode.UnprocessableEntity,
+                    "Feilet rekjøring av tilleggsstønader utbetaling"
+                )
+            }
+        }  catch (e: Exception) {
+            secureLog.error("Failed to resend tilleggsstonader", e)
+            call.respond(HttpStatusCode.InternalServerError, "Intern serverfeil: ${e.message}")
         }
     }
 }
