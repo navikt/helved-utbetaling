@@ -133,13 +133,26 @@ class JacksonListDeserializer<T: Any>(private val klass: KClass<T>): Deserialize
     private val type: JavaType = JsonSerde.jackson.typeFactory.constructCollectionType(List::class.java, klass.java)
     override fun deserialize(topic: String, data: ByteArray?): List<T>? {
         if (data == null) return null
-        return JsonSerde.jackson.readValue(data, type)
+        try {
+            return JsonSerde.jackson.readValue(data, type)
+        } catch (e: Exception) {
+            val rawJson = String(data, Charsets.UTF_8)
+            secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
+            throw e
+        }
     }
 }
+
 class JacksonListTypeRefDeserializer<T: Any>(private val typeRef: TypeReference<List<T>>): Deserializer<List<T>> {
     override fun deserialize(topic: String, data: ByteArray?): List<T>? {
         if (data == null) return null
-        return JsonSerde.jackson.readValue(data, typeRef)
+        try {
+            return JsonSerde.jackson.readValue(data, typeRef)
+        } catch (e: Exception) {
+            val rawJson = String(data, Charsets.UTF_8)
+            secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
+            throw e
+        }
     }
 }
 
@@ -154,7 +167,13 @@ class JacksonSetDeserializer<T: Any>(private val klass: KClass<T>): Deserializer
     private val type: JavaType = JsonSerde.jackson.typeFactory.constructCollectionType(Set::class.java, klass.java)
     override fun deserialize(topic: String, data: ByteArray?): Set<T>? {
         if (data == null) return null
-        return JsonSerde.jackson.readValue(data, type)
+        try {
+            return JsonSerde.jackson.readValue(data, type)
+        } catch (e: Exception) {
+            val rawJson = String(data, Charsets.UTF_8)
+            secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
+            throw e
+        }
     }
 }
 
@@ -182,8 +201,13 @@ class XmlSerializer<T : Any>(private val mapper: XMLMapper<T>) : Serializer<T> {
 
 class XmlDeserializer<T : Any>(private val mapper: XMLMapper<T>) : Deserializer<T> {
     override fun deserialize(topic: String, data: ByteArray?): T? {
-        return data?.let {
-            mapper.readValue(data)
+        if (data == null) return null
+        try {
+            return mapper.readValue(data)
+        } catch (e: Exception) {
+            val rawXml = String(data, Charsets.UTF_8)
+            secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawXml")
+            throw e
         }
     }
 }
