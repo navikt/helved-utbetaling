@@ -194,19 +194,25 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         val request = call.receive<KvitteringRequest>()
 
         try {
-            manuellEndringService.addKvitteringManuelt(
-                oppdragXml = request.oppdragXml,
-                messageKey = request.messageKey,
-                alvorlighetsgrad = request.alvorlighetsgrad,
-                beskrMelding = request.beskrMelding,
-                kodeMelding = request.kodeMelding
-            )
+            withContext(Jdbc.context + Dispatchers.IO) {
+                transaction {
+                    val oppdrag = Dao.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.Oppdrag.table)
+                    requireNotNull(oppdrag?.value) { "Kan ikke lage kvittering for melding uten oppdrag" } // Burde i teorien ikke kunne oppstå
+                    manuellEndringService.addKvitteringManuelt(
+                        oppdragXml = oppdrag.value,
+                        messageKey = oppdrag.key,
+                        alvorlighetsgrad = request.alvorlighetsgrad,
+                        beskrMelding = request.beskrMelding,
+                        kodeMelding = request.kodeMelding
+                    )
+                }
+            }
             call.respond(
                 HttpStatusCode.OK,
-                "Created kvittering for uid:${request.messageKey} on ${Topics.oppdrag.name}"
+                "Created kvittering for uid:${request.key} on ${Topics.oppdrag.name}"
             )
         } catch (e: Exception) {
-            val msg = "Failed to create kvittering for uid:${request.messageKey}"
+            val msg = "Failed to create kvittering for uid:${request.key}"
             appLog.error(msg)
             secureLog.error(msg, e)
             call.respond(HttpStatusCode.BadRequest, msg)
@@ -279,8 +285,9 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 }
 
 data class KvitteringRequest(
-    val messageKey: String,
-    val oppdragXml: String,
+    val key: String,
+    val offset: String,
+    val partition: String,
     val alvorlighetsgrad: String,
     val beskrMelding: String?,
     val kodeMelding: String?,
