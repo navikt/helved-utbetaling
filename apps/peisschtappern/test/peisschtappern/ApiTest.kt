@@ -154,12 +154,15 @@ class ApiTest {
         val xmlMapper = XMLMapper<Oppdrag>()
         val initialOppdrag = xmlMapper.readValue(TestData.oppdragXml)
 
+        val key = "202503271001"
         val oppdragProducer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Topic("helved.oppdrag.v1", xml<Oppdrag>()))
-        oppdragProducer.send("202503271001", initialOppdrag)
+        oppdragProducer.send(key, initialOppdrag)
+        save(Channel.Oppdrag, key = key, value = TestData.oppdragXml)
 
         val kvitteringRequest = KvitteringRequest(
-            oppdragXml = TestData.oppdragXml,
-            messageKey = "202503271001",
+            key = key,
+            offset = "1",
+            partition = "0",
             alvorlighetsgrad = "00",
             beskrMelding = "Test",
             kodeMelding = "Test"
