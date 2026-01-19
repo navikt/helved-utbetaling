@@ -243,13 +243,20 @@ class ApiTest {
         val jsonPayload = """
             {"dryrun":false,"originalKey":"213ae04f-d3cd-433b-9a71-992905d5043c","fagsystem":"TILLEGGSSTØNADER","uid":"dda57903-7349-4cb2-9d3e-0012e2b28590","action":"DELETE","førsteUtbetalingPåSak":false,"sakId":"200001343","behandlingId":"2259","lastPeriodeId":"200001343#0","personident":"15510060730","vedtakstidspunkt":"2026-01-05T12:59:33.235","stønad":"LÆREMIDLER_AAP","beslutterId":"VL","saksbehandlerId":"VL","periodetype":"UKEDAG","avvent":null,"perioder":[{"fom":"2025-10-15","tom":"2025-10-15","beløp":2703,"betalendeEnhet":null,"vedtakssats":null}]}
         """.trimIndent()
-
         val key = "213ae04f-d3cd-433b-9a71-992905d5043c"
+
+        save(Channel.PendingUtbetalinger, key = key, value = jsonPayload)
+
+        val requestBody = MessageRequest(
+            Channel.PendingUtbetalinger.topic.name,
+            "0",
+            "1"
+        )
 
         TestRuntime.ktor.httpClient.post("/pending-til-utbetaling") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(KeyValueRequest(key, jsonPayload))
+            setBody(requestBody)
         }.apply {
             assertEquals(HttpStatusCode.OK, status)
         }

@@ -238,18 +238,23 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
     }
 
     post("/pending-til-utbetaling") {
-        val request = call.receive<KeyValueRequest>()
+        val request = call.receive<MessageRequest>()
 
         try {
-            manuellEndringService.flyttPendingTilUtbetalinger(
-                key = request.key,
-                value = request.value
-            )
-            call.respond(
-                HttpStatusCode.OK, "Moved pending utbetaling for uid:${request.key} on ${Topics.pendingUtbetalinger.name}" + " to ${Topics.utbetalinger.name}"
-            )
+            withContext(Jdbc.context + Dispatchers.IO) {
+                transaction {
+                    val utbetaling = requireNotNull(Dao.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.PendingUtbetalinger.table)) {
+                        "Kan ikke flytte pending utbetaling. Fant ikke utbetaling i topic ${request.topic} med partition ${request.partition} og offset ${request.offset}"
+                    }
+                    manuellEndringService.flyttPendingTilUtbetalinger(
+                        key = utbetaling.key,
+                        value = utbetaling.value!!
+                    )
+                }
+            }
+            call.respond(HttpStatusCode.OK)
         } catch (e: Exception) {
-            val msg = "Failed to move pending utbetaling for uid:${request.key}"
+            val msg = "Failed to move pending utbetaling with partition ${request.partition} and offset ${request.offset}"
             appLog.error(msg)
             secureLog.error(msg, e)
             call.respond(HttpStatusCode.BadRequest, msg)
@@ -291,6 +296,12 @@ data class KvitteringRequest(
     val alvorlighetsgrad: String,
     val beskrMelding: String?,
     val kodeMelding: String?,
+)
+
+data class MessageRequest(
+    val topic: String,
+    val partition: String,
+    val offset: String,
 )
 
 data class KeyValueRequest(
