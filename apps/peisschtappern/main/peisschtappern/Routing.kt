@@ -188,6 +188,35 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                 }
             }
         }
+
+        post("/resend") {
+            val request = call.receive<MessageRequest>()
+            val channel = requireNotNull(Channel.findOrNull(request.topic)) {
+                "Fant ikke topic med navn ${request.topic}"
+            }
+
+            withContext(Jdbc.context + Dispatchers.IO) {
+                transaction {
+                    val message = requireNotNull(Dao.findSingle(request.partition.toInt(), request.offset.toLong(), channel.table)) {
+                        "Fant ikke melding på topic ${request.topic} med partition ${request.partition} og offset ${request.offset}"
+                    }
+                    val value = requireNotNull(message.value) { "Melding mangler value" }
+
+                    val success = when (channel) {
+                        is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(message.key, value)
+                        is Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value)
+                        is Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value)
+                        else -> error("Støtter ikke innsending av melding for topic ${channel.topic.name}")
+                    }
+
+                    if (success) {
+                        call.respond(HttpStatusCode.OK, "Sendte melding ${message.key} i topic ${message.topic_name} på nytt")
+                    } else {
+                        call.respond(HttpStatusCode.UnprocessableEntity, "Feilet å sende melding ${message.key} i topic ${message.topic_name} på nytt")
+                    }
+                }
+            }
+        }
     }
 
     post("/manuell-kvittering") {
@@ -216,35 +245,6 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             appLog.error(msg)
             secureLog.error(msg, e)
             call.respond(HttpStatusCode.BadRequest, msg)
-        }
-    }
-
-    post("/resend") {
-        val request = call.receive<MessageRequest>()
-        val channel = requireNotNull(Channel.findOrNull(request.topic)) {
-            "Fant ikke topic med navn ${request.topic}"
-        }
-
-        withContext(Jdbc.context + Dispatchers.IO) {
-            transaction {
-                val message = requireNotNull(Dao.findSingle(request.partition.toInt(), request.offset.toLong(), channel.table)) {
-                    "Fant ikke melding på topic ${request.topic} med partition ${request.partition} og offset ${request.offset}"
-                }
-                val value = requireNotNull(message.value) { "Melding mangler value" }
-
-                val success = when (channel) {
-                    is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(message.key, value)
-                    is Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value)
-                    is Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value)
-                    else -> error("Støtter ikke innsending av melding for topic ${channel.topic.name}")
-                }
-
-                if (success) {
-                    call.respond(HttpStatusCode.OK, "Sendte melding ${message.key} i topic ${message.topic_name} på nytt")
-                } else {
-                    call.respond(HttpStatusCode.UnprocessableEntity, "Feilet å sende melding ${message.key} i topic ${message.topic_name} på nytt")
-                }
-            }
         }
     }
 
