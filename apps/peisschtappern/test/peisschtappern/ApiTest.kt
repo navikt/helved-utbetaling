@@ -5,22 +5,42 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
+import libs.jdbc.truncate
 import libs.kafka.*
 import libs.xml.XMLMapper
 import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Disabled
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.*
 
+private var offset: Long = 1
+    get() = field++
+
 class ApiTest {
+    @AfterEach
+    fun resetProducers() {
+        TestRuntime.kafka.getProducer(Channel.Oppdrag.topic).clear()
+        TestRuntime.kafka.getProducer(Channel.Utbetalinger.topic).clear()
+        TestRuntime.kafka.getProducer(Channel.DpIntern.topic).clear()
+        TestRuntime.kafka.getProducer(Channel.TsIntern.topic).clear()
+        TestRuntime.jdbc.truncate("peisschtappern.oppdrag")
+        TestRuntime.jdbc.truncate("peisschtappern.utbetalinger")
+        TestRuntime.jdbc.truncate("peisschtappern.simuleringer")
+        TestRuntime.jdbc.truncate("peisschtappern.aap")
+        TestRuntime.jdbc.truncate("peisschtappern.aapintern")
+        TestRuntime.jdbc.truncate("peisschtappern.dpintern")
+        TestRuntime.jdbc.truncate("peisschtappern.tsintern")
+
+    }
 
     @Test
     fun `can query with limit`() = runTest(TestRuntime.context) {
-        save(Channel.Aap)
-        save(Channel.Utbetalinger)
-        save(Channel.Simuleringer)
+        save(Channel.Aap, offset = offset)
+        save(Channel.Utbetalinger, offset = offset)
+        save(Channel.Simuleringer, offset = offset)
 
         val result = TestRuntime.ktor.httpClient.get("/api?limit=2") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -32,9 +52,9 @@ class ApiTest {
 
     @Test
     fun `can query for key`() = runTest(TestRuntime.context) {
-        save(Channel.Aap, "testkey")
-        save(Channel.Utbetalinger, "testkey")
-        save(Channel.Simuleringer)
+        save(Channel.Aap, "testkey", offset = offset)
+        save(Channel.Utbetalinger, "testkey", offset = offset)
+        save(Channel.Simuleringer, offset = offset)
 
         val result = TestRuntime.ktor.httpClient.get("/api?key=testkey") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -47,10 +67,11 @@ class ApiTest {
 
     @Test
     fun `get a single message`() = runTest(TestRuntime.context) {
+        val offset = offset
         val key = UUID.randomUUID().toString()
-        save(Channel.Dp, key = key, offset = 1)
+        save(Channel.Dp, key = key, offset = offset)
 
-        val result = TestRuntime.ktor.httpClient.get("/api/${Channel.Dp.topic.name}/0/1") {
+        val result = TestRuntime.ktor.httpClient.get("/api/${Channel.Dp.topic.name}/0/$offset") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<Dao>()
@@ -60,9 +81,9 @@ class ApiTest {
 
     @Test
     fun `can query for topics`() = runTest(TestRuntime.context) {
-        save(Channel.AapIntern)
-        save(Channel.Utbetalinger)
-        save(Channel.Simuleringer)
+        save(Channel.AapIntern, offset = offset)
+        save(Channel.Utbetalinger, offset = offset)
+        save(Channel.Simuleringer, offset = offset)
 
         val result = TestRuntime.ktor.httpClient.get("/api?topics=helved.utbetalinger-aap.v1,helved.simuleringer.v1") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -76,9 +97,9 @@ class ApiTest {
     @Test
     fun `can query for value`() = runTest(TestRuntime.context) {
         val sakId = "BFH123DN"
-        save(Channel.Aap, value = "{\"sakId\":\"$sakId\"}")
-        save(Channel.Utbetalinger)
-        save(Channel.Simuleringer)
+        save(Channel.Aap, value = "{\"sakId\":\"$sakId\"}", offset = offset)
+        save(Channel.Utbetalinger, offset = offset)
+        save(Channel.Simuleringer, offset = offset)
 
         val result = TestRuntime.ktor.httpClient.get("/api?value=$sakId") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -93,10 +114,10 @@ class ApiTest {
     fun `can query for multiple values`() = runTest(TestRuntime.context) {
         val sakId = "AB12345"
         val behandlingId = "BC23456"
-        save(Channel.Aap, value = "{\"sakId\":\"$sakId\"}")
-        save(Channel.Aap, value = "{\"behandlingId\":\"$behandlingId\"}")
-        save(Channel.Utbetalinger)
-        save(Channel.Simuleringer)
+        save(Channel.Aap, value = "{\"sakId\":\"$sakId\"}", offset = offset)
+        save(Channel.Aap, value = "{\"behandlingId\":\"$behandlingId\"}", offset = offset)
+        save(Channel.Utbetalinger, offset = offset)
+        save(Channel.Simuleringer, offset = offset)
 
         val result = TestRuntime.ktor.httpClient.get("/api?value=$sakId,$behandlingId") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -126,9 +147,9 @@ class ApiTest {
         val later = Instant.now().plusSeconds(10L)
         val key = UUID.randomUUID().toString()
 
-        save(Channel.Aap, key = key, timestamp = before.toEpochMilli())
-        save(Channel.Utbetalinger, key = key, timestamp = now.toEpochMilli())
-        save(Channel.Simuleringer, key = key, timestamp = later.toEpochMilli())
+        save(Channel.Aap, key = key, timestamp = before.toEpochMilli(), offset = offset)
+        save(Channel.Utbetalinger, key = key, timestamp = now.toEpochMilli(), offset = offset)
+        save(Channel.Simuleringer, key = key, timestamp = later.toEpochMilli(), offset = offset)
 
         val fom = now.minusSeconds(5L).toString()
         val tom = now.plusSeconds(5L).toString()
@@ -144,20 +165,18 @@ class ApiTest {
 
     @Test
     fun `test kvittering endpoint overwrites oppdrag with manual kvittering`() = runTest(TestRuntime.context) {
+        val offset = offset
         val xmlMapper = XMLMapper<Oppdrag>()
         val initialOppdrag = xmlMapper.readValue(TestData.oppdragXml)
 
         val key = "202503271001"
-        val oppdragProducer = TestRuntime.vanillaKafka.createProducer(
-            TestRuntime.kafka.config,
-            Topic("helved.oppdrag.v1", xml<Oppdrag>())
-        )
+        val oppdragProducer = TestRuntime.kafka.getProducer(Topic("helved.oppdrag.v1", xml<Oppdrag>()))
         oppdragProducer.send(key, initialOppdrag)
-        save(Channel.Oppdrag, key = key, value = TestData.oppdragXml)
+        save(Channel.Oppdrag, key = key, value = TestData.oppdragXml, offset = offset)
 
         val kvitteringRequest = KvitteringRequest(
             key = key,
-            offset = "1",
+            offset = "$offset",
             partition = "0",
             alvorlighetsgrad = "00",
             beskrMelding = "Test",
@@ -213,7 +232,7 @@ class ApiTest {
         value: String = """{ "sakId": "123" }""",
         timestamp: Long = Instant.now().toEpochMilli(),
         commitHash: String = "test",
-        offset: Long = 1,
+        offset: Long,
     ) {
         val dao = Dao(
             topic_name = channel.topic.name,
@@ -236,17 +255,18 @@ class ApiTest {
 
     @Test
     fun `pending til utbetaling sends json to kafka`() = runTest(TestRuntime.context) {
+        val offset = offset
         val jsonPayload = """
             {"dryrun":false,"originalKey":"213ae04f-d3cd-433b-9a71-992905d5043c","fagsystem":"TILLEGGSSTØNADER","uid":"dda57903-7349-4cb2-9d3e-0012e2b28590","action":"DELETE","førsteUtbetalingPåSak":false,"sakId":"200001343","behandlingId":"2259","lastPeriodeId":"200001343#0","personident":"15510060730","vedtakstidspunkt":"2026-01-05T12:59:33.235","stønad":"LÆREMIDLER_AAP","beslutterId":"VL","saksbehandlerId":"VL","periodetype":"UKEDAG","avvent":null,"perioder":[{"fom":"2025-10-15","tom":"2025-10-15","beløp":2703,"betalendeEnhet":null,"vedtakssats":null}]}
         """.trimIndent()
         val key = "213ae04f-d3cd-433b-9a71-992905d5043c"
 
-        save(Channel.PendingUtbetalinger, key = key, value = jsonPayload)
+        save(Channel.PendingUtbetalinger, key = key, value = jsonPayload, offset = offset)
 
         val requestBody = MessageRequest(
             Channel.PendingUtbetalinger.topic.name,
             "0",
-            "1"
+            "$offset"
         )
 
         TestRuntime.ktor.httpClient.post("/pending-til-utbetaling") {
@@ -257,11 +277,7 @@ class ApiTest {
             assertEquals(HttpStatusCode.OK, status)
         }
 
-        val producer =
-            TestRuntime.vanillaKafka.createProducer(
-                TestRuntime.kafka.config,
-                Topic("helved.utbetalinger.v1", json<Utbetaling>())
-            )
+        val producer = TestRuntime.kafka.getProducer(Topic("helved.utbetalinger.v1", json<Utbetaling>()))
         assertEquals(1, producer.history().size)
 
         val (recordKey, _) = producer.history().last()
@@ -271,10 +287,8 @@ class ApiTest {
 
     @Test
     fun `resend oppdrag`() = runTest(TestRuntime.context) {
-        val producer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Channel.Oppdrag.topic)
-        val offset = producer.history().size.toLong() + 1
+        val offset = offset
         save(Channel.Oppdrag, value = TestData.oppdragXml, offset = offset)
-
         val request = MessageRequest(Channel.Oppdrag.topic.name, "0", "$offset")
 
         TestRuntime.ktor.httpClient.post("/resend") {
@@ -285,16 +299,18 @@ class ApiTest {
             assertEquals(HttpStatusCode.OK, status)
         }
 
-        assertEquals(offset, producer.history().size.toLong())
+        val producer = TestRuntime.kafka.getProducer(Channel.Oppdrag.topic)
+        assertEquals(1, producer.history().size)
     }
 
     @Test
     fun `resend dagpenger`() = runTest(TestRuntime.context) {
+        val offset = offset
         val utbetaling =
             """{"sakId": "AZvF9zVMdJyupoNo8ec8vg==","behandlingId": "AZvVuTf0d+KNOpkkQ05i7w==","ident": "27427413301","vedtakstidspunktet": "2026-01-19T11:12:26.301381","utbetalinger": []}"""
-        save(Channel.DpIntern, value = utbetaling)
+        save(Channel.DpIntern, value = utbetaling, offset = offset)
 
-        val request = MessageRequest(Channel.DpIntern.topic.name, "0", "1")
+        val request = MessageRequest(Channel.DpIntern.topic.name, "0", "$offset")
 
         TestRuntime.ktor.httpClient.post("/resend") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -304,17 +320,18 @@ class ApiTest {
             assertEquals(HttpStatusCode.OK, status)
         }
 
-        val producer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Channel.DpIntern.topic)
+        val producer = TestRuntime.kafka.getProducer(Channel.DpIntern.topic)
         assertEquals(1, producer.history().size)
     }
 
     @Test
     fun `resend ts`() = runTest(TestRuntime.context) {
+        val offset = offset
         val utbetaling =
             """{"sakId": "200001399","behandlingId": "2349","personident": "18528506875","vedtakstidspunkt": "2026-01-19T13:03:41.50704551","periodetype": "UKEDAG","saksbehandler": null,"beslutter": null,"utbetalinger": [{"id":"f59abb5e-dc4b-42bb-8a02-92c766778bcf","stønad": "DAGLIG_REISE_AAP","perioder":[{"fom":"2026-01-05","tom": "2026-01-05","beløp": 1450,"betalendeEnhet": null}],"brukFagområdeTillst": false}]}""".trimIndent()
-        save(Channel.TsIntern, value = utbetaling)
+        save(Channel.TsIntern, value = utbetaling, offset = offset)
 
-        val request = MessageRequest(Channel.TsIntern.topic.name, "0", "1")
+        val request = MessageRequest(Channel.TsIntern.topic.name, "0", "$offset")
 
         TestRuntime.ktor.httpClient.post("/resend") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -324,7 +341,7 @@ class ApiTest {
             assertEquals(HttpStatusCode.OK, status)
         }
 
-        val producer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Channel.TsIntern.topic)
+        val producer = TestRuntime.kafka.getProducer(Channel.TsIntern.topic)
         assertEquals(1, producer.history().size)
     }
 }

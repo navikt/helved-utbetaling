@@ -24,7 +24,6 @@ object TestRuntime {
     private val postgres = PostgresContainer("peisschtappern")
     val azure: AzureFake = AzureFake()
     val kafka: StreamsMock = StreamsMock()
-    val vanillaKafka: KafkaFactoryFake = KafkaFactoryFake()
     val jdbc: DataSource = Jdbc.initialize(postgres.config)
     val context: CoroutineDatasource = CoroutineDatasource(jdbc)
     val config: Config = Config(
@@ -37,11 +36,7 @@ object TestRuntime {
     val ktor = KtorRuntime<Config>(
         appName = "peisschtappern",
         module = { 
-            peisschtappern(
-                config, 
-                kafka, 
-                vanillaKafka, 
-            )
+            peisschtappern(config, kafka)
         },
         onClose = {
             jdbc.truncate("peisschtappern", *Table.entries.map{it.name}.toTypedArray(), TimerDao.TABLE_NAME)
@@ -49,10 +44,6 @@ object TestRuntime {
             azure.close()
         }
     )
-
-    fun reset() {
-        vanillaKafka.reset()
-    }
 }
 
 @Suppress("UNCHECKED_CAST")

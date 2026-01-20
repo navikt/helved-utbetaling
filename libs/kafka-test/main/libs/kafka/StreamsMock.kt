@@ -89,21 +89,21 @@ class StreamsMock : Streams {
         )
     }
 
-    private val producers = mutableMapOf<Topic<*, *>, KafkaProducer<*, *>>()
+    private val producers = mutableMapOf<String, KafkaProducer<*, *>>()
 
     @Suppress("UNCHECKED_CAST")
     override fun <K: Any, V> createProducer(
         config: StreamsConfig,
         topic: Topic<K, V & Any>,
     ): KafkaProducer <K, V> {
-        return producers.getOrPut(topic) { 
+        return producers.getOrPut(topic.name) {
             KafkaProducerFake(topic) 
         } as KafkaProducerFake<K, V>
     }
 
     @Suppress("UNCHECKED_CAST")
     fun <K: Any, V> getProducer(topic: Topic<K, V & Any>): KafkaProducerFake<K, V> {
-        return producers[topic] as KafkaProducerFake<K, V>
+        return producers[topic.name] as KafkaProducerFake<K, V>
     }
 
     override fun <K: Any, V> createConsumer(
