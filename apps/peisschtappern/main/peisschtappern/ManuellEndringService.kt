@@ -41,16 +41,13 @@ class ManuellEndringService(
     }
 
     fun sendOppdragManuelt(
-        oppdragXml: String,
-        messageKey: String,
-    ): Oppdrag {
-
+        key: String,
+        value: String,
+    ): Boolean {
         val xmlMapper = XMLMapper<Oppdrag>()
-        val oppdrag = xmlMapper.readValue(oppdragXml)
+        val oppdrag = xmlMapper.readValue(value)
 
-        oppdragProducer.send(messageKey, oppdrag)
-
-        return oppdrag
+        return oppdragProducer.send(key, oppdrag)
     }
 
     fun flyttPendingTilUtbetalinger(
