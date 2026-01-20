@@ -129,9 +129,15 @@ fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) 
                 meters.counter("helved_utbetalt_beløp", listOf(tag_fagsystem)).increment(kvitt.oppdrag110.oppdragsLinje150s.sumOf{ it.sats.toDouble() })
                 statusReply
             }
-            .includeHeader(FS_KEY) { statusReply -> 
-                statusReply.detaljer?.ytelse?.name
-                    ?: "ukjent" 
+            .includeHeader(FS_KEY) { statusReply ->
+                statusReply.detaljer
+                    ?.let { detaljer ->
+                        when (detaljer.ytelse.isTilleggsstønader()) {
+                            true -> Fagsystem.TILLEGGSSTØNADER.name
+                            false -> detaljer.ytelse.name
+                        }
+                    }
+                    ?: "ukjent"
             }
             .produce(Topics.status)
         }
