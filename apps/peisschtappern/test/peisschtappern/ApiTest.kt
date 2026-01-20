@@ -291,7 +291,7 @@ class ApiTest {
         save(Channel.Oppdrag, value = TestData.oppdragXml, offset = offset)
         val request = MessageRequest(Channel.Oppdrag.topic.name, "0", "$offset")
 
-        TestRuntime.ktor.httpClient.post("/resend") {
+        TestRuntime.ktor.httpClient.post("/api/resend") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(request)
@@ -312,7 +312,7 @@ class ApiTest {
 
         val request = MessageRequest(Channel.DpIntern.topic.name, "0", "$offset")
 
-        TestRuntime.ktor.httpClient.post("/resend") {
+        TestRuntime.ktor.httpClient.post("/api/resend") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(request)
@@ -333,7 +333,7 @@ class ApiTest {
 
         val request = MessageRequest(Channel.TsIntern.topic.name, "0", "$offset")
 
-        TestRuntime.ktor.httpClient.post("/resend") {
+        TestRuntime.ktor.httpClient.post("/api/resend") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(request)
