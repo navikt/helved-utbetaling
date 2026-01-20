@@ -56,7 +56,6 @@ fun main() {
 fun Application.peisschtappern(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    kafkaFactory: KafkaFactory = DefaultKafkaFactory(),
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
@@ -92,10 +91,10 @@ fun Application.peisschtappern(
         registry = prometheus
     )
 
-    val oppdragsdataProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.oppdrag.v1", xml<Oppdrag>()))
-    val utbetalingProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger.v1", json<Utbetaling>()))
-    val dpProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>()))
-    val tsProducer = kafkaFactory.createProducer(config.kafka, Topic("helved.utbetalinger-ts.v1", json<TsDto>()))
+    val oppdragsdataProducer = kafka.createProducer(config.kafka, Topic("helved.oppdrag.v1", xml<Oppdrag>()))
+    val utbetalingProducer = kafka.createProducer(config.kafka, Topic("helved.utbetalinger.v1", json<Utbetaling>()))
+    val dpProducer = kafka.createProducer(config.kafka, Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>()))
+    val tsProducer = kafka.createProducer(config.kafka, Topic("helved.utbetalinger-ts.v1", json<TsDto>()))
     val manuellEndringService = ManuellEndringService(oppdragsdataProducer, utbetalingProducer, dpProducer, tsProducer)
 
     routing {
