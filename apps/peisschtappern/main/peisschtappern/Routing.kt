@@ -6,15 +6,15 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.*
-import libs.kafka.Streams
-import libs.kafka.Topic
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
+import libs.kafka.Streams
+import libs.kafka.Topic
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.Fagsystem
-import java.time.Instant
 import peisschtappern.Dao.Companion.findAll
+import java.time.Instant
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/actuator") {
@@ -219,21 +219,32 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         }
     }
 
-    post("/manuell-oppdrag") {
-        val request = call.receive<KeyValueRequest>()
+    post("resend") {
+        val request = call.receive<MessageRequest>()
+        val channel = requireNotNull(Channel.findOrNull(request.topic)) {
+            "Fant ikke topic med navn ${request.topic}"
+        }
 
-        try {
-            manuellEndringService.sendOppdragManuelt(
-                oppdragXml = request.value,
-                messageKey = request.key
+        withContext(Jdbc.context + Dispatchers.IO) {
+            transaction {
+                val message = requireNotNull(Dao.findSingle(request.partition.toInt(), request.offset.toLong(), channel.table)) {
+                    "Fant ikke melding på topic ${request.topic} med partition ${request.partition} og offset ${request.offset}"
+                }
+                val value = requireNotNull(message.value) { "Melding mangler value" }
 
-            )
-            call.respond(HttpStatusCode.OK, "Sent oppdrag for uid:${request.key} on ${Topics.oppdrag.name}")
-        } catch (e: Exception) {
-            val msg = "Failed to send oppdrag for uid:${request.key}"
-            appLog.error(msg)
-            secureLog.error(msg, e)
-            call.respond(HttpStatusCode.BadRequest, msg)
+                val success = when (channel) {
+                    is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(message.key, value)
+                    is Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value)
+                    is Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value)
+                    else -> error("Støtter ikke innsending av melding for topic ${channel.topic.name}")
+                }
+
+                if (success) {
+                    call.respond(HttpStatusCode.OK, "Sendte melding ${message.key} i topic ${message.topic_name} på nytt")
+                } else {
+                    call.respond(HttpStatusCode.UnprocessableEntity, "Feilet å sende melding ${message.key} i topic ${message.topic_name} på nytt")
+                }
+            }
         }
     }
 
@@ -243,7 +254,13 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         try {
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    val utbetaling = requireNotNull(Dao.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.PendingUtbetalinger.table)) {
+                    val utbetaling = requireNotNull(
+                        Dao.findSingle(
+                            request.partition.toInt(),
+                            request.offset.toLong(),
+                            Channel.PendingUtbetalinger.table
+                        )
+                    ) {
                         "Kan ikke flytte pending utbetaling. Fant ikke utbetaling i topic ${request.topic} med partition ${request.partition} og offset ${request.offset}"
                     }
                     manuellEndringService.flyttPendingTilUtbetalinger(
@@ -254,7 +271,8 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             }
             call.respond(HttpStatusCode.OK)
         } catch (e: Exception) {
-            val msg = "Failed to move pending utbetaling with partition ${request.partition} and offset ${request.offset}"
+            val msg =
+                "Failed to move pending utbetaling with partition ${request.partition} and offset ${request.offset}"
             appLog.error(msg)
             secureLog.error(msg, e)
             call.respond(HttpStatusCode.BadRequest, msg)
@@ -265,25 +283,9 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         val request = call.receive<TombstoneRequest>()
         when (manuellEndringService.tombstoneUtbetaling(request.key)) {
             true -> call.respond("Tombstoned utbetaling with kafka key ${request.key}")
-            false -> call.respond(HttpStatusCode.UnprocessableEntity, "Failed to tombstone utbetaling with kafka key ${request.key}")
-        }
-    }
-
-    post("/resend-dagpenger") {
-        val req = call.receive<KeyValueRequest>()
-        when (manuellEndringService.rekjørDagpenger(req.key, req.value)) {
-            true -> call.respond("Dagpenger utbetaling rekjørt for key ${req.key}")
-            false -> call.respond(HttpStatusCode.UnprocessableEntity, "Feilet rekjøring av dagpenge utbetaling")
-        }
-    }
-
-    post("/resend-tilleggsstonader") {
-        val req = call.receive<KeyValueRequest>()
-        when (manuellEndringService.rekjørTilleggsstonader(req.key, req.value)) {
-            true -> call.respond("Tilleggsstønader utbetaling rekjørt for key ${req.key}")
             false -> call.respond(
                 HttpStatusCode.UnprocessableEntity,
-                "Feilet rekjøring av tilleggsstønader utbetaling"
+                "Failed to tombstone utbetaling with kafka key ${request.key}"
             )
         }
     }
@@ -302,11 +304,6 @@ data class MessageRequest(
     val topic: String,
     val partition: String,
     val offset: String,
-)
-
-data class KeyValueRequest(
-    val key: String,
-    val value: String
 )
 
 data class TombstoneRequest(val key: String)

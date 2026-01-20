@@ -1,25 +1,17 @@
 package peisschtappern
 
 import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.get
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
-import java.time.Instant
-import java.util.UUID
-import libs.kafka.Topic
-import libs.kafka.json
-import libs.kafka.xml
+import libs.kafka.*
 import libs.xml.XMLMapper
 import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.junit.jupiter.api.Disabled
+import java.time.Instant
+import java.util.UUID
 import kotlin.test.*
 
 class ApiTest {
@@ -118,7 +110,8 @@ class ApiTest {
 
     @Test
     fun `can query for fom, tom and value`() = runTest(TestRuntime.context) {
-        val result = TestRuntime.ktor.httpClient.get("/api?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4") {
+        val result =
+            TestRuntime.ktor.httpClient.get("/api?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4") {
                 bearerAuth(TestRuntime.azure.generateToken())
                 accept(ContentType.Application.Json)
             }
@@ -155,7 +148,10 @@ class ApiTest {
         val initialOppdrag = xmlMapper.readValue(TestData.oppdragXml)
 
         val key = "202503271001"
-        val oppdragProducer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Topic("helved.oppdrag.v1", xml<Oppdrag>()))
+        val oppdragProducer = TestRuntime.vanillaKafka.createProducer(
+            TestRuntime.kafka.config,
+            Topic("helved.oppdrag.v1", xml<Oppdrag>())
+        )
         oppdragProducer.send(key, initialOppdrag)
         save(Channel.Oppdrag, key = key, value = TestData.oppdragXml)
 
@@ -262,12 +258,74 @@ class ApiTest {
         }
 
         val producer =
-            TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Topic("helved.utbetalinger.v1", json<Utbetaling>()))
+            TestRuntime.vanillaKafka.createProducer(
+                TestRuntime.kafka.config,
+                Topic("helved.utbetalinger.v1", json<Utbetaling>())
+            )
         assertEquals(1, producer.history().size)
 
         val (recordKey, _) = producer.history().last()
 
         assertEquals(key, recordKey)
+    }
+
+    @Test
+    fun `resend oppdrag`() = runTest(TestRuntime.context) {
+        val producer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Channel.Oppdrag.topic)
+        val offset = producer.history().size.toLong() + 1
+        save(Channel.Oppdrag, value = TestData.oppdragXml, offset = offset)
+
+        val request = MessageRequest(Channel.Oppdrag.topic.name, "0", "$offset")
+
+        TestRuntime.ktor.httpClient.post("/resend") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+
+        assertEquals(offset, producer.history().size.toLong())
+    }
+
+    @Test
+    fun `resend dagpenger`() = runTest(TestRuntime.context) {
+        val utbetaling =
+            """{"sakId": "AZvF9zVMdJyupoNo8ec8vg==","behandlingId": "AZvVuTf0d+KNOpkkQ05i7w==","ident": "27427413301","vedtakstidspunktet": "2026-01-19T11:12:26.301381","utbetalinger": []}"""
+        save(Channel.DpIntern, value = utbetaling)
+
+        val request = MessageRequest(Channel.DpIntern.topic.name, "0", "1")
+
+        TestRuntime.ktor.httpClient.post("/resend") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+
+        val producer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Channel.DpIntern.topic)
+        assertEquals(1, producer.history().size)
+    }
+
+    @Test
+    fun `resend ts`() = runTest(TestRuntime.context) {
+        val utbetaling =
+            """{"sakId": "200001399","behandlingId": "2349","personident": "18528506875","vedtakstidspunkt": "2026-01-19T13:03:41.50704551","periodetype": "UKEDAG","saksbehandler": null,"beslutter": null,"utbetalinger": [{"id":"f59abb5e-dc4b-42bb-8a02-92c766778bcf","stønad": "DAGLIG_REISE_AAP","perioder":[{"fom":"2026-01-05","tom": "2026-01-05","beløp": 1450,"betalendeEnhet": null}],"brukFagområdeTillst": false}]}""".trimIndent()
+        save(Channel.TsIntern, value = utbetaling)
+
+        val request = MessageRequest(Channel.TsIntern.topic.name, "0", "1")
+
+        TestRuntime.ktor.httpClient.post("/resend") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+
+        val producer = TestRuntime.vanillaKafka.createProducer(TestRuntime.kafka.config, Channel.TsIntern.topic)
+        assertEquals(1, producer.history().size)
     }
 }
 

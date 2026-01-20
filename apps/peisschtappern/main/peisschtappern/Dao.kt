@@ -46,6 +46,8 @@ data class Dao(
     val system_time_ms: Long,
     val trace_id: String?,
     val commit: String? = null,
+    val sakId: String? = null,
+    val fagsystem: String? = null,
 ) {
     companion object {
         suspend fun find(key: String, table: Table, limit: Int = 1000): List<Dao> {
@@ -321,5 +323,7 @@ private fun from(rs: ResultSet) = Dao(
     system_time_ms = rs.getLong("system_time_ms"),
     trace_id = rs.getString("trace_id"),
     commit = rs.getString("commit"),
+    sakId = rs.getString("sak_id"),
+    fagsystem = rs.getString("fagsystem"),
 )
 
