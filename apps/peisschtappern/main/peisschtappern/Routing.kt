@@ -219,7 +219,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         }
     }
 
-    post("resend") {
+    post("/resend") {
         val request = call.receive<MessageRequest>()
         val channel = requireNotNull(Channel.findOrNull(request.topic)) {
             "Fant ikke topic med navn ${request.topic}"
