@@ -60,7 +60,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             call.respond(daos)
         }
 
-        get("{topic}/{partition}/{offset}") {
+        get("/{topic}/{partition}/{offset}") {
             val channel = checkNotNull(Channel.findOrNull(call.parameters["topic"]!!)) {
                 "Unknown topic ${call.parameters["topic"]}"
             }
