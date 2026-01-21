@@ -20,6 +20,7 @@ data class TpPeriode(
     val fom: LocalDate,
     val tom: LocalDate,
     val betalendeEnhet: NavEnhet? = null,
+    val barnetillegg: Boolean = false,
     val beløp: UInt,
     val stønad: StønadTypeTiltakspenger,
     ) {
@@ -73,7 +74,7 @@ object TpDto {
         val saksbehandler = tpUtbetaling.saksbehandler ?: "tp"
         val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, TpUtbetaling?>> = tpUtbetaling
             .perioder
-            .groupBy { it.meldeperiode to it.stønad }
+            .groupBy { it.meldeperiode to it.stønad.medBarnetillegg(it.barnetillegg) }
             .map { (group, utbetalinger) ->
                 val (meldeperiode, stønad) = group
                 tpUId(tpUtbetaling.sakId, meldeperiode, stønad) to tpUtbetaling.copy(perioder = utbetalinger)
@@ -114,8 +115,8 @@ object TpDto {
         uidsPåSak: Set<UtbetalingId>?,
         uid: UtbetalingId,
     ): Utbetaling {
-        val stønad = value.perioder.first().stønad
-        require(value.perioder.all { it.stønad == stønad })
+        val stønad = value.perioder.first().stønad.medBarnetillegg(value.perioder.first().barnetillegg)
+        require(value.perioder.all { it.stønad.medBarnetillegg(it.barnetillegg) == stønad })
 
         return Utbetaling(
             dryrun = value.dryrun,

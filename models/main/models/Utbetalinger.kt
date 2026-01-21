@@ -346,6 +346,32 @@ enum class StønadTypeTiltakspenger(override val klassekode: String) : Stønadst
     UTVIDET_OPPFØLGING_I_OPPLÆRING_BARN("TPBTUOPPFOPPL"),
 }
 
+fun StønadTypeTiltakspenger.medBarnetillegg(barnetillegg: Boolean): StønadTypeTiltakspenger =
+    if (barnetillegg) {
+        when (this) {
+            StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING -> StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING_BARN
+            StønadTypeTiltakspenger.ARBEIDSRETTET_REHABILITERING -> StønadTypeTiltakspenger.ARBEIDSRETTET_REHABILITERING_BARN
+            StønadTypeTiltakspenger.ARBEIDSTRENING -> StønadTypeTiltakspenger.ARBEIDSTRENING_BARN
+            StønadTypeTiltakspenger.AVKLARING -> StønadTypeTiltakspenger.AVKLARING_BARN
+            StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB -> StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB_BARN
+            StønadTypeTiltakspenger.ENKELTPLASS_AMO -> StønadTypeTiltakspenger.ENKELTPLASS_AMO_BARN
+            StønadTypeTiltakspenger.ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG -> StønadTypeTiltakspenger.ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG_BARN
+            StønadTypeTiltakspenger.FORSØK_OPPLÆRING_LENGRE_VARIGHET -> StønadTypeTiltakspenger.FORSØK_OPPLÆRING_LENGRE_VARIGHET_BARN
+            StønadTypeTiltakspenger.GRUPPE_AMO -> StønadTypeTiltakspenger.GRUPPE_AMO_BARN
+            StønadTypeTiltakspenger.GRUPPE_VGS_OG_HØYERE_YRKESFAG -> StønadTypeTiltakspenger.GRUPPE_VGS_OG_HØYERE_YRKESFAG_BARN
+            StønadTypeTiltakspenger.HØYERE_UTDANNING -> StønadTypeTiltakspenger.HØYERE_UTDANNING_BARN
+            StønadTypeTiltakspenger.INDIVIDUELL_JOBBSTØTTE -> StønadTypeTiltakspenger.INDIVIDUELL_JOBBSTØTTE_BARN
+            StønadTypeTiltakspenger.INDIVIDUELL_KARRIERESTØTTE_UNG -> StønadTypeTiltakspenger.INDIVIDUELL_KARRIERESTØTTE_UNG_BARN
+            StønadTypeTiltakspenger.JOBBKLUBB -> StønadTypeTiltakspenger.JOBBKLUBB_BARN
+            StønadTypeTiltakspenger.OPPFØLGING -> StønadTypeTiltakspenger.OPPFØLGING_BARN
+            StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_NAV -> StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_NAV_BARN
+            StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING -> StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING_BARN
+            else -> error("${this.name} har ikke klassekode for barnetillegg")
+        }
+    } else {
+        this
+    }
+
 enum class StønadTypeTilleggsstønader(override val klassekode: String) : Stønadstype {
     TILSYN_BARN_ENSLIG_FORSØRGER("TSTBASISP2-OP"),
     TILSYN_BARN_AAP("TSTBASISP4-OP"),

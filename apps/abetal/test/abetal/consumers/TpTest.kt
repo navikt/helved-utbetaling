@@ -1409,6 +1409,60 @@ internal class TpTest {
                 assertEquals("8020", beh?.enhet)
             }
     }
+
+    @Test
+    fun `meldekort med barnetillegg gir riktig klassekode`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val meldeperiode = "132460781"
+        val uid = tpUId(sid.id, meldeperiode, StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING_BARN)
+
+        TestRuntime.topics.tp.produce(transactionId) {
+            Tp.utbetaling(sid.id, bid.id) {
+                Tp.periode(
+                    meldeperiode = meldeperiode,
+                    fom = LocalDate.of(2021, 6, 7),
+                    tom = LocalDate.of(2021, 6, 18),
+                    beløp = 553u,
+                    stønad = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
+                    barnetillegg = true,
+                )
+            }
+        }
+
+        val mottatt = StatusReply(
+            Status.MOTTATT,
+            Detaljer(
+                ytelse = Fagsystem.TILTAKSPENGER,
+                linjer = listOf(
+                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, null, 553u, "TPBTAF"),
+                )
+            )
+        )
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .has(transactionId, mottatt)
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) {
+                assertEquals("TPBTAF", it.oppdrag110.oppdragsLinje150s[0].kodeKlassifik)
+            }
+            .get(transactionId)
+
+        TestRuntime.topics.oppdrag.produce(transactionId) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertEquals(StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING_BARN, it.stønad)
+            }
+    }
 }
 
 
