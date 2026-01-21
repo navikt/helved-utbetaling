@@ -4,7 +4,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
 import no.trygdeetaten.skjema.oppdrag.*
 import java.time.format.DateTimeFormatter
 import java.math.BigDecimal
@@ -148,9 +147,10 @@ object Tp {
         tom: LocalDate,
         beløp: UInt,
         betalendeEnhet: NavEnhet? = null,
+        barnetillegg: Boolean = false,
         stønad: StønadTypeTiltakspenger = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
         ): List<TpPeriode> {
-        return listOf(TpPeriode(meldeperiode, fom, tom, betalendeEnhet, beløp, stønad))
+        return listOf(TpPeriode(meldeperiode, fom, tom, betalendeEnhet, barnetillegg, beløp, stønad))
     }
 }
 
