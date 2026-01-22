@@ -23,8 +23,8 @@ fun Fagsystem.utbetFrekvens() = when(this) {
 }
 
 object OppdragService {
-    fun opprett(new: Utbetaling): Oppdrag {
-        var forrigeId: PeriodeId? = null
+    fun opprett(new: Utbetaling, lastPeriodeId: PeriodeId? = null): Oppdrag {
+        var forrigeId: PeriodeId? = lastPeriodeId
         val oppdrag110 = objectFactory.createOppdrag110().apply {
             kodeAksjon = "1"
             kodeEndring = if(new.førsteUtbetalingPåSak) "NY" else "ENDR"
@@ -68,7 +68,6 @@ object OppdragService {
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
             val nyeLinjer = nyeLinjer(new, prev)
             val opphørsdato = opphørsdato(new.perioder, prev.perioder)
-
             if (skalTilføreOpphørslinje(opphørsdato, nyeLinjer)) {
                 val opphørslinje = oppdragsLinje150(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
                 oppdragsLinje150s.add(opphørslinje)
