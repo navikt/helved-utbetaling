@@ -60,6 +60,20 @@ spec:
   kafka:
     pool: nav-dev
     streams: true
+  gcp:
+    sqlInstances:
+      - type: "POSTGRES_17"
+        diskAutoresize: true
+        tier: "db-f1-micro"
+        cascadingDelete: false
+        highAvailability: false 
+        pointInTimeRecovery: true
+        maintenance:
+          day: 7
+          hour: 23
+        databases:
+          - name: urskog
+            envVarPrefix: DB
   envFrom:
      # TODO: sjekk hva disse inneholder, er det samme eller noe ulikt?
     - secret: utsjekk-oppdrag-simulering
