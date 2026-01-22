@@ -1,39 +1,188 @@
 package urskog
 
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.Tag
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.transaction
 import libs.kafka.*
-import libs.kafka.processor.DedupProcessor
-import libs.kafka.processor.StateProcessor
+import libs.kafka.processor.EnrichMetadataProcessor
+import libs.kafka.processor.Metadata
+import libs.kafka.processor.Processor
+import libs.kafka.stream.ConsumedStream
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import kotlin.time.Duration.Companion.hours
+import java.time.LocalDateTime
 
 const val FS_KEY = "fagsystem"
 
 object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
+    val pendingUtbetalinger = Topic("helved.pending-utbetalinger.v1", json<Utbetaling>())
     val simuleringer = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
     val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val dryrunTilleggsstønader = Topic("helved.dryrun-ts.v1", json<models.v1.Simulering>())
     val dryrunTiltakspenger = Topic("helved.dryrun-tp.v1", json<models.v1.Simulering>())
     val status = Topic("helved.status.v1", json<StatusReply>())
-    val kvittering = Topic<OppdragForeignKey, Oppdrag>("helved.kvittering.v1", Serdes(JsonSerde.jackson(), XmlSerde.xml()))
     val avstemming = Topic("helved.avstemming.v1", xml<Avstemmingsdata>())
 }
 
-object Stores {
-    val keystore = Store<OppdragForeignKey, String>("fk-uid-store", jsonString())
-    val kvittering = Store("dedup-kvittering", Topics.oppdrag.serdes)
-    val oppdrag = Store("dedup-oppdrag", Topics.oppdrag.serdes)
+fun Topology.oppdrag(mq: OppdragMQProducer, meters: MeterRegistry) {
+    consume(Topics.oppdrag)
+        .branch({ it.mmel == null }) {
+            this
+                .processor(Processor{ EnrichMetadataProcessor() })
+                .map { key, (oppdrag, meta) -> saveOppdragAndSendIfReady(mq, key, oppdrag, meta) }
+                .filter { reply -> reply.status == Status.HOS_OPPDRAG }
+                .includeHeader(FS_KEY) { reply -> 
+                    val ytelse = reply.detaljer?.ytelse
+                    when(ytelse?.isTilleggsstønader()) {
+                        true -> Fagsystem.TILLEGGSSTØNADER.name
+                        false -> ytelse.name
+                        null -> "ukjent" 
+                    }
+                }
+                .produce(Topics.status)
+        }
+        .branch({ it.mmel != null }) {
+            this
+                .processor(Processor{ EnrichMetadataProcessor() })
+                .map { _, (oppdrag, _) -> statusReply(oppdrag) }
+                .includeHeader(FS_KEY) { reply -> 
+                    val ytelse = reply.detaljer?.ytelse
+                    when(ytelse?.isTilleggsstønader()) {
+                        true -> Fagsystem.TILLEGGSSTØNADER.name
+                        false -> ytelse.name
+                        null -> "ukjent" 
+                    }
+                }
+                .produce(Topics.status)
+        }
+
+    consume(Topics.pendingUtbetalinger)
+        .processor(Processor{ EnrichMetadataProcessor() })
+        .mapKeyAndValue { key, (value, meta) -> updatePendingAndOppdrag(mq, key, value, meta)}
+        .filter { reply -> reply.status == Status.HOS_OPPDRAG }
+        .includeHeader(FS_KEY) { reply -> 
+            val ytelse = reply.detaljer?.ytelse
+            when(ytelse?.isTilleggsstønader()) {
+                true -> Fagsystem.TILLEGGSSTØNADER.name
+                false -> ytelse.name
+                null -> "ukjent" 
+            }
+        }
+        .produce(Topics.status)
 }
 
-object Tables {
-    val kvittering = Table(Topics.kvittering)
+private fun saveOppdragAndSendIfReady(
+    mq: OppdragMQProducer,
+    key: String,
+    oppdrag: Oppdrag,
+    meta: Metadata,
+): StatusReply {
+     val (oppdragToSend, resultStatus) = runBlocking {
+        withContext(Jdbc.context + Dispatchers.IO) {
+        val hashKey = DaoOppdrag.hash(oppdrag)
+            val oppdragDao = transaction {
+                saveIdempotent(key, hashKey, oppdrag, meta) 
+            }
+            if (pendingIsReady(hashKey, oppdragDao.uids) && !oppdragDao.sent) {
+                oppdragDao to StatusReply.sendt(oppdrag)
+            } else {
+                null to StatusReply.mottatt(oppdrag)
+            }
+        }
+    }
+    if (oppdragToSend != null) {
+        runBlocking {
+            withContext(Jdbc.context + Dispatchers.IO) {
+                transaction { 
+                    mq.send(oppdrag)
+                    oppdragToSend.updateAsSent()
+                }
+            }
+        }
+    }
+    return resultStatus
+}
+
+// Jdbc.context holds the jdbc connection
+// Dispatchers.IO uses a thread-pool specialized for IO operations
+// SupervisorJob uses a long-lived scope that does not kill the whole scope if one transaction fails.
+// private val daoScope = CoroutineScope(Jdbc.context + Dispatchers.IO + SupervisorJob())
+
+private fun updatePendingAndOppdrag(
+    mq: OppdragMQProducer,
+    key: String,
+    value: Utbetaling,
+    meta: Metadata, 
+): KeyValue<String, StatusReply> { 
+    return runBlocking(Jdbc.context + Dispatchers.IO) {
+        val hashKey = meta.headers["hash_key"]?.toInt()
+        if (hashKey == null) {
+            kafkaLog.warn("pendingUtbetaling med key:$key mangler header hash_key")
+            return@runBlocking KeyValue(value.originalKey, StatusReply(Status.MOTTATT))
+        }
+
+        transaction {
+            DaoPendingUtbetaling(hashKey, key).insertIdempotent()
+        }
+
+        val dao = transaction {
+            DaoOppdrag.find(hashKey)
+        }
+
+        if (dao != null && !dao.sent && pendingIsReady(hashKey, dao.uids)) {
+            transaction {
+                mq.send(dao.oppdrag)
+                dao.updateAsSent()
+                kafkaLog.info("sent and updated hash:$hashKey")
+                KeyValue(value.originalKey, StatusReply.sendt(dao.oppdrag))
+            }
+        } else {
+            KeyValue(value.originalKey, StatusReply(Status.MOTTATT)) // midlertidig
+        }
+    }
+}
+
+private suspend fun pendingIsReady(hashKey: Int, expectedUids: List<String>): Boolean {
+    val receivedUids = transaction {
+        DaoPendingUtbetaling
+            .findAll(hashKey)
+            .filter { it.mottatt  }
+            .map { it.uid }
+            .toList()
+    }
+    val isReady = expectedUids.size == receivedUids.size && expectedUids.containsAll(receivedUids)
+    kafkaLog.info("is ready:$isReady for hash:$hashKey. expected: $expectedUids, received: $receivedUids")
+    return isReady
+}
+
+private suspend fun saveIdempotent(
+    key: String,
+    hashKey: Int,
+    oppdrag: Oppdrag,
+    meta: Metadata,
+): DaoOppdrag {
+    val new = DaoOppdrag(
+        kafkaKey = key,
+        sakId = oppdrag.oppdrag110.fagsystemId.trimEnd(),
+        behandlingId = oppdrag.oppdrag110.oppdragsLinje150s.last().henvisning.trimEnd(),
+        oppdrag = oppdrag,
+        uids = meta.headers["uids"]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList<String>(),
+        sent = false,
+        sentAt =  null,
+    )
+    if (new.insertIdempotent()) return new
+    return DaoOppdrag.find(hashKey)!!
+}
+
+fun Topology.avstemming(avstemProducer: AvstemmingMQProducer) {
+    consume(Topics.avstemming).forEach { _, v ->
+        avstemProducer.send(v)
+    }
 }
 
 fun Topology.simulering(simuleringService: SimuleringService) {
@@ -79,75 +228,6 @@ fun Topology.simulering(simuleringService: SimuleringService) {
 }
 
 private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
-
-fun Topology.oppdrag(oppdragProducer: OppdragMQProducer, meters: MeterRegistry) {
-    val kvitteringKTable = consume(Tables.kvittering)
-    val oppdragTopic = consume(Topics.oppdrag)
-
-    fun dedupHash(key: String, value: Oppdrag): Int = mapper.writeValueAsString(value).hashCode()
-
-    val dedupKvittering = DedupProcessor.supplier(1.hours, Stores.kvittering, false, ::dedupHash)
-
-    val dedupOppdrag = DedupProcessor.supplier(1.hours, Stores.oppdrag, false, ::dedupHash) { xml ->
-        oppdragProducer.send(xml) 
-    }
-
-    val kstore = oppdragTopic
-        .filter { oppdrag -> oppdrag.mmel == null }
-        .mapKeyAndValue { uid, xml -> OppdragForeignKey.from(xml) to uid }
-        .materialize(Stores.keystore)
-
-    kstore.join(kvitteringKTable)
-        .filter { (uid, kvitt) -> kvitt?.mmel != null && uid != null }
-        .mapKeyAndValue { _, (uid, kvitt) -> uid!! to kvitt!! }
-        .processor(StateProcessor(dedupKvittering, Named(Stores.kvittering.name), Stores.kvittering.name))
-        .produce(Topics.oppdrag)
-
-    oppdragTopic
-        .branch({ o -> o.mmel == null }) {
-            filter { o -> o.mmel == null }
-                .processor(StateProcessor(dedupOppdrag, Named(Stores.oppdrag.name), Stores.oppdrag.name))
-                .map { xml -> StatusReply.sendt(xml) }
-                .includeHeader(FS_KEY) { statusReply -> 
-                    statusReply.detaljer
-                        ?.let { detaljer -> 
-                            when (detaljer.ytelse.isTilleggsstønader()) {
-                                true -> Fagsystem.TILLEGGSSTØNADER.name
-                                false -> detaljer.ytelse.name
-                            }
-                        } 
-                        ?: "ukjent" 
-                }
-                .produce(Topics.status)
-        }
-        .branch( { o -> o.mmel != null}) {
-            filter { o -> o.mmel != null }.map { kvitt ->
-                val statusReply = statusReply(kvitt)
-                val tag_fagsystem = Tag.of("fagsystem", Fagsystem.fromFagområde(kvitt.oppdrag110.kodeFagomraade.trimEnd()).name) 
-                val tag_status = Tag.of("status", statusReply.status.name) 
-                meters.counter("helved_kvitteringer", listOf(tag_fagsystem, tag_status)).increment()
-                meters.counter("helved_utbetalt_beløp", listOf(tag_fagsystem)).increment(kvitt.oppdrag110.oppdragsLinje150s.sumOf{ it.sats.toDouble() })
-                statusReply
-            }
-            .includeHeader(FS_KEY) { statusReply ->
-                statusReply.detaljer
-                    ?.let { detaljer ->
-                        when (detaljer.ytelse.isTilleggsstønader()) {
-                            true -> Fagsystem.TILLEGGSSTØNADER.name
-                            false -> detaljer.ytelse.name
-                        }
-                    }
-                    ?: "ukjent"
-            }
-            .produce(Topics.status)
-        }
-}
-
-fun Topology.avstemming(avstemProducer: AvstemmingMQProducer) {
-    consume(Topics.avstemming).forEach { _, v ->
-        avstemProducer.send(v)
-    }
-}
 
 private fun statusReply(o: Oppdrag): StatusReply {
     return when (o.mmel) {

@@ -86,6 +86,7 @@ fun Topology.utbetalingToSak(): KTable<SakKey, Set<models.UtbetalingId>> {
 }
 
 fun Topology.consumeStatus() {
+    // TODO: utled status fra oppdrag i stedet? Da får vi ikke noe status på topic for disse
     consume(Topics.status)
         .filterKey { uid ->
             try {

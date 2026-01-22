@@ -17,45 +17,14 @@ import io.ktor.util.reflect.*
 import io.ktor.utils.io.*
 import libs.auth.AzureConfig
 import libs.auth.AzureToken
-import javax.jms.TextMessage
-import libs.mq.*
-import libs.utils.Resource
 import libs.auth.TEST_JWKS
-import libs.ktor.*
+import libs.ktor.port
+import libs.utils.Resource
 import libs.ws.*
-import libs.xml.XMLMapper
-import no.trygdeetaten.skjema.oppdrag.*
 import java.net.URI
 import java.nio.charset.Charset
 import java.time.LocalDateTime
 import java.util.*
-
-val receivedMqOppdrag = mutableListOf<Oppdrag>()
-
-fun oppdragURFake(): MQ {
-    val mapper = XMLMapper<Oppdrag>()
-    var mq: MQFake? = null 
-    val ctx by lazy {
-        JMSContextFake {
-            val oppdrag = mapper.readValue(it.text)
-            receivedMqOppdrag.add(oppdrag)
-            val kvittert = oppdrag.apply {
-                mmel = Mmel().apply {
-                    alvorlighetsgrad = "00"
-                }
-            }
-            mq?.textMessage(mapper.writeValueAsString(kvittert)) ?: error("MQ not initialized")
-        }
-    }
-    mq = MQFake(ctx) 
-    return mq
-}
-
-fun MQ.textMessage(xml: String): TextMessage {
-    return transaction {
-        it.createTextMessage(xml)
-    }
-}
 
 class WSFake: Sts, Soap {
     var respondWith: String = Resource.read("/simuler-ok.xml")

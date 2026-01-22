@@ -11,12 +11,34 @@ import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 import no.trygdeetaten.skjema.oppdrag.*
+import libs.xml.XMLMapper
+import models.*
+
+val Int.nov: LocalDate get() = LocalDate.of(2025, 11, this)
+
+var seq: Int = 0
+    get() = field++
+
+object XmlAssert {
+    private val mapper = XMLMapper<Oppdrag>()
+
+    inline fun <reified V: Any> assertEquals(expected: V, actual: V) {
+        val mapper = XMLMapper<V>()
+        val left = mapper.writeValueAsString(expected)
+        val right = mapper.writeValueAsString(actual)
+        kotlin.test.assertEquals(left, right)
+    }
+}
 
 object TestData {
     private val objectFactory = ObjectFactory()
     // private val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
     private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofPattern(pattern))
     private val fixedTime = LocalTime.of(10, 10, 0, 0)
+
+    fun ok(): Mmel = Mmel().apply {
+        alvorlighetsgrad = "00"
+    }
 
     fun oppdrag(
         oppdragslinjer: List<OppdragsLinje150>,
@@ -27,8 +49,10 @@ object TestData {
         saksbehId: String = "Z999999",
         avstemmingstidspunkt: LocalDateTime = LocalDateTime.now(),
         enhet: String? = null, // betalende enhet (lokalkontor)
+        mmel: Mmel? =  null,
     ): Oppdrag {
         return objectFactory.createOppdrag().apply {
+            this.mmel = mmel
             this.oppdrag110 = objectFactory.createOppdrag110().apply {
                 this.kodeAksjon = "1"
                 this.kodeEndring = kodeEndring
@@ -129,6 +153,59 @@ object TestData {
         )
     }
 }
+
+fun utbetaling(
+    uid: UtbetalingId,
+    action: Action = Action.CREATE,
+    sakId: SakId = SakId("$seq"),
+    behandlingId: BehandlingId = BehandlingId("$seq"),
+    originalKey: String = uid.id.toString(),
+    førsteUtbetalingPåSak: Boolean = true,
+    lastPeriodeId: PeriodeId = PeriodeId(),
+    periodetype: Periodetype = Periodetype.UKEDAG,
+    stønad: Stønadstype = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+    personident: Personident = Personident(""),
+    vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
+    beslutterId: Navident = Navident(""),
+    saksbehandlerId: Navident = Navident(""),
+    avvent: Avvent? = null,
+    fagsystem: Fagsystem = Fagsystem.AAP,
+    perioder: () -> List<Utbetalingsperiode> = { emptyList() },
+) = Utbetaling(
+    dryrun = false,
+    uid = uid,
+    originalKey = originalKey,
+    action = action,
+    førsteUtbetalingPåSak = førsteUtbetalingPåSak,
+    periodetype = periodetype,
+    stønad = stønad,
+    sakId = sakId,
+    behandlingId = behandlingId,
+    lastPeriodeId = lastPeriodeId,
+    personident = personident,
+    vedtakstidspunkt = vedtakstidspunkt,
+    beslutterId = beslutterId,
+    saksbehandlerId = saksbehandlerId,
+    avvent = avvent,
+    fagsystem = fagsystem,
+    perioder = perioder(),
+)
+
+fun periode(
+    fom: LocalDate,
+    tom: LocalDate,
+    beløp: UInt = 123u,
+    vedtakssats: UInt? = null,
+    betalendeEnhet: NavEnhet? = null,
+) = listOf(
+    Utbetalingsperiode(
+        fom = fom,
+        tom = tom,
+        beløp = beløp,
+        vedtakssats = vedtakssats,
+        betalendeEnhet = betalendeEnhet,
+    )
+)
 
 private fun LocalDate.toXMLDate(): XMLGregorianCalendar =
     DatatypeFactory.newInstance()

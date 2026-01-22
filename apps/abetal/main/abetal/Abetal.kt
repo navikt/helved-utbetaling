@@ -13,10 +13,6 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
-import libs.jdbc.Migrator
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
@@ -58,13 +54,6 @@ fun Application.abetal(
             registerModule(JavaTimeModule())
             disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
-    }
-
-    Jdbc.initialize(config.jdbc)
-    runBlocking {
-        withContext(Jdbc.context) {
-            Migrator(config.jdbc.migrations).migrate()
         }
     }
 

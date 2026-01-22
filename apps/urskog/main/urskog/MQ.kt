@@ -1,30 +1,40 @@
 package urskog
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
-import javax.jms.TextMessage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.transaction
 import libs.kafka.Streams
-import libs.mq.*
+import libs.mq.DefaultMQConsumer
+import libs.mq.DefaultMQProducer
+import libs.mq.MQ
+import libs.mq.mqLog
+import libs.utils.appLog
 import libs.utils.secureLog
 import libs.xml.XMLMapper
-import models.*
+import models.BehandlingId
+import models.Fagsystem
+import models.PeriodeId
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import no.trygdeetaten.skjema.oppdrag.Oppdrag110
+import javax.jms.TextMessage
 
-class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: MeterRegistry) {
+class OppdragMQProducer(config: Config, mq: MQ, private val meters: MeterRegistry) {
     private val kvitteringQueue = config.oppdrag.kvitteringsKø
     private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
     fun send(oppdrag: Oppdrag): Oppdrag {
         val oppdragXml = mapper.writeValueAsString(oppdrag)
-        val fk = OppdragForeignKey.from(oppdrag)
+        val hash = oppdragXml.hashCode()
+        val sid = oppdrag.oppdrag110.fagsystemId 
+        val bid = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId)
+        val lastDelytelsesId = oppdrag.lastDelytelseId() 
+        val pid = lastDelytelsesId?.let{ PeriodeId.decode(it) }
 
         runCatching {
             producer.produce(oppdragXml) {
@@ -32,22 +42,22 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
             }
             meters.counter("helved_oppdrag_mq", listOf(
                 Tag.of("status", "Sendt"),
-                Tag.of("fagsystem", fk.fagsystem.name),
+                Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
-            mqLog.info("Sender oppdrag $fk")
+            mqLog.info("Sender oppdrag $hash")
             return oppdrag
         }.onFailure {
             meters.counter("helved_oppdrag_mq", listOf(
                 Tag.of("status", "Feilet"),
-                Tag.of("fagsystem", fk.fagsystem.name),
+                Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
-            mqLog.error("Feilet sending av oppdrag $fk")
-            secureLog.error("Feilet sending av oppdrag $fk", it)
+            mqLog.error("Feilet sending av oppdrag hash: $hash, sak: $sid, behandling: $bid, last delytelse/periodeid: $lastDelytelsesId/$pid")
+            secureLog.error("Feilet sending av oppdrag $hash", it)
         }.getOrThrow()
     }
 }
 
-class AvstemmingMQProducer(private val config: Config, mq: MQ) {
+class AvstemmingMQProducer(config: Config, mq: MQ) {
     private val producer = DefaultMQProducer(mq, config.oppdrag.avstemmingKø)
     private val mapper: XMLMapper<Avstemmingsdata> = XMLMapper()
 
@@ -65,16 +75,26 @@ class AvstemmingMQProducer(private val config: Config, mq: MQ) {
     }
 }
 
-class KvitteringMQConsumer(private val config: Config, mq: MQ, kafka: Streams): AutoCloseable {
-    private val kvitteringProducer = kafka.createProducer(config.kafka, Topics.kvittering)
+class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams): AutoCloseable {
+    private val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
     private val consumer = DefaultMQConsumer(mq, config.oppdrag.kvitteringsKø, ::onMessage)
 
     fun onMessage(message: TextMessage) {
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
-        val fk = OppdragForeignKey.from(kvittering)
-        mqLog.info("Mottok kvittering $fk")
-        kvitteringProducer.send(fk, kvittering)
+        val stripped = mapper.copy(kvittering).apply { mmel = null }
+        val hashKey = DaoOppdrag.hash(stripped)
+        secureLog.info("MQ hashing: $kvittering -> $hashKey")
+        val dao = runBlocking {
+            withContext(Jdbc.context + Dispatchers.IO) {
+                transaction {
+                    DaoOppdrag.find(hashKey) ?: error("fant ikke noe sted å lagre unna kvittering for hashKey: $hashKey")
+                }
+            }
+        }
+        mqLog.info("Mottok kvittering ${dao.kafkaKey}")
+        val headers = mapOf("uids" to dao.uids.joinToString(","))
+        oppdragProducer.send(dao.kafkaKey, kvittering, headers)
     }
 
 
@@ -93,45 +113,15 @@ class KvitteringMQConsumer(private val config: Config, mq: MQ, kafka: Streams): 
     }
 }
 
-data class OppdragForeignKey(
-    val fagsystem: Fagsystem,
-    val sakId: SakId,
-    val behandlingId: BehandlingId? = null,
-    val lastPeriodeId: PeriodeId? = null,
-) {
-    companion object {
-        fun from(oppdrag: Oppdrag) = OppdragForeignKey(
-            fagsystem = Fagsystem.fromFagområde(oppdrag.oppdrag110.kodeFagomraade),
-            sakId = SakId(oppdrag.oppdrag110.fagsystemId), 
-            behandlingId = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId),
-            lastPeriodeId = oppdrag.oppdrag110.lastPeriodeId()
-        )
-
-        fun from(utbetaling: Utbetaling) = OppdragForeignKey(
-            fagsystem = utbetaling.fagsystem,
-            sakId = utbetaling.sakId,
-            behandlingId = utbetaling.behandlingId,
-            lastPeriodeId = utbetaling.lastPeriodeId,
-        )
-    }
-
-    private val jackson: ObjectMapper = jacksonObjectMapper().apply {
-        registerModule(JavaTimeModule())
-        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-    }
-
-    fun toJson(): String {
-        return jackson.writeValueAsString(this)
-    }
+private fun Oppdrag.lastDelytelseId(): String? {
+    return oppdrag110.oppdragsLinje150s?.lastOrNull()?.delytelseId?.trimEnd()
 }
 
-private fun Oppdrag110.lastPeriodeId(): PeriodeId? {
-    val lastDelytelsesId = oppdragsLinje150s?.lastOrNull()?.delytelseId?.trimEnd()
-    return try {
-        lastDelytelsesId?.let(PeriodeId::decode)
-    } catch (e: Exception) {
-        null
-    }
+private fun Oppdrag.fagsystem(): String {
+    return Fagsystem.fromFagområde(oppdrag110.kodeFagomraade).name
+}
+
+private fun Oppdrag.behandlingId(): BehandlingId? {
+    return oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId)
 }
 

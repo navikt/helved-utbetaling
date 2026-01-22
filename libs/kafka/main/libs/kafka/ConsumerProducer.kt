@@ -29,15 +29,21 @@ open class KafkaProducer<K: Any, V>(
     private val producer: Producer<K, V>,
 ): AutoCloseable {
 
-    fun send(key: K, value: V): Boolean {
-        if (key is String) {
+    fun send(key: K, value: V, headers: Map<String, String> = emptyMap()): Boolean {
+        val record = if (key is String) {
             val partition = partition(key as String, NUM_OF_PARTITION)
-            return send(ProducerRecord<K, V>(topic.name, partition, key, value))
+            ProducerRecord<K, V>(topic.name, partition, key, value)
         } else {
-            kafkaLog.warn("key $key was not string, and we cannot calculate partition. Usingn default", key)
-            return send(ProducerRecord<K, V>(topic.name, key, value))
+            // TODO: hvis K ikke er String, så må vi ta inn serde
+            kafkaLog.error("key $key was not string, and we cannot calculate partition. Using default", key)
+            ProducerRecord<K, V>(topic.name, key, value)
         }
+        headers.forEach { (k, v) -> 
+            record.headers().add(k, v.toByteArray(Charsets.UTF_8))
+        }
+        return send(record)
     }
+
     fun send(key: K, value: V, partition: Int): Boolean {
         return send(ProducerRecord<K, V>(topic.name, partition, key, value))
     }

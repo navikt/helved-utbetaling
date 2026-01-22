@@ -2,6 +2,7 @@ package libs.kafka
 
 import org.apache.kafka.streams.TestInputTopic
 import org.apache.kafka.streams.TestOutputTopic
+import org.apache.kafka.streams.test.TestRecord
 import java.time.Instant
 
 // data class TestTopic<K: Any, V: Any>(
@@ -45,6 +46,13 @@ sealed interface TestTopic<K: Any, V: Any> {
     ): TestTopic<K, V> {
         fun produce(key: K, value: () -> V) = input.pipeInput(key, value())
         fun produce(key: K, advanceClockMs: Long, value: () -> V) = input.pipeInput(key, value(), Instant.now().plusMillis(advanceClockMs))
+
+        fun produce(key: K, headers: Map<String, String>, value: () -> V) {
+            val record = TestRecord(key, value())
+            headers.forEach { (k, v) -> record.headers().add(k, v.toByteArray(Charsets.UTF_8))}
+            input.pipeInput(record)
+        }
+
         fun tombstone(key: K) = input.pipeInput(key, null)
         fun tombstone(key: K, advanceClockMs: Long) = input.pipeInput(key, null, Instant.now().plusMillis(advanceClockMs))
         fun assertThat() = output.readAndAssert()

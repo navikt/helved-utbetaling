@@ -23,19 +23,6 @@ import javax.jms.TemporaryTopic
 import javax.jms.TextMessage
 import javax.jms.Topic
 
-class MQFake(override val context: JMSContext = JMSContextFake()) : MQ {
-    override fun depth(queue: MQQueue): Int = TODO("fake")
-
-    override fun <T : Any> transaction(block: (JMSContext) -> T): T {
-        return block(context)
-    }
-
-    override fun <T : Any> transacted(ctx: JMSContext, block: () -> T): T {
-        return block()
-    }
-
-}
-
 class JMSContextFake(private val onReplyTo: (TextMessage) -> TextMessage = { it }) : JMSContext {
     val received: MutableList<Message> = mutableListOf()
     var replyTo: String? = null
@@ -89,17 +76,18 @@ class JMSContextFake(private val onReplyTo: (TextMessage) -> TextMessage = { it 
     override fun acknowledge() = TODO("fake")
 
     inner class JMSProducerFake : JMSProducer {
-        override fun send(p0: Destination, p1: Message): JMSProducer {
-            if (replyTo != null) {
-                consumer.messageListener.onMessage(onReplyTo(p1 as TextMessage))
+        override fun send(dest: Destination, message: Message): JMSProducer {
+            received.add(message)
+
+            if (::consumer.isInitialized && message is TextMessage) {
+                val response = onReplyTo(message)
+                consumer.messageListener?.onMessage(response)
             }
-            received.add(p1)
             return this
         }
 
-        override fun setJMSReplyTo(p0: Destination): JMSProducer {
-            val p0 = p0 as MQQueue
-            replyTo = p0.baseQueueName
+        override fun setJMSReplyTo(dest: Destination): JMSProducer {
+            replyTo = (dest as? MQQueue)?.baseQueueName ?: "fake-queue"
             return this
         }
 

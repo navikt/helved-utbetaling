@@ -41,6 +41,11 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(mappedStream)
     }
 
+    fun <K2: Any, U : Any> mapKeyAndValue(mapper: (K, V) -> KeyValue<K2, U>): MappedStream<K2, U> {
+        val mappedStream = stream.map ({ key, value -> mapper(key, value).toInternalKeyValue() })
+        return MappedStream(mappedStream)
+    }
+
     fun <U: Any> leftJoin(
         key: StreamSerde<K>,
         value: StreamSerde<V>,
@@ -127,6 +132,11 @@ class MappedStream<K: Any, V : Any> internal constructor(
     fun groupByKey(serdes: Serdes<K, V>, named: String): GroupedStream<K, V> {
         val grouped = stream.groupByKey(Grouped.with(serdes.key, serdes.value).withName(Named(named).toString()))
         return GroupedStream(grouped)
+    }
+
+    fun filterNotNull(): MappedStream<K, V> {
+        val mappedStream = stream.filterNotNull()
+        return MappedStream(mappedStream)
     }
 
     /**

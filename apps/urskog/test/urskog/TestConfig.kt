@@ -3,6 +3,7 @@ package urskog
 import com.ibm.mq.jms.MQQueue
 import java.util.Properties
 import libs.auth.AzureConfig
+import libs.jdbc.JdbcConfig
 import libs.kafka.SslConfig
 import libs.kafka.StreamsConfig
 import libs.mq.MQConfig
@@ -15,6 +16,7 @@ object TestConfig {
         proxy: ProxyConfig,
         azure: AzureConfig,
         simulering: SoapConfig,
+        jdbc: JdbcConfig,
     ): Config {
         val oppdrag = OppdragConfig(
             avstemmingKø = MQQueue("DEV.QUEUE.3"),
@@ -35,6 +37,7 @@ object TestConfig {
             password = "",
         )
         return Config(
+            jdbc = jdbc,
             kafka = kafka,
             oppdrag = oppdrag,
             mq = mq,

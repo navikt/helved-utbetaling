@@ -49,22 +49,3 @@ spec:
   kafka:
     pool: nav-prod
     streams: true
-  gcp:
-    sqlInstances:
-      - type: POSTGRES_17 
-        diskAutoresize: true
-        tier: db-custom-1-3840
-        cascadingDelete: false
-        highAvailability: true 
-        pointInTimeRecovery: true
-        maintenance:
-          day: 7
-          hour: 23
-        databases:
-          - name: abetal
-            envVarPrefix: DB
-        flags:
-          - name: "cloudsql.enable_pgaudit"
-            value: "on"
-          - name: "pgaudit.log"
-            value: "write,ddl"

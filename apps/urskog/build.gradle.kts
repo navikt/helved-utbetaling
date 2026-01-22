@@ -7,12 +7,13 @@ application {
 }
 
 val ktorVersion = "3.3.3"
-val libVersion = "3.1.219"
+val libVersion = "3.1.232"
 
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:auth"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:jdbc"))
     implementation(project(":libs:mq"))
     implementation(project(":libs:utils"))
     implementation(project(":libs:ws"))
@@ -30,7 +31,9 @@ dependencies {
     testImplementation(kotlin("test")) 
     testImplementation(project(":libs:auth-test"))
     testImplementation(project(":libs:kafka-test"))
+    testImplementation(project(":libs:jdbc-test"))
     testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:mq-test"))
     testImplementation("org.apache.kafka:kafka-streams:4.1.1") // StreamsConfig
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
