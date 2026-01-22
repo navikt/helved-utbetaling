@@ -1,16 +1,9 @@
 package abetal
 
-import libs.jdbc.JdbcConfig
 import libs.kafka.StreamsConfig
-import libs.utils.env
-import java.io.File
 import java.util.*
 
 data class Config(
-    val jdbc: JdbcConfig = JdbcConfig(
-        url = env("DB_JDBC_URL"), // databaser provisjonert etter juni 2024 må bruke denne
-        migrations = listOf(File("migrations")),
-    ),
     val kafka: StreamsConfig = StreamsConfig(
         additionalProperties = Properties().apply {
             // Vi har 3 partisjoner, for å ha en standby-replica må vi ha 4 poder.

@@ -30,7 +30,7 @@ import models.StønadTypeAAP
 import models.aapUId
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -40,6 +40,17 @@ import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
 
 class AapTest {
+
+    @AfterEach
+    fun `assert empty topic`() {
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.simulering.assertThat()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.saker.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+    }
 
     @Test
     fun `1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
@@ -91,7 +102,7 @@ class AapTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -180,7 +191,7 @@ class AapTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -305,7 +316,7 @@ class AapTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2,$uid3")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -373,120 +384,6 @@ class AapTest {
                 assertEquals(expected, it)
             }
 
-    }
-
-    @Test
-    @Disabled // støtter ikke lengre sessionWindows
-    fun `2 meldekort i 2 utbetalinger blir til 2 utbetaling med 1 oppdrag`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val meldeperiode1 = "132460781"
-        val meldeperiode2 = "232460781"
-        val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid2 = aapUId(sid.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid.id, bid.id) {
-                meldekort(meldeperiode1, 7.jun, 20.jun, 553u, 1077u)
-            }
-        }
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid.id, bid.id) {
-                meldekort(meldeperiode2, 8.jul, 19.jul, 779u, 2377u)
-            }
-        }
-
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun, 20.jun, 553u, 1077u, "AAPOR"),
-                    DetaljerLinje(bid.id, 8.jul, 19.jul, 779u, 2377u, "AAPOR"),
-                )))
-            }
-
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("kelvin", it.oppdrag110.saksbehId)
-                assertEquals(2, it.oppdrag110.oppdragsLinje150s.size)
-            }
-            .get(transactionId)
-
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .has(uid2.id.toString())
-    }
-
-    @Test
-    @Disabled // støtter ikke lengre sessionWindows
-    fun `2 meldekort med 2 behandlinger for samme person blir til 2 utbetalinger med 1 oppdrag`() {
-        val sid = SakId("$nextInt")
-        val bid1 = BehandlingId("$nextInt")
-        val bid2 = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val meldeperiode1 = "132460781"
-        val meldeperiode2 = "232460781"
-        val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid2 = aapUId(sid.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid.id, bid1.id) {
-                meldekort(meldeperiode1, 7.jun, 20.jun, 553u, 1077u)
-            }
-        }
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid.id, bid2.id) {
-                meldekort(meldeperiode1, 7.jun, 20.jun, 553u, 1077u)
-                meldekort(meldeperiode2, 8.jul, 19.jul, 779u, 2377u)
-            }
-        }
-
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
-                    DetaljerLinje(bid1.id, 7.jun, 18.jun, 553u, 1077u, "AAPOR"),
-                    DetaljerLinje(bid2.id, 8.jul, 19.jul, 779u, 2377u, "AAPOR"),
-                )))
-            }
-
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) { oppdrag ->
-                assertEquals("AAP", oppdrag.oppdrag110.kodeFagomraade)
-                assertEquals(2, oppdrag.oppdrag110.oppdragsLinje150s.size)
-                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
-                    assertEquals(bid1.id, it.henvisning)
-                }
-                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
-                    assertEquals(bid2.id, it.henvisning)
-                }
-            }
-            .get(transactionId)
-
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .has(uid2.id.toString())
     }
 
     @Test
@@ -561,7 +458,7 @@ class AapTest {
             }
             .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(transactionId2) {
+        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid2")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -685,7 +582,7 @@ class AapTest {
             }
             .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(transactionId2) {
+        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid1")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -782,7 +679,7 @@ class AapTest {
             }
             .get(transactionId1)
 
-        TestRuntime.topics.oppdrag.produce(transactionId1) {
+        TestRuntime.topics.oppdrag.produce(transactionId1, mapOf("uids" to "$uid1")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -887,7 +784,7 @@ class AapTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2,$uid3")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -897,214 +794,6 @@ class AapTest {
             .has(uid1.toString()).with(uid1.toString()) { assertEquals(Action.UPDATE, it.action) }
             .has(uid2.toString()).with(uid2.toString()) { assertEquals(Action.DELETE, it.action) }
             .has(uid3.toString()).with(uid3.toString()) { assertEquals(Action.CREATE, it.action) }
-    }
-
-    @Test
-    @Disabled
-    fun `en meldeperiode som endres 3 ganger samtidig skal feile`() {
-        val sid = SakId("$nextInt")
-        val bid1 = BehandlingId("$nextInt")
-        val bid2 = BehandlingId("$nextInt")
-        val bid3 = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val meldeperiode = "132460781"
-        val uid = aapUId(sid.id, meldeperiode, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid.id, bid1.id) {
-                Aap.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
-            }
-        }
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid.id, bid2.id) {
-                Aap.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
-                Aap.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
-            }
-        }
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid.id, bid3.id) {
-                Aap.meldekort(meldeperiode, 2.sep, 13.sep, 300u, 300u)
-                Aap.meldekort(meldeperiode, 16.sep, 27.sep, 300u, 300u)
-                Aap.meldekort(meldeperiode, 30.sep, 10.okt, 300u, 300u)
-            }
-        }
-
-
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.AAP,
-                linjer = listOf(
-                    DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "AAPOR"),
-                    DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "AAPOR"),
-                    DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "AAPOR"),
-                )
-            )
-        )
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .has(transactionId, mottatt)
-
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-
-        TestRuntime.topics.pendingUtbetalinger.assertThat()
-            .has(uid.toString(), 1)
-            .with(uid.toString(), index = 0) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid3,
-                    fagsystem = Fagsystem.AAP,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("kelvin"),
-                    saksbehandlerId = Navident("kelvin"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(2.sep, 13.sep, 300u, 300u) +
-                    periode(16.sep, 27.sep, 300u, 300u) +
-                    periode(30.sep, 10.okt, 300u, 300u)
-                }
-                assertEquals(expected, it)
-            }
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) { oppdrag -> 
-                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
-                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
-                assertEquals("AAP", oppdrag.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
-                assertEquals("MND", oppdrag.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
-                assertEquals("kelvin", oppdrag.oppdrag110.saksbehId)
-                assertEquals(3, oppdrag.oppdrag110.oppdragsLinje150s.size)
-                assertNull(oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid1.id, it.henvisning)
-                    assertEquals("AAPOR", it.kodeKlassifik)
-                    assertEquals(300, it.sats.toLong())
-                    assertEquals(300, it.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
-                    assertEquals(oppdrag.oppdrag110.oppdragsLinje150s[0].delytelseId, it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid2.id, it.henvisning)
-                    assertEquals("AAPOR", it.kodeKlassifik)
-                    assertEquals(300, it.sats.toLong())
-                    assertEquals(300, it.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                oppdrag.oppdrag110.oppdragsLinje150s[2].let {
-                    assertEquals(oppdrag.oppdrag110.oppdragsLinje150s[1].delytelseId, it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid3.id, it.henvisning)
-                    assertEquals("AAPOR", it.kodeKlassifik)
-                    assertEquals(300, it.sats.toLong())
-                    assertEquals(300, it.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-            }
-            .get(transactionId)
-
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid.toString(), size = 1)
-            .with(uid.toString(), index = 0) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid3,
-                    fagsystem = Fagsystem.AAP,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("kelvin"),
-                    saksbehandlerId = Navident("kelvin"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(2.sep, 13.sep, 300u, 300u) +
-                    periode(16.sep, 27.sep, 300u, 300u) +
-                    periode(30.sep, 10.okt, 300u, 300u)
-                }
-                assertEquals(expected, it)
-            }
-    }
-
-    @Test
-    @Disabled
-    fun `3 saker blir til 3 utbetalinger med 3 oppdrag`() {
-        val sid1 = SakId("$nextInt")
-        val sid2 = SakId("$nextInt")
-        val sid3 = SakId("$nextInt")
-        val bid1 = BehandlingId("$nextInt")
-        val bid2 = BehandlingId("$nextInt")
-        val bid3 = BehandlingId("$nextInt")
-        val transactionId = "12345678910"
-        val meldeperiode1 = "100000000"
-        val meldeperiode2 = "200000000"
-        val meldeperiode3 = "300000000"
-        val uid1 = aapUId(sid1.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid2 = aapUId(sid2.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid3 = aapUId(sid3.id, meldeperiode3, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid1.id, bid1.id) {
-                Aap.meldekort(meldeperiode1, 2.sep, 13.sep, 300u, 300u)
-            }
-        }
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid2.id, bid2.id) {
-                Aap.meldekort(meldeperiode2, 16.sep, 27.sep, 300u, 300u)
-            }
-        }
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid3.id, bid3.id) {
-                Aap.meldekort(meldeperiode3, 30.sep, 10.okt, 300u, 300u)
-            }
-        }
-
-
-        TestRuntime.topics.status.assertThat().has(transactionId, 3)
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-
-        val assertOppdrag = TestRuntime.topics.oppdrag.assertThat()
-        assertOppdrag.has(transactionId, size = 3)
-            .with(transactionId, index = 0) { assertEquals(sid1.id, it.oppdrag110.fagsystemId) }
-            .with(transactionId, index = 1) { assertEquals(sid2.id, it.oppdrag110.fagsystemId) }
-            .with(transactionId, index = 2) { assertEquals(sid3.id, it.oppdrag110.fagsystemId) }
-
-        val oppdrag1 = assertOppdrag.get(transactionId, index = 0)
-        val oppdrag2 = assertOppdrag.get(transactionId, index = 1)
-        val oppdrag3 = assertOppdrag.get(transactionId, index = 2)
-
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
-        }
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag2.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
-        }
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag3.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
-        }
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.toString())
-            .has(uid2.toString())
-            .has(uid3.toString())
     }
 
     @Test
@@ -1171,7 +860,7 @@ class AapTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }

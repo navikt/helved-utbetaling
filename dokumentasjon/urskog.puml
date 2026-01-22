@@ -6,10 +6,8 @@ queue "helved.dryrun-dp.v1" <<topic>> as helved_dryrun_dp_v1
 queue "helved.dryrun-ts.v1" <<topic>> as helved_dryrun_ts_v1
 queue "helved.dryrun-tp.v1" <<topic>> as helved_dryrun_tp_v1
 queue "helved.simuleringer.v1" <<topic>> as helved_simuleringer_v1
-queue "ktable-helved.kvittering.v1-repartition" <<topic>> as ktable_helved_kvittering_v1_repartition
-queue "helved.kvittering.v1" <<topic>> as helved_kvittering_v1
 queue "helved.oppdrag.v1" <<topic>> as helved_oppdrag_v1
-queue "fk-uid-store-materialize-repartition" <<topic>> as fk_uid_store_materialize_repartition
+queue "helved.pending-utbetalinger.v1" <<topic>> as helved_pending_utbetalinger_v1
 queue "helved.avstemming.v1" <<topic>> as helved_avstemming_v1
 package "Sub-topology: 0" {
 	agent "consume-helved.simuleringer.v1" <<Source>> as consume_helved_simuleringer_v1
@@ -143,115 +141,72 @@ package "Sub-topology: 0" {
 	KSTREAM_PROCESSOR_0000000058 --> KSTREAM_SINK_0000000059
 }
 package "Sub-topology: 1" {
-	agent "consume-helved.kvittering.v1" <<Source>> as consume_helved_kvittering_v1
+	agent "consume-helved.oppdrag.v1" <<Source>> as consume_helved_oppdrag_v1
 	agent "KSTREAM-PROCESSOR-0000000061" <<Processor>> as KSTREAM_PROCESSOR_0000000061
-	agent "KSTREAM-PROCESSOR-0000000062" <<Processor>> as KSTREAM_PROCESSOR_0000000062
-	agent "ktable-helved.kvittering.v1-repartition-filter" <<Processor>> as ktable_helved_kvittering_v1_repartition_filter
-	agent "ktable-helved.kvittering.v1-repartition-sink" <<Sink>> as ktable_helved_kvittering_v1_repartition_sink
-	helved_kvittering_v1 --> consume_helved_kvittering_v1
-	ktable_helved_kvittering_v1_repartition <-- ktable_helved_kvittering_v1_repartition_sink
-	consume_helved_kvittering_v1 --> KSTREAM_PROCESSOR_0000000061
-	KSTREAM_PROCESSOR_0000000061 --> KSTREAM_PROCESSOR_0000000062
-	KSTREAM_PROCESSOR_0000000062 --> ktable_helved_kvittering_v1_repartition_filter
-	ktable_helved_kvittering_v1_repartition_filter --> ktable_helved_kvittering_v1_repartition_sink
+	agent "KSTREAM-FILTER-0000000062" <<Processor>> as KSTREAM_FILTER_0000000062
+	agent "KSTREAM-BRANCH-0000000063" <<Processor>> as KSTREAM_BRANCH_0000000063
+	agent "KSTREAM-BRANCH-00000000631" <<Processor>> as KSTREAM_BRANCH_00000000631
+	agent "KSTREAM-BRANCH-00000000632" <<Processor>> as KSTREAM_BRANCH_00000000632
+	agent "KSTREAM-PROCESSOR-0000000065" <<Processor>> as KSTREAM_PROCESSOR_0000000065
+	agent "KSTREAM-MAPVALUES-0000000066" <<Processor>> as KSTREAM_MAPVALUES_0000000066
+	agent "KSTREAM-PROCESSOR-0000000072" <<Processor>> as KSTREAM_PROCESSOR_0000000072
+	agent "KSTREAM-FILTER-0000000067" <<Processor>> as KSTREAM_FILTER_0000000067
+	agent "KSTREAM-MAPVALUES-0000000073" <<Processor>> as KSTREAM_MAPVALUES_0000000073
+	agent "KSTREAM-PROCESSOR-0000000068" <<Processor>> as KSTREAM_PROCESSOR_0000000068
+	agent "KSTREAM-PROCESSOR-0000000074" <<Processor>> as KSTREAM_PROCESSOR_0000000074
+	agent "KSTREAM-PROCESSOR-0000000069" <<Processor>> as KSTREAM_PROCESSOR_0000000069
+	agent "KSTREAM-PROCESSOR-0000000075" <<Processor>> as KSTREAM_PROCESSOR_0000000075
+	agent "KSTREAM-SINK-0000000070" <<Sink>> as KSTREAM_SINK_0000000070
+	agent "KSTREAM-SINK-0000000076" <<Sink>> as KSTREAM_SINK_0000000076
+	helved_oppdrag_v1 --> consume_helved_oppdrag_v1
+	helved_status_v1 <-- KSTREAM_SINK_0000000070
+	helved_status_v1 <-- KSTREAM_SINK_0000000076
+	consume_helved_oppdrag_v1 --> KSTREAM_PROCESSOR_0000000061
+	KSTREAM_PROCESSOR_0000000061 --> KSTREAM_FILTER_0000000062
+	KSTREAM_FILTER_0000000062 --> KSTREAM_BRANCH_0000000063
+	KSTREAM_BRANCH_0000000063 --> KSTREAM_BRANCH_00000000631
+	KSTREAM_BRANCH_0000000063 --> KSTREAM_BRANCH_00000000632
+	KSTREAM_BRANCH_00000000631 --> KSTREAM_PROCESSOR_0000000065
+	KSTREAM_BRANCH_00000000632 --> KSTREAM_PROCESSOR_0000000072
+	KSTREAM_PROCESSOR_0000000065 --> KSTREAM_MAPVALUES_0000000066
+	KSTREAM_MAPVALUES_0000000066 --> KSTREAM_FILTER_0000000067
+	KSTREAM_PROCESSOR_0000000072 --> KSTREAM_MAPVALUES_0000000073
+	KSTREAM_FILTER_0000000067 --> KSTREAM_PROCESSOR_0000000068
+	KSTREAM_MAPVALUES_0000000073 --> KSTREAM_PROCESSOR_0000000074
+	KSTREAM_PROCESSOR_0000000068 --> KSTREAM_PROCESSOR_0000000069
+	KSTREAM_PROCESSOR_0000000074 --> KSTREAM_PROCESSOR_0000000075
+	KSTREAM_PROCESSOR_0000000069 --> KSTREAM_SINK_0000000070
+	KSTREAM_PROCESSOR_0000000075 --> KSTREAM_SINK_0000000076
 }
 package "Sub-topology: 2" {
-	database "fk-uid-store" <<State Store>> as fk_uid_store
-	database "helved.kvittering.v1-state-store" <<State Store>> as helved_kvittering_v1_state_store
-	database "dedup-kvittering" <<State Store>> as dedup_kvittering
-	agent "fk-uid-store-materialize-repartition-source" <<Source>> as fk_uid_store_materialize_repartition_source
-	agent "ktable-helved.kvittering.v1-repartition-source" <<Source>> as ktable_helved_kvittering_v1_repartition_source
-	agent "fk-uid-store-materialize" <<Processor>> as fk_uid_store_materialize
-	agent "ktable-helved.kvittering.v1" <<Processor>> as ktable_helved_kvittering_v1
-	agent "KTABLE-JOINOTHER-0000000079" <<Processor>> as KTABLE_JOINOTHER_0000000079
-	agent "KTABLE-JOINTHIS-0000000078" <<Processor>> as KTABLE_JOINTHIS_0000000078
-	agent "KTABLE-MERGE-0000000077" <<Processor>> as KTABLE_MERGE_0000000077
-	agent "KTABLE-TOSTREAM-0000000080" <<Processor>> as KTABLE_TOSTREAM_0000000080
-	agent "KSTREAM-FILTER-0000000081" <<Processor>> as KSTREAM_FILTER_0000000081
-	agent "KSTREAM-MAP-0000000082" <<Processor>> as KSTREAM_MAP_0000000082
-	agent "dedup-kvittering" <<Processor>> as dedup_kvittering
+	agent "consume-helved.pending-utbetalinger.v1" <<Source>> as consume_helved_pending_utbetalinger_v1
+	agent "KSTREAM-PROCESSOR-0000000078" <<Processor>> as KSTREAM_PROCESSOR_0000000078
+	agent "KSTREAM-FILTER-0000000079" <<Processor>> as KSTREAM_FILTER_0000000079
+	agent "KSTREAM-PROCESSOR-0000000080" <<Processor>> as KSTREAM_PROCESSOR_0000000080
+	agent "KSTREAM-MAP-0000000081" <<Processor>> as KSTREAM_MAP_0000000081
+	agent "KSTREAM-FILTER-0000000082" <<Processor>> as KSTREAM_FILTER_0000000082
 	agent "KSTREAM-PROCESSOR-0000000083" <<Processor>> as KSTREAM_PROCESSOR_0000000083
-	agent "KSTREAM-SINK-0000000084" <<Sink>> as KSTREAM_SINK_0000000084
-	fk_uid_store_materialize_repartition --> fk_uid_store_materialize_repartition_source
-	ktable_helved_kvittering_v1_repartition --> ktable_helved_kvittering_v1_repartition_source
-	fk_uid_store -- fk_uid_store_materialize
-	helved_kvittering_v1_state_store -- ktable_helved_kvittering_v1
-	fk_uid_store -- KTABLE_JOINOTHER_0000000079
-	helved_kvittering_v1_state_store -- KTABLE_JOINTHIS_0000000078
-	dedup_kvittering -- dedup_kvittering
-	helved_oppdrag_v1 <-- KSTREAM_SINK_0000000084
-	fk_uid_store_materialize_repartition_source --> fk_uid_store_materialize
-	ktable_helved_kvittering_v1_repartition_source --> ktable_helved_kvittering_v1
-	fk_uid_store_materialize --> KTABLE_JOINTHIS_0000000078
-	ktable_helved_kvittering_v1 --> KTABLE_JOINOTHER_0000000079
-	KTABLE_JOINOTHER_0000000079 --> KTABLE_MERGE_0000000077
-	KTABLE_JOINTHIS_0000000078 --> KTABLE_MERGE_0000000077
-	KTABLE_MERGE_0000000077 --> KTABLE_TOSTREAM_0000000080
-	KTABLE_TOSTREAM_0000000080 --> KSTREAM_FILTER_0000000081
-	KSTREAM_FILTER_0000000081 --> KSTREAM_MAP_0000000082
-	KSTREAM_MAP_0000000082 --> dedup_kvittering
-	dedup_kvittering --> KSTREAM_PROCESSOR_0000000083
-	KSTREAM_PROCESSOR_0000000083 --> KSTREAM_SINK_0000000084
+	agent "KSTREAM-PROCESSOR-0000000084" <<Processor>> as KSTREAM_PROCESSOR_0000000084
+	agent "KSTREAM-SINK-0000000085" <<Sink>> as KSTREAM_SINK_0000000085
+	helved_pending_utbetalinger_v1 --> consume_helved_pending_utbetalinger_v1
+	helved_status_v1 <-- KSTREAM_SINK_0000000085
+	consume_helved_pending_utbetalinger_v1 --> KSTREAM_PROCESSOR_0000000078
+	KSTREAM_PROCESSOR_0000000078 --> KSTREAM_FILTER_0000000079
+	KSTREAM_FILTER_0000000079 --> KSTREAM_PROCESSOR_0000000080
+	KSTREAM_PROCESSOR_0000000080 --> KSTREAM_MAP_0000000081
+	KSTREAM_MAP_0000000081 --> KSTREAM_FILTER_0000000082
+	KSTREAM_FILTER_0000000082 --> KSTREAM_PROCESSOR_0000000083
+	KSTREAM_PROCESSOR_0000000083 --> KSTREAM_PROCESSOR_0000000084
+	KSTREAM_PROCESSOR_0000000084 --> KSTREAM_SINK_0000000085
 }
 package "Sub-topology: 3" {
-	database "dedup-oppdrag" <<State Store>> as dedup_oppdrag
-	agent "consume-helved.oppdrag.v1" <<Source>> as consume_helved_oppdrag_v1
-	agent "KSTREAM-PROCESSOR-0000000068" <<Processor>> as KSTREAM_PROCESSOR_0000000068
-	agent "KSTREAM-FILTER-0000000069" <<Processor>> as KSTREAM_FILTER_0000000069
-	agent "KSTREAM-BRANCH-0000000085" <<Processor>> as KSTREAM_BRANCH_0000000085
-	agent "KSTREAM-BRANCH-00000000851" <<Processor>> as KSTREAM_BRANCH_00000000851
-	agent "KSTREAM-BRANCH-00000000852" <<Processor>> as KSTREAM_BRANCH_00000000852
-	agent "KSTREAM-FILTER-0000000087" <<Processor>> as KSTREAM_FILTER_0000000087
-	agent "KSTREAM-FILTER-0000000070" <<Processor>> as KSTREAM_FILTER_0000000070
-	agent "KSTREAM-FILTER-0000000093" <<Processor>> as KSTREAM_FILTER_0000000093
-	agent "dedup-oppdrag" <<Processor>> as dedup_oppdrag
-	agent "KSTREAM-MAP-0000000071" <<Processor>> as KSTREAM_MAP_0000000071
-	agent "KSTREAM-MAPVALUES-0000000088" <<Processor>> as KSTREAM_MAPVALUES_0000000088
-	agent "KSTREAM-MAPVALUES-0000000094" <<Processor>> as KSTREAM_MAPVALUES_0000000094
-	agent "KSTREAM-PROCESSOR-0000000072" <<Processor>> as KSTREAM_PROCESSOR_0000000072
-	agent "KSTREAM-PROCESSOR-0000000089" <<Processor>> as KSTREAM_PROCESSOR_0000000089
-	agent "KSTREAM-PROCESSOR-0000000095" <<Processor>> as KSTREAM_PROCESSOR_0000000095
-	agent "KSTREAM-PROCESSOR-0000000090" <<Processor>> as KSTREAM_PROCESSOR_0000000090
-	agent "KSTREAM-PROCESSOR-0000000096" <<Processor>> as KSTREAM_PROCESSOR_0000000096
-	agent "fk-uid-store-materialize-repartition-filter" <<Processor>> as fk_uid_store_materialize_repartition_filter
-	agent "KSTREAM-SINK-0000000091" <<Sink>> as KSTREAM_SINK_0000000091
-	agent "KSTREAM-SINK-0000000097" <<Sink>> as KSTREAM_SINK_0000000097
-	agent "fk-uid-store-materialize-repartition-sink" <<Sink>> as fk_uid_store_materialize_repartition_sink
-	helved_oppdrag_v1 --> consume_helved_oppdrag_v1
-	dedup_oppdrag -- dedup_oppdrag
-	helved_status_v1 <-- KSTREAM_SINK_0000000091
-	helved_status_v1 <-- KSTREAM_SINK_0000000097
-	fk_uid_store_materialize_repartition <-- fk_uid_store_materialize_repartition_sink
-	consume_helved_oppdrag_v1 --> KSTREAM_PROCESSOR_0000000068
-	KSTREAM_PROCESSOR_0000000068 --> KSTREAM_FILTER_0000000069
-	KSTREAM_FILTER_0000000069 --> KSTREAM_BRANCH_0000000085
-	KSTREAM_FILTER_0000000069 --> KSTREAM_FILTER_0000000070
-	KSTREAM_BRANCH_0000000085 --> KSTREAM_BRANCH_00000000851
-	KSTREAM_BRANCH_0000000085 --> KSTREAM_BRANCH_00000000852
-	KSTREAM_BRANCH_00000000851 --> KSTREAM_FILTER_0000000087
-	KSTREAM_BRANCH_00000000852 --> KSTREAM_FILTER_0000000093
-	KSTREAM_FILTER_0000000087 --> dedup_oppdrag
-	KSTREAM_FILTER_0000000070 --> KSTREAM_MAP_0000000071
-	KSTREAM_FILTER_0000000093 --> KSTREAM_MAPVALUES_0000000094
-	dedup_oppdrag --> KSTREAM_MAPVALUES_0000000088
-	KSTREAM_MAP_0000000071 --> KSTREAM_PROCESSOR_0000000072
-	KSTREAM_MAPVALUES_0000000088 --> KSTREAM_PROCESSOR_0000000089
-	KSTREAM_MAPVALUES_0000000094 --> KSTREAM_PROCESSOR_0000000095
-	KSTREAM_PROCESSOR_0000000072 --> fk_uid_store_materialize_repartition_filter
-	KSTREAM_PROCESSOR_0000000089 --> KSTREAM_PROCESSOR_0000000090
-	KSTREAM_PROCESSOR_0000000095 --> KSTREAM_PROCESSOR_0000000096
-	KSTREAM_PROCESSOR_0000000090 --> KSTREAM_SINK_0000000091
-	KSTREAM_PROCESSOR_0000000096 --> KSTREAM_SINK_0000000097
-	fk_uid_store_materialize_repartition_filter --> fk_uid_store_materialize_repartition_sink
-}
-package "Sub-topology: 4" {
 	agent "consume-helved.avstemming.v1" <<Source>> as consume_helved_avstemming_v1
-	agent "KSTREAM-PROCESSOR-0000000099" <<Processor>> as KSTREAM_PROCESSOR_0000000099
-	agent "KSTREAM-FILTER-0000000100" <<Processor>> as KSTREAM_FILTER_0000000100
-	agent "KSTREAM-FOREACH-0000000101" <<Processor>> as KSTREAM_FOREACH_0000000101
+	agent "KSTREAM-PROCESSOR-0000000087" <<Processor>> as KSTREAM_PROCESSOR_0000000087
+	agent "KSTREAM-FILTER-0000000088" <<Processor>> as KSTREAM_FILTER_0000000088
+	agent "KSTREAM-FOREACH-0000000089" <<Processor>> as KSTREAM_FOREACH_0000000089
 	helved_avstemming_v1 --> consume_helved_avstemming_v1
-	consume_helved_avstemming_v1 --> KSTREAM_PROCESSOR_0000000099
-	KSTREAM_PROCESSOR_0000000099 --> KSTREAM_FILTER_0000000100
-	KSTREAM_FILTER_0000000100 --> KSTREAM_FOREACH_0000000101
+	consume_helved_avstemming_v1 --> KSTREAM_PROCESSOR_0000000087
+	KSTREAM_PROCESSOR_0000000087 --> KSTREAM_FILTER_0000000088
+	KSTREAM_FILTER_0000000088 --> KSTREAM_FOREACH_0000000089
 }
 @enduml

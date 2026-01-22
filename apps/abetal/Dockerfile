@@ -5,27 +5,17 @@ RUN jlink \
     --verbose \
     --module-path $JAVA_HOME/bin/jmods/ \
     # --add-modules java.base \
-    --add-modules java.base \
-    --add-modules java.compiler \
     --add-modules java.desktop \
     --add-modules java.instrument \
-    --add-modules java.management \
     --add-modules java.naming \
-    --add-modules java.net.http \
     --add-modules java.security.jgss \
     --add-modules java.security.sasl \
     --add-modules java.sql \
-    --add-modules java.xml \
-    --add-modules java.xml.crypto \
-    --add-modules jdk.charsets \
-    --add-modules jdk.crypto.ec \
-    --add-modules jdk.httpserver \
+    --add-modules java.compiler \
+    --add-modules jdk.unsupported \
     --add-modules jdk.jcmd \ 
     --add-modules jdk.jfr \
     --add-modules jdk.management \
-    --add-modules jdk.naming.dns \
-    --add-modules jdk.unsupported \
-    --add-modules jdk.xml.dom \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
@@ -40,7 +30,6 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 RUN apk add --no-cache gcompat libstdc++ snappy
 
 COPY --from=jre /customjre $JAVA_HOME
-ADD apps/abetal/build/resources/main /migrations
 COPY apps/abetal/build/libs/abetal-all.jar /app.jar
 ENTRYPOINT [                              \
     "java",                               \

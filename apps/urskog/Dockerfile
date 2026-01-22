@@ -34,6 +34,7 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 RUN apk add --no-cache gcompat libstdc++ snappy
 
 COPY --from=jre /customjre $JAVA_HOME
+ADD apps/urskog/build/resources/main /migrations
 COPY apps/urskog/build/libs/urskog-all.jar /app.jar
 ENTRYPOINT [                              \
     "java",                               \

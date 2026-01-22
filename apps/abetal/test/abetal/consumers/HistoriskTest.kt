@@ -34,7 +34,6 @@ import models.UtbetalingId
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -44,6 +43,12 @@ internal class HistoriskTest {
 
     @AfterEach
     fun `assert empty topic`() {
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.simulering.assertThat()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.saker.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
     }
 
@@ -69,581 +74,13 @@ internal class HistoriskTest {
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat().has(transactionId).get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
         }
 
         TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
-    }
-
-    @Test
-    @Disabled // støtter ikke sessionWindows lengere
-    fun `2 utbetalinger i transaksjon = 2 utbetaling og 1 oppdrag`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val uid1 = UtbetalingId(UUID.randomUUID())
-        val uid2 = UtbetalingId(UUID.randomUUID())
-
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid1, sid.id, bid.id) {
-                Historisk.periode(7.jun, 20.jun, 1077u)
-            }
-        }
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid2, sid.id, bid.id) {
-                Historisk.periode(7.jul, 20.jul, 2377u)
-            }
-        }
-
-
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.HISTORISK,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun, 20.jun, null, 1077u, "HJRIM"),
-                    DetaljerLinje(bid.id, 7.jul, 20.jul, null, 2377u, "HJRIM"),
-                )
-            )
-        )
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .has(transactionId, mottatt)
-
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-
-        TestRuntime.topics.pendingUtbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .with(uid1.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid1,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.HISTORISK,
-                    lastPeriodeId = it.lastPeriodeId,
-                    periodetype = Periodetype.EN_GANG,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(7.jun, 20.jun, 1077u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid2.id.toString())
-            .with(uid2.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.HISTORISK,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    periodetype = Periodetype.EN_GANG,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(7.jul, 20.jul, 2377u, null)
-                }
-                assertEquals(expected, it)
-            }
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) { oppdrag ->
-                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
-                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
-                assertEquals("HELSREF", oppdrag.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
-                assertEquals("ENG", oppdrag.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
-                assertEquals("historisk", oppdrag.oppdrag110.saksbehId)
-                assertEquals(2, oppdrag.oppdrag110.oppdragsLinje150s.size)
-
-                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(1077, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-
-                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(2377, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-            }
-            .get(transactionId)
-
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .with(uid1.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid1,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.HISTORISK,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(7.jun, 20.jun, 1077u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid2.id.toString())
-            .with(uid2.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.HISTORISK,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(7.jul, 20.jul, 2377u, null)
-                }
-                assertEquals(expected, it)
-            }
-
-    }
-
-    @Test
-    @Disabled // støtter ikke sessionWindows lengere
-    fun `3 utbetalinger i transaksjon = 3 utbetaling og 1 oppdrag`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val uid1 = UtbetalingId(UUID.randomUUID())
-        val uid2 = UtbetalingId(UUID.randomUUID())
-        val uid3 = UtbetalingId(UUID.randomUUID())
-
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid1, sid.id, bid.id) {
-                Historisk.periode(
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
-                    beløp = 1077u,
-                )
-            }
-        }
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid2, sid.id, bid.id) {
-                Historisk.periode(
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    beløp = 2377u,
-                )
-            }
-        }
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid3, sid.id, bid.id) {
-                Historisk.periode(
-                    fom = LocalDate.of(2021, 8, 7),
-                    tom = LocalDate.of(2021, 8, 20),
-                    beløp = 3133u,
-                )
-            }
-        }
-
-
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.HISTORISK,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 20.jun21, null, 1077u, "HJRIM"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, null, 2377u, "HJRIM"),
-                    DetaljerLinje(bid.id, 7.aug21, 20.aug21, null, 3133u, "HJRIM"),
-                )
-            )
-        )
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .has(transactionId, mottatt)
-
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-
-        TestRuntime.topics.pendingUtbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .with(uid1.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid1,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.HISTORISK,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 20), 1077u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid2.id.toString())
-            .with(uid2.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    periodetype = Periodetype.EN_GANG,
-                    fagsystem = Fagsystem.HISTORISK,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 2377u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid3.id.toString())
-            .with(uid3.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid3,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.HISTORISK,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 8, 7), LocalDate.of(2021, 8, 20), 3133u, null)
-                }
-                assertEquals(expected, it)
-            }
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) { oppdrag ->
-                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
-                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
-                assertEquals("HELSREF", oppdrag.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
-                assertEquals("ENG", oppdrag.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
-                assertEquals("historisk", oppdrag.oppdrag110.saksbehId)
-                assertEquals(3, oppdrag.oppdrag110.oppdragsLinje150s.size)
-                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(1077, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(2377, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                oppdrag.oppdrag110.oppdragsLinje150s[2].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(3133, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-            }
-            .get(transactionId)
-
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.id.toString(), size = 1)
-            .with(uid1.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid1,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.HISTORISK,
-                    lastPeriodeId = it.lastPeriodeId,
-                    periodetype = Periodetype.EN_GANG,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 20), 1077u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid2.id.toString())
-            .with(uid2.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    periodetype = Periodetype.EN_GANG,
-                    fagsystem = Fagsystem.HISTORISK,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 2377u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid3.id.toString())
-            .with(uid3.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid3,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    periodetype = Periodetype.EN_GANG,
-                    fagsystem = Fagsystem.HISTORISK,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 8, 7), LocalDate.of(2021, 8, 20), 3133u, null)
-                }
-                assertEquals(expected, it)
-            }
-    }
-
-    @Test
-    @Disabled // støtter ikke sessionWindows lengere
-    fun `2 utbetalinger i transaksjon med ulik bid = 2 utbetalinger og 1 oppdrag`() {
-        val sid = SakId("$nextInt")
-        val bid1 = BehandlingId("$nextInt")
-        val bid2 = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val uid1 = UtbetalingId(UUID.randomUUID())
-        val uid2 = UtbetalingId(UUID.randomUUID())
-
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid1, sid.id, bid1.id) {
-                Historisk.periode(
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 20),
-                    beløp = 553u,
-                )
-            }
-        }
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid2, sid.id, bid2.id) {
-                Historisk.periode(
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    beløp = 779u,
-                )
-            }
-        }
-
-
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.HISTORISK,
-                linjer = listOf(
-                    DetaljerLinje(bid1.id, 7.jun21, 20.jun21, null, 553u, "HJRIM"),
-                    DetaljerLinje(bid2.id, 7.jul21, 20.jul21, null, 779u, "HJRIM"),
-                )
-            )
-        )
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .has(transactionId, mottatt)
-
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-
-        TestRuntime.topics.pendingUtbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .with(uid1.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid1,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid1,
-                    periodetype = Periodetype.EN_GANG,
-                    fagsystem = Fagsystem.HISTORISK,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 20), 553u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid2.id.toString())
-            .with(uid2.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid2,
-                    fagsystem = Fagsystem.HISTORISK,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, null)
-                }
-                assertEquals(expected, it)
-            }
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) { oppdrag ->
-                assertEquals("1", oppdrag.oppdrag110.kodeAksjon)
-                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
-                assertEquals("HELSREF", oppdrag.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, oppdrag.oppdrag110.fagsystemId)
-                assertEquals("ENG", oppdrag.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", oppdrag.oppdrag110.oppdragGjelderId)
-                assertEquals("historisk", oppdrag.oppdrag110.saksbehId)
-                assertEquals(2, oppdrag.oppdrag110.oppdragsLinje150s.size)
-                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid1.id, it.henvisning)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(553, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                oppdrag.oppdrag110.oppdragsLinje150s[1].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid2.id, it.henvisning)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(779, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-            }
-            .get(transactionId)
-
-        TestRuntime.topics.oppdrag.produce(transactionId) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .with(uid1.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid1,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid1,
-                    periodetype = Periodetype.EN_GANG,
-                    fagsystem = Fagsystem.HISTORISK,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 20), 553u, null)
-                }
-                assertEquals(expected, it)
-            }
-            .has(uid2.id.toString())
-            .with(uid2.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid2,
-                    fagsystem = Fagsystem.HISTORISK,
-                    periodetype = Periodetype.EN_GANG,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("historisk"),
-                    saksbehandlerId = Navident("historisk"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 7, 7), LocalDate.of(2021, 7, 20), 779u, null)
-                }
-                assertEquals(expected, it)
-            }
-
     }
 
     @Test
@@ -752,7 +189,7 @@ internal class HistoriskTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -892,7 +329,7 @@ internal class HistoriskTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1032,7 +469,7 @@ internal class HistoriskTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1166,7 +603,7 @@ internal class HistoriskTest {
             }
             .get(transactionId1)
 
-        TestRuntime.topics.oppdrag.produce(transactionId1) {
+        TestRuntime.topics.oppdrag.produce(transactionId1, mapOf("uids" to "$uid1")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1306,7 +743,7 @@ internal class HistoriskTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1380,81 +817,6 @@ internal class HistoriskTest {
                     assertEquals("NY", it.kodeEndringLinje)
                     assertEquals("HJRIM", it.kodeKlassifik)
                     assertEquals(1077, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-            }
-    }
-
-    @Test
-    @Disabled // støtter ikke sessionWindow lenger
-    fun `simuler 4 utbetalinger blir til 1 xml`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val uid1 = UtbetalingId(UUID.randomUUID())
-        val uid2 = UtbetalingId(UUID.randomUUID())
-        val uid3 = UtbetalingId(UUID.randomUUID())
-        val uid4 = UtbetalingId(UUID.randomUUID())
-
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid1, sid.id, bid.id, dryrun = true) {
-                Historisk.periode(6.jun, 6.jun, 70u)
-            }
-        }
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid2, sid.id, bid.id, dryrun = true) {
-                Historisk.periode(7.jun, 7.jun, 70u)
-            }
-        }
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid3, sid.id, bid.id, dryrun = true) {
-                Historisk.periode(6.jun, 6.jun, 140u)
-            }
-        }
-        TestRuntime.topics.historisk.produce(transactionId) {
-            Historisk.utbetaling(uid4, sid.id, bid.id, dryrun = true) {
-                Historisk.periode(7.jun, 7.jun, 140u)
-            }
-        }
-
-        TestRuntime.topics.status.assertThat().isEmpty()
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-        TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.simulering.assertThat()
-            .hasTotal(1)
-            .has(transactionId)
-            .with(transactionId) { simulering ->
-                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
-                assertEquals("NY", simulering.request.oppdrag.kodeEndring)
-                assertEquals("HELSREF", simulering.request.oppdrag.kodeFagomraade)
-                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
-                assertEquals("ENG", simulering.request.oppdrag.utbetFrekvens)
-                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
-                assertEquals("historisk", simulering.request.oppdrag.saksbehId)
-                assertEquals(4, simulering.request.oppdrag.oppdragslinjes.size)
-                assertNull(simulering.request.oppdrag.oppdragslinjes[0].refDelytelseId)
-                simulering.request.oppdrag.oppdragslinjes[0].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(70, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                simulering.request.oppdrag.oppdragslinjes[1].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(70, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                simulering.request.oppdrag.oppdragslinjes[2].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(140, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                simulering.request.oppdrag.oppdragslinjes[3].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals("HJRIM", it.kodeKlassifik)
-                    assertEquals(140, it.sats.toLong())
                     assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
             }

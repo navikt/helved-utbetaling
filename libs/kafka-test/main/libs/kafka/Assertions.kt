@@ -19,16 +19,18 @@ class TopicAssertion<K: Any, V : Any> private constructor(topic: TestOutputTopic
     private val actuals: List<TestRecord<K, V>> = topic.readRecordsToList()
     private fun valuesForKey(key: K) = actuals.filter { it.key == key }.map { it.value }
 
-    fun hasHeader(key: K, header: Pair<String, String>, index: Int = 0) {
+    fun hasHeader(key: K, header: Pair<String, String>, index: Int = 0) = this.also {
         val record = actuals.getOrNull(index)
         assertNotNull(record)
-        println("headers:")
-        record.headers().forEach {
-            println(it)
-        }
         val actualHeader = record.headers().singleOrNull { it.key() == header.first }
         assertNotNull(actualHeader)
         assertEquals(header.second, String(actualHeader.value()))
+    }
+
+    fun hasHeader(key: K, header: String, index: Int = 0) = this.also {
+        val record = actuals.getOrNull(index)
+        assertNotNull(record)
+        assertNotNull(record.headers().singleOrNull { it.key() == header })
     }
 
     fun hasTotal(size: Int) = this.also {

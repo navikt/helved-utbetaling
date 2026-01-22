@@ -1,10 +1,8 @@
 package abetal
 
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
-import libs.jdbc.concurrency.transaction
 import libs.kafka.*
+import libs.kafka.processor.EnrichMetadataProcessor
+import libs.kafka.processor.Processor
 import libs.kafka.stream.MappedStream
 import libs.utils.appLog
 import libs.utils.secureLog
@@ -26,7 +24,6 @@ object Topics {
     val status = Topic("helved.status.v1", json<StatusReply>())
     val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, UtbetalingId>())
     val pendingUtbetalinger = Topic("helved.pending-utbetalinger.v1", json<Utbetaling>())
-    val fk = Topic("helved.fk.v1", Serdes(XmlSerde.xml<Oppdrag>(), JsonSerde.jackson<PKs>()))
     val dpIntern = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val aapIntern = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
     val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
@@ -38,7 +35,6 @@ object Tables {
     val utbetalinger = Table(Topics.utbetalinger, stateStoreName = "${Topics.utbetalinger.name}-state-store-v4")
     val pendingUtbetalinger = Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v4")
     val saker = Table(Topics.saker)
-    val fk = Table(Topics.fk, stateStoreName = "${Topics.fk.name}-state-store-v4")
 }
 
 object Stores {
@@ -49,13 +45,12 @@ fun createTopology(kafka: Streams): Topology = topology {
     val utbetalinger = globalKTable(Tables.utbetalinger, materializeWithTrace = false)
     val pendingUtbetalinger = consume(Tables.pendingUtbetalinger, materializeWithTrace = false)
     val saker = consume(Tables.saker)
-    val fks = consume(Tables.fk, materializeWithTrace = false)
     dpStream(utbetalinger, saker, kafka)
     aapStream(utbetalinger, saker, kafka)
     tsStream(saker, kafka)
     tpStream(utbetalinger, saker, kafka)
     historiskStream(utbetalinger, saker, kafka)
-    successfulUtbetalingStream(fks, pendingUtbetalinger)
+    successfulUtbetalingStream(pendingUtbetalinger)
 }
 
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
@@ -122,7 +117,6 @@ fun Topology.dpStream(
                     result.sendSimulering()
                     result.sendOppdrag()
                     result.replyOkIfIdempotent()
-                    result.savePendingUids()
                 }
         }
 }
@@ -161,7 +155,6 @@ fun Topology.aapStream(
             result.sendSimulering()
             result.sendOppdrag()
             result.replyOkIfIdempotent()
-            result.savePendingUids()
         }
 }
 
@@ -208,9 +201,8 @@ fun Topology.tsStream(
                     result.sendSimulering()
                     result.sendOppdrag()
                     result.replyOkIfIdempotent()
-                    result.savePendingUids()
                 }
-    }
+        }
 }
 
 fun Topology.tpStream(
@@ -247,7 +239,6 @@ fun Topology.tpStream(
             result.sendSimulering()
             result.sendOppdrag()
             result.replyOkIfIdempotent()
-            result.savePendingUids()
         }
 }
 
@@ -283,7 +274,6 @@ fun Topology.historiskStream(
             result.sendSimulering()
             result.sendOppdrag()
             result.replyOkIfIdempotent()
-            result.savePendingUids()
         }
 }
 
@@ -323,8 +313,9 @@ private object Guard {
  * så er det fortsatt den forrige utbetalingen som skal gjelde.
  * Vi bruker Oppdrag (request) som kafka-key og må derfor fjerne mmel fra Oppdrag (response) for å trigge en join.
  * Resultatet av joinen kan ikke være null, da har vi en bug.
+ * TODO: når vi ikke har utsjekk lengre, skal status utledes her sammen med flyttinga.
  */
-fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTable<String, Utbetaling>) {
+fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
     consume(Topics.oppdrag)
         .filter { it.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") }
         .rekey { it.apply { it.mmel = null } }
@@ -337,27 +328,10 @@ fun Topology.successfulUtbetalingStream(fks: KTable<Oppdrag, PKs>, pending: KTab
             last.delytelse:${last.delytelseId}
             """.trimEnd()
         }
-        .leftJoin(Serde.xml(), Serde.json(), fks, "oppdrag-leftjoin-fks")
-        .flatMapKeyValue { oppdrag, info, pks ->
-            if (pks == null) {
-                appLog.warn("Fant ikke fks på topic, forsøker å se i datbasen. Oppdraginfo: $info")
-                val hashKey = DaoFks.hash(oppdrag)
-                val dao = runBlocking {
-                    withContext(Jdbc.context) {
-                        transaction {
-                            DaoFks.firstOrNull(hashKey)
-                        }
-                    }
-                }
-                if (dao != null) {
-                    dao.uids.map { pk -> KeyValue(pk, info) }
-                } else {
-                    appLog.warn("primary key used to move pending to utbetalinger was null. Oppdraginfo: $info")
-                    emptyList()
-                }
-            } else {
-                pks.uids.map { pk -> KeyValue(pk, info) }
-            }
+        .processor(Processor{ EnrichMetadataProcessor() })
+        .flatMapKeyAndValue { _, (info, meta) -> 
+            val uids = meta.headers["uids"]?.split(",")
+            uids?.map { uid -> KeyValue(uid, info) } ?: emptyList()
         }
         .leftJoin(Serde.string(), Serde.json(), pending, "pk-leftjoin-pending")
         .mapNotNull { info, pending ->
@@ -383,7 +357,11 @@ private fun MappedStream<String, Aggregate>.replyOkIfIdempotent() {
 }
 
 private fun MappedStream<String, Aggregate>.sendOppdrag() {
-    val oppdrag = this.flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger.map { it.first } }
+    val oppdrag = this
+        .flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger }
+        .includeHeader("uids") { (_, utbetalinger) -> utbetalinger.joinToString(",") { it.uid.toString() } }
+        .map { (oppdrag, _) -> oppdrag }
+
     oppdrag.produce(Topics.oppdrag)
     oppdrag.map(StatusReply::mottatt).produce(Topics.status)
 }
@@ -394,32 +372,13 @@ private fun MappedStream<String, Aggregate>.sendSimulering() {
         .produce(Topics.simulering)
 }
 
+val oppdragMapper = libs.xml.XMLMapper<Oppdrag>()
+
 private fun MappedStream<String, Aggregate>.saveUtbetalingerAsPending() {
     this
-        .flatMapKeyAndValue { _, (oppdragToUtbetalinger, _) ->
-            oppdragToUtbetalinger.flatMap { agg ->
-                agg.second.map { KeyValue(it.uid.toString(), it) }
-            }
-        }
+        .flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger }
+        .includeHeader("hash_key") { (oppdrag, _) -> oppdragMapper.writeValueAsString(oppdrag).hashCode().toString() }
+        .flatMapKeyAndValue { _, (_, utbetalinger) -> utbetalinger.map { KeyValue(it.uid.toString(), it) } }
         .produce(Topics.pendingUtbetalinger)
-}
-
-private fun MappedStream<String, Aggregate>.savePendingUids() {
-    this
-        .flatMapKeyAndValue { transactionId, (oppdragToUtbetalinger, _) ->
-            oppdragToUtbetalinger.map { (oppdrag, utbetalinger) ->
-                val uids = utbetalinger.map { u -> u.uid.toString() }
-                val dao = DaoFks(uids)
-                runBlocking {
-                    withContext(Jdbc.context) {
-                        transaction {
-                            dao.insert(oppdrag)
-                        }
-                    }
-                }
-                KeyValue(oppdrag, PKs(transactionId, uids))
-            }
-        }
-        .produce(Topics.fk)
 }
 

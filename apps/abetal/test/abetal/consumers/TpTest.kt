@@ -19,6 +19,12 @@ internal class TpTest {
     @AfterEach
     fun `assert empty topic`() {
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.simulering.assertThat()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.saker.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
     }
 
     @Test
@@ -75,7 +81,7 @@ internal class TpTest {
                     assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
             }.get(transaction1)
-        TestRuntime.topics.oppdrag.produce(transaction1) {
+        TestRuntime.topics.oppdrag.produce(transaction1, mapOf("uids" to uid)) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -190,18 +196,11 @@ internal class TpTest {
             }
         }
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.TILTAKSPENGER,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, null, 553u, "TPTPAFT"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .has(transactionId, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.TILTAKSPENGER, listOf(
+                DetaljerLinje(bid.id, 7.jun21, 18.jun21, null, 553u, "TPTPAFT"),
+            ))))
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -230,7 +229,7 @@ internal class TpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -373,7 +372,7 @@ internal class TpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -573,7 +572,7 @@ internal class TpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2,$uid3")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -759,7 +758,7 @@ internal class TpTest {
             }
             .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(transactionId2) {
+        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid2")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -902,7 +901,7 @@ internal class TpTest {
             }
             .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(transactionId2) {
+        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid1")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1040,7 +1039,7 @@ internal class TpTest {
             }
             .get(transactionId1)
 
-        TestRuntime.topics.oppdrag.produce(transactionId1) {
+        TestRuntime.topics.oppdrag.produce(transactionId1, mapOf("uids" to "$uid1")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1251,7 +1250,7 @@ internal class TpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2,$uid3")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1408,6 +1407,12 @@ internal class TpTest {
                 assertEquals("1234", bos?.enhet)
                 assertEquals("8020", beh?.enhet)
             }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .has(transactionId, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.TILTAKSPENGER, listOf(
+                DetaljerLinje("1", 30.jun25, 30.jun25, null, 1000u, "TPTPGRAMO"),
+            ))))
     }
 
     @Test
@@ -1451,7 +1456,7 @@ internal class TpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId) {
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
@@ -1464,6 +1469,4 @@ internal class TpTest {
             }
     }
 }
-
-
 
