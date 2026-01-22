@@ -13,14 +13,21 @@ import javax.xml.datatype.XMLGregorianCalendar
 import models.preValidateLockedFields
 
 object AggregateService {
+
+    private fun hasChanges(pair: StreamsPair<Utbetaling, Utbetaling?>) = pair.let { (new, prev) ->
+        prev == null ||
+        prev.action == Action.DELETE && new.action == Action.CREATE ||
+        new.perioder != prev.perioder
+    }
+
     fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<Pair<Oppdrag, List<Utbetaling>>> {
         aggregate.forEach { (new, prev) ->
             prev?.preValidateLockedFields(new)
         }
 
-        val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> =
-            aggregate.filter { (new, prev) -> prev == null || new.perioder != prev.perioder }.map {
-                (new, prev) ->
+        val utbetalingToOppdrag: List<Pair<Utbetaling, Oppdrag>> = aggregate
+            .filter(::hasChanges)
+            .map { (new, prev) ->
                 new.validate()
 
                 when {
@@ -30,6 +37,15 @@ object AggregateService {
                         val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
                         val utbetaling = prev.copy(action = Action.DELETE, lastPeriodeId = lastPeriodeId)
                         utbetaling to oppdrag
+                    }
+
+                    // reintroduser en tidligere opphørt utbetaling
+                    prev?.action == Action.DELETE && new.action == Action.CREATE -> {
+                        val oppdrag = OppdragService.opprett(new, prev.lastPeriodeId)
+                        val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
+                        val utbetaling = new.copy(action = Action.CREATE, lastPeriodeId = lastPeriodeId)
+                        utbetaling to oppdrag
+
                     }
 
                     prev == null -> {
@@ -60,14 +76,11 @@ object AggregateService {
     }
 
     fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<SimulerBeregningRequest> {
-        val hasChanges: (StreamsPair<Utbetaling, Utbetaling?>) -> Boolean = { (new, prev) ->
-            prev == null || new.perioder != prev.perioder
-        }
 
-        if (aggregate.isNotEmpty() && aggregate.none(hasChanges)) return emptyList()
+        if (aggregate.isNotEmpty() && aggregate.none(::hasChanges)) return emptyList()
 
         val simuleringer = aggregate
-            .filter(hasChanges)
+            .filter(::hasChanges)
             .map { (new, prev) ->
                 new.validate()
                 when {
@@ -75,6 +88,12 @@ object AggregateService {
                         secureLog.info("simuler opphør for $prev")
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         SimuleringService.delete(prev, prev)
+                    }
+
+                    // reintroduser en tidligere opphørt utbetaling
+                    prev?.action == Action.DELETE && new.action == Action.CREATE -> {
+                        secureLog.info("simuler recreate for $new")
+                        SimuleringService.opprett(new, prev.lastPeriodeId)
                     }
 
                     prev == null -> {

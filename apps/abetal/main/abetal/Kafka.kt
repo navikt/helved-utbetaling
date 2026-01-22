@@ -59,8 +59,8 @@ data class PKs(val originalKey: String, val uids: List<String>)
 data class AapTuple(val key: String, val value: AapUtbetaling)
 data class DpTuple(val key: String, val value: DpUtbetaling)
 data class TsTuple(
-    val transactionId: String?, 
-    val dto: TsDto?,
+    val transactionId: String?, // FIXME: denne kan kanskje fjernes nå 
+    val dto: TsDto?,            // FIXME: denne kan kanskje fjernes nå
     val key: String?, 
     val value: TsDto?
 )

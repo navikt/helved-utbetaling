@@ -20,8 +20,8 @@ private fun LocalDate.format() = format(DateTimeFormatter.ofPattern("yyyy-MM-dd"
 
 object SimuleringService {
 
-    fun opprett(new: Utbetaling): SimulerBeregningRequest {
-        var forrigeId: PeriodeId? = null
+    fun opprett(new: Utbetaling, lastPeriodeId: PeriodeId? = null): SimulerBeregningRequest {
+        var forrigeId: PeriodeId? = lastPeriodeId
         val oppdrag = objectFactory.createOppdrag().apply {
             kodeEndring = if (new.førsteUtbetalingPåSak) "NY" else "ENDR"
             kodeFagomraade = new.fagsystem.fagområde
