@@ -88,7 +88,7 @@ private fun saveOppdragAndSendIfReady(
             val oppdragDao = transaction {
                 saveIdempotent(key, hashKey, oppdrag, meta) 
             }
-            if (pendingIsReady(hashKey, oppdragDao.uids) && !oppdragDao.sent) {
+            if (pendingIsReady(hashKey, oppdragDao.uids) && (!oppdragDao.sent || meta.headers["resend"] == "true")) {
                 oppdragDao to StatusReply.sendt(oppdrag)
             } else {
                 null to StatusReply.mottatt(oppdrag)
@@ -134,7 +134,7 @@ private fun updatePendingAndOppdrag(
             DaoOppdrag.find(hashKey)
         }
 
-        if (dao != null && !dao.sent && pendingIsReady(hashKey, dao.uids)) {
+        if (dao != null && pendingIsReady(hashKey, dao.uids) && (!dao.sent || meta.headers["resend"] == "true")) {
             transaction {
                 mq.send(dao.oppdrag)
                 dao.updateAsSent()

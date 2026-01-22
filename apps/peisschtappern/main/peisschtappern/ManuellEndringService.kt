@@ -47,7 +47,8 @@ class ManuellEndringService(
         val xmlMapper = XMLMapper<Oppdrag>()
         val oppdrag = xmlMapper.readValue(value)
 
-        return oppdragProducer.send(key, oppdrag)
+        val headers = mapOf("resend" to "true")
+        return oppdragProducer.send(key, oppdrag, headers)
     }
 
     fun flyttPendingTilUtbetalinger(
