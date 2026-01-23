@@ -13,7 +13,7 @@ import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.doublereceive.DoubleReceive
+import io.ktor.server.plugins.doublereceive.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -30,30 +30,29 @@ import libs.jdbc.Migrator
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
+import libs.ktor.CallLog
+import libs.ktor.bodyAsText
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.ApiError
 import models.forbidden
 import models.kontrakter.felles.Fagsystem
-import utsjekk.clients.SimuleringClient
+import utsjekk.simulering.SimuleringClient
 import utsjekk.iverksetting.IverksettingMigrator
 import utsjekk.iverksetting.IverksettingService
-import utsjekk.iverksetting.iverksetting
+import utsjekk.routes.iverksetting
+import utsjekk.routes.probes
+import utsjekk.routes.simulering
+import utsjekk.routing.utbetalinger
 import utsjekk.simulering.SimuleringValidator
-import utsjekk.simulering.simulerBlocking
-import utsjekk.simulering.simulering
 import utsjekk.utbetaling.UtbetalingMigrator
 import utsjekk.utbetaling.UtbetalingService
 import utsjekk.utbetaling.simulering.SimuleringService
-import utsjekk.utbetaling.utbetalingRoute
 import java.io.File
-import libs.ktor.CallLog
-import libs.ktor.bodyAsText
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
         appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
-        // secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(
@@ -154,7 +153,7 @@ ${call.bodyAsText()}""".trimIndent()
     val simuleringValidator = SimuleringValidator(iverksettingService)
 
     val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)
-    val aapMigrator = UtbetalingMigrator(utbetalingProducer)
+    val utbetalingMigrator = UtbetalingMigrator(utbetalingProducer)
     val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer)
 
     val dryrunTsStore = kafka.getStore(Stores.dryrunTs)
@@ -162,12 +161,9 @@ ${call.bodyAsText()}""".trimIndent()
 
     routing {
         authenticate(TokenProvider.AZURE) {
-            iverksetting(iverksettingService)
-            simulering(simuleringValidator, simulering)
-            simulerBlocking(aapProducer, dpProducer, tpProducer, tsProducer, dryrunTsStore, dryrunDpStore)
-            utbetalingRoute(simuleringService, utbetalingService)
-            aapMigrator.route(this)
-            iverksettingMigrator.route(this)
+            iverksetting(iverksettingService, iverksettingMigrator)
+            simulering(simuleringValidator, simulering, aapProducer, dpProducer, tpProducer, tsProducer, dryrunTsStore, dryrunDpStore)
+            utbetalinger(simuleringService, utbetalingService, utbetalingMigrator)
         }
 
         probes(metrics)

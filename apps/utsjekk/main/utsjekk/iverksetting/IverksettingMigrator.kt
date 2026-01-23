@@ -10,23 +10,14 @@ import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
 import libs.utils.appLog
 import libs.utils.secureLog
-import models.Action
+import models.*
 import models.BehandlingId
-import models.Navident
-import models.PeriodeId
-import models.Periodetype
-import models.Personident
-import models.Stønadstype
 import models.UtbetalingId
-import models.Utbetalingsperiode
-import models.badRequest
 import models.kontrakter.oppdrag.OppdragStatus
-import models.locked
-import models.notFound
-import models.notImplemented
-import utsjekk.*
+import utsjekk.fagsystem
 import utsjekk.iverksetting.resultat.IverksettingResultater
-import java.util.UUID
+import utsjekk.partition
+import java.util.*
 
 data class MigrationRequest(
     val sakId: String,

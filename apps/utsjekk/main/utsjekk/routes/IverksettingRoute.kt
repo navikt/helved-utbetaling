@@ -1,4 +1,4 @@
-package utsjekk.iverksetting
+package utsjekk.routes
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -12,9 +12,23 @@ import models.badRequest
 import models.kontrakter.iverksett.IverksettV2Dto
 import models.notFound
 import utsjekk.*
+import utsjekk.iverksetting.*
 
-fun Route.iverksetting(iverksettingService: IverksettingService) {
+fun Route.iverksetting(
+    service: IverksettingService,
+    migrator: IverksettingMigrator,
+) {
     route("/api/iverksetting") {
+
+        post("/v2/migrate") {
+            val fagsystem = call.fagsystem()
+            val request = call.receive<MigrationRequest>()
+            if(request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
+            if (request.meldeperiode != null && request.uidToStønad != null) badRequest("mutual exclusive: 'meldeperiode' and 'uidToStønad'")
+            migrator.transfer(fagsystem, request)
+            call.respond(HttpStatusCode.OK)
+        }
+
         post("/v2") {
             val dto = try {
                 call.receive<IverksettV2Dto>()
@@ -30,8 +44,8 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
             val iverksetting = Iverksetting.from(dto, fagsystem)
 
             try {
-                iverksettingService.valider(iverksetting)
-                iverksettingService.iverksett(iverksetting)
+                service.valider(iverksetting)
+                service.iverksett(iverksetting)
             } catch (e: ApiError) {
                 if (e.statusCode != 409) throw e
             }
@@ -43,7 +57,7 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
             val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
             val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
             val fagsystem = call.fagsystem()
-            val status = iverksettingService.utledStatus(fagsystem, sakId, behandlingId, null)
+            val status = service.utledStatus(fagsystem, sakId, behandlingId, null)
                 ?: notFound("Fant ikke status utbetaling med sakId $sakId og behandlingId $behandlingId")
 
             call.respond(HttpStatusCode.OK, status)
@@ -54,7 +68,7 @@ fun Route.iverksetting(iverksettingService: IverksettingService) {
             val behandlingId = call.parameters.getOrFail<String>("behandlingId").let(::BehandlingId)
             val iverksettingId = call.parameters.getOrFail<String>("iverksettingId").let(::IverksettingId)
             val fagsystem = call.fagsystem()
-            val status = iverksettingService.utledStatus(fagsystem, sakId, behandlingId, iverksettingId)
+            val status = service.utledStatus(fagsystem, sakId, behandlingId, iverksettingId)
                 ?: notFound("Fant ikke status utbetaling med sakId $sakId, behandlingId $behandlingId og iverksettingId $iverksettingId")
 
             call.respond(HttpStatusCode.OK, status)

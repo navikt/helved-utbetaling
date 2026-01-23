@@ -3,8 +3,8 @@ package utsjekk.simulering
 import TestData.domain.postering
 import utsjekk.iverksetting.RandomOSURId
 import utsjekk.iverksetting.SakId
-import utsjekk.simulering.oppsummering.OppsummeringGenerator.KLASSEKODE_FEILUTBETALING
-import utsjekk.simulering.oppsummering.OppsummeringGenerator.KLASSEKODE_JUSTERING
+import utsjekk.simulering.KLASSEKODE_FEILUTBETALING
+import utsjekk.simulering.KLASSEKODE_JUSTERING
 import java.time.LocalDate
 
 object TestCaser {
