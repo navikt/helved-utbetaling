@@ -14,7 +14,6 @@ import utsjekk.simulering.TestCaser.feilutbetaling
 import utsjekk.simulering.TestCaser.justeringInnenforSammeMåned
 import utsjekk.simulering.TestCaser.justeringPåUlikeMåneder
 import utsjekk.simulering.TestCaser.nyUtbetaling
-import utsjekk.simulering.oppsummering.OppsummeringGenerator
 import java.time.LocalDate
 import java.time.Month
 
@@ -33,7 +32,7 @@ class SimuleringGeneratorTest {
         val deserialisert =
             objectMapper.readValue(json, client.SimuleringResponse::class.java)
         val detaljer = SimuleringDetaljer.from(deserialisert, Fagsystem.TILLEGGSSTØNADER)
-        val oppsummering = OppsummeringGenerator.lagOppsummering(detaljer)
+        val oppsummering = api.SimuleringRespons.from(detaljer)
         /* TODO(): Fiks denne
         *  Her forventer vi at bruker skal få en justering for april hvor ny utbetaling blir 1137 - 1024 = 113
         */
@@ -48,7 +47,7 @@ class SimuleringGeneratorTest {
         val deserialisert =
             objectMapper.readValue(json, client.SimuleringResponse::class.java)
         val detaljer = SimuleringDetaljer.from(deserialisert, Fagsystem.TILLEGGSSTØNADER)
-        val oppsummering = OppsummeringGenerator.lagOppsummering(detaljer)
+        val oppsummering = api.SimuleringRespons.from(detaljer)
 
         val september = oppsummering.oppsummeringer.first { it.fom.month == Month.SEPTEMBER }
         val oktober = oppsummering.oppsummeringer.first { it.fom.month == Month.OCTOBER }
@@ -85,7 +84,7 @@ class SimuleringGeneratorTest {
             ),
         )
 
-        val actual = OppsummeringGenerator.lagOppsummering(simuleringDetaljer)
+        val actual = api.SimuleringRespons.from(simuleringDetaljer)
         assertEquals(expected, actual)
     }
 
@@ -111,7 +110,7 @@ class SimuleringGeneratorTest {
             )
         )
 
-        val actual = OppsummeringGenerator.lagOppsummering(detaljer)
+        val actual = api.SimuleringRespons.from(detaljer)
         assertEquals(expected, actual)
     }
 
@@ -135,7 +134,7 @@ class SimuleringGeneratorTest {
                 )
             )
         )
-        val actual = OppsummeringGenerator.lagOppsummering(detaljer)
+        val actual = api.SimuleringRespons.from(detaljer)
         assertEquals(expected, actual)
     }
 
@@ -160,7 +159,7 @@ class SimuleringGeneratorTest {
             )
         )
 
-        val actual = OppsummeringGenerator.lagOppsummering(detaljer)
+        val actual = api.SimuleringRespons.from(detaljer)
         assertEquals(forventetOppsummering, actual)
     }
 
@@ -193,7 +192,7 @@ class SimuleringGeneratorTest {
             )
         )
 
-        val actual = OppsummeringGenerator.lagOppsummering(detaljer)
+        val actual = api.SimuleringRespons.from(detaljer)
         assertEquals(forventetOppsummering, actual)
     }
 
@@ -238,7 +237,7 @@ class SimuleringGeneratorTest {
                 )
             )
         )
-        val actual = OppsummeringGenerator.lagOppsummering(detaljer)
+        val actual = api.SimuleringRespons.from(detaljer)
         assertEquals(expected, actual)
     }
 }

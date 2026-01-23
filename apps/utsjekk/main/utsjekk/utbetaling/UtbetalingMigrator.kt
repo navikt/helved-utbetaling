@@ -1,28 +1,19 @@
 package utsjekk.utbetaling
 
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
-import models.Action
+import models.*
 import models.BehandlingId
-import models.Fagsystem
 import models.Navident
 import models.PeriodeId
-import models.Periodetype
 import models.Personident
 import models.SakId
 import models.StønadTypeAAP
-import models.aapUId
-import models.badRequest
-import models.notFound
-import java.util.*
+import utsjekk.partition
 import java.time.LocalDate
-import utsjekk.*
+import java.util.*
 
 data class MigrationRequest(
     val meldeperiode: String,
@@ -31,21 +22,6 @@ data class MigrationRequest(
 )
 
 class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, models.Utbetaling>) {
-
-    fun route(route: Route) {
-        route.route("/utbetalinger/{uid}/migrate") {
-            post {
-                val uid = call.parameters["uid"]
-                    ?.let(::uuid)
-                    ?.let(::UtbetalingId)
-                    ?: badRequest("Mangler path parameter 'uid'")
-
-                val request = call.receive<MigrationRequest>()
-                transfer(uid, request)
-                call.respond(HttpStatusCode.OK)
-            }
-        }
-    }
 
     suspend fun transfer(uid: UtbetalingId, request: MigrationRequest) {
         withContext(Jdbc.context) {

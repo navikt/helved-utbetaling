@@ -1,35 +1,38 @@
-package utsjekk.utbetaling
+package utsjekk.routing
 
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.request.authorization
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.put
-import io.ktor.server.routing.route
-import io.ktor.server.routing.RoutingCall
+import io.ktor.http.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import libs.utils.onFailure
-import models.badRequest
-import models.conflict
-import models.internalServerError
-import models.notFound
-import models.unauthorized
-import utsjekk.utbetaling.simulering.SimuleringService
-import utsjekk.hasClaim
+import models.*
 import utsjekk.TokenType
-import java.util.UUID
+import utsjekk.hasClaim
+import utsjekk.utbetaling.*
+import utsjekk.utbetaling.Utbetaling
+import utsjekk.utbetaling.UtbetalingId
+import utsjekk.utbetaling.simulering.SimuleringService
+import java.util.*
 
 // TODO: valider at stønad (enum) tilhører AZP (claims)
-fun Route.utbetalingRoute(
+fun Route.utbetalinger(
     simuleringService: SimuleringService,
     utbetalingService: UtbetalingService,
+    utbetalingMigrator: UtbetalingMigrator,
 ) {
 
     route("/utbetalinger/{uid}") {
+
+        post("/migrate") {
+            val uid = call.parameters["uid"]
+                ?.let(::uuid)
+                ?.let(::UtbetalingId)
+                ?: badRequest("Mangler path parameter 'uid'")
+
+            val request = call.receive<MigrationRequest>()
+            utbetalingMigrator.transfer(uid, request)
+            call.respond(HttpStatusCode.OK)
+        }
 
         post {
             val uid = call.parameters["uid"]

@@ -1,4 +1,4 @@
-package utsjekk.clients
+package utsjekk.simulering
 
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -23,7 +23,6 @@ import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.tilAndelData
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import utsjekk.simulering.*
-import utsjekk.simulering.oppsummering.OppsummeringGenerator
 import utsjekk.utbetaling.UtbetalingsoppdragDto
 
 class SimuleringClient(
@@ -89,7 +88,7 @@ class SimuleringClient(
         if(response.status == HttpStatusCode.OK) {
             val hentetSimulering = response.body<client.SimuleringResponse>()
             val detaljer = SimuleringDetaljer.from(hentetSimulering, simulering.behandlingsinformasjon.fagsystem)
-            return OppsummeringGenerator.lagOppsummering(detaljer)
+            return api.SimuleringRespons.from(detaljer)
         }
 
         when (response.status) {
