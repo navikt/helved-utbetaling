@@ -1,17 +1,18 @@
-package urskog
+package urskog.oppdrag
 
 import models.*
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import urskog.*
 import java.util.*
 import kotlin.test.assertEquals
 
-class UrskogTest {
+class OppdragTest {
 
     @AfterEach 
     fun cleanup() {
         TestRuntime.mq.reset()
-
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
@@ -48,8 +49,8 @@ class UrskogTest {
                 DetaljerLinje(bid, 1.nov, 14.nov, null, 1000u, "AAPOR"),
             ))))
 
-        assertEquals(1, TestRuntime.mq.sent().size)
-        XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sent().first())
+        assertEquals(1, TestRuntime.mq.sentOppdrag().size)
+        XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sentOppdrag().first())
     }
 
     @Test
@@ -78,11 +79,11 @@ class UrskogTest {
         }
 
         TestRuntime.topics.status.assertThat().isEmpty()
-        assertEquals(0, TestRuntime.mq.sent().size)
+        assertEquals(0, TestRuntime.mq.sentOppdrag().size)
 
         val hashKey = DaoOppdrag.hash(oppdrag).toString()
         TestRuntime.topics.pendingUtbetalinger.produce(uid.toString(), mapOf("hash_key" to hashKey)) {
-            utbetaling(uid = uid, originalKey = transaction)
+            TestData.utbetaling(uid = uid, originalKey = transaction)
         }
 
         TestRuntime.topics.status.assertThat()
@@ -92,8 +93,8 @@ class UrskogTest {
                 DetaljerLinje(bid, 1.nov, 14.nov, null, 1000u, "AAPOR"),
             ))))
 
-        assertEquals(1, TestRuntime.mq.sent().size)
-        XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sent().first())
+        assertEquals(1, TestRuntime.mq.sentOppdrag().size)
+        XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sentOppdrag().first())
     }
 
     @Test
@@ -120,11 +121,11 @@ class UrskogTest {
 
         val hashKey = DaoOppdrag.hash(oppdrag).toString()
         TestRuntime.topics.pendingUtbetalinger.produce(uid.toString(), mapOf("hash_key" to hashKey)) {
-            utbetaling(uid = uid)
+            TestData.utbetaling(uid = uid)
         }
 
         TestRuntime.topics.status.assertThat().isEmpty()
-        assertEquals(0, TestRuntime.mq.sent().size)
+        assertEquals(0, TestRuntime.mq.sentOppdrag().size)
 
         TestRuntime.topics.oppdrag.produce(transaction, mapOf("uids" to uid.toString())) {
             oppdrag
@@ -137,8 +138,8 @@ class UrskogTest {
                 DetaljerLinje(bid, 1.nov, 14.nov, null, 1000u, "AAPOR"),
             ))))
 
-        assertEquals(1, TestRuntime.mq.sent().size)
-        XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sent().first())
+        assertEquals(1, TestRuntime.mq.sentOppdrag().size)
+        XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sentOppdrag().first())
     }
 
     @Test
@@ -206,15 +207,15 @@ class UrskogTest {
                 DetaljerLinje(bid, 3.nov, 7.nov, null, 700u, "AAPOR"),
             ))))
 
-        assertEquals(1, TestRuntime.mq.sent().size)
-        XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sent().first())
+        assertEquals(1, TestRuntime.mq.sentOppdrag().size)
+        XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sentOppdrag().first())
 
         TestRuntime.topics.oppdrag.produce(transaction) {
             oppdrag
         }
 
         TestRuntime.topics.status.assertThat().isEmpty()
-        assertEquals(1, TestRuntime.mq.sent().size)
+        assertEquals(1, TestRuntime.mq.sentOppdrag().size)
     }
 }
 
