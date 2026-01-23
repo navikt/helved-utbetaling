@@ -26,7 +26,7 @@ import java.nio.charset.Charset
 import java.time.LocalDateTime
 import java.util.*
 
-class WSFake: Sts, Soap {
+class FakeWS: Sts, Soap {
     var respondWith: String = Resource.read("/simuler-ok.xml")
     val received = mutableListOf<String>()
 
