@@ -51,23 +51,23 @@ class SimuleringMapperTest {
             datoBeregnet = 28.may,
             totalBeløp = 800,
             perioder = listOf(
-                Periode(
+                domain.Periode(
                     fom = 1.may,
                     tom = 1.may,
                     posteringer = listOf(
                         postering(
-                            fagområde = Fagområde.TILLEGGSSTØNADER,
+                            fagområde = domain.Fagområde.TILLEGGSSTØNADER,
                             fom = 1.may,
                             tom = 1.may,
                             sakId = sakId,
                             beløp = 800,
-                            type = PosteringType.YTELSE,
+                            type = domain.PosteringType.YTELSE,
                         )
                     )
                 )
             )
         )
-        val actual = SimuleringDetaljer.from(dto, Fagsystem.TILLEGGSSTØNADER)
+        val actual = domain.SimuleringDetaljer.from(dto, Fagsystem.TILLEGGSSTØNADER)
         assertEquals(expected, actual)
     }
 
@@ -116,31 +116,31 @@ class SimuleringMapperTest {
             datoBeregnet = 28.may,
             totalBeløp = 1300,
             perioder = listOf(
-                Periode(
+                domain.Periode(
                     fom = 1.may,
                     tom = 1.may,
                     posteringer = listOf(
                         postering(
-                            fagområde = Fagområde.TILLEGGSSTØNADER,
+                            fagområde = domain.Fagområde.TILLEGGSSTØNADER,
                             fom = 1.may,
                             tom = 1.may,
                             sakId = sakId,
                             beløp = 800,
-                            type = PosteringType.YTELSE,
+                            type = domain.PosteringType.YTELSE,
                         ),
                         postering(
-                            fagområde = Fagområde.TILLEGGSSTØNADER_ARENA,
+                            fagområde = domain.Fagområde.TILLEGGSSTØNADER_ARENA,
                             fom = 15.may,
                             tom = 15.may,
                             sakId = SakId("ARENA-ID"),
                             beløp = 500,
-                            type = PosteringType.YTELSE,
+                            type = domain.PosteringType.YTELSE,
                         )
                     )
                 )
             )
         )
-        val actual = SimuleringDetaljer.from(dto, Fagsystem.TILLEGGSSTØNADER)
+        val actual = domain.SimuleringDetaljer.from(dto, Fagsystem.TILLEGGSSTØNADER)
         assertEquals(expected, actual)
     }
 
@@ -190,23 +190,23 @@ class SimuleringMapperTest {
             datoBeregnet = 28.may,
             totalBeløp = 1300,
             perioder = listOf(
-                Periode(
+                domain.Periode(
                     fom = 1.may,
                     tom = 1.may,
                     posteringer = listOf(
                         postering(
-                            fagområde = Fagområde.TILLEGGSSTØNADER,
+                            fagområde = domain.Fagområde.TILLEGGSSTØNADER,
                             fom = 1.may,
                             tom = 1.may,
                             sakId = sakId,
                             beløp = 800,
-                            type = PosteringType.YTELSE,
+                            type = domain.PosteringType.YTELSE,
                         ),
                     )
                 )
             )
         )
-        val actual = SimuleringDetaljer.from(dto, Fagsystem.TILLEGGSSTØNADER)
+        val actual = domain.SimuleringDetaljer.from(dto, Fagsystem.TILLEGGSSTØNADER)
         assertEquals(expected, actual)
     }
 }

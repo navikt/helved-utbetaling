@@ -13,7 +13,7 @@ import models.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.common.utils.Utils
 import utsjekk.iverksetting.OppdragResultat
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.iverksetting.IverksettingResultatDao
 import utsjekk.utbetaling.UtbetalingDao
 import utsjekk.utbetaling.UtbetalingId
 import kotlin.time.Duration.Companion.hours

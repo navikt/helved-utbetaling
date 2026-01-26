@@ -2,7 +2,7 @@ package utsjekk.simulering
 
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -10,19 +10,15 @@ import kotlinx.coroutines.withContext
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.jdbc.Jdbc
-import models.badGateway
-import models.badRequest
-import models.conflict
+import models.*
 import models.kontrakter.oppdrag.Utbetalingsoppdrag
-import models.notFound
-import models.unavailable
-import utsjekk.*
+import utsjekk.Config
+import utsjekk.TokenType
+import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.lagAndelData
-import utsjekk.iverksetting.resultat.IverksettingResultater
 import utsjekk.iverksetting.tilAndelData
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
-import utsjekk.simulering.*
 import utsjekk.utbetaling.UtbetalingsoppdragDto
 
 class SimuleringClient(
@@ -66,7 +62,7 @@ class SimuleringClient(
     }
 
     suspend fun hentSimuleringsresultatMedOppsummering(
-        simulering: Simulering,
+        simulering: domain.Simulering,
         token: TokenType,
     ): api.SimuleringRespons? {
         val utbetalingsoppdrag = hentUtbetalingsoppdrag(simulering)
@@ -87,7 +83,7 @@ class SimuleringClient(
 
         if(response.status == HttpStatusCode.OK) {
             val hentetSimulering = response.body<client.SimuleringResponse>()
-            val detaljer = SimuleringDetaljer.from(hentetSimulering, simulering.behandlingsinformasjon.fagsystem)
+            val detaljer = domain.SimuleringDetaljer.from(hentetSimulering, simulering.behandlingsinformasjon.fagsystem)
             return api.SimuleringRespons.from(detaljer)
         }
 
@@ -101,7 +97,7 @@ class SimuleringClient(
         }
     }
 
-    private suspend fun hentUtbetalingsoppdrag(sim: Simulering): Utbetalingsoppdrag {
+    private suspend fun hentUtbetalingsoppdrag(sim: domain.Simulering): Utbetalingsoppdrag {
         val forrigeTilkjenteYtelse = withContext(Jdbc.context) {
             sim.forrigeIverksetting?.let {
                 val forrigeIverksetting = IverksettingResultater.hent(

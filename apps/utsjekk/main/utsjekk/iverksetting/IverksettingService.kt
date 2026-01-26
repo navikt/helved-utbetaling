@@ -7,8 +7,8 @@ import libs.kafka.KafkaProducer
 import models.kontrakter.felles.Fagsystem
 import models.kontrakter.iverksett.IverksettStatus
 import models.kontrakter.oppdrag.OppdragStatus
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.iverksetting.IverksettingResultatDao
+import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.iverksetting.abetal.OppdragService
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import utsjekk.partition

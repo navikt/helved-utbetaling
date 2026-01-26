@@ -8,7 +8,6 @@ import models.locked
 import java.util.concurrent.ConcurrentHashMap
 
 object SimuleringSubscriptions {
-
     private val subscriptions = ConcurrentHashMap<String, CompletableDeferred<Simulering>>()
     private val subscriptionsV1 = ConcurrentHashMap<String, CompletableDeferred<models.v1.Simulering>>()
     private val statuses = ConcurrentHashMap<String, CompletableDeferred<StatusReply>>()

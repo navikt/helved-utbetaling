@@ -3,8 +3,6 @@ package utsjekk.simulering
 import TestData.domain.postering
 import utsjekk.iverksetting.RandomOSURId
 import utsjekk.iverksetting.SakId
-import utsjekk.simulering.KLASSEKODE_FEILUTBETALING
-import utsjekk.simulering.KLASSEKODE_JUSTERING
 import java.time.LocalDate
 
 object TestCaser {
@@ -13,7 +11,7 @@ object TestCaser {
     fun nyUtbetaling(fom: LocalDate, tom: LocalDate, beløp: Int) =
         listOf(
             postering(
-                type = PosteringType.YTELSE,
+                type = domain.PosteringType.YTELSE,
                 fom = fom,
                 tom = tom,
                 beløp = beløp,
@@ -24,14 +22,14 @@ object TestCaser {
     fun etterbetaling(fom: LocalDate, tom: LocalDate, gammeltBeløp: Int, nyttBeløp: Int) =
         listOf(
             postering(
-                type = PosteringType.YTELSE,
+                type = domain.PosteringType.YTELSE,
                 fom = fom,
                 tom = tom,
                 beløp = nyttBeløp,
                 sakId = sakId,
             ),
             postering(
-                type = PosteringType.YTELSE,
+                type = domain.PosteringType.YTELSE,
                 fom = fom,
                 tom = tom,
                 beløp = -gammeltBeløp,
@@ -39,25 +37,25 @@ object TestCaser {
             ),
         )
 
-    fun feilutbetaling(fom: LocalDate, tom: LocalDate, gammeltBeløp: Int, nyttBeløp: Int): List<Postering> {
+    fun feilutbetaling(fom: LocalDate, tom: LocalDate, gammeltBeløp: Int, nyttBeløp: Int): List<domain.Postering> {
         val feilutbetaltBeløp = gammeltBeløp - nyttBeløp
         return listOf(
             postering(
-                type = PosteringType.YTELSE,
+                type = domain.PosteringType.YTELSE,
                 fom = fom,
                 tom = tom,
                 beløp = feilutbetaltBeløp,
                 sakId = sakId,
             ),
             postering(
-                type = PosteringType.YTELSE,
+                type = domain.PosteringType.YTELSE,
                 fom = fom,
                 tom = tom,
                 beløp = nyttBeløp,
                 sakId = sakId,
             ),
             postering(
-                type = PosteringType.FEILUTBETALING,
+                type = domain.PosteringType.FEILUTBETALING,
                 klassekode = KLASSEKODE_FEILUTBETALING,
                 fom = fom,
                 tom = tom,
@@ -65,14 +63,14 @@ object TestCaser {
                 sakId = sakId,
             ),
             postering(
-                type = PosteringType.MOTPOSTERING,
+                type = domain.PosteringType.MOTPOSTERING,
                 fom = fom,
                 tom = tom,
                 beløp = -feilutbetaltBeløp,
                 sakId = sakId,
             ),
             postering(
-                type = PosteringType.YTELSE,
+                type = domain.PosteringType.YTELSE,
                 fom = fom,
                 tom = tom,
                 beløp = -gammeltBeløp,
@@ -83,10 +81,10 @@ object TestCaser {
 
     fun justeringInnenforSammeMåned(dato: LocalDate, gammeltBeløp: Int, nyttBeløp: Int) =
         listOf(
-            Periode(
+            domain.Periode(
                 posteringer = listOf(
                     postering(
-                        type = PosteringType.FEILUTBETALING,
+                        type = domain.PosteringType.FEILUTBETALING,
                         klassekode = KLASSEKODE_JUSTERING,
                         fom = dato,
                         tom = dato,
@@ -94,7 +92,7 @@ object TestCaser {
                         sakId = sakId,
                     ),
                     postering(
-                        type = PosteringType.YTELSE,
+                        type = domain.PosteringType.YTELSE,
                         fom = dato,
                         tom = dato,
                         beløp = nyttBeløp,
@@ -104,10 +102,10 @@ object TestCaser {
                 fom = dato,
                 tom = dato
             ),
-            Periode(
+            domain.Periode(
                 posteringer = listOf(
                     postering(
-                        type = PosteringType.FEILUTBETALING,
+                        type = domain.PosteringType.FEILUTBETALING,
                         klassekode = KLASSEKODE_JUSTERING,
                         fom = dato.plusDays(1),
                         tom = dato.plusDays(1),
@@ -115,7 +113,7 @@ object TestCaser {
                         sakId = sakId,
                     ),
                     postering(
-                        type = PosteringType.YTELSE,
+                        type = domain.PosteringType.YTELSE,
                         fom = dato.plusDays(1),
                         tom = dato.plusDays(1),
                         beløp = -gammeltBeløp,
@@ -127,13 +125,13 @@ object TestCaser {
             )
         )
 
-    fun justeringPåUlikeMåneder(dato: LocalDate, gammeltBeløp: Int, nyttBeløp: Int, nyttBeløpMåned2: Int): List<Periode> {
+    fun justeringPåUlikeMåneder(dato: LocalDate, gammeltBeløp: Int, nyttBeløp: Int, nyttBeløpMåned2: Int): List<domain.Periode> {
         val justering = gammeltBeløp - nyttBeløp
         return listOf(
-            Periode(
+            domain.Periode(
                 posteringer = listOf(
                     postering(
-                        type = PosteringType.FEILUTBETALING,
+                        type = domain.PosteringType.FEILUTBETALING,
                         klassekode = KLASSEKODE_JUSTERING,
                         fom = dato,
                         tom = dato,
@@ -141,14 +139,14 @@ object TestCaser {
                         sakId = sakId,
                     ),
                     postering(
-                        type = PosteringType.YTELSE,
+                        type = domain.PosteringType.YTELSE,
                         fom = dato,
                         tom = dato,
                         beløp = nyttBeløp,
                         sakId = sakId,
                     ),
                     postering(
-                        type = PosteringType.YTELSE,
+                        type = domain.PosteringType.YTELSE,
                         fom = dato,
                         tom = dato,
                         beløp = -gammeltBeløp,
@@ -158,10 +156,10 @@ object TestCaser {
                 fom = dato,
                 tom = dato
             ),
-            Periode(
+            domain.Periode(
                 posteringer = listOf(
                     postering(
-                        type = PosteringType.FEILUTBETALING,
+                        type = domain.PosteringType.FEILUTBETALING,
                         klassekode = KLASSEKODE_JUSTERING,
                         fom = dato.plusMonths(1),
                         tom = dato.plusMonths(1),
@@ -169,7 +167,7 @@ object TestCaser {
                         sakId = sakId,
                     ),
                     postering(
-                        type = PosteringType.YTELSE,
+                        type = domain.PosteringType.YTELSE,
                         fom = dato.plusMonths(1),
                         tom = dato.plusMonths(1),
                         beløp = nyttBeløpMåned2,

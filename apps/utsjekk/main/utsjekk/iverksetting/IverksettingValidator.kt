@@ -4,7 +4,7 @@ import models.badRequest
 import models.conflict
 import models.kontrakter.oppdrag.OppdragStatus
 import models.locked
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.iverksetting.IverksettingResultatDao
 
 object IverksettingValidator {
 

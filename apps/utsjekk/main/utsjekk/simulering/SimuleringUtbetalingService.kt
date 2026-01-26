@@ -1,4 +1,4 @@
-package utsjekk.utbetaling.simulering
+package utsjekk.simulering
 
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
@@ -9,8 +9,9 @@ import utsjekk.simulering.SimuleringClient
 import utsjekk.utbetaling.*
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
+import utsjekk.simulering.SimuleringApi
 
-class SimuleringService(
+class SimuleringUtbetalingService(
     private val client: SimuleringClient,
 ) {
     suspend fun simuler(
@@ -30,7 +31,7 @@ class SimuleringService(
         }
 
         val simulering = client.simuler(oppdrag, token)
-        return SimuleringMapper.oppsummering(simulering)
+        return SimuleringApi.from(simulering)
     }
 
     suspend fun simulerDelete(
@@ -73,7 +74,7 @@ class SimuleringService(
             })
         )
         val simulering = client.simuler(oppdrag, token)
-        return SimuleringMapper.oppsummering(simulering)
+        return SimuleringApi.from(simulering)
     }
 
     /** Lager utbetalingsoppdrag for endringer */

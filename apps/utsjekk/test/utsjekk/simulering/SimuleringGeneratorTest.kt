@@ -31,7 +31,7 @@ class SimuleringGeneratorTest {
         """.trimIndent()
         val deserialisert =
             objectMapper.readValue(json, client.SimuleringResponse::class.java)
-        val detaljer = SimuleringDetaljer.from(deserialisert, Fagsystem.TILLEGGSSTØNADER)
+        val detaljer = domain.SimuleringDetaljer.from(deserialisert, Fagsystem.TILLEGGSSTØNADER)
         val oppsummering = api.SimuleringRespons.from(detaljer)
         /* TODO(): Fiks denne
         *  Her forventer vi at bruker skal få en justering for april hvor ny utbetaling blir 1137 - 1024 = 113
@@ -46,7 +46,7 @@ class SimuleringGeneratorTest {
         """.trimIndent()
         val deserialisert =
             objectMapper.readValue(json, client.SimuleringResponse::class.java)
-        val detaljer = SimuleringDetaljer.from(deserialisert, Fagsystem.TILLEGGSSTØNADER)
+        val detaljer = domain.SimuleringDetaljer.from(deserialisert, Fagsystem.TILLEGGSSTØNADER)
         val oppsummering = api.SimuleringRespons.from(detaljer)
 
         val september = oppsummering.oppsummeringer.first { it.fom.month == Month.SEPTEMBER }
@@ -67,7 +67,7 @@ class SimuleringGeneratorTest {
         val simuleringDetaljer = simuleringDetaljer(
             datoBeregnet = 28.may,
             totalBeløp = 800,
-            perioder = listOf(Periode(fremtiden, fremtiden, nyUtbetaling(fremtiden, fremtiden, 800)))
+            perioder = listOf(domain.Periode(fremtiden, fremtiden, nyUtbetaling(fremtiden, fremtiden, 800)))
         )
 
         val expected = simuleringResponse(
@@ -93,7 +93,7 @@ class SimuleringGeneratorTest {
         val detaljer = simuleringDetaljer(
             datoBeregnet = 28.may,
             totalBeløp = 100,
-            perioder = listOf(Periode(1.may, 1.may, etterbetaling(1.may, 1.may, 700, 800)))
+            perioder = listOf(domain.Periode(1.may, 1.may, etterbetaling(1.may, 1.may, 700, 800)))
         )
 
         val expected = simuleringResponse(
@@ -119,7 +119,7 @@ class SimuleringGeneratorTest {
         val detaljer = simuleringDetaljer(
             datoBeregnet = 28.may,
             totalBeløp = 0,
-            perioder = listOf(Periode(1.may, 1.may, feilutbetaling(1.may, 1.may, 700, 600)))
+            perioder = listOf(domain.Periode(1.may, 1.may, feilutbetaling(1.may, 1.may, 700, 600)))
         )
         val expected = simuleringResponse(
             detaljer = detaljer,
@@ -203,9 +203,9 @@ class SimuleringGeneratorTest {
             datoBeregnet = 28.may,
             totalBeløp = 900,
             perioder = listOf(
-                Periode(1.mar, 1.mar, feilutbetaling(1.mar, 1.mar, 700, 600)),
-                Periode(1.apr, 1.apr, etterbetaling(1.apr, 1.apr, 700, 800)),
-                Periode(fremtiden, fremtiden, nyUtbetaling(fremtiden, fremtiden, 800)),
+                domain.Periode(1.mar, 1.mar, feilutbetaling(1.mar, 1.mar, 700, 600)),
+                domain.Periode(1.apr, 1.apr, etterbetaling(1.apr, 1.apr, 700, 800)),
+                domain.Periode(fremtiden, fremtiden, nyUtbetaling(fremtiden, fremtiden, 800)),
             )
         )
         val expected = simuleringResponse(

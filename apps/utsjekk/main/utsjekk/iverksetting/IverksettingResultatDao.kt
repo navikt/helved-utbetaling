@@ -1,4 +1,4 @@
-package utsjekk.iverksetting.resultat
+package utsjekk.iverksetting
 
 import java.sql.ResultSet
 import kotlin.coroutines.coroutineContext

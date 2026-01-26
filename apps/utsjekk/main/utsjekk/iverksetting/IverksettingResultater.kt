@@ -1,4 +1,4 @@
-package utsjekk.iverksetting.resultat
+package utsjekk.iverksetting
 
 import libs.jdbc.concurrency.transaction
 import utsjekk.iverksetting.*

@@ -30,7 +30,7 @@ import utsjekk.iverksetting.BehandlingId
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.IverksettingId
 import utsjekk.iverksetting.SakId
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.iverksetting.IverksettingResultatDao
 import java.time.LocalDate
 
 class IverksettingRouteTest {

@@ -15,7 +15,7 @@ import models.BehandlingId
 import models.UtbetalingId
 import models.kontrakter.oppdrag.OppdragStatus
 import utsjekk.fagsystem
-import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.partition
 import java.util.*
 

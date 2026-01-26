@@ -5,18 +5,15 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import libs.utils.onFailure
-import models.*
-import utsjekk.TokenType
-import utsjekk.hasClaim
+import models.badRequest
+import models.conflict
+import models.internalServerError
+import models.notFound
 import utsjekk.utbetaling.*
-import utsjekk.utbetaling.Utbetaling
-import utsjekk.utbetaling.UtbetalingId
-import utsjekk.utbetaling.simulering.SimuleringService
-import java.util.*
+import utsjekk.uuid
 
 // TODO: valider at stønad (enum) tilhører AZP (claims)
 fun Route.utbetalinger(
-    simuleringService: SimuleringService,
     utbetalingService: UtbetalingService,
     utbetalingMigrator: UtbetalingMigrator,
 ) {
@@ -114,55 +111,6 @@ fun Route.utbetalinger(
             }
             call.respond(HttpStatusCode.NoContent)
         }
-
-        route("/simuler") {
-            post {
-                val uid = call.parameters["uid"]
-                    ?.let(::uuid)
-                    ?.let(::UtbetalingId)
-                    ?: badRequest("Mangler path parameter 'uid'")
-
-                val dto = call.receive<UtbetalingApi>().also { it.validate() }
-                val domain = Utbetaling.from(dto)
-                val token = call.getTokenType() ?: unauthorized("Mangler claim, enten azp_name eller NAVident")
-
-                val response = simuleringService.simuler(uid, domain, token)
-
-                call.respond(HttpStatusCode.OK, response)
-            }
-            delete {
-                val uid = call.parameters["uid"]
-                    ?.let(::uuid)
-                    ?.let(::UtbetalingId)
-                    ?: badRequest("Mangler path parameter 'uid'")
-
-                val dto = call.receive<UtbetalingApi>().also { it.validate() }
-                val token = call.getTokenType() ?: unauthorized("Mangler claim, enten azp_name eller NAVident")
-                val existing = utbetalingService.lastOrNull(uid) ?: notFound("Fant ikke utbetaling med uid ${uid.id}")
-                val domain = Utbetaling.from(dto, existing.lastPeriodeId)
-                val response = simuleringService.simulerDelete(uid, domain, token)
-                call.respond(HttpStatusCode.OK, response)
-            }
-        }
-
-    }
-}
-
-fun RoutingCall.getTokenType(): TokenType? {
-    return if(hasClaim("NAVident")) {
-        TokenType.Obo(request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing"))
-    } else if (hasClaim("azp_name")) {
-        TokenType.Client(request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing"))
-    } else {
-        unauthorized("Mangler claim, enten azp_name eller NAVident")
-    }
-}
-
-private fun uuid(str: String): UUID {
-    return try {
-        UUID.fromString(str)
-    } catch (e: Exception) {
-        badRequest("Path param må være UUID")
     }
 }
 
