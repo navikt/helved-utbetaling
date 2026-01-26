@@ -10,7 +10,7 @@ import utsjekk.iverksetting.*
 import utsjekk.iverksetting.BehandlingId
 import utsjekk.iverksetting.Periode
 import utsjekk.iverksetting.SakId
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.iverksetting.IverksettingResultatDao
 import utsjekk.simulering.*
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -193,7 +193,7 @@ object TestData {
 
             fun simuleringResponse(
                 oppsummeringer: List<utsjekk.simulering.api.OppsummeringForPeriode>,
-                detaljer: SimuleringDetaljer,
+                detaljer: domain.SimuleringDetaljer,
             ) = utsjekk.simulering.api.SimuleringRespons(
                 oppsummeringer,
                 detaljer,
@@ -472,8 +472,8 @@ object TestData {
             personident: String = Personident.random().verdi,
             datoBeregnet: LocalDate = LocalDate.now(),
             totalBeløp: Int = 800,
-            perioder: List<utsjekk.simulering.Periode>,
-        ) = SimuleringDetaljer(
+            perioder: List<utsjekk.simulering.domain.Periode>,
+        ) = utsjekk.simulering.domain.SimuleringDetaljer(
             gjelderId = personident,
             datoBeregnet = datoBeregnet,
             totalBeløp = totalBeløp,
@@ -485,10 +485,10 @@ object TestData {
             tom: LocalDate,
             beløp: Int,
             sakId: SakId,
-            type: PosteringType = PosteringType.YTELSE,
-            fagområde: Fagområde = Fagområde.TILLEGGSSTØNADER,
+            type: utsjekk.simulering.domain.PosteringType = utsjekk.simulering.domain.PosteringType.YTELSE,
+            fagområde: utsjekk.simulering.domain.Fagområde = utsjekk.simulering.domain.Fagområde.TILLEGGSSTØNADER,
             klassekode: String = "TSTBASISP4-OP",
-        ) = Postering(
+        ) = utsjekk.simulering.domain.Postering(
             type = type,
             fom = fom,
             tom = tom,

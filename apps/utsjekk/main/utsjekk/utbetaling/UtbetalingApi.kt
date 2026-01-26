@@ -1,8 +1,7 @@
 package utsjekk.utbetaling
 
-import models.*
-import utsjekk.avstemming.erHelg
-import utsjekk.avstemming.nesteUkedag
+import models.DocumentedErrors
+import models.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit

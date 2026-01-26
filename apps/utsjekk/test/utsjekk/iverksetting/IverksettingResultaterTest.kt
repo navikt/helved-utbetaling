@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.iverksetting.IverksettingResultatDao
+import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.utbetaling.UtbetalingId
 import java.util.*
 

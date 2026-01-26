@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import libs.utils.Resource
 import models.kontrakter.felles.objectMapper
 import org.junit.jupiter.api.Test
+import utsjekk.simulering.SimuleringApi
 import utsjekk.simulering.client
 import kotlin.test.assertEquals
 
@@ -13,7 +14,7 @@ class SimuleringMapperTest {
     fun `mapper til simulering`() {
         val json = Resource.read("/json/simulering_forskjellige_klassekoder.json")
         val response = objectMapper.readValue<client.SimuleringResponse>(json)
-        val mapped = SimuleringMapper.oppsummering(response)
+        val mapped = SimuleringApi.from(response)
 
         assertEquals(8, mapped.perioder.size)
     }
@@ -22,7 +23,7 @@ class SimuleringMapperTest {
     fun `beregner nytt beløp`() {
         val json = Resource.read("/json/simulering_forskjellige_klassekoder.json")
         val response = objectMapper.readValue<client.SimuleringResponse>(json)
-        val mapped = SimuleringMapper.oppsummering(response)
+        val mapped = SimuleringApi.from(response)
 
         assertEquals(2190, mapped.perioder[0].utbetalinger[0].nyttBeløp)
         assertEquals(-201, mapped.perioder[1].utbetalinger[0].nyttBeløp)
@@ -39,7 +40,7 @@ class SimuleringMapperTest {
     fun `beregner tidligere utbetalt`() {
         val json = Resource.read("/json/simulering_forskjellige_klassekoder.json")
         val response = objectMapper.readValue<client.SimuleringResponse>(json)
-        val mapped = SimuleringMapper.oppsummering(response)
+        val mapped = SimuleringApi.from(response)
 
         assertEquals(  0, mapped.perioder[0].utbetalinger[0].tidligereUtbetalt)
         assertEquals(502, mapped.perioder[1].utbetalinger[0].tidligereUtbetalt)

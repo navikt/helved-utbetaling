@@ -9,8 +9,8 @@ import models.kontrakter.oppdrag.Utbetalingsoppdrag
 import models.kontrakter.oppdrag.Utbetalingsperiode
 import no.trygdeetaten.skjema.oppdrag.*
 import utsjekk.iverksetting.*
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
-import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.iverksetting.IverksettingResultatDao
+import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import java.time.LocalDate
 import java.time.LocalTime

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.*
-import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.utbetaling.UtbetalingId
 import java.time.LocalDateTime
 import java.util.*

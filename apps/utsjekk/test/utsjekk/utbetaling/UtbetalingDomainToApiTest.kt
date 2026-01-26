@@ -3,10 +3,13 @@ package utsjekk.utbetaling
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 import kotlin.test.assertEquals
 
 class UtbetalingDomainToApiTest {
+    private val skjærTorsdag2021 = LocalDate.of(2021, 4, 1)
+    private val skjærTorsdag2022 = LocalDate.of(2022, 4, 14)
+
     @Test
     fun `mapper fra feit periode til individuelle dager`() {
         val domain = Utbetaling(
@@ -33,5 +36,27 @@ class UtbetalingDomainToApiTest {
         val api = UtbetalingApi.from(domain)
 
         assertEquals(22, api.perioder.size)
+    }
+
+    @Test
+    fun `Hent virkedag allmenlig måndag`() {
+        val allmenligMåndag = LocalDate.of(2020, 10, 26)
+        assertEquals(allmenligMåndag.nesteVirkedag(), allmenligMåndag.plusDays(1))
+    }
+
+    @Test
+    fun `Hent virkedag allmenlig fredag`() {
+        val allmenligFredag = LocalDate.of(2020, 10, 30)
+        assertEquals(allmenligFredag.nesteVirkedag(), allmenligFredag.plusDays(3))
+    }
+
+    @Test
+    fun `Hent virkedag skjærtorsdag 2021`() {
+        assertEquals(skjærTorsdag2021.nesteVirkedag(), skjærTorsdag2021.plusDays(5))
+    }
+
+    @Test
+    fun `Hent virkedag skjærtorsdag 2022`() {
+        assertEquals(skjærTorsdag2022.nesteVirkedag(), skjærTorsdag2022.plusDays(5))
     }
 }

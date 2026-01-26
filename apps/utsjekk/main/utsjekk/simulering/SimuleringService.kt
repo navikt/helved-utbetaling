@@ -8,18 +8,18 @@ import models.kontrakter.oppdrag.OppdragStatus
 import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.behandlingId
-import utsjekk.iverksetting.resultat.IverksettingResultater
+import utsjekk.iverksetting.IverksettingResultater
 
-class SimuleringValidator(private val iverksettinger: IverksettingService) {
+class SimuleringService(private val iverksettinger: IverksettingService) {
 
-    suspend fun valider(simulering: Simulering) {
+    suspend fun valider(simulering: domain.Simulering) {
         withContext(Jdbc.context) {
             forrigeIverksettingSkalVæreFerdigstilt(simulering)
             forrigeIverksettingErLikSisteMottatteIverksetting(simulering)
         }
     }
 
-    private suspend fun forrigeIverksettingSkalVæreFerdigstilt(simulering: Simulering) {
+    private suspend fun forrigeIverksettingSkalVæreFerdigstilt(simulering: domain.Simulering) {
         simulering.forrigeIverksetting?.apply {
             val forrigeResultat = runCatching {
                 IverksettingResultater.hent(
@@ -39,7 +39,7 @@ class SimuleringValidator(private val iverksettinger: IverksettingService) {
         }
     }
 
-    private suspend fun forrigeIverksettingErLikSisteMottatteIverksetting(simulering: Simulering) {
+    private suspend fun forrigeIverksettingErLikSisteMottatteIverksetting(simulering: domain.Simulering) {
         val sisteMottatteIverksetting = iverksettinger.hentSisteMottatte(
             sakId = simulering.behandlingsinformasjon.fagsakId,
             fagsystem = simulering.behandlingsinformasjon.fagsystem,

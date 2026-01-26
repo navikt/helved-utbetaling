@@ -10,7 +10,7 @@ import libs.jdbc.concurrency.CoroutineDatasource
 import utsjekk.Config
 import utsjekk.Topics
 import utsjekk.iverksetting.IverksettingDao
-import utsjekk.iverksetting.resultat.IverksettingResultatDao
+import utsjekk.iverksetting.IverksettingResultatDao
 import utsjekk.utbetaling.UtbetalingDao
 import utsjekk.utsjekk
 import javax.sql.DataSource

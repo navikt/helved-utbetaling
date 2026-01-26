@@ -35,20 +35,20 @@ import libs.ktor.bodyAsText
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.ApiError
+import models.badRequest
 import models.forbidden
 import models.kontrakter.felles.Fagsystem
-import utsjekk.simulering.SimuleringClient
+import models.unauthorized
 import utsjekk.iverksetting.IverksettingMigrator
 import utsjekk.iverksetting.IverksettingService
+import utsjekk.routes.SimuleringRoutes
+import utsjekk.routes.actuator
 import utsjekk.routes.iverksetting
-import utsjekk.routes.probes
-import utsjekk.routes.simulering
 import utsjekk.routing.utbetalinger
-import utsjekk.simulering.SimuleringValidator
 import utsjekk.utbetaling.UtbetalingMigrator
 import utsjekk.utbetaling.UtbetalingService
-import utsjekk.utbetaling.simulering.SimuleringService
 import java.io.File
+import java.util.*
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -78,28 +78,6 @@ fun Application.utsjekk(
         registry = metrics
         meterBinders += LogbackMetrics()
     }
-
-    kafka.connect(
-        topology,
-        config.kafka,
-        metrics,
-    )
-
-    val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
-    val aapProducer = kafka.createProducer(config.kafka, Topics.utbetalingAap)
-    val dpProducer = kafka.createProducer(config.kafka, Topics.utbetalingDp)
-    val tpProducer = kafka.createProducer(config.kafka, Topics.utbetalingTp)
-    val tsProducer = kafka.createProducer(config.kafka, Topics.utbetalingTs)
-
-    Jdbc.initialize(config.jdbc)
-    runBlocking {
-        withContext(Jdbc.context) {
-            Migrator(File("migrations")).migrate()
-        }
-    }
-
-    val utbetalingService = UtbetalingService(oppdragProducer)
-    val iverksettingService = IverksettingService(oppdragProducer)
 
     install(ContentNegotiation) {
         jackson {
@@ -148,35 +126,52 @@ ${call.bodyAsText()}""".trimIndent()
         }
     }
 
-    val simulering = SimuleringClient(config)
-    val simuleringService = SimuleringService(simulering)
-    val simuleringValidator = SimuleringValidator(iverksettingService)
+    Jdbc.initialize(config.jdbc)
+    runBlocking {
+        withContext(Jdbc.context) {
+            Migrator(File("migrations")).migrate()
+        }
+    }
 
+    kafka.connect(
+        topology,
+        config.kafka,
+        metrics,
+    )
+
+    val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
     val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)
+
+    val utbetalingService = UtbetalingService(oppdragProducer)
+    val iverksettingService = IverksettingService(oppdragProducer)
+
+    val simuleringRoutes = SimuleringRoutes(
+        config,
+        kafka,
+        iverksettingService,
+        utbetalingService,
+    )
+
     val utbetalingMigrator = UtbetalingMigrator(utbetalingProducer)
     val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer)
-
-    val dryrunTsStore = kafka.getStore(Stores.dryrunTs)
-    val dryrunDpStore = kafka.getStore(Stores.dryrunDp)
 
     routing {
         authenticate(TokenProvider.AZURE) {
             iverksetting(iverksettingService, iverksettingMigrator)
-            simulering(simuleringValidator, simulering, aapProducer, dpProducer, tpProducer, tsProducer, dryrunTsStore, dryrunDpStore)
-            utbetalinger(simuleringService, utbetalingService, utbetalingMigrator)
+            utbetalinger(utbetalingService, utbetalingMigrator)
+            simuleringRoutes.aap(this)
+            simuleringRoutes.utsjekk(this)
+            simuleringRoutes.abetal(this)
         }
 
-        probes(metrics)
+        actuator(metrics)
     }
 
     monitor.subscribe(ApplicationStopping) {
         kafka.close()
         oppdragProducer.close()
-        aapProducer.close()
-        dpProducer.close()
-        tpProducer.close()
-        tsProducer.close()
         utbetalingProducer.close()
+        simuleringRoutes.close()
     }
 }
 
@@ -221,3 +216,22 @@ value class Client(
                 )
         }
 }
+
+fun RoutingCall.getTokenType(): TokenType? {
+    return if(hasClaim("NAVident")) {
+        TokenType.Obo(request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing"))
+    } else if (hasClaim("azp_name")) {
+        TokenType.Client(request.authorization()?.replace("Bearer ", "") ?: unauthorized("auth header missing"))
+    } else {
+        unauthorized("Mangler claim, enten azp_name eller NAVident")
+    }
+}
+
+fun uuid(str: String): UUID {
+    return try {
+        UUID.fromString(str)
+    } catch (e: Exception) {
+        badRequest("Path param må være UUID")
+    }
+}
+
