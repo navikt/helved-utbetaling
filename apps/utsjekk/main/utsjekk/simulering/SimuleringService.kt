@@ -4,11 +4,10 @@ import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import models.badRequest
 import models.conflict
-import models.kontrakter.oppdrag.OppdragStatus
+import utsjekk.iverksetting.OppdragStatus
 import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.behandlingId
-import utsjekk.iverksetting.IverksettingResultater
 
 class SimuleringService(private val iverksettinger: IverksettingService) {
 
@@ -22,7 +21,7 @@ class SimuleringService(private val iverksettinger: IverksettingService) {
     private suspend fun forrigeIverksettingSkalVæreFerdigstilt(simulering: domain.Simulering) {
         simulering.forrigeIverksetting?.apply {
             val forrigeResultat = runCatching {
-                IverksettingResultater.hent(
+                IverksettingService.hent(
                     UtbetalingId(
                         fagsystem = simulering.behandlingsinformasjon.fagsystem,
                         sakId = simulering.behandlingsinformasjon.fagsakId,

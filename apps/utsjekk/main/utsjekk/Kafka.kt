@@ -1,21 +1,20 @@
 package utsjekk
 
-import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.kafka.*
-import libs.utils.*
+import libs.utils.appLog
 import models.*
-import models.StatusReply
-import models.kontrakter.oppdrag.OppdragStatus
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.apache.kafka.common.utils.Utils
-import utsjekk.iverksetting.OppdragResultat
 import utsjekk.iverksetting.IverksettingResultatDao
+import utsjekk.iverksetting.OppdragResultat
+import utsjekk.iverksetting.OppdragStatus
 import utsjekk.utbetaling.UtbetalingDao
 import utsjekk.utbetaling.UtbetalingId
+import java.util.*
 import kotlin.time.Duration.Companion.hours
 
 object Topics {

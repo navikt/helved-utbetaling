@@ -2,11 +2,7 @@ package utsjekk.iverksetting
 
 import TestData
 import models.ApiError
-import models.kontrakter.felles.*
-import models.kontrakter.iverksett.Ferietillegg
-import models.kontrakter.iverksett.ForrigeIverksettingV2Dto
-import models.kontrakter.iverksett.StønadsdataDagpengerDto
-import models.kontrakter.iverksett.StønadsdataTiltakspengerV2Dto
+import models.kontrakter.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

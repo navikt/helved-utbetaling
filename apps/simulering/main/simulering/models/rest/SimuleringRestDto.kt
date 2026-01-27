@@ -1,7 +1,7 @@
 package simulering.models.rest
 
 import com.fasterxml.jackson.annotation.JsonValue
-import models.kontrakter.felles.Personident
+import models.kontrakter.Personident
 import java.time.LocalDate
 
 object rest {

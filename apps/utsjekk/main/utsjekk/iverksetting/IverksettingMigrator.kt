@@ -13,9 +13,8 @@ import libs.utils.secureLog
 import models.*
 import models.BehandlingId
 import models.UtbetalingId
-import models.kontrakter.oppdrag.OppdragStatus
+import models.Utbetalingsperiode
 import utsjekk.fagsystem
-import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.partition
 import java.util.*
 
@@ -48,8 +47,8 @@ class IverksettingMigrator(
         }
     }
 
-    suspend fun transfer(fs: models.kontrakter.felles.Fagsystem, req: MigrationRequest) {
-        if (fs !in listOf(models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER, models.kontrakter.felles.Fagsystem.TILTAKSPENGER)) {
+    suspend fun transfer(fs: models.kontrakter.Fagsystem, req: MigrationRequest) {
+        if (fs !in listOf(models.kontrakter.Fagsystem.TILLEGGSSTØNADER, models.kontrakter.Fagsystem.TILTAKSPENGER)) {
             notImplemented("kan ikke migrere $fs enda")
         } 
         withContext(Jdbc.context) {
@@ -57,7 +56,7 @@ class IverksettingMigrator(
                 val iverksetting = iverksettingService.hentSisteMottatte(SakId(req.sakId), fs)
                     ?: notFound("iverksetting for (sak=${req.sakId} fagsystem=$fs)")
                 val sisteIverksettingResultat = try {
-                    IverksettingResultater.hent(iverksetting)
+                    IverksettingService.hent(iverksetting)
                 } catch (e: Exception) {
                     secureLog.error("iverksettingsresultat for (sak=${req.sakId} fagsystem=$fs)", e)
                     notFound("iverksettingsresultat for (sak=${req.sakId} fagsystem=$fs)")

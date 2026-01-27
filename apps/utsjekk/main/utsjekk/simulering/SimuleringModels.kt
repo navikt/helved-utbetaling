@@ -1,10 +1,7 @@
 package utsjekk.simulering
 
-import models.kontrakter.felles.Fagsystem
-import models.kontrakter.felles.Personident
-import models.kontrakter.iverksett.ForrigeIverksettingV2Dto
-import models.kontrakter.iverksett.UtbetalingV2Dto
-import models.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.Fagsystem
+import models.kontrakter.Personident
 import utsjekk.iverksetting.*
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -30,7 +27,7 @@ object domain {
                     brukersNavKontor = null,
                     iverksettingId = null,
                 ),
-                nyTilkjentYtelse = dto.utbetalinger.toTilkjentYtelse(),
+                nyTilkjentYtelse = TilkjentYtelse.from(dto.utbetalinger),
                 forrigeIverksetting = dto.forrigeIverksetting?.let {
                     domain.ForrigeIverksetting(
                         behandlingId = BehandlingId(it.behandlingId),
@@ -207,11 +204,11 @@ object client {
         ENG; 
 
         companion object {
-            fun from(st: models.kontrakter.felles.Satstype) = when (st) {
-                models.kontrakter.felles. Satstype.DAGLIG -> client.Satstype.DAG
-                models.kontrakter.felles. Satstype.DAGLIG_INKL_HELG -> client.Satstype.DAG7
-                models.kontrakter.felles. Satstype.MÅNEDLIG -> client.Satstype.MND
-                models.kontrakter.felles. Satstype.ENGANGS -> client.Satstype.ENG
+            fun from(st: models.kontrakter.Satstype) = when (st) {
+                models.kontrakter.Satstype.DAGLIG -> client.Satstype.DAG
+                models.kontrakter.Satstype.DAGLIG_INKL_HELG -> client.Satstype.DAG7
+                models.kontrakter.Satstype.MÅNEDLIG -> client.Satstype.MND
+                models.kontrakter.Satstype.ENGANGS -> client.Satstype.ENG
             }
         }
     }
@@ -231,7 +228,7 @@ object client {
         HELSREF; 
 
         companion object {
-            fun from(fs: models.kontrakter.felles.Fagsystem) = when (fs) {
+            fun from(fs: models.kontrakter.Fagsystem) = when (fs) {
                 Fagsystem.AAP -> client.Fagområde.AAP
                 Fagsystem.DAGPENGER -> client.Fagområde.DP
                 Fagsystem.TILTAKSPENGER -> client.Fagområde.TILTPENG
@@ -239,26 +236,26 @@ object client {
             }
         }
 
-        fun hasFagsystem(fs: models.kontrakter.felles.Fagsystem): Boolean {
+        fun hasFagsystem(fs: models.kontrakter.Fagsystem): Boolean {
             val fagområde = domain.Fagområde.from(this)
             return when (fs) {
-                models.kontrakter.felles.Fagsystem.DAGPENGER -> fagområde in listOf(
+                models.kontrakter.Fagsystem.DAGPENGER -> fagområde in listOf(
                     domain.Fagområde.DAGPENGER,
                     domain.Fagområde.DAGPENGER_MANUELL_POSTERING,
                     domain.Fagområde.DAGPENGER_ARENA,
                     domain.Fagområde.DAGPENGER_ARENA_MANUELL_POSTERING,
                 )
-                models.kontrakter.felles.Fagsystem.TILTAKSPENGER -> fagområde in listOf(
+                models.kontrakter.Fagsystem.TILTAKSPENGER -> fagområde in listOf(
                     domain.Fagområde.TILTAKSPENGER,
                     domain.Fagområde.TILTAKSPENGER_ARENA,
                     domain.Fagområde.TILTAKSPENGER_ARENA_MANUELL_POSTERING,
                 )
-                models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER -> fagområde in listOf(
+                models.kontrakter.Fagsystem.TILLEGGSSTØNADER -> fagområde in listOf(
                     domain.Fagområde.TILLEGGSSTØNADER,
                     domain.Fagområde.TILLEGGSSTØNADER_ARENA,
                     domain.Fagområde.TILLEGGSSTØNADER_ARENA_MANUELL_POSTERING,
                 )
-                models.kontrakter.felles.Fagsystem.AAP -> fagområde in listOf(domain.Fagområde.AAP)
+                models.kontrakter.Fagsystem.AAP -> fagområde in listOf(domain.Fagområde.AAP)
             }
         }
     }
@@ -297,7 +294,7 @@ object client {
         val fastsattDagsats: BigDecimal?,
     ) {
         companion object {
-            fun from(domain: models.kontrakter.oppdrag.Utbetalingsperiode) = client.Utbetalingsperiode(
+            fun from(domain: utsjekk.iverksetting.Utbetalingsperiode) = client.Utbetalingsperiode(
                 periodeId = domain.periodeId.toString(),
                 forrigePeriodeId = domain.forrigePeriodeId?.toString(),
                 erEndringPåEksisterendePeriode = domain.erEndringPåEksisterendePeriode,

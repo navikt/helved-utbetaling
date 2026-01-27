@@ -12,25 +12,18 @@ import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import libs.jdbc.await
 import libs.jdbc.concurrency.transaction
-import libs.jdbc.*
 import models.DocumentedErrors
 import models.Status
 import models.StatusReply
-import models.kontrakter.felles.Fagsystem
-import models.kontrakter.felles.Satstype
-import models.kontrakter.felles.objectMapper
-import models.kontrakter.iverksett.IverksettStatus
-import models.kontrakter.oppdrag.OppdragIdDto
-import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.Fagsystem
+import models.kontrakter.Satstype
+import models.kontrakter.objectMapper
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import utsjekk.iverksetting.BehandlingId
-import utsjekk.iverksetting.IverksettingDao
-import utsjekk.iverksetting.IverksettingId
-import utsjekk.iverksetting.SakId
-import utsjekk.iverksetting.IverksettingResultatDao
+import utsjekk.iverksetting.*
 import java.time.LocalDate
 
 class IverksettingRouteTest {

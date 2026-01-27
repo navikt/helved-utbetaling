@@ -9,7 +9,7 @@ import libs.jdbc.*
 import libs.jdbc.concurrency.connection
 import libs.utils.*
 import libs.utils.secureLog
-import models.kontrakter.felles.objectMapper
+import models.kontrakter.objectMapper
 
 enum class DatabaseError {
     Conflict,

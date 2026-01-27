@@ -1,8 +1,8 @@
 package utsjekk.iverksetting.utbetalingsoppdrag.bdd
 
-import models.kontrakter.felles.Satstype
-import models.kontrakter.felles.StønadType
-import models.kontrakter.felles.StønadTypeDagpenger
+import models.kontrakter.Satstype
+import models.kontrakter.StønadType
+import models.kontrakter.StønadTypeDagpenger
 import org.junit.jupiter.api.Assertions.assertTrue
 import utsjekk.iverksetting.BehandlingId
 import java.time.LocalDate

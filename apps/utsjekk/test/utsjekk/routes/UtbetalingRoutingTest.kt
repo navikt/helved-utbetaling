@@ -9,7 +9,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
 import models.*
-import models.kontrakter.felles.objectMapper
+import models.kontrakter.objectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.Topics

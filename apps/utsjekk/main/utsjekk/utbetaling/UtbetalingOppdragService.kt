@@ -1,4 +1,4 @@
-package utsjekk.utbetaling.abetal
+package utsjekk.utbetaling
 
 import no.trygdeetaten.skjema.oppdrag.*
 import utsjekk.utbetaling.*
@@ -27,7 +27,7 @@ private fun FagsystemDto.kodekomponent() = when(this) {
     else -> this.kode
 }
 
-object OppdragService {
+object UtbetalingOppdragService {
     fun opprett(new: Utbetaling, erførsteUtbetalingPåSak: Boolean): Oppdrag {
         val fagsystemDto = FagsystemDto.from(new.stønad)
         val oppdrag110 = objectFactory.createOppdrag110().apply {

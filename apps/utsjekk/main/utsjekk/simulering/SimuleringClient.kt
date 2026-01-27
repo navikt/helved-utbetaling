@@ -11,14 +11,10 @@ import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.jdbc.Jdbc
 import models.*
-import models.kontrakter.oppdrag.Utbetalingsoppdrag
 import utsjekk.Config
 import utsjekk.TokenType
-import utsjekk.iverksetting.IverksettingResultater
+import utsjekk.iverksetting.*
 import utsjekk.iverksetting.UtbetalingId
-import utsjekk.iverksetting.lagAndelData
-import utsjekk.iverksetting.tilAndelData
-import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import utsjekk.utbetaling.UtbetalingsoppdragDto
 
 class SimuleringClient(
@@ -50,7 +46,6 @@ class SimuleringClient(
             return response.body<client.SimuleringResponse>()
         }
 
-        // TODO: Gå gjennom feilmeldinger og responser som sendes til konsument
         when (response.status) {
             HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
@@ -100,7 +95,7 @@ class SimuleringClient(
     private suspend fun hentUtbetalingsoppdrag(sim: domain.Simulering): Utbetalingsoppdrag {
         val forrigeTilkjenteYtelse = withContext(Jdbc.context) {
             sim.forrigeIverksetting?.let {
-                val forrigeIverksetting = IverksettingResultater.hent(
+                val forrigeIverksetting = IverksettingService.hent(
                     UtbetalingId(
                         fagsystem = sim.behandlingsinformasjon.fagsystem,
                         sakId = sim.behandlingsinformasjon.fagsakId,

@@ -37,7 +37,7 @@ import libs.utils.secureLog
 import models.ApiError
 import models.badRequest
 import models.forbidden
-import models.kontrakter.felles.Fagsystem
+import models.kontrakter.Fagsystem
 import models.unauthorized
 import utsjekk.iverksetting.IverksettingMigrator
 import utsjekk.iverksetting.IverksettingService

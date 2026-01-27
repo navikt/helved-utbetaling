@@ -1,16 +1,17 @@
 package utsjekk.iverksetting
 
+import kotlinx.coroutines.currentCoroutineContext
+import libs.jdbc.concurrency.connection
+import libs.jdbc.jdbcLog
+import libs.jdbc.map
+import libs.utils.secureLog
+import models.kontrakter.Fagsystem
+import models.kontrakter.objectMapper
+import utsjekk.utbetaling.UtbetalingId
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.util.*
-import kotlin.coroutines.coroutineContext
-import libs.jdbc.*
-import libs.jdbc.concurrency.connection
-import libs.utils.*
-import models.kontrakter.felles.Fagsystem
-import models.kontrakter.felles.objectMapper
-import utsjekk.utbetaling.UtbetalingId
 
 data class IverksettingDao(
     val data: Iverksetting,
@@ -22,7 +23,7 @@ data class IverksettingDao(
             INSERT INTO $TABLE_NAME (behandling_id, data, mottatt_tidspunkt, utbetaling_id) 
             VALUES (?, to_json(?::json), ?, ?)
         """.trimIndent()
-        coroutineContext.connection.prepareStatement(sql).use { stmt ->
+        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, data.behandlingId.id)
             stmt.setString(2, objectMapper.writeValueAsString(data))
             stmt.setTimestamp(3, Timestamp.valueOf(mottattTidspunkt))
@@ -56,7 +57,7 @@ data class IverksettingDao(
             // The posistion of the question marks in the sql must be relative to the position in the statement
             var position = 1
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 where.behandlingId?.let { stmt.setString(position++, it.id) }
                 where.sakId?.let { stmt.setString(position++, it.id) }
                 where.iverksettingId?.let { stmt.setString(position++, it.id) }
@@ -99,7 +100,7 @@ data class IverksettingDao(
             // The posistion of the question marks in the sql must be relative to the position in the statement
             var position = 1
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 where.behandlingId?.let { stmt.setString(position++, it.id) }
                 where.sakId?.let { stmt.setString(position++, it.id) }
                 where.iverksettingId?.let { stmt.setString(position++, it.id) }

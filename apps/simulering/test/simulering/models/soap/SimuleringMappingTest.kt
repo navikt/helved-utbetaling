@@ -1,6 +1,6 @@
 package simulering.models.soap
 
-import models.kontrakter.felles.Personident
+import models.kontrakter.Personident
 import org.junit.jupiter.api.Test
 import simulering.models.rest.rest
 import java.time.LocalDate

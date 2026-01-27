@@ -1,8 +1,8 @@
 package models
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import models.kontrakter.felles.GyldigBehandlingId
-import models.kontrakter.felles.GyldigSakId
+import models.kontrakter.GyldigBehandlingId
+import models.kontrakter.GyldigSakId
 import no.trygdeetaten.skjema.oppdrag.Mmel
 
 object DocumentedErrors {

@@ -5,7 +5,6 @@ import TestRuntime
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
 import models.ApiError
-import models.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -32,7 +31,7 @@ class IverksettingValidatorTest {
 
         val err = assertThrows<ApiError> {
             transaction {
-                IverksettingValidator.validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
+                IverksettingService.validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
             }
         }
 
@@ -62,7 +61,7 @@ class IverksettingValidatorTest {
 
             val err = assertThrows<ApiError> {
                 transaction {
-                    IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
+                    IverksettingService.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 }
             }
 
@@ -99,7 +98,7 @@ class IverksettingValidatorTest {
 
             val err = assertThrows<ApiError> {
                 transaction {
-                    IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
+                    IverksettingService.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 }
             }
 
@@ -120,7 +119,7 @@ class IverksettingValidatorTest {
 
             val err = assertThrows<ApiError> {
                 transaction {
-                    IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
+                    IverksettingService.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 }
             }
 
@@ -137,7 +136,7 @@ class IverksettingValidatorTest {
 
             val err = assertThrows<ApiError> {
                 transaction {
-                    IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
+                    IverksettingService.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 }
             }
 
@@ -165,7 +164,7 @@ class IverksettingValidatorTest {
 
         val err = assertThrows<ApiError> {
             transaction {
-                IverksettingValidator.validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting)
+                IverksettingService.validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting)
             }
         }
 

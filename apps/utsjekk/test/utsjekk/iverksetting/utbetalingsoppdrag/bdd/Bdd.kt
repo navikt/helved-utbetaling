@@ -1,15 +1,13 @@
 package utsjekk.iverksetting.utbetalingsoppdrag.bdd
 
 import AndelId
-import models.kontrakter.felles.BrukersNavKontor
-import models.kontrakter.felles.Fagsystem
-import models.kontrakter.felles.StønadTypeDagpenger
-import models.kontrakter.felles.StønadTypeTiltakspenger
-import models.kontrakter.oppdrag.Utbetalingsoppdrag
-import models.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.BrukersNavKontor
+import models.kontrakter.Fagsystem
+import models.kontrakter.StønadTypeDagpenger
+import models.kontrakter.StønadTypeTiltakspenger
 import org.junit.jupiter.api.Assertions.assertEquals
 import utsjekk.iverksetting.*
-import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
+import utsjekk.iverksetting.Utbetalingsgenerator
 import utsjekk.iverksetting.utbetalingsoppdrag.bdd.ValideringUtil.assertSjekkBehandlingIder
 import java.time.LocalDate
 

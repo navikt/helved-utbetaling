@@ -1,17 +1,6 @@
-import models.kontrakter.felles.*
-import models.kontrakter.felles.Personident
-import models.kontrakter.felles.Satstype
-import models.kontrakter.felles.StønadTypeDagpenger
-import models.kontrakter.felles.StønadTypeTilleggsstønader
-import models.kontrakter.iverksett.*
-import models.kontrakter.oppdrag.*
-import models.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.*
 import utsjekk.iverksetting.*
-import utsjekk.iverksetting.BehandlingId
-import utsjekk.iverksetting.Periode
-import utsjekk.iverksetting.SakId
-import utsjekk.iverksetting.IverksettingResultatDao
-import utsjekk.simulering.*
+import utsjekk.simulering.domain
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -136,21 +125,6 @@ object TestData {
             type: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_AAP,
             brukersNavKontor: String? = null,
         ) = StønadsdataTilleggsstønaderDto(type, brukersNavKontor)
-
-        fun oppdragStatus(
-            status: OppdragStatus = OppdragStatus.LAGT_PÅ_KØ,
-            feilmelding: String? = null,
-        ): OppdragStatusDto = OppdragStatusDto(
-            status = status,
-            feilmelding = feilmelding,
-        )
-
-        fun oppdragId(iverksetting: Iverksetting) = OppdragIdDto(
-            fagsystem = iverksetting.fagsak.fagsystem,
-            sakId = iverksetting.sakId.id,
-            behandlingId = iverksetting.behandlingId.id,
-            iverksettingId = iverksetting.iverksettingId?.id,
-        )
 
         object api {
             fun simuleringRequest(

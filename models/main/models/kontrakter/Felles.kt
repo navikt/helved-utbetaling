@@ -1,4 +1,4 @@
-package models.kontrakter.felles
+package models.kontrakter
 
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.databind.*

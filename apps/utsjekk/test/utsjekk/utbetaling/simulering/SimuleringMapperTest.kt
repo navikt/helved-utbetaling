@@ -2,7 +2,7 @@ package utsjekk.utbetaling.simulering
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.utils.Resource
-import models.kontrakter.felles.objectMapper
+import models.kontrakter.objectMapper
 import org.junit.jupiter.api.Test
 import utsjekk.simulering.SimuleringApi
 import utsjekk.simulering.client
