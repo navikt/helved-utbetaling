@@ -1,7 +1,6 @@
 package utsjekk.utbetaling
 
 import no.trygdeetaten.skjema.oppdrag.*
-import utsjekk.utbetaling.*
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -23,7 +22,6 @@ private fun FagsystemDto.utbetalingFrekvens() = when(this) {
 }
 
 private fun FagsystemDto.kodekomponent() = when(this) {
-    FagsystemDto.HISTORISK -> "INFO"
     else -> this.kode
 }
 

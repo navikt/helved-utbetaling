@@ -423,7 +423,18 @@ enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
 }
 
 enum class StønadTypeHistorisk(override val klassekode: String) : Stønadstype {
-    TILSKUDD_SMÅHJELPEMIDLER("HJRIM"),
+    TILSKUDD_SMÅHJELPEMIDLER("HJRIM"), // bakoverkomaptibel enn så lenge
+
+    REISEUTGIFTER("HTRUTR"),
+    ORTOPEDISK_PROTESE("HTOHPR"),
+    ORTOSE("HTOHHÅ"),
+    SPESIALSKO("HTOHSKBA"),
+    PARYKK("HTOHPAAV"),
+    ANSIKTSDEFEKTPROTESE("HTOHAD"),
+    BRYSTPROTESE("HTOHBP"),
+    ØYEPROTESE("HTOHØP"),
+    VANLIGE_SKO("HTOHAS"),
+    FOTSENG("HTOHFTEN")
 }
 
 fun uuid(

@@ -121,7 +121,6 @@ private fun skalTilføreOpphørslinje(
 }
 
 private fun Fagsystem.kodeKomponent() = when(this) {
-    Fagsystem.HISTORISK -> "INFO"
     else -> this.fagområde
 }
 
