@@ -4,13 +4,10 @@ import TestData
 import TestRuntime
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
-import models.kontrakter.oppdrag.OppdragStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import utsjekk.iverksetting.IverksettingResultatDao
-import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.utbetaling.UtbetalingId
 import java.util.*
 
@@ -19,7 +16,7 @@ class IverksettingResultaterTest {
     @Test
     fun `kan opprette tomt resultat`() = runTest(TestRuntime.context) {
         val iverksetting = TestData.domain.iverksetting()
-        IverksettingResultater.opprett(iverksetting, UtbetalingId(UUID.randomUUID()), null)
+        IverksettingService.saveEmptyResultat(iverksetting, UtbetalingId(UUID.randomUUID()), null)
 
         val resultater = transaction {
             IverksettingResultatDao.select {
@@ -40,7 +37,7 @@ class IverksettingResultaterTest {
         val iverksetting = TestData.domain.iverksetting()
 
         assertThrows<IllegalStateException> {
-            IverksettingResultater.hent(iverksetting)
+            IverksettingService.hent(iverksetting)
         }
 
         transaction {
@@ -54,7 +51,7 @@ class IverksettingResultaterTest {
             ).insert(UtbetalingId(UUID.randomUUID()))
         }
 
-        val resultat = IverksettingResultater.hent(iverksetting)
+        val resultat = IverksettingService.hent(iverksetting)
         assertEquals(OppdragResultat(OppdragStatus.KVITTERT_OK).oppdragStatus, resultat.oppdragResultat!!.oppdragStatus)
     }
 
@@ -71,7 +68,7 @@ class IverksettingResultaterTest {
         )
 
         assertThrows<IllegalStateException> {
-            IverksettingResultater.hentForrige(nyeste)
+            IverksettingService.hentForrige(nyeste)
         }
 
         transaction {
@@ -85,7 +82,7 @@ class IverksettingResultaterTest {
             ).insert(UtbetalingId(UUID.randomUUID()))
         }
 
-        val resultat = IverksettingResultater.hentForrige(nyeste)
+        val resultat = IverksettingService.hentForrige(nyeste)
         assertEquals(OppdragResultat(OppdragStatus.KVITTERT_OK).oppdragStatus, resultat.oppdragResultat!!.oppdragStatus)
 
     }
@@ -105,12 +102,12 @@ class IverksettingResultaterTest {
             ).insert(UtbetalingId(UUID.randomUUID()))
         }
 
-        assertNull(IverksettingResultater.hent(iverksetting).oppdragResultat)
+        assertNull(IverksettingService.hent(iverksetting).oppdragResultat)
 
         val resultat = OppdragResultat(OppdragStatus.KVITTERT_OK)
-        IverksettingResultater.oppdater(iverksetting, resultat)
+        IverksettingService.oppdater(iverksetting, resultat)
 
-        assertEquals(resultat, IverksettingResultater.hent(iverksetting).oppdragResultat)
+        assertEquals(resultat, IverksettingService.hent(iverksetting).oppdragResultat)
     }
 
     @Test
@@ -128,11 +125,11 @@ class IverksettingResultaterTest {
             ).insert(UtbetalingId(UUID.randomUUID()))
         }
 
-        assertNull(IverksettingResultater.hent(iverksetting).tilkjentYtelseForUtbetaling)
+        assertNull(IverksettingService.hent(iverksetting).tilkjentYtelseForUtbetaling)
 
         val tilkjentYtelse = TestData.domain.enTilkjentYtelse(emptyList())
-        IverksettingResultater.oppdater(iverksetting, tilkjentYtelse)
+        IverksettingService.oppdater(iverksetting, tilkjentYtelse)
 
-        assertEquals(tilkjentYtelse, IverksettingResultater.hent(iverksetting).tilkjentYtelseForUtbetaling)
+        assertEquals(tilkjentYtelse, IverksettingService.hent(iverksetting).tilkjentYtelseForUtbetaling)
     }
 }

@@ -3,18 +3,21 @@ package utsjekk.iverksetting
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.databind.*
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonSerializer
+import com.fasterxml.jackson.databind.KeyDeserializer
+import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.module.kotlin.readValue
+import libs.utils.appLog
 import models.DocumentedErrors
 import models.badRequest
-import models.kontrakter.felles.*
-import models.kontrakter.iverksett.Ferietillegg
-import models.kontrakter.oppdrag.OppdragStatus
-import models.kontrakter.oppdrag.Utbetalingsoppdrag
+import models.kontrakter.*
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 import kotlin.random.Random
 
 @JvmInline
@@ -32,10 +35,19 @@ data class Iverksetting(
     val søker: Søker,
     val vedtak: Vedtaksdetaljer,
 ) {
-    companion object;
-
     override fun toString() =
         "fagsystem ${fagsak.fagsystem}, sak $sakId, behandling $behandlingId, iverksettingId ${behandling.iverksettingId}"
+
+    companion object {
+        fun from(dto: IverksettV2Dto, fagsystem: Fagsystem): Iverksetting {
+            return Iverksetting(
+                fagsak = Fagsakdetaljer(SakId(dto.sakId), fagsystem),
+                søker = Søker(personident = dto.personident.verdi),
+                behandling = Behandlingsdetaljer.from(dto),
+                vedtak = Vedtaksdetaljer.from(dto.vedtak)
+            )
+        }
+    }
 }
 
 data class UtbetalingId(
@@ -100,14 +112,32 @@ data class Vedtaksdetaljer(
     val beslutterId: String,
     val brukersNavKontor: BrukersNavKontor? = null,
     val tilkjentYtelse: TilkjentYtelse,
-)
+) {
+    companion object {
+        fun from(dto: VedtaksdetaljerV2Dto) = Vedtaksdetaljer(
+            vedtakstidspunkt = dto.vedtakstidspunkt,
+            saksbehandlerId = dto.saksbehandlerId,
+            beslutterId = dto.beslutterId,
+            tilkjentYtelse = TilkjentYtelse.from(dto.utbetalinger)
+        )
+    }
+}
 
 data class Behandlingsdetaljer(
     val forrigeBehandlingId: BehandlingId? = null,
     val forrigeIverksettingId: IverksettingId? = null,
     val behandlingId: BehandlingId,
     val iverksettingId: IverksettingId? = null,
-)
+) {
+    companion object {
+        fun from(dto: IverksettV2Dto) = Behandlingsdetaljer(
+            behandlingId = BehandlingId(dto.behandlingId),
+            forrigeBehandlingId = dto.forrigeIverksetting?.behandlingId?.let(::BehandlingId),
+            iverksettingId = dto.iverksettingId?.let(::IverksettingId),
+            forrigeIverksettingId = dto.forrigeIverksetting?.iverksettingId?.let(::IverksettingId)
+        )
+    }
+}
 
 val Iverksetting.sakId get() = this.fagsak.fagsakId
 val Iverksetting.personident get() = this.søker.personident
@@ -126,14 +156,37 @@ data class TilkjentYtelse(
             mapOf(it.stønadsdata.tilKjedenøkkel() to it)
         } ?: emptyMap(),
 ) {
-    companion object Mapper
+    companion object {
+        fun from(dtos: List<UtbetalingV2Dto>): TilkjentYtelse {
+            val andeler = dtos.map(AndelTilkjentYtelse::from)
+
+            return when (andeler.size) {
+                0 -> TilkjentYtelse(andelerTilkjentYtelse = emptyList())
+                else -> TilkjentYtelse(andelerTilkjentYtelse = andeler)
+            }
+        }
+
+        fun from(json: String): TilkjentYtelse {
+            appLog.debug("trying to deserialize TilkjentYtelse: $json")
+            return objectMapper.readValue(json)
+        }
+    }
+
+    fun toJson(): String = objectMapper.writeValueAsString(this)
 }
 
 data class OppdragResultat(
     val oppdragStatus: OppdragStatus,
     val oppdragStatusOppdatert: LocalDateTime = LocalDateTime.now(),
 ) {
-    companion object Mapper
+    companion object {
+        fun from(json: String): OppdragResultat {
+            appLog.debug("trying to deserialize OppdragResultat: $json")
+            return objectMapper.readValue(json)
+        }
+    }
+
+    fun toJson(): String = objectMapper.writeValueAsString(this)
 }
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
@@ -144,7 +197,32 @@ data class OppdragResultat(
     JsonSubTypes.Type(StønadsdataTilleggsstønader::class, name = "tilleggsstønader"),
 )
 sealed class Stønadsdata(open val stønadstype: StønadType) {
-    companion object;
+    companion object {
+        fun from(dto: StønadsdataDto): Stønadsdata {
+            return when (dto) {
+                is StønadsdataAAPDto -> StønadsdataAAP(
+                    stønadstype = dto.stønadstype,
+                    fastsattDagsats = dto.fastsattDagsats
+                )
+                is StønadsdataDagpengerDto -> StønadsdataDagpenger(
+                    stønadstype = dto.stønadstype,
+                    ferietillegg = dto.ferietillegg,
+                    meldekortId = dto.meldekortId,
+                    fastsattDagsats = dto.fastsattDagsats,
+                )
+                is StønadsdataTiltakspengerV2Dto -> StønadsdataTiltakspenger(
+                    stønadstype = dto.stønadstype,
+                    barnetillegg = dto.barnetillegg,
+                    brukersNavKontor = BrukersNavKontor(enhet = dto.brukersNavKontor),
+                    meldekortId = dto.meldekortId,
+                )
+                is StønadsdataTilleggsstønaderDto -> StønadsdataTilleggsstønader(
+                    stønadstype = dto.stønadstype,
+                    brukersNavKontor = dto.brukersNavKontor?.let(::BrukersNavKontor)
+                )
+            }
+        }
+    }
 
     fun tilKlassifisering(): String =
         when (this) {
@@ -162,8 +240,7 @@ data class StønadsdataDagpenger(
     val ferietillegg: Ferietillegg? = null,
     val meldekortId: String,
     val fastsattDagsats: UInt,
-) :
-    Stønadsdata(stønadstype) {
+) : Stønadsdata(stønadstype) {
     fun tilKlassifiseringDagpenger(): String =
         when (this.stønadstype) {
             StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR ->
@@ -299,7 +376,14 @@ data class AndelTilkjentYtelse(
 ) {
     var id: UUID = UUID.randomUUID()
 
-    companion object;
+    companion object {
+        fun from(dto: UtbetalingV2Dto) = AndelTilkjentYtelse(
+            beløp = dto.beløp.toInt(),
+            satstype = dto.satstype,
+            periode = Periode(dto.fraOgMedDato, dto.tilOgMedDato),
+            stønadsdata = Stønadsdata.from(dto.stønadsdata)
+        )
+    }
 }
 
 data class Periode(val fom: LocalDate, val tom: LocalDate) : Comparable<Periode> {
@@ -388,3 +472,46 @@ class KjedenøkkelKeyDeserializer : KeyDeserializer() {
         ctx: DeserializationContext?,
     ): Kjedenøkkel? = key?.let { objectMapper.readValue(key, Kjedenøkkel::class.java) }
 }
+
+enum class OppdragStatus {
+    LAGT_PÅ_KØ,
+    KVITTERT_OK,
+    KVITTERT_MED_MANGLER,
+    KVITTERT_FUNKSJONELL_FEIL,
+    KVITTERT_TEKNISK_FEIL,
+    KVITTERT_UKJENT,
+    OK_UTEN_UTBETALING,
+}
+
+data class Utbetalingsoppdrag(
+    val erFørsteUtbetalingPåSak: Boolean,
+    val fagsystem: Fagsystem,
+    val saksnummer: String,
+    val iverksettingId: String?,
+    val aktør: String,
+    val saksbehandlerId: String,
+    val beslutterId: String? = null,
+    val avstemmingstidspunkt: LocalDateTime = LocalDateTime.now(),
+    val utbetalingsperiode: List<Utbetalingsperiode>,
+    val brukersNavKontor: String? = null,
+)
+
+data class Utbetalingsperiode(
+    val erEndringPåEksisterendePeriode: Boolean,
+    val opphør: Opphør? = null,
+    val periodeId: Long,
+    val forrigePeriodeId: Long? = null,
+    val vedtaksdato: LocalDate,
+    val klassifisering: String,
+    val fom: LocalDate,
+    val tom: LocalDate,
+    val sats: BigDecimal,
+    val satstype: Satstype,
+    val utbetalesTil: String,
+    val behandlingId: String,
+    val utbetalingsgrad: Int? = null,
+    val fastsattDagsats: BigDecimal? = null,
+)
+
+data class Opphør(val fom: LocalDate)
+

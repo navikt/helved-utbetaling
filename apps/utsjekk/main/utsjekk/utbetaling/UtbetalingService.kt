@@ -9,7 +9,7 @@ import libs.kafka.KafkaProducer
 import models.locked
 import models.notFound
 import utsjekk.*
-import utsjekk.utbetaling.abetal.OppdragService
+import utsjekk.utbetaling.UtbetalingOppdragService
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class UtbetalingService(
@@ -40,7 +40,7 @@ class UtbetalingService(
         }
 
         // TODO: Avvent118
-        val oppdrag = OppdragService.opprett(utbetaling, erFørsteUtbetalingPåSak)
+        val oppdrag = UtbetalingOppdragService.opprett(utbetaling, erFørsteUtbetalingPåSak)
         oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
 
         return withContext(Jdbc.context) {
@@ -95,7 +95,7 @@ class UtbetalingService(
         existing.validateLockedFields(utbetaling)
         existing.validateMinimumChanges(utbetaling)
 
-        val oppdrag = OppdragService.update(utbetaling, existing)
+        val oppdrag = UtbetalingOppdragService.update(utbetaling, existing)
         oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
 
         return withContext(Jdbc.context) {
@@ -127,7 +127,7 @@ class UtbetalingService(
         existing.validateLockedFields(utbetaling)
         existing.validateEqualityOnDelete(utbetaling)
 
-        val oppdrag = OppdragService.delete(utbetaling, existing)
+        val oppdrag = UtbetalingOppdragService.delete(utbetaling, existing)
         oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
 
         return withContext(Jdbc.context) {

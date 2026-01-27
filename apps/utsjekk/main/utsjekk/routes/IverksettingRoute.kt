@@ -9,7 +9,6 @@ import libs.utils.appLog
 import models.ApiError
 import models.DocumentedErrors
 import models.badRequest
-import models.kontrakter.iverksett.IverksettV2Dto
 import models.notFound
 import utsjekk.*
 import utsjekk.iverksetting.*

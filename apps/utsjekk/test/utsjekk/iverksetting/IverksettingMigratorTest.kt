@@ -9,10 +9,9 @@ import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
-import models.kontrakter.felles.BrukersNavKontor
-import models.kontrakter.felles.StønadTypeTilleggsstønader
-import models.kontrakter.felles.StønadTypeTiltakspenger
-import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.BrukersNavKontor
+import models.kontrakter.StønadTypeTilleggsstønader
+import models.kontrakter.StønadTypeTiltakspenger
 import org.junit.jupiter.api.Test
 import utsjekk.Topics
 import utsjekk.utbetaling.feb
@@ -65,7 +64,7 @@ class IverksettingMigratorTest {
             TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -93,7 +92,7 @@ class IverksettingMigratorTest {
             TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -101,7 +100,7 @@ class IverksettingMigratorTest {
             ).also { it.insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID())) }
 
             TestData.dao.iverksettingResultat(
-                fagsystem =models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER, 
+                fagsystem =models.kontrakter.Fagsystem.TILLEGGSSTØNADER, 
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),
@@ -130,7 +129,7 @@ class IverksettingMigratorTest {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -140,7 +139,7 @@ class IverksettingMigratorTest {
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER, 
+                fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER, 
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),
@@ -208,7 +207,7 @@ class IverksettingMigratorTest {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -218,7 +217,7 @@ class IverksettingMigratorTest {
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.felles.Fagsystem.TILLEGGSSTØNADER, 
+                fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER, 
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),
@@ -297,7 +296,7 @@ class IverksettingMigratorTest {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.felles.Fagsystem.TILTAKSPENGER,
+                    fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -307,7 +306,7 @@ class IverksettingMigratorTest {
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.felles.Fagsystem.TILTAKSPENGER, 
+                fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER, 
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),
@@ -392,7 +391,7 @@ class IverksettingMigratorTest {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.felles.Fagsystem.TILTAKSPENGER,
+                    fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -402,7 +401,7 @@ class IverksettingMigratorTest {
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.felles.Fagsystem.TILTAKSPENGER, 
+                fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER, 
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),
@@ -492,7 +491,7 @@ class IverksettingMigratorTest {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.felles.Fagsystem.TILTAKSPENGER,
+                    fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -502,7 +501,7 @@ class IverksettingMigratorTest {
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.felles.Fagsystem.TILTAKSPENGER, 
+                fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER, 
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),

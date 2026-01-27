@@ -1,20 +1,13 @@
-package utsjekk.iverksetting.abetal
+package utsjekk.iverksetting
 
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
-import models.kontrakter.felles.BrukersNavKontor
-import models.kontrakter.felles.Satstype
-import models.kontrakter.oppdrag.OppdragStatus
-import models.kontrakter.oppdrag.Utbetalingsoppdrag
-import models.kontrakter.oppdrag.Utbetalingsperiode
+import models.kontrakter.BrukersNavKontor
+import models.kontrakter.Satstype
 import no.trygdeetaten.skjema.oppdrag.*
-import utsjekk.iverksetting.*
-import utsjekk.iverksetting.IverksettingResultatDao
-import utsjekk.iverksetting.IverksettingResultater
-import utsjekk.iverksetting.utbetalingsoppdrag.Utbetalingsgenerator
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -26,14 +19,14 @@ private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofP
 private val fixedTime = LocalTime.of(10, 10, 0, 0)
 private fun LocalDate.toXMLDate(): XMLGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
 
-object OppdragService {
+object IverksettingOppdragService {
     suspend fun create(iverksetting: Iverksetting): Oppdrag? {
         val forrigeResultat = iverksetting.behandling.forrigeBehandlingId?.let {
-            IverksettingResultater.hentForrige(iverksetting)
+            IverksettingService.hentForrige(iverksetting)
         }
         val beregnetUtbetalingsoppdrag = utbetalingsoppdrag(iverksetting, forrigeResultat)
 
-        IverksettingResultater.oppdater(
+        IverksettingService.oppdater(
             iverksetting = iverksetting,
             resultat = OppdragResultat(OppdragStatus.LAGT_PÅ_KØ),
         )
@@ -70,7 +63,7 @@ object OppdragService {
         val forrigeSisteAndelPerKjede = forrigeResultat?.tilkjentYtelseForUtbetaling?.sisteAndelPerKjede ?: emptyMap()
         val nyTilkjentYtelseMedSisteAndelIKjede = lagTilkjentYtelseMedSisteAndelPerKjede(nyTilkjentYtelse, forrigeSisteAndelPerKjede)
         transaction {
-            IverksettingResultater.oppdater(iverksetting, nyTilkjentYtelseMedSisteAndelIKjede)
+            IverksettingService.oppdater(iverksetting, nyTilkjentYtelseMedSisteAndelIKjede)
         }
         return nyTilkjentYtelseMedSisteAndelIKjede
     }

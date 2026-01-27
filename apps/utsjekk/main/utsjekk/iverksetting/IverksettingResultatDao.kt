@@ -1,14 +1,14 @@
 package utsjekk.iverksetting
 
-import java.sql.ResultSet
-import kotlin.coroutines.coroutineContext
-import libs.jdbc.*
+import kotlinx.coroutines.currentCoroutineContext
 import libs.jdbc.concurrency.connection
-import libs.utils.*
-import models.kontrakter.felles.Fagsystem
-import models.kontrakter.felles.objectMapper
-import utsjekk.iverksetting.*
+import libs.jdbc.jdbcLog
+import libs.jdbc.map
+import libs.utils.secureLog
+import models.kontrakter.Fagsystem
+import models.kontrakter.objectMapper
 import utsjekk.utbetaling.UtbetalingId
+import java.sql.ResultSet
 
 data class IverksettingResultatDao(
     val fagsystem: Fagsystem,
@@ -23,7 +23,7 @@ data class IverksettingResultatDao(
             INSERT INTO $TABLE_NAME (fagsystem, sakId, behandling_id, iverksetting_id, tilkjentytelseforutbetaling, oppdragresultat, utbetaling_id)
             VALUES (?,?,?,?,to_json(?::json),to_json(?::json), ?)
         """.trimIndent()
-        coroutineContext.connection.prepareStatement(sql).use { stmt ->
+        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, fagsystem.name)
             stmt.setString(2, sakId.id)
             stmt.setString(3, behandlingId.id)
@@ -51,7 +51,7 @@ data class IverksettingResultatDao(
                 SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
                 WHERE utbetaling_id = ?
             """.trimIndent()
-        coroutineContext.connection.prepareStatement(sql).use { stmt ->
+        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
             tilkjentYtelseForUtbetaling?.let { 
                 stmt.setString(1, objectMapper.writeValueAsString(it)) 
             } ?: stmt.setNull(1, java.sql.Types.OTHER)
@@ -78,7 +78,7 @@ data class IverksettingResultatDao(
                 WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id = ?
             """.trimIndent()
 
-            coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 tilkjentYtelseForUtbetaling?.let { 
                     stmt.setString(1, objectMapper.writeValueAsString(it)) 
                 } ?: stmt.setNull(1, java.sql.Types.OTHER)
@@ -105,7 +105,7 @@ data class IverksettingResultatDao(
                 WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id IS NULL
             """.trimIndent()
 
-            coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 tilkjentYtelseForUtbetaling?.let { 
                     stmt.setString(1, objectMapper.writeValueAsString(it)) 
                 } ?: stmt.setNull(1, java.sql.Types.OTHER)
@@ -161,7 +161,7 @@ data class IverksettingResultatDao(
             // The posistion of the question marks in the sql must be relative to the position in the statement
             var position = 1
 
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 where.fagsystem?.let { stmt.setString(position++, it.name) }
                 where.sakId?.let { stmt.setString(position++, it.id) }
                 where.behandlingId?.let { stmt.setString(position++, it.id) }

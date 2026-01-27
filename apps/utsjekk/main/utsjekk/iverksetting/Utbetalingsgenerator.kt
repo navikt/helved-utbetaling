@@ -1,11 +1,13 @@
-package utsjekk.iverksetting.utbetalingsoppdrag
+package utsjekk.iverksetting
 
-import models.kontrakter.oppdrag.Utbetalingsoppdrag
-import models.kontrakter.oppdrag.Utbetalingsperiode
-import utsjekk.iverksetting.*
-import utsjekk.iverksetting.utbetalingsoppdrag.AndelValidator.validerAndeler
-import utsjekk.iverksetting.utbetalingsoppdrag.BeståendeAndelerBeregner.finnBeståendeAndeler
+import models.badRequest
+import models.kontrakter.Satstype
+import utsjekk.iverksetting.AndelValidator.validerAndeler
+import utsjekk.iverksetting.BeståendeAndelerBeregner.finnBeståendeAndeler
+import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.ZoneId
+import java.util.*
 
 object Utbetalingsgenerator {
     /**
@@ -197,5 +199,184 @@ object Utbetalingsgenerator {
     ): List<Utbetalingsperiode> {
         val utbetalingsperiodeMal = UtbetalingsperiodeMal(behandlingsinformasjon = behandlingsinformasjon)
         return andeler.map { utbetalingsperiodeMal.lagPeriodeFraAndel(it) }
+    }
+}
+
+/**
+ * Lager mal for generering av utbetalingsperioder med tilpasset setting av verdier basert på parametre
+ *
+ * @param[vedtak] for vedtakdato og opphørsdato hvis satt
+ * @param[erEndringPåEksisterendePeriode] ved true vil oppdrag sette asksjonskode ENDR på linje og ikke referere bakover
+ * @return mal med tilpasset lagPeriodeFraAndel
+ */
+internal data class UtbetalingsperiodeMal(
+    val behandlingsinformasjon: Behandlingsinformasjon,
+    val erEndringPåEksisterendePeriode: Boolean = false,
+) {
+    /**
+     * Lager utbetalingsperioder som legges på utbetalingsoppdrag. En utbetalingsperiode tilsvarer linjer hos økonomi
+     *
+     * Denne metoden brukes også til simulering og på dette tidspunktet er ikke vedtaksdatoen satt.
+     * Derfor defaulter vi til now() når vedtaksdato mangler.
+     *
+     * @param[andel] andel som skal mappes til periode
+     * @param[periodeIdOffset] brukes til å synce våre linjer med det som ligger hos økonomi
+     * @param[forrigePeriodeIdOffset] peker til forrige i kjeden. Kun relevant når IKKE erEndringPåEksisterendePeriode
+     * @param[opphørKjedeFom] fom-dato fra tidligste periode i kjede med endring
+     * @return Periode til utbetalingsoppdrag
+     */
+    fun lagPeriodeFraAndel(
+        andel: AndelData,
+        opphørKjedeFom: LocalDate? = null,
+    ): Utbetalingsperiode =
+        Utbetalingsperiode(
+            erEndringPåEksisterendePeriode = erEndringPåEksisterendePeriode,
+            opphør =
+                if (erEndringPåEksisterendePeriode) {
+                    val opphørDatoFom =
+                        opphørKjedeFom
+                            ?: error("Mangler opphørsdato for kjede")
+                    Opphør(opphørDatoFom)
+                } else {
+                    null
+                },
+            forrigePeriodeId = andel.forrigePeriodeId,
+            periodeId = andel.periodeId ?: error("Mangler periodeId på andel=${andel.id}"),
+            vedtaksdato = behandlingsinformasjon.vedtaksdato,
+            klassifisering = andel.stønadsdata.tilKlassifisering(),
+            fom = andel.fom,
+            tom = andel.tom,
+            sats = BigDecimal(andel.beløp),
+            satstype = andel.satstype,
+            utbetalesTil = behandlingsinformasjon.personident,
+            behandlingId = behandlingsinformasjon.behandlingId.id,
+            fastsattDagsats =
+                when (andel.stønadsdata) {
+                    is StønadsdataAAP -> andel.stønadsdata.fastsattDagsats?.let {BigDecimal(it.toInt()) }
+                    is StønadsdataDagpenger -> BigDecimal(andel.stønadsdata.fastsattDagsats.toInt())
+                    else -> null
+                },
+        )
+}
+
+private sealed interface BeståendeAndelResultat
+private object NyAndelSkriverOver : BeståendeAndelResultat
+private class Opphørsdato(val opphør: LocalDate) : BeståendeAndelResultat
+private class AvkortAndel(val andel: AndelData, val opphør: LocalDate? = null) : BeståendeAndelResultat
+internal data class BeståendeAndeler(val andeler: List<AndelData>, val opphørFra: LocalDate? = null)
+
+internal object BeståendeAndelerBeregner {
+
+    fun finnBeståendeAndeler(
+        existing: List<AndelData>,
+        requested: List<AndelData>,
+        opphørsdato: LocalDate?,
+    ): BeståendeAndeler {
+        if (opphørsdato != null) return BeståendeAndeler(emptyList(), opphørsdato)
+        val existingEnriched = existing.copyIdFrom(requested)
+        val indexOnFirstDiff = existing.getIndexOnFirstDiff(requested) 
+            ?: return BeståendeAndeler(existingEnriched, null) // normalt sett er det ny(e) andel(er) i kjeden som skal legges til  
+
+        return when (val opphørsdato = finnBeståendeAndelOgOpphør(indexOnFirstDiff, existingEnriched, requested)) {
+            is Opphørsdato -> BeståendeAndeler(existingEnriched.subList(0, indexOnFirstDiff), opphørsdato.opphør)
+            is NyAndelSkriverOver -> BeståendeAndeler(existingEnriched.subList(0, indexOnFirstDiff))
+            is AvkortAndel -> BeståendeAndeler(existingEnriched.subList(0, indexOnFirstDiff) + opphørsdato.andel, opphørsdato.opphør)
+        }
+    }
+
+    private fun finnBeståendeAndelOgOpphør(
+        indexOnFirstDiff: Int,
+        existing: List<AndelData>,
+        requested: List<AndelData>,
+    ): BeståendeAndelResultat {
+        val forrige = existing[indexOnFirstDiff]
+        val ny = if (requested.size > indexOnFirstDiff) requested[indexOnFirstDiff] else null
+        val nyNeste = if (requested.size > indexOnFirstDiff + 1) requested[indexOnFirstDiff + 1] else null
+        return finnBeståendeAndelOgOpphør(ny, forrige, nyNeste)
+    }
+
+    private fun finnBeståendeAndelOgOpphør(
+        ny: AndelData?,
+        forrige: AndelData,
+        nyNeste: AndelData?,
+    ): BeståendeAndelResultat {
+        if (ny == null || forrige.fom < ny.fom) return Opphørsdato(forrige.fom)
+        if (forrige.fom > ny.fom || forrige.beløp != ny.beløp) {
+            if (ny.beløp == 0) return Opphørsdato(ny.fom)
+            return NyAndelSkriverOver
+        }
+        if (forrige.tom > ny.tom) {
+            if (nyNeste != null && nyNeste.fom == ny.tom.plusDays(1) && nyNeste.beløp != 0) {
+                return AvkortAndel(forrige.copy(tom = ny.tom), null)
+            }
+            return AvkortAndel(forrige.copy(tom = ny.tom), ny.tom.plusDays(1) )
+        }
+        return NyAndelSkriverOver
+    }
+
+    private fun List<AndelData>.copyIdFrom(other: List<AndelData>) = 
+        this.mapIndexed { index, andel ->
+            if (other.size <= index) andel // fallback
+            else andel.copy(id = other[index].id) // ta ID fra requesten (random uuid)
+        }
+
+    private fun List<AndelData>.getIndexOnFirstDiff(other: List<AndelData>): Int? {
+        this.forEachIndexed { index, andel ->
+            if (other.size <= index) return index
+            if (!andel.erLik(other[index])) return index
+        }
+        return null // alt er likt, other har fler elementer
+    }
+
+    private fun AndelData.erLik(other: AndelData): Boolean =
+        this.fom == other.fom && this.tom == other.tom && this.beløp == other.beløp
+}
+
+internal object AndelValidator {
+    fun validerAndeler(
+        forrige: List<AndelData>,
+        nye: List<AndelData>,
+    ) {
+        if ((forrige + nye).any { it.beløp == 0 }) {
+            error("Andeler inneholder 0-beløp")
+        }
+
+        val alleIder = forrige.map { it.id } + nye.map { it.id }
+        if (alleIder.size != alleIder.toSet().size) {
+            error("Inneholder duplikat av id'er")
+        }
+
+        forrige
+            .filter { it.periodeId == null }
+            .forEach { error("Tidligere andel=${it.id} mangler periodeId") }
+
+        nye
+            .filter { it.periodeId != null || it.forrigePeriodeId != null }
+            .forEach { error("Ny andel=${it.id} inneholder periodeId/forrigePeriodeId") }
+
+        (forrige + nye).map { validerSatstype(it) }
+    }
+
+    private fun validerSatstype(andelData: AndelData) {
+        when (andelData.satstype) {
+            Satstype.MÅNEDLIG -> validerMånedssats(andelData)
+            else -> return
+        }
+    }
+
+    private fun validerMånedssats(andelData: AndelData) {
+        if (andelData.fom.dayOfMonth != 1 || andelData.tom != andelData.tom.sisteDagIMåneden()) {
+            badRequest("Utbetalinger med satstype ${andelData.satstype.name} må starte den første i måneden og slutte den siste i måneden")
+        }
+    }
+
+    private fun LocalDate.sisteDagIMåneden(): LocalDate {
+        val defaultZoneId = ZoneId.systemDefault()
+        val calendar = Calendar.getInstance().apply {
+            time = Date.from(this@sisteDagIMåneden.atStartOfDay(defaultZoneId).toInstant())
+            set(Calendar.DAY_OF_MONTH, this.getActualMaximum(Calendar.DAY_OF_MONTH))
+        }
+
+        return LocalDate.ofInstant(calendar.toInstant(), defaultZoneId)
     }
 }

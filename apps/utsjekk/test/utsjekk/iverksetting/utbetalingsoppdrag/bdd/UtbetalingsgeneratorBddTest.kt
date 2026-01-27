@@ -1,7 +1,7 @@
 package utsjekk.iverksetting.utbetalingsoppdrag.bdd
 
 import TestData.domain.andelData
-import models.kontrakter.felles.*
+import models.kontrakter.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

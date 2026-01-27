@@ -1,4 +1,4 @@
-package utsjekk.simulering
+package utsjekk.routes
 
 import TestData.domain.iverksetting
 import TestData.dto.api.forrigeIverksetting
@@ -7,34 +7,21 @@ import TestData.dto.api.utbetaling
 import TestRuntime
 import fakes.Azp
 import httpClient
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
-import models.kontrakter.felles.Fagsystem
-import models.kontrakter.felles.StønadTypeDagpenger
-import models.kontrakter.felles.StønadTypeTiltakspenger
-import models.kontrakter.felles.objectMapper
-import models.kontrakter.iverksett.StønadsdataDagpengerDto
-import models.kontrakter.iverksett.StønadsdataTiltakspengerV2Dto
-import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.Fagsystem
+import models.kontrakter.StønadTypeDagpenger
+import models.kontrakter.StønadTypeTiltakspenger
+import models.kontrakter.objectMapper
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import utsjekk.iverksetting.BehandlingId
-import utsjekk.iverksetting.IverksettingDao
-import utsjekk.iverksetting.IverksettingId
-import utsjekk.iverksetting.OppdragResultat
-import utsjekk.iverksetting.RandomOSURId
-import utsjekk.iverksetting.SakId
-import utsjekk.iverksetting.IverksettingResultater
+import utsjekk.iverksetting.*
 import utsjekk.utbetaling.UtbetalingId
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class SimuleringRouteTest {
     @Test
@@ -151,8 +138,7 @@ class SimuleringRouteTest {
         }
 
     @Test
-    fun `simuler for tilleggsstønader med eksisterende iverksetting`() =
-        runTest(TestRuntime.context) {
+    fun `simuler for tilleggsstønader med eksisterende iverksetting`() = runTest(TestRuntime.context) {
             val forrigeIverksettingId = IverksettingId(UUID.randomUUID().toString())
             val forrigeBehandlingId = BehandlingId("forrige-beh")
             val sakId = SakId("en-sakid")
@@ -168,8 +154,8 @@ class SimuleringRouteTest {
                 IverksettingDao(iverksetting, LocalDateTime.now()).insert(UtbetalingId(UUID.randomUUID()))
             }
 
-            IverksettingResultater.opprett(iverksetting, UtbetalingId(UUID.randomUUID()), OppdragResultat(OppdragStatus.KVITTERT_OK))
-            IverksettingResultater.oppdater(iverksetting, iverksetting.vedtak.tilkjentYtelse)
+            IverksettingService.saveEmptyResultat(iverksetting, UtbetalingId(UUID.randomUUID()), OppdragResultat(OppdragStatus.KVITTERT_OK))
+            IverksettingService.oppdater(iverksetting, iverksetting.vedtak.tilkjentYtelse)
 
             val res =
                 httpClient.post("/api/simulering/v2") {

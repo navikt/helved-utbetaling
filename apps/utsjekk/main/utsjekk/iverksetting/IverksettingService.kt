@@ -4,17 +4,14 @@ import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
-import models.kontrakter.felles.Fagsystem
-import models.kontrakter.iverksett.IverksettStatus
-import models.kontrakter.oppdrag.OppdragStatus
-import utsjekk.iverksetting.IverksettingResultatDao
-import utsjekk.iverksetting.IverksettingResultater
-import utsjekk.iverksetting.abetal.OppdragService
+import models.badRequest
+import models.conflict
+import models.kontrakter.Fagsystem
+import models.locked
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import utsjekk.partition
-import utsjekk.utbetaling.UtbetalingId
-import java.util.UUID
 import java.time.LocalDateTime
+import java.util.*
 
 class IverksettingService(
     private val oppdragProducer: KafkaProducer<String, Oppdrag>,
@@ -22,10 +19,10 @@ class IverksettingService(
     suspend fun valider(iverksetting: Iverksetting) {
         withContext(Jdbc.context) {
             transaction {
-                IverksettingValidator.validerAtIverksettingIkkeAlleredeErMottatt(iverksetting)
-                IverksettingValidator.validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
-                IverksettingValidator.validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
-                IverksettingValidator.validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting)
+                validerAtIverksettingIkkeAlleredeErMottatt(iverksetting)
+                validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
+                validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
+                validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting)
             }
         }
     }
@@ -34,13 +31,13 @@ class IverksettingService(
         withContext(Jdbc.context) {
             transaction {
                 val now = LocalDateTime.now()
-                val uid = UtbetalingId(UUID.randomUUID())
+                val uid = utsjekk.utbetaling.UtbetalingId(UUID.randomUUID())
                 IverksettingDao(iverksetting, now).insert(uid)
-                IverksettingResultater.opprett(iverksetting, uid, resultat = null)
+                saveEmptyResultat(iverksetting, uid, resultat = null)
                 
-                when (val oppdrag = OppdragService.create(iverksetting)) {
+                when (val oppdrag = IverksettingOppdragService.create(iverksetting)) {
                     null -> {
-                        IverksettingResultater.oppdater(
+                        oppdater(
                             iverksetting = iverksetting,
                             resultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING),
                         )
@@ -97,5 +94,186 @@ class IverksettingService(
             this.sakId = sakId
             this.fagsystem = fagsystem
         }.maxByOrNull { it.mottattTidspunkt }?.data
+    }
+
+    companion object {
+        suspend fun saveEmptyResultat(
+            iverksetting: Iverksetting,
+            uid: utsjekk.utbetaling.UtbetalingId,
+            resultat: OppdragResultat?,
+        ): IverksettingResultatDao {
+            return transaction {
+                IverksettingResultatDao(
+                    fagsystem = iverksetting.fagsak.fagsystem,
+                    sakId = iverksetting.sakId,
+                    behandlingId = iverksetting.behandlingId,
+                    iverksettingId = iverksetting.iverksettingId,
+                    oppdragResultat = resultat,
+                ).also {
+                    it.insert(uid)
+                }
+            }
+        }
+
+        suspend fun oppdater(iverksetting: Iverksetting, tilkjentYtelse: TilkjentYtelse) {
+            transaction {
+                hent(iverksetting)
+                    .copy(tilkjentYtelseForUtbetaling = tilkjentYtelse)
+                    .update()
+            }
+        }
+
+        suspend fun oppdater(iverksetting: Iverksetting, resultat: OppdragResultat) {
+            transaction {
+                hent(iverksetting)
+                    .copy(oppdragResultat = resultat)
+                    .update()
+            }
+        }
+
+        suspend fun hent(iverksetting: Iverksetting): IverksettingResultatDao {
+            return transaction {
+                IverksettingResultatDao.select(1) {
+                    this.iverksettingId = iverksetting.iverksettingId
+                    this.behandlingId = iverksetting.behandlingId
+                    this.sakId = iverksetting.sakId
+                    this.fagsystem = iverksetting.fagsak.fagsystem
+                }.singleOrNull() ?: error(
+                    """
+                    Fant ikke iverksettingresultat for iverksetting med 
+                        iverksettingId  ${iverksetting.iverksettingId}
+                        behandlingId    ${iverksetting.behandlingId}
+                        sakId           ${iverksetting.sakId}
+                        fagsystem       ${iverksetting.fagsak.fagsystem}
+                    """.trimIndent()
+                )
+            }
+        }
+
+        suspend fun hent(utbetalingId: UtbetalingId): IverksettingResultatDao {
+            return transaction {
+                IverksettingResultatDao.select(1) {
+                    this.iverksettingId = utbetalingId.iverksettingId
+                    this.behandlingId = utbetalingId.behandlingId
+                    this.sakId = utbetalingId.sakId
+                    this.fagsystem = utbetalingId.fagsystem
+                }.singleOrNull() ?: error(
+                    """
+                    Fant ikke iverksettingresultat for iverksetting med 
+                        iverksettingId  ${utbetalingId.iverksettingId}
+                        behandlingId    ${utbetalingId.behandlingId}
+                        sakId           ${utbetalingId.sakId}
+                        fagsystem       ${utbetalingId.fagsystem}
+                    """.trimIndent()
+                )
+            }
+        }
+
+        suspend fun hentForrige(iverksetting: Iverksetting): IverksettingResultatDao {
+            return transaction {
+                IverksettingResultatDao.select(1) {
+                    this.iverksettingId = iverksetting.behandling.forrigeIverksettingId
+                    this.behandlingId = iverksetting.behandling.forrigeBehandlingId
+                    this.sakId = iverksetting.sakId
+                    this.fagsystem = iverksetting.fagsak.fagsystem
+                }.singleOrNull() ?: error(
+                    """
+                    Fant ikke forrige iverksettingresultat for iverksetting med 
+                        forrigeIverksettingId  ${iverksetting.behandling.forrigeIverksettingId}
+                        forrigeBehandlingId    ${iverksetting.behandling.forrigeBehandlingId}
+                        sakId                  ${iverksetting.sakId}
+                        fagsystem              ${iverksetting.fagsak.fagsystem}
+                    """.trimIndent()
+                )
+            }
+        }
+
+        suspend fun validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting: Iverksetting) {
+            if (iverksetting.behandling.forrigeBehandlingId == null) {
+                return
+            }
+
+            val forrigeIverksetting = IverksettingDao.select {
+                this.sakId = iverksetting.sakId
+                this.behandlingId = iverksetting.behandling.forrigeBehandlingId
+                this.iverksettingId = iverksetting.behandling.forrigeIverksettingId
+                this.fagsystem = iverksetting.fagsak.fagsystem
+            }.firstOrNull()
+
+            if (forrigeIverksetting == null) {
+                badRequest(
+                    """
+                        Fant ikke iverksetting med sakId ${iverksetting.sakId} 
+                        og behandlingId ${iverksetting.behandling.forrigeBehandlingId} 
+                        og iverksettingId ${iverksetting.behandling.forrigeIverksettingId}
+                    """.trimIndent()
+                )
+            }
+        }
+
+        suspend fun validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting: Iverksetting) {
+            val sisteMottatteIverksetting = IverksettingDao.select {
+                this.sakId = iverksetting.sakId
+                this.fagsystem = iverksetting.fagsak.fagsystem
+            }.maxByOrNull { it.mottattTidspunkt }?.data
+            // TODO: Skriv om til if/else
+            sisteMottatteIverksetting?.let {
+                if (it.behandlingId != iverksetting.behandling.forrigeBehandlingId ||
+                    it.behandling.iverksettingId != iverksetting.behandling.forrigeIverksettingId
+                ) {
+                    badRequest(
+                        """
+                            Forrige iverksetting stemmer ikke med siste mottatte iverksetting på saken. 
+                            BehandlingId/IverksettingId forrige iverksetting: ${iverksetting.behandling.forrigeBehandlingId}/${iverksetting.behandling.forrigeIverksettingId}, 
+                            behandlingId/iverksettingId siste mottatte iverksetting: ${it.behandlingId}/${it.behandling.iverksettingId}
+                        """.trimIndent(),
+                    )
+                }
+            } ?: run {
+                if (iverksetting.behandling.forrigeBehandlingId != null || iverksetting.behandling.forrigeIverksettingId != null) {
+                    badRequest(
+                        """
+                            Det er ikke registrert noen tidligere iverksettinger på saken, men forrigeIverksetting er satt 
+                            til behandling ${iverksetting.behandling.forrigeBehandlingId}/iverksetting ${iverksetting.behandling.forrigeIverksettingId}
+                        """.trimIndent(),
+                    )
+                }
+            }
+        }
+
+        suspend fun validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting: Iverksetting) {
+            if (iverksetting.behandling.forrigeBehandlingId == null) {
+                return
+            }
+
+            val forrigeResultat = IverksettingResultatDao.select {
+                this.fagsystem = iverksetting.fagsak.fagsystem
+                this.sakId = iverksetting.sakId
+                this.behandlingId = iverksetting.behandling.forrigeBehandlingId
+                this.iverksettingId = iverksetting.behandling.forrigeIverksettingId
+            }.firstOrNull()
+
+            val kvittertOk = forrigeResultat?.oppdragResultat?.oppdragStatus in listOf(
+                OppdragStatus.KVITTERT_OK,
+                OppdragStatus.OK_UTEN_UTBETALING,
+            )
+
+            if (!kvittertOk) {
+                locked("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet")
+            }
+        }
+
+        suspend fun validerAtIverksettingIkkeAlleredeErMottatt(iverksetting: Iverksetting) {
+            val hentetIverksetting = IverksettingDao.select {
+                this.fagsystem = iverksetting.fagsak.fagsystem
+                this.sakId = iverksetting.fagsak.fagsakId
+                this.behandlingId = iverksetting.behandling.behandlingId
+                this.iverksettingId = iverksetting.behandling.iverksettingId
+            }.firstOrNull()
+
+            if (hentetIverksetting != null) {
+                conflict("Iverksettingen er allerede mottatt")
+            }
+        }
     }
 }

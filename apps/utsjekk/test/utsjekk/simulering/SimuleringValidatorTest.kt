@@ -12,14 +12,11 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
-import models.kontrakter.felles.StønadTypeDagpenger
-import models.kontrakter.iverksett.StønadsdataDagpengerDto
-import models.kontrakter.oppdrag.OppdragStatus
+import models.kontrakter.StønadTypeDagpenger
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.*
-import utsjekk.iverksetting.IverksettingResultater
 import utsjekk.utbetaling.UtbetalingId
 import java.time.LocalDateTime
 import java.util.*
@@ -39,8 +36,9 @@ class SimuleringValidatorTest {
                 IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert(UtbetalingId(UUID.randomUUID()))
                 IverksettingDao(iverksetting2, LocalDateTime.now()).insert(UtbetalingId(UUID.randomUUID()))
             }
-            IverksettingResultater.opprett(iverksetting1,UtbetalingId(UUID.randomUUID()),  OppdragResultat(OppdragStatus.KVITTERT_OK))
-            IverksettingResultater.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
+
+            IverksettingService.saveEmptyResultat(iverksetting1,UtbetalingId(UUID.randomUUID()),  OppdragResultat(OppdragStatus.KVITTERT_OK))
+            IverksettingService.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
 
             val res = httpClient.post("/api/simulering/v2") {
                 contentType(ContentType.Application.Json)
@@ -86,8 +84,8 @@ class SimuleringValidatorTest {
                 IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert(UtbetalingId(UUID.randomUUID()))
                 IverksettingDao(iverksetting2, LocalDateTime.now()).insert(UtbetalingId(UUID.randomUUID()))
             }
-            IverksettingResultater.opprett(iverksetting1, UtbetalingId(UUID.randomUUID()), OppdragResultat(OppdragStatus.KVITTERT_OK))
-            IverksettingResultater.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
+            IverksettingService.saveEmptyResultat(iverksetting1, UtbetalingId(UUID.randomUUID()), OppdragResultat(OppdragStatus.KVITTERT_OK))
+            IverksettingService.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
 
             val res = httpClient.post("/api/simulering/v2") {
                 contentType(ContentType.Application.Json)
@@ -133,8 +131,8 @@ class SimuleringValidatorTest {
                 IverksettingDao(iverksetting1, LocalDateTime.now().minusDays(2)).insert(UtbetalingId(UUID.randomUUID()))
                 IverksettingDao(iverksetting2, LocalDateTime.now()).insert(UtbetalingId(UUID.randomUUID()))
             }
-            IverksettingResultater.opprett(iverksetting1, UtbetalingId(UUID.randomUUID()), OppdragResultat(OppdragStatus.KVITTERT_OK))
-            IverksettingResultater.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
+            IverksettingService.saveEmptyResultat(iverksetting1, UtbetalingId(UUID.randomUUID()), OppdragResultat(OppdragStatus.KVITTERT_OK))
+            IverksettingService.oppdater(iverksetting1, iverksetting1.vedtak.tilkjentYtelse)
 
             val res = httpClient.post("/api/simulering/v2") {
                 contentType(ContentType.Application.Json)
@@ -147,10 +145,6 @@ class SimuleringValidatorTest {
                                 stønadsdata = StønadsdataDagpengerDto(stønadstype = StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR, meldekortId = "M1", fastsattDagsats = 1000u)
                             )
                         ),
-//                        forrigeIverksetting = forrigeIverksetting(
-//                            iverksetting1.behandlingId,
-//                            iverksetting1.iverksettingId
-//                        ),
                     ),
                 )
             }
