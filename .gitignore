@@ -12,6 +12,8 @@ build/
 # Kotlin
 .kotlin/
 
+.editorconfig
+
 # Generated sources
 src/generated
 

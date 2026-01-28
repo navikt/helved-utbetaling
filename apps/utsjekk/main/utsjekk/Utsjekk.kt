@@ -119,7 +119,8 @@ fun Application.utsjekk(
         log { call ->
             appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}")
             if (call.response.status()?.isSuccess() == false) {
-                secureLog.info("""${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}
+                secureLog.info(
+                    """${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}
 ${call.bodyAsText()}""".trimIndent()
                 )
             }
@@ -148,6 +149,7 @@ ${call.bodyAsText()}""".trimIndent()
     val simuleringRoutes = SimuleringRoutes(
         config,
         kafka,
+
         iverksettingService,
         utbetalingService,
     )
@@ -234,4 +236,3 @@ fun uuid(str: String): UUID {
         badRequest("Path param må være UUID")
     }
 }
-

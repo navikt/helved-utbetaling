@@ -5,11 +5,9 @@ import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import models.notFound
 import utsjekk.TokenType
-import utsjekk.simulering.SimuleringClient
 import utsjekk.utbetaling.*
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import utsjekk.simulering.SimuleringApi
 
 class SimuleringUtbetalingService(
     private val client: SimuleringClient,

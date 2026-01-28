@@ -6,6 +6,7 @@ import models.Simulering
 import models.StatusReply
 import models.locked
 import java.util.concurrent.ConcurrentHashMap
+import libs.utils.appLog
 
 object SimuleringSubscriptions {
     private val subscriptions = ConcurrentHashMap<String, CompletableDeferred<Simulering>>()
@@ -14,7 +15,7 @@ object SimuleringSubscriptions {
     val subscriptionEvents = Channel<String>(Channel.UNLIMITED)
 
     fun subscribeV1(key: String): Pair<CompletableDeferred<models.v1.Simulering>, CompletableDeferred<StatusReply>> {
-        libs.utils.appLog.info("subscribe to $key")
+        appLog.info("subscribe to $key")
         if (subscriptionsV1.containsKey(key)) locked("Simulering for $key pågår allerede")
 
         val simuleringDeferred = CompletableDeferred<models.v1.Simulering>()
@@ -28,7 +29,7 @@ object SimuleringSubscriptions {
     }
 
     fun subscribe(key: String): Pair<CompletableDeferred<Simulering>, CompletableDeferred<StatusReply>> {
-        libs.utils.appLog.info("subscribe to $key")
+        appLog.info("subscribe to $key")
         if (subscriptions.containsKey(key)) locked("Simulering for $key pågår allerede")
 
         val simuleringDeferred = CompletableDeferred<Simulering>()
@@ -42,7 +43,7 @@ object SimuleringSubscriptions {
     }
 
     fun unsubscribe(key: String) {
-        libs.utils.appLog.info("unsubscribe to $key")
+        appLog.info("unsubscribe to $key")
         subscriptions[key]?.cancel()
         subscriptions.remove(key)
 
