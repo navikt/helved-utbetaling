@@ -86,6 +86,8 @@ private fun saveOppdragAndSendIfReady(
         val hashKey = DaoOppdrag.hash(oppdrag)
         transaction {
             saveIdempotent(key, hashKey, oppdrag, meta)
+        }
+        transaction {
             val lockedOppdrag = DaoOppdrag.findWithLock(hashKey)
                 ?: return@transaction StatusReply.mottatt(oppdrag)
             val alreadySent = lockedOppdrag.sent && meta.headers["resend"] != "true"
