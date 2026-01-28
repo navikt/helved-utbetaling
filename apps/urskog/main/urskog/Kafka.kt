@@ -82,36 +82,23 @@ private fun saveOppdragAndSendIfReady(
     oppdrag: Oppdrag,
     meta: Metadata,
 ): StatusReply {
-     val (oppdragToSend, resultStatus) = runBlocking {
-        withContext(Jdbc.context + Dispatchers.IO) {
+    return runBlocking(Jdbc.context + Dispatchers.IO) {
         val hashKey = DaoOppdrag.hash(oppdrag)
-            val oppdragDao = transaction {
-                saveIdempotent(key, hashKey, oppdrag, meta) 
-            }
-            if (pendingIsReady(hashKey, oppdragDao.uids) && (!oppdragDao.sent || meta.headers["resend"] == "true")) {
-                oppdragDao to StatusReply.sendt(oppdrag)
+        transaction {
+            saveIdempotent(key, hashKey, oppdrag, meta)
+            val lockedOppdrag = DaoOppdrag.findWithLock(hashKey)
+                ?: return@transaction StatusReply.mottatt(oppdrag)
+            val alreadySent = lockedOppdrag.sent && meta.headers["resend"] != "true"
+            if (!alreadySent && pendingIsReady(hashKey, lockedOppdrag.uids)) {
+                mq.send(oppdrag)
+                lockedOppdrag.updateAsSent()
+                StatusReply.sendt(oppdrag)
             } else {
-                null to StatusReply.mottatt(oppdrag)
+                StatusReply.mottatt(oppdrag)
             }
         }
     }
-    if (oppdragToSend != null) {
-        runBlocking {
-            withContext(Jdbc.context + Dispatchers.IO) {
-                transaction { 
-                    mq.send(oppdrag)
-                    oppdragToSend.updateAsSent()
-                }
-            }
-        }
-    }
-    return resultStatus
 }
-
-// Jdbc.context holds the jdbc connection
-// Dispatchers.IO uses a thread-pool specialized for IO operations
-// SupervisorJob uses a long-lived scope that does not kill the whole scope if one transaction fails.
-// private val daoScope = CoroutineScope(Jdbc.context + Dispatchers.IO + SupervisorJob())
 
 private fun updatePendingAndOppdrag(
     mq: OppdragMQProducer,
@@ -128,21 +115,15 @@ private fun updatePendingAndOppdrag(
 
         transaction {
             DaoPendingUtbetaling(hashKey, key).insertIdempotent()
-        }
-
-        val dao = transaction {
-            DaoOppdrag.find(hashKey)
-        }
-
-        if (dao != null && pendingIsReady(hashKey, dao.uids) && (!dao.sent || meta.headers["resend"] == "true")) {
-            transaction {
-                mq.send(dao.oppdrag)
-                dao.updateAsSent()
-                kafkaLog.info("sent and updated hash:$hashKey")
-                KeyValue(value.originalKey, StatusReply.sendt(dao.oppdrag))
+            val lockedOppdrag = DaoOppdrag.findWithLock(hashKey)
+            val alreadySent = lockedOppdrag != null && lockedOppdrag.sent && meta.headers["resend"] != "true"
+            if (!alreadySent && lockedOppdrag != null && pendingIsReady(hashKey, lockedOppdrag.uids)) {
+                mq.send(lockedOppdrag.oppdrag)
+                lockedOppdrag.updateAsSent()
+                KeyValue(value.originalKey, StatusReply.sendt(lockedOppdrag.oppdrag))
+            } else {
+                KeyValue(value.originalKey, StatusReply(Status.MOTTATT))
             }
-        } else {
-            KeyValue(value.originalKey, StatusReply(Status.MOTTATT)) // midlertidig
         }
     }
 }

@@ -42,6 +42,21 @@ data class DaoOppdrag (
                 stmt.executeQuery().map(::from).firstOrNull()
             }
         }
+
+        suspend fun findWithLock(hashKey: Int): DaoOppdrag? {
+            val sql = """
+                SELECT * FROM $TABLE 
+                WHERE hash_key = ? 
+                FOR UPDATE
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setInt(1, hashKey)
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().map(::from).firstOrNull()
+            }
+        }
     }
 
     suspend fun insertIdempotent(): Boolean {
