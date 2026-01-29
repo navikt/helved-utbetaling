@@ -1,10 +1,7 @@
 package urskog
 
-import kotlinx.coroutines.currentCoroutineContext
-import libs.jdbc.concurrency.connection
-import libs.jdbc.map
+import libs.jdbc.Dao
 import libs.utils.logger
-import libs.utils.secureLog
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -22,8 +19,19 @@ data class DaoOppdrag (
     val sent: Boolean = false,
     val sentAt: LocalDateTime? = null,
 ) {
-    companion object {
-        const val TABLE = "oppdrag"
+
+    companion object: Dao<DaoOppdrag> {
+        override val table = "oppdrag" 
+
+        override fun from(rs: ResultSet) = DaoOppdrag(
+            kafkaKey = rs.getString("kafka_key"),
+            oppdrag = rs.getString("oppdrag").let { mapper.readValue(it) },
+            sakId = rs.getString("sak_id"),
+            behandlingId = rs.getString("behandling_id"),
+            uids = rs.getString("uids")?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList(),
+            sent = rs.getBoolean("sent"),
+            sentAt = rs.getTimestamp("sent_at")?.toLocalDateTime(),
+        )
 
         fun hash(oppdrag: Oppdrag): Int { 
             return mapper.writeValueAsString(oppdrag).hashCode()
@@ -31,37 +39,31 @@ data class DaoOppdrag (
 
         suspend fun find(hashKey: Int): DaoOppdrag? {
             val sql = """
-                SELECT * FROM $TABLE 
+                SELECT * FROM $table 
                 WHERE hash_key = ? 
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 stmt.setInt(1, hashKey)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from).firstOrNull()
-            }
+            }.firstOrNull()
         }
 
         suspend fun findWithLock(hashKey: Int): DaoOppdrag? {
             val sql = """
-                SELECT * FROM $TABLE 
+                SELECT * FROM $table 
                 WHERE hash_key = ? 
                 FOR UPDATE
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 stmt.setInt(1, hashKey)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from).firstOrNull()
-            }
+            }.firstOrNull()
         }
     }
 
     suspend fun insertIdempotent(): Boolean {
         val sql = """
-            INSERT INTO $TABLE (
+            INSERT INTO $table (
                 hash_key,
                 kafka_key,
                 oppdrag,
@@ -76,7 +78,7 @@ data class DaoOppdrag (
 
         val hashKey = hash(oppdrag)
 
-        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+        val rowsAffected = update(sql) { stmt ->
             stmt.setInt(1, hashKey)
             stmt.setString(2, kafkaKey)
             stmt.setString(3, mapper.writeValueAsString(oppdrag))
@@ -85,42 +87,27 @@ data class DaoOppdrag (
             stmt.setString(6, uids.joinToString(","))
             stmt.setBoolean(7, sent)
             stmt.setTimestamp(8, sentAt?.let { Timestamp.valueOf(it) }) 
-            daoLog.debug(sql)
-            secureLog.debug(stmt.toString())
-            return when(val rowsAffected = stmt.executeUpdate()) {
-                0 -> false.also { daoLog.info("Idempotent guard: row in $TABLE already exists for $hashKey") }
-                else -> true.also{ daoLog.info("row in $TABLE inserted for $hashKey") }
-            }
+        }
+
+        return when(rowsAffected) {
+            0 -> false.also { daoLog.info("Idempotent guard: row in $table already exists for $hashKey") }
+            else -> true.also{ daoLog.info("row in $table inserted for $hashKey") }
         }
     }
 
     suspend fun updateAsSent() {
         val sql = """
-            UPDATE $TABLE
+            UPDATE $table
             SET 
                 sent = ?,
                 sent_at = ?
             WHERE hash_key = ?
         """.trimIndent()
 
-        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+        update(sql) { stmt ->
             stmt.setBoolean(1, true)
             stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
             stmt.setInt(3, hash(oppdrag))
-            daoLog.debug(sql)
-            secureLog.debug(stmt.toString())
-            stmt.executeUpdate()
         }
     }
 }
-
-private fun from(rs: ResultSet) = DaoOppdrag(
-    kafkaKey = rs.getString("kafka_key"),
-    oppdrag = rs.getString("oppdrag").let { mapper.readValue(it) },
-    sakId = rs.getString("sak_id"),
-    behandlingId = rs.getString("behandling_id"),
-    uids = rs.getString("uids")?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList(),
-    sent = rs.getBoolean("sent"),
-    sentAt = rs.getTimestamp("sent_at")?.toLocalDateTime(),
-)
-

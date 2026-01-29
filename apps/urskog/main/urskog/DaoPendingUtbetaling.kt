@@ -1,10 +1,7 @@
 package urskog
 
-import kotlinx.coroutines.currentCoroutineContext
-import libs.jdbc.concurrency.connection
-import libs.jdbc.map
+import libs.jdbc.Dao
 import libs.utils.logger
-import libs.utils.secureLog
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -19,8 +16,15 @@ data class DaoPendingUtbetaling (
     val mottatt: Boolean = true,
     val mottattAt: LocalDateTime = LocalDateTime.now(),
 ) {
-    companion object {
-        const val TABLE = "pending_utbetaling"
+    companion object: Dao<DaoPendingUtbetaling> {
+        override val table = "pending_utbetaling"
+
+        override fun from(rs: ResultSet) = DaoPendingUtbetaling(
+            hashKey = rs.getInt("hash_key"),
+            uid = rs.getString("uid"),
+            mottatt = rs.getBoolean("mottatt"),
+            mottattAt = rs.getTimestamp("mottatt_at").toLocalDateTime(),
+        )
 
         fun hash(oppdrag: Oppdrag): Int { 
             return mapper.writeValueAsString(oppdrag).hashCode()
@@ -28,22 +32,19 @@ data class DaoPendingUtbetaling (
 
         suspend fun findAll(hashKey: Int): List<DaoPendingUtbetaling> {
             val sql = """
-                SELECT * FROM $TABLE 
+                SELECT * FROM $table 
                 WHERE hash_key = ? 
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 stmt.setInt(1, hashKey)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
             }
         }
     }
 
     suspend fun insertIdempotent() {
         val sql = """
-            INSERT INTO $TABLE (
+            INSERT INTO $table (
                 hash_key,
                 uid,
                 mottatt,
@@ -52,24 +53,17 @@ data class DaoPendingUtbetaling (
             ON CONFLICT (hash_key, uid) DO NOTHING
         """.trimIndent()
 
-        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+        val rowsAffected = update(sql) { stmt ->
             stmt.setInt(1, hashKey)
             stmt.setString(2, uid)
             stmt.setBoolean(3, mottatt)
             stmt.setTimestamp(4, Timestamp.valueOf(mottattAt))
-            daoLog.debug(sql)
-            secureLog.debug(stmt.toString())
-            when(val rowsAffected = stmt.executeUpdate()) {
-                0 -> daoLog.info("Idempotent guard: row in $TABLE already exists for $hashKey/$uid.")
-                else -> daoLog.info("row in $TABLE inserted for $hashKey/$uid.")
-            }
+        }
+
+        when(rowsAffected) {
+            0 -> daoLog.info("Idempotent guard: row in $table already exists for $hashKey/$uid.")
+            else -> daoLog.info("row in $table inserted for $hashKey/$uid.")
         }
     }
 }
 
-private fun from(rs: ResultSet) = DaoPendingUtbetaling(
-    hashKey = rs.getInt("hash_key"),
-    uid = rs.getString("uid"),
-    mottatt = rs.getBoolean("mottatt"),
-    mottattAt = rs.getTimestamp("mottatt_at").toLocalDateTime(),
-)
