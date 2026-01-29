@@ -182,13 +182,13 @@ fun Topology.simulering(simuleringService: SimuleringService) {
             map { result -> result.unwrap() }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.AAP }) {
                     map { (sim, _) -> sim }
-                        .map { Result.catch { into(it) } }
+                        .map { Result.catch { Simulering.from(it) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunAap) }
                         .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.DAGPENGER }) {
                     map { (sim, _) -> sim }
-                        .map { Result.catch { into(it) } }
+                        .map { Result.catch { Simulering.from(it) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunDp) }
                         .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }
