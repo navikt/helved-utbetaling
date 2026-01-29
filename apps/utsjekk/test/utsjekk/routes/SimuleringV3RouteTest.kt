@@ -71,6 +71,7 @@ class SimuleringV3RouteTest {
                                 stønadstype = StønadTypeDagpenger.DAGPENGER,
                                 tidligereUtbetalt = 1572,
                                 nyttBeløp = 1572,
+                                posteringer = listOf(),
                             )
                         )
                     )
