@@ -45,7 +45,7 @@ class ApiTest {
         val result = TestRuntime.ktor.httpClient.get("/api?limit=2") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Dao>>()
+        }.body<List<Daos>>()
 
         assertEquals(2, result.size)
     }
@@ -59,7 +59,7 @@ class ApiTest {
         val result = TestRuntime.ktor.httpClient.get("/api?key=testkey") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Dao>>()
+        }.body<List<Daos>>()
 
         assertEquals(2, result.size)
         assertTrue(result.map { it.topic_name }.containsAll(listOf(Topics.utbetalinger.name, Topics.aap.name)))
@@ -74,7 +74,7 @@ class ApiTest {
         val result = TestRuntime.ktor.httpClient.get("/api/${Channel.Dp.topic.name}/0/$offset") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<Dao>()
+        }.body<Daos>()
 
         assertEquals(key, result.key)
     }
@@ -88,7 +88,7 @@ class ApiTest {
         val result = TestRuntime.ktor.httpClient.get("/api?topics=helved.utbetalinger-aap.v1,helved.simuleringer.v1") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Dao>>()
+        }.body<List<Daos>>()
 
         assertEquals(2, result.size)
         assertTrue(result.map { it.topic_name }.containsAll(listOf(Topics.aapIntern.name, Topics.simuleringer.name)))
@@ -104,7 +104,7 @@ class ApiTest {
         val result = TestRuntime.ktor.httpClient.get("/api?value=$sakId") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Dao>>()
+        }.body<List<Daos>>()
 
         assertEquals(1, result.size)
         assertTrue(result.first().value!!.contains(sakId))
@@ -122,7 +122,7 @@ class ApiTest {
         val result = TestRuntime.ktor.httpClient.get("/api?value=$sakId,$behandlingId") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Dao>>()
+        }.body<List<Daos>>()
 
         assertEquals(2, result.size)
         assertNotNull(result.find { it.value!!.contains(sakId) })
@@ -157,7 +157,7 @@ class ApiTest {
         val result = TestRuntime.ktor.httpClient.get("/api?fom=$fom&tom=$tom&key=$key") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Dao>>()
+        }.body<List<Daos>>()
 
         assertEquals(1, result.size)
         assertEquals(Topics.utbetalinger.name, result[0].topic_name)
@@ -206,7 +206,7 @@ class ApiTest {
         TestRuntime.ktor.httpClient.get("/api/saker") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Dao>>()
+        }.body<List<Daos>>()
     }
 
     @Test
@@ -223,7 +223,7 @@ class ApiTest {
         TestRuntime.ktor.httpClient.get("/api/saker/test/test") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Dao>>()
+        }.body<List<Daos>>()
     }
 
     private suspend fun save(
@@ -234,7 +234,7 @@ class ApiTest {
         commitHash: String = "test",
         offset: Long,
     ) {
-        val dao = Dao(
+        val dao = Daos(
             topic_name = channel.topic.name,
             version = "v1",
             key = key,

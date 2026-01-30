@@ -1,10 +1,6 @@
 package utsjekk.iverksetting
 
-import kotlinx.coroutines.currentCoroutineContext
-import libs.jdbc.concurrency.connection
-import libs.jdbc.jdbcLog
-import libs.jdbc.map
-import libs.utils.secureLog
+import libs.jdbc.Dao
 import models.kontrakter.Fagsystem
 import models.kontrakter.objectMapper
 import utsjekk.utbetaling.UtbetalingId
@@ -18,120 +14,18 @@ data class IverksettingResultatDao(
     val tilkjentYtelseForUtbetaling: TilkjentYtelse? = null,
     val oppdragResultat: OppdragResultat? = null,
 ) {
-    suspend fun insert(uid: UtbetalingId) {
-        val sql = """
-            INSERT INTO $TABLE_NAME (fagsystem, sakId, behandling_id, iverksetting_id, tilkjentytelseforutbetaling, oppdragresultat, utbetaling_id)
-            VALUES (?,?,?,?,to_json(?::json),to_json(?::json), ?)
-        """.trimIndent()
-        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-            stmt.setObject(1, fagsystem.name)
-            stmt.setString(2, sakId.id)
-            stmt.setString(3, behandlingId.id)
-            stmt.setString(4, iverksettingId?.id)
 
-            tilkjentYtelseForUtbetaling?.let { 
-                stmt.setString(5, objectMapper.writeValueAsString(it)) 
-            } ?: stmt.setNull(5, java.sql.Types.OTHER)
+    companion object : Dao<IverksettingResultatDao> {
+        override val table = "iverksettingsresultat"
 
-            oppdragResultat?.let { 
-                stmt.setString(6, objectMapper.writeValueAsString(it))
-            } ?: stmt.setNull(6, java.sql.Types.OTHER)
-
-            stmt.setObject(7, uid.id)
-
-            jdbcLog.debug(sql)
-            secureLog.debug(stmt.toString())
-            stmt.executeUpdate()
-        }
-    }
-
-    suspend fun update(uid: UtbetalingId) {
-        val sql = """
-                UPDATE $TABLE_NAME 
-                SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
-                WHERE utbetaling_id = ?
-            """.trimIndent()
-        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-            tilkjentYtelseForUtbetaling?.let { 
-                stmt.setString(1, objectMapper.writeValueAsString(it)) 
-            } ?: stmt.setNull(1, java.sql.Types.OTHER)
-
-            oppdragResultat?.let { 
-                stmt.setString(2, objectMapper.writeValueAsString(it))
-            } ?: stmt.setNull(2, java.sql.Types.OTHER)
-
-            stmt.setObject(3, uid.id)
-
-            jdbcLog.debug(sql)
-            secureLog.debug(stmt.toString())
-            stmt.executeUpdate()
-        }
-    }
-
-    suspend fun update() {
-
-        suspend fun updateWithIverksettingId() {
-
-            val sql = """
-                UPDATE $TABLE_NAME 
-                SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
-                WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id = ?
-            """.trimIndent()
-
-            currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                tilkjentYtelseForUtbetaling?.let { 
-                    stmt.setString(1, objectMapper.writeValueAsString(it)) 
-                } ?: stmt.setNull(1, java.sql.Types.OTHER)
-
-                oppdragResultat?.let { 
-                    stmt.setString(2, objectMapper.writeValueAsString(it))
-                } ?: stmt.setNull(2, java.sql.Types.OTHER)
-
-                stmt.setString(3, behandlingId.id)
-                stmt.setString(4, sakId.id)
-                stmt.setString(5, fagsystem.name)
-                stmt.setString(6, requireNotNull(iverksettingId).id)
-
-                jdbcLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeUpdate()
-            }
-        }
-
-        suspend fun updateWithoutIverksettingId() {
-            val sql = """
-                UPDATE $TABLE_NAME 
-                SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
-                WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id IS NULL
-            """.trimIndent()
-
-            currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                tilkjentYtelseForUtbetaling?.let { 
-                    stmt.setString(1, objectMapper.writeValueAsString(it)) 
-                } ?: stmt.setNull(1, java.sql.Types.OTHER)
-
-                oppdragResultat?.let { 
-                    stmt.setString(2, objectMapper.writeValueAsString(it))
-                } ?: stmt.setNull(2, java.sql.Types.OTHER)
-
-                stmt.setString(3, behandlingId.id)
-                stmt.setString(4, sakId.id)
-                stmt.setString(5, fagsystem.name)
-
-                jdbcLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeUpdate()
-            }
-        }
-
-        when (iverksettingId) {
-            null -> updateWithoutIverksettingId()
-            else -> updateWithIverksettingId()
-        }
-    }
-
-    companion object {
-        const val TABLE_NAME = "iverksettingsresultat"
+        override fun from(rs: ResultSet) = IverksettingResultatDao(
+            fagsystem = Fagsystem.valueOf(rs.getString("fagsystem")),
+            sakId = SakId(rs.getString("sakId")),
+            behandlingId = BehandlingId(rs.getString("behandling_id")),
+            iverksettingId = rs.getString("iverksetting_id")?.let(::IverksettingId),
+            tilkjentYtelseForUtbetaling = rs.getString("tilkjentytelseforutbetaling")?.let{ TilkjentYtelse.from(it) },
+            oppdragResultat = rs.getString("oppdragresultat")?.let{ OppdragResultat.from(it) },
+        )
 
         suspend fun select(
             limit: Int? = null,
@@ -140,7 +34,7 @@ data class IverksettingResultatDao(
             val where = Where().apply(where)
 
             val sql = buildString {
-                append("SELECT * FROM $TABLE_NAME")
+                append("SELECT * FROM $table")
 
                 if (where.any()) {
                     append(" WHERE ")
@@ -161,7 +55,7 @@ data class IverksettingResultatDao(
             // The posistion of the question marks in the sql must be relative to the position in the statement
             var position = 1
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 where.fagsystem?.let { stmt.setString(position++, it.name) }
                 where.sakId?.let { stmt.setString(position++, it.id) }
                 where.behandlingId?.let { stmt.setString(position++, it.id) }
@@ -170,21 +64,104 @@ data class IverksettingResultatDao(
                 where.oppdragresultat?.let { stmt.setString(position++, it.toJson()) }
                 where.uid?.let { stmt.setObject(position++, it.id) }
                 limit?.let { stmt.setInt(position, it) } // position++ if more where parameters is added
+            }
+        }
+    }
+    suspend fun insert(uid: UtbetalingId): Int {
+        val sql = """
+            INSERT INTO $table (fagsystem, sakId, behandling_id, iverksetting_id, tilkjentytelseforutbetaling, oppdragresultat, utbetaling_id)
+            VALUES (?,?,?,?,to_json(?::json),to_json(?::json), ?)
+        """.trimIndent()
 
-                jdbcLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
+        return update(sql) { stmt ->
+            stmt.setObject(1, fagsystem.name)
+            stmt.setString(2, sakId.id)
+            stmt.setString(3, behandlingId.id)
+            stmt.setString(4, iverksettingId?.id)
+
+            tilkjentYtelseForUtbetaling?.let { 
+                stmt.setString(5, objectMapper.writeValueAsString(it)) 
+            } ?: stmt.setNull(5, java.sql.Types.OTHER)
+
+            oppdragResultat?.let { 
+                stmt.setString(6, objectMapper.writeValueAsString(it))
+            } ?: stmt.setNull(6, java.sql.Types.OTHER)
+
+            stmt.setObject(7, uid.id)
+        }
+    }
+
+    suspend fun update(uid: UtbetalingId): Int {
+        val sql = """
+                UPDATE $table 
+                SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
+                WHERE utbetaling_id = ?
+        """.trimIndent()
+
+        return update(sql) { stmt ->
+            tilkjentYtelseForUtbetaling?.let { 
+                stmt.setString(1, objectMapper.writeValueAsString(it)) 
+            } ?: stmt.setNull(1, java.sql.Types.OTHER)
+
+            oppdragResultat?.let { 
+                stmt.setString(2, objectMapper.writeValueAsString(it))
+            } ?: stmt.setNull(2, java.sql.Types.OTHER)
+
+            stmt.setObject(3, uid.id)
+        }
+    }
+
+    suspend fun update() {
+
+        suspend fun updateWithIverksettingId(): Int {
+            val sql = """
+                UPDATE $table 
+                SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
+                WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id = ?
+            """.trimIndent()
+
+            return update(sql) { stmt -> 
+                tilkjentYtelseForUtbetaling?.let { 
+                    stmt.setString(1, objectMapper.writeValueAsString(it)) 
+                } ?: stmt.setNull(1, java.sql.Types.OTHER)
+
+                oppdragResultat?.let { 
+                    stmt.setString(2, objectMapper.writeValueAsString(it))
+                } ?: stmt.setNull(2, java.sql.Types.OTHER)
+
+                stmt.setString(3, behandlingId.id)
+                stmt.setString(4, sakId.id)
+                stmt.setString(5, fagsystem.name)
+                stmt.setString(6, requireNotNull(iverksettingId).id)
             }
         }
 
-        private fun from(rs: ResultSet) = IverksettingResultatDao(
-            fagsystem = Fagsystem.valueOf(rs.getString("fagsystem")),
-            sakId = SakId(rs.getString("sakId")),
-            behandlingId = BehandlingId(rs.getString("behandling_id")),
-            iverksettingId = rs.getString("iverksetting_id")?.let(::IverksettingId),
-            tilkjentYtelseForUtbetaling = rs.getString("tilkjentytelseforutbetaling")?.let{ TilkjentYtelse.from(it) },
-            oppdragResultat = rs.getString("oppdragresultat")?.let{ OppdragResultat.from(it) },
-        )
+        suspend fun updateWithoutIverksettingId(): Int {
+            val sql = """
+                UPDATE $table 
+                SET tilkjentytelseforutbetaling = to_json(?::json), oppdragresultat = to_json(?::json)
+                WHERE behandling_id = ? AND sakId = ? AND fagsystem = ? AND iverksetting_id IS NULL
+            """.trimIndent()
+
+            return update(sql) { stmt ->
+                tilkjentYtelseForUtbetaling?.let { 
+                    stmt.setString(1, objectMapper.writeValueAsString(it)) 
+                } ?: stmt.setNull(1, java.sql.Types.OTHER)
+
+                oppdragResultat?.let { 
+                    stmt.setString(2, objectMapper.writeValueAsString(it))
+                } ?: stmt.setNull(2, java.sql.Types.OTHER)
+
+                stmt.setString(3, behandlingId.id)
+                stmt.setString(4, sakId.id)
+                stmt.setString(5, fagsystem.name)
+            }
+        }
+
+        when (iverksettingId) {
+            null -> updateWithoutIverksettingId()
+            else -> updateWithIverksettingId()
+        }
     }
 
     data class Where(
@@ -197,7 +174,13 @@ data class IverksettingResultatDao(
         var uid: UtbetalingId? = null,
     ) {
         fun any() = listOf(
-            fagsystem, sakId, behandlingId, iverksettingId, tilkjentytelseforutbetaling, oppdragresultat, uid
+            fagsystem,
+            sakId,
+            behandlingId,
+            iverksettingId,
+            tilkjentytelseforutbetaling,
+            oppdragresultat,
+            uid
         ).any { it != null }
     }
 }

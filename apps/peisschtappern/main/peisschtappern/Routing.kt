@@ -13,7 +13,6 @@ import libs.kafka.Topic
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.Fagsystem
-import peisschtappern.Dao.Companion.findAll
 import java.time.Instant
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
@@ -53,7 +52,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
             val daos = withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    findAll(channels, limit, key, value, fom, tom, traceId)
+                    Daos.findAll(channels, limit, key, value, fom, tom, traceId)
                 }
             }
 
@@ -73,7 +72,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
             val dao = withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    Dao.findSingle(partition, offset, channel.table)
+                    Daos.findSingle(partition, offset, channel.table)
                 }
             }
 
@@ -88,7 +87,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             get {
                 val saker = withContext(Jdbc.context + Dispatchers.IO) {
                     transaction {
-                        Dao.find(Channel.Saker.table, Integer.MAX_VALUE)
+                        Daos.find(Channel.Saker.table, Integer.MAX_VALUE)
                     }
                 }
 
@@ -99,41 +98,41 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                 val sakId = call.parameters["sakId"]!!
                 val fagsystemer: List<Fagsystem> =
                     call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
-                val hendelser: List<Dao> = withContext(Jdbc.context + Dispatchers.IO) {
+                val hendelser: List<Daos> = withContext(Jdbc.context + Dispatchers.IO) {
                     transaction {
                         coroutineScope {
                             fagsystemer.flatMap { fagsystem ->
-                                val deferred: List<Deferred<List<Dao>>> = listOf(
-                                    async { Dao.findOppdrag(sakId, fagsystem.fagområde) },
-                                    async { Dao.findKvitteringer(sakId, fagsystem.fagområde) },
-                                    async { Dao.findUtbetalinger(sakId, fagsystem.name) },
-                                    async { Dao.findPendingUtbetalinger(sakId, fagsystem.name) },
-                                    async { Dao.findSimuleringer(sakId, fagsystem.fagområde) },
+                                val deferred: List<Deferred<List<Daos>>> = listOf(
+                                    async { Daos.findOppdrag(sakId, fagsystem.fagområde) },
+                                    async { Daos.findKvitteringer(sakId, fagsystem.fagområde) },
+                                    async { Daos.findUtbetalinger(sakId, fagsystem.name) },
+                                    async { Daos.findPendingUtbetalinger(sakId, fagsystem.name) },
+                                    async { Daos.findSimuleringer(sakId, fagsystem.fagområde) },
                                     async {
                                         when (fagsystem) {
-                                            Fagsystem.AAP -> Dao.findUtbetalinger(sakId, Table.aap)
-                                            Fagsystem.DAGPENGER -> Dao.findUtbetalinger(sakId, Table.dp)
-                                            Fagsystem.TILLEGGSSTØNADER -> Dao.findUtbetalinger(sakId, Table.ts)
-                                            Fagsystem.HISTORISK -> Dao.findUtbetalinger(sakId, Table.historisk)
-                                            // TODO: Fagsystem.TILTAKSPENGER -> Dao.findUtbetalinger(sakId, Table.tp)
+                                            Fagsystem.AAP -> Daos.findUtbetalinger(sakId, Table.aap)
+                                            Fagsystem.DAGPENGER -> Daos.findUtbetalinger(sakId, Table.dp)
+                                            Fagsystem.TILLEGGSSTØNADER -> Daos.findUtbetalinger(sakId, Table.ts)
+                                            Fagsystem.HISTORISK -> Daos.findUtbetalinger(sakId, Table.historisk)
+                                            // TODO: Fagsystem.TILTAKSPENGER -> Daos.findUtbetalinger(sakId, Table.tp)
                                             else -> emptyList()
                                         }
                                     },
                                     async {
                                         when (fagsystem) {
-                                            Fagsystem.AAP -> Dao.findUtbetalinger(sakId, Table.aapIntern)
-                                            Fagsystem.DAGPENGER -> Dao.findUtbetalinger(sakId, Table.dpIntern)
-                                            Fagsystem.TILLEGGSSTØNADER -> Dao.findUtbetalinger(sakId, Table.tsIntern)
-                                            Fagsystem.TILTAKSPENGER -> Dao.findUtbetalinger(sakId, Table.tpIntern)
-                                            Fagsystem.HISTORISK -> Dao.findUtbetalinger(sakId, Table.historiskIntern)
+                                            Fagsystem.AAP -> Daos.findUtbetalinger(sakId, Table.aapIntern)
+                                            Fagsystem.DAGPENGER -> Daos.findUtbetalinger(sakId, Table.dpIntern)
+                                            Fagsystem.TILLEGGSSTØNADER -> Daos.findUtbetalinger(sakId, Table.tsIntern)
+                                            Fagsystem.TILTAKSPENGER -> Daos.findUtbetalinger(sakId, Table.tpIntern)
+                                            Fagsystem.HISTORISK -> Daos.findUtbetalinger(sakId, Table.historiskIntern)
                                             else -> emptyList()
                                         }
                                     },
-                                    async { Dao.findSaker(sakId, fagsystem.name) },
+                                    async { Daos.findSaker(sakId, fagsystem.name) },
                                     async {
-                                        val keys = Dao.findOppdrag(sakId, fagsystem.fagområde).map { it.key }
+                                        val keys = Daos.findOppdrag(sakId, fagsystem.fagområde).map { it.key }
                                         if (keys.isNotEmpty()) {
-                                            Dao.findStatusByKeys(keys)
+                                            Daos.findStatusByKeys(keys)
                                         } else emptyList()
                                     },
                                     async {
@@ -147,13 +146,13 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                                         }
 
                                         val internalKeys = if (internTables != null) {
-                                            Dao.findUtbetalinger(sakId, internTables).map { it.key }
+                                            Daos.findUtbetalinger(sakId, internTables).map { it.key }
                                         } else {
                                             emptyList()
                                         }
 
                                         if (internalKeys.isNotEmpty()) {
-                                            Dao.findStatusByKeys(internalKeys)
+                                            Daos.findStatusByKeys(internalKeys)
                                         } else emptyList()
                                     }
                                 )
@@ -197,7 +196,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    val message = requireNotNull(Dao.findSingle(request.partition.toInt(), request.offset.toLong(), channel.table)) {
+                    val message = requireNotNull(Daos.findSingle(request.partition.toInt(), request.offset.toLong(), channel.table)) {
                         "Fant ikke melding på topic ${request.topic} med partition ${request.partition} og offset ${request.offset}"
                     }
                     val value = requireNotNull(message.value) { "Melding mangler value" }
@@ -225,7 +224,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         try {
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    val oppdrag = Dao.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.Oppdrag.table)
+                    val oppdrag = Daos.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.Oppdrag.table)
                     requireNotNull(oppdrag?.value) { "Kan ikke lage kvittering for melding uten oppdrag" } // Burde i teorien ikke kunne oppstå
                     manuellEndringService.addKvitteringManuelt(
                         oppdragXml = oppdrag.value,
@@ -255,7 +254,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
                     val utbetaling = requireNotNull(
-                        Dao.findSingle(
+                        Daos.findSingle(
                             request.partition.toInt(),
                             request.offset.toLong(),
                             Channel.PendingUtbetalinger.table

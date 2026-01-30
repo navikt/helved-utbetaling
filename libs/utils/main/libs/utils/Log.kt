@@ -7,4 +7,4 @@ fun logger(name: String): Logger = LoggerFactory.getLogger(name)
 
 val secureLog: Logger = logger("secureLog")
 val appLog: Logger = logger("appLog")
-val daoLog: Logger = logger("dao")
+val jdbcLog: Logger = logger("jdbc")
