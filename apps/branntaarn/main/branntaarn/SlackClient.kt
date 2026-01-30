@@ -28,11 +28,11 @@ private fun json(brann: Brann, config: Config): String = """{
   "blocks": [
     {
       "type": "header",
-      "text": { "type": "plain_text", "text": "Branntårn alert :alert: (${config.nais.cluster})", "emoji": true }
+      "text": { "type": "plain_text", "text": "Branntårn ${emoji(config)} (${config.nais.cluster})", "emoji": true }
     },
     {
       "type": "section",
-      "text": { "type": "mrkdwn", "text": "Mangler kvittering for ${brann.key}" },
+      "text": { "type": "mrkdwn", "text": "Mangler kvittering for sak: ${brann.sakId} i ${brann.fagsystem}" },
       "accessory": {
         "type": "button",
         "text": { "type": "plain_text", "text": "Peisen" },
@@ -42,3 +42,10 @@ private fun json(brann: Brann, config: Config): String = """{
     }
   ]
 }""".trimIndent()
+
+private fun emoji(config: Config): String {
+    return when (config.nais.cluster) {
+        "prod-gcp" -> ":alert:"
+        else -> ""
+    }
+}
