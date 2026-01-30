@@ -39,7 +39,7 @@ object TestRuntime {
             peisschtappern(config, kafka)
         },
         onClose = {
-            jdbc.truncate("peisschtappern", *Table.entries.map{it.name}.toTypedArray(), TimerDao.TABLE_NAME)
+            jdbc.truncate("peisschtappern", *Table.entries.map{it.name}.toTypedArray(), TimerDao.table)
             postgres.close()
             azure.close()
         }

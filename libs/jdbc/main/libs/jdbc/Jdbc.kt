@@ -9,7 +9,6 @@ import libs.jdbc.concurrency.CoroutineDatasource
 import libs.utils.env
 import libs.utils.logger
 
-val jdbcLog = logger("jdbc")
 /**
  * The Jdbc wrapper for managing the datasource
  */
@@ -52,7 +51,13 @@ data class JdbcConfig(
     val migrations: List<File> = listOf(File("main/migrations"))
 )
 
-fun <T : Any> ResultSet.map(block: (ResultSet) -> T): List<T> =
+fun <T> ResultSet.map(block: (ResultSet) -> T): List<T> =
     sequence {
         while (next()) yield(block(this@map))
     }.toList()
+
+fun <T : Any> ResultSet.mapNotNull(block: (ResultSet) -> T?): List<T> =
+    sequence { 
+        while (next()) yield(block(this@mapNotNull))
+    }.toList().filterNotNull()
+

@@ -25,16 +25,16 @@ class SimuleringTest {
                 val expected = models.v1.Simulering(
                     listOf(
                         models.v1.OppsummeringForPeriode(
-                            LocalDate.of(2025, 8, 1),
-                            LocalDate.of(2025, 8, 1),
+                            fom = LocalDate.of(2025, 8, 1),
+                            tom = LocalDate.of(2025, 8, 1),
                             tidligereUtbetalt = 4505,
                             nyUtbetaling = 4293,
                             totalEtterbetaling = 0, 
                             totalFeilutbetaling = 212, 
                         ),
                         models.v1.OppsummeringForPeriode(
-                            LocalDate.of(2026, 1, 27),
-                            LocalDate.of(2026, 1, 27),
+                            fom = LocalDate.of(2026, 1, 27),
+                            tom = LocalDate.of(2026, 1, 27),
                             tidligereUtbetalt = 0,
                             nyUtbetaling = 4605,
                             totalEtterbetaling = 4605, 
@@ -427,6 +427,7 @@ class SimuleringTest {
                     )
                 )
                 assertEquals(expected, it)
+                // libs.utils.appLog.info(libs.kafka.JsonSerde.jackson.writeValueAsString(it))
             }
     }
 

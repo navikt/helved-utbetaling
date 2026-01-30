@@ -1,13 +1,7 @@
 package peisschtappern
 
-import libs.jdbc.concurrency.connection
-import libs.jdbc.map
-import libs.utils.logger
-import libs.utils.secureLog
+import libs.jdbc.Dao
 import java.sql.ResultSet
-import kotlinx.coroutines.currentCoroutineContext
-
-private val daoLog = logger("dao")
 
 enum class Table {
     avstemming,
@@ -34,7 +28,7 @@ enum class Table {
     historiskIntern,
 }
 
-data class Dao(
+data class Daos(
     val version: String,
     val topic_name: String,
     val key: String,
@@ -49,8 +43,26 @@ data class Dao(
     val sakId: String? = null,
     val fagsystem: String? = null,
 ) {
-    companion object {
-        suspend fun find(key: String, table: Table, limit: Int = 1000): List<Dao> {
+    companion object: Dao<Daos> {
+        override val table = "PLACEHODLER"
+
+        override fun from(rs: ResultSet) = Daos(
+            version = rs.getString("version"),
+            topic_name = rs.getString("topic_name"),
+            key = rs.getString("record_key"),
+            value = rs.getString("record_value"),
+            partition = rs.getInt("record_partition"),
+            offset = rs.getLong("record_offset"),
+            timestamp_ms = rs.getLong("timestamp_ms"),
+            stream_time_ms = rs.getLong("stream_time_ms"),
+            system_time_ms = rs.getLong("system_time_ms"),
+            trace_id = rs.getString("trace_id"),
+            commit = rs.getString("commit"),
+            sakId = rs.getString("sak_id"),
+            fagsystem = rs.getString("fagsystem"),
+        )
+
+        suspend fun find(key: String, table: Table, limit: Int = 1000): List<Daos> {
             val sql = """
                 SELECT * FROM ${table.name} 
                 WHERE record_key = ? 
@@ -58,26 +70,21 @@ data class Dao(
                 LIMIT $limit 
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 stmt.setString(1, key)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
             }
         }
-        suspend fun findSingle(partition: Int, offset: Long, table: Table): Dao? {
+
+        suspend fun findSingle(partition: Int, offset: Long, table: Table): Daos? {
             val sql = """
                 SELECT * FROM ${table.name} 
                 WHERE record_partition = ? AND record_offset = ? 
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 stmt.setInt(1, partition)
                 stmt.setLong(2, offset)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from).singleOrNull()
-            }
+            }.singleOrNull()
         }
 
         suspend fun find(
@@ -87,7 +94,7 @@ data class Dao(
             value: List<String>? = null,
             fom: Long? = null,
             tom: Long? = null,
-        ): List<Dao> {
+        ): List<Daos> {
             val whereClause = if (key != null || value != null || fom != null || tom != null) {
                 val keyQuery = if (key != null) " (" + key.joinToString(" OR ") { "record_key like '%$it%'" } + ") AND" else ""
                 val valueQuery = if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") AND" else ""
@@ -104,11 +111,7 @@ data class Dao(
                 LIMIT $limit 
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
-            }
+            return query(sql)
         }
 
         suspend fun findAll(
@@ -119,7 +122,7 @@ data class Dao(
             fom: Long? = null,
             tom: Long? = null,
             traceId: String? = null,
-        ): List<Dao> {
+        ): List<Daos> {
             val whereClause = if (key != null || value != null || fom != null || tom != null) {
                 val keyQuery =
                     if (key != null) " (" + key.joinToString(" OR ") { "record_key like '%$it%'" } + ") AND" else ""
@@ -144,122 +147,95 @@ data class Dao(
                 LIMIT $limit 
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
-            }
+            return query(sql)
         }
 
-        suspend fun findOppdrag(sakId: String, fagsystem: String): List<Dao> {
+        suspend fun findOppdrag(sakId: String, fagsystem: String): List<Daos> {
             val sql = """
                 SELECT * 
                 FROM oppdrag 
                 WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 stmt.setString(1, sakId)
                 stmt.setString(2, fagsystem)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery()?.map(::from) ?: emptyList()
             }
         }
 
-        suspend fun findStatusByKeys(keys: List<String>): List<Dao> {
+        suspend fun findStatusByKeys(keys: List<String>): List<Daos> {
             val sql = """
                 SELECT *
                 FROM status
                 WHERE record_key IN (${keys.joinToString { "'$it'" }});
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
-            }
+            return query(sql)
         }
 
-        suspend fun findKvitteringer(sakId: String, fagsystem: String): List<Dao> {
+        suspend fun findKvitteringer(sakId: String, fagsystem: String): List<Daos> {
             val sql = """
                 SELECT * 
                 FROM kvittering 
                 WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt -> 
                 stmt.setString(1, sakId)
                 stmt.setString(2, fagsystem)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
             }
         }
 
-        suspend fun findUtbetalinger(sakId: String, fagsystem: String): List<Dao> {
+        suspend fun findUtbetalinger(sakId: String, fagsystem: String): List<Daos> {
             val sql = """
                 SELECT * 
                 FROM utbetalinger 
                 WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 stmt.setString(1, sakId)
                 stmt.setString(2, fagsystem)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
             }
         }
 
-        suspend fun findPendingUtbetalinger(sakId: String, fagsystem: String): List<Dao> {
+        suspend fun findPendingUtbetalinger(sakId: String, fagsystem: String): List<Daos> {
             val sql = """
                 SELECT * 
                 FROM pending_utbetalinger 
                 WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 stmt.setString(1, sakId)
                 stmt.setString(2, fagsystem)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
             }
         }
 
-        suspend fun findUtbetalinger(sakId: String, table: Table): List<Dao> {
+        suspend fun findUtbetalinger(sakId: String, table: Table): List<Daos> {
             val sql = """
                 SELECT *
                 FROM ${table.name}
                 WHERE json(record_value) ->> 'sakId' = '$sakId';
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
-            }
+            return query(sql)
         }
 
-        suspend fun findSimuleringer(sakId: String, fagsystem: String): List<Dao> {
+        suspend fun findSimuleringer(sakId: String, fagsystem: String): List<Daos> {
             val sql = """
                 SELECT *
                 FROM simuleringer
                 WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+            return query(sql) { stmt ->
                 stmt.setString(1, sakId)
                 stmt.setString(2, fagsystem)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
             }
         }
 
-        suspend fun findSaker(sakId: String, fagsystem: String): List<Dao> {
+        suspend fun findSaker(sakId: String, fagsystem: String): List<Daos> {
             val sql = """
                 SELECT *
                 FROM saker
@@ -267,15 +243,11 @@ data class Dao(
                     AND json(record_key) ->> 'fagsystem' = '$fagsystem';
             """.trimIndent()
 
-            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
-                stmt.executeQuery().map(::from)
-            }
+            return query(sql)
         }
     }
 
-    suspend fun insert(table: Table) {
+    suspend fun insert(table: Table): Int {
         val sql = """
             INSERT INTO ${table.name} (
                 version,
@@ -292,7 +264,7 @@ data class Dao(
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """.trimIndent()
 
-        currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+        return update(sql) { stmt ->
             stmt.setString(1, version)
             stmt.setString(2, topic_name)
             stmt.setString(3, key)
@@ -304,26 +276,7 @@ data class Dao(
             stmt.setObject(9, system_time_ms)
             stmt.setObject(10, trace_id)
             stmt.setObject(11, commit)
-            daoLog.debug(sql)
-            secureLog.debug(stmt.toString())
-            stmt.executeUpdate()
         }
     }
 }
-
-private fun from(rs: ResultSet) = Dao(
-    version = rs.getString("version"),
-    topic_name = rs.getString("topic_name"),
-    key = rs.getString("record_key"),
-    value = rs.getString("record_value"),
-    partition = rs.getInt("record_partition"),
-    offset = rs.getLong("record_offset"),
-    timestamp_ms = rs.getLong("timestamp_ms"),
-    stream_time_ms = rs.getLong("stream_time_ms"),
-    system_time_ms = rs.getLong("system_time_ms"),
-    trace_id = rs.getString("trace_id"),
-    commit = rs.getString("commit"),
-    sakId = rs.getString("sak_id"),
-    fagsystem = rs.getString("fagsystem"),
-)
 

@@ -64,9 +64,9 @@ object TestRuntime {
         onClose = {
             jdbc.truncate(
                 "utsjekk",
-                IverksettingDao.TABLE_NAME,
-                IverksettingResultatDao.TABLE_NAME,
-                UtbetalingDao.TABLE_NAME,
+                IverksettingDao.table,
+                IverksettingResultatDao.table,
+                UtbetalingDao.table,
             )
             postgres.close()
             simulering.close()

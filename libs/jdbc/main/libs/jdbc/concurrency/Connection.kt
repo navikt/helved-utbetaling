@@ -2,9 +2,8 @@ package libs.jdbc.concurrency
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
-import libs.utils.logger
+import libs.utils.jdbcLog
 import libs.utils.secureLog
-import libs.jdbc.jdbcLog
 import java.sql.Connection
 import java.sql.SQLException
 import kotlin.contracts.ExperimentalContracts

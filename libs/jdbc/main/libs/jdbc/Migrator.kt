@@ -6,6 +6,7 @@ import libs.jdbc.concurrency.connection
 import libs.jdbc.concurrency.transaction
 import libs.utils.Resource
 import libs.utils.secureLog
+import libs.utils.jdbcLog
 import java.io.File
 import java.nio.charset.Charset
 import java.security.MessageDigest

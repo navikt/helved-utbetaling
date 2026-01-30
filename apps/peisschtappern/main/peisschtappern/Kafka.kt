@@ -72,7 +72,7 @@ private fun Topology.save(
                             missingKvitteringHandler(key, value)
                         }
                         val aud = AuditMetadata.parse(metadata) 
-                        Dao(
+                        Daos(
                             version = topic.name.substringAfterLast("."),
                             topic_name = topic.name,
                             key = key,

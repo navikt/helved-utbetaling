@@ -1,13 +1,12 @@
 package urskog
 
 import libs.jdbc.Dao
-import libs.utils.logger
+import libs.utils.jdbcLog
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
-private val daoLog = logger("dao")
 private val mapper = libs.xml.XMLMapper<Oppdrag>()
 
 data class DaoPendingUtbetaling (
@@ -61,8 +60,8 @@ data class DaoPendingUtbetaling (
         }
 
         when(rowsAffected) {
-            0 -> daoLog.info("Idempotent guard: row in $table already exists for $hashKey/$uid.")
-            else -> daoLog.info("row in $table inserted for $hashKey/$uid.")
+            0 -> jdbcLog.info("Idempotent guard: row in $table already exists for $hashKey/$uid.")
+            else -> jdbcLog.info("row in $table inserted for $hashKey/$uid.")
         }
     }
 }
