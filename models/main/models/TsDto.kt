@@ -131,13 +131,17 @@ fun TsUtbetaling.fagsystem(): Fagsystem {
             StønadTypeTilleggsstønader.BOUTGIFTER_AAP -> Fagsystem.TILLSTBO
             StønadTypeTilleggsstønader.BOUTGIFTER_ENSLIG_FORSØRGER -> Fagsystem.TILLSTBO
             StønadTypeTilleggsstønader.BOUTGIFTER_ETTERLATTE -> Fagsystem.TILLSTBO
+            @Suppress("Deprecation")
             StønadTypeTilleggsstønader.DAGLIG_REISE_ENSLIG_FORSØRGET -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.DAGLIG_REISE_ENSLIG_FORSØRGER -> Fagsystem.TILLSTDR
             StønadTypeTilleggsstønader.DAGLIG_REISE_AAP -> Fagsystem.TILLSTDR
             StønadTypeTilleggsstønader.DAGLIG_REISE_ETTERLATTE -> Fagsystem.TILLSTDR
             StønadTypeTilleggsstønader.REISE_TIL_SAMLING_ENSLIG_FORSØRGER -> Fagsystem.TILLSTRS
             StønadTypeTilleggsstønader.REISE_TIL_SAMLING_AAP -> Fagsystem.TILLSTRS
             StønadTypeTilleggsstønader.REISE_TIL_SAMLING_ETTERLATTE -> Fagsystem.TILLSTRS
+            @Suppress("Deprecation")
             StønadTypeTilleggsstønader.REISE_OPPSTART_ENSLIG_FORSØRGET -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_ENSLIG_FORSØRGER -> Fagsystem.TILLSTRO
             StønadTypeTilleggsstønader.REISE_OPPSTART_AAP -> Fagsystem.TILLSTRO
             StønadTypeTilleggsstønader.REISE_OPPSTART_ETTERLATTE -> Fagsystem.TILLSTRO
             StønadTypeTilleggsstønader.REIS_ARBEID_ENSLIG_FORSØRGER -> Fagsystem.TILLSTRA
