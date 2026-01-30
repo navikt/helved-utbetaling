@@ -3,15 +3,16 @@ package libs.ws
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import io.ktor.client.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import java.net.URL
-import java.util.*
 import libs.http.HttpClientFactory
 import libs.utils.Resource
 import libs.utils.logger
-import models.*
+import models.badGateway
+import java.net.URL
+import java.util.*
 
 val wsLog = logger("ws")
 
@@ -27,7 +28,7 @@ data class SoapConfig(
 class SoapClient(
     private val config: SoapConfig,
     private val sts: Sts,
-    private val http: HttpClient = HttpClientFactory.new(),
+    private val http: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val proxyAuth: ProxyAuthProvider? = null,
 ) : Soap {
     override suspend fun call(
