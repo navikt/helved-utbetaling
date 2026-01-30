@@ -28,7 +28,7 @@ data class SoapConfig(
 class SoapClient(
     private val config: SoapConfig,
     private val sts: Sts,
-    private val http: HttpClient = HttpClientFactory.new(LogLevel.ALL),
+    private val http: HttpClient = HttpClientFactory.new(),
     private val proxyAuth: ProxyAuthProvider? = null,
 ) : Soap {
     override suspend fun call(
