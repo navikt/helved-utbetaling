@@ -27,7 +27,7 @@ dependencies {
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.16.0")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
     implementation("jakarta.xml.ws:jakarta.xml.ws-api:4.0.2")
     implementation("com.sun.xml.ws:jaxws-rt:4.0.3")
