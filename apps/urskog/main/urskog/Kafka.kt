@@ -23,8 +23,8 @@ object Topics {
     val simuleringer = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
     val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
-    val dryrunTilleggsstønader = Topic("helved.dryrun-ts.v1", json<models.v1.Simulering>())
-    val dryrunTiltakspenger = Topic("helved.dryrun-tp.v1", json<models.v1.Simulering>())
+    val dryrunTilleggsstønader = Topic("helved.dryrun-ts.v1", json<Simulering>())
+    val dryrunTiltakspenger = Topic("helved.dryrun-tp.v1", json<Simulering>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val avstemming = Topic("helved.avstemming.v1", xml<Avstemmingsdata>())
 }
@@ -182,13 +182,13 @@ fun Topology.simulering(simuleringService: SimuleringService) {
             map { result -> result.unwrap() }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.AAP }) {
                     map { (sim, _) -> sim }
-                        .map { Result.catch { Simulering.from(it) } }
+                        .map { Result.catch { v2.Simulering.from(it) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunAap) }
                         .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.DAGPENGER }) {
                     map { (sim, _) -> sim }
-                        .map { Result.catch { Simulering.from(it) } }
+                        .map { Result.catch { v2.Simulering.from(it) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunDp) }
                         .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }

@@ -58,13 +58,13 @@ class SimuleringV3RouteTest {
                 }
             }
 
-            val sim = Simulering(
+            val sim = v2.Simulering(
                 perioder = listOf(
-                    Simuleringsperiode(
+                    v2.Simuleringsperiode(
                         fom = LocalDate.of(2025, 8, 18),
                         tom = LocalDate.of(2025, 8, 19),
                         utbetalinger = listOf(
-                            SimulertUtbetaling(
+                            v2.SimulertUtbetaling(
                                 fagsystem = Fagsystem.DAGPENGER,
                                 sakId = "sakId",
                                 utbetalesTil = "12345678910",
@@ -191,9 +191,9 @@ class SimuleringV3RouteTest {
         }
 
 
-        val sim = models.v1.Simulering(
+        val sim = v1.Simulering(
             oppsummeringer = listOf(
-                models.v1.OppsummeringForPeriode(
+                v1.OppsummeringForPeriode(
                     fom = LocalDate.of(2025, 10, 1),
                     tom = LocalDate.of(2025, 10, 31),
                     tidligereUtbetalt = 573,
@@ -201,7 +201,7 @@ class SimuleringV3RouteTest {
                     totalEtterbetaling = 0,
                     totalFeilutbetaling = 0,
                 ),
-                models.v1.OppsummeringForPeriode(
+                v1.OppsummeringForPeriode(
                     fom = LocalDate.of(2025, 11, 1),
                     tom = LocalDate.of(2025, 11, 30),
                     tidligereUtbetalt = 574,
@@ -210,37 +210,37 @@ class SimuleringV3RouteTest {
                     totalFeilutbetaling = 0,
                 )
             ),
-            detaljer = models.v1.SimuleringDetaljer(
+            detaljer = v1.SimuleringDetaljer(
                 gjelderId = "12345678910",
                 datoBeregnet = LocalDate.now(),
                 totalBeløp = 573,
                 perioder = listOf(
-                    models.v1.Periode(
+                    v1.Periode(
                         fom = LocalDate.of(2025, 10, 1),
                         tom = LocalDate.of(2025, 10, 31),
                         posteringer = listOf(
-                            models.v1.Postering(
-                                fagområde = models.v1.Fagområde.TILLSTDR,
+                            v1.Postering(
+                                fagområde = v1.Fagområde.TILLSTDR,
                                 sakId = SakId("sakId"),
                                 fom = LocalDate.of(2025, 10, 1),
                                 tom = LocalDate.of(2025, 10, 31),
                                 beløp = 573,
-                                type = models.v1.PosteringType.YTELSE,
+                                type = v1.PosteringType.YTELSE,
                                 klassekode = "TSDRASISP3-OP",
                             )
                         )
                     ),
-                    models.v1.Periode(
+                    v1.Periode(
                         fom = LocalDate.of(2025, 11, 1),
                         tom = LocalDate.of(2025, 11, 30),
                         posteringer = listOf(
-                            models.v1.Postering(
-                                fagområde = models.v1.Fagområde.TILLSTDR,
+                            v1.Postering(
+                                fagområde = v1.Fagområde.TILLSTDR,
                                 sakId = SakId("sakId"),
                                 fom = LocalDate.of(2025, 11, 1),
                                 tom = LocalDate.of(2025, 11, 30),
                                 beløp = 574,
-                                type = models.v1.PosteringType.YTELSE,
+                                type = v1.PosteringType.YTELSE,
                                 klassekode = "TSDRASISP3-OP",
                             )
                         )
@@ -261,7 +261,7 @@ class SimuleringV3RouteTest {
         assertEquals(dto, actual)
 
         assertEquals(HttpStatusCode.OK, res.status)
-        assertEquals(sim, res.body<models.v1.Simulering>())
+        assertEquals(sim, res.body<v1.Simulering>())
     }
 }
 

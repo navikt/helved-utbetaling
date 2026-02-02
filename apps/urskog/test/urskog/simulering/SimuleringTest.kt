@@ -236,13 +236,13 @@ class SimuleringTest {
         TestRuntime.topics.dryrunAap.assertThat()
             .has(uid)
             .with(uid, 0) {
-                val expected = Simulering(
+                val expected = v2.Simulering(
                     perioder = listOf(
-                        Simuleringsperiode(
+                        v2.Simuleringsperiode(
                             fom = LocalDate.of(2025, 8, 1),
                             tom = LocalDate.of(2025, 8, 1),
                             utbetalinger = listOf(
-                                SimulertUtbetaling(
+                                v2.SimulertUtbetaling(
                                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                                     sakId = "223",
                                     utbetalesTil = "12345678910",
@@ -250,43 +250,43 @@ class SimuleringTest {
                                     tidligereUtbetalt = 638,
                                     nyttBeløp = -638,
                                     posteringer = listOf(
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 1),
                                             tom = LocalDate.of(2025, 8, 1),
                                             beløp = 638,
-                                            type = Type.FEIL,
+                                            type = v2.Type.FEIL,
                                             klassekode = "KL_KODE_JUST_ARBYT"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 1),
                                             tom = LocalDate.of(2025, 8, 1),
                                             beløp = -638,
-                                            type = Type.YTEL,
+                                            type = v2.Type.YTEL,
                                             klassekode = "TSTBASISP2-OP"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 1),
                                             tom = LocalDate.of(2025, 8, 1),
                                             beløp = 638,
-                                            type = Type.MOTP,
+                                            type = v2.Type.MOTP,
                                             klassekode = "TBMOTOBS"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 1),
                                             tom = LocalDate.of(2025, 8, 1),
                                             beløp = -638,
-                                            type = Type.FEIL,
+                                            type = v2.Type.FEIL,
                                             klassekode = "KL_KODE_FEIL_ARBYT"
                                         ),
                                     )
                                 )
                             )
                         ),
-                        Simuleringsperiode(
+                        v2.Simuleringsperiode(
                             fom = LocalDate.of(2025, 8, 11),
                             tom = LocalDate.of(2025, 8, 11),
                             utbetalinger = listOf(
-                                SimulertUtbetaling(
+                                v2.SimulertUtbetaling(
                                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                                     sakId = "4819",
                                     utbetalesTil = "12345678910",
@@ -294,43 +294,43 @@ class SimuleringTest {
                                     tidligereUtbetalt = 3867,
                                     nyttBeløp = -3867,
                                     posteringer = listOf(
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 11),
                                             tom = LocalDate.of(2025, 8, 11),
                                             beløp = 3867,
-                                            type = Type.FEIL,
+                                            type = v2.Type.FEIL,
                                             klassekode = "KL_KODE_JUST_ARBYT"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 11),
                                             tom = LocalDate.of(2025, 8, 11),
                                             beløp = -3867,
-                                            type = Type.YTEL,
+                                            type = v2.Type.YTEL,
                                             klassekode = "TSLMASISP2-OP"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 11),
                                             tom = LocalDate.of(2025, 8, 11),
                                             beløp = 3867,
-                                            type = Type.MOTP,
+                                            type = v2.Type.MOTP,
                                             klassekode = "TBMOTOBS"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 11),
                                             tom = LocalDate.of(2025, 8, 11),
                                             beløp = -3867,
-                                            type = Type.FEIL,
+                                            type = v2.Type.FEIL,
                                             klassekode = "KL_KODE_FEIL_ARBYT"
                                         ),
                                     )
                                 )
                             )
                         ),
-                        Simuleringsperiode(
+                        v2.Simuleringsperiode(
                             fom = LocalDate.of(2025, 8, 27),
                             tom = LocalDate.of(2025, 8, 27),
                             utbetalinger = listOf(
-                                SimulertUtbetaling(
+                                v2.SimulertUtbetaling(
                                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                                     sakId = "223",
                                     utbetalesTil = "12345678910",
@@ -338,44 +338,44 @@ class SimuleringTest {
                                     tidligereUtbetalt = 0,
                                     nyttBeløp = -212,
                                     posteringer = listOf(
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 27),
                                             tom = LocalDate.of(2025, 8, 27),
                                             beløp = -106,
-                                            type = Type.FEIL,
+                                            type = v2.Type.FEIL,
                                             klassekode = "KL_KODE_JUST_ARBYT"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 27),
                                             tom = LocalDate.of(2025, 8, 27),
                                             beløp = 106,
-                                            type = Type.FEIL,
+                                            type = v2.Type.FEIL,
                                             klassekode = "KL_KODE_FEIL_ARBYT"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 27),
                                             tom = LocalDate.of(2025, 8, 27),
                                             beløp = -106,
-                                            type = Type.MOTP,
+                                            type = v2.Type.MOTP,
                                             klassekode = "TBMOTOBS"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 27),
                                             tom = LocalDate.of(2025, 8, 27),
                                             beløp = 106,
-                                            type = Type.FEIL,
+                                            type = v2.Type.FEIL,
                                             klassekode = "KL_KODE_FEIL_ARBYT"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 27),
                                             tom = LocalDate.of(2025, 8, 27),
                                             beløp = -106,
-                                            type = Type.MOTP,
+                                            type = v2.Type.MOTP,
                                             klassekode = "TBMOTOBS"
                                         ),
                                     )
                                 ),
-                                SimulertUtbetaling(
+                                v2.SimulertUtbetaling(
                                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                                     sakId = "4819",
                                     utbetalesTil = "12345678910",
@@ -383,29 +383,29 @@ class SimuleringTest {
                                     tidligereUtbetalt = 0,
                                     nyttBeløp = 4505,
                                     posteringer = listOf(
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 27),
                                             tom = LocalDate.of(2025, 8, 27),
                                             beløp = -4505,
-                                            type = Type.FEIL,
+                                            type = v2.Type.FEIL,
                                             klassekode = "KL_KODE_JUST_ARBYT"
                                         ),
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2025, 8, 27),
                                             tom = LocalDate.of(2025, 8, 27),
                                             beløp = 4505,
-                                            type = Type.YTEL,
+                                            type = v2.Type.YTEL,
                                             klassekode = "TSLMASISP2-OP"
                                         ),
                                     )
                                 )
                             )
                         ),
-                        Simuleringsperiode(
+                        v2.Simuleringsperiode(
                             fom = LocalDate.of(2026, 1, 27),
                             tom = LocalDate.of(2026, 1, 27),
                             utbetalinger = listOf(
-                                SimulertUtbetaling(
+                                v2.SimulertUtbetaling(
                                     fagsystem = Fagsystem.TILLEGGSSTØNADER,
                                     sakId = "4819",
                                     utbetalesTil = "12345678910",
@@ -413,11 +413,11 @@ class SimuleringTest {
                                     tidligereUtbetalt = 0,
                                     nyttBeløp = 4605,
                                     posteringer = listOf(
-                                        Postering(
+                                        v2.Postering(
                                             fom = LocalDate.of(2026, 1, 27),
                                             tom = LocalDate.of(2026, 1, 27),
                                             beløp = 4605,
-                                            type = Type.YTEL,
+                                            type = v2.Type.YTEL,
                                             klassekode = "TSLMASISP2-OP"
                                         ),
                                     )

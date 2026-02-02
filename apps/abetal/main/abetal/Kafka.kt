@@ -29,6 +29,10 @@ object Topics {
     val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
     val historisk = Topic("historisk.utbetaling.v1", json<HistoriskUtbetaling>())
     val historiskIntern = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
+    val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
+    val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
+    val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
+    val dryrunTp = Topic("helved.dryrun-tp.v1", json<Simulering>())
 }
 
 object Tables {
@@ -66,7 +70,6 @@ data class TsTuple(
 )
 data class HistoriskTuple(val key: String, val value: HistoriskUtbetaling)
 data class TpTuple(val key: String, val value: TpUtbetaling)
-
 
 /**
  * Dagpenger sender hele saken sin hver gang, som inneholder en eller fler meldeperioder.
@@ -117,6 +120,7 @@ fun Topology.dpStream(
                     result.sendSimulering()
                     result.sendOppdrag()
                     result.replyOkIfIdempotent()
+                    result.replyOkUtenEndring(Fagsystem.DAGPENGER)
                 }
         }
 }
@@ -155,6 +159,7 @@ fun Topology.aapStream(
             result.sendSimulering()
             result.sendOppdrag()
             result.replyOkIfIdempotent()
+            result.replyOkUtenEndring(Fagsystem.AAP)
         }
 }
 
@@ -201,6 +206,7 @@ fun Topology.tsStream(
                     result.sendSimulering()
                     result.sendOppdrag()
                     result.replyOkIfIdempotent()
+                    result.replyOkUtenEndring(Fagsystem.TILLEGGSSTØNADER)
                 }
         }
 }
@@ -239,6 +245,7 @@ fun Topology.tpStream(
             result.sendSimulering()
             result.sendOppdrag()
             result.replyOkIfIdempotent()
+            result.replyOkUtenEndring(Fagsystem.TILTAKSPENGER)
         }
 }
 
@@ -274,6 +281,7 @@ fun Topology.historiskStream(
             result.sendSimulering()
             result.sendOppdrag()
             result.replyOkIfIdempotent()
+            result.replyOkUtenEndring(Fagsystem.HISTORISK)
         }
 }
 
@@ -351,9 +359,19 @@ private fun replyError(branch: MappedStream<String, Result<Aggregate, StatusRepl
 
 private fun MappedStream<String, Aggregate>.replyOkIfIdempotent() {
     this
-        .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty() }
+        .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty()}
         .map { StatusReply.ok() }
         .produce(Topics.status)
+}
+
+private fun MappedStream<String,  Aggregate>.replyOkUtenEndring(fagsystem: Fagsystem) {
+    this
+        .filter { (_, simuleringer) -> simuleringer.isEmpty() }
+        .map { Info.OkUtenEndring(fagsystem) }
+        .branch( { (it as Info).fagsystem == Fagsystem.AAP} ) { produce(Topics.dryrunAap) }
+        .branch( { (it as Info).fagsystem == Fagsystem.DAGPENGER} ) { produce(Topics.dryrunDp) }
+        .branch( { (it as Info).fagsystem == Fagsystem.TILLEGGSSTØNADER} ) { produce(Topics.dryrunTs) }
+        .branch( { (it as Info).fagsystem == Fagsystem.TILTAKSPENGER} ) { produce(Topics.dryrunTp) }
 }
 
 private fun MappedStream<String, Aggregate>.sendOppdrag() {
@@ -381,4 +399,3 @@ private fun MappedStream<String, Aggregate>.saveUtbetalingerAsPending() {
         .flatMapKeyAndValue { _, (_, utbetalinger) -> utbetalinger.map { KeyValue(it.uid.toString(), it) } }
         .produce(Topics.pendingUtbetalinger)
 }
-

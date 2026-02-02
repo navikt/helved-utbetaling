@@ -191,6 +191,12 @@ class SimuleringRoutes(
 
                     when (result) {
                         is models.v1.Simulering -> call.respond(result)
+                        is models.v2.Simulering -> call.respond(result)
+                        is models.Info -> {
+                            when (result.status) {
+                                Info.Status.OK_UTEN_ENDRING -> call.respond(HttpStatusCode.Found, result)
+                            }
+                        }
                         // is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
                         null -> call.respond(HttpStatusCode.RequestTimeout)
                         else -> call.respond(HttpStatusCode.InternalServerError)
