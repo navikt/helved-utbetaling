@@ -19,6 +19,10 @@ subgraph Topologi
 	helved.status.v1([helved.status.v1])
 	helved.simuleringer.v1([helved.simuleringer.v1])
 	helved.oppdrag.v1([helved.oppdrag.v1])
+	helved.dryrun-aap.v1([helved.dryrun-aap.v1])
+	helved.dryrun-dp.v1([helved.dryrun-dp.v1])
+	helved.dryrun-ts.v1([helved.dryrun-ts.v1])
+	helved.dryrun-tp.v1([helved.dryrun-tp.v1])
 	teamdagpenger.utbetaling.v1([teamdagpenger.utbetaling.v1])
 	from-teamdagpenger.utbetaling.v1-repartition([from-teamdagpenger.utbetaling.v1-repartition])
 	helved.utbetalinger-dp.v1([helved.utbetalinger-dp.v1])
@@ -61,34 +65,54 @@ subgraph Topologi
 	pk-leftjoin-pending --> helved.utbetalinger.v1
 	dptuple-leftjoin-saker-repartition --> dptuple-leftjoin-saker
 	helved.saker.v1-state-store --> dptuple-leftjoin-saker
-	dptuple-leftjoin-saker --> helved.status.v1
-	dptuple-leftjoin-saker --> helved.oppdrag.v1
 	dptuple-leftjoin-saker --> helved.simuleringer.v1
 	dptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
+	dptuple-leftjoin-saker --> helved.status.v1
+	dptuple-leftjoin-saker --> helved.oppdrag.v1
+	dptuple-leftjoin-saker --> helved.dryrun-aap.v1
+	dptuple-leftjoin-saker --> helved.dryrun-dp.v1
+	dptuple-leftjoin-saker --> helved.dryrun-ts.v1
+	dptuple-leftjoin-saker --> helved.dryrun-tp.v1
 	tstuple-leftjoin-saker-repartition --> tstuple-leftjoin-saker
 	helved.saker.v1-state-store --> tstuple-leftjoin-saker
+	tstuple-leftjoin-saker --> helved.dryrun-aap.v1
+	tstuple-leftjoin-saker --> helved.dryrun-dp.v1
+	tstuple-leftjoin-saker --> helved.dryrun-ts.v1
+	tstuple-leftjoin-saker --> helved.dryrun-tp.v1
+	tstuple-leftjoin-saker --> helved.simuleringer.v1
 	tstuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 	tstuple-leftjoin-saker --> helved.status.v1
-	tstuple-leftjoin-saker --> helved.simuleringer.v1
 	tstuple-leftjoin-saker --> helved.oppdrag.v1
 	aaptuple-leftjoin-saker-repartition --> aaptuple-leftjoin-saker
 	helved.saker.v1-state-store --> aaptuple-leftjoin-saker
-	aaptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
-	aaptuple-leftjoin-saker --> helved.simuleringer.v1
 	aaptuple-leftjoin-saker --> helved.status.v1
 	aaptuple-leftjoin-saker --> helved.oppdrag.v1
+	aaptuple-leftjoin-saker --> helved.simuleringer.v1
+	aaptuple-leftjoin-saker --> helved.dryrun-tp.v1
+	aaptuple-leftjoin-saker --> helved.dryrun-aap.v1
+	aaptuple-leftjoin-saker --> helved.dryrun-dp.v1
+	aaptuple-leftjoin-saker --> helved.dryrun-ts.v1
+	aaptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 	historisktuple-leftjoin-saker-repartition --> historisktuple-leftjoin-saker
 	helved.saker.v1-state-store --> historisktuple-leftjoin-saker
-	historisktuple-leftjoin-saker --> helved.status.v1
-	historisktuple-leftjoin-saker --> helved.oppdrag.v1
+	historisktuple-leftjoin-saker --> helved.dryrun-aap.v1
+	historisktuple-leftjoin-saker --> helved.dryrun-dp.v1
+	historisktuple-leftjoin-saker --> helved.dryrun-ts.v1
+	historisktuple-leftjoin-saker --> helved.dryrun-tp.v1
 	historisktuple-leftjoin-saker --> helved.pending-utbetalinger.v1
+	historisktuple-leftjoin-saker --> helved.status.v1
 	historisktuple-leftjoin-saker --> helved.simuleringer.v1
+	historisktuple-leftjoin-saker --> helved.oppdrag.v1
 	tptuple-leftjoin-saker-repartition --> tptuple-leftjoin-saker
 	helved.saker.v1-state-store --> tptuple-leftjoin-saker
+	tptuple-leftjoin-saker --> helved.status.v1
+	tptuple-leftjoin-saker --> helved.dryrun-aap.v1
+	tptuple-leftjoin-saker --> helved.dryrun-dp.v1
+	tptuple-leftjoin-saker --> helved.dryrun-ts.v1
+	tptuple-leftjoin-saker --> helved.dryrun-tp.v1
+	tptuple-leftjoin-saker --> helved.oppdrag.v1
 	tptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 	tptuple-leftjoin-saker --> helved.simuleringer.v1
-	tptuple-leftjoin-saker --> helved.status.v1
-	tptuple-leftjoin-saker --> helved.oppdrag.v1
 
     %% TABLE STREAMS
     
@@ -146,6 +170,10 @@ style tptuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-wi
 style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.simuleringer.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.dryrun-aap.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.dryrun-dp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.dryrun-ts.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.dryrun-tp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style teamdagpenger.utbetaling.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style from-teamdagpenger.utbetaling.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger-dp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a

@@ -23,7 +23,7 @@ object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
-    val dryrunTs = Topic("helved.dryrun-ts.v1", json<models.v1.Simulering>())
+    val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
     val utbetalingDp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val utbetalingAap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
     val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
