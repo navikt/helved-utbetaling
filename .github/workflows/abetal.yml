@@ -37,7 +37,7 @@ jobs:
         with:
           # use sha from the merged pr or default to the current sha.
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
-      - uses: actions/setup-java@v5.1.0
+      - uses: actions/setup-java@v5.2.0
         with:
           java-version: 21
           distribution: temurin
