@@ -5,7 +5,7 @@ dependencies {
     implementation(project(":libs:tracing"))
     implementation("no.nav.helved:xml:$libVersion")
 
-    implementation("io.micrometer:micrometer-registry-prometheus:1.16.0")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
     api("org.apache.kafka:kafka-streams:4.1.1")
 
     implementation("ch.qos.logback:logback-classic:1.5.22")
