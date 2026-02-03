@@ -75,9 +75,8 @@ object AggregateService {
         return listOf(oppdrag to utbetalinger)
     }
 
-    fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<SimulerBeregningRequest> {
-
-        if (aggregate.isNotEmpty() && aggregate.none(::hasChanges)) return emptyList()
+    fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): Pair<Boolean, List<SimulerBeregningRequest>> {
+        if (aggregate.isNotEmpty() && aggregate.none(::hasChanges)) return aggregate.any() to emptyList()
 
         val simuleringer = aggregate
             .filter(::hasChanges)
@@ -111,7 +110,7 @@ object AggregateService {
         val simuleringerPerSak = simuleringer.groupBy { it.request.oppdrag.fagsystemId.trimEnd() }
             .map { (_, group) -> group.reduce { acc, next -> acc + next } }
 
-        return simuleringerPerSak
+        return aggregate.any() to simuleringerPerSak
     }
 }
 

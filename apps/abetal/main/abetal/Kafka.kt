@@ -109,8 +109,8 @@ fun Topology.dpStream(
                             StreamsPair(new, prev)
                         }
                         val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                        val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                        oppdragToUtbetalinger to simuleringer
+                        val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                        oppdragToUtbetalinger to hasDryrunTosimuleringer
                     }
                 }
                 .branch(Result<*, *>::isErr, ::replyError)
@@ -349,7 +349,12 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
         .produce(Topics.utbetalinger)
 }
 
-typealias Aggregate = Pair<List<Pair<Oppdrag, List<Utbetaling>>>, List<SimulerBeregningRequest>>
+typealias DryrunAggregate = Pair<Boolean, List<SimulerBeregningRequest>>
+typealias OppdragAggregate = Pair<Oppdrag, List<Utbetaling>>
+typealias Aggregate = Pair<List<OppdragAggregate>, DryrunAggregate>
+
+private val DryrunAggregate.isRequested: Boolean get() = first
+private val DryrunAggregate.requests: List<SimulerBeregningRequest> get() = second
 
 private fun replyError(branch: MappedStream<String, Result<Aggregate, StatusReply>>) {
     branch
@@ -359,15 +364,17 @@ private fun replyError(branch: MappedStream<String, Result<Aggregate, StatusRepl
 
 private fun MappedStream<String, Aggregate>.replyOkIfIdempotent() {
     this
-        .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.isEmpty()}
+        .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.requests.isEmpty() }
         .map { StatusReply.ok() }
         .produce(Topics.status)
 }
 
 private fun MappedStream<String,  Aggregate>.replyOkUtenEndring(fagsystem: Fagsystem) {
-    this
-        .filter { (_, simuleringer) -> simuleringer.isEmpty() }
+    val ok = this
+        .filter { (_, simuleringer) -> simuleringer.requests.isEmpty() && simuleringer.isRequested }
         .map { Info.OkUtenEndring(fagsystem) }
+
+    ok
         .branch( { (it as Info).fagsystem == Fagsystem.AAP} ) { produce(Topics.dryrunAap) }
         .branch( { (it as Info).fagsystem == Fagsystem.DAGPENGER} ) { produce(Topics.dryrunDp) }
         .branch( { (it as Info).fagsystem == Fagsystem.TILLEGGSSTØNADER} ) { produce(Topics.dryrunTs) }
@@ -386,7 +393,7 @@ private fun MappedStream<String, Aggregate>.sendOppdrag() {
 
 private fun MappedStream<String, Aggregate>.sendSimulering() {
     this
-        .flatMap { (_, simuleringer) -> simuleringer }
+        .flatMap { (_, simuleringer) -> simuleringer.requests }
         .produce(Topics.simulering)
 }
 

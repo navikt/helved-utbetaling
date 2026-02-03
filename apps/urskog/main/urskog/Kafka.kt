@@ -194,13 +194,13 @@ fun Topology.simulering(simuleringService: SimuleringService) {
                 }
                 .branch({ (_, fagsystem) -> fagsystem.isTilleggsstønader() }) {
                     map { (sim, _) -> sim }
-                        .map { Result.catch { intoV1(it) } }
+                        .map { Result.catch { intoV1(it) ?: Info.OkUtenEndring(Fagsystem.TILLEGGSSTØNADER) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunTilleggsstønader) }
                         .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILTAKSPENGER }) {
                     map { (sim, _) -> sim }
-                        .map { Result.catch { intoV1(it) } }
+                        .map { Result.catch { intoV1(it) ?: Info.OkUtenEndring(Fagsystem.TILTAKSPENGER) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunTiltakspenger) }
                         .default { map { it.unwrapErr() }.produce(Topics.status) }
                 }

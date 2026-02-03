@@ -8,11 +8,13 @@ import kotlin.math.abs
 import no.nav.system.os.entiteter.beregningskjema.*;
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
-fun intoV1(jaxb: SimulerBeregningResponse): models.Simulering { 
-    return v1.Simulering(
-        oppsummeringer = oppsummeringer(jaxb.response.simulering.beregningsPeriodes),
-        detaljer = jaxb.response.simulering.into(),
-    )
+fun intoV1(jaxb: SimulerBeregningResponse): models.Simulering? { 
+    return jaxb.response.let { response -> 
+        v1.Simulering(
+            oppsummeringer = oppsummeringer(response.simulering.beregningsPeriodes),
+            detaljer = response.simulering.into(),
+        )
+    }
 }
 
 private fun Beregning.into(): models.v1.SimuleringDetaljer {
