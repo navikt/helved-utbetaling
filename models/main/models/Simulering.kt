@@ -222,7 +222,11 @@ data class Info (
             return Info(
                 Status.OK_UTEN_ENDRING,
                 fagsystem,
-                "Simuleringen er helt lik som det forrige oppdraget. Det er ingen endring",
+                "Simulering er vellykket, men det er ingen posteringer å vise til." +
+                "Det er to mulige årsaker til dette. " + 
+                "1) Oppdraget finnes fra før, det er ingen endring mellom det som simuleres og det som eksisterer fra før. " +
+                "2) Det simuleres et opphør på et oppdrag som ikke er ajourholdt, hvis oppdraget iverksettes så vil opphøret skje uten at noe utbetales." 
+                ,
             )
         }
     }
