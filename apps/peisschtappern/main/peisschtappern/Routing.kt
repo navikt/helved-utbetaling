@@ -203,8 +203,8 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
                     val success = when (channel) {
                         is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(message.key, value)
-                        is Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value)
-                        is Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value)
+                        is Channel.Dp, Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value)
+                        is Channel.Ts, Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value)
                         else -> error("Støtter ikke innsending av melding for topic ${channel.topic.name}")
                     }
 
