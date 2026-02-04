@@ -24,8 +24,18 @@ fun Route.iverksetting(
             val request = call.receive<MigrationRequest>()
             if(request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
             if (request.meldeperiode != null && request.uidToStønad != null) badRequest("mutual exclusive: 'meldeperiode' and 'uidToStønad'")
-            migrator.transfer(fagsystem, request)
+            val utbetalinger = migrator.mapUtbetalinger(fagsystem, request)
+            utbetalinger.forEach { migrator.migrate(it) }
             call.respond(HttpStatusCode.OK)
+        }
+
+        post("/v2/migrate/dryrun") {
+            val fagsystem = call.fagsystem()
+            val request = call.receive<MigrationRequest>()
+            if(request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
+            if (request.meldeperiode != null && request.uidToStønad != null) badRequest("mutual exclusive: 'meldeperiode' and 'uidToStønad'")
+            val utbetalinger = migrator.mapUtbetalinger(fagsystem, request)
+            call.respond(HttpStatusCode.OK, utbetalinger)
         }
 
         post("/v2") {

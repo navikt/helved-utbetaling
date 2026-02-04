@@ -325,6 +325,9 @@ object TestData {
             id = RandomOSURId.generate(),
             utbetalingsoppdrag = null,
             andelerTilkjentYtelse = andeler,
+            sisteAndelPerKjede = andeler
+                .groupBy { it.stønadsdata.tilKjedenøkkel() }
+                .mapValues { andeler -> andeler.value.maxBy { it.periodeId!! } },
         )
 
         fun behandlingsinformasjon(
