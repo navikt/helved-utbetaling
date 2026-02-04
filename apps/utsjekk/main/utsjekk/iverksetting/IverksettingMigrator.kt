@@ -1,9 +1,5 @@
 package utsjekk.iverksetting
 
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
@@ -14,44 +10,35 @@ import models.*
 import models.BehandlingId
 import models.UtbetalingId
 import models.Utbetalingsperiode
-import utsjekk.fagsystem
 import utsjekk.partition
-import java.util.*
+import java.util.UUID
 
 data class MigrationRequest(
     val sakId: String,
     val behandlingId: String,
     val iverksettingId: String?,
     val meldeperiode: String?, // meldekortId
-    val uidToStønad: Pair<UUID, models.Stønadstype>?,
+    val uidToStønad: Pair<UUID, Stønadstype>?,
 ) {
     init {
-        require(meldeperiode == null || uidToStønad == null) 
+        require(meldeperiode == null || uidToStønad == null)
     }
 }
 
 class IverksettingMigrator(
     val iverksettingService: IverksettingService,
-    val utbetalingProducer: KafkaProducer<String, models.Utbetaling>,
+    val utbetalingProducer: KafkaProducer<String, Utbetaling>,
 ) {
-    fun route(route: Route) {
-        route.route("/api/iverksetting/v2/migrate") {
-            post {
-                val fagsystem = call.fagsystem()
-                val request = call.receive<MigrationRequest>()
-                if(request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
-                if (request.meldeperiode != null && request.uidToStønad != null) badRequest("mutual exclusive: 'meldeperiode' and 'uidToStønad'")
-                transfer(fagsystem, request)
-                call.respond(HttpStatusCode.OK)
-            }
-        }
+    fun migrate(utbetaling: Utbetaling) {
+        val key = utbetaling.uid.id.toString()
+        utbetalingProducer.send(key, utbetaling, partition(key))
     }
 
-    suspend fun transfer(fs: models.kontrakter.Fagsystem, req: MigrationRequest) {
+    suspend fun mapUtbetalinger(fs: models.kontrakter.Fagsystem, req: MigrationRequest): List<Utbetaling> {
         if (fs !in listOf(models.kontrakter.Fagsystem.TILLEGGSSTØNADER, models.kontrakter.Fagsystem.TILTAKSPENGER)) {
             notImplemented("kan ikke migrere $fs enda")
-        } 
-        withContext(Jdbc.context) {
+        }
+        return withContext(Jdbc.context) {
             transaction {
                 val iverksetting = iverksettingService.hentSisteMottatte(SakId(req.sakId), fs)
                     ?: notFound("iverksetting for (sak=${req.sakId} fagsystem=$fs)")
@@ -61,7 +48,11 @@ class IverksettingMigrator(
                     secureLog.error("iverksettingsresultat for (sak=${req.sakId} fagsystem=$fs)", e)
                     notFound("iverksettingsresultat for (sak=${req.sakId} fagsystem=$fs)")
                 }
-                if (sisteIverksettingResultat.oppdragResultat?.oppdragStatus !in listOf(OppdragStatus.KVITTERT_OK, OppdragStatus.OK_UTEN_UTBETALING)) {
+                if (sisteIverksettingResultat.oppdragResultat?.oppdragStatus !in listOf(
+                        OppdragStatus.KVITTERT_OK,
+                        OppdragStatus.OK_UTEN_UTBETALING
+                    )
+                ) {
                     locked("iverksetting for (sak=${req.sakId} fagsystem=$fs)")
                 }
 
@@ -69,19 +60,33 @@ class IverksettingMigrator(
                     .tilkjentYtelseForUtbetaling
                     .lagAndelData()
                     .groupBy { it.stønadsdata.tilKjedenøkkel() }
-                    .mapValues { andel -> andel.value.sortedBy { it.fom} }
-                    .filter { (nøkkel, _) -> 
+                    .mapValues { andel -> andel.value.sortedBy { it.fom } }
+                    .filter { (nøkkel, _) ->
                         when (nøkkel) {
                             is KjedenøkkelMeldeplikt -> nøkkel.meldekortId == req.meldeperiode!!
                             is KjedenøkkelStandard -> nøkkel.klassifiseringskode == req.uidToStønad!!.second.klassekode
                         }
                     }
 
-               andelerByKlassekode.forEach { klassekode, andeler ->
-                    appLog.info("forsøker å migrere $klassekode}")
-                    val utbet = utbetaling(req, iverksetting, andeler, klassekode.klassifiseringskode, models.Fagsystem.from(fs.kode))
-                    val key = utbet.uid.id.toString()
-                    utbetalingProducer.send(key, utbet, partition(key))
+                val sisteAndeler = sisteIverksettingResultat
+                    .tilkjentYtelseForUtbetaling
+                    ?.sisteAndelPerKjede
+                    ?.mapValues { it.value.tilAndelData() }
+                    ?: badRequest("Fant ikke siste andeler for (sak=${req.sakId} fagsystem=$fs)")
+
+                andelerByKlassekode.map { (kjedenøkkel, andeler) ->
+                    appLog.info("forsøker å migrere $kjedenøkkel}")
+                    utbetaling(
+                        req = req,
+                        iverksetting = iverksetting,
+                        andeler = andeler,
+                        sisteAndel = sisteAndeler[kjedenøkkel]
+                            ?: badRequest("Fant ikke siste andeler for (sak=${req.sakId} fagsystem=$fs) kjedenøkkel=$kjedenøkkel"),
+                        klassekode = kjedenøkkel.klassifiseringskode,
+                        fagsystem = Fagsystem.from(fs.kode)
+                    )
+//                    val key = utbet.uid.id.toString()
+//                    utbetalingProducer.send(key, utbet, partition(key))
                 }
             }
         }
@@ -91,9 +96,10 @@ class IverksettingMigrator(
         req: MigrationRequest,
         iverksetting: Iverksetting,
         andeler: List<AndelData>,
+        sisteAndel: AndelData,
         klassekode: String,
-        fagsystem: models.Fagsystem,
-    ): models.Utbetaling = models.Utbetaling(
+        fagsystem: Fagsystem,
+    ): Utbetaling = Utbetaling(
         dryrun = false,
         originalKey = iverksetting.iverksettingId?.id ?: iverksetting.behandlingId.id,
         fagsystem = fagsystem,
@@ -104,7 +110,7 @@ class IverksettingMigrator(
         førsteUtbetalingPåSak = false,
         sakId = models.SakId(iverksetting.sakId.id),
         behandlingId = BehandlingId(iverksetting.behandlingId.id),
-        lastPeriodeId = andeler.mapNotNull { it.periodeId }.maxByOrNull { it }?.let { PeriodeId("${iverksetting.sakId.id}#$it") } ?: error("fant ingen siste periode id for $req"),
+        lastPeriodeId = PeriodeId("${iverksetting.sakId.id}#${sisteAndel.periodeId}"),
         personident = Personident(iverksetting.personident),
         vedtakstidspunkt = iverksetting.vedtak.vedtakstidspunkt,
         stønad = Stønadstype.fraKode(klassekode),
@@ -116,9 +122,10 @@ class IverksettingMigrator(
     )
 }
 
-fun uid(sakId: String, meldeperiode: String, stønad: Stønadstype, fagsystem: models.Fagsystem): UtbetalingId {
+fun uid(sakId: String, meldeperiode: String, stønad: Stønadstype, fagsystem: Fagsystem): UtbetalingId {
     return UtbetalingId(
-        models.uuid(sakId = models.SakId(sakId),
+        uuid(
+            sakId = models.SakId(sakId),
             fagsystem = fagsystem,
             meldeperiode = meldeperiode,
             stønad = stønad

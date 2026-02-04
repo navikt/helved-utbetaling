@@ -235,7 +235,6 @@ class IverksettingMigratorTest {
                             fom = 1.mar,
                             tom = 1.mar,
                             periodeId = pid + 1,
-                            forrigePeriodeId = pid,
                             stønadsdata = StønadsdataTilleggsstønader(StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE)
                         )
                     )
