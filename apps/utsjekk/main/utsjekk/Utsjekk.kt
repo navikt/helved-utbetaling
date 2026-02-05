@@ -208,6 +208,7 @@ value class Client(
     fun toFagsystem(): Fagsystem =
         when (name) {
             "azure-token-generator" -> Fagsystem.AAP
+            "helved-peisen" -> Fagsystem.TILLEGGSSTØNADER
             "helved-performance" -> Fagsystem.DAGPENGER
             "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
             "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
