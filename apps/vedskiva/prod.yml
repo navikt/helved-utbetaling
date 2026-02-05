@@ -11,8 +11,8 @@ spec:
   ttlSecondsAfterFinished: 14400
   resources:
     requests:
-      cpu: 200m
-      memory: 1Gi
+      cpu: 500m
+      memory: 512Mi
   gcp:
     sqlInstances:
       - type: POSTGRES_17
