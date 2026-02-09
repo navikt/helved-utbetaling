@@ -45,7 +45,6 @@ object AggregateService {
                         val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
                         val utbetaling = new.copy(action = Action.CREATE, lastPeriodeId = lastPeriodeId)
                         utbetaling to oppdrag
-
                     }
 
                     prev == null -> {

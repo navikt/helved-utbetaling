@@ -24,6 +24,60 @@ internal class TsTest {
     }
 
     @Test
+    fun `migrer et opphør og fortsett på det`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+        val periodeId = PeriodeId()
+
+        TestRuntime.topics.utbetalinger.produce(uid.toString()) {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid,
+                sakId = sid,
+                behandlingId = BehandlingId("$nextInt"),
+                originalKey = UUID.randomUUID().toString(),
+                stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
+                periodetype = Periodetype.EN_GANG,
+                lastPeriodeId = periodeId,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 6.jun.atStartOfDay(),
+                beslutterId = Navident("ts"),
+                saksbehandlerId = Navident("ts"),
+                fagsystem = Fagsystem.TILLSTPB,
+            ) {
+                emptyList()
+            }
+        }
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.TILLEGGSSTØNADER)) {
+            setOf(uid)
+        }
+
+
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = bid.id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    Ts.periode(3.jun, 7.jun, 1500u)
+                }
+            }
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .has(transactionId, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.TILLSTPB, listOf(
+                DetaljerLinje(bid.id, 3.jun, 7.jun, null, 1500u, "TSTBASISP2-OP"),
+            ))))
+
+        TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+    }
+
+    @Test
     fun `1 utbetalinger med brukFagområdeTillst = gammel fagområde`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
