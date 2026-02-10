@@ -1,19 +1,13 @@
 package abetal
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.time.Duration.Companion.milliseconds
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.*
+import java.time.*
+import java.time.format.DateTimeFormatter
+import java.util.UUID
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 internal class AbetalTest {
 
@@ -60,7 +54,7 @@ internal class AbetalTest {
         val mottatt = StatusReply(
             Status.MOTTATT,
             Detaljer(
-                ytelse = Fagsystem.DAGPENGER, 
+                ytelse = Fagsystem.DAGPENGER,
                 linjer = listOf(
                     DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
                     DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DAGPENGER"),
@@ -143,8 +137,8 @@ internal class AbetalTest {
         //
         // SIMULATE A KVITTERING REKEYED JOINED AND PRODUCED TO OPPDRAG
         //
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2")) { 
-            oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" }}
+        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2")) {
+            oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
         }
 
         TestRuntime.topics.utbetalinger.assertThat()
@@ -238,7 +232,7 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.dp.produce(key) { 
+        TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode,
@@ -256,7 +250,7 @@ internal class AbetalTest {
         TestRuntime.topics.status.assertThat().has(key)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
-        TestRuntime.topics.oppdrag.produce(key, mapOf("uids" to "$uid")) { 
+        TestRuntime.topics.oppdrag.produce(key, mapOf("uids" to "$uid")) {
             oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
@@ -272,7 +266,7 @@ internal class AbetalTest {
         val meldeperiode2 = UUID.randomUUID().toString()
         val uid2 = dpUId(sid.id, meldeperiode2, StønadTypeDagpenger.DAGPENGER)
 
-        TestRuntime.topics.dp.produce(key) { 
+        TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode1,
@@ -291,13 +285,13 @@ internal class AbetalTest {
         val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
             .with(key, 0) { assertEquals("NY", it.oppdrag110.kodeEndring) }
             .get(key)
-        TestRuntime.topics.oppdrag.produce(key, mapOf("uids" to "$uid1")) { 
-            oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" }}
+        TestRuntime.topics.oppdrag.produce(key, mapOf("uids" to "$uid1")) {
+            oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
         }
 
         TestRuntime.topics.utbetalinger.assertThat().has(uid1.toString())
 
-        TestRuntime.topics.dp.produce(key) { 
+        TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode2,
@@ -309,14 +303,14 @@ internal class AbetalTest {
             }
         }
 
-    val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-        .with(key, 0) { assertEquals("ENDR", it.oppdrag110.kodeEndring) }
-        .get(key)
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .with(key, 0) { assertEquals("ENDR", it.oppdrag110.kodeEndring) }
+            .get(key)
 
         TestRuntime.topics.status.assertThat().has(key)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid2.toString())
-        TestRuntime.topics.oppdrag.produce(key, mapOf("uids" to "$uid2")) { 
+        TestRuntime.topics.oppdrag.produce(key, mapOf("uids" to "$uid2")) {
             oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(uid2.toString())
@@ -348,7 +342,7 @@ internal class AbetalTest {
             }
         }
 
-        TestRuntime.topics.dp.produce(key) { 
+        TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(
                 sakId = sid.id,
                 behandlingId = bid.id,
@@ -718,7 +712,7 @@ internal class AbetalTest {
         val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId1)
             .get(transactionId1)
-        TestRuntime.topics.oppdrag.produce(transactionId1, mapOf("uids" to "$uid1")) { 
+        TestRuntime.topics.oppdrag.produce(transactionId1, mapOf("uids" to "$uid1")) {
             oppdrag1.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
         }
 
@@ -776,7 +770,7 @@ internal class AbetalTest {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
 
-        TestRuntime.topics.dp.produce(key) { 
+        TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id, bid.id) {
                 Dp.meldekort(
                     meldeperiode = meldeperiode,
@@ -792,7 +786,8 @@ internal class AbetalTest {
             .has(key)
             .with(key, 0) {
                 assertEquals("DP", it.oppdrag110.avstemming115.kodeKomponent)
-                val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+                val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0))
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
                 assertEquals(todayAtTen, it.oppdrag110.avstemming115.nokkelAvstemming)
                 assertEquals(todayAtTen, it.oppdrag110.avstemming115.tidspktMelding)
             }
@@ -800,10 +795,84 @@ internal class AbetalTest {
         TestRuntime.topics.status.assertThat()
             .has(key)
             .with(key) {
-                StatusReply(Status.MOTTATT, Detaljer(ytelse = Fagsystem.DAGPENGER, linjer = listOf(
-                    DetaljerLinje(bid.id, 1.jan, 1.jan, 100u, 100u, "DAGPENGER"),
-                )))
+                StatusReply(
+                    Status.MOTTATT, Detaljer(
+                        ytelse = Fagsystem.DAGPENGER, linjer = listOf(
+                            DetaljerLinje(bid.id, 1.jan, 1.jan, 100u, 100u, "DAGPENGER"),
+                        )
+                    )
+                )
             }
     }
-}
 
+    @Test
+    fun `oppdrag med kvittering uten uids produserer ikke nye meldinger`() {
+        val key = UUID.randomUUID().toString()
+        val uid = randomUtbetalingId()
+
+        val oppdrag = OppdragService.opprett(utbetaling(Action.CREATE, uid) { periode(1.jan, 3.jan) }).apply {
+            mmel = Mmel().apply { alvorlighetsgrad = "00" }
+        }
+
+        TestRuntime.topics.oppdrag.produce(key) { oppdrag }
+
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.retryOppdrag.assertThat().isEmpty()
+    }
+
+    @Test
+    fun `oppdrag med kvittering og uids produserer til utbetalinger`() {
+        val key = UUID.randomUUID().toString()
+        val uid = randomUtbetalingId()
+
+        val utbetaling = utbetaling(Action.CREATE, uid)
+
+        TestRuntime.topics.pendingUtbetalinger.produce(uid.toString()) { utbetaling }
+
+        val oppdrag = OppdragService.opprett(utbetaling).apply {
+            mmel = Mmel().apply { alvorlighetsgrad = "00" }
+        }
+
+        TestRuntime.topics.oppdrag.produce(key, mapOf("uids" to uid.toString())) { oppdrag }
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString(), utbetaling)
+        TestRuntime.topics.retryOppdrag.assertThat().isEmpty()
+    }
+
+    @Test
+    fun `oppdrag med kvittering med uids uten pending prøver på nytt`() {
+        val key = UUID.randomUUID().toString()
+        val uid = randomUtbetalingId()
+        val utbetaling = utbetaling(Action.CREATE, uid) {
+            periode(1.jan, 3.jan)
+        }
+
+        val oppdrag = OppdragService.opprett(utbetaling).apply {
+            mmel = Mmel().apply { alvorlighetsgrad = "00" }
+        }
+
+        TestRuntime.topics.oppdrag.produce(key, mapOf("uids" to uid.toString(), "maxRetries" to "1")) { oppdrag }
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        TestRuntime.topics.retryOppdrag.assertThat().with(key) {
+            assertEquals(oppdrag.oppdrag110.fagsystemId, it.oppdrag110.fagsystemId)
+        }
+    }
+
+    @Test
+    fun `retry med pending produserer til utbetaling`() {
+        val key = UUID.randomUUID().toString()
+        val uid = randomUtbetalingId()
+        val utbetaling = utbetaling(Action.CREATE, uid) {
+            periode(1.jan, 3.jan)
+        }
+
+        val oppdrag = OppdragService.opprett(utbetaling).apply {
+            mmel = Mmel().apply { alvorlighetsgrad = "00" }
+        }
+
+        TestRuntime.topics.pendingUtbetalinger.produce(uid.toString()) { utbetaling }
+        TestRuntime.topics.retryOppdrag.produce(key, mapOf("uids" to uid.toString())) { oppdrag }
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString(), utbetaling)
+    }
+}

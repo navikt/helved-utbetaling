@@ -104,6 +104,11 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(filteredStream)
     }
 
+    fun filter(lambda: (K, V) -> Boolean): MappedStream<K, V> {
+        val filteredStream = stream.filter ({ key, value -> lambda(key, value) })
+        return MappedStream(filteredStream)
+    }
+
     fun branch(predicate: (V) -> Boolean, consumed: MappedStream<K, V>.() -> Unit): BranchedMappedStream<K, V> {
         val branchedStream = stream.split()
         return BranchedMappedStream(branchedStream).branch(predicate, consumed)
