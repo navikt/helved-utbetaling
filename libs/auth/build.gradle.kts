@@ -1,4 +1,4 @@
-val ktorVersion = "3.3.3"
+val ktorVersion = "3.4.0"
 
 dependencies {
     api(project(":libs:cache"))
