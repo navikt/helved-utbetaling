@@ -3,21 +3,18 @@ package vedskiva
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.ktor.client.*
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.*
-import libs.jdbc.*
-import libs.kafka.*
-import libs.ktor.*
 import libs.jdbc.Jdbc
-import libs.jdbc.concurrency.*
+import libs.jdbc.PostgresContainer
+import libs.jdbc.concurrency.CoroutineDatasource
+import libs.jdbc.truncate
+import libs.kafka.*
+import libs.ktor.KtorRuntime
 import libs.utils.logger
 import java.io.File
 import java.net.URI
@@ -25,7 +22,6 @@ import java.net.URI
 val testLog = logger("test")
 
 object TestRuntime {
-
     private val postgres = PostgresContainer("vedskiva")
     val azure = AzureFake()
     val peisschtappern = PeisschtappernFake()
@@ -39,22 +35,26 @@ object TestRuntime {
         peisschtappern.config,
     )
 
-    init {
-        Runtime.getRuntime().addShutdownHook(Thread {
-            reset()
+
+    val ktor = KtorRuntime<Config>(
+        appName = "vedskiva",
+        module = {
+            vedskiva(
+                config, 
+                kafka,
+            )
+        },
+        onClose = { 
+            reset() 
             postgres.close()
-        })
-    }
+        },
+    )
 
     fun reset() {
         jdbc.truncate("vedskiva", Scheduled.TABLE_NAME)
         kafka.reset()
         PeisschtappernFake.response.clear()
     }
-}
-
-val http: HttpClient by lazy {
-    HttpClient()
 }
 
 class AzureFake {
@@ -124,19 +124,16 @@ class PeisschtappernFake {
 
 @Suppress("UNCHECKED_CAST")
 class KafkaFactoryFake: KafkaFactory {
-    private val producers = mutableMapOf<String, KafkaProducer<*, * >>()
-    private val consumers = mutableMapOf<String, KafkaConsumer<*, * >>()
-
-    internal fun reset() {
-        producers.clear()
-        consumers.clear()
-    }
+    private val producers = mutableMapOf<String, KafkaProducerFake<*, * >>()
+    private val consumers = mutableMapOf<String, KafkaConsumerFake<*, * >>()
 
     override fun <K: Any, V> createProducer(
         config: StreamsConfig,
         topic: Topic<K, V & Any>,
     ): KafkaProducerFake<K, V> {
-        return producers.getOrPut(topic.name) { KafkaProducerFake(topic) } as KafkaProducerFake<K, V>
+        if (producers.containsKey(topic.name)) error("producer already registered for $topic")
+        producers[topic.name] = KafkaProducerFake(topic)
+        return producers[topic.name]!! as KafkaProducerFake<K, V>
     }
 
     override fun <K: Any, V> createConsumer(
@@ -146,7 +143,18 @@ class KafkaFactoryFake: KafkaFactory {
         maxProcessingTimeMs: Int,
         groupId: Int,
     ): KafkaConsumerFake<K, V> {
-        return consumers.getOrPut(topic.name) { KafkaConsumerFake(topic) } as KafkaConsumerFake<K, V>
+        consumers[topic.name] = KafkaConsumerFake(topic)
+        return consumers[topic.name]!! as KafkaConsumerFake<K, V>
+    }
+
+    fun reset() {
+        producers.values.forEach { topic -> 
+            topic.clear()
+        }
+    }
+
+    fun <K: Any, V> getProducer(topic: Topic<K, V & Any>): KafkaProducerFake<K, V> {
+        return producers[topic.name]!! as KafkaProducerFake<K, V>
     }
 }
 

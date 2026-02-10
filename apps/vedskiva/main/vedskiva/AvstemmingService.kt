@@ -1,130 +1,136 @@
 package vedskiva
 
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.*
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.nio.ByteBuffer
-import java.util.UUID
-import java.util.Base64
-import java.math.BigDecimal
-import java.time.LocalTime
+import libs.jdbc.concurrency.transaction
+import libs.kafka.KafkaFactory
+import libs.kafka.KafkaProducer
+import libs.utils.appLog
 import models.*
-import kotlin.collections.chunked
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
-private const val CHUNK_SIZE = 70
+class AvstemmingService(
+    config: Config,
+    val producer: KafkaProducer<String, Avstemmingsdata>,
+    val peisschtappern: PeisschtappernClient = PeisschtappernClient(config)
+) {
 
-object AvstemmingService {
-    fun create(avstemming: Avstemming): List<Avstemmingsdata> {
-        if (avstemming.oppdragsdata.isEmpty()) return emptyList()
-        val start = listOf(avstemmingsdata(AksjonType.START, avstemming))
-        val chunks = avstemmingsdatas(avstemming)
-        val end = listOf(avstemmingsdata(AksjonType.AVSL, avstemming))
-        return start + chunks + end
-    }
+    suspend fun generate(
+        avstemFom: LocalDateTime,
+        avstemTom: LocalDateTime,
+    ): List<Pair<String, List<Avstemmingsdata>>> {
+        val oppdragDaos = mutableMapOf<String, Set<Dao>>()
 
-    private fun avstemmingsdata(type: AksjonType, avstemming: Avstemming) = Avstemmingsdata().apply {
-        aksjon = Aksjonsdata().apply {
-            this.aksjonType = type
-            this.kildeType = KildeType.AVLEV
-            this.avstemmingType = AvstemmingType.GRSN
-            this.avleverendeKomponentKode = avstemming.fagsystem.fagområde
-            this.mottakendeKomponentKode = "OS"
-            this.underkomponentKode = avstemming.fagsystem.fagområde
-            this.nokkelFom = avstemming.fom.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
-            this.nokkelTom = avstemming.tom.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
-            this.avleverendeAvstemmingId = avstemming.id
-            this.brukerId = avstemming.fagsystem.fagområde
+        peisschtappern.oppdrag(
+            fom = avstemFom,
+            tom = avstemTom,
+        ).also {
+            appLog.info("Fetched ${it.size} oppdrag between $avstemFom - $avstemTom from peisschtappern")
+        }.filter { dao ->
+            val avstemmingdag: LocalDateTime? = dao.oppdrag?.let { oppdrag ->
+                oppdrag.oppdrag110?.avstemming115?.tidspktMelding?.trimEnd()
+                    ?.let { LocalDateTime.parse(it, formatter) } 
+                    // hvis avstemming115 ikke er med, så setter vi den til i går og krysser fingrene
+                    ?: LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).minusDays(1) 
+            }
+            val keep = avstemmingdag == null || (avstemmingdag in avstemFom..avstemTom)
+            if (!keep) appLog.warn("Filter oppdrag not suited for todays avstemming k:${dao.key} p:${dao.partition} o:${dao.offset}")
+            keep
+        }.also {
+            appLog.info("Keeping ${it.size} of the fetched ones")
+        }.forEach { dao ->
+            if (dao.value == null) {
+                appLog.error("Found tombstone key:${dao.key} p:${dao.partition} o:${dao.offset}. Tombstones are not necessary on topics with retention.")
+            } else {
+                oppdragDaos.accAndDedup(dao)
+            }
         }
-    }
 
-    fun genererId(): AvstemmingId {
-        val uuid = UUID.randomUUID()
-        val byteBuffer = ByteBuffer.wrap(ByteArray(16)).apply {
-            putLong(uuid.mostSignificantBits)
-            putLong(uuid.leastSignificantBits)
-        }
-        return Base64.getUrlEncoder().encodeToString(byteBuffer.array()).substring(0, 22)
-    }
+        oppdragDaos.reduce()
 
-    private fun avstemmingsdatas(avstemming: Avstemming): List<Avstemmingsdata> {
-        val avstemmingsdatas = avstemming.oppdragsdata
-            .mapNotNull(::detaljdata)
-            .chunked(CHUNK_SIZE)
-            .map { chunk ->
-                avstemmingsdata(AksjonType.DATA, avstemming).apply {
-                    this.detaljs.addAll(chunk)
+        return oppdragDaos.values
+            .filterNot { it.isEmpty() }
+            .groupBy { requireNotNull(it.first().oppdrag).oppdrag110.kodeFagomraade.trimEnd() }
+            .map { (fagområde, daos) ->
+                appLog.debug("create oppdragsdatas for $fagområde")
+                daos.flatten().forEach { 
+                    appLog.debug("oppdragsdata k:${it.key} p:${it.partition} o:${it.offset}")
                 }
+
+                val avstemmingId = AvstemmingFactory.genererId()
+
+                val oppdragsdatas = daos.flatten().mapNotNull { it.oppdrag }.map { oppdrag ->
+                    Oppdragsdata(
+                        fagsystem = Fagsystem.fromFagområde(fagområde),
+                        personident = Personident(oppdrag.oppdrag110.oppdragGjelderId.trimEnd()),
+                        sakId = SakId(oppdrag.oppdrag110.fagsystemId.trimEnd()),
+                        lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
+                        innsendt = oppdrag.oppdrag110?.avstemming115?.tidspktMelding?.trimEnd()?.toLocalDateTime() ?: LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).minusDays(1) ,
+                        totalBeløpAllePerioder = oppdrag.oppdrag110.oppdragsLinje150s.sumOf {
+                            it.sats.toLong().toUInt()
+                        },
+                        kvittering = oppdrag.mmel?.let { mmel ->
+                            Kvittering(
+                                alvorlighetsgrad = mmel.alvorlighetsgrad.trimEnd(),
+                                kode = mmel.kodeMelding?.trimEnd(),
+                                melding = mmel.beskrMelding?.trimEnd(),
+                            )
+                        },
+                    )
+                }
+                val avstemming = Avstemming(avstemmingId, avstemFom, avstemTom, oppdragsdatas)
+                val messages = AvstemmingFactory.create(avstemming)
+                // FIXME: hvis forrige iter i forEach gikk bra, men neste feiler. Så har vi allerede sendt ut disse
+                // Hvordan kan vi gjøre alle forEach (fagområde, daos) atomisk? 
+                fagområde to messages
             }
-            .ifEmpty {
-                listOf(avstemmingsdata(AksjonType.DATA, avstemming))
-            }
-        avstemmingsdatas.first().apply {
-            total = totaldata(avstemming.oppdragsdata)
-            periode = periodedata(avstemming)
-            grunnlag = grunnlagsdata(avstemming.oppdragsdata)
-        }
-        return avstemmingsdatas
-    }
-
-    private fun detaljdata(data: Oppdragsdata): Detaljdata? {
-        val type = detaljType(data.kvittering) ?: return null
-        return Detaljdata().apply {
-            detaljType = type
-            offnr = data.personident.ident
-            avleverendeTransaksjonNokkel = data.sakId.id
-            tidspunkt = data.innsendt.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
-            if (type in listOf(DetaljType.AVVI, DetaljType.VARS)) {
-                val kvittering = data.kvittering ?: return null
-                meldingKode = kvittering.kode
-                alvorlighetsgrad = kvittering.alvorlighetsgrad
-                tekstMelding = kvittering.melding
-            }
-        }
-    }
-
-    private fun totaldata(datas: List<Oppdragsdata>) = Totaldata().apply {
-        val totalbeløp = datas.sumOf { it.totalBeløpAllePerioder.toLong() }
-        totalAntall = datas.size
-        totalBelop = BigDecimal.valueOf(totalbeløp)
-        fortegn = if (totalbeløp >= 0) Fortegn.T else Fortegn.F
-    }
-
-    private fun periodedata(avstemming: Avstemming) = Periodedata().apply {
-        datoAvstemtFom = avstemming.fom.format("yyyyMMddHH")
-        datoAvstemtTom = avstemming.tom.format("yyyyMMddHH")
-    }
-
-    private fun grunnlagsdata(datas: List<Oppdragsdata>) = Grunnlagsdata().apply {
-        val godkjente = datas.filter { it.kvittering?.alvorlighetsgrad == "00" }
-        godkjentAntall = godkjente.size
-        godkjentBelop = BigDecimal.valueOf(godkjente.sumOf{ it.totalBeløpAllePerioder }.toLong())
-        godkjentFortegn = if(godkjentBelop.toLong() >= 0) Fortegn.T else Fortegn.F
-
-        val varsel = datas.filter { it.kvittering?.alvorlighetsgrad == "04" }
-        varselAntall = varsel.size
-        varselBelop = BigDecimal.valueOf(varsel.sumOf{ it.totalBeløpAllePerioder }.toLong())
-        varselFortegn = if(varselBelop.toLong() >= 0) Fortegn.T else Fortegn.F
-
-        val mangler = datas.filter { it.kvittering == null }
-        manglerAntall = mangler.size
-        manglerBelop = BigDecimal.valueOf(mangler.sumOf { it.totalBeløpAllePerioder }.toLong())
-        manglerFortegn = if(manglerBelop.toLong() >= 0) Fortegn.T else Fortegn.F
-
-        val avvist = datas.filter { it.kvittering?.alvorlighetsgrad in listOf("08", "12") }
-        avvistAntall = avvist.size
-        avvistBelop = BigDecimal.valueOf(avvist.sumOf { it.totalBeløpAllePerioder }.toLong())
-        avvistFortegn = if(avvistBelop.toLong() >= 0) Fortegn.T else Fortegn.F
-    }
-
-    private fun detaljType(kvittering: Kvittering?): DetaljType? {
-        return when(kvittering?.alvorlighetsgrad) {
-            "00" -> null
-            "04" -> DetaljType.VARS
-            "08" -> DetaljType.AVVI
-            "12" -> DetaljType.AVVI
-            else -> DetaljType.MANG
-        }
     }
 }
 
-private fun LocalDateTime.format(pattern: String) = format(DateTimeFormatter.ofPattern(pattern))
+private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+private fun String.toLocalDate(): LocalDate = LocalDate.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+private fun String.toLocalDateTime(): LocalDateTime =
+    LocalDateTime.parse(this, DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+
+private fun MutableMap<String, Set<Dao>>.accAndDedup(dao: Dao) {
+    val daosForKey = getOrDefault(dao.key, emptySet())
+    if (daosForKey.none { it.value == dao.value }) {
+        this[dao.key] = daosForKey + dao
+    }
+}
+
+/**
+ * Alle oppdrag skal få en kvittering og de som har kvittering har presedens over de som er ukvitterte
+ */
+private fun MutableMap<String, Set<Dao>>.reduce() {
+    val obsoleteDaos = mutableListOf<Dao>()
+    entries.forEach { (_, daos) ->
+        daos.filter { dao ->
+            dao.oppdrag?.mmel == null
+        }.forEach { dao ->
+            if (daos.findCorrelated(dao) != null) {
+                obsoleteDaos.add(dao)
+            } else {
+                appLog.warn("Found oppdrag uten kvittering key:${dao.key} p:${dao.partition} o:${dao.offset}")
+            }
+        }
+    }
+    obsoleteDaos.forEach { dao ->
+        appLog.debug("Found oppdrag with kvittering, removing ukvittert key:${dao.key} p:${dao.partition} o:${dao.offset}")
+        this[dao.key] = this[dao.key]!! - dao
+    }
+}
+
+private fun Set<Dao>.findCorrelated(dao: Dao): Dao? {
+    val firstDelytelseId = dao.oppdrag?.oppdrag110?.oppdragsLinje150s?.first()?.delytelseId?.trimEnd()
+    val lastDelytelseId = dao.oppdrag?.oppdrag110?.oppdragsLinje150s?.last()?.delytelseId?.trimEnd()
+    val mmel = dao.oppdrag?.mmel
+
+    return this.singleOrNull {
+        firstDelytelseId == it.oppdrag?.oppdrag110?.oppdragsLinje150s?.first()?.delytelseId?.trimEnd() &&
+            lastDelytelseId == it.oppdrag?.oppdrag110?.oppdragsLinje150s?.last()?.delytelseId?.trimEnd() &&
+            mmel != it.oppdrag?.mmel
+    }
+}
