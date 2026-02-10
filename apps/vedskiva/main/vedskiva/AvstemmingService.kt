@@ -1,7 +1,5 @@
 package vedskiva
 
-import libs.jdbc.concurrency.transaction
-import libs.kafka.KafkaFactory
 import libs.kafka.KafkaProducer
 import libs.utils.appLog
 import models.*
