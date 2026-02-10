@@ -1,12 +1,21 @@
 package vedskiva
 
+import io.ktor.client.call.body
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.*
 import no.trygdeetaten.skjema.oppdrag.*
+import no.trygdeetaten.skjema.oppdrag.ObjectFactory
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import java.math.BigDecimal
@@ -19,19 +28,21 @@ import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import libs.kafka.KafkaProducerFake
 
 class VedskivaTest {
 
+    private val avsProducer: KafkaProducerFake<String, Avstemmingsdata> by lazy {
+        TestRuntime.kafka.getProducer(Topics.avstemming)
+    }
+
     @BeforeEach
     fun reset() {
-        database(TestRuntime.config)
         TestRuntime.reset()
     }
 
     @Test
     fun `can avstemme 00 (OK)`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("00"),
@@ -42,7 +53,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -62,11 +83,54 @@ class VedskivaTest {
         assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
     }
 
+    @Test
+    fun `can dryrun avstemming`() = runTest(TestRuntime.context) {
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 0,
+                key = "abc",
+                beløper = listOf(100),
+            )
+        )
+
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        val res = TestRuntime.ktor.httpClient.post ("/api/avstem/dryrun") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }.body<List<Pair<String, List<Avstemmingsdata>>>>()
+
+        assertEquals(0, avsProducer.history().size)
+
+        assertEquals(1, res.size)
+        assertEquals(3, res[0].second.size)
+        val start = res[0].second[0]
+        assertEquals(AksjonType.START, start.aksjon.aksjonType)
+        val data = res[0].second[1]
+        assertEquals(1, data.total.totalAntall)
+        assertEquals(100, data.total.totalBelop.toInt())
+        assertEquals(1, data.grunnlag.godkjentAntall)
+        assertEquals(100, data.grunnlag.godkjentBelop.toInt())
+        assertEquals(0, data.grunnlag.varselAntall)
+        assertEquals(0, data.grunnlag.varselBelop.toInt())
+        assertEquals(0, data.grunnlag.avvistAntall)
+        assertEquals(0, data.grunnlag.avvistBelop.toInt())
+        assertEquals(0, data.grunnlag.manglerAntall)
+        assertEquals(0, data.grunnlag.manglerBelop.toInt())
+        val end = res[0].second[2]
+        assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+    }
+
     @Disabled("Tror denne ikke lenger er nødvendig siden nokkelAvstemming i oppdrag-115 er satt til feil dato i testdataen")
     @Test
     fun `test with dev data from may 5th`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         runBlocking {
             withContext(Jdbc.context) {
                 transaction {
@@ -78,7 +142,18 @@ class VedskivaTest {
                 }
             }
         }
-        vedskiva(TestRuntime.config, TestRuntime.kafka, today = LocalDate.of(2025, 5, 6))
+
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.of(2025, 5, 6))
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(6, avsProducer.history().size)
 
@@ -114,8 +189,6 @@ class VedskivaTest {
 
     @Test
     fun `can avstemme 04 (Varsel)`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("04"),
@@ -126,7 +199,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -148,8 +231,6 @@ class VedskivaTest {
 
     @Test
     fun `can avstemme 08 (Funksjonell Feil)`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("08", "funksjonell", "feil"),
@@ -160,7 +241,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -182,8 +273,6 @@ class VedskivaTest {
 
     @Test
     fun `can avstemme 12 (Teknisk Feil)`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("12", "teknisk", "feil"),
@@ -194,7 +283,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -216,8 +315,6 @@ class VedskivaTest {
 
     @Test
     fun `can avstemme    (no kvittering)`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = null,
@@ -228,7 +325,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -250,8 +357,6 @@ class VedskivaTest {
 
     @Test
     fun `can skip without avstemminger for today`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("00"),
@@ -273,15 +378,23 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
     }
 
     @Test
     fun `can deduplicate`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         val dao = dao(
             kvittering = mmel("00"),
             partition = 0,
@@ -293,7 +406,17 @@ class VedskivaTest {
         PeisschtappernFake.response.add(dao)
         PeisschtappernFake.response.add(dao.copy(offset = 1))
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -315,8 +438,6 @@ class VedskivaTest {
 
     @Test
     fun `can accumulate oppdrag with same key`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("00"),
@@ -336,7 +457,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -358,8 +489,6 @@ class VedskivaTest {
 
     @Test
     fun `can summarize total beløp per oppdrag`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("00"),
@@ -370,7 +499,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -392,8 +531,6 @@ class VedskivaTest {
 
     @Test
     fun `can accumulate opphør (UPDATE)`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             Dao(
                 version = "v1",
@@ -457,7 +594,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -479,8 +626,6 @@ class VedskivaTest {
 
     @Test
     fun `can accumulate opphør (DELETE)`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             Dao(
                 version = "v1",
@@ -544,7 +689,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -566,8 +721,6 @@ class VedskivaTest {
 
     @Test
     fun `will take precedence on kvitterte oppdrag`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = null,
@@ -587,7 +740,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -609,8 +772,6 @@ class VedskivaTest {
 
     @Test
     fun `will skip future avstemminger`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("00"),
@@ -622,7 +783,17 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(0, avsProducer.history().size)
     }
@@ -630,8 +801,6 @@ class VedskivaTest {
     // Hvis denne feiler så kan de hende at det er flere dager siden forrige virkedag
     @Test
     fun `will skip previous avstemminger`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("00"),
@@ -643,40 +812,58 @@ class VedskivaTest {
             )
         )
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(0, avsProducer.history().size)
     }
 
     @Test
     fun `will save scheduled`() = runTest(TestRuntime.context) {
-        TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming).use { avsProducer ->
-            PeisschtappernFake.response.add(
-                dao(
-                    kvittering = mmel("00"),
-                    partition = 0,
-                    offset = 0,
-                    key = "abc",
-                    beløper = listOf(100),
-                )
+        PeisschtappernFake.response.add(
+            dao(
+                kvittering = mmel("00"),
+                partition = 0,
+                offset = 0,
+                key = "abc",
+                beløper = listOf(100),
             )
+        )
 
-            vedskiva(TestRuntime.config, TestRuntime.kafka)
-            assertEquals(3, avsProducer.history().size)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
         }
+        assertEquals(3, avsProducer.history().size)
 
         TestRuntime.kafka.reset()
 
-        TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming).use { avsProducer ->
-            vedskiva(TestRuntime.config, TestRuntime.kafka)
-            assertEquals(0, avsProducer.history().size)
+        TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
         }
+        assertEquals(0, avsProducer.history().size)
     }
 
     @Test
     fun `has idempotent scheduler`() = runTest(TestRuntime.context) {
-        val avsProducer = TestRuntime.kafka.createProducer(TestRuntime.config.kafka, Topics.avstemming)
-
         PeisschtappernFake.response.add(
             dao(
                 kvittering = mmel("00"),
@@ -695,9 +882,21 @@ class VedskivaTest {
             }
         }
 
-        vedskiva(TestRuntime.config, TestRuntime.kafka)
+        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(LocalDate.now())
+        }.body<AvstemmingRequest>()
+
+        val res = TestRuntime.ktor.httpClient.post ("/api/avstem") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }
 
         assertEquals(0, avsProducer.history().size)
+        assertEquals(res.status, HttpStatusCode.Conflict)
     }
 }
 

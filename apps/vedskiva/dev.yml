@@ -1,18 +1,30 @@
-apiVersion: nais.io/v1
-kind: Naisjob
+apiVersion: nais.io/v1alpha1
+kind: Application
 metadata:
-  labels:
-    team: helved
   name: vedskiva
   namespace: helved
+  labels:
+    team: helved
 spec:
-  schedule: "0 5 * * *"
+  terminationGracePeriodSeconds: 70
   image: {{ image }} 
-  ttlSecondsAfterFinished: 14400
   resources:
+    limits:
+      memory: 1024Mi
     requests:
-      cpu: 200m
       memory: 512Mi
+      cpu: 200m
+  liveness:
+    path: /actuator/health
+    initialDelay: 30
+    failureThreshold: 10
+  readiness:
+    path: /actuator/health
+    initialDelay: 30
+    failureThreshold: 10
+  prometheus:
+    path: /actuator/metric
+    enabled: true
   gcp:
     sqlInstances:
       - type: POSTGRES_17
@@ -27,7 +39,6 @@ spec:
     logging:
       destinations:
         - id: loki
-        - id: elastic
   kafka:
     pool: nav-dev
     streams: true
@@ -35,6 +46,9 @@ spec:
     application:
       enabled: true
   accessPolicy:
+    inbound:
+      rules:
+        - application: smokesignal
     outbound:
       rules:
         - application: logging
@@ -43,3 +57,4 @@ spec:
   env:
     - name: PEISSCHTAPPERN_SCOPE
       value: api://dev-gcp.helved.peisschtappern/.default
+

@@ -1,17 +1,17 @@
 package libs.ktor
 
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.ktor.serialization.jackson.*
-import kotlinx.coroutines.*
 import io.ktor.client.*
-import io.ktor.server.application.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.jackson.*
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import kotlinx.coroutines.runBlocking
 import libs.utils.logger
 
 private val testLog = logger("test")
@@ -21,12 +21,11 @@ open class KtorRuntime<Config: Any>(
     val module: Application.() -> Unit,
     val onClose: () -> Unit = {}, 
 ) {
-    val ktor: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>
+    val ktor: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> = embeddedServer(Netty, port = 0) {
+        module()
+    }
 
     init {
-        ktor = embeddedServer(Netty, port = 0) {
-            module()
-        }
 
         Runtime.getRuntime().addShutdownHook(Thread {
             testLog.info("Shutting down $appName TestRunner")

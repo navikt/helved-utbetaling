@@ -22,3 +22,4 @@ data class PeisschtappernConfig(
     val scope: String = env("PEISSCHTAPPERN_SCOPE"),
     val host: URL = env("PEISSCHTAPPERN_HOST", URI("http://peisschtappern").toURL())
 )
+
