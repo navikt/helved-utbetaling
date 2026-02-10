@@ -55,6 +55,11 @@ spec:
       rules:
         - application: smokesignal
         - application: helved-peisen
+          # generer obo token: https://azure-token-generator.intern.dev.nav.no/api/obo?aud=dev-gcp.helved.peisschtappern
+          #ref https://docs.nais.io/auth/entra-id/how-to/generate/?h=azure+token
+        - application: azure-token-generator
+          namespace: nais
+          cluster: dev-gcp
     outbound:
       rules:
         - application: logging
