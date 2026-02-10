@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: smokesignal-alerts
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  groups:
+    - name: app
+      rules:
+        - alert: unavailable
+          expr: sum(kube_deployment_status_replicas_available{app="smokesignal", namespace="helved"} offset 5m) by (deployment, namespace) == 0
+          for: 5m
+          annotations:
+            consequence: 'smokesignal er dau'
+            action: '`kubectl describe pod -l app=smokesignal` -> `kubectl logs -l app=smokesignal`'
+          labels:
+            namespace: helved
+            severity: critical
+

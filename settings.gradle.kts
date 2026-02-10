@@ -5,6 +5,7 @@ include(
     "apps:branntaarn",
     "apps:peisschtappern",
     "apps:simulering",
+    "apps:smokesignal",
     "apps:urskog",
     "apps:utsjekk",
     "apps:vedskiva",

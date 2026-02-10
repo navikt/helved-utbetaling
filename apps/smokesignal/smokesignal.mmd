@@ -1,0 +1,15 @@
+---
+config:
+  theme: neo-dark
+  layout: dagre
+  look: neo
+---
+flowchart RL
+ subgraph Topologi["vedskiva"]
+    postgres[("postgres")]
+    avstemming(["helved.avstemming.v1"])
+        
+  end
+    oppdrag(["helved.oppdrag.v1"]) --> Peisschtappern
+    postgres --> |query last scheduled| avstemming
+    Peisschtappern --> |query oppdrag| avstemming

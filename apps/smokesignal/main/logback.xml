@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>trace_id</includeMdcKeyName>
+            <includeMdcKeyName>span_id</includeMdcKeyName>
+        </encoder>
+    </appender>
+
+    <appender name="otel" class="io.opentelemetry.instrumentation.logback.v1_0.OpenTelemetryAppender">
+        <appender-ref ref="json" />
+    </appender>
+
+    <appender name="secureLog" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>team-logs.nais-system:5170</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${HOSTNAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
+            <includeContext>false</includeContext>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="json"/>
+    </root>
+
+    <logger name="app"       level="INFO" additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="auth"      level="INFO" additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="http"      level="INFO" additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="jdbc"      level="DEBUG" additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="kafka"     level="INFO" additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="mq"        level="INFO" additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="ws"        level="INFO" additivity="false"><appender-ref ref="json"/></logger>
+    <logger name="secureLog" level="INFO" additivity="false"><appender-ref ref="secureLog"/></logger>
+</configuration>
+
