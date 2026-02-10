@@ -50,6 +50,10 @@ spec:
   azure:
     application:
       enabled: true
+      allowAllUsers: false
+      claims:
+        groups:
+          - id: dec3ee50-b683-4644-9507-520e8f054ac2
   accessPolicy:
     inbound:
       rules:
