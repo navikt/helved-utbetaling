@@ -25,6 +25,9 @@ spec:
   prometheus:
     path: /actuator/metric
     enabled: true
+  replicas:
+    min: 1
+    max: 1
   gcp:
     sqlInstances:
       - type: POSTGRES_17
