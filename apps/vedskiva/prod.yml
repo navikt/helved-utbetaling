@@ -60,7 +60,7 @@ spec:
     inbound:
       rules:
         - application: smokesignal
-        - application: peisen
+        - application: helved-peisen
     outbound:
       rules:
         - application: logging
