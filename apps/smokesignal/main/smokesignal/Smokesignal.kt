@@ -19,9 +19,10 @@ fun main() {
 
 suspend fun smokesignal(
     config: Config = Config(),
-    client: VedskivaClient = VedskivaClient(config),
+    client: Vedskiva = VedskivaClient(config),
+    today: LocalDate = LocalDate.now(),
 ) {
-    if (LocalDate.now().erHelligdag()) return
+    if (today.erHelligdag()) return
     val next = client.next()
     client.signal(next)
 }
