@@ -11,13 +11,18 @@ import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+interface Vedskiva {
+    suspend fun next(): AvstemmingRequest
+    suspend fun signal(req: AvstemmingRequest)
+}
+
 class VedskivaClient(
     private val config: Config,
     private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
-) {
+): Vedskiva {
 
-    suspend fun next(): AvstemmingRequest {
+    override suspend fun next(): AvstemmingRequest {
         val next = client.post("${config.vedskiva.host}/api/next_range") {
             bearerAuth(azure.getClientCredentialsToken(config.vedskiva.scope).access_token)
             contentType(ContentType.Application.Json)
@@ -28,7 +33,7 @@ class VedskivaClient(
         return next.body<AvstemmingRequest>()
     }
 
-    suspend fun signal(req: AvstemmingRequest) {
+    override suspend fun signal(req: AvstemmingRequest) {
         val res = client.post("${config.vedskiva.host}/api/avstem") {
             bearerAuth(azure.getClientCredentialsToken(config.vedskiva.scope).access_token)
             contentType(ContentType.Application.Json)
