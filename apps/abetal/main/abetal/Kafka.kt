@@ -350,47 +350,52 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
 
     consume(Topics.oppdrag)
         .merge(consume(Topics.retryOppdrag))
-        .filter { it.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") }
         .processor(Processor { EnrichMetadataProcessor() })
         .filter { key, (oppdrag: Oppdrag, meta) ->
-            val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
-            val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: defaultMaxRetries
-            val shouldRetry = retries < maxRetries
-            appLog.info("Prøver å ferdigstille oppdrag ${key}, forsøk $retries av $maxRetries")
-            if (!shouldRetry) {
-                appLog.warn("Fant ikke pending utbetaling. Oppdragsinfo: ${oppdrag.info()}")
-            }
-            shouldRetry
-        }
-        .flatMapKeyAndValue { key, (oppdrag, meta) ->
-            val uids = meta.headers["uids"]?.split(",") ?: emptyList()
-            if (uids.isEmpty()) {
+            val hasKvittering = oppdrag.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") 
+            val hasUids = meta.headers.containsKey("uids")
+
+            if (!hasUids) {
                 appLog.info("Håndteres ikke i abetal. Oppdragsinfo: ${oppdrag.info()}")
             }
 
+            val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
+            val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: defaultMaxRetries
+            val shouldRetry = retries < maxRetries
+
+            if (!shouldRetry) {
+                appLog.warn("Fant ikke pending utbetaling. Oppdragsinfo: ${oppdrag.info()}")
+            }
+
+            appLog.info("Prøver å ferdigstille oppdrag $key med uids ${meta.headers["uids"]} forsøk $retries av $maxRetries")
+            hasKvittering && hasUids && shouldRetry
+        }
+        .flatMapKeyAndValue { key, (oppdrag, meta) ->
+            val uids = meta.headers["uids"]?.split(",") ?: emptyList()
             uids.map { uid -> KeyValue(uid, KeyValueAndUids(key, oppdrag, uids)) }
         }
         .leftJoin(Serde.string(), Serde.json(), pending, "pk-leftjoin-pending")
-        .branch({
-            (keyAndValue, pending) -> pending == null && keyAndValue.uids.isNotEmpty()
-        }) {
+        .branch({ (keyAndValue, pending) -> pending == null && keyAndValue.uids.isNotEmpty() }) {
             this.processor(Processor { EnrichMetadataProcessor() })
-            .includeHeader("retries") { (_: StreamsPair<KeyValueAndUids, Utbetaling?>, meta) ->
-                val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
-                (retries + 1).toString()
-            }.includeHeader("uids") { (streamsPair: StreamsPair<KeyValueAndUids, Utbetaling?>) ->
-                streamsPair.left.uids.joinToString(",")
-            }.mapKeyAndValue { _, (streamsPair: StreamsPair<KeyValueAndUids, Utbetaling?>, _) ->
-                KeyValue(streamsPair.left.originalKey, streamsPair.left.originalValue)
-            }.produce(Topics.retryOppdrag)
+                .includeHeader("retries") { (_: StreamsPair<KeyValueAndUids, Utbetaling?>, meta) ->
+                    val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
+                    (retries + 1).toString()
+                }
+                .includeHeader("uids") { (streamsPair: StreamsPair<KeyValueAndUids, Utbetaling?>) ->
+                    streamsPair.left.uids.joinToString(",")
+                }
+                .mapKeyAndValue { _, (streamsPair: StreamsPair<KeyValueAndUids, Utbetaling?>, _) ->
+                    KeyValue(streamsPair.left.originalKey, streamsPair.left.originalValue)
+                }
+                .produce(Topics.retryOppdrag)
         }
         .branch({ (_, pending) -> pending != null }) {
             this.map { (_, pending) -> pending!! }
                 .produce(Topics.utbetalinger)
         }
         .default {
-            forEach { _, (_: KeyValueAndUids, _) ->
-                error("Denne burde ikke oppstå")
+            forEach { _, (kv: KeyValueAndUids, _) ->
+                error("Denne burde ikke oppstå oppdrag: ${kv.originalKey}")
             }
         }
 }
