@@ -8,6 +8,7 @@ subgraph Topologi
     helved.pending-utbetalinger.v1([helved.pending-utbetalinger.v1])
 	ktable-helved.pending-utbetalinger.v1-repartition([ktable-helved.pending-utbetalinger.v1-repartition])
 	pk-leftjoin-pending-repartition([pk-leftjoin-pending-repartition])
+	helved.retry-oppdrag.v1([helved.retry-oppdrag.v1])
 	helved.utbetalinger.v1([helved.utbetalinger.v1])
 	helved.saker.v1([helved.saker.v1])
 	ktable-helved.saker.v1-repartition([ktable-helved.saker.v1-repartition])
@@ -62,6 +63,7 @@ subgraph Topologi
     %% JOIN STREAMS
     pk-leftjoin-pending-repartition --> pk-leftjoin-pending
 	helved.pending-utbetalinger.v1-state-store-v4 --> pk-leftjoin-pending
+	pk-leftjoin-pending --> helved.retry-oppdrag.v1
 	pk-leftjoin-pending --> helved.utbetalinger.v1
 	dptuple-leftjoin-saker-repartition --> dptuple-leftjoin-saker
 	helved.saker.v1-state-store --> dptuple-leftjoin-saker
@@ -143,6 +145,7 @@ subgraph Topologi
 	helved.utbetalinger-historisk.v1 --> historisktuple-leftjoin-saker-repartition
 	from-historisk.utbetaling.v1-repartition --> historisktuple-leftjoin-saker-repartition
 	helved.oppdrag.v1 --> pk-leftjoin-pending-repartition
+	helved.retry-oppdrag.v1 --> pk-leftjoin-pending-repartition
     
     %% CUSTOM PROCESS STREAMS
     
@@ -159,6 +162,7 @@ end
 style helved.pending-utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style ktable-helved.pending-utbetalinger.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style pk-leftjoin-pending-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.retry-oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.saker.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style ktable-helved.saker.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a

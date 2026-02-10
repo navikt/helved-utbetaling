@@ -17,13 +17,14 @@ class TestTopics(kafka: StreamsMock) {
     val historisk = kafka.testTopic(Topics.historisk)
     val saker = kafka.testTopic(Topics.saker) 
     val utbetalinger = kafka.testTopic(Topics.utbetalinger) 
-    val oppdrag = kafka.testTopic(Topics.oppdrag) 
-    val status = kafka.testTopic(Topics.status) 
+    val oppdrag = kafka.testTopic(Topics.oppdrag)
+    val status = kafka.testTopic(Topics.status)
     val simulering = kafka.testTopic(Topics.simulering) 
     val pendingUtbetalinger = kafka.testTopic(Topics.pendingUtbetalinger) 
     val dpIntern = kafka.testTopic(Topics.dpIntern) 
     val tsIntern = kafka.testTopic(Topics.tsIntern)
     val historiskIntern = kafka.testTopic(Topics.historisk)
+    val retryOppdrag = kafka.testTopic(Topics.retryOppdrag)
 }
 
 object TestRuntime {

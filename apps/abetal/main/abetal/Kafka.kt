@@ -5,7 +5,7 @@ import libs.kafka.processor.EnrichMetadataProcessor
 import libs.kafka.processor.Processor
 import libs.kafka.stream.MappedStream
 import libs.utils.appLog
-import libs.utils.secureLog
+import libs.xml.XMLMapper
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -33,11 +33,13 @@ object Topics {
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
     val dryrunTp = Topic("helved.dryrun-tp.v1", json<Simulering>())
+    val retryOppdrag = Topic("helved.retry-oppdrag.v1", xml<Oppdrag>())
 }
 
 object Tables {
     val utbetalinger = Table(Topics.utbetalinger, stateStoreName = "${Topics.utbetalinger.name}-state-store-v4")
-    val pendingUtbetalinger = Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v4")
+    val pendingUtbetalinger =
+        Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v4")
     val saker = Table(Topics.saker)
 }
 
@@ -65,9 +67,10 @@ data class DpTuple(val key: String, val value: DpUtbetaling)
 data class TsTuple(
     val transactionId: String?, // FIXME: denne kan kanskje fjernes nå 
     val dto: TsDto?,            // FIXME: denne kan kanskje fjernes nå
-    val key: String?, 
+    val key: String?,
     val value: TsDto?
 )
+
 data class HistoriskTuple(val key: String, val value: HistoriskUtbetaling)
 data class TpTuple(val key: String, val value: TpUtbetaling)
 
@@ -108,8 +111,10 @@ fun Topology.dpStream(
                             kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
                             StreamsPair(new, prev)
                         }
-                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                        val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                        val oppdragToUtbetalinger =
+                            AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                        val hasDryrunTosimuleringer =
+                            AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
                         oppdragToUtbetalinger to hasDryrunTosimuleringer
                     }
                 }
@@ -171,7 +176,7 @@ fun Topology.tsStream(
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
         .merge(consume(Topics.tsIntern))
         .map { key, ts -> TsTuple(key, ts, key, ts) }
-        .rekey { (_, dto, _, value) -> 
+        .rekey { (_, dto, _, value) ->
             val ts = dto ?: value!!
             SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER)
         }
@@ -182,7 +187,7 @@ fun Topology.tsStream(
         .branch(Guard::ifNoUtbetalinger, Guard::replyOkTs)
         .default {
             this
-                .map { originalKey, (req, uids)  -> 
+                .map { originalKey, (req, uids) ->
                     Result.catch {
                         val dto = req.value ?: req.dto!!
                         val key = req.key ?: req.transactionId!!
@@ -194,7 +199,8 @@ fun Topology.tsStream(
                             kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
                             StreamsPair(new, prev)
                         }
-                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
+                        val oppdragToUtbetalinger =
+                            AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
                         val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
                         oppdragToUtbetalinger to simuleringer
                     }
@@ -224,7 +230,7 @@ fun Topology.tpStream(
         .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
         .includeHeader(FS_KEY) { Fagsystem.TILTAKSPENGER.name }
-        .map { sakKey, req, ids -> TpDto.splitToDomain(sakKey.sakId, req.key, req.value, ids)  }
+        .map { sakKey, req, ids -> TpDto.splitToDomain(sakKey.sakId, req.key, req.value, ids) }
         .rekey { dtos -> dtos.first().originalKey }
         .map { value ->
             Result.catch {
@@ -262,7 +268,7 @@ fun Topology.historiskStream(
         .leftJoin(Serde.json(), Serde.json(), saker, "historisktuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
         .includeHeader(FS_KEY) { Fagsystem.HISTORISK.name }
-        .map { req, uids -> HistoriskUtbetaling.toDomain(req.key, req.value, uids)}
+        .map { req, uids -> HistoriskUtbetaling.toDomain(req.key, req.value, uids) }
         .rekey { dto -> dto.originalKey }
         .map { new ->
             Result.catch {
@@ -315,6 +321,22 @@ private object Guard {
     }
 }
 
+private fun Oppdrag.info(): String {
+    val last = oppdrag110.oppdragsLinje150s.last()
+    return """
+    ${oppdrag110.kodeFagomraade} 
+    sak:${oppdrag110.fagsystemId} 
+    last.beh:${last.henvisning} 
+    last.delytelse:${last.delytelseId}
+    """.trimEnd()
+}
+
+data class KeyValueAndUids(
+    val originalKey: String,
+    val originalValue: Oppdrag,
+    val uids: List<String>,
+)
+
 /**
  * Vi må vente med å lagre helved.utbetalinger.v1 til vi har fått en positiv kvittering.
  * Hvis vi ikke klarer å validere med feil og Oppdrag UR svarer med 08 eller 12,
@@ -324,29 +346,53 @@ private object Guard {
  * TODO: når vi ikke har utsjekk lengre, skal status utledes her sammen med flyttinga.
  */
 fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
+    val defaultMaxRetries = 1000
+
     consume(Topics.oppdrag)
+        .merge(consume(Topics.retryOppdrag))
         .filter { it.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") }
-        .rekey { it.apply { it.mmel = null } }
-        .map {
-            val last = it.oppdrag110.oppdragsLinje150s.last()
-            """
-            ${it.oppdrag110.kodeFagomraade} 
-            sak:${it.oppdrag110.fagsystemId} 
-            last.beh:${last.henvisning} 
-            last.delytelse:${last.delytelseId}
-            """.trimEnd()
+        .processor(Processor { EnrichMetadataProcessor() })
+        .filter { key, (oppdrag: Oppdrag, meta) ->
+            val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
+            val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: defaultMaxRetries
+            val shouldRetry = retries < maxRetries
+            appLog.info("Prøver å ferdigstille oppdrag ${key}, forsøk $retries av $maxRetries")
+            if (!shouldRetry) {
+                appLog.warn("Fant ikke pending utbetaling. Oppdragsinfo: ${oppdrag.info()}")
+            }
+            shouldRetry
         }
-        .processor(Processor{ EnrichMetadataProcessor() })
-        .flatMapKeyAndValue { _, (info, meta) -> 
-            val uids = meta.headers["uids"]?.split(",")
-            uids?.map { uid -> KeyValue(uid, info) } ?: emptyList()
+        .flatMapKeyAndValue { key, (oppdrag, meta) ->
+            val uids = meta.headers["uids"]?.split(",") ?: emptyList()
+            if (uids.isEmpty()) {
+                appLog.info("Håndteres ikke i abetal. Oppdragsinfo: ${oppdrag.info()}")
+            }
+
+            uids.map { uid -> KeyValue(uid, KeyValueAndUids(key, oppdrag, uids)) }
         }
         .leftJoin(Serde.string(), Serde.json(), pending, "pk-leftjoin-pending")
-        .mapNotNull { info, pending ->
-            if (pending == null) appLog.warn("Fant ikke pending utbetaling. Oppdragsinfo: $info")
-            pending
+        .branch({
+            (keyAndValue, pending) -> pending == null && keyAndValue.uids.isNotEmpty()
+        }) {
+            this.processor(Processor { EnrichMetadataProcessor() })
+            .includeHeader("retries") { (_: StreamsPair<KeyValueAndUids, Utbetaling?>, meta) ->
+                val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
+                (retries + 1).toString()
+            }.includeHeader("uids") { (streamsPair: StreamsPair<KeyValueAndUids, Utbetaling?>) ->
+                streamsPair.left.uids.joinToString(",")
+            }.mapKeyAndValue { _, (streamsPair: StreamsPair<KeyValueAndUids, Utbetaling?>, _) ->
+                KeyValue(streamsPair.left.originalKey, streamsPair.left.originalValue)
+            }.produce(Topics.retryOppdrag)
         }
-        .produce(Topics.utbetalinger)
+        .branch({ (_, pending) -> pending != null }) {
+            this.map { (_, pending) -> pending!! }
+                .produce(Topics.utbetalinger)
+        }
+        .default {
+            forEach { _, (_: KeyValueAndUids, _) ->
+                error("Denne burde ikke oppstå")
+            }
+        }
 }
 
 typealias DryrunAggregate = Pair<Boolean, List<SimulerBeregningRequest>>
@@ -369,16 +415,16 @@ private fun MappedStream<String, Aggregate>.replyOkIfIdempotent() {
         .produce(Topics.status)
 }
 
-private fun MappedStream<String,  Aggregate>.replyOkUtenEndring(fagsystem: Fagsystem) {
+private fun MappedStream<String, Aggregate>.replyOkUtenEndring(fagsystem: Fagsystem) {
     val ok = this
         .filter { (_, simuleringer) -> simuleringer.requests.isEmpty() && simuleringer.isRequested }
         .map { Info.OkUtenEndring(fagsystem) }
 
     ok
-        .branch( { (it as Info).fagsystem == Fagsystem.AAP} ) { produce(Topics.dryrunAap) }
-        .branch( { (it as Info).fagsystem == Fagsystem.DAGPENGER} ) { produce(Topics.dryrunDp) }
-        .branch( { (it as Info).fagsystem == Fagsystem.TILLEGGSSTØNADER} ) { produce(Topics.dryrunTs) }
-        .branch( { (it as Info).fagsystem == Fagsystem.TILTAKSPENGER} ) { produce(Topics.dryrunTp) }
+        .branch({ (it as Info).fagsystem == Fagsystem.AAP }) { produce(Topics.dryrunAap) }
+        .branch({ (it as Info).fagsystem == Fagsystem.DAGPENGER }) { produce(Topics.dryrunDp) }
+        .branch({ (it as Info).fagsystem == Fagsystem.TILLEGGSSTØNADER }) { produce(Topics.dryrunTs) }
+        .branch({ (it as Info).fagsystem == Fagsystem.TILTAKSPENGER }) { produce(Topics.dryrunTp) }
 }
 
 private fun MappedStream<String, Aggregate>.sendOppdrag() {
@@ -397,7 +443,7 @@ private fun MappedStream<String, Aggregate>.sendSimulering() {
         .produce(Topics.simulering)
 }
 
-val oppdragMapper = libs.xml.XMLMapper<Oppdrag>()
+val oppdragMapper = XMLMapper<Oppdrag>()
 
 private fun MappedStream<String, Aggregate>.saveUtbetalingerAsPending() {
     this
