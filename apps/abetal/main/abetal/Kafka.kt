@@ -368,7 +368,7 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
 
             appLog.info("Prøver å ferdigstille oppdrag $key med uids ${meta.headers["uids"]} forsøk $retries av $maxRetries")
             if (!shouldRetry) {
-                appLog.warn("Fant ikke pending utbetaling. Oppdragsinfo: ${oppdrag.info()}")
+                appLog.error("Fant ikke pending utbetaling. Oppdragsinfo: ${oppdrag.info()}")
             }
             shouldRetry
         }
