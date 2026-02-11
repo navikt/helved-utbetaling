@@ -1,8 +1,10 @@
 package peisschtappern
 
+import io.ktor.server.auth.*
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import io.ktor.server.auth.jwt.*
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.*
 import io.ktor.server.auth.Authentication
@@ -101,7 +103,7 @@ fun Application.peisschtappern(
         probes(kafka, prometheus)
 
         authenticate(TokenProvider.AZURE) {
-            api( manuellEndringService)
+            api(manuellEndringService)
         }
     }
 
@@ -110,4 +112,29 @@ fun Application.peisschtappern(
         oppdragsdataProducer.close()
     }
 
+}
+
+data class Audit(
+    val ident: String,
+    val name: String,
+    val email: String,
+) {
+    companion object {
+        fun from(call: ApplicationCall): Audit {
+            return Audit(
+                name = call.claim("name")!!,
+                ident = call.claim("NAVident")!!,
+                email = call.claim("preferred_username")!!,
+            )
+        }
+    }
+
+    override fun toString(): String {
+        return "name:$name email:$email ident:$ident"
+    }
+}
+
+fun ApplicationCall.claim(claim: String): String? { 
+    return principal<JWTPrincipal>()
+        ?.getClaim(claim, String::class)
 }

@@ -10,7 +10,7 @@
         <appender-ref ref="stdout"/>
     </root>
 
-    <logger name="jdbc" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
+    <logger name="jdbc"      level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
     <logger name="secureLog" level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
-
+    <logger name="audit"     level="INFO" additivity="false"><appender-ref ref="stdout"/></logger>
 </configuration>

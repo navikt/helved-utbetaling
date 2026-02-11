@@ -26,7 +26,13 @@ class AzureFake : AutoCloseable {
 
     private val jwksGenerator = JwkGenerator(config.issuer, config.clientId)
 
-    fun generateToken() = jwksGenerator.generate()
+    fun generateToken(claims: List<Claim> = defaultClaims) = jwksGenerator.generate(claims.toList())
+
+    val defaultClaims = listOf(
+        Claim("name", "test"),
+        Claim("NAVident", "T123456"),
+        Claim("preferred_username", "test@nav.no"),
+    ) 
 
     override fun close() = azure.stop(0, 0)
 }

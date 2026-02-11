@@ -4,6 +4,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
+import libs.auth.Claim
 import libs.jdbc.concurrency.transaction
 import libs.jdbc.truncate
 import libs.kafka.*
