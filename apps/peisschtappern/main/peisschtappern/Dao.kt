@@ -2,6 +2,14 @@ package peisschtappern
 
 import libs.jdbc.Dao
 import java.sql.ResultSet
+import kotlinx.coroutines.currentCoroutineContext
+import libs.utils.logger
+import java.sql.Types
+import libs.jdbc.concurrency.connection
+import libs.jdbc.map
+import libs.utils.secureLog
+
+private val daoLog = logger("dao")
 
 enum class Table {
     avstemming,
@@ -42,6 +50,7 @@ data class Daos(
     val commit: String? = null,
     val sakId: String? = null,
     val fagsystem: String? = null,
+    val status: String? = null,
 ) {
     companion object: Dao<Daos> {
         override val table = "PLACEHODLER"
@@ -60,6 +69,7 @@ data class Daos(
             commit = rs.getString("commit"),
             sakId = rs.getString("sak_id"),
             fagsystem = rs.getString("fagsystem"),
+            status = rs.getString("status"),
         )
 
         suspend fun find(key: String, table: Table, limit: Int = 1000): List<Daos> {
