@@ -24,12 +24,19 @@ fun partition(key: String, numberOfPartitions: Int = 3): Int {
 
 const val NUM_OF_PARTITION = 3
 
+data class SendResult(
+    val isSuccess: Boolean,
+    val offset: Long? = null,
+    val partition: Int? = null,
+    val topic: String? = null,
+)
+
 open class KafkaProducer<K: Any, V>(
     private val topic: Topic<K, V & Any>,
     private val producer: Producer<K, V>,
 ): AutoCloseable {
 
-    fun send(key: K, value: V, headers: Map<String, String> = emptyMap()): Boolean {
+    fun send(key: K, value: V, headers: Map<String, String> = emptyMap()): SendResult {
         val record = if (key is String) {
             val partition = partition(key as String, NUM_OF_PARTITION)
             ProducerRecord<K, V>(topic.name, partition, key, value)
@@ -44,11 +51,11 @@ open class KafkaProducer<K: Any, V>(
         return send(record)
     }
 
-    fun send(key: K, value: V, partition: Int): Boolean {
+    fun send(key: K, value: V, partition: Int): SendResult {
         return send(ProducerRecord<K, V>(topic.name, partition, key, value))
     }
 
-    fun tombstone(key: K, numberOfPartitions: Int = 3): Boolean {
+    fun tombstone(key: K, numberOfPartitions: Int = 3): SendResult {
         if (key is String) {
             val partition = partition(key as String, numberOfPartitions)
             return send(ProducerRecord<K, V>(topic.name, partition, key, null))
@@ -58,13 +65,13 @@ open class KafkaProducer<K: Any, V>(
         }
     }
 
-    private fun send(record: ProducerRecord<K, V>): Boolean {
-        var res = false
+    private fun send(record: ProducerRecord<K, V>): SendResult {
+        var res = SendResult(false)
         producer.send(record) { md, err ->
             when (err) {
                 null -> {
                     kafkaLog.trace("produce ${topic.name}", kv("key", record.key()), kv("topic", topic.name), kv("partition", md.partition()), kv("offset", md.offset())) 
-                    res = true
+                    res = SendResult(true, md.offset(), md.partition(), md.topic())
                 }
                 else -> {
                     kafkaLog.error("Failed to produce record for ${record.key()} on ${topic.name}:${md.partition()}")

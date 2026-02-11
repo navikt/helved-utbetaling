@@ -39,6 +39,11 @@ spec:
     application:
       enabled: true
       allowAllUsers: false
+      claims:
+        extra:
+          - NAVident
+          - preferred_username
+          - name
   accessPolicy:
     inbound:
       rules:

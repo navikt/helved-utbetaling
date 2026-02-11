@@ -226,9 +226,9 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                     val value = requireNotNull(message.value) { "Melding mangler value" }
 
                     val success = when (channel) {
-                        is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(message.key, value)
-                        is Channel.Dp, Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value)
-                        is Channel.Ts, Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value)
+                        is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(message.key, value, Audit.from(call))
+                        is Channel.Dp, Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value, Audit.from(call))
+                        is Channel.Ts, Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value, Audit.from(call))
                         else -> error("Støtter ikke innsending av melding for topic ${channel.topic.name}")
                     }
 
@@ -255,7 +255,8 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                         messageKey = oppdrag.key,
                         alvorlighetsgrad = request.alvorlighetsgrad,
                         beskrMelding = request.beskrMelding,
-                        kodeMelding = request.kodeMelding
+                        kodeMelding = request.kodeMelding,
+                        audit = Audit.from(call),
                     )
                 }
             }
@@ -288,7 +289,8 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                     }
                     manuellEndringService.flyttPendingTilUtbetalinger(
                         key = utbetaling.key,
-                        value = utbetaling.value!!
+                        value = utbetaling.value!!,
+                        audit = Audit.from(call),
                     )
                 }
             }
@@ -304,7 +306,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
     post("/tombstone-utbetaling") {
         val request = call.receive<TombstoneRequest>()
-        when (manuellEndringService.tombstoneUtbetaling(request.key)) {
+        when (manuellEndringService.tombstoneUtbetaling(request.key, Audit.from(call))) {
             true -> call.respond("Tombstoned utbetaling with kafka key ${request.key}")
             false -> call.respond(
                 HttpStatusCode.UnprocessableEntity,

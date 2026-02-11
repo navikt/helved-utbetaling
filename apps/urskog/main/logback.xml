@@ -32,4 +32,5 @@
     <logger name="mq"        level="INFO" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="ws"        level="INFO" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="secureLog"/></logger>
+    <logger name="audit"     level="INFO" additivity="false"><appender-ref ref="secureLog"/></logger>
 </configuration>
