@@ -355,7 +355,8 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
             val hasKvittering = oppdrag.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") 
             if (!hasKvittering) return@filter false 
 
-            if (!meta.headers.containsKey("uids")) {
+            val uids = meta.headers["uids"]?.split(",") ?: emptyList()
+            if (uids.isEmpty()) {
                 appLog.info("Håndteres ikke i abetal. Oppdragsinfo: ${oppdrag.info()}")
                 return@filter false
             }
