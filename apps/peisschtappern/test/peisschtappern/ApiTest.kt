@@ -354,12 +354,27 @@ class ApiTest {
         save(Channel.Simuleringer, key = key, offset = offset)
         save(Channel.Oppdrag, key = key, offset = offset, value = TestData.oppdragXml(alvorlighetsgrad = "00"))
 
-        val result = TestRuntime.ktor.httpClient.get("/api/messages?page=1&key=$key") {
+        val pageSize = 2
+
+        val firstPage = TestRuntime.ktor.httpClient.get("/api/messages?page=1&pageSize=$pageSize&key=$key") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<Page>()
 
-        assertEquals(4, result.total)
+        assertEquals(2, firstPage.items.size)
+        assertEquals(4, firstPage.total)
+
+        val secondPage = TestRuntime.ktor.httpClient.get("/api/messages?page=2&pageSize=$pageSize&key=$key") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Page>()
+
+        assertEquals(2, secondPage.items.size)
+        assertEquals(4, secondPage.total)
+
+        firstPage.items.forEach { a ->
+            secondPage.items.none { b -> a.topic_name == b.topic_name }
+        }
     }
 
     @Test
