@@ -170,10 +170,13 @@ data class Daos(
             tom: Long? = null,
             traceId: String? = null,
             status: List<String>? = null,
+            sortBy: String? = null,
+            direction: String,
         ): Page {
             val sql = """
                 WITH unified AS (
                     ${channels.joinToString(" UNION ALL ") { channel -> "SELECT * FROM ${channel.table.name}" }}
+                    ORDER BY ${sortBy ?: "system_time_ms"} $direction
                 )
                 SELECT *, count(*) OVER () AS total FROM unified
                 WHERE record_key ILIKE COALESCE(?, record_key)
@@ -188,7 +191,6 @@ data class Daos(
                     AND (? IS NULL OR system_time_ms > ?)
                     AND (? IS NULL OR system_time_ms < ?)
                     AND (? IS NULL OR trace_id = ?)
-                ORDER BY system_time_ms DESC
                 LIMIT ? OFFSET ?
             """.trimIndent()
 
@@ -353,4 +355,3 @@ data class Daos(
         }
     }
 }
-
