@@ -1,19 +1,19 @@
 package urskog
 
 import io.micrometer.core.instrument.MeterRegistry
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
+import libs.utils.intoUids
 import libs.kafka.*
 import libs.kafka.processor.EnrichMetadataProcessor
 import libs.kafka.processor.Metadata
 import libs.kafka.processor.Processor
-import libs.kafka.stream.ConsumedStream
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import java.time.LocalDateTime
 
 const val FS_KEY = "fagsystem"
 
@@ -154,7 +154,7 @@ private suspend fun saveIdempotent(
         sakId = oppdrag.oppdrag110.fagsystemId.trimEnd(),
         behandlingId = oppdrag.oppdrag110.oppdragsLinje150s.last().henvisning.trimEnd(),
         oppdrag = oppdrag,
-        uids = meta.headers["uids"]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList<String>(),
+        uids = meta.headers["uids"].intoUids(),
         sent = false,
         sentAt =  null,
     )

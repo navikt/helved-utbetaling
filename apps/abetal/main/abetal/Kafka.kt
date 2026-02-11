@@ -5,6 +5,7 @@ import libs.kafka.processor.EnrichMetadataProcessor
 import libs.kafka.processor.Processor
 import libs.kafka.stream.MappedStream
 import libs.utils.appLog
+import libs.utils.intoUids
 import libs.xml.XMLMapper
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
@@ -355,7 +356,7 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
             val hasKvittering = oppdrag.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") 
             if (!hasKvittering) return@filter false 
 
-            val uids = meta.headers["uids"]?.split(",") ?: emptyList()
+            val uids = meta.headers["uids"].intoUids()
             if (uids.isEmpty()) {
                 appLog.info("Håndteres ikke i abetal. Oppdragsinfo: ${oppdrag.info()}")
                 return@filter false
@@ -372,7 +373,7 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
             shouldRetry
         }
         .flatMapKeyAndValue { key, (oppdrag, meta) ->
-            val uids = meta.headers["uids"]?.split(",") ?: emptyList()
+            val uids = meta.headers["uids"].intoUids()
             uids.map { uid -> KeyValue(uid, KeyValueAndUids(key, oppdrag, uids)) }
         }
         .leftJoin(Serde.string(), Serde.json(), pending, "pk-leftjoin-pending")
