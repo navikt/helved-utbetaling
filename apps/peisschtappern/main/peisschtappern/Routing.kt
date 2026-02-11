@@ -73,10 +73,26 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                 ?.getOrNull()
             val traceId = call.queryParameters["trace_id"]
             val status = call.queryParameters["status"]?.split(",")
+            val sortBy = when (call.queryParameters["sortBy"]) {
+                "offset" -> "record_offset"
+                "timestamp" -> "system_time_ms"
+                null -> null
+                else -> {
+                    return@get call.respond(
+                        HttpStatusCode.BadRequest,
+                        "Invalid sortBy parameter: ${call.queryParameters["sortBy"]}"
+                    )
+                }
+            }
+            val direction = call.queryParameters["direction"] ?: "DESC"
+
+            if (direction != "ASC" && direction != "DESC") {
+                call.respond(HttpStatusCode.BadRequest, "Invalid direction parameter: $direction")
+            }
 
             val result = withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    Daos.findAll(channels, page, pageSize, key, value, fom, tom, traceId, status)
+                    Daos.findAll(channels, page, pageSize, key, value, fom, tom, traceId, status, sortBy, direction)
                 }
             }
 

@@ -379,6 +379,43 @@ class ApiTest {
     }
 
     @Test
+    fun `fetch sorted paginated messages`() = runTest(TestRuntime.context) {
+        val key = UUID.randomUUID().toString()
+        save(Channel.Aap, key = key, offset = 1)
+        save(Channel.Utbetalinger, key = key, offset = 56)
+        save(Channel.Simuleringer, key = key, offset = 34)
+        save(Channel.Oppdrag, key = key, offset = 999, value = TestData.oppdragXml(alvorlighetsgrad = "00"))
+
+        val pageSize = 2
+
+        val firstPage = TestRuntime.ktor.httpClient.get("/api/messages?page=1&pageSize=$pageSize&key=$key&sortBy=offset&direction=ASC") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Page>()
+
+        assertEquals(1, firstPage.items.first().offset)
+        assertEquals(34, firstPage.items.last().offset)
+
+        assertEquals(2, firstPage.items.size)
+        assertEquals(4, firstPage.total)
+
+        val secondPage = TestRuntime.ktor.httpClient.get("/api/messages?page=2&pageSize=$pageSize&key=$key&sortBy=offset&direction=ASC") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Page>()
+
+        assertEquals(56, secondPage.items.first().offset)
+        assertEquals(999, secondPage.items.last().offset)
+
+        assertEquals(2, secondPage.items.size)
+        assertEquals(4, secondPage.total)
+
+        firstPage.items.forEach { a ->
+            secondPage.items.none { b -> a.topic_name == b.topic_name }
+        }
+    }
+
+    @Test
     fun `fetch messages with status`() = runTest(TestRuntime.context) {
         val offset = offset
         val key = UUID.randomUUID().toString()
