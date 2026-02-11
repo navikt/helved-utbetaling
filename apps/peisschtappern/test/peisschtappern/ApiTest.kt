@@ -344,5 +344,39 @@ class ApiTest {
         val producer = TestRuntime.kafka.getProducer(Channel.TsIntern.topic)
         assertEquals(1, producer.history().size)
     }
+
+    @Test
+    fun `fetch paginated messages`() = runTest(TestRuntime.context) {
+        val offset = offset
+        val key = UUID.randomUUID().toString()
+        save(Channel.Aap, key = key, offset = offset)
+        save(Channel.Utbetalinger, key = key, offset = offset)
+        save(Channel.Simuleringer, key = key, offset = offset)
+        save(Channel.Oppdrag, key = key, offset = offset, value = TestData.oppdragXml(alvorlighetsgrad = "00"))
+
+        val result = TestRuntime.ktor.httpClient.get("/api/messages?page=1&key=$key") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Page>()
+
+        assertEquals(4, result.total)
+    }
+
+    @Test
+    fun `fetch messages with status`() = runTest(TestRuntime.context) {
+        val offset = offset
+        val key = UUID.randomUUID().toString()
+        save(Channel.Aap, key = key, offset = offset)
+        save(Channel.Utbetalinger, key = key, offset = offset)
+        save(Channel.Simuleringer, key = key, offset = offset)
+        save(Channel.Oppdrag, key = key, offset = offset, value = TestData.oppdragXml(alvorlighetsgrad = "00"))
+
+        val result = TestRuntime.ktor.httpClient.get("/api/messages?page=1&key=$key&status=OK") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Page>()
+
+        assertEquals(1, result.total)
+    }
 }
 

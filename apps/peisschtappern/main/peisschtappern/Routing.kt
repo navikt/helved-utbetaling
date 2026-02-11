@@ -59,6 +59,30 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             call.respond(daos)
         }
 
+        get("/messages") {
+            val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
+            val page = call.queryParameters["page"]?.toIntOrNull() ?: 1
+            val pageSize = call.queryParameters["pageSize"]?.toIntOrNull() ?: 100
+            val key = call.queryParameters["key"]
+            val value = call.queryParameters["value"]?.split(",")
+            val fom = call.queryParameters["fom"]
+                ?.runCatching { Instant.parse(this).toEpochMilli() }
+                ?.getOrNull()
+            val tom = call.queryParameters["tom"]
+                ?.runCatching { Instant.parse(this).toEpochMilli() }
+                ?.getOrNull()
+            val traceId = call.queryParameters["trace_id"]
+            val status = call.queryParameters["status"]?.split(",")
+
+            val result = withContext(Jdbc.context + Dispatchers.IO) {
+                transaction {
+                    Daos.findAll(channels, page, pageSize, key, value, fom, tom, traceId, status)
+                }
+            }
+
+            call.respond(result)
+        }
+
         get("/{topic}/{partition}/{offset}") {
             val channel = checkNotNull(Channel.findOrNull(call.parameters["topic"]!!)) {
                 "Unknown topic ${call.parameters["topic"]}"
@@ -314,7 +338,6 @@ sealed class Channel(
 ) {
     data object Avstemming : Channel(Topics.avstemming, Table.avstemming, 0)
     data object Oppdrag : Channel(Topics.oppdrag, Table.oppdrag, 1)
-    data object Kvittering : Channel(Topics.kvittering, Table.kvittering, 2)
     data object Simuleringer : Channel(Topics.simuleringer, Table.simuleringer, 3)
     data object Utbetalinger : Channel(Topics.utbetalinger, Table.utbetalinger, 4)
     data object Saker : Channel(Topics.saker, Table.saker, 5)
@@ -341,3 +364,4 @@ sealed class Channel(
     }
 }
 
+data class Page(val messages: List<Daos>, val total: Int)

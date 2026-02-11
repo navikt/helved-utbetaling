@@ -160,6 +160,70 @@ data class Daos(
             return query(sql)
         }
 
+        suspend fun findAll(
+            channels: List<Channel>,
+            page: Int,
+            pageSize: Int,
+            key: String? = null,
+            value: List<String>? = null,
+            fom: Long? = null,
+            tom: Long? = null,
+            traceId: String? = null,
+            status: List<String>? = null,
+        ): Page {
+            val sql = """
+                WITH unified AS (
+                    ${channels.joinToString(" UNION ALL ") { channel -> "SELECT * FROM ${channel.table.name}" }}
+                )
+                SELECT *, count(*) OVER () AS total FROM unified
+                WHERE record_key ILIKE COALESCE(?, record_key)
+                    AND ( ?::text[] IS NULL OR EXISTS (
+                        SELECT 1 FROM unnest(?::text[]) v
+                        WHERE unified.record_value ILIKE '%' || v || '%'
+                    ))
+                    AND ( ?::text[] IS NULL OR EXISTS (
+                        SELECT 1 FROM unnest(?::text[]) v
+                        WHERE unified.status ILIKE v
+                    ))
+                    AND (? IS NULL OR system_time_ms > ?)
+                    AND (? IS NULL OR system_time_ms < ?)
+                    AND (? IS NULL OR trace_id = ?)
+                ORDER BY system_time_ms DESC
+                LIMIT ? OFFSET ?
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                var i = 1
+                val valueArray = value?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
+                val statusArray = status?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
+                stmt.setObject(i++, key, Types.VARCHAR)
+                stmt.setObject(i++, valueArray, Types.ARRAY)
+                stmt.setObject(i++, valueArray, Types.ARRAY)
+                stmt.setObject(i++, statusArray, Types.ARRAY)
+                stmt.setObject(i++, statusArray, Types.ARRAY)
+                stmt.setObject(i++, fom, Types.BIGINT)
+                stmt.setObject(i++, fom, Types.BIGINT)
+                stmt.setObject(i++, tom, Types.BIGINT)
+                stmt.setObject(i++, tom, Types.BIGINT)
+                stmt.setObject(i++, traceId, Types.VARCHAR)
+                stmt.setObject(i++, traceId, Types.VARCHAR)
+                stmt.setInt(i++, pageSize)
+                stmt.setInt(i, (page - 1) * pageSize)
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().use { rs ->
+                    var total: Int? = null
+
+                    val rows = rs.map { r ->
+                        if (total == null) total = r.getInt("total")
+                        from(r)
+                    }
+
+                    Page(messages = rows, total = total ?: 0)
+                }
+            }
+        }
+
         suspend fun findOppdrag(sakId: String, fagsystem: String): List<Daos> {
             val sql = """
                 SELECT * 
@@ -190,7 +254,7 @@ data class Daos(
                 WHERE sak_id = ? AND fagsystem = ?
             """.trimIndent()
 
-            return query(sql) { stmt -> 
+            return query(sql) { stmt ->
                 stmt.setString(1, sakId)
                 stmt.setString(2, fagsystem)
             }
