@@ -364,4 +364,4 @@ sealed class Channel(
     }
 }
 
-data class Page(val messages: List<Daos>, val total: Int)
+data class Page(val items: List<Daos>, val total: Int)

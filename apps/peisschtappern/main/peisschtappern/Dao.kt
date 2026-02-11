@@ -219,7 +219,7 @@ data class Daos(
                         from(r)
                     }
 
-                    Page(messages = rows, total = total ?: 0)
+                    Page(items = rows, total = total ?: 0)
                 }
             }
         }
