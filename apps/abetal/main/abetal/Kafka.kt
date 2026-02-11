@@ -353,22 +353,22 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
         .processor(Processor { EnrichMetadataProcessor() })
         .filter { key, (oppdrag: Oppdrag, meta) ->
             val hasKvittering = oppdrag.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") 
-            val hasUids = meta.headers.containsKey("uids")
+            if (!hasKvittering) return@filter false 
 
-            if (!hasUids) {
+            if (!meta.headers.containsKey("uids")) {
                 appLog.info("Håndteres ikke i abetal. Oppdragsinfo: ${oppdrag.info()}")
+                return@filter false
             }
 
             val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
             val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: defaultMaxRetries
             val shouldRetry = retries < maxRetries
 
+            appLog.info("Prøver å ferdigstille oppdrag $key med uids ${meta.headers["uids"]} forsøk $retries av $maxRetries")
             if (!shouldRetry) {
                 appLog.warn("Fant ikke pending utbetaling. Oppdragsinfo: ${oppdrag.info()}")
             }
-
-            appLog.info("Prøver å ferdigstille oppdrag $key med uids ${meta.headers["uids"]} forsøk $retries av $maxRetries")
-            hasKvittering && hasUids && shouldRetry
+            shouldRetry
         }
         .flatMapKeyAndValue { key, (oppdrag, meta) ->
             val uids = meta.headers["uids"]?.split(",") ?: emptyList()
