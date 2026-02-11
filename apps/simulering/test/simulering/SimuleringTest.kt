@@ -16,12 +16,12 @@ import models.kontrakter.Personident
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import simulering.models.rest.rest
 import simulering.models.soap.soap
 import java.time.LocalDate
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class SimuleringTest {
 
