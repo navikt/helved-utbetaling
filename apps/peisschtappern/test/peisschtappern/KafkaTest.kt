@@ -19,7 +19,6 @@ class KafkaTest {
             when (it) {
                Channel.Avstemming -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Oppdrag -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
-               Channel.Kvittering -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Simuleringer -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Utbetalinger -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                Channel.Saker -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
