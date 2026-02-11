@@ -42,8 +42,6 @@ spec:
       claims:
         extra:
           - NAVident
-          - preferred_username
-          - name
   accessPolicy:
     inbound:
       rules:
