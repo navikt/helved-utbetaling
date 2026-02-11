@@ -14,7 +14,7 @@ class AlertTest {
     @Test
     fun `legg til timer for oppdrag uten kvittering`() = runTest(TestRuntime.context) {
         val xmlMapper = XMLMapper<Oppdrag>()
-        val oppdrag = xmlMapper.readValue(TestData.oppdragXml)
+        val oppdrag = xmlMapper.readValue(TestData.oppdragXml())
         val key = UUID.randomUUID().toString()
 
         val oppdragProducer = TestRuntime.kafka.testTopic(Topics.oppdrag)
@@ -30,9 +30,9 @@ class AlertTest {
     @Test
     fun `fjern timer for oppdrag når vi får kvittering`() = runTest(TestRuntime.context) {
         val xmlMapper = XMLMapper<Oppdrag>()
-        val oppdrag = xmlMapper.readValue(TestData.oppdragXml)
+        val oppdrag = xmlMapper.readValue(TestData.oppdragXml())
         val key = UUID.randomUUID().toString()
-        val oppdragMedKvittering = xmlMapper.readValue(TestData.oppdragMedKvitteringXml)
+        val oppdragMedKvittering = xmlMapper.readValue(TestData.oppdragXml(alvorlighetsgrad = "00"))
 
         val oppdragProducer = TestRuntime.kafka.testTopic(Topics.oppdrag)
         oppdragProducer.produce(key) { xmlMapper.writeValueAsBytes(oppdrag) }
@@ -54,7 +54,7 @@ class AlertTest {
     @Test
     fun `fjern timer for oppdrag dersom oppdrag er null`() = runTest(TestRuntime.context) {
         val xmlMapper = XMLMapper<Oppdrag>()
-        val oppdrag = xmlMapper.readValue(TestData.oppdragXml)
+        val oppdrag = xmlMapper.readValue(TestData.oppdragXml())
         val key = UUID.randomUUID().toString()
 
         val oppdragProducer = TestRuntime.kafka.testTopic(Topics.oppdrag)
