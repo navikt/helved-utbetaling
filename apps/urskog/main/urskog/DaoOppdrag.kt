@@ -1,6 +1,7 @@
 package urskog
 
 import libs.jdbc.Dao
+import libs.utils.intoUids
 import libs.utils.jdbcLog
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.sql.ResultSet
@@ -27,7 +28,7 @@ data class DaoOppdrag (
             oppdrag = rs.getString("oppdrag").let { mapper.readValue(it) },
             sakId = rs.getString("sak_id"),
             behandlingId = rs.getString("behandling_id"),
-            uids = rs.getString("uids")?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList(),
+            uids = rs.getString("uids").intoUids(),
             sent = rs.getBoolean("sent"),
             sentAt = rs.getTimestamp("sent_at")?.toLocalDateTime(),
         )
