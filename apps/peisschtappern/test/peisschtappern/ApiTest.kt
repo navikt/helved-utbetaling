@@ -167,12 +167,12 @@ class ApiTest {
     fun `test kvittering endpoint overwrites oppdrag with manual kvittering`() = runTest(TestRuntime.context) {
         val offset = offset
         val xmlMapper = XMLMapper<Oppdrag>()
-        val initialOppdrag = xmlMapper.readValue(TestData.oppdragXml)
+        val initialOppdrag = xmlMapper.readValue(TestData.oppdragXml())
 
         val key = "202503271001"
         val oppdragProducer = TestRuntime.kafka.getProducer(Topic("helved.oppdrag.v1", xml<Oppdrag>()))
         oppdragProducer.send(key, initialOppdrag)
-        save(Channel.Oppdrag, key = key, value = TestData.oppdragXml, offset = offset)
+        save(Channel.Oppdrag, key = key, value = TestData.oppdragXml(), offset = offset)
 
         val kvitteringRequest = KvitteringRequest(
             key = key,
@@ -288,7 +288,7 @@ class ApiTest {
     @Test
     fun `resend oppdrag`() = runTest(TestRuntime.context) {
         val offset = offset
-        save(Channel.Oppdrag, value = TestData.oppdragXml, offset = offset)
+        save(Channel.Oppdrag, value = TestData.oppdragXml(), offset = offset)
         val request = MessageRequest(Channel.Oppdrag.topic.name, "0", "$offset")
 
         TestRuntime.ktor.httpClient.post("/api/resend") {

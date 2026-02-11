@@ -2,13 +2,17 @@ package peisschtappern
 
 object TestData {
 
-    val oppdragXml =
-        """<ns2:oppdrag xmlns:ns2="http://www.trygdeetaten.no/skjema/oppdrag">
+    fun oppdragXml(sakId: String = "202503271001", alvorlighetsgrad: String? = null) =
+        """
+<ns2:oppdrag xmlns:ns2="http://www.trygdeetaten.no/skjema/oppdrag">
+  ${
+      alvorlighetsgrad?.let { "<mmel><alvorlighetsgrad>$it</alvorlighetsgrad></mmel>" } ?: ""
+  }
   <oppdrag-110>
     <kodeAksjon>1</kodeAksjon>
     <kodeEndring>ENDR</kodeEndring>
     <kodeFagomraade>TILTPENG</kodeFagomraade>
-    <fagsystemId>202503271001</fagsystemId>
+    <fagsystemId>$sakId</fagsystemId>
     <utbetFrekvens>MND</utbetFrekvens>
     <oppdragGjelderId>14439535912</oppdragGjelderId>
     <datoOppdragGjelderFom>2000-01-01+01:00</datoOppdragGjelderFom>
@@ -110,7 +114,7 @@ object TestData {
     </oppdrags-linje-150>
   </oppdrag-110>
 </ns2:oppdrag>
-"""
+""".trimIndent()
 
 val oppdragMedKvitteringXml =
     """<ns2:oppdrag xmlns:ns2="http://www.trygdeetaten.no/skjema/oppdrag">

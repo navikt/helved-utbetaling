@@ -48,7 +48,7 @@ class KafkaTest {
         val key = UUID.randomUUID().toString()
         testCases.forEach { case ->
             val byteArray = if (case.channel.topic == Topics.oppdrag) {
-                TestData.oppdragXml.toByteArray()
+                TestData.oppdragXml().toByteArray()
             } else {
                 """{"sakId": "123"}""".toByteArray()
 
