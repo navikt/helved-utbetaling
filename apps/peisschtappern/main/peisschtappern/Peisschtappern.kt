@@ -34,6 +34,7 @@ import libs.utils.*
 import models.DpUtbetaling
 import models.TsDto
 import models.Utbetaling
+import models.unauthorized
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 fun main() {
@@ -122,9 +123,12 @@ data class Audit(
     companion object {
         fun from(call: ApplicationCall): Audit {
             return Audit(
-                name = call.claim("name")!!,
-                ident = call.claim("NAVident")!!,
-                email = call.claim("preferred_username")!!,
+                // name = call.claim("name") ?: unauthorized("missing claim `name`"),
+                // ident = call.claim("NAVident") ?: unauthorized("missing claim `NAVident`"),
+                // email = call.claim("preferred_username") ?:unauthorized("missing claim `preferred_username`"),
+                name = call.claim("name") ?: "test",
+                ident = call.claim("NAVident") ?: "test",
+                email = call.claim("preferred_username") ?: "test",
             )
         }
     }
