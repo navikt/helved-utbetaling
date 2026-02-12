@@ -170,10 +170,10 @@ data class Daos(
             tom: Long? = null,
             traceId: String? = null,
             status: List<String>? = null,
-            sortBy: String? = null,
+            orderBy: String? = null,
             direction: String,
         ): Page {
-            val orderClause = if (sortBy != null) "ORDER BY $sortBy $direction" else ""
+            val orderClause = if (orderBy != null) "ORDER BY $orderBy $direction" else ""
             val sql = """
                 WITH unified AS (
                     ${channels.joinToString(" UNION ALL ") { channel -> "SELECT * FROM ${channel.table.name}" }}
