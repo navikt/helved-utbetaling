@@ -79,6 +79,8 @@ spec:
             value: "on"
           - name: "pgaudit.log"
             value: "write,ddl"
+          - name: "pgaudit.log_parameter"
+            value: "on"
   envFrom:
      # TODO: sjekk hva disse inneholder, er det samme eller noe ulikt?
     - secret: utsjekk-oppdrag-simulering
