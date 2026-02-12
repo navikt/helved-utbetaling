@@ -73,14 +73,14 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                 ?.getOrNull()
             val traceId = call.queryParameters["trace_id"]
             val status = call.queryParameters["status"]?.split(",")
-            val sortBy = when (call.queryParameters["sortBy"]) {
+            val orderBy = when (call.queryParameters["orderBy"]) {
                 "offset" -> "record_offset"
                 "timestamp" -> "system_time_ms"
                 null -> null
                 else -> {
                     return@get call.respond(
                         HttpStatusCode.BadRequest,
-                        "Invalid sortBy parameter: ${call.queryParameters["sortBy"]}"
+                        "Invalid orderBy parameter: ${call.queryParameters["orderBy"]}"
                     )
                 }
             }
@@ -92,7 +92,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
             val result = withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    Daos.findAll(channels, page, pageSize, key, value, fom, tom, traceId, status, sortBy, direction)
+                    Daos.findAll(channels, page, pageSize, key, value, fom, tom, traceId, status, orderBy, direction)
                 }
             }
 
