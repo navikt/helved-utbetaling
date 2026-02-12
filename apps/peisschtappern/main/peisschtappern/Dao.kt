@@ -173,6 +173,7 @@ data class Daos(
             sortBy: String? = null,
             direction: String,
         ): Page {
+            val orderClause = if (sortBy != null) "ORDER BY $sortBy $direction" else ""
             val sql = """
                 WITH unified AS (
                     ${channels.joinToString(" UNION ALL ") { channel -> "SELECT * FROM ${channel.table.name}" }}
@@ -190,7 +191,7 @@ data class Daos(
                     AND (? IS NULL OR system_time_ms > ?)
                     AND (? IS NULL OR system_time_ms < ?)
                     AND (? IS NULL OR trace_id = ?)
-                ORDER BY ${sortBy ?: "system_time_ms"} $direction
+                $orderClause
                 LIMIT ? OFFSET ?
             """.trimIndent()
 
