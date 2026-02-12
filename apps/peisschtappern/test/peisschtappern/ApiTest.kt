@@ -388,7 +388,7 @@ class ApiTest {
 
         val pageSize = 2
 
-        val firstPage = TestRuntime.ktor.httpClient.get("/api/messages?page=1&pageSize=$pageSize&key=$key&sortBy=offset&direction=ASC") {
+        val firstPage = TestRuntime.ktor.httpClient.get("/api/messages?page=1&pageSize=$pageSize&key=$key&orderBy=offset&direction=ASC") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<Page>()
@@ -399,7 +399,7 @@ class ApiTest {
         assertEquals(2, firstPage.items.size)
         assertEquals(4, firstPage.total)
 
-        val secondPage = TestRuntime.ktor.httpClient.get("/api/messages?page=2&pageSize=$pageSize&key=$key&sortBy=offset&direction=ASC") {
+        val secondPage = TestRuntime.ktor.httpClient.get("/api/messages?page=2&pageSize=$pageSize&key=$key&orderBy=offset&direction=ASC") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<Page>()
