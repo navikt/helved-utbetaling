@@ -139,6 +139,15 @@ data class Audit(
 }
 
 fun ApplicationCall.claim(claim: String): String? { 
-    return principal<JWTPrincipal>()
-        ?.getClaim(claim, String::class)
+    val principal = principal<JWTPrincipal>() ?: return null
+    val claimValue = principal.payload.getClaim(claim)
+    if (claimValue.isNull) {
+        val claims = principal.payload.claims.keys.joinToString(", ")
+        secureLog.info("could not find claim '$claim'. Available: [$claims]")
+    }
+    return when {
+        claimValue.isNull -> null
+        claimValue.asString() != null -> claimValue.toString()
+        else -> claimValue.toString().replace("\"", "")
+    }
 }
