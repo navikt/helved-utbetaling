@@ -18,7 +18,6 @@ enum class Table {
     dryrun_tp,
     dryrun_ts,
     dryrun_dp,
-    kvittering,
     simuleringer,
     utbetalinger,
     saker,
@@ -248,19 +247,6 @@ data class Daos(
             """.trimIndent()
 
             return query(sql)
-        }
-
-        suspend fun findKvitteringer(sakId: String, fagsystem: String): List<Daos> {
-            val sql = """
-                SELECT * 
-                FROM kvittering 
-                WHERE sak_id = ? AND fagsystem = ?
-            """.trimIndent()
-
-            return query(sql) { stmt ->
-                stmt.setString(1, sakId)
-                stmt.setString(2, fagsystem)
-            }
         }
 
         suspend fun findUtbetalinger(sakId: String, fagsystem: String): List<Daos> {
