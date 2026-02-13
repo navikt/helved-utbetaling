@@ -74,19 +74,32 @@ class IverksettingMigrator(
                     ?.mapValues { it.value.tilAndelData() }
                     ?: badRequest("Fant ikke siste andeler for (sak=${req.sakId} fagsystem=$fs)")
 
-                andelerByKlassekode.map { (kjedenøkkel, andeler) ->
-                    appLog.info("forsøker å migrere $kjedenøkkel}")
-                    utbetaling(
-                        req = req,
-                        iverksetting = iverksetting,
-                        andeler = andeler,
-                        sisteAndel = sisteAndeler[kjedenøkkel]
-                            ?: badRequest("Fant ikke siste andeler for (sak=${req.sakId} fagsystem=$fs) kjedenøkkel=$kjedenøkkel"),
-                        klassekode = kjedenøkkel.klassifiseringskode,
-                        fagsystem = Fagsystem.from(fs.kode)
-                    )
-//                    val key = utbet.uid.id.toString()
-//                    utbetalingProducer.send(key, utbet, partition(key))
+                if (andelerByKlassekode.isEmpty()) {
+                    sisteAndeler.map {
+                        appLog.info("forsøker å migrere ${it.key.klassifiseringskode}} uten andeler")
+                        utbetaling(
+                            req = req,
+                            iverksetting = iverksetting,
+                            andeler = emptyList(),
+                            sisteAndel = it.value,
+                            klassekode = it.key.klassifiseringskode,
+                            fagsystem = Fagsystem.from(fs.kode),
+                            action = Action.DELETE
+                        )
+                    }
+                } else {
+                    andelerByKlassekode.map { (kjedenøkkel, andeler) ->
+                        appLog.info("forsøker å migrere $kjedenøkkel}")
+                        utbetaling(
+                            req = req,
+                            iverksetting = iverksetting,
+                            andeler = andeler,
+                            sisteAndel = sisteAndeler[kjedenøkkel]
+                                ?: badRequest("Fant ikke siste andeler for (sak=${req.sakId} fagsystem=$fs) kjedenøkkel=$kjedenøkkel"),
+                            klassekode = kjedenøkkel.klassifiseringskode,
+                            fagsystem = Fagsystem.from(fs.kode)
+                        )
+                    }
                 }
             }
         }
@@ -99,6 +112,7 @@ class IverksettingMigrator(
         sisteAndel: AndelData,
         klassekode: String,
         fagsystem: Fagsystem,
+        action: Action = Action.CREATE,
     ): Utbetaling = Utbetaling(
         dryrun = false,
         originalKey = iverksetting.iverksettingId?.id ?: iverksetting.behandlingId.id,
@@ -106,7 +120,7 @@ class IverksettingMigrator(
         uid = req.uidToStønad
             ?.let { UtbetalingId(it.first) }
             ?: uid(iverksetting.sakId.id, requireNotNull(req.meldeperiode), Stønadstype.fraKode(klassekode), fagsystem),
-        action = Action.CREATE,
+        action = action,
         førsteUtbetalingPåSak = false,
         sakId = models.SakId(iverksetting.sakId.id),
         behandlingId = BehandlingId(iverksetting.behandlingId.id),
