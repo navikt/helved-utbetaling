@@ -11,6 +11,167 @@ import kotlin.test.assertEquals
 class SimuleringTest {
 
     @Test
+    fun `simuler sak 200001495 med v1`() {
+        TestRuntime.ws.respondWith = Resource.read("/simuler-ts-200001495.xml")
+        val uid = UUID.randomUUID().toString()
+
+        TestRuntime.topics.simuleringer.produce(uid) {
+            simulering(fagområde = "TILLST")
+        }
+
+        TestRuntime.topics.dryrunTilleggsstønader.assertThat()
+            .has(uid)
+            .with(uid) {
+                val expected = models.v1.Simulering(
+                    oppsummeringer = listOf(
+                        models.v1.OppsummeringForPeriode(
+                            fom = LocalDate.of(2026, 2, 4),
+                            tom = LocalDate.of(2026, 2, 4),
+                            tidligereUtbetalt = 970,
+                            nyUtbetaling = 340,
+                            totalEtterbetaling = 0,
+                            totalFeilutbetaling = 630,
+                        ),
+                    ),
+                    detaljer = models.v1.SimuleringDetaljer(
+                        gjelderId = "12345678910",
+                        datoBeregnet = LocalDate.of(2026, 2, 12),
+                        totalBeløp = 0,
+                        perioder = listOf(
+                            models.v1.Periode(
+                                fom = LocalDate.of(2026, 2, 4),
+                                tom = LocalDate.of(2026, 2, 4),
+                                posteringer = listOf(
+                                    models.v1.Postering(
+                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                        sakId = SakId("200001495"),
+                                        fom = LocalDate.of(2026, 2, 4),
+                                        tom = LocalDate.of(2026, 2, 4),
+                                        beløp = 630,
+                                        type = models.v1.PosteringType.YTELSE,
+                                        klassekode = "TSDRASISP3-OP"
+                                    ),
+                                    models.v1.Postering(
+                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                        sakId = SakId("200001495"),
+                                        fom = LocalDate.of(2026, 2, 4),
+                                        tom = LocalDate.of(2026, 2, 4),
+                                        beløp = 340,
+                                        type = models.v1.PosteringType.YTELSE,
+                                        klassekode = "TSDRASISP3-OP"
+                                    ),
+                                    models.v1.Postering(
+                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                        sakId = SakId("200001495"),
+                                        fom = LocalDate.of(2026, 2, 4),
+                                        tom = LocalDate.of(2026, 2, 4),
+                                        beløp = 630,
+                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        klassekode = "KL_KODE_FEIL_TILLST"
+                                    ),
+                                    models.v1.Postering(
+                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                        sakId = SakId("200001495"),
+                                        fom = LocalDate.of(2026, 2, 4),
+                                        tom = LocalDate.of(2026, 2, 4),
+                                        beløp = -630,
+                                        type = models.v1.PosteringType.MOTPOSTERING,
+                                        klassekode = "TBMOTOBS"
+                                    ),
+                                    models.v1.Postering(
+                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                        sakId = SakId("200001495"),
+                                        fom = LocalDate.of(2026, 2, 4),
+                                        tom = LocalDate.of(2026, 2, 4),
+                                        beløp = -970,
+                                        type = models.v1.PosteringType.YTELSE,
+                                        klassekode = "TSDRASISP3-OP"
+                                    ),
+                                )
+                            )
+                        )
+                    )
+                )
+
+                assertEquals(expected, it)
+            }
+        // libs.utils.appLog.info(libs.kafka.JsonSerde.jackson.writeValueAsString(response))
+    }
+
+    @Test
+    fun `simuler sak 200001495 med v2`() {
+        TestRuntime.ws.respondWith = Resource.read("/simuler-ts-200001495.xml")
+        val uid = UUID.randomUUID().toString()
+
+        TestRuntime.topics.simuleringer.produce(uid) {
+            simulering(fagområde = "AAP")
+        }
+
+        TestRuntime.topics.dryrunAap.assertThat()
+            .has(uid)
+            .with(uid) {
+                val expected = v2.Simulering(
+                    perioder = listOf(
+                        v2.Simuleringsperiode(
+                            fom = LocalDate.of(2026, 2, 4),
+                            tom = LocalDate.of(2026, 2, 4),
+                            utbetalinger = listOf(
+                                v2.SimulertUtbetaling(
+                                    fagsystem = Fagsystem.TILLSTDR,
+                                    sakId = "200001495",
+                                    utbetalesTil = "12345678910",
+                                    stønadstype = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
+                                    tidligereUtbetalt = 970,
+                                    nyttBeløp = -630,
+                                    posteringer = listOf(
+                                        v2.Postering(
+                                            fom = LocalDate.of(2026, 2, 4),
+                                            tom = LocalDate.of(2026, 2, 4),
+                                            beløp = 630,
+                                            type = v2.Type.YTEL,
+                                            klassekode = "TSDRASISP3-OP"
+                                        ),
+                                        v2.Postering(
+                                            fom = LocalDate.of(2026, 2, 4),
+                                            tom = LocalDate.of(2026, 2, 4),
+                                            beløp = 340,
+                                            type = v2.Type.YTEL,
+                                            klassekode = "TSDRASISP3-OP"
+                                        ),
+                                        v2.Postering(
+                                            fom = LocalDate.of(2026, 2, 4),
+                                            tom = LocalDate.of(2026, 2, 4),
+                                            beløp = 630,
+                                            type = v2.Type.FEIL,
+                                            klassekode = "KL_KODE_FEIL_TILLST"
+                                        ),
+                                        v2.Postering(
+                                            fom = LocalDate.of(2026, 2, 4),
+                                            tom = LocalDate.of(2026, 2, 4),
+                                            beløp = -630,
+                                            type = v2.Type.MOTP,
+                                            klassekode = "TBMOTOBS"
+                                        ),
+                                        v2.Postering(
+                                            fom = LocalDate.of(2026, 2, 4),
+                                            tom = LocalDate.of(2026, 2, 4),
+                                            beløp = -970,
+                                            type = v2.Type.YTEL,
+                                            klassekode = "TSDRASISP3-OP"
+                                        ),
+                                    )
+                                ),
+                            )
+                        ),
+                    )
+                )
+
+                assertEquals(expected, it)
+            }
+        // libs.utils.appLog.info(libs.kafka.JsonSerde.jackson.writeValueAsString(response))
+    }
+
+    @Test
     fun `simuler sak 4819 på gammelt format`() {
         TestRuntime.ws.respondWith = Resource.read("/simuler-ts-4819.xml")
         val uid = UUID.randomUUID().toString()

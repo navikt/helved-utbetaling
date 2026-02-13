@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<simulerBeregningResponse xmlns="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt">
+  <response xmlns="">
+    <simulering>
+      <gjelderId>12345678910</gjelderId>
+      <gjelderNavn>BASE TRU                      </gjelderNavn>
+      <datoBeregnet>2026-02-12</datoBeregnet>
+      <kodeFaggruppe>TILLST  </kodeFaggruppe>
+      <belop>0.00</belop>
+      <beregningsPeriode xmlns="http://nav.no/system/os/entiteter/beregningSkjema">
+        <periodeFom xmlns="">2026-02-04</periodeFom>
+        <periodeTom xmlns="">2026-02-04</periodeTom>
+        <beregningStoppnivaa>
+          <kodeFagomraade xmlns="">TILLSTDR</kodeFagomraade>
+          <stoppNivaaId xmlns="">1</stoppNivaaId>
+          <behandlendeEnhet xmlns="">8020         </behandlendeEnhet>
+          <oppdragsId xmlns="">83095312</oppdragsId>
+          <fagsystemId xmlns="">200001495                     </fagsystemId>
+          <kid xmlns=""/>
+          <utbetalesTilId xmlns="">12345678910</utbetalesTilId>
+          <utbetalesTilNavn xmlns="">TEST TEST                      </utbetalesTilNavn>
+          <bilagsType xmlns="">U </bilagsType>
+          <forfall xmlns="">2026-02-12</forfall>
+          <feilkonto xmlns="">true</feilkonto>
+          <beregningStoppnivaaDetaljer>
+            <faktiskFom xmlns="">2026-02-04</faktiskFom>
+            <faktiskTom xmlns="">2026-02-04</faktiskTom>
+            <kontoStreng xmlns="">111111            </kontoStreng>
+            <behandlingskode xmlns="">1</behandlingskode>
+            <belop xmlns="">630.00</belop>
+            <trekkVedtakId xmlns="">0</trekkVedtakId>
+            <stonadId xmlns="">          </stonadId>
+            <korrigering xmlns=""> </korrigering>
+            <tilbakeforing xmlns="">false</tilbakeforing>
+            <linjeId xmlns="">0</linjeId>
+            <sats xmlns="">0.00</sats>
+            <typeSats xmlns="">    </typeSats>
+            <antallSats xmlns="">0.00</antallSats>
+            <saksbehId xmlns="">T123345</saksbehId>
+            <uforeGrad xmlns="">0</uforeGrad>
+            <kravhaverId xmlns="">           </kravhaverId>
+            <delytelseId xmlns="">                              </delytelseId>
+            <bostedsenhet xmlns="">8020         </bostedsenhet>
+            <skykldnerId xmlns="">           </skykldnerId>
+            <klassekode xmlns="">TSDRASISP3-OP       </klassekode>
+            <klasseKodeBeskrivelse xmlns="">Tilleggsst. daglig reise a.s&#xF8;ker ingen spes.      </klasseKodeBeskrivelse>
+            <typeKlasse xmlns="">YTEL</typeKlasse>
+            <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti                       </typeKlasseBeskrivelse>
+            <refunderesOrgNr xmlns="">           </refunderesOrgNr>
+          </beregningStoppnivaaDetaljer>
+          <beregningStoppnivaaDetaljer>
+            <faktiskFom xmlns="">2026-02-04</faktiskFom>
+            <faktiskTom xmlns="">2026-02-04</faktiskTom>
+            <kontoStreng xmlns="">111111            </kontoStreng>
+            <behandlingskode xmlns="">1</behandlingskode>
+            <belop xmlns="">340.00</belop>
+            <trekkVedtakId xmlns="">0</trekkVedtakId>
+            <stonadId xmlns="">          </stonadId>
+            <korrigering xmlns=""> </korrigering>
+            <tilbakeforing xmlns="">false</tilbakeforing>
+            <linjeId xmlns="">3</linjeId>
+            <sats xmlns="">340.00</sats>
+            <typeSats xmlns="">DAG </typeSats>
+            <antallSats xmlns="">1.00</antallSats>
+            <saksbehId xmlns="">ts      </saksbehId>
+            <uforeGrad xmlns="">0</uforeGrad>
+            <kravhaverId xmlns="">           </kravhaverId>
+            <delytelseId xmlns="">zMDybfxNQSqXLfrgmPxbRw==      </delytelseId>
+            <bostedsenhet xmlns="">8020         </bostedsenhet>
+            <skykldnerId xmlns="">           </skykldnerId>
+            <klassekode xmlns="">TSDRASISP3-OP       </klassekode>
+            <klasseKodeBeskrivelse xmlns="">Tilleggsst. daglig reise a.s&#xF8;ker ingen spes.      </klasseKodeBeskrivelse>
+            <typeKlasse xmlns="">YTEL</typeKlasse>
+            <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti                       </typeKlasseBeskrivelse>
+            <refunderesOrgNr xmlns="">           </refunderesOrgNr>
+          </beregningStoppnivaaDetaljer>
+          <beregningStoppnivaaDetaljer>
+            <faktiskFom xmlns="">2026-02-04</faktiskFom>
+            <faktiskTom xmlns="">2026-02-04</faktiskTom>
+            <kontoStreng xmlns="">222222            </kontoStreng>
+            <behandlingskode xmlns="">0</behandlingskode>
+            <belop xmlns="">630.00</belop>
+            <trekkVedtakId xmlns="">0</trekkVedtakId>
+            <stonadId xmlns="">          </stonadId>
+            <korrigering xmlns="">J</korrigering>
+            <tilbakeforing xmlns="">false</tilbakeforing>
+            <linjeId xmlns="">0</linjeId>
+            <sats xmlns="">0.00</sats>
+            <typeSats xmlns="">    </typeSats>
+            <antallSats xmlns="">0.00</antallSats>
+            <saksbehId xmlns="">T123345</saksbehId>
+            <uforeGrad xmlns="">0</uforeGrad>
+            <kravhaverId xmlns="">           </kravhaverId>
+            <delytelseId xmlns="">                              </delytelseId>
+            <bostedsenhet xmlns="">8020         </bostedsenhet>
+            <skykldnerId xmlns="">           </skykldnerId>
+            <klassekode xmlns="">KL_KODE_FEIL_TILLST </klassekode>
+            <klasseKodeBeskrivelse xmlns="">Feilutbetaling tilleggsst&#xF8;nader                   </klasseKodeBeskrivelse>
+            <typeKlasse xmlns="">FEIL</typeKlasse>
+            <typeKlasseBeskrivelse xmlns="">Klassetype for feilkontoer                        </typeKlasseBeskrivelse>
+            <refunderesOrgNr xmlns="">           </refunderesOrgNr>
+          </beregningStoppnivaaDetaljer>
+          <beregningStoppnivaaDetaljer>
+            <faktiskFom xmlns="">2026-02-04</faktiskFom>
+            <faktiskTom xmlns="">2026-02-04</faktiskTom>
+            <kontoStreng xmlns="">333333            </kontoStreng>
+            <behandlingskode xmlns="">0</behandlingskode>
+            <belop xmlns="">-630.00</belop>
+            <trekkVedtakId xmlns="">0</trekkVedtakId>
+            <stonadId xmlns="">          </stonadId>
+            <korrigering xmlns=""> </korrigering>
+            <tilbakeforing xmlns="">false</tilbakeforing>
+            <linjeId xmlns="">0</linjeId>
+            <sats xmlns="">0.00</sats>
+            <typeSats xmlns="">    </typeSats>
+            <antallSats xmlns="">0.00</antallSats>
+            <saksbehId xmlns="">T123345</saksbehId>
+            <uforeGrad xmlns="">0</uforeGrad>
+            <kravhaverId xmlns="">           </kravhaverId>
+            <delytelseId xmlns="">                              </delytelseId>
+            <bostedsenhet xmlns="">8020         </bostedsenhet>
+            <skykldnerId xmlns="">           </skykldnerId>
+            <klassekode xmlns="">TBMOTOBS            </klassekode>
+            <klasseKodeBeskrivelse xmlns="">Feilutbetaling motkonto til OBS konto             </klasseKodeBeskrivelse>
+            <typeKlasse xmlns="">MOTP</typeKlasse>
+            <typeKlasseBeskrivelse xmlns="">Klassetype for motposteringskonto                 </typeKlasseBeskrivelse>
+            <refunderesOrgNr xmlns="">           </refunderesOrgNr>
+          </beregningStoppnivaaDetaljer>
+          <beregningStoppnivaaDetaljer>
+            <faktiskFom xmlns="">2026-02-04</faktiskFom>
+            <faktiskTom xmlns="">2026-02-04</faktiskTom>
+            <kontoStreng xmlns="">111111            </kontoStreng>
+            <behandlingskode xmlns="">1</behandlingskode>
+            <belop xmlns="">-970.00</belop>
+            <trekkVedtakId xmlns="">0</trekkVedtakId>
+            <stonadId xmlns="">          </stonadId>
+            <korrigering xmlns=""> </korrigering>
+            <tilbakeforing xmlns="">true</tilbakeforing>
+            <linjeId xmlns="">2</linjeId>
+            <sats xmlns="">970.00</sats>
+            <typeSats xmlns="">DAG </typeSats>
+            <antallSats xmlns="">0.00</antallSats>
+            <saksbehId xmlns="">T123345</saksbehId>
+            <uforeGrad xmlns="">0</uforeGrad>
+            <kravhaverId xmlns="">           </kravhaverId>
+            <delytelseId xmlns="">                              </delytelseId>
+            <bostedsenhet xmlns="">8020         </bostedsenhet>
+            <skykldnerId xmlns="">           </skykldnerId>
+            <klassekode xmlns="">TSDRASISP3-OP       </klassekode>
+            <klasseKodeBeskrivelse xmlns="">Tilleggsst. daglig reise a.s&#xF8;ker ingen spes.      </klasseKodeBeskrivelse>
+            <typeKlasse xmlns="">YTEL</typeKlasse>
+            <typeKlasseBeskrivelse xmlns="">Klassetype for ytelseskonti                       </typeKlasseBeskrivelse>
+            <refunderesOrgNr xmlns="">           </refunderesOrgNr>
+          </beregningStoppnivaaDetaljer>
+        </beregningStoppnivaa>
+      </beregningsPeriode>
+    </simulering>
+  </response>
+</simulerBeregningResponse>
