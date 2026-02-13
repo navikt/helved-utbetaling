@@ -144,7 +144,6 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                             fagsystemer.flatMap { fagsystem ->
                                 val deferred: List<Deferred<List<Daos>>> = listOf(
                                     async { Daos.findOppdrag(sakId, fagsystem.fagområde) },
-                                    async { Daos.findKvitteringer(sakId, fagsystem.fagområde) },
                                     async { Daos.findUtbetalinger(sakId, fagsystem.name) },
                                     async { Daos.findPendingUtbetalinger(sakId, fagsystem.name) },
                                     async { Daos.findSimuleringer(sakId, fagsystem.fagområde) },
