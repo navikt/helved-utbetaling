@@ -174,19 +174,19 @@ object v2 {
     }
 }
 
-private fun BeregningStoppnivaa.tidligereUtbetalt(): Int {
-    val sumTidligereutbetalinger = beregningStoppnivaaDetaljers
-        .filter { v2.Type.YTEL == v2.Type.from(it.typeKlasse) && it.belop.toInt() < 0 }
-        .sumOf { it.belop.toInt() }
-    return abs(sumTidligereutbetalinger)
-}  
-
 private fun BeregningStoppnivaa.stønadstype(): Stønadstype? =
     beregningStoppnivaaDetaljers
         .firstOrNull { v2.Type.YTEL == v2.Type.from(it.typeKlasse) }
         ?.klassekode
         ?.trimEnd()
         ?.let(Stønadstype::fraKode)
+
+private fun BeregningStoppnivaa.tidligereUtbetalt(): Int {
+    val sumTidligereutbetalinger = beregningStoppnivaaDetaljers
+        .filter { v2.Type.YTEL == v2.Type.from(it.typeKlasse) && it.belop.toInt() < 0 }
+        .sumOf { it.belop.toInt() }
+    return abs(sumTidligereutbetalinger)
+}  
 
 private fun BeregningStoppnivaa.nyttBeløp(): Int {
     val totalSumYtelser = beregningStoppnivaaDetaljers.ytelser.sum()
@@ -198,7 +198,7 @@ private val List<BeregningStoppnivaaDetaljer>.ytelser: List<BeregningStoppnivaaD
     get() = filter { v2.Type.YTEL == v2.Type.from(it.typeKlasse) }
 
 private val List<BeregningStoppnivaaDetaljer>.feilutbetalinger: List<BeregningStoppnivaaDetaljer>
-    get() = filter { v2.Type.FEIL == v2.Type.from(it.typeKlasse) && it.klassekode.trimEnd() == "KL_KODE_FEIL_ARBYT" }
+    get() = filter { v2.Type.FEIL == v2.Type.from(it.typeKlasse) && it.klassekode.trimEnd() in listOf("KL_KODE_FEIL_ARBYT", "KL_KODE_FEIL_TILLST") }
 
 private val List<BeregningStoppnivaaDetaljer>.positive: List<BeregningStoppnivaaDetaljer>
     get() = filter { it.belop.toInt() > 0 }

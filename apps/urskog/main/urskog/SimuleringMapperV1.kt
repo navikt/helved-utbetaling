@@ -88,7 +88,7 @@ private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<v1
 }
 
 private fun totalEtterbetaling(posteringer: List<v1.Postering>): Int {
-    val justeringer = posteringer.filter { it.type == v1.PosteringType.FEILUTBETALING && it.klassekode == "KL_KODE_JUST_ARBYT" }.sumOf { it.beløp }
+    val justeringer = posteringer.filter { it.type == v1.PosteringType.FEILUTBETALING && it.klassekode in listOf("KL_KODE_JUST_ARBYT", "KL_KODE_JUST_TILLST") }.sumOf { it.beløp }
     val resultat = nyUtbetaling(posteringer) - tidligereUtbetalt(posteringer) 
     return when (justeringer < 0) {
         true  -> maxOf(resultat - abs(justeringer), 0)
@@ -101,13 +101,13 @@ private fun tidligereUtbetalt(posteringer: List<v1.Postering>): Int {
 }
 
 private fun totalFeilutbetaling(posteringer: List<v1.Postering>): Int {
-    val positiveFeil = posteringer.filter { it.beløp > 0 && it.type == v1.PosteringType.FEILUTBETALING && it.klassekode == "KL_KODE_FEIL_ARBYT" }.sumOf { it.beløp }
+    val positiveFeil = posteringer.filter { it.beløp > 0 && it.type == v1.PosteringType.FEILUTBETALING && it.klassekode in listOf("KL_KODE_FEIL_ARBYT", "KL_KODE_FEIL_TILLST") }.sumOf { it.beløp }
     return maxOf(0, positiveFeil)
 }
 
 private fun nyUtbetaling(posteringer: List<v1.Postering>): Int {
     val positiveYtel = posteringer.filter { it.beløp > 0 && it.type == v1.PosteringType.YTELSE }.sumOf { it.beløp }
-    val positiveFeil = posteringer.filter { it.beløp > 0 && it.type == v1.PosteringType.FEILUTBETALING && it.klassekode == "KL_KODE_FEIL_ARBYT" }.sumOf { it.beløp }
+    val positiveFeil = posteringer.filter { it.beløp > 0 && it.type == v1.PosteringType.FEILUTBETALING && it.klassekode in listOf("KL_KODE_FEIL_ARBYT", "KL_KODE_FEIL_TILLST") }.sumOf { it.beløp }
     return positiveYtel - positiveFeil
 }
 
