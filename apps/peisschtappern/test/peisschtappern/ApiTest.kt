@@ -4,7 +4,6 @@ import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
-import libs.auth.Claim
 import libs.jdbc.concurrency.transaction
 import libs.jdbc.truncate
 import libs.kafka.*
@@ -34,7 +33,7 @@ class ApiTest {
         TestRuntime.jdbc.truncate("peisschtappern.aapintern")
         TestRuntime.jdbc.truncate("peisschtappern.dpintern")
         TestRuntime.jdbc.truncate("peisschtappern.tsintern")
-
+        TestRuntime.jdbc.truncate("peisschtappern.avstemming")
     }
 
     @Test
@@ -430,6 +429,28 @@ class ApiTest {
         }.body<Page>()
 
         assertEquals(1, result.total)
+    }
+
+    @Test
+    fun `fetch avstemminger between fom and tom`() = runTest(TestRuntime.context) {
+        val before = Instant.now().minusSeconds(60L)
+        val now = Instant.now()
+        val later = Instant.now().plusSeconds(60L)
+
+        save(Channel.Avstemming, key = "old", timestamp = before.toEpochMilli(), offset = offset)
+        save(Channel.Avstemming, key = "match", timestamp = now.toEpochMilli(), offset = offset)
+        save(Channel.Avstemming, key = "future", timestamp = later.toEpochMilli(), offset = offset)
+
+        val fom = now.minusSeconds(5L)
+        val tom = now.plusSeconds(5L)
+
+        val result = TestRuntime.ktor.httpClient.get("/api/avstemminger?fom=$fom&tom=$tom") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<Daos>>()
+
+        assertEquals(1, result.size)
+        assertEquals("match", result.first().key)
     }
 }
 
