@@ -4,11 +4,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import libs.jdbc.concurrency.transaction
 import libs.kafka.*
+import libs.xml.XMLMapper
 import libs.kafka.processor.*
 import libs.tracing.Tracing
-import peisschtappern.AlertService.missingKvitteringHandler
 
 object Topics {
     val avstemming = Topic("helved.avstemming.v1", bytes())
@@ -69,7 +70,7 @@ private fun Topology.save(
                 withContext(Jdbc.context + Dispatchers.IO) {
                     transaction {
                         if (topic == Topics.oppdrag) {
-                            missingKvitteringHandler(key, value)
+                            AlertService.missingKvitteringHandler(key, value)
                         }
                         val aud = AuditMetadata.parse(metadata) 
                         Daos(

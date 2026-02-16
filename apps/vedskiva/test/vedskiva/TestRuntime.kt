@@ -21,11 +21,16 @@ import java.net.URI
 
 val testLog = logger("test")
 
+class TestTopics(kafka: StreamsMock) {
+    val oppdrag = kafka.testTopic(Topics.oppdrag) 
+}
+
 object TestRuntime {
     private val postgres = PostgresContainer("vedskiva")
     val azure = AzureFake()
     val peisschtappern = PeisschtappernFake()
     val kafka = KafkaFactoryFake()
+    val streams: StreamsMock = StreamsMock()
     val jdbc = Jdbc.initialize(postgres.config)
     val context = CoroutineDatasource(jdbc)
     val config = Config(
@@ -41,6 +46,7 @@ object TestRuntime {
         module = {
             vedskiva(
                 config, 
+                streams,
                 kafka,
             )
         },
@@ -51,7 +57,7 @@ object TestRuntime {
     )
 
     fun reset() {
-        jdbc.truncate("vedskiva", Scheduled.TABLE_NAME)
+        jdbc.truncate("vedskiva", Scheduled.TABLE_NAME, OppdragDao.table)
         kafka.reset()
         PeisschtappernFake.response.clear()
     }

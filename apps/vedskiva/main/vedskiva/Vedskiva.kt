@@ -24,6 +24,8 @@ import libs.auth.configure
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.kafka.KafkaFactory
+import libs.kafka.KafkaStreams
+import libs.kafka.Streams
 import libs.utils.appLog
 import libs.utils.secureLog
 
@@ -48,7 +50,8 @@ fun main() {
 
 fun Application.vedskiva(
     config: Config = Config(),
-    kafka: KafkaFactory = Kafka(),
+    streams: Streams = KafkaStreams(),
+    kafka: KafkaFactory = Kafka(), // FIXME: streams har en innebygget ekvivalent
 ) {
     val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
@@ -80,6 +83,11 @@ fun Application.vedskiva(
     val producer = kafka.createProducer(config.kafka, Topics.avstemming) 
     val service = AvstemmingService(config, producer)
 
+    streams.connect(
+        config = config.kafka,
+        registry = metrics,
+        topology = topology()
+    )
     routing {
         authenticate(TokenProvider.AZURE) {
             avstem(service)

@@ -1,7 +1,6 @@
 package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
-// import io.micrometer.core.instrument.binder.kafka.KafkaTestMetrics
 import org.apache.kafka.streams.TopologyTestDriver
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
