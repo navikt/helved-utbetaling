@@ -255,6 +255,26 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                 }
             }
         }
+
+        get("/avstemminger") {
+            val fom = call.queryParameters["fom"]
+                ?.runCatching { Instant.parse(this).toEpochMilli() }
+                ?.getOrNull()
+            val tom = call.queryParameters["tom"]
+                ?.runCatching { Instant.parse(this).toEpochMilli() }
+                ?.getOrNull()
+
+            requireNotNull(fom) { "Missing required parameter: fom" }
+            requireNotNull(tom) { "Missing required parameter: tom" }
+
+            val avstemminger = withContext(Jdbc.context + Dispatchers.IO) {
+                transaction {
+                    Daos.findAvstemminger(fom, tom)
+                }
+            }
+
+            call.respond(avstemminger)
+        }
     }
 
     post("/manuell-kvittering") {

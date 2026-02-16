@@ -308,6 +308,20 @@ data class Daos(
 
             return query(sql)
         }
+
+        suspend fun findAvstemminger(fom: Long, tom: Long): List<Daos> {
+            val sql = """
+                SELECT *
+                FROM avstemming
+                WHERE system_time_ms >= ? AND system_time_ms <= ?
+                ORDER BY system_time_ms DESC
+            """.trimIndent()
+
+            return query(sql) { stmt ->
+                stmt.setLong(1, fom)
+                stmt.setLong(2, tom)
+            }
+        }
     }
 
     suspend fun insert(table: Table): Int {
