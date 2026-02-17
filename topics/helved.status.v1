@@ -12,6 +12,9 @@ spec:
     retentionHours: 336
     partitions: 3
   acl:
+    - team: aap
+      application: aap-utbetal
+      access: read
     - team: helved
       application: abetal
       access: write
