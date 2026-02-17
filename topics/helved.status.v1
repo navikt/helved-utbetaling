@@ -13,7 +13,7 @@ spec:
     partitions: 3
   acl:
     - team: aap
-      application: aap-utbetal
+      application: utbetal
       access: read
     - team: helved
       application: abetal
