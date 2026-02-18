@@ -744,36 +744,43 @@ internal class DpTest {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         var tid = UUID.randomUUID().toString()
-        var uid = dpUId(sid.id, "1-15 aug", StønadTypeDagpenger.DAGPENGER)
+        var uid1 = dpUId(sid.id, "1-15 aug", StønadTypeDagpenger.DAGPENGER)
+        var uid2 = dpUId(sid.id, "2-13 sep", StønadTypeDagpenger.DAGPENGER)
 
         TestRuntime.topics.dp.produce(tid) {
             Dp.utbetaling(sid.id, bid.id) {
-                Dp.meldekort("1-15 aug", 1.aug, 15.aug, 200u, 200u)
+                Dp.meldekort("1-15 aug", 1.aug, 15.aug, 200u, 200u) +
+                Dp.meldekort("2-13 sep", 2.sep, 13.sep, 200u, 200u)
             }
         }
         TestRuntime.topics.status.assertThat()
             .has(tid)
             .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
+                DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 200u, "DAGPENGER"),
             ))))
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         var oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
-        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid")) {
+        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid1,$uid2")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
         }
-        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid1.toString())
+            .has(uid2.toString())
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
-            setOf(uid)
+            setOf(uid1,uid2)
         }
 
         val bid2 = BehandlingId("$nextInt")
         tid = UUID.randomUUID().toString()
-        uid = dpUId(sid.id, "2-14 aug", StønadTypeDagpenger.DAGPENGER)
+        uid1 = dpUId(sid.id, "2-16 aug", StønadTypeDagpenger.DAGPENGER)
+        uid2 = dpUId(sid.id, "3-12 sep", StønadTypeDagpenger.DAGPENGER)
         TestRuntime.topics.dp.produce(tid) {
             Dp.utbetaling(sid.id, bid2.id) {
-                Dp.meldekort("2-14 aug", 2.aug, 16.aug, 200u, 200u)
+                Dp.meldekort("2-16 aug", 2.aug, 16.aug, 200u, 200u) +
+                Dp.meldekort("3-12 sep", 3.sep, 12.sep, 200u, 200u)
             }
         }
 
@@ -781,20 +788,24 @@ internal class DpTest {
             .has(tid)
             .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
                 DetaljerLinje(bid2.id, 2.aug, 16.aug, 200u, 200u, "DAGPENGER"),
+                DetaljerLinje(bid2.id, 3.sep, 12.sep, 200u, 200u, "DAGPENGER"),
+                DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 0u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
             ))))
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
         val mapper = libs.xml.XMLMapper<no.trygdeetaten.skjema.oppdrag.Oppdrag>()
         println(mapper.writeValueAsString(oppdrag))
-        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid")) {
+        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid1,$uid2")) {
             oppdrag.apply {
                 mmel = Mmel().apply { alvorlighetsgrad = "00" }
             }
         }
-        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid1.toString())
+            .has(uid2.toString())
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
-            setOf(uid)
+            setOf(uid1, uid2)
         }
     }
 
