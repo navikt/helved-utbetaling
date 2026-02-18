@@ -36,6 +36,7 @@ object AggregateService {
                         val oppdrag = OppdragService.delete(prev, prev) // new is a fakeDelete
                         val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
                         val utbetaling = prev.copy(action = Action.DELETE, lastPeriodeId = lastPeriodeId)
+                        secureLog.debug("opphør utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
 
@@ -44,6 +45,7 @@ object AggregateService {
                         val oppdrag = OppdragService.opprett(new, prev.lastPeriodeId)
                         val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
                         val utbetaling = new.copy(action = Action.CREATE, lastPeriodeId = lastPeriodeId)
+                        secureLog.debug("reintroduser en tidligere opphørt utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
 
@@ -51,6 +53,7 @@ object AggregateService {
                         val oppdrag = OppdragService.opprett(new)
                         val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
                         val utbetaling = new.copy(action = Action.CREATE, lastPeriodeId = lastPeriodeId)
+                        secureLog.debug("opprett utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
 
@@ -58,6 +61,7 @@ object AggregateService {
                         val oppdrag = OppdragService.update(new, prev)
                         val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
                         val utbetaling = new.copy(action = Action.UPDATE, lastPeriodeId = lastPeriodeId)
+                        secureLog.debug("endre utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
                 }

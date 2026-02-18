@@ -13,19 +13,33 @@ import java.util.GregorianCalendar
 import javax.xml.datatype.XMLGregorianCalendar
 import models.*
 
+/** 2021*/
 val Int.jun21: LocalDate get() = LocalDate.of(2021, 6, this)
+/** 2021*/
 val Int.jul21: LocalDate get() = LocalDate.of(2021, 7, this)
+/** 2021*/
 val Int.aug21: LocalDate get() = LocalDate.of(2021, 8, this)
+/** 2024*/
 val Int.jun: LocalDate get() = LocalDate.of(2024, 6, this)
+/** 2024*/
 val Int.jul: LocalDate get() = LocalDate.of(2024, 7, this)
+/** 2024*/
 val Int.aug: LocalDate get() = LocalDate.of(2024, 8, this)
+/** 2024*/
 val Int.sep: LocalDate get() = LocalDate.of(2024, 9, this)
+/** 2024*/
 val Int.okt: LocalDate get() = LocalDate.of(2024, 10, this)
+/** 2024*/
 val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
+/** 2025*/
 val Int.jan: LocalDate get() = LocalDate.of(2025, 1, this)
+/** 2025*/
 val Int.feb25: LocalDate get() = LocalDate.of(2025, 2, this)
+/** 2025*/
 val Int.mar25: LocalDate get() = LocalDate.of(2025, 3, this)
+/** 2025*/
 val Int.apr25: LocalDate get() = LocalDate.of(2025, 4, this)
+/** 2025*/
 val Int.jun25: LocalDate get() = LocalDate.of(2025, 6, this)
 
 fun hashOppdrag(oppdrag: Oppdrag): Int { 

@@ -684,6 +684,121 @@ internal class DpTest {
     }
 
     @Test
+    fun `fom tom endres men meldeperiode står seg`() {
+        val sid = SakId("$nextInt")
+        var bid = BehandlingId("$nextInt")
+        var tid = UUID.randomUUID().toString()
+        val uid = dpUId(sid.id, "1-15 aug", StønadTypeDagpenger.DAGPENGER)
+
+        TestRuntime.topics.dp.produce(tid) {
+            Dp.utbetaling(sid.id, bid.id) {
+                Dp.meldekort("1-15 aug", 1.aug, 15.aug, 200u, 200u)
+            }
+        }
+        TestRuntime.topics.status.assertThat()
+            .has(tid)
+            .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
+                DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
+            ))))
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        var oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
+        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid")) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid)
+        }
+
+        bid = BehandlingId("$nextInt")
+        tid = UUID.randomUUID().toString()
+        TestRuntime.topics.dp.produce(tid) {
+            Dp.utbetaling(sid.id, bid.id) {
+                Dp.meldekort("1-15 aug", 2.aug, 16.aug, 200u, 200u)
+            }
+        }
+        TestRuntime.topics.status.assertThat()
+            .has(tid)
+            .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
+                DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
+                DetaljerLinje(bid.id, 2.aug, 16.aug, 200u, 200u, "DAGPENGER"),
+            ))))
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
+        val mapper = libs.xml.XMLMapper<no.trygdeetaten.skjema.oppdrag.Oppdrag>()
+        println(mapper.writeValueAsString(oppdrag))
+        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid")) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid)
+        }
+    }
+    @Test
+    fun `meldeperiode fom og tom endres`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        var tid = UUID.randomUUID().toString()
+        var uid = dpUId(sid.id, "1-15 aug", StønadTypeDagpenger.DAGPENGER)
+
+        TestRuntime.topics.dp.produce(tid) {
+            Dp.utbetaling(sid.id, bid.id) {
+                Dp.meldekort("1-15 aug", 1.aug, 15.aug, 200u, 200u)
+            }
+        }
+        TestRuntime.topics.status.assertThat()
+            .has(tid)
+            .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
+                DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
+            ))))
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        var oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
+        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid")) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid)
+        }
+
+        val bid2 = BehandlingId("$nextInt")
+        tid = UUID.randomUUID().toString()
+        uid = dpUId(sid.id, "2-14 aug", StønadTypeDagpenger.DAGPENGER)
+        TestRuntime.topics.dp.produce(tid) {
+            Dp.utbetaling(sid.id, bid2.id) {
+                Dp.meldekort("2-14 aug", 2.aug, 16.aug, 200u, 200u)
+            }
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(tid)
+            .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
+                DetaljerLinje(bid2.id, 2.aug, 16.aug, 200u, 200u, "DAGPENGER"),
+                DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
+            ))))
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
+        val mapper = libs.xml.XMLMapper<no.trygdeetaten.skjema.oppdrag.Oppdrag>()
+        println(mapper.writeValueAsString(oppdrag))
+        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid")) {
+            oppdrag.apply {
+                mmel = Mmel().apply { alvorlighetsgrad = "00" }
+            }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
+            setOf(uid)
+        }
+    }
+
+    @Test
     fun `1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")

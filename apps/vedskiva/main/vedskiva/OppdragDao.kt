@@ -51,8 +51,6 @@ data class OppdragDao(
         }
     }
 
-    // add this if duplicate oppdrag wrongly occurs:
-    // ON CONFLICT (hash_key) DO NOTHIN
     suspend fun insert(): Int {
         val sql = """
             INSERT INTO $table (
