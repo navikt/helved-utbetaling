@@ -114,7 +114,7 @@ object DpDto {
                     behandlingId = BehandlingId(behandlingId),
                     periodetype = periodetype,
                     vedtakstidspunkt = vedtakstidspunktet,
-                ).also { appLog.debug("creating a fake delete to force-trigger a join with existing utbetaling") }
+                ).also { appLog.info("creating a fake delete to force-trigger a join with existing utbetaling") }
 
                 else -> utbetaling(originalKey, utbet, uids, uid)
             }
