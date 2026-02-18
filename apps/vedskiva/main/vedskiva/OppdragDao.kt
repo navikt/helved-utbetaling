@@ -42,10 +42,11 @@ data class OppdragDao(
             beskrMelding = rs.getString("beskrMelding"),
         )
 
-        suspend fun selectWith(nokkelAvstemming: LocalDateTime): List<OppdragDao> {
-            val sql = "SELECT * FROM  $table WHERE nokkelAvstemming = ?"
+        suspend fun selectWith(from: LocalDateTime, to: LocalDateTime): List<OppdragDao> {
+            val sql = "SELECT * FROM  $table WHERE nokkelAvstemming >= ? AND nokkelAvstemming <= ?"
             return query(sql) { stmt ->
-                stmt.setTimestamp(1, Timestamp.valueOf(nokkelAvstemming))
+                stmt.setTimestamp(1, Timestamp.valueOf(from))
+                stmt.setTimestamp(2, Timestamp.valueOf(to))
             }
         }
     }

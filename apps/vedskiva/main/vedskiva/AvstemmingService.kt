@@ -1,5 +1,6 @@
 package vedskiva
 
+import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
 import libs.utils.appLog
 import models.*
@@ -14,6 +15,46 @@ class AvstemmingService(
     val producer: KafkaProducer<String, Avstemmingsdata>,
     val peisschtappern: PeisschtappernClient = PeisschtappernClient(config)
 ) {
+
+    suspend fun generate2(
+        avstemFom: LocalDateTime,
+        avstemTom: LocalDateTime,
+    ): List<Pair<String, List<Avstemmingsdata>>> {
+        val daos = transaction {
+            OppdragDao.selectWith(avstemFom, avstemTom)
+        }
+        return daos.asSequence()
+            .distinctBy { dao -> dao.hashKey to dao.alvorlighetsgrad }
+            .groupBy { it.hashKey }
+            .map { (_, value) -> value.firstOrNull { it.alvorlighetsgrad != null} ?: value.first() }
+            .groupBy { it.kodeFagomraade }
+            .map { (kodeFagomraade, daos) ->
+                val fagsystem = Fagsystem.fromFagområde(kodeFagomraade)
+                appLog.debug("oppretter oppdragsdata for $fagsystem")
+
+                val avstemmingId = AvstemmingFactory.genererId()
+                val oppdragsdatas = daos.map { dao ->
+                    Oppdragsdata(
+                        fagsystem = fagsystem,
+                        personident = Personident(dao.personident),
+                        sakId = SakId(dao.fagsystemId),
+                        lastDelytelseId = dao.lastDelytelseId,
+                        innsendt = dao.tidspktMelding,
+                        totalBeløpAllePerioder = dao.sats.toUInt(),
+                        kvittering = dao.alvorlighetsgrad?.let {
+                            Kvittering(
+                                alvorlighetsgrad = dao.alvorlighetsgrad,
+                                kode = dao.kodeMelding,
+                                melding = dao.beskrMelding,
+                            )
+                        },
+                    )
+                }
+                val avstemming = Avstemming(avstemmingId, avstemFom, avstemTom, oppdragsdatas)
+                val messages = AvstemmingFactory.create(avstemming)
+                kodeFagomraade to messages
+            }
+    }
 
     suspend fun generate(
         avstemFom: LocalDateTime,

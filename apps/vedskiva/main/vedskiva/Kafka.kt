@@ -23,9 +23,13 @@ open class Kafka : KafkaFactory
 fun topology() = topology {
     consume(Topics.oppdrag).forEach { _, oppdrag ->
         val avstemming = oppdrag.oppdrag110.avstemming115 
+        val hashKey = mapper
+            .copy(oppdrag)
+            .apply { mmel = null }
+            .let { mapper.writeValueAsString(it).hashCode() }
         val dao = OppdragDao(
             nokkelAvstemming = avstemming.nokkelAvstemming.trimEnd().toLocalDateTime(),
-            hashKey = mapper.writeValueAsString(oppdrag).hashCode(),
+            hashKey = hashKey,
             kodeFagomraade = oppdrag.oppdrag110.kodeFagomraade.trimEnd(),
             personident = oppdrag.oppdrag110.oppdragGjelderId.trimEnd(),
             fagsystemId = oppdrag.oppdrag110.fagsystemId.trimEnd(),

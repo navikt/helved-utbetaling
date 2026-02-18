@@ -32,48 +32,100 @@ fun Route.avstem(service: AvstemmingService) {
             }
         }
 
-        post("/avstem") {
-            val req = call.receive<AvstemmingRequest>()
-            appLog.info("starter avstemming for ${req.today}, mellom [${req.fom} - ${req.tom}]")
+        route("/avstem") {
+            post {
+                val req = call.receive<AvstemmingRequest>()
+                appLog.info("starter avstemming for ${req.today}, mellom [${req.fom} - ${req.tom}]")
 
-            withContext(Jdbc.context + Dispatchers.IO) {
-                if (req.today.erHelligdag()) {
-                    appLog.info("Today is a holiday or weekend, no avstemming")
-                    call.respond(HttpStatusCode.Locked, "Today is a holiday or weekend, no avstemming")
-                    return@withContext
-                }
-
-                val last: Scheduled? = transaction { Scheduled.lastOrNull() }
-
-                if (req.today == last?.created_at) {
-                    appLog.info("Already avstemt today (${req.today})")
-                    call.respond(HttpStatusCode.Conflict, "Already avstemt today (${req.today})")
-                    return@withContext
-                }
-
-                val avstemminger = service.generate(req.fom, req.tom)
-
-                avstemminger.forEach { (fagområde, messages) ->
-                    messages.forEach { message -> 
-                        // FIXME: hvis forrige iter i forEach gikk bra, men neste feiler. Så har vi allerede sendt ut disse
-                        // Hvordan kan vi gjøre alle forEach (fagområde, daos) atomisk? 
-                        service.producer.send(UUID.randomUUID().toString(), message, 0)
+                withContext(Jdbc.context + Dispatchers.IO) {
+                    if (req.today.erHelligdag()) {
+                        appLog.info("Today is a holiday or weekend, no avstemming")
+                        call.respond(HttpStatusCode.Locked, "Today is a holiday or weekend, no avstemming")
+                        return@withContext
                     }
-                    appLog.info("Avstemming for $fagområde completed with avstemmingId: ${messages.first().aksjon.avleverendeAvstemmingId}")
-                }
 
-                transaction {
-                    Scheduled(req.today, req.fom.toLocalDate(), req.tom.toLocalDate()).insert()
-                }
+                    val last: Scheduled? = transaction { Scheduled.lastOrNull() }
 
-                call.respond(HttpStatusCode.OK)
+                    if (req.today == last?.created_at) {
+                        appLog.info("Already avstemt today (${req.today})")
+                        call.respond(HttpStatusCode.Conflict, "Already avstemt today (${req.today})")
+                        return@withContext
+                    }
+
+                    val avstemminger = service.generate(req.fom, req.tom)
+
+                    avstemminger.forEach { (fagområde, messages) ->
+                        messages.forEach { message -> 
+                            // FIXME: hvis forrige iter i forEach gikk bra, men neste feiler. Så har vi allerede sendt ut disse
+                            // Hvordan kan vi gjøre alle forEach (fagområde, daos) atomisk? 
+                            service.producer.send(UUID.randomUUID().toString(), message, 0)
+                        }
+                        appLog.info("Avstemming for $fagområde completed with avstemmingId: ${messages.first().aksjon.avleverendeAvstemmingId}")
+                    }
+
+                    transaction {
+                        Scheduled(req.today, req.fom.toLocalDate(), req.tom.toLocalDate()).insert()
+                    }
+
+                    call.respond(HttpStatusCode.OK)
+                }
+            }
+
+            post("/dryrun") {
+                withContext(Jdbc.context + Dispatchers.IO) {
+                    val req = call.receive<AvstemmingRequest>()
+                    val avstemminger = service.generate(req.fom, req.tom)
+                    call.respond(avstemminger)
+                }
             }
         }
 
-        post("/avstem/dryrun") {
-            val req = call.receive<AvstemmingRequest>()
-            val avstemminger = service.generate(req.fom, req.tom)
-            call.respond(avstemminger)
+        route("/avstem2") {
+            post {
+                val req = call.receive<AvstemmingRequest>()
+                appLog.info("starter avstemming for ${req.today}, mellom [${req.fom} - ${req.tom}]")
+
+                withContext(Jdbc.context + Dispatchers.IO) {
+                    if (req.today.erHelligdag()) {
+                        appLog.info("Today is a holiday or weekend, no avstemming")
+                        call.respond(HttpStatusCode.Locked, "Today is a holiday or weekend, no avstemming")
+                        return@withContext
+                    }
+
+                    val last: Scheduled? = transaction { Scheduled.lastOrNull() }
+
+                    if (req.today == last?.created_at) {
+                        appLog.info("Already avstemt today (${req.today})")
+                        call.respond(HttpStatusCode.Conflict, "Already avstemt today (${req.today})")
+                        return@withContext
+                    }
+
+                    val avstemminger = service.generate2(req.fom, req.tom)
+
+                    avstemminger.forEach { (fagområde, messages) ->
+                        messages.forEach { message -> 
+                            // FIXME: hvis forrige iter i forEach gikk bra, men neste feiler. Så har vi allerede sendt ut disse
+                            // Hvordan kan vi gjøre alle forEach (fagområde, daos) atomisk? 
+                            service.producer.send(UUID.randomUUID().toString(), message, 0)
+                        }
+                        appLog.info("Avstemming for $fagområde completed with avstemmingId: ${messages.first().aksjon.avleverendeAvstemmingId}")
+                    }
+
+                    transaction {
+                        Scheduled(req.today, req.fom.toLocalDate(), req.tom.toLocalDate()).insert()
+                    }
+
+                    call.respond(HttpStatusCode.OK)
+                }
+            }
+
+            post("/dryrun") {
+                val req = call.receive<AvstemmingRequest>()
+                withContext(Jdbc.context + Dispatchers.IO) {
+                    val avstemminger = service.generate2(req.fom, req.tom)
+                    call.respond(avstemminger)
+                }
+            }
         }
     }
 }
