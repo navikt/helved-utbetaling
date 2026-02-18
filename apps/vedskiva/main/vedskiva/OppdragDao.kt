@@ -69,6 +69,7 @@ data class OppdragDao(
                 kodeMelding,
                 beskrMelding
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (hash_key) DO NOTHING
         """.trimIndent()
         return update(sql) { stmt ->
             stmt.setTimestamp(1, Timestamp.valueOf(nokkelAvstemming))
