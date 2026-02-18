@@ -1,34 +1,34 @@
 package vedskiva
 
-import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
-import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.*
+import libs.kafka.KafkaProducerFake
+import libs.utils.CsvReader
+import libs.utils.Resource
+import libs.utils.Rule
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.*
-import no.trygdeetaten.skjema.oppdrag.ObjectFactory
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import java.math.BigDecimal
-import java.time.*
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.GregorianCalendar
-import java.util.UUID
+import java.util.*
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import libs.kafka.KafkaProducerFake
 
 class VedskivaTest {
 
@@ -39,6 +39,117 @@ class VedskivaTest {
     @BeforeEach
     fun reset() {
         TestRuntime.reset()
+    }
+
+    @Test
+    fun `avstem 17feb 2026 from dev`()= runTest(TestRuntime.context) {
+        val csv = Resource.read("/avstem_17feb_dev.csv")
+        val rules = listOf(
+            Rule("nokkelAvstemming") { LocalDateTime.parse(it, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) },
+            Rule("tidspktMelding") { LocalDateTime.parse(it, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) },
+            Rule("createdAt") { LocalDateTime.parse(it, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")) },
+        )
+        runBlocking {
+            withContext(Jdbc.context) {
+                transaction {
+                    CsvReader
+                        .parse<OppdragDao>(csv, rules)
+                        .forEach { dao -> dao.insert() }
+                }
+            }
+        }
+
+        val req = AvstemmingRequest(
+            today = LocalDate.of(2026, 2, 18),
+            fom = LocalDate.of(2026, 2, 17).atStartOfDay(),
+            tom = LocalDate.of(2026, 2, 18).atStartOfDay().minusMinutes(1),
+        )
+
+        val res = TestRuntime.ktor.httpClient.post ("/api/avstem2/dryrun") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken())
+            setBody(req)
+        }.body<List<Pair<String, List<Avstemmingsdata>>>>()
+
+        assertEquals(0, avsProducer.history().size)
+
+        assertEquals(4, res.size)
+        res[0].let {
+            assertEquals(3, it.second.size)
+            val start = it.second[0]
+            assertEquals(AksjonType.START, start.aksjon.aksjonType)
+            val data = it.second[1]
+            assertEquals("AAP", data.aksjon.avleverendeKomponentKode)
+            assertEquals(70, data.total.totalAntall)
+            assertEquals(73700, data.total.totalBelop.toInt())
+            assertEquals(11, data.grunnlag.godkjentAntall)
+            assertEquals(7079, data.grunnlag.godkjentBelop.toInt())
+            assertEquals(0, data.grunnlag.varselAntall)
+            assertEquals(0, data.grunnlag.varselBelop.toInt())
+            assertEquals(24, data.grunnlag.avvistAntall)
+            assertEquals(29771, data.grunnlag.avvistBelop.toInt())
+            assertEquals(35, data.grunnlag.manglerAntall)
+            assertEquals(36850, data.grunnlag.manglerBelop.toInt())
+            val end = it.second[2]
+            assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+        }
+        res[1].let {
+            assertEquals(3, it.second.size)
+            val start = it.second[0]
+            assertEquals(AksjonType.START, start.aksjon.aksjonType)
+            val data = it.second[1]
+            assertEquals("TILLSTDR", data.aksjon.avleverendeKomponentKode)
+            assertEquals(6, data.total.totalAntall)
+            assertEquals(7360, data.total.totalBelop.toInt())
+            assertEquals(3, data.grunnlag.godkjentAntall)
+            assertEquals(3680, data.grunnlag.godkjentBelop.toInt())
+            assertEquals(0, data.grunnlag.varselAntall)
+            assertEquals(0, data.grunnlag.varselBelop.toInt())
+            assertEquals(0, data.grunnlag.avvistAntall)
+            assertEquals(0, data.grunnlag.avvistBelop.toInt())
+            assertEquals(3, data.grunnlag.manglerAntall)
+            assertEquals(3680, data.grunnlag.manglerBelop.toInt())
+            val end = it.second[2]
+            assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+        }
+        res[2].let {
+            assertEquals(3, it.second.size)
+            val start = it.second[0]
+            assertEquals(AksjonType.START, start.aksjon.aksjonType)
+            val data = it.second[1]
+            assertEquals("TILLST", data.aksjon.avleverendeKomponentKode)
+            assertEquals(2, data.total.totalAntall)
+            assertEquals(18124, data.total.totalBelop.toInt())
+            assertEquals(1, data.grunnlag.godkjentAntall)
+            assertEquals(9062, data.grunnlag.godkjentBelop.toInt())
+            assertEquals(0, data.grunnlag.varselAntall)
+            assertEquals(0, data.grunnlag.varselBelop.toInt())
+            assertEquals(0, data.grunnlag.avvistAntall)
+            assertEquals(0, data.grunnlag.avvistBelop.toInt())
+            assertEquals(1, data.grunnlag.manglerAntall)
+            assertEquals(9062, data.grunnlag.manglerBelop.toInt())
+            val end = it.second[2]
+            assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+        }
+        res[3].let {
+            assertEquals(3, it.second.size)
+            val start = it.second[0]
+            assertEquals(AksjonType.START, start.aksjon.aksjonType)
+            val data = it.second[1]
+            assertEquals("TILTPENG", data.aksjon.avleverendeKomponentKode)
+            assertEquals(40, data.total.totalAntall)
+            assertEquals(41700, data.total.totalBelop.toInt())
+            assertEquals(20, data.grunnlag.godkjentAntall)
+            assertEquals(20850, data.grunnlag.godkjentBelop.toInt())
+            assertEquals(0, data.grunnlag.varselAntall)
+            assertEquals(0, data.grunnlag.varselBelop.toInt())
+            assertEquals(0, data.grunnlag.avvistAntall)
+            assertEquals(0, data.grunnlag.avvistBelop.toInt())
+            assertEquals(20, data.grunnlag.manglerAntall)
+            assertEquals(20850, data.grunnlag.manglerBelop.toInt())
+            val end = it.second[2]
+            assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
+        }
     }
 
     @Test
@@ -1060,5 +1171,3 @@ private fun oppdragslinje(
         }
     }
 }
-
-
