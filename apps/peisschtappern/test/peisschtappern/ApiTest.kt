@@ -37,32 +37,18 @@ class ApiTest {
     }
 
     @Test
-    fun `can query with limit`() = runTest(TestRuntime.context) {
-        save(Channel.Aap, offset = offset)
-        save(Channel.Utbetalinger, offset = offset)
-        save(Channel.Simuleringer, offset = offset)
-
-        val result = TestRuntime.ktor.httpClient.get("/api?limit=2") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
-
-        assertEquals(2, result.size)
-    }
-
-    @Test
     fun `can query for key`() = runTest(TestRuntime.context) {
         save(Channel.Aap, "testkey", offset = offset)
         save(Channel.Utbetalinger, "testkey", offset = offset)
         save(Channel.Simuleringer, offset = offset)
 
-        val result = TestRuntime.ktor.httpClient.get("/api?key=testkey") {
+        val result = TestRuntime.ktor.httpClient.get("/api/messages?key=testkey") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        }.body<Page>()
 
-        assertEquals(2, result.size)
-        assertTrue(result.map { it.topic_name }.containsAll(listOf(Topics.utbetalinger.name, Topics.aap.name)))
+        assertEquals(2, result.total)
+        assertTrue(result.items.map { it.topic_name }.containsAll(listOf(Topics.utbetalinger.name, Topics.aap.name)))
     }
 
     @Test
@@ -71,7 +57,7 @@ class ApiTest {
         val key = UUID.randomUUID().toString()
         save(Channel.Dp, key = key, offset = offset)
 
-        val result = TestRuntime.ktor.httpClient.get("/api/${Channel.Dp.topic.name}/0/$offset") {
+        val result = TestRuntime.ktor.httpClient.get("/api/messages/${Channel.Dp.topic.name}/0/$offset") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<Daos>()
@@ -85,13 +71,13 @@ class ApiTest {
         save(Channel.Utbetalinger, offset = offset)
         save(Channel.Simuleringer, offset = offset)
 
-        val result = TestRuntime.ktor.httpClient.get("/api?topics=helved.utbetalinger-aap.v1,helved.simuleringer.v1") {
+        val result = TestRuntime.ktor.httpClient.get("/api/messages?topics=helved.utbetalinger-aap.v1,helved.simuleringer.v1") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        }.body<Page>()
 
-        assertEquals(2, result.size)
-        assertTrue(result.map { it.topic_name }.containsAll(listOf(Topics.aapIntern.name, Topics.simuleringer.name)))
+        assertEquals(2, result.total)
+        assertTrue(result.items.map { it.topic_name }.containsAll(listOf(Topics.aapIntern.name, Topics.simuleringer.name)))
     }
 
     @Test
@@ -101,13 +87,13 @@ class ApiTest {
         save(Channel.Utbetalinger, offset = offset)
         save(Channel.Simuleringer, offset = offset)
 
-        val result = TestRuntime.ktor.httpClient.get("/api?value=$sakId") {
+        val result = TestRuntime.ktor.httpClient.get("/api/messages?value=$sakId") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        }.body<Page>()
 
-        assertEquals(1, result.size)
-        assertTrue(result.first().value!!.contains(sakId))
+        assertEquals(1, result.total)
+        assertTrue(result.items.first().value!!.contains(sakId))
     }
 
     @Test
@@ -119,20 +105,20 @@ class ApiTest {
         save(Channel.Utbetalinger, offset = offset)
         save(Channel.Simuleringer, offset = offset)
 
-        val result = TestRuntime.ktor.httpClient.get("/api?value=$sakId,$behandlingId") {
+        val result = TestRuntime.ktor.httpClient.get("/api/messages?value=$sakId,$behandlingId") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        }.body<Page>()
 
-        assertEquals(2, result.size)
-        assertNotNull(result.find { it.value!!.contains(sakId) })
-        assertNotNull(result.find { it.value!!.contains(behandlingId) })
+        assertEquals(2, result.total)
+        assertNotNull(result.items.find { it.value!!.contains(sakId) })
+        assertNotNull(result.items.find { it.value!!.contains(behandlingId) })
     }
 
     @Test
     fun `can query for fom, tom and value`() = runTest(TestRuntime.context) {
         val result =
-            TestRuntime.ktor.httpClient.get("/api?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4") {
+            TestRuntime.ktor.httpClient.get("/api/messages?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4") {
                 bearerAuth(TestRuntime.azure.generateToken())
                 accept(ContentType.Application.Json)
             }
@@ -154,13 +140,13 @@ class ApiTest {
         val fom = now.minusSeconds(5L).toString()
         val tom = now.plusSeconds(5L).toString()
 
-        val result = TestRuntime.ktor.httpClient.get("/api?fom=$fom&tom=$tom&key=$key") {
+        val result = TestRuntime.ktor.httpClient.get("/api/messages?fom=$fom&tom=$tom&key=$key") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        }.body<Page>()
 
-        assertEquals(1, result.size)
-        assertEquals(Topics.utbetalinger.name, result[0].topic_name)
+        assertEquals(1, result.total)
+        assertEquals(Topics.utbetalinger.name, result.items.first().topic_name)
     }
 
     @Test
@@ -180,7 +166,8 @@ class ApiTest {
             partition = "0",
             alvorlighetsgrad = "00",
             beskrMelding = "Test",
-            kodeMelding = "Test"
+            kodeMelding = "Test",
+            reason = "en grunn"
         )
 
         TestRuntime.ktor.httpClient.post("/manuell-kvittering") {
@@ -266,7 +253,8 @@ class ApiTest {
         val requestBody = MessageRequest(
             Channel.PendingUtbetalinger.topic.name,
             "0",
-            "$offset"
+            "$offset",
+            "some reason"
         )
 
         TestRuntime.ktor.httpClient.post("/pending-til-utbetaling") {
@@ -289,7 +277,7 @@ class ApiTest {
     fun `resend oppdrag`() = runTest(TestRuntime.context) {
         val offset = offset
         save(Channel.Oppdrag, value = TestData.oppdragXml(), offset = offset)
-        val request = MessageRequest(Channel.Oppdrag.topic.name, "0", "$offset")
+        val request = MessageRequest(Channel.Oppdrag.topic.name, "0", "$offset", "some reason")
 
         TestRuntime.ktor.httpClient.post("/api/resend") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -310,7 +298,7 @@ class ApiTest {
             """{"sakId": "AZvF9zVMdJyupoNo8ec8vg==","behandlingId": "AZvVuTf0d+KNOpkkQ05i7w==","ident": "27427413301","vedtakstidspunktet": "2026-01-19T11:12:26.301381","utbetalinger": []}"""
         save(Channel.DpIntern, value = utbetaling, offset = offset)
 
-        val request = MessageRequest(Channel.DpIntern.topic.name, "0", "$offset")
+        val request = MessageRequest(Channel.DpIntern.topic.name, "0", "$offset", "some reason")
 
         TestRuntime.ktor.httpClient.post("/api/resend") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -331,7 +319,7 @@ class ApiTest {
             """{"sakId": "200001399","behandlingId": "2349","personident": "18528506875","vedtakstidspunkt": "2026-01-19T13:03:41.50704551","periodetype": "UKEDAG","saksbehandler": null,"beslutter": null,"utbetalinger": [{"id":"f59abb5e-dc4b-42bb-8a02-92c766778bcf","stønad": "DAGLIG_REISE_AAP","perioder":[{"fom":"2026-01-05","tom": "2026-01-05","beløp": 1450,"betalendeEnhet": null}],"brukFagområdeTillst": false}]}""".trimIndent()
         save(Channel.TsIntern, value = utbetaling, offset = offset)
 
-        val request = MessageRequest(Channel.TsIntern.topic.name, "0", "$offset")
+        val request = MessageRequest(Channel.TsIntern.topic.name, "0", "$offset", "some reason")
 
         TestRuntime.ktor.httpClient.post("/api/resend") {
             bearerAuth(TestRuntime.azure.generateToken())

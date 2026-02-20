@@ -123,43 +123,7 @@ data class Daos(
             return query(sql)
         }
 
-        suspend fun findAll(
-            channels: List<Channel>,
-            limit: Int,
-            key: List<String>? = null,
-            value: List<String>? = null,
-            fom: Long? = null,
-            tom: Long? = null,
-            traceId: String? = null,
-        ): List<Daos> {
-            val whereClause = if (key != null || value != null || fom != null || tom != null) {
-                val keyQuery =
-                    if (key != null) " (" + key.joinToString(" OR ") { "record_key like '%$it%'" } + ") AND" else ""
-                val valueQuery =
-                    if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") AND" else ""
-                val fomQuery = if (fom != null) " system_time_ms > $fom AND" else ""
-                val tomQuery = if (tom != null) " system_time_ms < $tom AND" else ""
-                val traceIdQuery = if (traceId != null) " trace_id = '$traceId' AND" else ""
-                val query = "WHERE$keyQuery$valueQuery$fomQuery$tomQuery$traceIdQuery"
-                query.removeSuffix(" AND").removeSuffix(" ")
-            } else ""
-
-            val unionQuery = channels.joinToString(" UNION ALL ") { channel ->
-                "SELECT * FROM ${channel.table.name} $whereClause"
-            }
-
-            val sql = """
-                SELECT * FROM (
-                    $unionQuery
-                ) data
-                ORDER BY system_time_ms DESC 
-                LIMIT $limit 
-            """.trimIndent()
-
-            return query(sql)
-        }
-
-        suspend fun findAll(
+        suspend fun pagedMessages(
             channels: List<Channel>,
             page: Int,
             pageSize: Int,

@@ -22,7 +22,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
-import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.jdbc.Jdbc
@@ -34,7 +33,6 @@ import libs.utils.*
 import models.DpUtbetaling
 import models.TsDto
 import models.Utbetaling
-import models.unauthorized
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 fun main() {
@@ -119,23 +117,25 @@ data class Audit(
     val ident: String,
     val name: String,
     val email: String,
+    val reason: String?,
 ) {
     companion object {
-        fun from(call: ApplicationCall): Audit {
+        fun from(call: ApplicationCall, reason: String? = null): Audit {
             return Audit(
-                // name = call.claim("name") ?: unauthorized("missing claim `name`"),
-                // ident = call.claim("NAVident") ?: unauthorized("missing claim `NAVident`"),
-                // email = call.claim("preferred_username") ?:unauthorized("missing claim `preferred_username`"),
                 name = call.claim("name") ?: "test",
                 ident = call.claim("NAVident") ?: "test",
                 email = call.claim("preferred_username") ?: "test",
+                reason = reason
             )
         }
     }
 
-    override fun toString(): String {
-        return "name:$name email:$email ident:$ident"
-    }
+    override fun toString(): String =
+        if (reason != null) {
+            "name:$name email:$email ident:$ident reason:$reason"
+        } else {
+            "name:$name email:$email ident:$ident"
+        }
 }
 
 fun ApplicationCall.claim(claim: String): String? { 
