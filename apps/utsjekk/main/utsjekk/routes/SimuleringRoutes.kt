@@ -117,7 +117,7 @@ class SimuleringRoutes(
                             Fagsystem.valueOf(doubleDecoded)
                         }
                     }
-                    "helved-performance" -> {
+                    "snickerboa" -> {
                         val fagsystem = call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator")
                         try {
                             Fagsystem.valueOf(fagsystem)
@@ -126,7 +126,7 @@ class SimuleringRoutes(
                             Fagsystem.valueOf(doubleDecoded)
                         }
                     }
-                    // "helved-performance" -> Fagsystem.valueOf(call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator"))
+                    // "snickerboa" -> Fagsystem.valueOf(call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator"))
                     "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
                     "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
                     else -> forbidden(msg = "mangler mapping mellom appname ($name) og fagsystem-enum", doc = "kom_i_gang")
