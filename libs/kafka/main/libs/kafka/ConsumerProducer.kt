@@ -90,10 +90,10 @@ open class KafkaConsumer<K: Any, V>(
     private val consumer: Consumer<K, V>,
 ): AutoCloseable {
 
-    fun seekToBeginning(vararg partition: Int) {
+    fun seekToEnd(vararg partition: Int) {
         val partitions = partition.toList().map { TopicPartition(topic.name, it) }
         consumer.assign(partitions)
-        consumer.seekToBeginning(partitions)
+        consumer.seekToEnd(partitions)
     }
 
     fun poll(timeout: Duration): List<Record<K, V?>> {
