@@ -8,7 +8,6 @@ import org.apache.kafka.clients.producer.Partitioner
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.Cluster
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.utils.Utils
@@ -42,8 +41,8 @@ class KafkaProducerFake<K: Any, V>(
 
 class KafkaConsumerFake<K: Any, V>(
     private val topic: Topic<K, V & Any>,
-    private val resetPolicy: libs.kafka.OffsetResetPolicy = OffsetResetPolicy.earliest,
-    private val consumer: MockConsumer<K, V> = MockConsumer(resetPolicy.name)
+    private val resetPolicy: OffsetResetPolicy = OffsetResetPolicy.latest,
+    private val consumer: MockConsumer<K, V> = InternalMockConsumer(resetPolicy)
 ): KafkaConsumer<K, V>(topic, consumer) {
 
     fun populate(key: K, value: V?, partition: Int, offset: Long) {
@@ -54,8 +53,17 @@ class KafkaConsumerFake<K: Any, V>(
     fun assign(vararg partition: Int) {
         val partitions = partition.toList().map { TopicPartition(topic.name, it) }
         consumer.assign(partitions)
-        consumer.updateBeginningOffsets(partitions.map { p -> p to 0L }.toMap())
+        consumer.updateEndOffsets(partitions.map { p -> p to 0L }.toMap())
     }
+
+     class InternalMockConsumer<K, V>(
+         resetPolicy: OffsetResetPolicy,
+     ) : MockConsumer<K, V>(resetPolicy.name) {
+         override fun seekToEnd(partitions: Collection<TopicPartition>) {
+             super.updateEndOffsets(partitions.associateWith { 0L })
+             super.seekToEnd(partitions)
+         }
+     }
 }
 
 private class MockPartitioner(private val numberOfPartitions: Int = 3): Partitioner {

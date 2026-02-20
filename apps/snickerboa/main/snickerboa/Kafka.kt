@@ -66,7 +66,7 @@ suspend fun statusConsumer(
     consumer: KafkaConsumer<String, StatusReply>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.subscribe()
+        consumer.seekToEnd(0,1,2)
         while (isActive) {
             for (record in consumer.poll(50.milliseconds)) {
                 val uid = UUID.fromString(record.key) ?: continue
@@ -85,7 +85,7 @@ suspend fun dryrunConsumer(
     consumer: KafkaConsumer<String, Simulering>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.subscribe()
+        consumer.seekToEnd(0,1,2)
         while (isActive) {
             for (record in consumer.poll(50.milliseconds)) {
                 val uid = UUID.fromString(record.key) ?: continue

@@ -45,11 +45,7 @@ class VanillaKafkaMock : Streams, KafkaFactory {
         maxProcessingTimeMs: Int,
         groupId: Int
     ): KafkaConsumer<K, V> {
-        return consumers.getOrPut(topic.name) {
-            val consumer = KafkaConsumerFake(topic, resetPolicy)
-            consumer.assign(0, 1, 2)
-            consumer
-        } as KafkaConsumer<K, V>
+        return consumers.getOrPut(topic.name) { KafkaConsumerFake(topic) } as KafkaConsumerFake<K, V>
     }
 
 
@@ -60,6 +56,6 @@ class VanillaKafkaMock : Streams, KafkaFactory {
 
     @Suppress("UNCHECKED_CAST")
     fun <K : Any, V> getConsumer(topic: Topic<K, V & Any>): KafkaConsumerFake<K, V> {
-        return createConsumer(config, topic, OffsetResetPolicy.earliest, 0, 0) as KafkaConsumerFake<K, V>
+        return createConsumer(config, topic) as KafkaConsumerFake<K, V>
     }
 }
