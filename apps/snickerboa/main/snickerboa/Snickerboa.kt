@@ -98,7 +98,7 @@ fun Application.snickerboa(
     val tpJob = launch { dryrunConsumer(correlator, dryrunTpConsumer) }
 
     routing {
-        probes(kafka, prometheus)
+        probes(prometheus)
         api(correlator)
     }
 
