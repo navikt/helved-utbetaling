@@ -22,7 +22,7 @@ spec:
       application: utsjekk
       access: read
     - team: helved
-      application: helved-performance
+      application: snickerboa
       access: read
     - team: helved
       application: peisschtappern

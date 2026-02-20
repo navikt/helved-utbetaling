@@ -27,10 +27,8 @@
     <logger name="app"       level="INFO" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="auth"      level="INFO" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="http"      level="INFO" additivity="false"><appender-ref ref="json"/></logger>
-    <logger name="jdbc"      level="INFO" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="kafka"     level="INFO" additivity="false"><appender-ref ref="json"/></logger>
-    <logger name="mq"        level="INFO" additivity="false"><appender-ref ref="json"/></logger>
-    <logger name="ws"        level="INFO" additivity="false"><appender-ref ref="json"/></logger>
-    <logger name="secureLog" level="TRACE" additivity="false"><appender-ref ref="secureLog"/></logger>
-    <logger name="audit"     level="TRACE" additivity="false"><appender-ref ref="secureLog"/></logger>
+    <logger name="secureLog" level="INFO" additivity="false"><appender-ref ref="secureLog"/></logger>
+    <logger name="audit"     level="INFO" additivity="false"><appender-ref ref="secureLog"/></logger>
 </configuration>
+

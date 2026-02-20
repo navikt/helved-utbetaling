@@ -9,7 +9,8 @@ include(
     "apps:urskog",
     "apps:utsjekk",
     "apps:vedskiva",
-)
+    "apps:snickerboa",
+    )
 
 include(
     "models",
