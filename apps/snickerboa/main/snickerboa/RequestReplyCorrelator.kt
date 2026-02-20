@@ -59,6 +59,7 @@ class RequestReplyCorrelator(
         return UtbetalingResponse(statusCode, reply)
     }
 
+    // TODO: Skal vi lese simulerings topicet direkte?
     private suspend fun handleSimulering(txId: UUID, produce: (UUID) -> Unit): UtbetalingResponse {
         val deferred = CompletableDeferred<Simulering>().also {
             simuleringsRequests[txId] = it

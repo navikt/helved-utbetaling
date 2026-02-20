@@ -7,7 +7,6 @@ import io.ktor.server.response.respond
 import java.util.UUID
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import libs.kafka.Streams
 import models.AapUtbetaling
 import models.DpUtbetaling
 import models.HistoriskUtbetaling

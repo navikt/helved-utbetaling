@@ -12,6 +12,7 @@ import io.ktor.server.engine.EngineConnectorBuilder
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
@@ -73,8 +74,14 @@ fun Application.snickerboa(
         exception<Throwable> { call, cause ->
             when (cause) {
                 is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
+                is BadRequestException -> {
+                    val msg = "Påkrevd felt mangler eller er null: ${cause.message}"
+                    appLog.warn(msg, cause)
+                    call.respond(HttpStatusCode.BadRequest, msg)
+                }
+
                 else -> {
-                    val msg = "Uhåndtert feil - Helved har fått beskjed."
+                    val msg = "Uhåndtert feil: ${cause.message}"
                     appLog.warn(msg, cause)
                     call.respond(HttpStatusCode.InternalServerError, msg)
                 }
