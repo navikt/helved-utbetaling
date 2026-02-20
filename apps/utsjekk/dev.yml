@@ -65,7 +65,7 @@ spec:
     inbound:
       rules:
         - application: helved-peisen
-        - application: helved-performance
+        - application: snickerboa
         - application: tiltakspenger-saksbehandling-api
           namespace: tpts
         - application: tilleggsstonader-sak
