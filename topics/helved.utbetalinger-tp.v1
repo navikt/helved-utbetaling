@@ -19,7 +19,7 @@ spec:
       application: utsjekk
       access: write
     - team: helved
-      application: helved-performance
+      application: snickerboa
       access: write
     - team: helved
       application: peisschtappern

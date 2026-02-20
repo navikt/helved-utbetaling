@@ -34,7 +34,7 @@ spec:
       application: kafka-cli
       access: readwrite
     - team: helved
-      application: helved-performance
+      application: snickerboa
       access: read
     - team: tilleggsstonader
       application: tilleggsstonader-sak

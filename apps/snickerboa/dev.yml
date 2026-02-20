@@ -1,0 +1,50 @@
+apiVersion: nais.io/v1alpha1
+kind: Application
+metadata:
+  name: snickerboa
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  terminationGracePeriodSeconds: 70
+  image: {{ image }}
+  ingresses:
+    - https://snickerboa.intern.dev.nav.no
+  resources:
+    limits:
+      memory: 1024Mi
+    requests:
+      memory: 512Mi
+      cpu: 200m
+  liveness:
+    path: /actuator/health
+    initialDelay: 30
+    failureThreshold: 10
+  readiness:
+    path: /actuator/health
+    initialDelay: 30
+    failureThreshold: 10
+  prometheus:
+    path: /actuator/metric
+    enabled: true
+  replicas:
+    min: 1
+    max: 1
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: loki
+  kafka:
+    pool: nav-dev
+  azure:
+    application:
+      enabled: true
+  accessPolicy:
+    outbound:
+      rules:
+        - application: logging
+          namespace: nais-system
+        - application: utsjekk
