@@ -100,6 +100,14 @@ open class KafkaConsumer<K: Any, V>(
         return consumer.poll(timeout.toJavaDuration()).map { Record(it.key(), it.value(), it.partition()) }
     }
 
+    fun subscribe() {
+        consumer.subscribe(listOf(topic.name))
+    }
+
+    fun unsubscribe() {
+        consumer.unsubscribe()
+    }
+
     override fun close() = consumer.close()
 }
 
