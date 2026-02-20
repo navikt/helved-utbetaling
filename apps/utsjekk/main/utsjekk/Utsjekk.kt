@@ -209,7 +209,7 @@ value class Client(
         when (name) {
             "azure-token-generator" -> Fagsystem.AAP
             "helved-peisen" -> Fagsystem.TILLEGGSSTØNADER
-            "helved-performance" -> Fagsystem.DAGPENGER
+            "snickerboa" -> Fagsystem.DAGPENGER
             "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
             "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
             else ->
