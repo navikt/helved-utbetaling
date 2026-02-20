@@ -69,22 +69,16 @@ fun Route.api(correlator: RequestReplyCorrelator) {
     }
 }
 
-fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
+fun Routing.probes(meters: PrometheusMeterRegistry) {
     route("/actuator") {
         get("/metric") {
             call.respond(meters.scrape())
         }
         get("/ready") {
-            when (kafka.ready()) {
-                true -> call.respond(HttpStatusCode.OK)
-                false -> call.respond(HttpStatusCode.Locked)
-            }
+            call.respond(HttpStatusCode.OK)
         }
         get("/live") {
-            when (kafka.live()) {
-                true -> call.respond(HttpStatusCode.OK)
-                false -> call.respond(HttpStatusCode.Locked)
-            }
+           call.respond(HttpStatusCode.OK)
         }
     }
 }
