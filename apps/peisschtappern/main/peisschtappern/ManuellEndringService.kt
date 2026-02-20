@@ -78,7 +78,7 @@ class ManuellEndringService(
     fun tombstoneUtbetaling(key: String, audit: Audit): Boolean { 
         val result = utbetalingerProducer.tombstone(key)
         if(result.isSuccess) {
-            auditLog.info("$audit -> tombstonen utbetaling manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
+            auditLog.info("$audit -> tombstone utbetaling manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
         return result.isSuccess
     }

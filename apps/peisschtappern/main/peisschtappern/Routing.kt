@@ -37,28 +37,6 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 
 fun Route.api(manuellEndringService: ManuellEndringService) {
     route("/api") {
-        get {
-            val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
-            val limit = call.queryParameters["limit"]?.toInt() ?: 10000
-            val key = call.queryParameters["key"]?.split(",")
-            val value = call.queryParameters["value"]?.split(",")
-            val fom = call.queryParameters["fom"]
-                ?.runCatching { Instant.parse(this).toEpochMilli() }
-                ?.getOrNull()
-            val tom = call.queryParameters["tom"]
-                ?.runCatching { Instant.parse(this).toEpochMilli() }
-                ?.getOrNull()
-            val traceId = call.queryParameters["trace_id"]
-
-            val daos = withContext(Jdbc.context + Dispatchers.IO) {
-                transaction {
-                    Daos.findAll(channels, limit, key, value, fom, tom, traceId)
-                }
-            }
-
-            call.respond(daos)
-        }
-
         get("/messages") {
             val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
             val page = call.queryParameters["page"]?.toIntOrNull() ?: 1
@@ -92,14 +70,14 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
             val result = withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    Daos.findAll(channels, page, pageSize, key, value, fom, tom, traceId, status, orderBy, direction)
+                    Daos.pagedMessages(channels, page, pageSize, key, value, fom, tom, traceId, status, orderBy, direction)
                 }
             }
 
             call.respond(result)
         }
 
-        get("/{topic}/{partition}/{offset}") {
+        get("/messages/{topic}/{partition}/{offset}") {
             val channel = checkNotNull(Channel.findOrNull(call.parameters["topic"]!!)) {
                 "Unknown topic ${call.parameters["topic"]}"
             }
@@ -142,31 +120,29 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                     transaction {
                         coroutineScope {
                             fagsystemer.flatMap { fagsystem ->
+                                val (table, internalTable) = when (fagsystem) {
+                                    Fagsystem.AAP -> Table.aap to Table.aapIntern
+                                    Fagsystem.DAGPENGER -> Table.dp to Table.dpIntern
+                                    Fagsystem.TILTAKSPENGER -> null to Table.tpIntern
+                                    Fagsystem.TILLSTPB,
+                                    Fagsystem.TILLSTLM,
+                                    Fagsystem.TILLSTBO,
+                                    Fagsystem.TILLSTDR,
+                                    Fagsystem.TILLSTRS,
+                                    Fagsystem.TILLSTRO,
+                                    Fagsystem.TILLSTRA,
+                                    Fagsystem.TILLSTFL,
+                                    Fagsystem.TILLEGGSSTØNADER -> Table.ts to Table.tsIntern
+                                    Fagsystem.HISTORISK -> Table.historisk to Table.historiskIntern
+                                }
+                                // TODO: Kanskje hente meldinger på samme måte som vi gjør lenger opp? Da må vi lagre sakId og fagsystem for alle tabellene
                                 val deferred: List<Deferred<List<Daos>>> = listOf(
                                     async { Daos.findOppdrag(sakId, fagsystem.fagområde) },
                                     async { Daos.findUtbetalinger(sakId, fagsystem.name) },
                                     async { Daos.findPendingUtbetalinger(sakId, fagsystem.name) },
                                     async { Daos.findSimuleringer(sakId, fagsystem.fagområde) },
-                                    async {
-                                        when (fagsystem) {
-                                            Fagsystem.AAP -> Daos.findUtbetalinger(sakId, Table.aap)
-                                            Fagsystem.DAGPENGER -> Daos.findUtbetalinger(sakId, Table.dp)
-                                            Fagsystem.TILLEGGSSTØNADER -> Daos.findUtbetalinger(sakId, Table.ts)
-                                            Fagsystem.HISTORISK -> Daos.findUtbetalinger(sakId, Table.historisk)
-                                            // TODO: Fagsystem.TILTAKSPENGER -> Daos.findUtbetalinger(sakId, Table.tp)
-                                            else -> emptyList()
-                                        }
-                                    },
-                                    async {
-                                        when (fagsystem) {
-                                            Fagsystem.AAP -> Daos.findUtbetalinger(sakId, Table.aapIntern)
-                                            Fagsystem.DAGPENGER -> Daos.findUtbetalinger(sakId, Table.dpIntern)
-                                            Fagsystem.TILLEGGSSTØNADER -> Daos.findUtbetalinger(sakId, Table.tsIntern)
-                                            Fagsystem.TILTAKSPENGER -> Daos.findUtbetalinger(sakId, Table.tpIntern)
-                                            Fagsystem.HISTORISK -> Daos.findUtbetalinger(sakId, Table.historiskIntern)
-                                            else -> emptyList()
-                                        }
-                                    },
+                                    async { if (table !== null) Daos.findUtbetalinger(sakId, table) else emptyList() },
+                                    async { Daos.findUtbetalinger(sakId, internalTable) },
                                     async { Daos.findSaker(sakId, fagsystem.name) },
                                     async {
                                         val keys = Daos.findOppdrag(sakId, fagsystem.fagområde).map { it.key }
@@ -175,21 +151,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                                         } else emptyList()
                                     },
                                     async {
-                                        val internTables = when (fagsystem) {
-                                            Fagsystem.AAP -> Table.aapIntern
-                                            Fagsystem.DAGPENGER -> Table.dpIntern
-                                            Fagsystem.TILLEGGSSTØNADER -> Table.tsIntern
-                                            Fagsystem.TILTAKSPENGER -> Table.tpIntern
-                                            Fagsystem.HISTORISK -> Table.historiskIntern
-                                            else -> null
-                                        }
-
-                                        val internalKeys = if (internTables != null) {
-                                            Daos.findUtbetalinger(sakId, internTables).map { it.key }
-                                        } else {
-                                            emptyList()
-                                        }
-
+                                        val internalKeys = Daos.findUtbetalinger(sakId, internalTable).map { it.key }
                                         if (internalKeys.isNotEmpty()) {
                                             Daos.findStatusByKeys(internalKeys)
                                         } else emptyList()
@@ -229,6 +191,9 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
         post("/resend") {
             val request = call.receive<MessageRequest>()
+            requireNotNull(request.reason) {
+                "Må oppgi grunn for resending av melding"
+            }
             val channel = requireNotNull(Channel.findOrNull(request.topic)) {
                 "Fant ikke topic med navn ${request.topic}"
             }
@@ -241,9 +206,9 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                     val value = requireNotNull(message.value) { "Melding mangler value" }
 
                     val success = when (channel) {
-                        is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(message.key, value, Audit.from(call))
-                        is Channel.Dp, Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value, Audit.from(call))
-                        is Channel.Ts, Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value, Audit.from(call))
+                        is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(message.key, value, Audit.from(call, request.reason))
+                        is Channel.Dp, Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value, Audit.from(call, request.reason))
+                        is Channel.Ts, Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value, Audit.from(call, request.reason))
                         else -> error("Støtter ikke innsending av melding for topic ${channel.topic.name}")
                     }
 
@@ -291,7 +256,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                         alvorlighetsgrad = request.alvorlighetsgrad,
                         beskrMelding = request.beskrMelding,
                         kodeMelding = request.kodeMelding,
-                        audit = Audit.from(call),
+                        audit = Audit.from(call, request.reason),
                     )
                 }
             }
@@ -341,7 +306,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
     post("/tombstone-utbetaling") {
         val request = call.receive<TombstoneRequest>()
-        when (manuellEndringService.tombstoneUtbetaling(request.key, Audit.from(call))) {
+        when (manuellEndringService.tombstoneUtbetaling(request.key, Audit.from(call, request.reason))) {
             true -> call.respond("Tombstoned utbetaling with kafka key ${request.key}")
             false -> call.respond(
                 HttpStatusCode.UnprocessableEntity,
@@ -358,15 +323,17 @@ data class KvitteringRequest(
     val alvorlighetsgrad: String,
     val beskrMelding: String?,
     val kodeMelding: String?,
+    val reason: String,
 )
 
 data class MessageRequest(
     val topic: String,
     val partition: String,
     val offset: String,
+    val reason: String? = null,
 )
 
-data class TombstoneRequest(val key: String)
+data class TombstoneRequest(val key: String, val reason: String)
 
 sealed class Channel(
     val topic: Topic<String, ByteArray>,
