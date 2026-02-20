@@ -17,13 +17,9 @@ spec:
       memory: 512Mi
       cpu: 200m
   liveness:
-    path: /actuator/health
-    initialDelay: 30
-    failureThreshold: 10
+    path: /actuator/live
   readiness:
-    path: /actuator/health
-    initialDelay: 30
-    failureThreshold: 10
+    path: /actuator/ready
   prometheus:
     path: /actuator/metric
     enabled: true
