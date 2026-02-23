@@ -302,6 +302,12 @@ data class StønadsdataTiltakspenger(
                 StønadTypeTiltakspenger.OPPFØLGING -> "TPBTOPPFAGR"
                 StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_NAV -> "TPBTUAOPPFL"
                 StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING -> "TPBTUOPPFOPPL"
+
+                StønadTypeTiltakspenger.ARBEIDSMARKEDSOPPLÆRING_AMO -> "TPFORSAMOGRUBT"
+                StønadTypeTiltakspenger.NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER -> "TPFORSAMOENKBT"
+                StønadTypeTiltakspenger.FAG_OG_YRKESOPPLÆRING -> "TPFORSFAGGRUBT"
+                StønadTypeTiltakspenger.STUDIESPESIALISERING -> "TPFORSFAGENKBT"
+                StønadTypeTiltakspenger.FAGSKOLE -> "TPFORSHOYUTDBT"
             }
         } else {
             when (this.stønadstype) {
@@ -322,6 +328,12 @@ data class StønadsdataTiltakspenger(
                 StønadTypeTiltakspenger.OPPFØLGING -> "TPTPOPPFAG"
                 StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_NAV -> "TPTPUAOPPF"
                 StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING -> "TPTPUOPPFOPPL"
+
+                StønadTypeTiltakspenger.ARBEIDSMARKEDSOPPLÆRING_AMO -> "TPFORSAMOGRU"
+                StønadTypeTiltakspenger.NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER -> "TPFORSAMOENK"
+                StønadTypeTiltakspenger.FAG_OG_YRKESOPPLÆRING -> "TPFORSFAGGRU"
+                StønadTypeTiltakspenger.STUDIESPESIALISERING -> "TPFORSFAGENK"
+                StønadTypeTiltakspenger.FAGSKOLE -> "TPFORSHOYUTD"
             }
         }
 

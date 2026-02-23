@@ -327,6 +327,12 @@ enum class StønadTypeTiltakspenger(override val klassekode: String) : Stønadst
     UTVIDET_OPPFØLGING_I_NAV("TPTPUAOPPF"),
     UTVIDET_OPPFØLGING_I_OPPLÆRING("TPTPUOPPFOPPL"),
 
+    ARBEIDSMARKEDSOPPLÆRING_AMO("TPFORSAMOGRU"),
+    NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER("TPFORSAMOENK"),
+    FAG_OG_YRKESOPPLÆRING("TPFORSFAGGRU"),
+    STUDIESPESIALISERING("TPFORSFAGENK"),
+    FAGSKOLE("TPFORSHOYUTD"),
+
     ARBEIDSFORBEREDENDE_TRENING_BARN("TPBTAF"),
     ARBEIDSRETTET_REHABILITERING_BARN("TPBTARREHABAGDAG"),
     ARBEIDSTRENING_BARN("TPBTATTILT"),
@@ -344,6 +350,12 @@ enum class StønadTypeTiltakspenger(override val klassekode: String) : Stønadst
     OPPFØLGING_BARN("TPBTOPPFAGR"),
     UTVIDET_OPPFØLGING_I_NAV_BARN("TPBTUAOPPFL"),
     UTVIDET_OPPFØLGING_I_OPPLÆRING_BARN("TPBTUOPPFOPPL"),
+
+    ARBEIDSMARKEDSOPPLÆRING_AMO_BARN("TPFORSAMOGRUBT"),
+    NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER_BARN("TPFORSAMOENKBT"),
+    FAG_OG_YRKESOPPLÆRING_BARN("TPFORSFAGGRUBT"),
+    STUDIESPESIALISERING_BARN("TPFORSFAGENKBT"),
+    FAGSKOLE_BARN("TPFORSHOYUTDBT"),
 }
 
 fun StønadTypeTiltakspenger.medBarnetillegg(barnetillegg: Boolean): StønadTypeTiltakspenger =
@@ -366,6 +378,12 @@ fun StønadTypeTiltakspenger.medBarnetillegg(barnetillegg: Boolean): StønadType
             StønadTypeTiltakspenger.OPPFØLGING -> StønadTypeTiltakspenger.OPPFØLGING_BARN
             StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_NAV -> StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_NAV_BARN
             StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING -> StønadTypeTiltakspenger.UTVIDET_OPPFØLGING_I_OPPLÆRING_BARN
+            StønadTypeTiltakspenger.ARBEIDSMARKEDSOPPLÆRING_AMO -> StønadTypeTiltakspenger.ARBEIDSMARKEDSOPPLÆRING_AMO_BARN
+            StønadTypeTiltakspenger.NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER -> StønadTypeTiltakspenger
+                .NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER_BARN
+            StønadTypeTiltakspenger.FAG_OG_YRKESOPPLÆRING -> StønadTypeTiltakspenger.FAG_OG_YRKESOPPLÆRING_BARN
+            StønadTypeTiltakspenger.STUDIESPESIALISERING -> StønadTypeTiltakspenger.STUDIESPESIALISERING_BARN
+            StønadTypeTiltakspenger.FAGSKOLE -> StønadTypeTiltakspenger.FAGSKOLE_BARN
             else -> error("${this.name} har ikke klassekode for barnetillegg")
         }
     } else {
