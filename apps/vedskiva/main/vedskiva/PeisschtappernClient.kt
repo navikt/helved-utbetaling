@@ -29,8 +29,11 @@ class PeisschtappernClient(
             parameter("fom", formatter.format(fom))
             parameter("tom", formatter.format(tom))
         }
-        return response.body()
+
+        return response.body<Page>().items
     }
+
+    private data class Page(val items: List<Dao>, val total: Int)
 
 }
 

@@ -111,7 +111,7 @@ class PeisschtappernFake {
             app.routing {
                 get("/api/messages") {
                     if (response.isNotEmpty()) {
-                        call.respond(response)
+                        call.respond(mapOf("items" to response, "total" to response.size))
                     } else {
                         call.respondText(libs.utils.Resource.read("/may_5th.json"), ContentType.Application.Json)
                     }
