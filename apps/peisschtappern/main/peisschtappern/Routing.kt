@@ -40,7 +40,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         get("/messages") {
             val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
             val page = call.queryParameters["page"]?.toIntOrNull() ?: 1
-            val pageSize = call.queryParameters["pageSize"]?.toIntOrNull() ?: 100
+            val pageSize = call.queryParameters["pageSize"]?.toIntOrNull() ?: Int.MAX_VALUE
             val key = call.queryParameters["key"]
             val value = call.queryParameters["value"]?.split(",")
             val fom = call.queryParameters["fom"]
