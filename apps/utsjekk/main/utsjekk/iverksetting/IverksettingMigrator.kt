@@ -84,7 +84,8 @@ class IverksettingMigrator(
                             sisteAndel = it.value,
                             klassekode = it.key.klassifiseringskode,
                             fagsystem = Fagsystem.from(fs.kode),
-                            action = Action.DELETE
+                            betalendeEnhet = it.value.stønadsdata.betalendeEnhet(),
+                            action = Action.DELETE,
                         )
                     }
                 } else {
@@ -97,11 +98,20 @@ class IverksettingMigrator(
                             sisteAndel = sisteAndeler[kjedenøkkel]
                                 ?: badRequest("Fant ikke siste andeler for (sak=${req.sakId} fagsystem=$fs) kjedenøkkel=$kjedenøkkel"),
                             klassekode = kjedenøkkel.klassifiseringskode,
-                            fagsystem = Fagsystem.from(fs.kode)
+                            fagsystem = Fagsystem.from(fs.kode),
+                            betalendeEnhet = andeler.last().stønadsdata.betalendeEnhet(), 
+                            action = Action.CREATE,
                         )
                     }
                 }
             }
+        }
+    }
+
+    private fun Stønadsdata.betalendeEnhet(): NavEnhet? {
+        return when (this) {
+            is StønadsdataTiltakspenger -> NavEnhet(this.brukersNavKontor.enhet)
+            else -> null
         }
     }
 
@@ -112,7 +122,8 @@ class IverksettingMigrator(
         sisteAndel: AndelData,
         klassekode: String,
         fagsystem: Fagsystem,
-        action: Action = Action.CREATE,
+        betalendeEnhet: NavEnhet?,
+        action: Action,
     ): Utbetaling = Utbetaling(
         dryrun = false,
         originalKey = iverksetting.iverksettingId?.id ?: iverksetting.behandlingId.id,
@@ -132,7 +143,7 @@ class IverksettingMigrator(
         saksbehandlerId = Navident(iverksetting.vedtak.saksbehandlerId),
         periodetype = Periodetype.UKEDAG,
         avvent = null,
-        perioder = andeler.map { Utbetalingsperiode(it.fom, it.tom, it.beløp.toUInt()) },
+        perioder = andeler.map { Utbetalingsperiode(it.fom, it.tom, it.beløp.toUInt(), betalendeEnhet) },
     )
 }
 
