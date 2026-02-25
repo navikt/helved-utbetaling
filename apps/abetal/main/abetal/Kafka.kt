@@ -285,20 +285,26 @@ private object Guard {
 
     fun replyOk(branch: MappedStream<SakKey, StreamsPair<DpTuple, Set<UtbetalingId>?>>) {
         branch.rekey { (dpTuple, _) -> dpTuple.key }
-            .map { StatusReply.ok() }
-            .produce(Topics.status)
+            .map { 
+                appLog.info("idempotens guard (DP) - will reply OK for sakId=${it.left.value.sakId}")
+                StatusReply.ok()
+            }.produce(Topics.status)
     }
 
     // Tilleggsstønader
     fun ifNoUtbetalinger(pair: StreamsPair<TsTuple, Set<UtbetalingId>?>): Boolean {
+        if (pair.left.dto != null) appLog.warn("TsTuple.dto is still in use")
+        if (pair.left.transactionId != null) appLog.warn("TsTuple.transactionId is still in use")
         val dto = pair.left.value ?: pair.left.dto!!
         val (utbetalinger, saker) = dto.utbetalinger to pair.right
         return utbetalinger.isEmpty() && saker.isNullOrEmpty()
     }
 
     fun replyOkTs(branch: MappedStream<String, StreamsPair<TsTuple, Set<UtbetalingId>?>>) {
-        branch.map { StatusReply.ok() }
-            .produce(Topics.status)
+        branch.map { 
+            appLog.info("idempotens guard (TS) - will reply OK for sakId=${it.left.value?.sakId}")
+            StatusReply.ok()
+        }.produce(Topics.status)
     }
 }
 
@@ -398,7 +404,10 @@ private fun replyError(branch: MappedStream<String, Result<Aggregate, StatusRepl
 private fun MappedStream<String, Aggregate>.replyOkIfIdempotent() {
     this
         .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.requests.isEmpty() }
-        .map { StatusReply.ok() }
+        .map { 
+            appLog.info("idempotent aggregat kicked in. Will reply OK")
+            StatusReply.ok()
+        }
         .produce(Topics.status)
 }
 
