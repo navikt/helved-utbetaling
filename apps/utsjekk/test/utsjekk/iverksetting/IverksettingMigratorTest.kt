@@ -375,7 +375,7 @@ class IverksettingMigratorTest {
         assertEquals(null, actual.perioder[0].vedtakssats)
         assertEquals(1.feb, actual.perioder[0].fom)
         assertEquals(14.feb, actual.perioder[0].tom)
-        assertEquals(null, actual.perioder[0].betalendeEnhet)
+        assertEquals(models.NavEnhet("1234"), actual.perioder[0].betalendeEnhet)
     }
 
     @Test
@@ -470,12 +470,12 @@ class IverksettingMigratorTest {
         assertEquals(null, actual.perioder[0].vedtakssats)
         assertEquals(1.feb, actual.perioder[0].fom)
         assertEquals(14.feb, actual.perioder[0].tom)
-        assertEquals(null, actual.perioder[0].betalendeEnhet)
+        assertEquals(models.NavEnhet("1234"), actual.perioder[0].betalendeEnhet)
         assertEquals(500u, actual.perioder[1].beløp)
         assertEquals(null, actual.perioder[1].vedtakssats)
         assertEquals(15.feb, actual.perioder[1].fom)
         assertEquals(28.feb, actual.perioder[1].tom)
-        assertEquals(null, actual.perioder[1].betalendeEnhet)
+        assertEquals(models.NavEnhet("1234"), actual.perioder[1].betalendeEnhet)
     }
 
     @Test
@@ -570,7 +570,7 @@ class IverksettingMigratorTest {
         assertEquals(null, actual1.perioder[0].vedtakssats)
         assertEquals(1.feb, actual1.perioder[0].fom)
         assertEquals(14.feb, actual1.perioder[0].tom)
-        assertEquals(null, actual1.perioder[0].betalendeEnhet)
+        assertEquals(models.NavEnhet("1234"), actual1.perioder[0].betalendeEnhet)
 
         val uid2 = uid(sid, meldeperiode, models.StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB, models.Fagsystem.TILTAKSPENGER)
         val actual2 = utbetaling.history() .single { (key, _) -> key == uid2.toString() }.second
@@ -595,7 +595,7 @@ class IverksettingMigratorTest {
         assertEquals(null, actual2.perioder[0].vedtakssats)
         assertEquals(1.feb, actual2.perioder[0].fom)
         assertEquals(14.feb, actual2.perioder[0].tom)
-        assertEquals(null, actual2.perioder[0].betalendeEnhet)
+        assertEquals(models.NavEnhet("1234"), actual2.perioder[0].betalendeEnhet)
     }
 }
 
