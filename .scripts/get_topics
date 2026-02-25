@@ -1,0 +1,4 @@
+sh ~/bin/kafka_2.13-4.1.1/bin/kafka-topics.sh \
+    --bootstrap-server nav-dev-kafka-nav-dev.aivencloud.com:26484 \
+    --command-config /private/var/folders/bh/xltypjf53350jvww3cr_f4g00000gn/T/aiven-secret-542195830/kafka.properties \
+    --list | grep "helved"

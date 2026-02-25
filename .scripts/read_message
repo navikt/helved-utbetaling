@@ -1,0 +1,9 @@
+sh ~/bin/kafka_2.13-4.1.1/bin/kafka-console-consumer.sh \
+    --consumer.config kafka.properties  \
+    --bootstrap-server nav-dev-kafka-nav-dev.aivencloud.com:26484 \
+    --topic helved.abetal_stream_-dp-aggregate-store-v3-changelog  \
+    --from-beginning  \
+    --max-messages 3  \
+    --property print.headers=true \
+    --property print.offset=true  \
+    --property print.timestamp=true
