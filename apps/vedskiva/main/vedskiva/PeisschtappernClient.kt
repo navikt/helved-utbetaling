@@ -33,6 +33,33 @@ class PeisschtappernClient(
         return response.body<Page>().items
     }
 
+    suspend fun oppdragPaged(
+        fom: LocalDateTime,
+        tom: LocalDateTime,
+        onPage: suspend (List<Dao>) -> Unit,
+    ) {
+        var page = 1
+        val pageSize = 500
+
+        while (true) {
+            val response = client.get("${config.peisschtappern.host}/api/messages") {
+                bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
+                contentType(ContentType.Application.Json)
+                parameter("topics", "helved.oppdrag.v1")
+                parameter("pageSize", pageSize)
+                parameter("page", page)
+                parameter("fom", formatter.format(fom))
+                parameter("tom", formatter.format(tom))
+            }
+
+            val body = response.body<Page>()
+            onPage(body.items)
+
+            if (body.items.size < pageSize) break
+            page++
+        }
+    }
+
     private data class Page(val items: List<Dao>, val total: Int)
 
 }
