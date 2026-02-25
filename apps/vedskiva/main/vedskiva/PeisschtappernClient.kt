@@ -21,7 +21,7 @@ class PeisschtappernClient(
 ) {
 
     suspend fun oppdrag(fom: LocalDateTime, tom: LocalDateTime): List<Dao> {
-        val response = client.get("${config.peisschtappern.host}/api") {
+        val response = client.get("${config.peisschtappern.host}/api/messages") {
             bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
             contentType(ContentType.Application.Json)
             parameter("topics", "helved.oppdrag.v1")
