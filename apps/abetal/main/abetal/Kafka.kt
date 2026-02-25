@@ -106,16 +106,9 @@ fun Topology.dpStream(
                 .map { _, utbetalinger ->
                     Result.catch {
                         val store = kafka.getStore(Stores.utbetalinger)
-                        kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
-                        val aggregate = utbetalinger.map { new ->
-                            val prev = store.getOrNull(new.uid.toString())
-                            kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
-                            StreamsPair(new, prev)
-                        }
-                        val oppdragToUtbetalinger =
-                            AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                        val hasDryrunTosimuleringer =
-                            AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
+                        val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString()))}
+                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
+                        val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
                         oppdragToUtbetalinger to hasDryrunTosimuleringer
                     }
                 }
@@ -149,13 +142,10 @@ fun Topology.aapStream(
         .map { value ->
             Result.catch {
                 val store = kafka.getStore(Stores.utbetalinger)
-                val aggregate = value.map { new ->
-                    val prev = store.getOrNull(new.uid.toString())
-                    StreamsPair(new, prev)
-                }
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                oppdragToUtbetalinger to simuleringer
+                val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
+                val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
+                oppdragToUtbetalinger to hasDryrunTosimuleringer
             }
         }
         .branch(Result<*, *>::isErr, ::replyError)
@@ -194,17 +184,11 @@ fun Topology.tsStream(
                         val key = req.key ?: req.transactionId!!
                         val utbetalinger = TsDto.toDomain(SakId(dto.sakId), key, dto, uids)
                         val store = kafka.getStore(Stores.utbetalinger)
-                        kafkaLog.info("trying to join ${utbetalinger.size} utbetalinger")
-                        val aggregate = utbetalinger.map { new ->
-                            val prev = store.getOrNull(new.uid.toString())
-                            kafkaLog.info("key ${new.uid} | found previous in store: ${prev != null}")
-                            StreamsPair(new, prev)
-                        }
-                        val oppdragToUtbetalinger =
-                            AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                        val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                        oppdragToUtbetalinger to simuleringer
-                    }
+                        val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
+                        val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
+                        oppdragToUtbetalinger to hasDryrunTosimuleringer
+}
                 }
                 .branch(Result<*, *>::isErr, ::replyError)
                 .default {
@@ -236,14 +220,11 @@ fun Topology.tpStream(
         .map { value ->
             Result.catch {
                 val store = kafka.getStore(Stores.utbetalinger)
-                val aggregate = value.map { new ->
-                    val prev = store.getOrNull(new.uid.toString())
-                    StreamsPair(new, prev)
-                }
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                oppdragToUtbetalinger to simuleringer
-            }
+                val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
+                val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
+                oppdragToUtbetalinger to hasDryrunTosimuleringer
+}
         }
         .branch(Result<*, *>::isErr, ::replyError)
         .default {
@@ -274,12 +255,11 @@ fun Topology.historiskStream(
         .map { new ->
             Result.catch {
                 val store = kafka.getStore(Stores.utbetalinger)
-                val prev = store.getOrNull(new.uid.toString())
-                val aggregate = listOf(StreamsPair(new, prev))
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate.filter { (new, _) -> !new.dryrun })
-                val simuleringer = AggregateService.utledSimulering(aggregate.filter { (new, _) -> new.dryrun })
-                oppdragToUtbetalinger to simuleringer
-            }
+                val aggregate = listOf(StreamsPair(new, store.getOrNull(new.uid.toString())))
+                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
+                val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
+                oppdragToUtbetalinger to hasDryrunTosimuleringer
+}
         }
         .branch(Result<*, *>::isErr, ::replyError)
         .default {

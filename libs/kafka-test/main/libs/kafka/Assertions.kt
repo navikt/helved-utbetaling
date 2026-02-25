@@ -11,7 +11,7 @@ import kotlin.test.fail
 
 fun <K: Any, V : Any> TestOutputTopic<K, V>.readAndAssert() = TopicAssertion.readAndAssertThat(this)
 
-class TopicAssertion<K: Any, V : Any> private constructor(topic: TestOutputTopic<K, V>) {
+class TopicAssertion<K: Any, V : Any> private constructor(val topic: TestOutputTopic<K, V>) {
     companion object {
         fun <K: Any, V : Any> readAndAssertThat(topic: TestOutputTopic<K, V>) = TopicAssertion(topic)
     }
@@ -38,11 +38,23 @@ class TopicAssertion<K: Any, V : Any> private constructor(topic: TestOutputTopic
     }
 
     fun has(key: K, size: Int = 1) = this.also {
-        assertEquals(size, actuals.filter { it.key == key }.size)
+        val actual = actuals.filter { it.key == key }.size
+        assertEquals(size, actual, """
+            |expected:
+            |  $size
+            |actual:
+            |  $actual
+        """.trimMargin())
     }
 
     fun has(key: K, value: V, index: Int = 0) = this.also {
-        assertEquals(value, valuesForKey(key).getOrNull(index))
+        val actual = valuesForKey(key).getOrNull(index)
+        assertEquals(value, actual, """
+            |expected:
+            |  $value
+            |actual:
+            |  $actual
+        """.trimMargin())
     }
 
     fun has(key: K, index: Int = 0, size: Int = 1, value: V) = this.also {
@@ -60,7 +72,11 @@ class TopicAssertion<K: Any, V : Any> private constructor(topic: TestOutputTopic
     }
 
     fun isEmpty() = this.also {
-        assertTrue(actuals.isEmpty())
+        if (actuals.isNotEmpty()) {
+            fail("""expected topic to be empty, but it contains: ${actuals.size} records.
+keys: ${actuals.map { it.key() }}
+            """.trimIndent())
+        }
     }
 
     fun hasTombstone(key: K) = this.also {
