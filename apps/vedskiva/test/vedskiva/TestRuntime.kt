@@ -109,7 +109,7 @@ class PeisschtappernFake {
                 }
             }
             app.routing {
-                get("/api") {
+                get("/api/messages") {
                     if (response.isNotEmpty()) {
                         call.respond(response)
                     } else {
