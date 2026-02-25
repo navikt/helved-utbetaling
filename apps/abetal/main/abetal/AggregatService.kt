@@ -2,15 +2,9 @@ package abetal
 
 import libs.kafka.StreamsPair
 import libs.utils.secureLog
-import models.Action
-import models.PeriodeId
-import models.Utbetaling
-import models.notFound
+import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
-import java.math.BigDecimal
-import javax.xml.datatype.XMLGregorianCalendar
-import models.preValidateLockedFields
 
 object AggregateService {
 
@@ -21,6 +15,8 @@ object AggregateService {
     }
 
     fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<Pair<Oppdrag, List<Utbetaling>>> {
+        val aggregate = aggregate.filter { (new, _) -> !new.dryrun }
+
         aggregate.forEach { (new, prev) ->
             prev?.preValidateLockedFields(new)
         }
@@ -67,18 +63,18 @@ object AggregateService {
                 }
             }
 
-        val kjeder = utbetalingToOppdrag.groupBy { it.first.uid }.map { (_, kjede) -> kjede.reduce { acc, next -> acc + next } }
-
-        val oppdrager = kjeder.map { it.second }
+        val oppdrager = utbetalingToOppdrag.map { it.second }
         if (oppdrager.isEmpty()) return emptyList()
-        val oppdrag = oppdrager.reduce { acc, next -> acc + next }
 
-        val utbetalinger = kjeder.map { it.first }
+        val oppdrag = oppdrager.reduce { acc, next -> acc + next }
+        val utbetalinger = utbetalingToOppdrag.map { it.first }
 
         return listOf(oppdrag to utbetalinger)
     }
 
     fun utledSimulering(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): Pair<Boolean, List<SimulerBeregningRequest>> {
+        val aggregate = aggregate.filter { (new, _) -> new.dryrun }
+
         if (aggregate.isNotEmpty() && aggregate.none(::hasChanges)) return aggregate.any() to emptyList()
 
         val simuleringer = aggregate
@@ -117,64 +113,10 @@ object AggregateService {
     }
 }
 
-data class Oppdrag150(
-    val vedtakId: String,
-    val fom: XMLGregorianCalendar,
-    val tom: XMLGregorianCalendar,
-    val kodeKlassifik: String,
-    val sats: BigDecimal,
-    val vedtakssats: BigDecimal?
-)
-
-operator fun Pair<Utbetaling, Oppdrag>.plus(other: Pair<Utbetaling, Oppdrag>): Pair<Utbetaling, Oppdrag> {
-    return (first fuse other.first) to (second kjed other.second)
-}
-
-infix fun Utbetaling.fuse(other: Utbetaling): Utbetaling {
-    return this.copy(
-        // behandlingId = other.behandlingId,
-        perioder = (perioder union other.perioder).toList() // .sortedBy { it.fom }
-    )
-}
-
-infix fun Oppdrag.kjed(other: Oppdrag): Oppdrag {
-    if (oppdrag110.kodeEndring != "NY") oppdrag110.kodeEndring = other.oppdrag110.kodeEndring
-    val currentOppdrag150s = oppdrag110.oppdragsLinje150s.map {
-        Oppdrag150(
-            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157?.vedtakssats
-        )
-    }
-
-    val otherOppdrag150s = other.oppdrag110.oppdragsLinje150s.filter {
-        val oppdrag150 = Oppdrag150(
-            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157?.vedtakssats
-        )
-        oppdrag150 !in currentOppdrag150s
-    }
-    if (otherOppdrag150s.isNotEmpty()) {
-        otherOppdrag150s.first().refDelytelseId = this.oppdrag110.oppdragsLinje150s.last().delytelseId
-    }
-
-    oppdrag110.oppdragsLinje150s.addAll(otherOppdrag150s)
-    return this
-}
-
 operator fun Oppdrag.plus(other: Oppdrag): Oppdrag {
     if (oppdrag110.kodeEndring != "NY") oppdrag110.kodeEndring = other.oppdrag110.kodeEndring
     require(oppdrag110.fagsystemId == other.oppdrag110.fagsystemId)
-    val currentOppdrag150s = oppdrag110.oppdragsLinje150s.map { it ->
-        Oppdrag150(
-            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157?.vedtakssats
-        )
-    }
-
-    val otherOppdrag150s = other.oppdrag110.oppdragsLinje150s.filter {
-        val oppdrag150 = Oppdrag150(
-            it.vedtakId, it.datoVedtakFom, it.datoVedtakTom, it.kodeKlassifik, it.sats, it.vedtakssats157?.vedtakssats
-        )
-        oppdrag150 !in currentOppdrag150s
-    }
-
+    val otherOppdrag150s = other.oppdrag110.oppdragsLinje150s
     oppdrag110.oppdragsLinje150s.addAll(otherOppdrag150s)
     return this
 }
