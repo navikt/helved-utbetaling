@@ -7,13 +7,13 @@ metadata:
     team: helved
 spec:
   terminationGracePeriodSeconds: 70
-  image: {{ image }} 
+  image: {{ image }}
   resources:
     limits:
-      memory: 1024Mi
+      memory: 1600Mi
     requests:
-      memory: 512Mi
-      cpu: 200m
+      memory: 1024Mi
+      cpu: 1000m
   liveness:
     path: /actuator/health
     initialDelay: 30
