@@ -25,7 +25,7 @@ class PeisschtappernClient(
             bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
             contentType(ContentType.Application.Json)
             parameter("topics", "helved.oppdrag.v1")
-            parameter("limit", 10000)
+            parameter("pageSize", 10000)
             parameter("fom", formatter.format(fom))
             parameter("tom", formatter.format(tom))
         }
