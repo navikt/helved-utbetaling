@@ -47,7 +47,7 @@ fun main() {
         module = Application::vedskiva,
     ).start(wait = true)
 }
-
+// TODO: Skru ned CPU bruk i prod.yml!
 fun Application.vedskiva(
     config: Config = Config(),
     streams: Streams = KafkaStreams(),
