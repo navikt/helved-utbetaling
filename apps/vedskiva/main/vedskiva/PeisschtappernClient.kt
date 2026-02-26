@@ -2,7 +2,6 @@ package vedskiva
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -16,7 +15,7 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class PeisschtappernClient(
     private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
+    private val client: HttpClient = HttpClientFactory.new(),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
 
