@@ -73,6 +73,7 @@ private fun Topology.save(
                             AlertService.missingKvitteringHandler(key, value)
                         }
                         val aud = AuditMetadata.parse(metadata) 
+                        val headers = metadata.headers.map { (k, v) -> Header(k, v) }
                         Daos(
                             version = topic.name.substringAfterLast("."),
                             topic_name = topic.name,
@@ -85,6 +86,7 @@ private fun Topology.save(
                             system_time_ms = aud.systemTimeMs,
                             trace_id = Tracing.getCurrentTraceId(),
                             commit = commitHash, 
+                            headers = headers, 
                         ).insert(table)
                     }
                 }
