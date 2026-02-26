@@ -18,18 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-internal class DpTest {
-
-    @AfterEach
-    fun `assert empty topic`() {
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-        TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.simulering.assertThat().isEmpty()
-        TestRuntime.topics.status.assertThat().isEmpty()
-        TestRuntime.topics.saker.assertThat().isEmpty()
-        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-    }
+internal class DpTest : ConsumerTestBase() {
 
     @Test
     fun `simulering av dp`() {
@@ -70,7 +59,7 @@ internal class DpTest {
         val transaction1 = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transaction1) { utbet }
         TestRuntime.topics.status.assertThat().has(transaction1)
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid)
             .hasHeader(uid, "hash_key")
@@ -234,12 +223,8 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.oppdrag.produce(atid, mapOf("uids" to "$auid")) {
-            aoppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-        TestRuntime.topics.utbetalinger.assertThat().has(auid.toString())
+        atid.acknowledgeOppdrag(aoppdrag, auid)
+        assertUtbetalinger(auid)
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid)
         }
@@ -295,12 +280,8 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.oppdrag.produce(btid, mapOf("uids" to "$buid")) {
-            boppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-        TestRuntime.topics.utbetalinger.assertThat().has(buid.toString())
+        btid.acknowledgeOppdrag(boppdrag, buid)
+        assertUtbetalinger(buid)
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid, buid)
         }
@@ -356,12 +337,8 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.oppdrag.produce(ctid, mapOf("uids" to "$cuid")) {
-            coppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-        TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
+        ctid.acknowledgeOppdrag(coppdrag, cuid)
+        assertUtbetalinger(cuid)
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid, buid, cuid)
         }
@@ -423,12 +400,8 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.oppdrag.produce(etid, mapOf("uids" to "$cuid")) {
-            eoppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-        TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
+        etid.acknowledgeOppdrag(eoppdrag, cuid)
+        assertUtbetalinger(cuid)
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
     }
 
@@ -507,12 +480,8 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.oppdrag.produce(atid, mapOf("uids" to "$auid")) {
-            aoppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-        TestRuntime.topics.utbetalinger.assertThat().has(auid.toString())
+        atid.acknowledgeOppdrag(aoppdrag, auid)
+        assertUtbetalinger(auid)
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid)
         }
@@ -568,12 +537,8 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.oppdrag.produce(btid, mapOf("uids" to "$buid")) {
-            boppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-        TestRuntime.topics.utbetalinger.assertThat().has(buid.toString())
+        btid.acknowledgeOppdrag(boppdrag, buid)
+        assertUtbetalinger(buid)
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid, buid)
         }
@@ -629,12 +594,8 @@ internal class DpTest {
                 }
                 assertEquals(expected, it)
             }
-        TestRuntime.topics.oppdrag.produce(ctid, mapOf("uids" to "$cuid")) {
-            coppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-        TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
+        ctid.acknowledgeOppdrag(coppdrag, cuid)
+        assertUtbetalinger(cuid)
 
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
     }
@@ -701,16 +662,12 @@ internal class DpTest {
             .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
             ))))
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
         var oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
-        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        tid.acknowledgeOppdrag(oppdrag, uid)
+        assertUtbetalinger(uid)
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid)
         }
@@ -728,18 +685,14 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 2.aug, 16.aug, 200u, 200u, "DAGPENGER"),
             ))))
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
         oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
         val mapper = libs.xml.XMLMapper<Oppdrag>()
         println(mapper.writeValueAsString(oppdrag))
-        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
-        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        tid.acknowledgeOppdrag(oppdrag, uid)
+        assertUtbetalinger(uid)
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid)
         }
@@ -765,13 +718,9 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 200u, "DAGPENGER"),
             ))))
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         var oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
-        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid1,$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        tid.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
@@ -798,18 +747,14 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 0u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
             ))))
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
         oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
         // val mapper = libs.xml.XMLMapper<no.trygdeetaten.skjema.oppdrag.Oppdrag>()
         // println(mapper.writeValueAsString(oppdrag))
-        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid1,$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        tid.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
@@ -838,16 +783,12 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 200u, "DAGPENGER"),
             ))))
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
         var oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
-        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid1,$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        tid.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
@@ -874,18 +815,14 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 0u, "DAGPENGER"),
             ))))
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
         oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
         val mapper = libs.xml.XMLMapper<no.trygdeetaten.skjema.oppdrag.Oppdrag>()
         println(mapper.writeValueAsString(oppdrag))
-        TestRuntime.topics.oppdrag.produce(tid, mapOf("uids" to "$uid1,$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        tid.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
@@ -920,7 +857,7 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
             ))))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
 
@@ -949,11 +886,7 @@ internal class DpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, uid)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
@@ -1013,7 +946,7 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DAGPENGER"),
             ))))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId, size = 1)
@@ -1091,11 +1024,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -1203,7 +1132,7 @@ internal class DpTest {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -1471,7 +1400,7 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "DAGPENGER"),
             ))))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -1720,7 +1649,7 @@ internal class DpTest {
             .has(transactionId2)
             .has(transactionId2, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
@@ -1771,11 +1700,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId2.acknowledgeOppdrag(oppdrag, uid2)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid2.toString())
@@ -1865,7 +1790,7 @@ internal class DpTest {
             .has(transactionId2)
             .has(transactionId2, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
@@ -1915,11 +1840,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid1")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId2.acknowledgeOppdrag(oppdrag, uid1)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -1992,7 +1913,7 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "DAGPENGERFERIE")))
             ))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId1)
@@ -2045,11 +1966,7 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.oppdrag.produce(transactionId1, mapOf("uids" to "$uid1")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId1.acknowledgeOppdrag(oppdrag, uid1)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -2125,16 +2042,12 @@ internal class DpTest {
                 assertEquals(expected, it)
             }
 
-        TestRuntime.topics.oppdrag.produce(tid1, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        tid1.acknowledgeOppdrag(oppdrag, uid)
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid)
         }
 
-        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        assertUtbetalinger(uid)
 
         TestRuntime.topics.dp.produce(tid2) {
             Dp.utbetaling(sid.id, bid2.id) {
@@ -2177,16 +2090,12 @@ internal class DpTest {
             }
             .get(uid.toString())
 
-        TestRuntime.topics.oppdrag.produce(tid3, mapOf("uids" to "$uid")) {
-            oppdrag2.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        tid3.acknowledgeOppdrag(oppdrag2, uid)
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf()
         }
 
-        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        assertUtbetalinger(uid)
 
         TestRuntime.topics.dp.produce(tid3) {
             Dp.utbetaling(sid.id, bid3.id) {
@@ -2200,7 +2109,7 @@ internal class DpTest {
                 DetaljerLinje(bid3.id, 3.jun, 13.jun, 100u, 100u, "DAGPENGER")))
             ))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
         TestRuntime.topics.oppdrag.assertThat()
             .has(tid3)
@@ -2242,7 +2151,7 @@ internal class DpTest {
         TestRuntime.topics.status.assertThat()
             .has(uid, expectedStatus)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
     }
@@ -2314,7 +2223,7 @@ internal class DpTest {
                 DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "DAGPENGER"),
             ))))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -2549,11 +2458,7 @@ internal class DpTest {
 
         TestRuntime.topics.status.assertThat().has(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, uid)
 
         TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
             .with(uid.toString()) { utbetaling ->
@@ -2588,7 +2493,7 @@ internal class DpTest {
                 DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DAGPENGER"),
             ))))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
             .has(tid1)
@@ -2687,7 +2592,7 @@ internal class DpTest {
                 DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DAGPENGER"),
             ))))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag2 = TestRuntime.topics.oppdrag.assertThat()
             .has(tid2)
@@ -2792,7 +2697,7 @@ internal class DpTest {
                 DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DAGPENGER"),
             ))))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag3 = TestRuntime.topics.oppdrag.assertThat()
             .has(tid3)
@@ -2897,7 +2802,7 @@ internal class DpTest {
         }
 
         TestRuntime.topics.status.assertThat().isEmpty()
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
         TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
@@ -2955,7 +2860,7 @@ internal class DpTest {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
 
@@ -2983,11 +2888,7 @@ internal class DpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, uid)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
@@ -3033,7 +2934,7 @@ internal class DpTest {
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId)
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -3048,13 +2949,9 @@ internal class DpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, uid)
 
-        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        assertUtbetalinger(uid)
     }
 
     @Test
