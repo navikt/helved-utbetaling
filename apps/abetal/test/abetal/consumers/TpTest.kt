@@ -1,7 +1,6 @@
 package abetal.consumers
 
 import abetal.*
-import abetal.TestRuntime
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.kafka.JsonSerde
 import models.*
@@ -10,22 +9,10 @@ import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.*
-import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-internal class TpTest {
-
-    @AfterEach
-    fun `assert empty topic`() {
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-        TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.simulering.assertThat()
-        TestRuntime.topics.status.assertThat().isEmpty()
-        TestRuntime.topics.saker.assertThat().isEmpty()
-        TestRuntime.topics.pendingUtbetalinger.assertThat()
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-    }
+internal class TpTest : ConsumerTestBase() {
 
     @Test
     fun `simulering av tp`() {
@@ -55,7 +42,7 @@ internal class TpTest {
         val transaction1 = UUID.randomUUID().toString()
         TestRuntime.topics.tp.produce(transaction1) { utbet }
         TestRuntime.topics.status.assertThat().has(transaction1)
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid)
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transaction1)
@@ -202,7 +189,7 @@ internal class TpTest {
                 DetaljerLinje(bid.id, 7.jun21, 18.jun21, null, 553u, "TPTPAFT"),
             ))))
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -229,11 +216,7 @@ internal class TpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, uid)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
@@ -299,7 +282,7 @@ internal class TpTest {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -372,11 +355,7 @@ internal class TpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -470,7 +449,7 @@ internal class TpTest {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -709,7 +688,7 @@ internal class TpTest {
             .has(transactionId2)
             .has(transactionId2, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid2.toString())
@@ -758,11 +737,7 @@ internal class TpTest {
             }
             .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId2.acknowledgeOppdrag(oppdrag, uid2)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid2.toString())
@@ -852,7 +827,7 @@ internal class TpTest {
             .has(transactionId2)
             .has(transactionId2, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -901,11 +876,7 @@ internal class TpTest {
             }
             .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid1")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId2.acknowledgeOppdrag(oppdrag, uid1)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -989,7 +960,7 @@ internal class TpTest {
             .has(transactionId1)
             .has(transactionId1, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -1039,11 +1010,7 @@ internal class TpTest {
             }
             .get(transactionId1)
 
-        TestRuntime.topics.oppdrag.produce(transactionId1, mapOf("uids" to "$uid1")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId1.acknowledgeOppdrag(oppdrag, uid1)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -1146,7 +1113,7 @@ internal class TpTest {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -1342,7 +1309,7 @@ internal class TpTest {
 
 
         TestRuntime.topics.status.assertThat().isEmpty()
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
         TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
@@ -1456,11 +1423,7 @@ internal class TpTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, uid)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())

@@ -1,56 +1,15 @@
 package abetal.consumers
 
-import abetal.Aap
-import abetal.SakKey
-import abetal.Stores
-import abetal.TestRuntime
-import abetal.aug
-import abetal.jul
-import abetal.jun
-import abetal.meldekort
-import abetal.nextInt
-import abetal.okt
-import abetal.periode
-import abetal.sep
-import abetal.toLocalDate
-import abetal.utbetaling
-import java.util.UUID
-import models.Action
-import models.BehandlingId
-import models.Detaljer
-import models.DetaljerLinje
-import models.Fagsystem
-import models.Navident
-import models.PeriodeId
-import models.Personident
-import models.SakId
-import models.Status
-import models.StatusReply
-import models.StønadTypeAAP
-import models.aapUId
+import abetal.*
+import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import kotlin.collections.component1
-import kotlin.collections.component2
+import java.util.*
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.time.Duration.Companion.milliseconds
 
-class AapTest {
-
-    @AfterEach
-    fun `assert empty topic`() {
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-        TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.simulering.assertThat()
-        TestRuntime.topics.status.assertThat().isEmpty()
-        TestRuntime.topics.saker.assertThat().isEmpty()
-        TestRuntime.topics.pendingUtbetalinger.assertThat()
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-    }
+class AapTest : ConsumerTestBase() {
 
     @Test
     fun `1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
@@ -67,15 +26,11 @@ class AapTest {
         }
 
 
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                StatusReply(Status.MOTTATT, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
+        transactionId.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
                     DetaljerLinje(bid.id, 7.jun, 18.jun, 553u, 1077u, "AAPOR"),
-                )))
-            }
+                ))) }
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -102,11 +57,7 @@ class AapTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, uid)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
@@ -149,16 +100,12 @@ class AapTest {
         }
 
 
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+        transactionId.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
                     DetaljerLinje(bid.id, 7.jun, 18.jun, 553u, 1077u, "AAPOR"),
                     DetaljerLinje(bid.id, 7.jul, 20.jul, 779u, 2377u, "AAPOR"),
-                )))
-            }
+                ))) }
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId, size = 1)
@@ -191,11 +138,7 @@ class AapTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -260,17 +203,13 @@ class AapTest {
             }
         }
 
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+        transactionId.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
                     DetaljerLinje(bid.id, 7.jun, 18.jun, 1077u, 553u, "AAPOR"),
                     DetaljerLinje(bid.id, 7.jul, 20.jul, 2377u, 779u, "AAPOR"),
                     DetaljerLinje(bid.id, 7.aug, 20.aug, 3133u, 3000u, "AAPOR"),
-                )))
-            }
+                ))) }
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -425,13 +364,9 @@ class AapTest {
             }
         }
 
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId2)
-            .with(transactionId2) {
-                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+        transactionId2.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
                     DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "AAPOR"),
-                )))
-            }
+                ))) }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
@@ -458,11 +393,7 @@ class AapTest {
             }
             .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid2")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId2.acknowledgeOppdrag(oppdrag, uid2)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid2.toString())
@@ -527,15 +458,11 @@ class AapTest {
         }
 
 
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId2)
-            .with(transactionId2) {
-                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+        transactionId2.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
                     DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "AAPOR"),
-                )))
-            }
+                ))) }
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -582,11 +509,7 @@ class AapTest {
             }
             .get(transactionId2)
 
-        TestRuntime.topics.oppdrag.produce(transactionId2, mapOf("uids" to "$uid1")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId2.acknowledgeOppdrag(oppdrag, uid1)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -679,11 +602,7 @@ class AapTest {
             }
             .get(transactionId1)
 
-        TestRuntime.topics.oppdrag.produce(transactionId1, mapOf("uids" to "$uid1")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId1.acknowledgeOppdrag(oppdrag, uid1)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -755,17 +674,13 @@ class AapTest {
         }
 
 
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+        transactionId.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
                     DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "AAPOR"),
                     DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "AAPOR"),
                     DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "AAPOR"),
-                )))
-            }
+                ))) }
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -810,7 +725,7 @@ class AapTest {
 
 
         TestRuntime.topics.status.assertThat().isEmpty()
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
         TestRuntime.topics.simulering.assertThat()
             .hasTotal(1)
@@ -842,15 +757,11 @@ class AapTest {
         }
 
 
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
+        transactionId.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
                     DetaljerLinje(bid.id, 7.jun, 18.jun, 1077u, 553u, "AAPOR"),
-                )))
-            }
+                ))) }
 
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        assertUtbetalingerEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -860,11 +771,7 @@ class AapTest {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        transactionId.acknowledgeOppdrag(oppdrag, uid)
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
