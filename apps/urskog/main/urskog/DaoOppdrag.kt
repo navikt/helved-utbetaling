@@ -90,8 +90,8 @@ data class DaoOppdrag (
         }
 
         return when(rowsAffected) {
-            0 -> false.also { jdbcLog.info("Idempotent guard: row in $table already exists for $hashKey") }
-            else -> true.also{ jdbcLog.info("row in $table inserted for $hashKey") }
+            0 -> false.also { jdbcLog.info("Idempotent guard: row in $table already exists for hashKey($hashKey)") }
+            else -> true.also{ jdbcLog.info("row in $table inserted for hashKey($hashKey)") }
         }
     }
 

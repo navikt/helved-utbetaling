@@ -13,7 +13,6 @@ import libs.mq.DefaultMQConsumer
 import libs.mq.DefaultMQProducer
 import libs.mq.MQ
 import libs.mq.mqLog
-import libs.utils.appLog
 import libs.utils.secureLog
 import libs.xml.XMLMapper
 import models.BehandlingId
@@ -44,15 +43,15 @@ class OppdragMQProducer(config: Config, mq: MQ, private val meters: MeterRegistr
                 Tag.of("status", "Sendt"),
                 Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
-            mqLog.info("Sender oppdrag $hash")
+            mqLog.info("Sender oppdrag hashKey($hash)")
             return oppdrag
         }.onFailure {
             meters.counter("helved_oppdrag_mq", listOf(
                 Tag.of("status", "Feilet"),
                 Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
-            mqLog.error("Feilet sending av oppdrag hash: $hash, sak: $sid, behandling: $bid, last delytelse/periodeid: $lastDelytelsesId/$pid")
-            secureLog.error("Feilet sending av oppdrag $hash", it)
+            mqLog.error("Feilet sending av oppdrag hashKey($hash) sakId:$sid, behandling:$bid, lastDelytelsesId/periodeId: $lastDelytelsesId/$pid")
+            secureLog.error("Feilet sending av oppdrag hashKey($hash)", it)
         }.getOrThrow()
     }
 }
@@ -84,15 +83,14 @@ class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams): AutoCloseabl
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
         val stripped = mapper.copy(kvittering).apply { mmel = null }
         val hashKey = DaoOppdrag.hash(stripped)
-        secureLog.info("MQ hashing: $kvittering -> $hashKey")
         val dao = runBlocking {
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    DaoOppdrag.find(hashKey) ?: error("fant ikke noe sted å lagre unna kvittering for hashKey: $hashKey")
+                    DaoOppdrag.find(hashKey) ?: error("fant ikke noe sted å lagre kvittering for hashKey($hashKey) sakId:${kvittering.sakId()}")
                 }
             }
         }
-        mqLog.info("Mottok kvittering ${dao.kafkaKey}")
+        mqLog.info("Mottok kvittering ${kvittering.alvorlighetsgrad()} for key:${dao.kafkaKey} oppdrag hashKey($hashKey) sakId:${kvittering.sakId()}")
         val headers = mapOf("uids" to dao.uids.joinToString(","))
         oppdragProducer.send(dao.kafkaKey, kvittering, headers)
     }
@@ -120,6 +118,9 @@ private fun Oppdrag.lastDelytelseId(): String? {
 private fun Oppdrag.fagsystem(): String {
     return Fagsystem.fromFagområde(oppdrag110.kodeFagomraade).name
 }
+
+private fun Oppdrag.sakId(): String = oppdrag110.fagsystemId.trimEnd()
+private fun Oppdrag.alvorlighetsgrad(): String? = mmel?.alvorlighetsgrad?.trimEnd()
 
 private fun Oppdrag.behandlingId(): BehandlingId? {
     return oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId)
