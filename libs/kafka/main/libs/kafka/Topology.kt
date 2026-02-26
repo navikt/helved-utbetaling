@@ -121,33 +121,26 @@ class Topology {
         return ConsumedStream(stream.skipTombstone(topic) )
     }
 
-    fun <K: Any, V : Any> consume(table: Table<K, V>, materializeWithTrace: Boolean = false): KTable<K, V> {
+    fun <K: Any, V : Any> consume(table: Table<K, V>): KTable<K, V> {
         return builder
             .stream(table.sourceTopicName, table.sourceTopic.consumed())
             .process({ LogConsumeTopicProcessor<K, V?>(table.sourceTopic) })
-            .toKTable(table, materializeWithTrace)
+            .toKTable(table)
     }
 
     fun <K: Any, V: Any> globalKTable(
         table: Table<K, V>,
         retention: Duration? = null,
-        materializeWithTrace: Boolean = false,
     ): GlobalKTable<K, V> {
         if (retention == null) {
             return GlobalKTable(table, builder.globalTable(
                 table.sourceTopicName,
-                when (materializeWithTrace) {
-                    true -> materializedWithTrace(table)
-                    false -> materialized(table)
-                }
+                materialized(table)
             ))
         }
         return GlobalKTable(table, builder.globalTable(
             table.sourceTopicName,
-            when (materializeWithTrace) {
-                true -> materializedWithTrace(table).withRetention(retention.toJavaDuration())
-                false -> materialized(table).withRetention(retention.toJavaDuration())
-            }
+            materialized(table).withRetention(retention.toJavaDuration())
         ))
     }
 

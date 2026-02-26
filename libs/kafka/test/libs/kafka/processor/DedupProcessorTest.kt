@@ -23,7 +23,7 @@ class DedupProcessorTest {
         val kafka = Mock.withTopology {
             consume(Topics.B)
             .processor(StateProcessor(
-                supplier = DedupProcessor.supplier(10.milliseconds, Stores.B, false), 
+                supplier = DedupProcessor.supplier(10.milliseconds, Stores.B), 
                 named = Named("abc"), 
                 storeName = Stores.B.name
             )).produce(Topics.C)
@@ -40,7 +40,7 @@ class DedupProcessorTest {
         val kafka = Mock.withTopology {
             consume(Topics.B)
             .processor(StateProcessor(
-                supplier = DedupProcessor.supplier(10.milliseconds, Stores.B, false),
+                supplier = DedupProcessor.supplier(10.milliseconds, Stores.B),
                 named = Named("abc"),
                 storeName = Stores.B.name
             )).produce(Topics.C)
@@ -58,7 +58,7 @@ class DedupProcessorTest {
         val kafka = Mock.withTopology {
             consume(Topics.B)
             .processor(StateProcessor(
-                supplier = DedupProcessor.supplier(10.milliseconds, Stores.B, false, { _, value -> value.hashCode() }),
+                supplier = DedupProcessor.supplier(10.milliseconds, Stores.B, { _, value -> value.hashCode() }),
                 named = Named("abc"),
                 storeName = Stores.B.name
             )).produce(Topics.C)
@@ -75,7 +75,7 @@ class DedupProcessorTest {
         val kafka = Mock.withTopology {
             consume(Topics.B)
             .processor(StateProcessor(
-                supplier = DedupProcessor.supplier(10.milliseconds, Stores.B, false, { key, _ -> key.hashCode() }),
+                supplier = DedupProcessor.supplier(10.milliseconds, Stores.B, { key, _ -> key.hashCode() }),
                 named = Named("abc"),
                 storeName = Stores.B.name
             )).produce(Topics.C)
@@ -96,7 +96,7 @@ class DedupProcessorTest {
         val kafka = Mock.withTopology {
             consume(Topics.B)
             .processor(StateProcessor(
-                supplier = DedupProcessor.supplier(10.milliseconds, Stores.Dedup, false, ::hasher) {
+                supplier = DedupProcessor.supplier(10.milliseconds, Stores.Dedup, ::hasher) {
                     if (attempt == 0) {
                         attempt++
                         error("fail")

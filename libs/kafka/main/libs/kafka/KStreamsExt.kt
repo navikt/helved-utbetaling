@@ -70,13 +70,10 @@ internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.join(
 
 internal fun <K: Any, V : Any> KStream<K, V?>.toKTable(
     table: Table<K, V>,
-    materializeWithTrace: Boolean,
     named: String = "ktable-${table.sourceTopicName}",
 ): KTable<K, V> {
-    val internalKTable  = when (materializeWithTrace) {
-        false -> process({LogProduceTableProcessor(table)}).toTable(Named(named).into(), materialized(table))
-        true -> toTable(Named(named).into(), materializedWithTrace(table))
-    }
+
+    val internalKTable = process({LogProduceTableProcessor(table)}).toTable(Named(named).into(), materialized(table))
     return KTable(table, internalKTable)
 }
 
@@ -95,28 +92,8 @@ internal fun <K: Any, V : Any> materialized(
         .withValueSerde(store.serde.value)
 }
 
-internal fun <K: Any, V : Any> materializedWithTrace(
-    store: Store<K, V>,
-): Materialized<K, V?, KeyValueStore<Bytes, ByteArray>> {
-    val traceStoreSupplier = TracingKeyValueStore.supplier(store.name)
-    return Materialized.`as`<K, V>(traceStoreSupplier)
-        .withKeySerde(store.serde.key)
-        .withValueSerde(store.serde.value)
-}
-
 internal fun <K: Any, V : Any> materialized(table: Table<K, V>): Materialized<K, V?, KeyValueStore<Bytes, ByteArray>> {
     return Materialized.`as`<K, V, KeyValueStore<Bytes, ByteArray>>(table.stateStoreName)
-        .withKeySerde(table.sourceTopic.serdes.key)
-        .withValueSerde(table.sourceTopic.serdes.value)
-}
-
-/**
-* Traces in open telemetry is not propagated for records stored in vanilla state stores.
-* This will materialize the value and the traceparent
-*/
-internal fun <K: Any, V : Any> materializedWithTrace(table: Table<K, V>): Materialized<K, V?, KeyValueStore<Bytes, ByteArray>> {
-    val traceStoreSupplier = TracingKeyValueStore.supplier(table.stateStoreName)
-    return Materialized.`as`<K, V>(traceStoreSupplier)
         .withKeySerde(table.sourceTopic.serdes.key)
         .withValueSerde(table.sourceTopic.serdes.value)
 }
