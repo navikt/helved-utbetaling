@@ -39,8 +39,7 @@ object Topics {
 
 object Tables {
     val utbetalinger = Table(Topics.utbetalinger, stateStoreName = "${Topics.utbetalinger.name}-state-store-v4")
-    val pendingUtbetalinger =
-        Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v4")
+    val pendingUtbetalinger = Table(Topics.pendingUtbetalinger, stateStoreName = "${Topics.pendingUtbetalinger.name}-state-store-v4")
     val saker = Table(Topics.saker)
 }
 
@@ -49,14 +48,14 @@ object Stores {
 }
 
 fun createTopology(kafka: Streams): Topology = topology {
-    val utbetalinger = globalKTable(Tables.utbetalinger, materializeWithTrace = false)
-    val pendingUtbetalinger = consume(Tables.pendingUtbetalinger, materializeWithTrace = false)
+    globalKTable(Tables.utbetalinger)
+    val pendingUtbetalinger = consume(Tables.pendingUtbetalinger)
     val saker = consume(Tables.saker)
-    dpStream(utbetalinger, saker, kafka)
-    aapStream(utbetalinger, saker, kafka)
+    dpStream(saker, kafka)
+    aapStream(saker, kafka)
     tsStream(saker, kafka)
-    tpStream(utbetalinger, saker, kafka)
-    historiskStream(utbetalinger, saker, kafka)
+    tpStream(saker, kafka)
+    historiskStream(saker, kafka)
     successfulUtbetalingStream(pendingUtbetalinger)
 }
 
@@ -86,7 +85,6 @@ data class TpTuple(val key: String, val value: TpUtbetaling)
  * Ved suksess flyttes pending-utbetalinger til utbetalinger, 
  */
 fun Topology.dpStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
 ) {
@@ -125,7 +123,6 @@ fun Topology.dpStream(
 }
 
 fun Topology.aapStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
 ) {
@@ -203,7 +200,6 @@ fun Topology.tsStream(
 }
 
 fun Topology.tpStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
 ) {
@@ -238,7 +234,6 @@ fun Topology.tpStream(
 }
 
 fun Topology.historiskStream(
-    utbetalinger: GlobalKTable<String, Utbetaling>,
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
 ) {
