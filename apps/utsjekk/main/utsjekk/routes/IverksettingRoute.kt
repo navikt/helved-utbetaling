@@ -45,7 +45,7 @@ fun Route.iverksetting(
                 badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", "${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling")
             }
 
-            appLog.info("Behandler sakId ${dto.sakId} behandlingId ${dto.behandlingId}")
+            appLog.info("Behandler sakId:${dto.sakId} behandlingId:${dto.behandlingId}")
 
             dto.validate()
 

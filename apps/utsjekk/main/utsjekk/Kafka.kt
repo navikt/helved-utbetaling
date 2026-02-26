@@ -136,7 +136,7 @@ fun Topology.consumeStatus() {
                     }
 
                     if (uDao == null && iDao == null) {
-                        appLog.info("Mottok status $status for uid=${uid.id} som ikke finnes i utsjekk. Denne antas å ligge i abetal")
+                        appLog.info("Mottok status for key:${key} uid:${uid} som ikke finnes i utsjekk.")
                     }
                 }
             }
