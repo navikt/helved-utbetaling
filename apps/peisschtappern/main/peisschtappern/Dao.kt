@@ -37,13 +37,13 @@ enum class Table {
 
 data class Header(
     val key: String,
-    val value: String,
+    val value: String?,
 ) {
     companion object {
         fun fromString(str: String): Header {
             daoLog.error("trying to split '$str' on ':'")
-            val (key, value) = str.split(":")
-            return Header(key, value)
+            val parts = str.split(":")
+            return Header(parts[0], parts.getOrNull(1))
         }
     }
 }
