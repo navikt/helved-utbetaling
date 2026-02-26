@@ -35,6 +35,19 @@ enum class Table {
     historiskIntern,
 }
 
+data class Header(
+    val key: String,
+    val value: String,
+) {
+    companion object {
+        fun fromString(str: String): Header {
+            daoLog.error("trying to split '$str' on ':'")
+            val (key, value) = str.split(":")
+            return Header(key, value)
+        }
+    }
+}
+
 data class Daos(
     val version: String,
     val topic_name: String,
@@ -50,6 +63,7 @@ data class Daos(
     val sakId: String? = null,
     val fagsystem: String? = null,
     val status: String? = null,
+    val headers: List<Header> = emptyList(),
 ) {
     companion object: Dao<Daos> {
         override val table = "PLACEHODLER"
@@ -69,6 +83,7 @@ data class Daos(
             sakId = rs.getString("sak_id"),
             fagsystem = rs.getString("fagsystem"),
             status = rs.getString("status"),
+            headers = rs.getString("headers")?.takeIf { it.isNotEmpty() }?.split(",")?.map(Header::fromString) ?: emptyList(),
         )
 
         suspend fun find(key: String, table: Table, limit: Int = 1000): List<Daos> {
@@ -301,8 +316,9 @@ data class Daos(
                 stream_time_ms,
                 system_time_ms,
                 trace_id,
-                commit
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                commit,
+                headers
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """.trimIndent()
 
         return update(sql) { stmt ->
@@ -317,6 +333,7 @@ data class Daos(
             stmt.setObject(9, system_time_ms)
             stmt.setObject(10, trace_id)
             stmt.setObject(11, commit)
+            stmt.setObject(12, headers.joinToString(",") { "${it.key}:${it.value}" })
         }
     }
 }

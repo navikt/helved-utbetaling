@@ -220,6 +220,7 @@ class ApiTest {
         timestamp: Long = Instant.now().toEpochMilli(),
         commitHash: String = "test",
         offset: Long,
+        headers: List<Header> = emptyList(),
     ) {
         val dao = Daos(
             topic_name = channel.topic.name,
@@ -232,7 +233,8 @@ class ApiTest {
             stream_time_ms = timestamp,
             system_time_ms = timestamp,
             trace_id = null,
-            commit = commitHash
+            commit = commitHash,
+            headers = headers,
         )
 
         transaction {
