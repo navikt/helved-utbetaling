@@ -166,7 +166,7 @@ fun Topology.tsStream(
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
         .merge(consume(Topics.tsIntern))
-        .map { key, ts -> TsTuple(key, ts, key, ts) }
+        .map { key, ts -> TsTuple(null, null, key, ts) }
         .rekey { (_, dto, _, value) ->
             val ts = dto ?: value!!
             SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER)
