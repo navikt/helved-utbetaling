@@ -10,10 +10,10 @@ spec:
   image: {{ image }}
   resources:
     limits:
-      memory: 1500Mi
-    requests:
       memory: 1024Mi
-      cpu: 3000m
+    requests:
+      memory: 800Mi
+      cpu: 1200m
   liveness:
     path: /actuator/health
     initialDelay: 30
