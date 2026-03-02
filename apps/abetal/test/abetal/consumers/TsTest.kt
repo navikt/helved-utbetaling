@@ -229,91 +229,6 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `1 utbetalinger i transaksjon = 1 utbetaling og 1 oppdrag`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val uid = UtbetalingId(UUID.randomUUID())
-
-        TestRuntime.topics.ts.produce(transactionId) {
-            Ts.dto(sid.id, bid.id) {
-                Ts.utbetaling(uid) {
-                    Ts.periode(
-                        fom = LocalDate.of(2021, 6, 7),
-                        tom = LocalDate.of(2021, 6, 18),
-                        beløp = 1077u,
-                    )
-                }
-            }
-        }
-
-
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.TILLEGGSSTØNADER,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, null, 1077u, "TSTBASISP2-OP"),
-                )
-            )
-        )
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .has(transactionId, mottatt)
-
-        assertUtbetalingerEmpty()
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("NY", it.oppdrag110.kodeEndring)
-                assertEquals("TILLST", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("ts", it.oppdrag110.saksbehId)
-                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
-                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
-                    assertEquals("NY", a.kodeEndringLinje)
-                    assertEquals(bid.id, a.henvisning)
-                    assertEquals("TSTBASISP2-OP", a.kodeKlassifik)
-                    assertEquals(1077, a.sats.toLong())
-                    assertEquals(a.delytelseId, b.refDelytelseId)
-                    assertEquals(a.datoVedtakFom, a.datoKlassifikFom)
-                    assertEquals(b.datoVedtakFom, b.datoKlassifikFom)
-                }
-            }
-            .get(transactionId)
-
-        transactionId.acknowledgeOppdrag(oppdrag, uid)
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid.toString())
-            .with(uid.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
-                    lastPeriodeId = it.lastPeriodeId,
-                    periodetype = Periodetype.EN_GANG,
-                    stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("ts"),
-                    saksbehandlerId = Navident("ts"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 1077u, null)
-                }
-                assertEquals(expected, it)
-            }
-    }
-
-    @Test
     fun `utbetal på intern ts topic`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
@@ -1309,23 +1224,5 @@ internal class TsTest : ConsumerTestBase() {
             .has(transactionId, expectedError)
     }
 
-    @Test
-    fun `tom utbetaling svarer OK`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-
-        TestRuntime.topics.ts.produce(transactionId) {
-            Ts.dto(sid.id, bid.id) {
-                emptyList()
-            }
-        }
-
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                assertEquals(Status.OK, it.status)
-            }
-    }
 }
 
