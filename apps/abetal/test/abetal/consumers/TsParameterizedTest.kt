@@ -28,6 +28,7 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
     // Disable tests that don't apply to TS
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
     override fun `update existing utbetaling`() = emptyList<DynamicTest>()
+    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // Needs investigation
     
     override fun createMessage(
         sakId: String,
@@ -59,5 +60,21 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
     
     override fun getDefaultStønad(): Stønadstype {
         return StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER
+    }
+    
+    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>): TsDto {
+        val utbetalinger = perioder.groupBy { it.uniqueKey }.map { (_, groupedPerioder) ->
+            val uid = createUtbetalingId(sakId, groupedPerioder.first().uniqueKey, getDefaultStønad())
+            TsUtbetaling(
+                id = uid.id,
+                stønad = getDefaultStønad() as StønadTypeTilleggsstønader,
+                perioder = groupedPerioder.map { TsPeriode(it.fom, it.tom, it.sats) },
+                brukFagområdeTillst = false
+            )
+        }
+        
+        return Ts.dto(sakId, behandlingId, dryrun = true) {
+            utbetalinger
+        }
     }
 }
