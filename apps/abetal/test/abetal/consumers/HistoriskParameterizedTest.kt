@@ -3,6 +3,7 @@ package abetal.consumers
 import abetal.*
 import models.*
 import org.junit.jupiter.api.DynamicTest
+import java.time.LocalDateTime
 
 /**
  * Parameterized tests for Historisk consumer.
@@ -20,7 +21,7 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
     override fun `update existing utbetaling`() = emptyList<DynamicTest>()
     override fun `empty utbetaling returns OK`() = emptyList<DynamicTest>()
-    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // Needs investigation
+    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // Historisk has different simulation behavior - needs specific investigation
     
     override fun createMessage(
         sakId: String,
@@ -71,13 +72,14 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
         return listOf(createUtbetalingId(sakId, "historisk", getDefaultStønad()))
     }
     
-    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>): HistoriskUtbetaling {
+    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): HistoriskUtbetaling {
         val uid = createUtbetalingId(sakId, "historisk", getDefaultStønad())
         
         return Historisk.utbetaling(
             uid = uid,
             sakId = sakId,
             behandlingId = behandlingId,
+            vedtakstidspunkt = vedtakstidspunkt,
             dryrun = true
         ) {
             perioder.map { periode ->

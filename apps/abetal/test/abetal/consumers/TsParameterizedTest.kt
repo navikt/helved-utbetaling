@@ -3,6 +3,7 @@ package abetal.consumers
 import abetal.*
 import models.*
 import org.junit.jupiter.api.DynamicTest
+import java.time.LocalDateTime
 
 /**
  * Parameterized tests for Tilleggsstønader consumer.
@@ -28,7 +29,7 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
     // Disable tests that don't apply to TS
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
     override fun `update existing utbetaling`() = emptyList<DynamicTest>()
-    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // Needs investigation
+    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // TS has different simulation behavior - needs specific investigation
     
     override fun createMessage(
         sakId: String,
@@ -62,7 +63,7 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
         return StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER
     }
     
-    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>): TsDto {
+    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): TsDto {
         val utbetalinger = perioder.groupBy { it.uniqueKey }.map { (_, groupedPerioder) ->
             val uid = createUtbetalingId(sakId, groupedPerioder.first().uniqueKey, getDefaultStønad())
             TsUtbetaling(
@@ -73,7 +74,7 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
             )
         }
         
-        return Ts.dto(sakId, behandlingId, dryrun = true) {
+        return Ts.dto(sakId, behandlingId, vedtakstidspunkt = vedtakstidspunkt, dryrun = true) {
             utbetalinger
         }
     }
