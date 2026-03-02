@@ -25,9 +25,11 @@ object TestScenarios {
         sakId: SakId,
         behandlingId: BehandlingId,
         fagsystem: Fagsystem,
+        sakerFagsystem: Fagsystem = fagsystem,
         stønad: Stønadstype,
         periodeId: PeriodeId = PeriodeId(),
         personident: Personident = Personident("12345678910"),
+        periodetype: Periodetype = Periodetype.UKEDAG,
         perioder: () -> List<Utbetalingsperiode>
     ): PeriodeId {
         TestRuntime.topics.utbetalinger.produce(uid.toString()) {
@@ -40,6 +42,7 @@ object TestScenarios {
                 stønad = stønad,
                 lastPeriodeId = periodeId,
                 personident = personident,
+                periodetype = periodetype,
                 vedtakstidspunkt = LocalDateTime.now(),
                 beslutterId = Navident(fagsystem.saksbehandler()),
                 saksbehandlerId = Navident(fagsystem.saksbehandler()),
@@ -47,7 +50,7 @@ object TestScenarios {
                 perioder = perioder
             )
         }
-        TestRuntime.topics.saker.produce(SakKey(sakId, fagsystem)) {
+        TestRuntime.topics.saker.produce(SakKey(sakId, sakerFagsystem)) {
             setOf(uid)
         }
         return periodeId
@@ -66,6 +69,36 @@ fun String.assertStatus(
         .with(this) {
             assertEquals(expectedStatus, it.status)
             assertEquals(expectedFagsystem, it.detaljer?.ytelse)
+        }
+}
+
+/**
+ * Asserts status with full details comparison (order-independent for linjer)
+ */
+fun String.assertStatusWithDetails(
+    expectedStatus: Status = Status.MOTTATT,
+    expectedDetaljer: Detaljer
+) {
+    TestRuntime.topics.status.assertThat()
+        .has(this)
+        .with(this) { actual ->
+            assertEquals(expectedStatus, actual.status)
+            assertEquals(expectedDetaljer.ytelse, actual.detaljer?.ytelse)
+            
+            // Sort both lists for order-independent comparison
+            val actualLinjer = actual.detaljer?.linjer?.sortedWith(
+                compareBy<DetaljerLinje> { it.behandlingId }
+                    .thenBy { it.fom }
+                    .thenBy { it.tom }
+            ) ?: emptyList()
+            
+            val expectedLinjer = expectedDetaljer.linjer.sortedWith(
+                compareBy<DetaljerLinje> { it.behandlingId }
+                    .thenBy { it.fom }
+                    .thenBy { it.tom }
+            )
+            
+            assertEquals(expectedLinjer, actualLinjer, "DetaljerLinje lists don't match (compared after sorting)")
         }
 }
 
@@ -137,8 +170,9 @@ fun String.acknowledgeOppdrag(oppdrag: Oppdrag, uid: UtbetalingId) {
  * Asserts that utbetalinger topic has the specified UIDs
  */
 fun assertUtbetalinger(uids: List<UtbetalingId>) {
+    val assertion = TestRuntime.topics.utbetalinger.assertThat()
     uids.forEach { uid ->
-        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+        assertion.has(uid.toString())
     }
 }
 
