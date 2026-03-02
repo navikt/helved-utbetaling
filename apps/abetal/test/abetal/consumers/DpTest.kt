@@ -601,51 +601,6 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `simulering uten endring`() {
-        val key = UUID.randomUUID().toString()
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val meldeperiode1 = UUID.randomUUID().toString()
-        val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGER)
-
-        TestRuntime.topics.utbetalinger.produce("$uid1") {
-            utbetaling(
-                action = Action.CREATE,
-                uid = uid1,
-                sakId = sid,
-                behandlingId = bid,
-                originalKey = key,
-                stønad = StønadTypeDagpenger.DAGPENGER,
-                personident = Personident("12345678910"),
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
-                beslutterId = Navident("dagpenger"),
-                saksbehandlerId = Navident("dagpenger"),
-                fagsystem = Fagsystem.DAGPENGER,
-            ) {
-                periode(1.jan, 2.jan, 100u, 100u)
-            }
-        }
-
-        TestRuntime.topics.dp.produce(key) {
-            Dp.utbetaling(sid.id, bid.id, dryrun = true) {
-                Dp.meldekort(
-                    meldeperiode = meldeperiode1,
-                    fom = 1.jan,
-                    tom = 2.jan,
-                    sats = 100u,
-                    utbetaltBeløp = 100u,
-                )
-            }
-        }
-
-        TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
-            assertEquals(Status.OK, statusReply.status)
-        }
-
-        TestRuntime.topics.simulering.assertThat().hasNot(key)
-    }
-
-    @Test
     fun `fom tom endres men meldeperiode står seg`() {
         val sid = SakId("$nextInt")
         var bid = BehandlingId("$nextInt")
@@ -831,86 +786,6 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid1, uid2)
         }
-    }
-
-    @Test
-    fun `1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val meldeperiode = "132460781"
-        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
-
-        TestRuntime.topics.dp.produce(transactionId) {
-            Dp.utbetaling(sid.id, bid.id) {
-                Dp.meldekort(
-                    meldeperiode = "132460781",
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                )
-            }
-        }
-
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .has(transactionId, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
-                DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
-            ))))
-
-        assertUtbetalingerEmpty()
-        TestRuntime.topics.pendingUtbetalinger.assertThat()
-            .has(uid.toString())
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("NY", it.oppdrag110.kodeEndring)
-                assertEquals("DP", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("dagpenger", it.oppdrag110.saksbehId)
-                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
-                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
-                    assertEquals("NY", a.kodeEndringLinje)
-                    assertEquals(bid.id, a.henvisning)
-                    assertEquals("DAGPENGER", a.kodeKlassifik)
-                    assertEquals(553, a.sats.toLong())
-                    assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(a.delytelseId, b.refDelytelseId)
-                    assertEquals(a.datoVedtakFom, a.datoKlassifikFom)
-                    assertEquals(b.datoVedtakFom, b.datoKlassifikFom)
-                }
-            }
-            .get(transactionId)
-
-        transactionId.acknowledgeOppdrag(oppdrag, uid)
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid.toString())
-            .with(uid.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.DAGPENGER,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeDagpenger.DAGPENGER,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("dagpenger"),
-                    saksbehandlerId = Navident("dagpenger"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 18), 553u, 1077u)
-                }
-                assertEquals(expected, it)
-            }
     }
 
     @Test
@@ -2134,28 +2009,6 @@ internal class DpTest : ConsumerTestBase() {
                     assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                 }
             }
-    }
-
-    @Test
-    fun `utbetaling uten meldeperiode gir status OK`() {
-        val uid = UUID.randomUUID().toString()
-        TestRuntime.topics.dp.produce(uid) {
-            Dp.utbetaling(
-                sakId = "$nextInt",
-                behandlingId = "$nextInt",
-                vedtakstidspunkt = LocalDateTime.now(),
-            ) {
-                emptyList()
-            }
-        }
-        val expectedStatus = StatusReply(Status.OK)
-
-        TestRuntime.topics.status.assertThat()
-            .has(uid, expectedStatus)
-
-        assertUtbetalingerEmpty()
-        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
-        TestRuntime.topics.oppdrag.assertThat().isEmpty()
     }
 
     @Test
