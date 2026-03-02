@@ -739,14 +739,15 @@ internal class DpTest : ConsumerTestBase() {
             }
         }
 
-        TestRuntime.topics.status.assertThat()
-            .has(tid)
-            .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
+        tid.assertStatusWithDetails(
+            expectedStatus = Status.MOTTATT,
+            expectedDetaljer = Detaljer(Fagsystem.DAGPENGER, listOf(
                 DetaljerLinje(bid2.id, 2.aug, 16.aug, 200u, 200u, "DAGPENGER"),
                 DetaljerLinje(bid2.id, 3.sep, 12.sep, 200u, 200u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 0u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
-            ))))
+            ))
+        )
         assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -807,14 +808,15 @@ internal class DpTest : ConsumerTestBase() {
             }
         }
 
-        TestRuntime.topics.status.assertThat()
-            .has(tid)
-            .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
+        tid.assertStatusWithDetails(
+            expectedStatus = Status.MOTTATT,
+            expectedDetaljer = Detaljer(Fagsystem.DAGPENGER, listOf(
                 DetaljerLinje(bid2.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
                 DetaljerLinje(bid2.id, 2.sep, 13.sep, 200u, 200u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 0u, "DAGPENGER"),
-            ))))
+            ))
+        )
         assertUtbetalingerEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
