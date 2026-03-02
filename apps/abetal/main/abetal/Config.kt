@@ -1,5 +1,6 @@
 package abetal
 
+import libs.kafka.ConsumeNextHandler
 import libs.kafka.StreamsConfig
 import java.util.*
 
@@ -16,7 +17,7 @@ data class Config(
 
             // this[org.apache.kafka.streams.StreamsConfig.PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProduceNextHandler::class.java
             // this[org.apache.kafka.streams.StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessNextHandler::class.java
-            //this[org.apache.kafka.streams.StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeNextHandler::class.java
+            this[org.apache.kafka.streams.StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeNextHandler::class.java
 
             // AdminClient trenger lengre tid ved opprettelse av internal topics
             this[org.apache.kafka.streams.StreamsConfig.RETRY_BACKOFF_MS_CONFIG] = 1000
