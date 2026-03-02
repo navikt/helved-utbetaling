@@ -3,6 +3,7 @@ package abetal.consumers
 import abetal.*
 import models.*
 import org.junit.jupiter.api.DynamicTest
+import java.time.LocalDateTime
 
 /**
  * Parameterized tests for Tiltakspenger consumer.
@@ -22,7 +23,7 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
     override fun `update existing utbetaling`() = emptyList<DynamicTest>()
     override fun `empty utbetaling returns OK`() = emptyList<DynamicTest>()
-    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // TP has different simulation behavior
+    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // TP has different simulation behavior - needs specific investigation
     
     override fun createMessage(
         sakId: String,
@@ -59,10 +60,11 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
         return StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING
     }
     
-    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>): TpUtbetaling {
+    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): TpUtbetaling {
         return Tp.utbetaling(
             sakId = sakId,
             behandlingId = behandlingId,
+            vedtakstidspunkt = vedtakstidspunkt,
             saksbehandler = saksbehId,
             beslutter = saksbehId,
             dryrun = true

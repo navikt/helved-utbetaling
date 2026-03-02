@@ -3,6 +3,7 @@ package abetal.consumers
 import abetal.*
 import models.*
 import org.junit.jupiter.api.DynamicTest
+import java.time.LocalDateTime
 
 /**
  * Parameterized tests for AAP consumer.
@@ -23,7 +24,6 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
     override fun `update existing utbetaling`() = emptyList<DynamicTest>()
     override fun `empty utbetaling returns OK`() = emptyList<DynamicTest>()
-    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // Needs investigation
     
     override fun createMessage(
         sakId: String,
@@ -58,10 +58,11 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
         return StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING
     }
     
-    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>): AapUtbetaling {
+    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): AapUtbetaling {
         return Aap.utbetaling(
             sakId = sakId,
             behandlingId = behandlingId,
+            vedtakstidspunkt = vedtakstidspunkt,
             dryrun = true
         ) {
             perioder.forEach { periode ->

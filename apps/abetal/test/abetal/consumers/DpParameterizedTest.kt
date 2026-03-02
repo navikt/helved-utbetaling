@@ -5,6 +5,7 @@ import models.*
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.*
 
 /**
@@ -23,7 +24,7 @@ internal class DpParameterizedTest : ConsumerParameterizedTestBase<DpUtbetaling>
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
     
     // Disable simulation test - needs investigation why status topic isn't populated
-    override fun `simulering uten endring`() = emptyList<DynamicTest>()
+    // override fun `simulering uten endring`() = emptyList<DynamicTest>()
     
     override fun createMessage(
         sakId: String,
@@ -73,7 +74,7 @@ internal class DpParameterizedTest : ConsumerParameterizedTestBase<DpUtbetaling>
         return StønadTypeDagpenger.DAGPENGER
     }
     
-    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>): DpUtbetaling {
+    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): DpUtbetaling {
         val utbetalinger = perioder.flatMap { periode ->
             var current = periode.fom
             val result = mutableListOf<DpUtbetalingsdag>()
@@ -98,7 +99,7 @@ internal class DpParameterizedTest : ConsumerParameterizedTestBase<DpUtbetaling>
             sakId = sakId,
             behandlingId = behandlingId,
             ident = "12345678910",
-            vedtakstidspunktet = 14.jun.atStartOfDay(),
+            vedtakstidspunktet = vedtakstidspunkt,
             utbetalinger = utbetalinger,
             saksbehandler = saksbehId,
             beslutter = saksbehId,

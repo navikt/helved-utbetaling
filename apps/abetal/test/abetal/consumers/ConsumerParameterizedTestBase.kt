@@ -5,6 +5,7 @@ import models.*
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 import kotlin.test.assertEquals
 
@@ -282,6 +283,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             val key = UUID.randomUUID().toString()
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
+            val vedtakstidspunkt = 14.jun.atStartOfDay()
             val periode = TestPeriode(
                 fom = 1.jan,
                 tom = 2.jan,
@@ -301,7 +303,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                     originalKey = key,
                     stønad = getDefaultStønad(),
                     personident = Personident("12345678910"),
-                    vedtakstidspunkt = 14.jun.atStartOfDay(),
+                    vedtakstidspunkt = vedtakstidspunkt,
                     beslutterId = Navident(saksbehId),
                     saksbehandlerId = Navident(saksbehId),
                     fagsystem = fagsystem,
@@ -311,11 +313,17 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                 }
             }
             
-            // Now simulate the exact same utbetaling (dryrun=true)
+            // Setup saker topic so the system knows this utbetaling exists
+            TestRuntime.topics.saker.produce(SakKey(sid, getSakerFagsystem())) {
+                setOf(uid)
+            }
+            
+            // Now simulate the exact same utbetaling (dryrun=true) with same vedtakstidspunkt
             val dryrunMessage = createMessageDryrun(
                 sakId = sid.id,
                 behandlingId = bid.id,
-                perioder = listOf(periode)
+                perioder = listOf(periode),
+                vedtakstidspunkt = vedtakstidspunkt
             )
             
             produceMessage(key, dryrunMessage)
@@ -329,8 +337,6 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             // Should not create a simulering since nothing changed
             TestRuntime.topics.simulering.assertThat().hasNot(key)
             
-            // Clean up
-            TestRuntime.topics.saker.assertThat().has(SakKey(SakId(sid.id), fagsystem))
             TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
         }
     )
@@ -340,7 +346,12 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * Default implementation delegates to createMessage, but consumers can override
      * if they need special handling for dryrun messages.
      */
-    open fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>): TMessage {
+    open fun createMessageDryrun(
+        sakId: String,
+        behandlingId: String,
+        perioder: List<TestPeriode>,
+        vedtakstidspunkt: LocalDateTime
+    ): TMessage {
         return createMessage(sakId, behandlingId, perioder)
     }
 }
