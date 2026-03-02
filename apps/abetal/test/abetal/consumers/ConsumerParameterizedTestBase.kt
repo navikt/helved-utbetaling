@@ -2,11 +2,11 @@ package abetal.consumers
 
 import abetal.*
 import models.*
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import java.time.LocalDate
-import java.util.UUID
+import java.util.*
+import kotlin.test.assertEquals
 
 /**
  * Parameterized test scenarios that can be run across all consumers.
@@ -228,6 +228,121 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
         }
     )
+    
+    /**
+     * Common test scenario: Delete/Opphør existing utbetaling
+     * 
+     * NOTE: This test is complex due to subtle differences between consumers:
+     * - AAP/TP create one utbetaling per stønad type
+     * - TS/DP create one utbetaling per period
+     * - The idempotency logic requires careful setup
+     * 
+     * Consider implementing this test in individual consumer test classes
+     * for better clarity and maintainability.
+     */
+    @TestFactory
+    open fun `delete existing utbetaling creates opphør`() = emptyList<DynamicTest>()
+    
+    /**
+     * Common test scenario: Empty utbetaling returns OK status
+     * Should be overridden for consumers where this isn't valid behavior
+     */
+    @TestFactory
+    open fun `empty utbetaling returns OK`() = listOf(
+        testWithCleanup("utbetaling without perioder gives status OK") {
+            val sid = SakId("$nextInt")
+            val bid = BehandlingId("$nextInt")
+            val tid = UUID.randomUUID().toString()
+            
+            val emptyMessage = createMessage(
+                sakId = sid.id,
+                behandlingId = bid.id,
+                perioder = emptyList()
+            )
+            
+            produceMessage(tid, emptyMessage)
+            
+            TestRuntime.topics.status.assertThat()
+                .has(tid)
+                .with(tid) { assertEquals(Status.OK, it.status) }
+            
+            assertUtbetalingerEmpty()
+            TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+            TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        }
+    )
+    
+    /**
+     * Common test scenario: Simulation without changes returns OK
+     * Tests that simulating the same utbetaling that already exists does not create a simulering request
+     */
+    @TestFactory
+    open fun `simulering uten endring`() = listOf(
+        testWithCleanup("simulation without changes returns OK") {
+            val key = UUID.randomUUID().toString()
+            val sid = SakId("$nextInt")
+            val bid = BehandlingId("$nextInt")
+            val periode = TestPeriode(
+                fom = 1.jan,
+                tom = 2.jan,
+                beløp = 100u,
+                sats = 100u,
+                uniqueKey = "period1"
+            )
+            val uid = createUtbetalingId(sid.id, periode.uniqueKey, getDefaultStønad())
+            
+            // First create an existing utbetaling
+            TestRuntime.topics.utbetalinger.produce(uid.toString()) {
+                utbetaling(
+                    action = Action.CREATE,
+                    uid = uid,
+                    sakId = sid,
+                    behandlingId = bid,
+                    originalKey = key,
+                    stønad = getDefaultStønad(),
+                    personident = Personident("12345678910"),
+                    vedtakstidspunkt = 14.jun.atStartOfDay(),
+                    beslutterId = Navident(saksbehId),
+                    saksbehandlerId = Navident(saksbehId),
+                    fagsystem = fagsystem,
+                    periodetype = getDefaultPeriodetype()
+                ) {
+                    periode(periode.fom, periode.tom, periode.beløp, periode.sats)
+                }
+            }
+            
+            // Now simulate the exact same utbetaling (dryrun=true)
+            val dryrunMessage = createMessageDryrun(
+                sakId = sid.id,
+                behandlingId = bid.id,
+                perioder = listOf(periode)
+            )
+            
+            produceMessage(key, dryrunMessage)
+            
+            TestRuntime.topics.status.assertThat()
+                .has(key)
+                .with(key) { statusReply ->
+                    assertEquals(Status.OK, statusReply.status)
+                }
+            
+            // Should not create a simulering since nothing changed
+            TestRuntime.topics.simulering.assertThat().hasNot(key)
+            
+            // Clean up
+            TestRuntime.topics.saker.assertThat().has(SakKey(SakId(sid.id), fagsystem))
+            TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+        }
+    )
+    
+    /**
+     * Creates a dryrun (simulation) message.
+     * Default implementation delegates to createMessage, but consumers can override
+     * if they need special handling for dryrun messages.
+     */
+    open fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>): TMessage {
+        return createMessage(sakId, behandlingId, perioder)
+    }
 }
 
 data class TestPeriode(

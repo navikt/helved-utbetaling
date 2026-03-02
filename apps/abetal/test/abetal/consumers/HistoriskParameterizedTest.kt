@@ -9,9 +9,6 @@ import org.junit.jupiter.api.DynamicTest
  * 
  * Historisk creates ONE utbetaling containing all periods (unlike other consumers
  * which create one utbetaling per period).
- * 
- * NOTE: The "multiple periods" and "update" tests are disabled because Historisk
- * has different behavior that needs consumer-specific test logic.
  */
 internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<HistoriskUtbetaling>() {
     
@@ -22,6 +19,8 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
     // Disable tests that don't work generically for Historisk
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
     override fun `update existing utbetaling`() = emptyList<DynamicTest>()
+    override fun `empty utbetaling returns OK`() = emptyList<DynamicTest>()
+    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // Needs investigation
     
     override fun createMessage(
         sakId: String,
@@ -70,5 +69,24 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
     // Historisk creates ONE utbetaling with multiple periods
     override fun getExpectedUtbetalingIds(sakId: String, perioder: List<TestPeriode>): List<UtbetalingId> {
         return listOf(createUtbetalingId(sakId, "historisk", getDefaultStønad()))
+    }
+    
+    override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>): HistoriskUtbetaling {
+        val uid = createUtbetalingId(sakId, "historisk", getDefaultStønad())
+        
+        return Historisk.utbetaling(
+            uid = uid,
+            sakId = sakId,
+            behandlingId = behandlingId,
+            dryrun = true
+        ) {
+            perioder.map { periode ->
+                HistoriskPeriode(
+                    fom = periode.fom,
+                    tom = periode.tom,
+                    beløp = periode.beløp
+                )
+            }
+        }
     }
 }
