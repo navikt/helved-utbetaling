@@ -68,6 +68,31 @@ class MigrationsTest {
     }
 
     @Test
+    fun `lagrer fagsystem for statusmelding ved insert`() = runTest(TestRuntime.context) {
+        val key = UUID.randomUUID().toString()
+        saveStatus(key, status("FEILET", "TILTPENG"))
+
+        val dao = transaction {
+            Daos.findStatusByKeys(listOf(key)).single()
+        }
+
+        assertEquals("TILTPENG", dao.fagsystem)
+    }
+
+    @Test
+    fun `lagrer fagsystem for saker ved insert`() = runTest(TestRuntime.context) {
+        val sakId = "ljvbswi"
+        val key = """{"sakId":"$sakId","fagsystem":"TILTPENG"}"""
+        save(Channel.Saker, key, "[${UUID.randomUUID()}]")
+
+        val dao = transaction {
+            Daos.findSaker(sakId, "TILTPENG").single()
+        }
+
+        assertEquals("TILTPENG", dao.fagsystem)
+    }
+
+    @Test
     fun `lagrer fagsystem for avstemminger`() = runTest(TestRuntime.context) {
         val key = UUID.randomUUID().toString()
         saveAvstemming(key, avstemming())
@@ -149,10 +174,12 @@ class MigrationsTest {
         }
     }
 
-    private fun status(status: String? = "OK") = """
+    private fun status(status: String? = "OK", ytelse: String? = "DP") = """
         {
             "status": "$status",
-            "detaljer": [],
+            "detaljer": {
+                "ytelse": "$ytelse"
+            },
             "error": null
         }
     """.trimIndent()
@@ -160,12 +187,19 @@ class MigrationsTest {
     private suspend fun saveOppdrag(
         key: String = UUID.randomUUID().toString(),
         value: String = TestData.oppdragXml(),
+    ) =
+        save(Channel.Oppdrag, key, value)
+
+    private suspend fun save(
+        channel: Channel,
+        key: String,
+        value: String,
         timestamp: Long = Instant.now().toEpochMilli(),
         commitHash: String = "test",
         offset: Long = 1,
     ) {
         val dao = Daos(
-            topic_name = Channel.Oppdrag.topic.name,
+            topic_name = channel.topic.name,
             version = "v1",
             key = key,
             value = value,
@@ -179,7 +213,7 @@ class MigrationsTest {
         )
 
         transaction {
-            dao.insert(Channel.Oppdrag.table)
+            dao.insert(channel.table)
         }
     }
 }
