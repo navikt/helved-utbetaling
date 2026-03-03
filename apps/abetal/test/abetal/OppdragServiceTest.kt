@@ -150,7 +150,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 7.jun, 100u) + 
+            periode(1.jun, 7.jun, 100u) 
             periode(8.jun, 14.jun, 200u)
         }
 
@@ -160,8 +160,8 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 7.jun, 100u) + 
-            periode(8.jun, 14.jun, 200u) + 
+            periode(1.jun, 7.jun, 100u)  
+            periode(8.jun, 14.jun, 200u)  
             periode(15.jun, 21.jun, 300u)
         }
 
@@ -255,7 +255,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 7.jun, 100u) + 
+            periode(1.jun, 7.jun, 100u)  
             periode(8.jun, 14.jun, 200u)
         }
 
@@ -311,7 +311,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 14.jun, 100u) + 
+            periode(1.jun, 14.jun, 100u)  
             periode(15.jun, 28.jun, 200u)
         }
 
@@ -321,7 +321,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 7.jun, 100u) + 
+            periode(1.jun, 7.jun, 100u)  
             periode(15.jun, 28.jun, 200u)
         }
 
@@ -376,8 +376,8 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 14.jun, 100u) + 
-            periode(15.jun, 28.jun, 200u) + 
+            periode(1.jun, 14.jun, 100u)  
+            periode(15.jun, 28.jun, 200u)  
             periode(29.jun, 7.jul, 100u) 
         }
 
@@ -387,8 +387,8 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 14.jun, 100u) + 
-            periode(21.jun, 28.jun, 200u) + 
+            periode(1.jun, 14.jun, 100u)  
+            periode(21.jun, 28.jun, 200u)  
             periode(29.jun, 7.jul, 100u) 
         }
 
@@ -510,7 +510,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 14.jun, 200u) + 
+            periode(1.jun, 14.jun, 200u)  
             periode(15.jun, 28.jun, 100u)
         }
 
@@ -571,7 +571,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 14.jun, 100u) + 
+            periode(1.jun, 14.jun, 100u)  
             periode(15.jun, 28.jun, 200u)
         }
 
@@ -623,8 +623,8 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 9.jun, 100u) +
-            periode(10.jun, 19.jun, 200u) +
+            periode(1.jun, 9.jun, 100u) 
+            periode(10.jun, 19.jun, 200u) 
             periode(20.jun, 28.jun, 100u)
         }
 
@@ -686,7 +686,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jun, 14.jun, 100u) +
+            periode(1.jun, 14.jun, 100u) 
             periode(21.jun, 28.jun, 100u)
         }
 
@@ -737,7 +737,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(3.jun, 3.jun, 100u) + 
+            periode(3.jun, 3.jun, 100u)  
             periode(1.jul, 1.jul, 200u)
         }
 
@@ -747,8 +747,8 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(3.jun, 3.jun, 100u) + 
-            periode(1.jul, 1.jul, 200u) +
+            periode(3.jun, 3.jun, 100u)  
+            periode(1.jul, 1.jul, 200u) 
             periode(1.aug, 1.aug, 300u)
         }
 
@@ -789,8 +789,8 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(3.jun, 3.jun, 100u) + 
-            periode(1.jul, 1.jul, 200u) +
+            periode(3.jun, 3.jun, 100u)  
+            periode(1.jul, 1.jul, 200u) 
             periode(1.aug, 1.aug, 300u)
         }
 
@@ -800,7 +800,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(3.jun, 3.jun, 100u) + 
+            periode(3.jun, 3.jun, 100u)  
             periode(1.jul, 1.jul, 200u)
         }
 
@@ -844,8 +844,8 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(3.jun, 3.jun, 100u) + 
-            periode(1.jul, 1.jul, 200u) +
+            periode(3.jun, 3.jun, 100u)  
+            periode(1.jul, 1.jul, 200u) 
             periode(1.aug, 1.aug, 300u)
         }
 
@@ -855,7 +855,7 @@ class OppdragServiceTest {
             sakId = sid,
             periodetype = Periodetype.UKEDAG,
         ) {
-            periode(1.jul, 1.jul, 200u) + 
+            periode(1.jul, 1.jul, 200u)  
             periode(1.aug, 1.aug, 300u)
         }
 
@@ -927,7 +927,7 @@ class OppdragServiceTest {
             uid = UtbetalingId(UUID.randomUUID()),
             fagsystem = Fagsystem.AAP,
         ) {
-            periode(1.jul, 1.jul, 300u) +
+            periode(1.jul, 1.jul, 300u) 
             periode(1.aug, 1.aug, 300u)
         }
 
@@ -955,7 +955,7 @@ class OppdragServiceTest {
             uid = UtbetalingId(UUID.randomUUID()),
             fagsystem = Fagsystem.AAP,
         ) {
-            periode(1.jul, 1.jul, 300u) +
+            periode(1.jul, 1.jul, 300u) 
             periode(1.aug, 1.aug, 300u)
         }
 

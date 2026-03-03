@@ -1,6 +1,7 @@
 package abetal.consumers
 
 import abetal.*
+import abetal.aap.linje
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
@@ -41,7 +42,7 @@ class AapTest : ConsumerTestBase() {
 
         val expectedUtbetaling2 = expectedUtbetaling1.copy(
             uid = uid2,
-            perioder = periode(8.jul, 19.jul, 779u, 2377u) // fjern surrounding helg
+            perioder = listOf(periode(8.jul, 19.jul, 779u, 2377u))
         ) 
 
         TestRuntime.topics.aap.produce(transactionId) {
@@ -52,8 +53,8 @@ class AapTest : ConsumerTestBase() {
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Aap.mottatt {
-                linje(bid, 7.jun, 18.jun, 553u, 1077u)
-                linje(bid, 8.jul, 19.jul, 779u, 2377u)
+                linje(bid, 7.jun, 18.jun, 1077u, 553u)
+                linje(bid, 8.jul, 19.jul, 2377u, 779u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -65,7 +66,7 @@ class AapTest : ConsumerTestBase() {
                 assertEquals("kelvin", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
                     kodeEndringLinje = "NY",
-                    henvisning = bid.id,
+                    behandlingId = bid,
                     kodeKlassifik = "AAPOR",
                     sats = 553,
                     vedtakssats = 1077,
@@ -73,7 +74,7 @@ class AapTest : ConsumerTestBase() {
                 )
                 oppdrag.oppdrag110.oppdragsLinje150s[1].assertLine(
                     kodeEndringLinje = "NY",
-                    henvisning = bid.id,
+                    behandlingId = bid,
                     kodeKlassifik = "AAPOR",
                     sats = 779,
                     vedtakssats = 2377
@@ -125,11 +126,11 @@ class AapTest : ConsumerTestBase() {
         }
         val expectedUtbetaling2 = expectedUtbetaling1.copy(
             uid = uid2,
-            perioder = periode(8.jul, 19.jul, 779u, 2377u)
+            perioder = listOf(periode(8.jul, 19.jul, 779u, 2377u))
         )
         val expectedUtbetaling3 = expectedUtbetaling1.copy(
             uid = uid3,
-            perioder = periode(7.aug, 20.aug, 3000u, 3133u),
+            perioder = listOf(periode(7.aug, 20.aug, 3000u, 3133u)),
         )
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
@@ -140,9 +141,9 @@ class AapTest : ConsumerTestBase() {
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Aap.mottatt {
-                linje(bid, 7.jun, 20.jun, 553u, 1077u)
-                linje(bid, 8.jul, 19.jul, 779u, 2377u)
-                linje(bid, 7.aug, 20.aug, 3000u, 3133u)
+                linje(bid, 7.jun, 20.jun, 1077u, 553u)
+                linje(bid, 8.jul, 19.jul, 2377u, 779u)
+                linje(bid, 7.aug, 20.aug, 3133u, 3000u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -154,7 +155,7 @@ class AapTest : ConsumerTestBase() {
                 assertEquals("kelvin", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
                     kodeEndringLinje = "NY",
-                    henvisning = bid.id,
+                    behandlingId = bid,
                     kodeKlassifik = "AAPOR",
                     sats = 553,
                     vedtakssats = 1077,
@@ -162,7 +163,7 @@ class AapTest : ConsumerTestBase() {
                 )
                 oppdrag.oppdrag110.oppdragsLinje150s[1].assertLine(
                     kodeEndringLinje = "NY",
-                    henvisning = bid.id,
+                    behandlingId = bid,
                     kodeKlassifik = "AAPOR",
                     sats = 779,
                     vedtakssats = 2377,
@@ -170,7 +171,7 @@ class AapTest : ConsumerTestBase() {
                 )
                 oppdrag.oppdrag110.oppdragsLinje150s[2].assertLine(
                     kodeEndringLinje = "NY",
-                    henvisning = bid.id,
+                    behandlingId = bid,
                     kodeKlassifik = "AAPOR",
                     sats = 3000,
                     vedtakssats = 3133,
@@ -228,7 +229,7 @@ class AapTest : ConsumerTestBase() {
             uid = uid2,
             originalKey = transactionId2,
             førsteUtbetalingPåSak = false,
-            perioder = periode(17.jun, 28.jun, 200u, 200u)
+            perioder = listOf(periode(17.jun, 28.jun, 200u, 200u))
         ) 
 
         TestRuntime.topics.utbetalinger.produce(uid1.toString(), existingUtbetaling)
@@ -254,7 +255,7 @@ class AapTest : ConsumerTestBase() {
                 assertEquals("kelvin", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
                     kodeEndringLinje = "NY",
-                    henvisning = bid.id,
+                    behandlingId = bid,
                     kodeKlassifik = "AAPOR",
                     sats = 200,
                     vedtakssats = 200,
@@ -309,7 +310,7 @@ class AapTest : ConsumerTestBase() {
             action = Action.UPDATE,
             originalKey = transactionId2,
             førsteUtbetalingPåSak = false,
-            perioder = periode(3.jun, 14.jun, 80u, 100u)
+            perioder = listOf(periode(3.jun, 14.jun, 80u, 100u))
         )
 
         TestRuntime.topics.utbetalinger.produce(uid1.toString(), utbetaling)
@@ -321,7 +322,7 @@ class AapTest : ConsumerTestBase() {
         }
         TestRuntime.topics.status.assertThat().has(transactionId2) {
             Aap.mottatt {
-                linje(bid, 3.jun, 14.jun, 80u, 100u)
+                linje(bid, 3.jun, 14.jun, 100u, 80u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -338,7 +339,7 @@ class AapTest : ConsumerTestBase() {
                 assertEquals("kelvin", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
                     kodeEndringLinje = "NY",
-                    henvisning = bid.id,
+                    behandlingId = bid,
                     kodeKlassifik = "AAPOR",
                     sats = 80,
                     vedtakssats = 100,
@@ -396,7 +397,7 @@ class AapTest : ConsumerTestBase() {
 
         TestRuntime.topics.status.assertThat().has(transactionId1) {
             Aap.mottatt {
-                linje(bid, 2.jun, 13.jun, 0u, 100u)
+                linje(bid, 2.jun, 13.jun, 100u, 0u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -458,7 +459,7 @@ class AapTest : ConsumerTestBase() {
         val utbetaling2 = utbetaling1.copy(
             uid = uid2,
             førsteUtbetalingPåSak = false,
-            perioder = periode(16.sep, 27.sep, 600u, 600u)
+            perioder = listOf(periode(16.sep, 27.sep, 600u, 600u))
         ) 
 
         TestRuntime.topics.utbetalinger.produce(uid1.toString(), utbetaling1)
@@ -474,7 +475,7 @@ class AapTest : ConsumerTestBase() {
             Aap.mottatt {
                 linje(bid, 2.sep, 13.sep, 600u, 600u)
                 linje(bid, 30.sep, 10.okt, 600u, 600u)
-                linje(bid, 16.sep, 27.sep, 0u, 600u)
+                linje(bid, 16.sep, 27.sep, 600u, 0u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -516,7 +517,7 @@ class AapTest : ConsumerTestBase() {
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Aap.mottatt {
-                linje(bid, 7.jun, 18.jun, 1077u, 553u)
+                linje(bid, 7.jun, 18.jun, 553u, 1077u)
             }
         }
 

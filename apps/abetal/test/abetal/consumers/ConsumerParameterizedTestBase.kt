@@ -163,7 +163,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                     stønad = defaultStønad,
                     periodetype = periodetype,
                     perioder = {
-                        listOf(Utbetalingsperiode(1.jun, 15.jun, 100u))
+                        add(Utbetalingsperiode(1.jun, 15.jun, 100u))
                     }
                 )
             }

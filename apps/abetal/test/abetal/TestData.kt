@@ -29,6 +29,8 @@ val Int.aug: LocalDate get() = LocalDate.of(2024, 8, this)
 val Int.sep: LocalDate get() = LocalDate.of(2024, 9, this)
 /** 2024*/
 val Int.okt: LocalDate get() = LocalDate.of(2024, 10, this)
+/** 2025 */
+val Int.nov: LocalDate get() = LocalDate.of(2025, 11, this)
 /** 2024*/
 val Int.des: LocalDate get() = LocalDate.of(2024, 12, this)
 /** 2025*/
@@ -41,6 +43,8 @@ val Int.mar25: LocalDate get() = LocalDate.of(2025, 3, this)
 val Int.apr25: LocalDate get() = LocalDate.of(2025, 4, this)
 /** 2025*/
 val Int.jun25: LocalDate get() = LocalDate.of(2025, 6, this)
+/** 2025*/
+val Int.des25: LocalDate get() = LocalDate.of(2025, 12, this)
 
 fun hashOppdrag(oppdrag: Oppdrag): Int { 
     return oppdragMapper.writeValueAsString(oppdrag).hashCode()
@@ -72,6 +76,38 @@ fun MutableList<AapUtbetalingsdag>.meldekort(
             add(AapUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp))
         }
     }
+}
+
+fun periode(
+    fom: LocalDate,
+    tom: LocalDate,
+    beløp: UInt,
+    vedtakssats: UInt? = null,
+    betalendeEnhet: NavEnhet? = null,
+): Utbetalingsperiode {
+    return Utbetalingsperiode(
+        fom = fom,
+        tom = tom,
+        beløp = beløp,
+        vedtakssats = vedtakssats,
+        betalendeEnhet = betalendeEnhet,
+    )
+}
+
+fun MutableList<Utbetalingsperiode>.periode(
+    fom: LocalDate,
+    tom: LocalDate,
+    beløp: UInt,
+    vedtakssats: UInt? = null,
+    betalendeEnhet: NavEnhet? = null,
+) {
+    add(Utbetalingsperiode(
+        fom = fom,
+        tom = tom,
+        beløp = beløp,
+        vedtakssats = vedtakssats,
+        betalendeEnhet = betalendeEnhet,
+    ))
 }
 
 object Aap {
@@ -116,51 +152,6 @@ object Aap {
     }
 }
 
-fun MutableList<DetaljerLinje>.linje(
-    behandlingId: BehandlingId,
-    fom: LocalDate,
-    tom: LocalDate,
-    sats: UInt,
-    utbetaltBeløp: UInt = sats,
-) {
-    add(DetaljerLinje(behandlingId.id, fom, tom, utbetaltBeløp, sats, "AAPOR"))
-}
-
-object Dp {
-    fun utbetaling(
-        sakId: String = "$nextInt",
-        behandlingId: String = "$nextInt",
-        dryrun: Boolean = false,
-        ident: String = "12345678910",
-        vedtakstidspunkt: LocalDateTime = LocalDateTime.now(),
-        utbetalinger: () -> List<DpUtbetalingsdag>,
-    ): DpUtbetaling = DpUtbetaling(
-        dryrun = dryrun,
-        behandlingId = behandlingId,
-        sakId = sakId,
-        ident = ident,
-        vedtakstidspunktet = vedtakstidspunkt,
-        utbetalinger = utbetalinger(),
-    )
-
-    fun meldekort(
-        meldeperiode: String,
-        fom: LocalDate,
-        tom: LocalDate,
-        sats: UInt,
-        utbetaltBeløp: UInt = sats,
-        utbetalingstype: Utbetalingstype = Utbetalingstype.Dagpenger,
-    ): List<DpUtbetalingsdag> {
-        return buildList<DpUtbetalingsdag> {
-            for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
-                val dato = fom.plusDays(i)
-                if (!dato.erHelg()) {
-                    add(DpUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp, utbetalingstype))
-                }
-            }
-        }
-    }
-}
 
 object Tp {
     fun utbetaling(
@@ -221,21 +212,29 @@ object Ts {
         uid: UtbetalingId,
         brukFagområdeTillst: Boolean = true,
         stønad: StønadTypeTilleggsstønader = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
-        perioder: () -> List<TsPeriode>,
+        perioder: MutableList<TsPeriode>.() -> Unit,
     ): List<TsUtbetaling> = listOf(TsUtbetaling(
         id = uid.id,
         stønad = stønad,
-        perioder = perioder(),
+        perioder = mutableListOf<TsPeriode>().apply(perioder),
         brukFagområdeTillst = brukFagområdeTillst,
     ))
 
-    fun periode(
-        fom: LocalDate,
-        tom: LocalDate,
-        beløp: UInt,
-    ): List<TsPeriode> {
-        return listOf(TsPeriode(fom, tom, beløp))
-    }
+    // fun periode(
+    //     fom: LocalDate,
+    //     tom: LocalDate,
+    //     beløp: UInt,
+    // ): List<TsPeriode> {
+    //     return listOf(TsPeriode(fom, tom, beløp))
+    // }
+}
+
+fun MutableList<TsPeriode>.periode(
+    fom: LocalDate,
+    tom: LocalDate,
+    beløp: UInt,
+) {
+    add(TsPeriode(fom, tom, beløp))
 }
 
 object Historisk {
@@ -286,7 +285,7 @@ fun utbetaling(
     saksbehandlerId: Navident = Navident(""),
     avvent: Avvent? = null,
     fagsystem: Fagsystem = Fagsystem.AAP,
-    perioder: () -> List<Utbetalingsperiode> = { emptyList() },
+    perioder: MutableList<Utbetalingsperiode>.() -> Unit,
 ) = Utbetaling(
     dryrun = false,
     uid = uid,
@@ -304,24 +303,24 @@ fun utbetaling(
     saksbehandlerId = saksbehandlerId,
     avvent = avvent,
     fagsystem = fagsystem,
-    perioder = perioder(),
+    perioder = mutableListOf<Utbetalingsperiode>().apply(perioder),
 )
 
-fun periode(
-    fom: LocalDate,
-    tom: LocalDate,
-    beløp: UInt = 123u,
-    vedtakssats: UInt? = null,
-    betalendeEnhet: NavEnhet? = null,
-) = listOf(
-    Utbetalingsperiode(
-        fom = fom,
-        tom = tom,
-        beløp = beløp,
-        vedtakssats = vedtakssats,
-        betalendeEnhet = betalendeEnhet,
-    )
-)
+// fun periode(
+//     fom: LocalDate,
+//     tom: LocalDate,
+//     beløp: UInt = 123u,
+//     vedtakssats: UInt? = null,
+//     betalendeEnhet: NavEnhet? = null,
+// ) = listOf(
+//     Utbetalingsperiode(
+//         fom = fom,
+//         tom = tom,
+//         beløp = beløp,
+//         vedtakssats = vedtakssats,
+//         betalendeEnhet = betalendeEnhet,
+//     )
+// )
 
 fun utbetalingsperiode(
     fom: LocalDate,
