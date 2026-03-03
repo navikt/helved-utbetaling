@@ -8,6 +8,10 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import abetal.*
+import abetal.dp.Dp
+import abetal.dp.linje
+import abetal.dp.meldekort
 
 internal class AbetalTest {
 
@@ -35,35 +39,16 @@ internal class AbetalTest {
 
         TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
-                Dp.meldekort(
-                    meldeperiode = meldeperiode1,
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    sats = 1077u,
-                    utbetaltBeløp = 553u,
-                ) + Dp.meldekort(
-                    meldeperiode = meldeperiode2,
-                    fom = LocalDate.of(2021, 7, 7),
-                    tom = LocalDate.of(2021, 7, 20),
-                    sats = 2377u,
-                    utbetaltBeløp = 779u,
-                )
+                meldekort(meldeperiode1, 7.jun21, 18.jun21, 1077u, 553u) 
+                meldekort(meldeperiode2, 7.jul21, 20.jul21, 2377u, 779u)
             }
         }
-
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.DAGPENGER,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun21, 18.jun21, 1077u, 553u, "DAGPENGER"),
-                    DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DAGPENGER"),
-                )
-            )
-        )
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId)
-            .has(transactionId, mottatt)
+        TestRuntime.topics.status.assertThat().has(transactionId) {
+            Dp.mottatt {
+                linje(bid, 7.jun21, 18.jun21, 1077u, 553u)
+                linje(bid, 7.jul21, 20.jul21, 2377u, 779u)
+            }
+        }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
@@ -201,7 +186,7 @@ internal class AbetalTest {
 
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id) {
-                Dp.meldekort(
+                meldekort(
                     meldeperiode = meldeperiode,
                     fom = 1.jan,
                     tom = 2.jan,
@@ -234,7 +219,7 @@ internal class AbetalTest {
 
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id) {
-                Dp.meldekort(
+                meldekort(
                     meldeperiode = meldeperiode,
                     fom = 1.jan,
                     tom = 2.jan,
@@ -268,7 +253,7 @@ internal class AbetalTest {
 
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id) {
-                Dp.meldekort(
+                meldekort(
                     meldeperiode = meldeperiode1,
                     fom = 1.jan,
                     tom = 2.jan,
@@ -293,7 +278,7 @@ internal class AbetalTest {
 
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id) {
-                Dp.meldekort(
+                meldekort(
                     meldeperiode = meldeperiode2,
                     fom = 3.jan,
                     tom = 4.jan,
@@ -348,7 +333,7 @@ internal class AbetalTest {
                 behandlingId = bid.id,
                 vedtakstidspunkt = 2.jun.atStartOfDay(),
             ) {
-                Dp.meldekort(
+                meldekort(
                     meldeperiode = meldeperiode,
                     fom = 1.jan,
                     tom = 2.jan,
@@ -381,7 +366,7 @@ internal class AbetalTest {
                 sakId = sakId.id,
                 behandlingId = behandlingId1.id
             ) {
-                Dp.meldekort(
+                meldekort(
                     meldeperiode = meldeperiode1,
                     fom = 10.jun,
                     tom = 14.jun,
@@ -418,7 +403,7 @@ internal class AbetalTest {
                     tom = 28.jun,
                     sats = 550u
                 )
-                originalDays + newDays
+                addAll(originalDays + newDays)
             }
         }
 
@@ -452,7 +437,7 @@ internal class AbetalTest {
 
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sid.id, bid.id) {
-                Dp.meldekort(
+                meldekort(
                     meldeperiode = meldeperiode,
                     fom = 1.jan,
                     tom = 2.jan,
@@ -490,7 +475,9 @@ internal class AbetalTest {
         val key = UUID.randomUUID().toString()
         val uid = randomUtbetalingId()
 
-        val oppdrag = OppdragService.opprett(utbetaling(Action.CREATE, uid) { periode(1.jan, 3.jan) }).apply {
+        val oppdrag = OppdragService.opprett(utbetaling(Action.CREATE, uid) { 
+            periode(1.jan, 3.jan, 123u) 
+        }).apply {
             mmel = Mmel().apply { alvorlighetsgrad = "00" }
         }
 
@@ -505,7 +492,9 @@ internal class AbetalTest {
         val key = UUID.randomUUID().toString()
         val uid = randomUtbetalingId()
 
-        val utbetaling = utbetaling(Action.CREATE, uid)
+        val utbetaling = utbetaling(Action.CREATE, uid) {
+            // empty periods
+        }
 
         TestRuntime.topics.pendingUtbetalinger.produce(uid.toString()) { utbetaling }
 
@@ -524,7 +513,7 @@ internal class AbetalTest {
         val key = UUID.randomUUID().toString()
         val uid = randomUtbetalingId()
         val utbetaling = utbetaling(Action.CREATE, uid) {
-            periode(1.jan, 3.jan)
+            periode(1.jan, 3.jan, 123u)
         }
 
         val oppdrag = OppdragService.opprett(utbetaling).apply {
@@ -544,7 +533,7 @@ internal class AbetalTest {
         val key = UUID.randomUUID().toString()
         val uid = randomUtbetalingId()
         val utbetaling = utbetaling(Action.CREATE, uid) {
-            periode(1.jan, 3.jan)
+            periode(1.jan, 3.jan, 123u)
         }
 
         val oppdrag = OppdragService.opprett(utbetaling).apply {

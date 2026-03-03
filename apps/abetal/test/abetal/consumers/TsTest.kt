@@ -36,7 +36,7 @@ internal class TsTest : ConsumerTestBase() {
                 saksbehandlerId = Navident("ts"),
                 fagsystem = Fagsystem.TILLSTPB,
             ) {
-                emptyList()
+                // empty
             }
         }
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.TILLEGGSSTØNADER)) {
@@ -51,7 +51,7 @@ internal class TsTest : ConsumerTestBase() {
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
             ) {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
-                    Ts.periode(3.jun, 7.jun, 1500u)
+                    periode(3.jun, 7.jun, 1500u)
                 }
             }
         }
@@ -76,7 +76,7 @@ internal class TsTest : ConsumerTestBase() {
         TestRuntime.topics.ts.produce(transactionId) {
             Ts.dto(sid.id, bid.id) {
                 Ts.utbetaling(uid, brukFagområdeTillst = true) {
-                    Ts.periode(7.jun, 18.jun, 1077u)
+                    periode(7.jun, 18.jun, 1077u)
                 }
             }
         }
@@ -157,7 +157,7 @@ internal class TsTest : ConsumerTestBase() {
         TestRuntime.topics.ts.produce(transactionId) {
             Ts.dto(sid.id, bid.id) {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
-                    Ts.periode(7.jun, 18.jun, 1077u)
+                    periode(7.jun, 18.jun, 1077u)
                 }
             }
         }
@@ -238,11 +238,7 @@ internal class TsTest : ConsumerTestBase() {
         TestRuntime.topics.tsIntern.produce(transactionId) {
             Ts.dto(sid.id, bid.id) {
                 Ts.utbetaling(uid) {
-                    Ts.periode(
-                        fom = LocalDate.of(2021, 6, 7),
-                        tom = LocalDate.of(2021, 6, 18),
-                        beløp = 1077u,
-                    )
+                    periode(7.jun21, 18.jun21, 1077u)
                 }
             }
         }
@@ -296,7 +292,7 @@ internal class TsTest : ConsumerTestBase() {
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
             ) {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
-                    Ts.periode(3.jun, 7.jun, 1500u)
+                    periode(3.jun, 7.jun, 1500u)
                 }
             }
         }
@@ -406,7 +402,7 @@ internal class TsTest : ConsumerTestBase() {
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
             ) {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
-                    Ts.periode(1.jun, 30.jun, 1100u)
+                    periode(1.jun, 30.jun, 1100u)
                 }
             }
         }
@@ -452,7 +448,7 @@ internal class TsTest : ConsumerTestBase() {
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
             ) {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
-                    Ts.periode(1.jun, 30.jun, 1200u)
+                    periode(1.jun, 30.jun, 1200u)
                 }
             }
         }
@@ -497,7 +493,7 @@ internal class TsTest : ConsumerTestBase() {
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
             ) {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
-                    Ts.periode(1.jun, 30.jun, 1300u)
+                    periode(1.jun, 30.jun, 1300u)
                 }
             }
         }
@@ -575,7 +571,7 @@ internal class TsTest : ConsumerTestBase() {
                 vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
                 Ts.utbetaling(uid1, stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP) { // tillst=false ?
-                    Ts.periode(1.jun, 30.jun, 3000u)
+                    periode(1.jun, 30.jun, 3000u)
                 }
                 
             }
@@ -712,7 +708,7 @@ internal class TsTest : ConsumerTestBase() {
                 vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
                 Ts.utbetaling(uid = uid1, stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP) { // tillst=tru3?
-                    Ts.periode(1.jun, 30.jun, 3070u)
+                    periode(1.jun, 30.jun, 3070u)
                 }
             }
         }
@@ -848,8 +844,8 @@ internal class TsTest : ConsumerTestBase() {
                 vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
                 Ts.utbetaling(uid1, stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP) { // tillst=true?=
-                    Ts.periode(1.jun, 3.jun, 210u) +
-                            Ts.periode(6.jun, 6.jun, 70u)
+                    periode(1.jun, 3.jun, 210u)
+                    periode(6.jun, 6.jun, 70u)
                 }
             }
         }
@@ -889,8 +885,8 @@ internal class TsTest : ConsumerTestBase() {
                     saksbehandlerId = Navident("ts"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(1.jun, 3.jun, 210u, null) +
-                            periode(6.jun, 6.jun, 70u, null)
+                    periode(1.jun, 3.jun, 210u, null)
+                    periode(6.jun, 6.jun, 70u, null)
                 }
                 assertEquals(expected, it)
             }
@@ -939,8 +935,8 @@ internal class TsTest : ConsumerTestBase() {
                     saksbehandlerId = Navident("ts"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(1.jun, 3.jun, 210u, null) +
-                            periode(6.jun, 6.jun, 70u, null)
+                    periode(1.jun, 3.jun, 210u, null)
+                    periode(6.jun, 6.jun, 70u, null)
                 }
                 assertEquals(expected, it)
             }
@@ -981,7 +977,9 @@ internal class TsTest : ConsumerTestBase() {
                 behandlingId = bid.id,
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
             ) {
-                Ts.utbetaling(uid = uid1) { emptyList() }
+                Ts.utbetaling(uid = uid1) {
+                    // empty
+                }
             }
         }
 
@@ -1104,7 +1102,7 @@ internal class TsTest : ConsumerTestBase() {
         TestRuntime.topics.ts.produce(key) {
             Ts.dto(sid.id, bid.id, dryrun = true) {
                 Ts.utbetaling(uid1) {
-                    Ts.periode(fom = 1.jan, tom = 2.jan, beløp = 100u)
+                    periode(1.jan, 2.jan, 100u)
                 }
             }
         }
@@ -1143,8 +1141,8 @@ internal class TsTest : ConsumerTestBase() {
                 saksbehandlerId = Navident("ts"),
                 fagsystem = Fagsystem.TILLSTDR,
             ) {
-                periode(1.jun, 5.jun, 1000u, null) +
-                        periode(8.jun, 10.jun, 500u, null)
+                periode(1.jun, 5.jun, 1000u, null)
+                periode(8.jun, 10.jun, 500u, null)
             }
         }
 
@@ -1158,8 +1156,8 @@ internal class TsTest : ConsumerTestBase() {
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
             ) {
                 Ts.utbetaling(uid) {
-                    Ts.periode(1.jun, 5.jun, 1000u) +
-                            Ts.periode(8.jun, 10.jun, 500u)
+                    periode(1.jun, 5.jun, 1000u)
+                    periode(8.jun, 10.jun, 500u)
                 }
             }
         }

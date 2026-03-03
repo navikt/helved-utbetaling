@@ -612,7 +612,7 @@ internal class TpTest : ConsumerTestBase() {
                 assertEquals("tp", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
                     kodeEndringLinje = "NY",
-                    henvisning = bid.id,
+                    behandlingId = bid,
                     kodeKlassifik = "TPTPAFT",
                     sats = 200,
                     refDelytelseId = null
@@ -667,7 +667,7 @@ internal class TpTest : ConsumerTestBase() {
             originalKey = transactionId2,
             førsteUtbetalingPåSak = false,
             lastPeriodeId = PeriodeId(), // placeholder - dynamically generated at runtime
-            perioder = periode(3.jun, 14.jun, 80u, null)
+            perioder = listOf(periode(3.jun, 14.jun, 80u, null))
         )
 
         TestRuntime.topics.utbetalinger.produce(uid1.toString(), utbetaling)
@@ -693,7 +693,7 @@ internal class TpTest : ConsumerTestBase() {
                 assertEquals(periodeId.toString(), oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
                     kodeEndringLinje = "NY",
-                    henvisning = bid.id,
+                    behandlingId = bid,
                     kodeKlassifik = "TPTPAFT",
                     sats = 80,
                     refDelytelseId = periodeId.toString()

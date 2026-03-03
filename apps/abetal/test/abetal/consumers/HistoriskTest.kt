@@ -653,8 +653,8 @@ internal class HistoriskTest : ConsumerTestBase() {
                     saksbehandlerId = Navident("historisk"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(1.jun, 3.jun, 210u, null) +
-                            periode(6.jun, 6.jun, 70u, null)
+                    periode(1.jun, 3.jun, 210u, null)
+                    periode(6.jun, 6.jun, 70u, null)
                 }
                 assertEquals(expected, it)
             }
@@ -703,8 +703,8 @@ internal class HistoriskTest : ConsumerTestBase() {
                     saksbehandlerId = Navident("historisk"),
                     personident = Personident("12345678910")
                 ) {
-                    periode(1.jun, 3.jun, 210u, null) +
-                            periode(6.jun, 6.jun, 70u, null)
+                    periode(1.jun, 3.jun, 210u, null)
+                    periode(6.jun, 6.jun, 70u, null)
                 }
                 assertEquals(expected, it)
             }
@@ -781,8 +781,8 @@ internal class HistoriskTest : ConsumerTestBase() {
                 saksbehandlerId = Navident("historisk"),
                 fagsystem = Fagsystem.HISTORISK,
             ) {
-                periode(1.jun, 5.jun, 1000u, null) +
-                        periode(8.jun, 10.jun, 500u, null)
+                periode(1.jun, 5.jun, 1000u, null)
+                periode(8.jun, 10.jun, 500u, null)
             }
         }
 
@@ -796,8 +796,8 @@ internal class HistoriskTest : ConsumerTestBase() {
                 behandlingId = bid2.id,
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
             ) {
-                Historisk.periode(1.jun, 5.jun, 1000u) +
-                        Historisk.periode(8.jun, 10.jun, 500u)
+                Historisk.periode(1.jun, 5.jun, 1000u)
+                Historisk.periode(8.jun, 10.jun, 500u)
             }
         }
 

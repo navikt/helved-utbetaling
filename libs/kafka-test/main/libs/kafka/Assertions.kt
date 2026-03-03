@@ -59,7 +59,14 @@ class TopicAssertion<K: Any, V : Any> private constructor(val topic: TestOutputT
 
     fun has(key: K, index: Int = 0, size: Int = 1, value: () -> V) = this.also {
         has(key, size)
-        assertEquals(value(), valuesForKey(key).getOrNull(index))
+        val actual = valuesForKey(key).getOrNull(index)
+        val expected = value()
+        assertEquals(expected, actual, """
+            |expected:
+            |  $expected
+            |actual:
+            |  $actual
+        """.trimMargin())
     }
 
     fun with(key: K, index: Int = 0, value: (V) -> Unit) = this.also {
