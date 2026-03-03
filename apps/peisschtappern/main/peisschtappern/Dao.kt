@@ -154,7 +154,25 @@ data class Daos(
             val orderClause = if (orderBy != null) "ORDER BY $orderBy $direction" else ""
             val sql = """
                 WITH unified AS (
-                    ${channels.joinToString(" UNION ALL ") { channel -> "SELECT * FROM ${channel.table.name}" }}
+                    ${channels.joinToString(" UNION ALL ") { channel -> """
+                        SELECT 
+                            version,
+                            topic_name, 
+                            record_key, 
+                            record_value,
+                            record_partition,
+                            record_offset,
+                            timestamp_ms,
+                            stream_time_ms,
+                            system_time_ms,
+                            trace_id,
+                            commit,
+                            sak_id,
+                            fagsystem,
+                            status,
+                            headers
+                        FROM ${channel.table.name}
+                    """.trimIndent() }}
                 )
                 SELECT *, count(*) OVER () AS total FROM unified
                 WHERE record_key ILIKE COALESCE(?, record_key)
