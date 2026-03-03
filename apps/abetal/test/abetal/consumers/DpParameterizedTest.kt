@@ -10,9 +10,6 @@ import java.util.*
 
 /**
  * Parameterized tests for Dagpenger consumer.
- * 
- * Uses testWithCleanup() wrapper to ensure cleanup after each test.
- * This provides the same safety checks as @AfterEach in regular tests.
  */
 internal class DpParameterizedTest : ConsumerParameterizedTestBase<DpUtbetaling>() {
     
@@ -21,11 +18,11 @@ internal class DpParameterizedTest : ConsumerParameterizedTestBase<DpUtbetaling>
     override val saksbehId = "dagpenger"
     override val periodetype = Periodetype.UKEDAG
     
+    override val defaultStønad: Stønadstype = StønadTypeDagpenger.DAGPENGER
+    override val expectedKlassekode: String = "DAGPENGER"
+    
     // Disable multi-period test - DP has complex multi-utbetaling logic that needs specific test coverage in DpTest
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
-    
-    // Disable simulation test - needs investigation why status topic isn't populated
-    // override fun `simulering uten endring`() = emptyList<DynamicTest>()
     
     override fun createMessage(
         sakId: String,
@@ -69,14 +66,6 @@ internal class DpParameterizedTest : ConsumerParameterizedTestBase<DpUtbetaling>
     
     override fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId {
         return dpUId(sakId, uniqueKey, stønad as StønadTypeDagpenger)
-    }
-    
-    override fun getDefaultStønad(): Stønadstype {
-        return StønadTypeDagpenger.DAGPENGER
-    }
-    
-    override fun getExpectedKlassekode(): String {
-        return "DAGPENGER"
     }
     
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): DpUtbetaling {

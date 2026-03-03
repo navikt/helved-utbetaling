@@ -7,9 +7,6 @@ import java.time.LocalDateTime
 
 /**
  * Parameterized tests for Tilleggsstønader consumer.
- * 
- * Runs common test scenarios with TS-specific configuration.
- * Uses TILLSTPB fagområde (Tilsyn barn).
  */
 internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
     
@@ -18,9 +15,9 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
     override val saksbehId = "ts"
     override val periodetype = Periodetype.EN_GANG
     
-    // TS uses TILLEGGSSTØNADER as the saker topic key, even though individual
-    // utbetalinger use specific fagsystems (TILLSTPB, TILLSTLM, etc.)
-    override fun getSakerFagsystem(): Fagsystem = Fagsystem.TILLEGGSSTØNADER
+    override val sakerFagsystem: Fagsystem = Fagsystem.TILLEGGSSTØNADER
+    override val defaultStønad: Stønadstype = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER
+    override val expectedKlassekode: String = "TSTBASISP2-OP"
     
     // Disable tests that don't apply to TS
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
@@ -33,10 +30,10 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
         perioder: List<TestPeriode>
     ): TsDto {
         val utbetalinger = perioder.groupBy { it.uniqueKey }.map { (_, groupedPerioder) ->
-            val uid = createUtbetalingId(sakId, groupedPerioder.first().uniqueKey, getDefaultStønad())
+            val uid = createUtbetalingId(sakId, groupedPerioder.first().uniqueKey, defaultStønad)
             TsUtbetaling(
                 id = uid.id,
-                stønad = getDefaultStønad() as StønadTypeTilleggsstønader,
+                stønad = defaultStønad as StønadTypeTilleggsstønader,
                 perioder = groupedPerioder.map { TsPeriode(it.fom, it.tom, it.sats) },
                 brukFagområdeTillst = false
             )
@@ -55,20 +52,12 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
         return UtbetalingId(java.util.UUID.nameUUIDFromBytes("$sakId-$uniqueKey-$stønad".toByteArray()))
     }
     
-    override fun getDefaultStønad(): Stønadstype {
-        return StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER
-    }
-    
-    override fun getExpectedKlassekode(): String {
-        return "TSTBASISP2-OP"
-    }
-    
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): TsDto {
         val utbetalinger = perioder.groupBy { it.uniqueKey }.map { (_, groupedPerioder) ->
-            val uid = createUtbetalingId(sakId, groupedPerioder.first().uniqueKey, getDefaultStønad())
+            val uid = createUtbetalingId(sakId, groupedPerioder.first().uniqueKey, defaultStønad)
             TsUtbetaling(
                 id = uid.id,
-                stønad = getDefaultStønad() as StønadTypeTilleggsstønader,
+                stønad = defaultStønad as StønadTypeTilleggsstønader,
                 perioder = groupedPerioder.map { TsPeriode(it.fom, it.tom, it.sats) },
                 brukFagområdeTillst = false
             )

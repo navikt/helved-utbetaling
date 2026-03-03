@@ -20,6 +20,9 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
     override val saksbehId = "tp"
     override val periodetype = Periodetype.UKEDAG
     
+    override val defaultStønad: Stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING
+    override val expectedKlassekode: String = "TPTPAFT"
+
     // Disable tests that don't work generically for TP
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
     override fun `update existing utbetaling`() = emptyList<DynamicTest>()
@@ -43,7 +46,7 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
                     fom = periode.fom,
                     tom = periode.tom,
                     beløp = periode.beløp,
-                    stønad = getDefaultStønad() as StønadTypeTiltakspenger
+                    stønad = defaultStønad as StønadTypeTiltakspenger
                 )
             }
         }
@@ -55,14 +58,6 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
     
     override fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId {
         return tpUId(sakId, uniqueKey, stønad as StønadTypeTiltakspenger)
-    }
-    
-    override fun getDefaultStønad(): Stønadstype {
-        return StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING
-    }
-    
-    override fun getExpectedKlassekode(): String {
-        return "TPTPAFT"
     }
     
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): TpUtbetaling {
@@ -80,7 +75,7 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
                     fom = periode.fom,
                     tom = periode.tom,
                     beløp = periode.beløp,
-                    stønad = getDefaultStønad() as StønadTypeTiltakspenger
+                    stønad = defaultStønad as StønadTypeTiltakspenger
                 )
             }
         }

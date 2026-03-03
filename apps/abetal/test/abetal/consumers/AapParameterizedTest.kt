@@ -7,12 +7,6 @@ import java.time.LocalDateTime
 
 /**
  * Parameterized tests for AAP consumer.
- * 
- * AAP creates multiple utbetalinger (one per meldekort) from a single message.
- * Each meldekort becomes a separate utbetaling with its own UtbetalingId.
- * 
- * NOTE: The "multiple periods" and "update" tests are disabled because AAP
- * has different behavior that needs consumer-specific test logic.
  */
 internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetaling>() {
     
@@ -20,6 +14,9 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
     override val fagområde = "AAP"
     override val saksbehId = "kelvin"
     override val periodetype = Periodetype.UKEDAG
+    
+    override val defaultStønad: Stønadstype = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING
+    override val expectedKlassekode: String = "AAPOR"
     
     // Disable tests that don't work generically for AAP
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
@@ -53,14 +50,6 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
     
     override fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId {
         return aapUId(sakId, uniqueKey, stønad as StønadTypeAAP)
-    }
-    
-    override fun getDefaultStønad(): Stønadstype {
-        return StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING
-    }
-    
-    override fun getExpectedKlassekode(): String {
-        return "AAPOR"
     }
     
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): AapUtbetaling {

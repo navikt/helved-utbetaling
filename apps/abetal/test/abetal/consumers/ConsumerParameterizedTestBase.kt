@@ -12,54 +12,20 @@ import kotlin.test.assertNull
 
 /**
  * Parameterized test scenarios that can be run across all consumers.
- * 
- * This allows testing common functionality (create, update, delete, etc.)
- * for all consumer types without duplicating test code.
  */
 abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
-    
-    /**
-     * Wrapper that ensures cleanup after each dynamic test.
-     * This replicates the @AfterEach behavior from ConsumerTestBase.
-     */
-    private fun testWithCleanup(name: String, test: () -> Unit) = 
-        DynamicTest.dynamicTest(name) {
-            test()
-            `assert empty topic`()
-        }
-    
-    /**
-     * Consumer-specific configuration
-     */
     abstract val fagsystem: Fagsystem
     abstract val fagområde: String
     abstract val saksbehId: String
     abstract val periodetype: Periodetype
+    abstract val defaultStønad: Stønadstype
+
     abstract fun createMessage(sakId: String, behandlingId: String, perioder: List<TestPeriode>): TMessage
     abstract fun produceMessage(transactionId: String, message: TMessage)
     abstract fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId
-    abstract fun getDefaultStønad(): Stønadstype
     
-    /**
-     * Returns the fagsystem used for saker topic key.
-     * Default is same as fagsystem, but TS overrides this to use TILLEGGSSTØNADER.
-     */
-    open fun getSakerFagsystem(): Fagsystem = fagsystem
-    // open fun getDefaultPeriodetype(): Periodetype = Periodetype.UKEDAG
-    
-    /**
-     * Get the expected utbetFrekvens for oppdrag assertions.
-     * Defaults to "MND", override for other periodetype (e.g., "ENG" for EN_GANG)
-     */
-    open fun getExpectedUtbetFrekvens(): String = "MND"
-    
-    /**
-     * Determines how many utbetalinger are created per message.
-     * Default: one utbetaling per period (DP, TS, TP)
-     * AAP: one utbetaling per meldekort
-     * Historisk: one utbetaling containing all periods
-     */
-    open fun getExpectedUtbetalingCount(periodeCount: Int): Int = periodeCount
+    open val sakerFagsystem: Fagsystem get() = fagsystem
+    open val expectedUtbetFrekvens: String = "MND"
     
     /**
      * Get all UtbetalingIds that should be created from the periods.
@@ -67,7 +33,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * Override for AAP (one per meldekort) or Historisk (single ID for all periods)
      */
     open fun getExpectedUtbetalingIds(sakId: String, perioder: List<TestPeriode>): List<UtbetalingId> {
-        return perioder.map { createUtbetalingId(sakId, it.uniqueKey, getDefaultStønad()) }
+        return perioder.map { createUtbetalingId(sakId, it.uniqueKey, defaultStønad) }
     }
     
     /**
@@ -75,7 +41,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      */
     @TestFactory
     open fun `single period creates single utbetaling and oppdrag`() = listOf(
-        testWithCleanup("1 period creates utbetaling(er) with 1 oppdrag") {
+        DynamicTest.dynamicTest("1 period creates utbetaling(er) with 1 oppdrag") {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
             val tid = UUID.randomUUID().toString()
@@ -107,7 +73,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                 sakId = sid.id,
                 saksbehId = saksbehId,
                 expectedLines = perioder.size,
-                utbetFrekvens = getExpectedUtbetFrekvens()
+                utbetFrekvens = expectedUtbetFrekvens
             )
             
             // Check all UIDs are in pending-utbetalinger (chain assertions)
@@ -118,7 +84,9 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             tid.acknowledgeOppdrag(oppdrag, uids)
             assertUtbetalinger(uids)
             TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+            `assert empty topic`()
         }
+        
     )
     
     /**
@@ -126,7 +94,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      */
     @TestFactory
     open fun `multiple periods create multiple utbetalinger`() = listOf(
-        testWithCleanup("2 periods create utbetaling(er) with 1 oppdrag") {
+        DynamicTest.dynamicTest("2 periods create utbetaling(er) with 1 oppdrag") {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
             val tid = UUID.randomUUID().toString()
@@ -137,7 +105,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             val uids = getExpectedUtbetalingIds(sid.id, perioder)
             
             // Setup empty saker for first utbetaling on sak
-            TestRuntime.topics.saker.produce(SakKey(sid, getSakerFagsystem())) { emptySet<UtbetalingId>() }
+            TestRuntime.topics.saker.produce(SakKey(sid, sakerFagsystem)) { emptySet<UtbetalingId>() }
             
             val message = createMessage(
                 sakId = sid.id,
@@ -157,7 +125,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                 sakId = sid.id,
                 saksbehId = saksbehId,
                 expectedLines = 2,
-                utbetFrekvens = getExpectedUtbetFrekvens()
+                utbetFrekvens = expectedUtbetFrekvens
             )
             
             // Check all UIDs are in pending-utbetalinger (chain assertions to avoid re-reading topic)
@@ -168,7 +136,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             
             tid.acknowledgeOppdrag(oppdrag, uids)
             assertUtbetalinger(uids)
-            TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+            `assert empty topic`()
         }
     )
     
@@ -177,7 +145,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      */
     @TestFactory
     open fun `update existing utbetaling`() = listOf(
-        testWithCleanup("updating period amount creates ENDR oppdrag") {
+        DynamicTest.dynamicTest("updating period amount creates ENDR oppdrag") {
             val sid = SakId("$nextInt")
             val bid1 = BehandlingId("$nextInt")
             val bid2 = BehandlingId("$nextInt")
@@ -191,8 +159,8 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                     sakId = sid,
                     behandlingId = bid1,
                     fagsystem = fagsystem,
-                    sakerFagsystem = getSakerFagsystem(),
-                    stønad = getDefaultStønad(),
+                    sakerFagsystem = sakerFagsystem,
+                    stønad = defaultStønad,
                     periodetype = periodetype,
                     perioder = {
                         listOf(Utbetalingsperiode(1.jun, 15.jun, 100u))
@@ -218,7 +186,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                 sakId = sid.id,
                 saksbehId = saksbehId,
                 expectedLines = 2, // ENDR creates 2 lines: old with 0, new with amount
-                utbetFrekvens = getExpectedUtbetFrekvens()
+                utbetFrekvens = expectedUtbetFrekvens
             )
             
             // Check all UIDs are in pending-utbetalinger (chain assertions)
@@ -228,7 +196,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             }
             tid.acknowledgeOppdrag(oppdrag, uids)
             assertUtbetalinger(uids)
-            TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+            `assert empty topic`()
         }
     )
     
@@ -252,7 +220,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      */
     @TestFactory
     open fun `empty utbetaling returns OK`() = listOf(
-        testWithCleanup("utbetaling without perioder gives status OK") {
+        DynamicTest.dynamicTest("utbetaling without perioder gives status OK") {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
             val tid = UUID.randomUUID().toString()
@@ -268,10 +236,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             TestRuntime.topics.status.assertThat()
                 .has(tid)
                 .with(tid) { assertEquals(Status.OK, it.status) }
-            
-            assertUtbetalingerEmpty()
-            TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
-            TestRuntime.topics.oppdrag.assertThat().isEmpty()
+            `assert empty topic`()
         }
     )
     
@@ -281,7 +246,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      */
     @TestFactory
     open fun `simulering uten endring`() = listOf(
-        testWithCleanup("simulation without changes returns OK") {
+        DynamicTest.dynamicTest("simulation without changes returns OK") {
             val key = UUID.randomUUID().toString()
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
@@ -293,7 +258,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                 sats = 100u,
                 uniqueKey = "period1"
             )
-            val uid = createUtbetalingId(sid.id, periode.uniqueKey, getDefaultStønad())
+            val uid = createUtbetalingId(sid.id, periode.uniqueKey, defaultStønad)
             
             // First create an existing utbetaling
             TestRuntime.topics.utbetalinger.produce(uid.toString()) {
@@ -303,7 +268,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                     sakId = sid,
                     behandlingId = bid,
                     originalKey = key,
-                    stønad = getDefaultStønad(),
+                    stønad = defaultStønad,
                     personident = Personident("12345678910"),
                     vedtakstidspunkt = vedtakstidspunkt,
                     beslutterId = Navident(saksbehId),
@@ -316,7 +281,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             }
             
             // Setup saker topic so the system knows this utbetaling exists
-            TestRuntime.topics.saker.produce(SakKey(sid, getSakerFagsystem())) {
+            TestRuntime.topics.saker.produce(SakKey(sid, sakerFagsystem)) {
                 setOf(uid)
             }
             
@@ -338,8 +303,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             
             // Should not create a simulering since nothing changed
             TestRuntime.topics.simulering.assertThat().hasNot(key)
-            
-            TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+            `assert empty topic`()
         }
     )
     
@@ -347,7 +311,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * Get the expected klassekode (e.g., "DAGPENGER", "AAPOR", "TPTPAFT", etc.)
      * Used in simulering assertions
      */
-    abstract fun getExpectedKlassekode(): String
+    abstract val expectedKlassekode: String
     
     /**
      * Common test scenario: Simulate (dryrun) new utbetaling creates simulering request
@@ -355,7 +319,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      */
     @TestFactory
     open fun `simuler utbetaling creates simulering request`() = listOf(
-        testWithCleanup("dryrun creates simulering without persisting") {
+        DynamicTest.dynamicTest("dryrun creates simulering without persisting") {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
             val tid = UUID.randomUUID().toString()
@@ -391,13 +355,13 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                     assertEquals("NY", simulering.request.oppdrag.kodeEndring)
                     assertEquals(fagområde, simulering.request.oppdrag.kodeFagomraade)
                     assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
-                    assertEquals(getExpectedUtbetFrekvens(), simulering.request.oppdrag.utbetFrekvens)
+                    assertEquals(expectedUtbetFrekvens, simulering.request.oppdrag.utbetFrekvens)
                     assertEquals(saksbehId, simulering.request.oppdrag.saksbehId)
                     assertEquals(1, simulering.request.oppdrag.oppdragslinjes.size)
                     assertNull(simulering.request.oppdrag.oppdragslinjes[0].refDelytelseId)
                     simulering.request.oppdrag.oppdragslinjes[0].let {
                         assertEquals("NY", it.kodeEndringLinje)
-                        assertEquals(getExpectedKlassekode(), it.kodeKlassifik)
+                        assertEquals(expectedKlassekode, it.kodeKlassifik)
                         val expectedSats = when (periodetype){
                             Periodetype.EN_GANG -> periode.sats.toLong()
                             else -> periode.beløp.toLong()
@@ -406,6 +370,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                         assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
                     }
                 }
+            `assert empty topic`()
         }
     )
     

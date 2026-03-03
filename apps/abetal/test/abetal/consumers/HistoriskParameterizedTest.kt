@@ -7,9 +7,6 @@ import java.time.LocalDateTime
 
 /**
  * Parameterized tests for Historisk consumer.
- * 
- * Historisk creates ONE utbetaling containing all periods (unlike other consumers
- * which create one utbetaling per period).
  */
 internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<HistoriskUtbetaling>() {
     
@@ -17,6 +14,10 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
     override val fagområde = "HELSREF"
     override val saksbehId = "historisk"
     override val periodetype = Periodetype.EN_GANG
+    
+    override val defaultStønad: Stønadstype = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER
+    override val expectedUtbetFrekvens: String = "ENG"
+    override val expectedKlassekode: String = "HJRIM"
     
     // Disable tests that don't work generically for Historisk
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
@@ -29,7 +30,7 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
         behandlingId: String,
         perioder: List<TestPeriode>
     ): HistoriskUtbetaling {
-        val uid = createUtbetalingId(sakId, "historisk", getDefaultStønad())
+        val uid = createUtbetalingId(sakId, "historisk", defaultStønad)
         
         return Historisk.utbetaling(
             uid = uid,
@@ -56,25 +57,13 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
         return UtbetalingId(uuid)
     }
     
-    override fun getDefaultStønad(): Stønadstype {
-        return StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER
-    }
-    
-    override fun getExpectedUtbetFrekvens(): String {
-        return "ENG" // EN_GANG periodetype uses ENG utbetFrekvens
-    }
-    
-    override fun getExpectedKlassekode(): String {
-        return "HJRIM"
-    }
-    
     // Historisk creates ONE utbetaling with multiple periods
     override fun getExpectedUtbetalingIds(sakId: String, perioder: List<TestPeriode>): List<UtbetalingId> {
-        return listOf(createUtbetalingId(sakId, "historisk", getDefaultStønad()))
+        return listOf(createUtbetalingId(sakId, "historisk", defaultStønad))
     }
     
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): HistoriskUtbetaling {
-        val uid = createUtbetalingId(sakId, "historisk", getDefaultStønad())
+        val uid = createUtbetalingId(sakId, "historisk", defaultStønad)
         
         return Historisk.utbetaling(
             uid = uid,
@@ -87,7 +76,7 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
                 HistoriskPeriode(
                     fom = periode.fom,
                     tom = periode.tom,
-                    beløp = periode.sats  // Use sats for EN_GANG periodetype (1077)
+                    beløp = periode.sats
                 )
             }
         }
