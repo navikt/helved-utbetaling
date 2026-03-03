@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /**
  * Parameterized test scenarios that can be run across all consumers.
@@ -33,6 +34,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
     abstract val fagsystem: Fagsystem
     abstract val fagområde: String
     abstract val saksbehId: String
+    abstract val periodetype: Periodetype
     abstract fun createMessage(sakId: String, behandlingId: String, perioder: List<TestPeriode>): TMessage
     abstract fun produceMessage(transactionId: String, message: TMessage)
     abstract fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId
@@ -43,7 +45,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * Default is same as fagsystem, but TS overrides this to use TILLEGGSSTØNADER.
      */
     open fun getSakerFagsystem(): Fagsystem = fagsystem
-    open fun getDefaultPeriodetype(): Periodetype = Periodetype.UKEDAG
+    // open fun getDefaultPeriodetype(): Periodetype = Periodetype.UKEDAG
     
     /**
      * Get the expected utbetFrekvens for oppdrag assertions.
@@ -191,7 +193,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                     fagsystem = fagsystem,
                     sakerFagsystem = getSakerFagsystem(),
                     stønad = getDefaultStønad(),
-                    periodetype = getDefaultPeriodetype(),
+                    periodetype = periodetype,
                     perioder = {
                         listOf(Utbetalingsperiode(1.jun, 15.jun, 100u))
                     }
@@ -307,7 +309,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                     beslutterId = Navident(saksbehId),
                     saksbehandlerId = Navident(saksbehId),
                     fagsystem = fagsystem,
-                    periodetype = getDefaultPeriodetype()
+                    periodetype = periodetype
                 ) {
                     periode(periode.fom, periode.tom, periode.beløp, periode.sats)
                 }
@@ -338,6 +340,72 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             TestRuntime.topics.simulering.assertThat().hasNot(key)
             
             TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+        }
+    )
+    
+    /**
+     * Get the expected klassekode (e.g., "DAGPENGER", "AAPOR", "TPTPAFT", etc.)
+     * Used in simulering assertions
+     */
+    abstract fun getExpectedKlassekode(): String
+    
+    /**
+     * Common test scenario: Simulate (dryrun) new utbetaling creates simulering request
+     * Tests that dryrun=true creates a simulering request without persisting anything
+     */
+    @TestFactory
+    open fun `simuler utbetaling creates simulering request`() = listOf(
+        testWithCleanup("dryrun creates simulering without persisting") {
+            val sid = SakId("$nextInt")
+            val bid = BehandlingId("$nextInt")
+            val tid = UUID.randomUUID().toString()
+            val periode = TestPeriode(
+                fom = 7.jun,
+                tom = 18.jun,
+                beløp = 553u,
+                sats = 1077u,
+                uniqueKey = "period1"
+            )
+            
+            // Create dryrun message
+            val dryrunMessage = createMessageDryrun(
+                sakId = sid.id,
+                behandlingId = bid.id,
+                perioder = listOf(periode),
+                vedtakstidspunkt = LocalDateTime.now()
+            )
+            
+            produceMessage(tid, dryrunMessage)
+            
+            // Should not create status, utbetaling, or oppdrag
+            TestRuntime.topics.status.assertThat().isEmpty()
+            assertUtbetalingerEmpty()
+            TestRuntime.topics.oppdrag.assertThat().isEmpty()
+            
+            // Should create simulering request
+            TestRuntime.topics.simulering.assertThat()
+                .hasTotal(1)
+                .has(tid)
+                .with(tid) { simulering ->
+                    assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
+                    assertEquals("NY", simulering.request.oppdrag.kodeEndring)
+                    assertEquals(fagområde, simulering.request.oppdrag.kodeFagomraade)
+                    assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
+                    assertEquals(getExpectedUtbetFrekvens(), simulering.request.oppdrag.utbetFrekvens)
+                    assertEquals(saksbehId, simulering.request.oppdrag.saksbehId)
+                    assertEquals(1, simulering.request.oppdrag.oppdragslinjes.size)
+                    assertNull(simulering.request.oppdrag.oppdragslinjes[0].refDelytelseId)
+                    simulering.request.oppdrag.oppdragslinjes[0].let {
+                        assertEquals("NY", it.kodeEndringLinje)
+                        assertEquals(getExpectedKlassekode(), it.kodeKlassifik)
+                        val expectedSats = when (periodetype){
+                            Periodetype.EN_GANG -> periode.sats.toLong()
+                            else -> periode.beløp.toLong()
+                        }
+                        assertEquals(expectedSats, it.sats.toLong())
+                        assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                    }
+                }
         }
     )
     

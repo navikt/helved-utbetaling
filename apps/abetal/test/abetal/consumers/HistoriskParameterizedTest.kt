@@ -16,6 +16,7 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
     override val fagsystem = Fagsystem.HISTORISK
     override val fagområde = "HELSREF"
     override val saksbehId = "historisk"
+    override val periodetype = Periodetype.EN_GANG
     
     // Disable tests that don't work generically for Historisk
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
@@ -59,12 +60,12 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
         return StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER
     }
     
-    override fun getDefaultPeriodetype(): Periodetype {
-        return Periodetype.EN_GANG
-    }
-    
     override fun getExpectedUtbetFrekvens(): String {
         return "ENG" // EN_GANG periodetype uses ENG utbetFrekvens
+    }
+    
+    override fun getExpectedKlassekode(): String {
+        return "HJRIM"
     }
     
     // Historisk creates ONE utbetaling with multiple periods
@@ -86,7 +87,7 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
                 HistoriskPeriode(
                     fom = periode.fom,
                     tom = periode.tom,
-                    beløp = periode.beløp
+                    beløp = periode.sats  // Use sats for EN_GANG periodetype (1077)
                 )
             }
         }

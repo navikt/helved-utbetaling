@@ -1214,49 +1214,6 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `simuler 1 meldekort i 1 utbetalinger`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-
-        TestRuntime.topics.tp.produce(transactionId) {
-            Tp.utbetaling(sid.id, bid.id, dryrun = true) {
-                Tp.periode(
-                    meldeperiode = "132460781",
-                    fom = LocalDate.of(2021, 6, 7),
-                    tom = LocalDate.of(2021, 6, 18),
-                    beløp = 553u,
-                )
-            }
-        }
-
-
-        TestRuntime.topics.status.assertThat().isEmpty()
-        assertUtbetalingerEmpty()
-        TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.simulering.assertThat()
-            .hasTotal(1)
-            .has(transactionId)
-            .with(transactionId) { simulering ->
-                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
-                assertEquals("NY", simulering.request.oppdrag.kodeEndring)
-                assertEquals("TILTPENG", simulering.request.oppdrag.kodeFagomraade)
-                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
-                assertEquals("MND", simulering.request.oppdrag.utbetFrekvens)
-                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
-                assertEquals("tp", simulering.request.oppdrag.saksbehId)
-                assertEquals(1, simulering.request.oppdrag.oppdragslinjes.size)
-                assertNull(simulering.request.oppdrag.oppdragslinjes[0].refDelytelseId)
-                simulering.request.oppdrag.oppdragslinjes[0].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals("TPTPAFT", it.kodeKlassifik)
-                    assertEquals(553, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-            }
-    }
-
-    @Test
     fun `betalendeEnhet mapping skal gi riktig oppdragsEnhet120`() {
         val json = """
             {
