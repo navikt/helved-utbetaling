@@ -29,13 +29,13 @@ internal class HistoriskTest : ConsumerTestBase() {
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId)
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat().has(transactionId).get(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, uid)
+        kvitterOk(transactionId, oppdrag, listOf(uid))
 
-        assertUtbetalinger(uid)
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
     }
 
     @Test
@@ -95,7 +95,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
@@ -144,7 +144,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, uid)
+        kvitterOk(transactionId, oppdrag, listOf(uid))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
@@ -231,7 +231,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -280,7 +280,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, uid1)
+        kvitterOk(transactionId, oppdrag, listOf(uid1))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -367,7 +367,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -416,7 +416,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, uid1)
+        kvitterOk(transactionId, oppdrag, listOf(uid1))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -496,7 +496,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             .has(transactionId1)
             .has(transactionId1, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -546,7 +546,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             }
             .get(transactionId1)
 
-        transactionId1.acknowledgeOppdrag(oppdrag, uid1)
+        kvitterOk(transactionId1, oppdrag, listOf(uid1))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -632,7 +632,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -682,7 +682,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, uid1)
+        kvitterOk(transactionId, oppdrag, listOf(uid1))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())

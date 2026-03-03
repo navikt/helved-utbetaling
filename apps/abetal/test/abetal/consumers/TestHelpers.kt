@@ -144,22 +144,11 @@ fun String.getOppdragWithBasics(
 }
 
 /**
- * Acknowledges an oppdrag with success
+ * Acknowledges an oppdrag with success (multiple UIDs)
  */
-fun String.acknowledgeOppdrag(oppdrag: Oppdrag, uids: List<UtbetalingId>) {
+fun kvitterOk(transactionId: String, oppdrag: Oppdrag, uids: List<UtbetalingId>) {
     val uidString = uids.joinToString(",") { it.toString() }
-    TestRuntime.topics.oppdrag.produce(this, mapOf("uids" to uidString)) {
-        oppdrag.apply {
-            mmel = Mmel().apply { alvorlighetsgrad = "00" }
-        }
-    }
-}
-
-/**
- * Acknowledges an oppdrag with success (single UID)
- */
-fun String.acknowledgeOppdrag(oppdrag: Oppdrag, uid: UtbetalingId) {
-    TestRuntime.topics.oppdrag.produce(this, mapOf("uids" to uid.toString())) {
+    TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to uidString)) {
         oppdrag.apply {
             mmel = Mmel().apply { alvorlighetsgrad = "00" }
         }
@@ -176,29 +165,11 @@ fun assertUtbetalinger(uids: List<UtbetalingId>) {
     }
 }
 
-/**
- * Asserts that utbetalinger topic has the specified UID
- */
-fun assertUtbetalinger(uid: UtbetalingId) {
-    TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
-}
-
-/**
- * Asserts that utbetalinger topic is empty
- */
-fun assertUtbetalingerEmpty() {
-    TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-}
-
-/**
- * Asserts an utbetaling matches expected value
- */
-fun assertUtbetalingMatches(uid: UtbetalingId, expected: Utbetaling) {
-    TestRuntime.topics.utbetalinger.assertThat()
-        .has(uid.toString())
-        .with(uid.toString()) {
-            assertEquals(expected, it)
-        }
+fun assertUtbetaling(expected: Utbetaling, actual: Utbetaling) {
+    val expected = expected.copy(
+        lastPeriodeId = actual.lastPeriodeId,       // generated runtime
+    )
+    assertEquals(expected, actual)
 }
 
 /**

@@ -26,6 +26,7 @@ sealed interface TestTopic<K: Any, V: Any> {
         private val output: TestOutputTopic<K, V>,
     ): TestTopic<K, V> {
         fun produce(key: K, value: () -> V) = input.pipeInput(key, value())
+        fun produce(key: K, value: V) = input.pipeInput(key, value)
         fun produce(key: K, advanceClockMs: Long, value: () -> V) = input.pipeInput(key, value(), Instant.now().plusMillis(advanceClockMs))
 
         fun produce(key: K, headers: Map<String, String>, value: () -> V) {

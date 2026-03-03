@@ -65,7 +65,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             
             tid.assertStatus(expectedFagsystem = fagsystem)
             
-            assertUtbetalingerEmpty()
+            TestRuntime.topics.utbetalinger.assertThat().isEmpty()
             
             val oppdrag = tid.getOppdragWithBasics(
                 kodeEndring = "NY",
@@ -81,7 +81,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             uids.forEach { uid ->
                 assertion = assertion.has(uid.toString())
             }
-            tid.acknowledgeOppdrag(oppdrag, uids)
+            kvitterOk(tid, oppdrag, uids)
             assertUtbetalinger(uids)
             TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
             `assert empty topic`()
@@ -117,7 +117,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             
             tid.assertStatus(expectedFagsystem = fagsystem)
             
-            assertUtbetalingerEmpty()
+            TestRuntime.topics.utbetalinger.assertThat().isEmpty()
             
             val oppdrag = tid.getOppdragWithBasics(
                 kodeEndring = "NY",
@@ -134,7 +134,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                 assertion = assertion.has(uid.toString())
             }
             
-            tid.acknowledgeOppdrag(oppdrag, uids)
+            kvitterOk(tid, oppdrag, uids)
             assertUtbetalinger(uids)
             `assert empty topic`()
         }
@@ -194,7 +194,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             uids.forEach { uid ->
                 assertion = assertion.has(uid.toString())
             }
-            tid.acknowledgeOppdrag(oppdrag, uids)
+            kvitterOk(tid, oppdrag, uids)
             assertUtbetalinger(uids)
             `assert empty topic`()
         }
@@ -343,7 +343,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             
             // Should not create status, utbetaling, or oppdrag
             TestRuntime.topics.status.assertThat().isEmpty()
-            assertUtbetalingerEmpty()
+            TestRuntime.topics.utbetalinger.assertThat().isEmpty()
             TestRuntime.topics.oppdrag.assertThat().isEmpty()
             
             // Should create simulering request
