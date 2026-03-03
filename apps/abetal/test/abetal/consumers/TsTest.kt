@@ -1077,54 +1077,6 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `simuler utbetaling blir ikke persistert`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val uid = UtbetalingId(UUID.randomUUID())
-
-        TestRuntime.topics.ts.produce(transactionId) {
-            Ts.dto(sid.id, bid.id, dryrun = true) {
-                Ts.utbetaling(uid) {
-                    Ts.periode(
-                        fom = LocalDate.of(2021, 6, 7),
-                        tom = LocalDate.of(2021, 6, 18),
-                        beløp = 1077u,
-                    )
-                }
-            }
-        }
-        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.TILLEGGSSTØNADER)) {
-            setOf(uid)
-        }
-
-
-        TestRuntime.topics.status.assertThat().isEmpty()
-        assertUtbetalingerEmpty()
-        TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.simulering.assertThat()
-            .hasTotal(1)
-            .has(transactionId)
-            .with(transactionId) { simulering ->
-                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
-                assertEquals("NY", simulering.request.oppdrag.kodeEndring)
-                assertEquals("TILLST", simulering.request.oppdrag.kodeFagomraade)
-                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
-                assertEquals("MND", simulering.request.oppdrag.utbetFrekvens)
-                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
-                assertEquals("ts", simulering.request.oppdrag.saksbehId)
-                assertEquals(1, simulering.request.oppdrag.oppdragslinjes.size)
-                assertNull(simulering.request.oppdrag.oppdragslinjes[0].refDelytelseId)
-                simulering.request.oppdrag.oppdragslinjes[0].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals("TSTBASISP2-OP", it.kodeKlassifik)
-                    assertEquals(1077, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-            }
-    }
-
-    @Test
     fun `simulering uten endring`() {
         val key = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")

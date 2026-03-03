@@ -641,37 +641,6 @@ class AapTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `simuler 1 meldekort i 1 utbetalinger`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid.id, bid.id, dryrun = true) {
-                meldekort("132460781", 7.jun, 18.jun, 553u, 1077u)
-            }
-        }
-
-
-        TestRuntime.topics.status.assertThat().isEmpty()
-        assertUtbetalingerEmpty()
-        TestRuntime.topics.oppdrag.assertThat().isEmpty()
-        TestRuntime.topics.simulering.assertThat()
-            .hasTotal(1)
-            .has(transactionId)
-            .with(transactionId) { simulering ->
-                assertEquals("AAP", simulering.request.oppdrag.kodeFagomraade)
-                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
-                assertEquals("kelvin", simulering.request.oppdrag.saksbehId)
-                simulering.request.oppdrag.oppdragslinjes[0].let {
-                    assertEquals("AAPOR", it.kodeKlassifik)
-                    assertEquals(553, it.sats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-            }
-    }
-
-    @Test
     fun `test 1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")

@@ -19,6 +19,7 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
     override val fagsystem = Fagsystem.AAP
     override val fagområde = "AAP"
     override val saksbehId = "kelvin"
+    override val periodetype = Periodetype.UKEDAG
     
     // Disable tests that don't work generically for AAP
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
@@ -56,6 +57,10 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
     
     override fun getDefaultStønad(): Stønadstype {
         return StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING
+    }
+    
+    override fun getExpectedKlassekode(): String {
+        return "AAPOR"
     }
     
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): AapUtbetaling {

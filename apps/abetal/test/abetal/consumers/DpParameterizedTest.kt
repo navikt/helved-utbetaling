@@ -19,6 +19,7 @@ internal class DpParameterizedTest : ConsumerParameterizedTestBase<DpUtbetaling>
     override val fagsystem = Fagsystem.DAGPENGER
     override val fagområde = "DP"
     override val saksbehId = "dagpenger"
+    override val periodetype = Periodetype.UKEDAG
     
     // Disable multi-period test - DP has complex multi-utbetaling logic that needs specific test coverage in DpTest
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
@@ -72,6 +73,10 @@ internal class DpParameterizedTest : ConsumerParameterizedTestBase<DpUtbetaling>
     
     override fun getDefaultStønad(): Stønadstype {
         return StønadTypeDagpenger.DAGPENGER
+    }
+    
+    override fun getExpectedKlassekode(): String {
+        return "DAGPENGER"
     }
     
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): DpUtbetaling {

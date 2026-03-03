@@ -18,6 +18,7 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
     override val fagsystem = Fagsystem.TILTAKSPENGER
     override val fagområde = "TILTPENG"
     override val saksbehId = "tp"
+    override val periodetype = Periodetype.UKEDAG
     
     // Disable tests that don't work generically for TP
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
@@ -58,6 +59,10 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
     
     override fun getDefaultStønad(): Stønadstype {
         return StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING
+    }
+    
+    override fun getExpectedKlassekode(): String {
+        return "TPTPAFT"
     }
     
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): TpUtbetaling {

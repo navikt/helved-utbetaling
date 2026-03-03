@@ -10,21 +10,17 @@ import java.time.LocalDateTime
  * 
  * Runs common test scenarios with TS-specific configuration.
  * Uses TILLSTPB fagområde (Tilsyn barn).
- * 
- * NOTE: The "multiple periods" test is disabled because TS groups periods
- * into a single utbetaling, unlike DP which creates one utbetaling per period.
  */
 internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
     
     override val fagsystem = Fagsystem.TILLSTPB
     override val fagområde = "TILLSTPB"
     override val saksbehId = "ts"
+    override val periodetype = Periodetype.EN_GANG
     
     // TS uses TILLEGGSSTØNADER as the saker topic key, even though individual
     // utbetalinger use specific fagsystems (TILLSTPB, TILLSTLM, etc.)
     override fun getSakerFagsystem(): Fagsystem = Fagsystem.TILLEGGSSTØNADER
-    
-    override fun getDefaultPeriodetype(): Periodetype = Periodetype.EN_GANG
     
     // Disable tests that don't apply to TS
     override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
@@ -61,6 +57,10 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
     
     override fun getDefaultStønad(): Stønadstype {
         return StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER
+    }
+    
+    override fun getExpectedKlassekode(): String {
+        return "TSTBASISP2-OP"
     }
     
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): TsDto {
