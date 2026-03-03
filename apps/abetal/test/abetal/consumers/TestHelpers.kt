@@ -103,15 +103,6 @@ fun String.assertStatusWithDetails(
 }
 
 /**
- * Asserts status with custom validation
- */
-fun String.assertStatusWith(validation: (StatusReply) -> Unit) {
-    TestRuntime.topics.status.assertThat()
-        .has(this)
-        .with(this) { validation(it) }
-}
-
-/**
  * Gets and asserts oppdrag, returns it for further processing
  */
 fun String.getOppdrag(
@@ -168,6 +159,7 @@ fun assertUtbetalinger(uids: List<UtbetalingId>) {
 fun assertUtbetaling(expected: Utbetaling, actual: Utbetaling) {
     val expected = expected.copy(
         lastPeriodeId = actual.lastPeriodeId,       // generated runtime
+        vedtakstidspunkt = actual.vedtakstidspunkt, // generated runtime
     )
     assertEquals(expected, actual)
 }

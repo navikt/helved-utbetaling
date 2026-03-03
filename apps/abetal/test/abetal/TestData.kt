@@ -107,6 +107,23 @@ object Aap {
             }
         }
     }
+
+    fun mottatt(linjer: MutableList<DetaljerLinje>.() -> Unit): StatusReply {
+        return StatusReply(
+            Status.MOTTATT, 
+            Detaljer(Fagsystem.AAP, mutableListOf<DetaljerLinje>().apply(linjer))
+        )
+    }
+}
+
+fun MutableList<DetaljerLinje>.linje(
+    behandlingId: BehandlingId,
+    fom: LocalDate,
+    tom: LocalDate,
+    sats: UInt,
+    utbetaltBeløp: UInt = sats,
+) {
+    add(DetaljerLinje(behandlingId.id, fom, tom, utbetaltBeløp, sats, "AAPOR"))
 }
 
 object Dp {

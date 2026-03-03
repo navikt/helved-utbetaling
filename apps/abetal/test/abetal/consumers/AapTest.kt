@@ -5,6 +5,7 @@ import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -21,97 +22,78 @@ class AapTest : ConsumerTestBase() {
         val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
         val uid2 = aapUId(sid.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
 
+        val expectedUtbetaling1 = utbetaling(
+            action = Action.CREATE,
+            uid = uid1,
+            originalKey = transactionId,
+            sakId = sid,
+            behandlingId = bid,
+            fagsystem = Fagsystem.AAP,
+            lastPeriodeId = PeriodeId(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            vedtakstidspunkt = LocalDateTime.now(),
+            beslutterId = Navident("kelvin"),
+            saksbehandlerId = Navident("kelvin"),
+            personident = Personident("12345678910")
+        ) {
+            periode(7.jun, 18.jun, 553u, 1077u)
+        }
+
+        val expectedUtbetaling2 = expectedUtbetaling1.copy(
+            uid = uid2,
+            perioder = periode(8.jul, 19.jul, 779u, 2377u) // fjern surrounding helg
+        ) 
+
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
                 meldekort(meldeperiode1, 7.jun, 18.jun, 553u, 1077u)
                 meldekort(meldeperiode2, 7.jul, 20.jul, 779u, 2377u)
             }
         }
-
-        transactionId.assertStatusWith { 
-            StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
-                DetaljerLinje(bid.id, 7.jun, 18.jun, 553u, 1077u, "AAPOR"),
-                DetaljerLinje(bid.id, 7.jul, 20.jul, 779u, 2377u, "AAPOR"),
-            )))
+        TestRuntime.topics.status.assertThat().has(transactionId) {
+            Aap.mottatt {
+                linje(bid, 7.jun, 18.jun, 553u, 1077u)
+                linje(bid, 8.jul, 19.jul, 779u, 2377u)
+            }
         }
-
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId, size = 1)
-            .with(transactionId, index = 0) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("NY", it.oppdrag110.kodeEndring)
-                assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("kelvin", it.oppdrag110.saksbehId)
-                assertEquals(2, it.oppdrag110.oppdragsLinje150s.size)
-                it.oppdrag110.oppdragsLinje150s[0].let {
-                    assertNull(it.refDelytelseId)
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("AAPOR", it.kodeKlassifik)
-                    assertEquals(553, it.sats.toLong())
-                    assertEquals(1077, it.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
-                it.oppdrag110.oppdragsLinje150s[1].let {
-                    assertEquals("NY", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
-                    assertEquals("AAPOR", it.kodeKlassifik)
-                    assertEquals(779, it.sats.toLong())
-                    assertEquals(2377, it.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
-                }
+            .with(transactionId, index = 0) { oppdrag ->
+                oppdrag.assertBasics("NY", "AAP", sid.id, expectedLines = 2)
+                assertEquals("kelvin", oppdrag.oppdrag110.saksbehId)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
+                    kodeEndringLinje = "NY",
+                    henvisning = bid.id,
+                    kodeKlassifik = "AAPOR",
+                    sats = 553,
+                    vedtakssats = 1077,
+                    refDelytelseId = null
+                )
+                oppdrag.oppdrag110.oppdragsLinje150s[1].assertLine(
+                    kodeEndringLinje = "NY",
+                    henvisning = bid.id,
+                    kodeKlassifik = "AAPOR",
+                    sats = 779,
+                    vedtakssats = 2377
+                )
             }
             .get(transactionId)
 
         kvitterOk(transactionId, oppdrag, listOf(uid1, uid2))
 
         TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.id.toString())
-            .with(uid1.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid1,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.AAP,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("kelvin"),
-                    saksbehandlerId = Navident("kelvin"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(7.jun, 18.jun, 553u, 1077u)
-                }
-                assertEquals(expected, it)
+            .has(uid1.toString())
+            .with(uid1.toString()) {
+                assertUtbetaling(expectedUtbetaling1, it)
             }
-            .has(uid2.id.toString())
-            .with(uid2.id.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    originalKey = transactionId,
-                    sakId = sid,
-                    behandlingId = bid,
-                    fagsystem = Fagsystem.AAP,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("kelvin"),
-                    saksbehandlerId = Navident("kelvin"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(8.jul, 19.jul, 779u, 2377u) // fjern surrounding helg
-                }
-                assertEquals(expected, it)
+            .has(uid2.toString())
+            .with(uid2.toString()) {
+                assertUtbetaling(expectedUtbetaling2, it)
             }
     }
+
 
     @Test
     fun `3 meldekort i 1 utbetalinger blir til 3 utbetaling med 1 oppdrag`() {
@@ -132,13 +114,13 @@ class AapTest : ConsumerTestBase() {
                 meldekort(meldeperiode3, 7.aug, 20.aug, 3000u, 3133u)
             }
         }
-
-        transactionId.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun, 18.jun, 1077u, 553u, "AAPOR"),
-                    DetaljerLinje(bid.id, 7.jul, 20.jul, 2377u, 779u, "AAPOR"),
-                    DetaljerLinje(bid.id, 7.aug, 20.aug, 3133u, 3000u, "AAPOR"),
-                ))) }
-
+        TestRuntime.topics.status.assertThat().has(transactionId) {
+            Aap.mottatt {
+                linje(bid, 7.jun, 20.jun, 553u, 1077u)
+                linje(bid, 8.jul, 19.jul, 779u, 2377u)
+                linje(bid, 7.aug, 20.aug, 3000u, 3133u)
+            }
+        }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -185,15 +167,11 @@ class AapTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2,$uid3")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        kvitterOk(transactionId, oppdrag, listOf(uid1, uid2, uid3))
 
         TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid1.id.toString(), size = 1)
-            .with(uid1.id.toString()) {
+            .has(uid1.toString(), size = 1)
+            .with(uid1.toString()) {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid1,
@@ -212,8 +190,8 @@ class AapTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-            .has(uid2.id.toString())
-            .with(uid2.id.toString()) {
+            .has(uid2.toString())
+            .with(uid2.toString()) {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid2,
@@ -232,8 +210,8 @@ class AapTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-            .has(uid3.id.toString())
-            .with(uid3.id.toString()) {
+            .has(uid3.toString())
+            .with(uid3.toString()) {
                 val expected = utbetaling(
                     action = Action.CREATE,
                     uid = uid3,
@@ -252,7 +230,6 @@ class AapTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-
     }
 
     @Test
@@ -266,27 +243,32 @@ class AapTest : ConsumerTestBase() {
         val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
         val uid2 = aapUId(sid.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
 
-        TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
-            utbetaling(
-                action = Action.CREATE,
-                uid = uid1,
-                sakId = sid,
-                behandlingId = bid,
-                originalKey = transactionId1,
-                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                personident = Personident("12345678910"),
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
-                beslutterId = Navident("kelvin"),
-                saksbehandlerId = Navident("kelvin"),
-                fagsystem = Fagsystem.AAP,
-            ) {
-                periode(3.jun, 14.jun, 100u, 100u)
-            }
-        }
-        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP)) {
-            setOf(uid1)
+        val existingUtbetaling = utbetaling(
+            action = Action.CREATE,
+            uid = uid1,
+            sakId = sid,
+            behandlingId = bid,
+            originalKey = transactionId1,
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = 14.jun.atStartOfDay(),
+            beslutterId = Navident("kelvin"),
+            saksbehandlerId = Navident("kelvin"),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(3.jun, 14.jun, 100u, 100u)
         }
 
+        val expectedUtbetaling = existingUtbetaling.copy(
+            uid = uid2,
+            originalKey = transactionId2,
+            førsteUtbetalingPåSak = false,
+            perioder = periode(17.jun, 28.jun, 200u, 200u)
+        ) 
+
+        TestRuntime.topics.utbetalinger.produce(uid1.toString(), existingUtbetaling)
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP), setOf(uid1))
         TestRuntime.topics.aap.produce(transactionId2) {
             Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
                 meldekort(meldeperiode1, 3.jun, 14.jun, 100u, 100u)
@@ -294,58 +276,41 @@ class AapTest : ConsumerTestBase() {
             }
         }
 
-        transactionId2.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
-                    DetaljerLinje(bid.id, 17.jun, 28.jun, 200u, 200u, "AAPOR"),
-                ))) }
+        TestRuntime.topics.status.assertThat().has(transactionId2) {
+            Aap.mottatt {
+                linje(bid, 17.jun, 28.jun, 200u, 200u)
+            }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
-            .with(transactionId2) {
-                assertEquals("1", it.oppdrag110.kodeAksjon)
-                assertEquals("ENDR", it.oppdrag110.kodeEndring)
-                assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                assertEquals(sid.id, it.oppdrag110.fagsystemId)
-                assertEquals("MND", it.oppdrag110.utbetFrekvens)
-                assertEquals("12345678910", it.oppdrag110.oppdragGjelderId)
-                assertEquals("kelvin", it.oppdrag110.saksbehId)
-                assertEquals(1, it.oppdrag110.oppdragsLinje150s.size)
-                assertNull(it.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
-                it.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
-                    assertEquals("ENDR", a.kodeEndringLinje)
-                    assertEquals(bid.id, a.henvisning)
-                    assertEquals("AAPOR", a.kodeKlassifik)
-                    assertEquals(200, a.sats.toLong())
-                    assertEquals(200, a.vedtakssats157.vedtakssats.toLong())
-                    assertEquals(a.delytelseId, b.refDelytelseId)
-                    assertEquals(a.datoVedtakFom, a.datoKlassifikFom)
-                    assertEquals(b.datoVedtakFom, b.datoKlassifikFom)
-                }
+            .with(transactionId2) { oppdrag ->
+                oppdrag.assertBasics("ENDR", "AAP", sid.id, expectedLines = 1)
+                assertEquals("kelvin", oppdrag.oppdrag110.saksbehId)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
+                    kodeEndringLinje = "NY",
+                    henvisning = bid.id,
+                    kodeKlassifik = "AAPOR",
+                    sats = 200,
+                    vedtakssats = 200,
+                    refDelytelseId = null
+                )
             }
             .get(transactionId2)
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid2.toString())
+            .with(uid2.toString()) {
+                assertUtbetaling(expectedUtbetaling, it)
+            }
 
         kvitterOk(transactionId2, oppdrag, listOf(uid2))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid2.toString())
             .with(uid2.toString()) {
-                val expected = utbetaling(
-                    action = Action.CREATE,
-                    uid = uid2,
-                    sakId = sid,
-                    behandlingId = bid,
-                    originalKey = transactionId2,
-                    førsteUtbetalingPåSak = false,
-                    fagsystem = Fagsystem.AAP,
-                    lastPeriodeId = it.lastPeriodeId,
-                    stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                    vedtakstidspunkt = it.vedtakstidspunkt,
-                    beslutterId = Navident("kelvin"),
-                    saksbehandlerId = Navident("kelvin"),
-                    personident = Personident("12345678910")
-                ) {
-                    periode(17.jun, 28.jun, 200u, 200u)
-                }
-                assertEquals(expected, it)
+                assertUtbetaling(expectedUtbetaling, it)
             }
     }
 
@@ -380,7 +345,6 @@ class AapTest : ConsumerTestBase() {
             action = Action.UPDATE,
             originalKey = transactionId2,
             førsteUtbetalingPåSak = false,
-            lastPeriodeId = PeriodeId(), // placeholder - dynamically generated at runtime 
             perioder = periode(3.jun, 14.jun, 80u, 100u)
         )
 
@@ -392,9 +356,9 @@ class AapTest : ConsumerTestBase() {
             }
         }
         TestRuntime.topics.status.assertThat().has(transactionId2) {
-            StatusReply(Status.MOTTATT, Detaljer(Fagsystem.AAP, listOf(
-                DetaljerLinje(bid.id, 3.jun, 14.jun, 100u, 80u, "AAPOR"),
-            )))
+            Aap.mottatt {
+                linje(bid, 3.jun, 14.jun, 80u, 100u)
+            }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
@@ -427,7 +391,7 @@ class AapTest : ConsumerTestBase() {
 
         kvitterOk(transactionId2, oppdrag, listOf(uid1))
 
-        TestRuntime.topics.utbetalinger.assertThat()
+        TestRuntime.topics.utbetalinger.assertThat().has(uid1.toString()) 
             .has(uid1.toString())
             .with(uid1.toString()) {
                 assertUtbetaling(expectedUtbetaling, it)
@@ -443,56 +407,47 @@ class AapTest : ConsumerTestBase() {
         val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
         val periodeId = PeriodeId()
 
-        TestRuntime.topics.utbetalinger.produce("${uid1.id}") {
-            utbetaling(
-                action = Action.CREATE,
-                uid = uid1,
-                sakId = sid,
-                behandlingId = bid,
-                originalKey = transactionId1,
-                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                lastPeriodeId = periodeId,
-                personident = Personident("12345678910"),
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
-                beslutterId = Navident("kelvin"),
-                saksbehandlerId = Navident("kelvin"),
-                fagsystem = Fagsystem.AAP,
-            ) {
-                periode(2.jun, 13.jun, 100u, 100u)
-            }
+        val existingUtbetaling = utbetaling(
+            action = Action.CREATE,
+            uid = uid1,
+            sakId = sid,
+            behandlingId = bid,
+            originalKey = transactionId1,
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            lastPeriodeId = periodeId,
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = 14.jun.atStartOfDay(),
+            beslutterId = Navident("kelvin"),
+            saksbehandlerId = Navident("kelvin"),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(2.jun, 13.jun, 100u, 100u)
         }
 
-        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP)) {
-            setOf(uid1)
-        }
+        val expectedUtbetaling = existingUtbetaling.copy(
+            action = Action.DELETE,
+        )
 
+        TestRuntime.topics.utbetalinger.produce(uid1.toString(), existingUtbetaling)
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP), setOf(uid1))
         TestRuntime.topics.aap.produce(transactionId1) {
-            Aap.utbetaling(
-                sakId = sid.id,
-                behandlingId = bid.id,
-                vedtakstidspunkt = 14.jun.atStartOfDay(),
-            ) {
-                
+            Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
+                // Empty - opphør
             }
         }
 
-
-        TestRuntime.topics.status.assertThat()
-            .has(transactionId1)
-            .with(transactionId1) {
-                val expected = StatusReply(
-                    status = Status.MOTTATT,
-                    detaljer = Detaljer(Fagsystem.AAP, listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "AAPOR")))
-                )
-                assertEquals(expected, it)
+        TestRuntime.topics.status.assertThat().has(transactionId1) {
+            Aap.mottatt {
+                linje(bid, 2.jun, 13.jun, 0u, 100u)
             }
+        }
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId1)
-            .with(transactionId1) {
-                assertEquals("ENDR", it.oppdrag110.kodeEndring)
-                assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                it.oppdrag110.oppdragsLinje150s[0].let {
+            .with(transactionId1) { oppdrag ->
+                oppdrag.assertBasics("ENDR", "AAP", sid.id, expectedLines = 1)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
                     assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
                     assertEquals(2.jun, it.datoStatusFom.toLocalDate())
                     assertEquals("AAPOR", it.kodeKlassifik)
@@ -501,15 +456,19 @@ class AapTest : ConsumerTestBase() {
             }
             .get(transactionId1)
 
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid1.toString())
+            .with(uid1.toString()) {
+                assertUtbetaling(expectedUtbetaling, it)
+            }
+
         kvitterOk(transactionId1, oppdrag, listOf(uid1))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .with(uid1.toString()) {
-                assertEquals(Action.DELETE, it.action)
-                assertEquals(uid1, it.uid)
+                assertUtbetaling(expectedUtbetaling, it)
             }
-
     }
 
     @Test
@@ -520,89 +479,63 @@ class AapTest : ConsumerTestBase() {
         val uid1 = aapUId(sid.id, "132460781", StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
         val uid2 = aapUId(sid.id, "232460781", StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
         val uid3 = aapUId(sid.id, "132462765", StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val pid1 = PeriodeId()
-        val pid2 = PeriodeId()
 
-        TestRuntime.topics.utbetalinger.produce(uid1.toString()) {
-            utbetaling(
-                action = Action.CREATE,
-                uid = uid1,
-                sakId = sid,
-                behandlingId = bid,
-                originalKey = transactionId,
-                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                lastPeriodeId = pid1,
-                personident = Personident("12345678910"),
-                vedtakstidspunkt = 14.sep.atStartOfDay(),
-                beslutterId = Navident("kelvin"),
-                saksbehandlerId = Navident("kelvin"),
-                fagsystem = Fagsystem.AAP,
-            ) {
-                periode(2.sep, 13.sep, 500u, 500u)
-            }
-        }
-        TestRuntime.topics.utbetalinger.produce(uid2.toString()) {
-            utbetaling(
-                action = Action.CREATE,
-                uid = uid2,
-                sakId = sid,
-                behandlingId = bid,
-                originalKey = transactionId,
-                stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
-                førsteUtbetalingPåSak = false,
-                lastPeriodeId = pid2,
-                personident = Personident("12345678910"),
-                vedtakstidspunkt = 14.sep.atStartOfDay(),
-                beslutterId = Navident("kelvin"),
-                saksbehandlerId = Navident("kelvin"),
-                fagsystem = Fagsystem.AAP,
-            ) {
-                periode(16.sep, 27.sep, 600u, 600u)
-            }
-        }
-        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP)) {
-            setOf(uid1, uid2)
+        val utbetaling1 = utbetaling(
+            action = Action.CREATE,
+            uid = uid1,
+            sakId = sid,
+            behandlingId = bid,
+            originalKey = transactionId,
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            lastPeriodeId = PeriodeId(),
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = 14.sep.atStartOfDay(),
+            beslutterId = Navident("kelvin"),
+            saksbehandlerId = Navident("kelvin"),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(2.sep, 13.sep, 500u, 500u)
         }
 
+        val utbetaling2 = utbetaling1.copy(
+            uid = uid2,
+            førsteUtbetalingPåSak = false,
+            perioder = periode(16.sep, 27.sep, 600u, 600u)
+        ) 
 
+        TestRuntime.topics.utbetalinger.produce(uid1.toString(), utbetaling1)
+        TestRuntime.topics.utbetalinger.produce(uid2.toString(), utbetaling2)
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2))
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
                 meldekort("132460781", 2.sep, 13.sep, 600u, 600u)
                 meldekort("132462765", 30.sep, 10.okt, 600u, 600u)
             }
         }
-
-
-        transactionId.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
-                    DetaljerLinje(bid.id, 2.sep, 13.sep, 600u, 600u, "AAPOR"),
-                    DetaljerLinje(bid.id, 30.sep, 10.okt, 600u, 600u, "AAPOR"),
-                    DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "AAPOR"),
-                ))) }
-
+        TestRuntime.topics.status.assertThat().has(transactionId) {
+            Aap.mottatt {
+                linje(bid, 2.sep, 13.sep, 600u, 600u)
+                linje(bid, 30.sep, 10.okt, 600u, 600u)
+                linje(bid, 16.sep, 27.sep, 0u, 600u)
+            }
+        }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
             .with(transactionId) { oppdrag ->
-                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
-                assertEquals("AAP", oppdrag.oppdrag110.kodeFagomraade)
-                assertEquals(3, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.assertBasics("ENDR", "AAP", sid.id, expectedLines = 3)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].let {
-                    assertEquals(pid1.toString(), it.refDelytelseId)
+                    assertEquals(utbetaling1.lastPeriodeId.toString(), it.refDelytelseId)
                 }
                 oppdrag.oppdrag110.oppdragsLinje150s[2].let {
-                    //assertEquals(pid2.toString(), it.refDelytelseId)
                     assertNull(it.refDelytelseId)
                     assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
                 }
             }
             .get(transactionId)
 
-        TestRuntime.topics.oppdrag.produce(transactionId, mapOf("uids" to "$uid1,$uid2,$uid3")) {
-            oppdrag.apply {
-                mmel = Mmel().apply { alvorlighetsgrad = "00" }
-            }
-        }
+        kvitterOk(transactionId, oppdrag, listOf(uid1, uid2, uid3))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString()).with(uid1.toString()) { assertEquals(Action.UPDATE, it.action) }
@@ -623,11 +556,11 @@ class AapTest : ConsumerTestBase() {
                 meldekort(meldeperiode, 7.jun, 18.jun, 1077u, 553u)
             }
         }
-
-
-        transactionId.assertStatusWith { StatusReply(Status.MOTTATT, Detaljer( ytelse = Fagsystem.AAP, linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun, 18.jun, 1077u, 553u, "AAPOR"),
-                ))) }
+        TestRuntime.topics.status.assertThat().has(transactionId) {
+            Aap.mottatt {
+                linje(bid, 7.jun, 18.jun, 1077u, 553u)
+            }
+        }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
