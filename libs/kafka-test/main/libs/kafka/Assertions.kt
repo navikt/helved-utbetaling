@@ -1,13 +1,8 @@
 package libs.kafka
 
-import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.TestOutputTopic
 import org.apache.kafka.streams.test.TestRecord
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
-import kotlin.test.fail
+import kotlin.test.*
 
 fun <K: Any, V : Any> TestOutputTopic<K, V>.readAndAssert() = TopicAssertion.readAndAssertThat(this)
 
@@ -60,6 +55,11 @@ class TopicAssertion<K: Any, V : Any> private constructor(val topic: TestOutputT
     fun has(key: K, index: Int = 0, size: Int = 1, value: V) = this.also {
         has(key, size)
         assertEquals(value, valuesForKey(key).getOrNull(index))
+    }
+
+    fun has(key: K, index: Int = 0, size: Int = 1, value: () -> V) = this.also {
+        has(key, size)
+        assertEquals(value(), valuesForKey(key).getOrNull(index))
     }
 
     fun with(key: K, index: Int = 0, value: (V) -> Unit) = this.also {

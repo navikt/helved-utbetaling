@@ -42,7 +42,7 @@ internal class TpTest : ConsumerTestBase() {
         val transaction1 = UUID.randomUUID().toString()
         TestRuntime.topics.tp.produce(transaction1) { utbet }
         TestRuntime.topics.status.assertThat().has(transaction1)
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid)
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transaction1)
@@ -205,7 +205,7 @@ internal class TpTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -278,7 +278,7 @@ internal class TpTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
+        kvitterOk(transactionId, oppdrag, listOf(uid1, uid2))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -372,7 +372,7 @@ internal class TpTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -611,7 +611,7 @@ internal class TpTest : ConsumerTestBase() {
             .has(transactionId2)
             .has(transactionId2, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid2.toString())
@@ -660,7 +660,7 @@ internal class TpTest : ConsumerTestBase() {
             }
             .get(transactionId2)
 
-        transactionId2.acknowledgeOppdrag(oppdrag, uid2)
+        kvitterOk(transactionId2, oppdrag, listOf(uid2))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid2.toString())
@@ -750,7 +750,7 @@ internal class TpTest : ConsumerTestBase() {
             .has(transactionId2)
             .has(transactionId2, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -799,7 +799,7 @@ internal class TpTest : ConsumerTestBase() {
             }
             .get(transactionId2)
 
-        transactionId2.acknowledgeOppdrag(oppdrag, uid1)
+        kvitterOk(transactionId2, oppdrag, listOf(uid1))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -883,7 +883,7 @@ internal class TpTest : ConsumerTestBase() {
             .has(transactionId1)
             .has(transactionId1, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -933,7 +933,7 @@ internal class TpTest : ConsumerTestBase() {
             }
             .get(transactionId1)
 
-        transactionId1.acknowledgeOppdrag(oppdrag, uid1)
+        kvitterOk(transactionId1, oppdrag, listOf(uid1))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -1036,7 +1036,7 @@ internal class TpTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -1303,7 +1303,7 @@ internal class TpTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, uid)
+        kvitterOk(transactionId, oppdrag, listOf(uid))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())

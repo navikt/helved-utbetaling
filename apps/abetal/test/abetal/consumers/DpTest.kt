@@ -7,8 +7,6 @@ import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -59,7 +57,7 @@ internal class DpTest : ConsumerTestBase() {
         val transaction1 = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transaction1) { utbet }
         TestRuntime.topics.status.assertThat().has(transaction1)
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid)
             .hasHeader(uid, "hash_key")
@@ -223,8 +221,8 @@ internal class DpTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-        atid.acknowledgeOppdrag(aoppdrag, auid)
-        assertUtbetalinger(auid)
+        kvitterOk(atid, aoppdrag, listOf(auid))
+        TestRuntime.topics.utbetalinger.assertThat().has(auid.toString())
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid)
         }
@@ -280,8 +278,8 @@ internal class DpTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-        btid.acknowledgeOppdrag(boppdrag, buid)
-        assertUtbetalinger(buid)
+        kvitterOk(btid, boppdrag, listOf(buid))
+        TestRuntime.topics.utbetalinger.assertThat().has(buid.toString())
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid, buid)
         }
@@ -337,8 +335,8 @@ internal class DpTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-        ctid.acknowledgeOppdrag(coppdrag, cuid)
-        assertUtbetalinger(cuid)
+        kvitterOk(ctid, coppdrag, listOf(cuid))
+        TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid, buid, cuid)
         }
@@ -400,8 +398,8 @@ internal class DpTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-        etid.acknowledgeOppdrag(eoppdrag, cuid)
-        assertUtbetalinger(cuid)
+        kvitterOk(etid, eoppdrag, listOf(cuid))
+        TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
     }
 
@@ -480,8 +478,8 @@ internal class DpTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-        atid.acknowledgeOppdrag(aoppdrag, auid)
-        assertUtbetalinger(auid)
+        kvitterOk(atid, aoppdrag, listOf(auid))
+        TestRuntime.topics.utbetalinger.assertThat().has(auid.toString())
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid)
         }
@@ -537,8 +535,8 @@ internal class DpTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-        btid.acknowledgeOppdrag(boppdrag, buid)
-        assertUtbetalinger(buid)
+        kvitterOk(btid, boppdrag, listOf(buid))
+        TestRuntime.topics.utbetalinger.assertThat().has(buid.toString())
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER)) {
             setOf(auid, buid)
         }
@@ -594,10 +592,8 @@ internal class DpTest : ConsumerTestBase() {
                 }
                 assertEquals(expected, it)
             }
-        ctid.acknowledgeOppdrag(coppdrag, cuid)
-        assertUtbetalinger(cuid)
-
-        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+        kvitterOk(ctid, coppdrag, listOf(cuid))
+        TestRuntime.topics.utbetalinger.assertThat().has(cuid.toString())
     }
 
     @Test
@@ -617,12 +613,12 @@ internal class DpTest : ConsumerTestBase() {
             .has(tid, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.DAGPENGER, listOf(
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
             ))))
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
         var oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
-        tid.acknowledgeOppdrag(oppdrag, uid)
-        assertUtbetalinger(uid)
+        kvitterOk(tid, oppdrag, listOf(uid))
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid)
         }
@@ -640,14 +636,14 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 2.aug, 16.aug, 200u, 200u, "DAGPENGER"),
             ))))
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
         oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
         val mapper = libs.xml.XMLMapper<Oppdrag>()
         println(mapper.writeValueAsString(oppdrag))
-        tid.acknowledgeOppdrag(oppdrag, uid)
-        assertUtbetalinger(uid)
+        kvitterOk(tid, oppdrag, listOf(uid))
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid)
         }
@@ -673,9 +669,9 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 200u, "DAGPENGER"),
             ))))
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         var oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
-        tid.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
+        kvitterOk(tid, oppdrag, listOf(uid1, uid2))
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
@@ -703,14 +699,14 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 0u, "DAGPENGER"),
             ))
         )
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
         oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
         // val mapper = libs.xml.XMLMapper<no.trygdeetaten.skjema.oppdrag.Oppdrag>()
         // println(mapper.writeValueAsString(oppdrag))
-        tid.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
+        kvitterOk(tid, oppdrag, listOf(uid1, uid2))
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
@@ -739,12 +735,12 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid.id, 1.aug, 15.aug, 200u, 200u, "DAGPENGER"),
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 200u, "DAGPENGER"),
             ))))
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
         var oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
-        tid.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
+        kvitterOk(tid, oppdrag, listOf(uid1, uid2))
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
@@ -772,14 +768,14 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid.id, 2.sep, 13.sep, 200u, 0u, "DAGPENGER"),
             ))
         )
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
         oppdrag = TestRuntime.topics.oppdrag.assertThat().has(tid).get(tid)
         val mapper = libs.xml.XMLMapper<no.trygdeetaten.skjema.oppdrag.Oppdrag>()
         println(mapper.writeValueAsString(oppdrag))
-        tid.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
+        kvitterOk(tid, oppdrag, listOf(uid1, uid2))
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
             .has(uid2.toString())
@@ -823,7 +819,7 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid.id, 7.jul21, 20.jul21, 2377u, 779u, "DAGPENGER"),
             ))))
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId, size = 1)
@@ -901,7 +897,7 @@ internal class DpTest : ConsumerTestBase() {
                 assertEquals(expected, it)
             }
 
-        transactionId.acknowledgeOppdrag(oppdrag, listOf(uid1, uid2))
+        kvitterOk(transactionId, oppdrag, listOf(uid1, uid2))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.id.toString())
@@ -1009,7 +1005,7 @@ internal class DpTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -1277,7 +1273,7 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid.id, 9.aug21, 20.aug21, 3133u, 3000u, "DAGPENGER"),
             ))))
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -1526,7 +1522,7 @@ internal class DpTest : ConsumerTestBase() {
             .has(transactionId2)
             .has(transactionId2, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
@@ -1577,7 +1573,7 @@ internal class DpTest : ConsumerTestBase() {
                 assertEquals(expected, it)
             }
 
-        transactionId2.acknowledgeOppdrag(oppdrag, uid2)
+        kvitterOk(transactionId2, oppdrag, listOf(uid2))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid2.toString())
@@ -1667,7 +1663,7 @@ internal class DpTest : ConsumerTestBase() {
             .has(transactionId2)
             .has(transactionId2, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
@@ -1717,7 +1713,7 @@ internal class DpTest : ConsumerTestBase() {
                 assertEquals(expected, it)
             }
 
-        transactionId2.acknowledgeOppdrag(oppdrag, uid1)
+        kvitterOk(transactionId2, oppdrag, listOf(uid1))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -1790,7 +1786,7 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid.id, 2.jun, 13.jun, 100u, 0u, "DAGPENGERFERIE")))
             ))
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId1)
@@ -1843,7 +1839,7 @@ internal class DpTest : ConsumerTestBase() {
                 assertEquals(expected, it)
             }
 
-        transactionId1.acknowledgeOppdrag(oppdrag, uid1)
+        kvitterOk(transactionId1, oppdrag, listOf(uid1))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString())
@@ -1919,12 +1915,12 @@ internal class DpTest : ConsumerTestBase() {
                 assertEquals(expected, it)
             }
 
-        tid1.acknowledgeOppdrag(oppdrag, uid)
+        kvitterOk(tid1, oppdrag, listOf(uid))
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf(uid)
         }
 
-        assertUtbetalinger(uid)
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
 
         TestRuntime.topics.dp.produce(tid2) {
             Dp.utbetaling(sid.id, bid2.id) {
@@ -1967,12 +1963,12 @@ internal class DpTest : ConsumerTestBase() {
             }
             .get(uid.toString())
 
-        tid3.acknowledgeOppdrag(oppdrag2, uid)
+        kvitterOk(tid3, oppdrag2, listOf(uid))
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
             setOf()
         }
 
-        assertUtbetalinger(uid)
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
 
         TestRuntime.topics.dp.produce(tid3) {
             Dp.utbetaling(sid.id, bid3.id) {
@@ -1986,7 +1982,7 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid3.id, 3.jun, 13.jun, 100u, 100u, "DAGPENGER")))
             ))
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
         TestRuntime.topics.oppdrag.assertThat()
             .has(tid3)
@@ -2078,7 +2074,7 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid.id, 16.sep, 27.sep, 600u, 0u, "DAGPENGER"),
             ))))
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -2313,7 +2309,7 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.status.assertThat().has(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, uid)
+        kvitterOk(transactionId, oppdrag, listOf(uid))
 
         TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
             .with(uid.toString()) { utbetaling ->
@@ -2348,7 +2344,7 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid1.id, 2.sep, 13.sep, 300u, 300u, "DAGPENGER"),
             ))))
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
             .has(tid1)
@@ -2447,7 +2443,7 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid2.id, 16.sep, 27.sep, 300u, 300u, "DAGPENGER"),
             ))))
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag2 = TestRuntime.topics.oppdrag.assertThat()
             .has(tid2)
@@ -2552,7 +2548,7 @@ internal class DpTest : ConsumerTestBase() {
                 DetaljerLinje(bid3.id, 30.sep, 10.okt, 300u, 300u, "DAGPENGER"),
             ))))
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
         val oppdrag3 = TestRuntime.topics.oppdrag.assertThat()
             .has(tid3)
@@ -2672,7 +2668,7 @@ internal class DpTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId, mottatt)
 
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
 
@@ -2700,7 +2696,7 @@ internal class DpTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, uid)
+        kvitterOk(transactionId, oppdrag, listOf(uid))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
@@ -2746,7 +2742,7 @@ internal class DpTest : ConsumerTestBase() {
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId)
-        assertUtbetalingerEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -2761,9 +2757,9 @@ internal class DpTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        transactionId.acknowledgeOppdrag(oppdrag, uid)
+        kvitterOk(transactionId, oppdrag, listOf(uid))
 
-        assertUtbetalinger(uid)
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
     }
 
     @Test
