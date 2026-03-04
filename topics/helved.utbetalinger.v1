@@ -23,3 +23,6 @@ spec:
     - team: helved
       application: utsjekk
       access: readwrite
+    - team: helved
+      application: statistikkern
+      access: read
