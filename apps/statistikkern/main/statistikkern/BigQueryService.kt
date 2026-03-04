@@ -18,8 +18,8 @@ import models.Utbetaling
 
 class BigQueryService(
     // TODO: Stemmer disse?
-    private val projectId: String = env("GOOGLE_CLOUD_PROJECT"),
-    val datasetName: String = env("BIGQUERY_DATASET_HELVED_UTBETALING_DATASET_ID"),
+    val projectId: String = env("GCP_TEAM_PROJECT_ID"),
+    val datasetName: String = env("BIGQUERY_DATASET_ID"),
     val bigQuery: BigQuery = BigQueryOptions.getDefaultInstance().service,
 ) {
     val utbetalingerTableId = getOrCreateTable(
