@@ -42,3 +42,6 @@ spec:
     - team: historisk
       application: superhelt
       access: read
+    - team: helved
+      application: statistikkern
+      access: read
