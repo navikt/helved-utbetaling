@@ -31,7 +31,6 @@ spec:
     logging:
       destinations:
         - id: loki
-        - id: elastic
   kafka:
     pool: nav-dev
     streams: true
@@ -40,3 +39,8 @@ spec:
       - cascadingDelete: true
         name: helved_utbetaling
         permission: READWRITE
+  accessPolicy:
+    outbound:
+      rules:
+        - application: logging
+          namespace: nais-system
