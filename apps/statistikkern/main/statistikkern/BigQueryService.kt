@@ -17,9 +17,9 @@ import models.StatusReply
 import models.Utbetaling
 
 class BigQueryService(
-    // TODO: Stemmer disse?
     val projectId: String = env("GCP_TEAM_PROJECT_ID"),
-    val datasetName: String = env("BIGQUERY_DATASET_ID"),
+    // TODO: Lag env for denne?
+    val datasetName: String = "helved_utbetaling",
     val bigQuery: BigQuery = BigQueryOptions.getDefaultInstance().service,
 ) {
     val utbetalingerTableId = getOrCreateTable(
