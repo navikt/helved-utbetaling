@@ -154,7 +154,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             
             // Create initial utbetaling(er)
             uids.forEach { uid ->
-                TestScenarios.createExistingUtbetaling(
+                TestHelpers.createExistingUtbetaling(
                     uid = uid,
                     sakId = sid,
                     behandlingId = bid1,

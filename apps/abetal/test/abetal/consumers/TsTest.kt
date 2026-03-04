@@ -1,6 +1,7 @@
 package abetal.consumers
 
 import abetal.*
+import abetal.ts.linje
 import models.*
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
@@ -58,9 +59,11 @@ internal class TsTest : ConsumerTestBase() {
 
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, StatusReply(Status.MOTTATT, Detaljer(Fagsystem.TILLSTPB, listOf(
-                DetaljerLinje(bid.id, 3.jun, 7.jun, null, 1500u, "TSTBASISP2-OP"),
-            ))))
+            .has(transactionId) {
+                Ts.mottatt(Fagsystem.TILLSTPB) {
+                    linje(bid, 3.jun, 7.jun, 1500u)
+                }
+            }
 
         TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -82,18 +85,13 @@ internal class TsTest : ConsumerTestBase() {
         }
 
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.TILLEGGSSTØNADER,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun, 18.jun, null, 1077u, "TSTBASISP2-OP"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .has(transactionId) {
+                Ts.mottatt(Fagsystem.TILLEGGSSTØNADER) {
+                    linje(bid, 7.jun, 18.jun, 1077u)
+                }
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -163,18 +161,13 @@ internal class TsTest : ConsumerTestBase() {
         }
 
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.TILLSTPB,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 7.jun, 18.jun, null, 1077u, "TSTBASISP2-OP"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .has(transactionId) {
+                Ts.mottatt(Fagsystem.TILLSTPB) {
+                    linje(bid, 7.jun, 18.jun, 1077u)
+                }
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -298,18 +291,13 @@ internal class TsTest : ConsumerTestBase() {
         }
 
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.TILLSTPB,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 3.jun, 7.jun, null, 1500u, "TSTBASISP2-OP"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .has(transactionId) {
+                Ts.mottatt(Fagsystem.TILLSTPB) {
+                    linje(bid, 3.jun, 7.jun, 1500u)
+                }
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -578,18 +566,13 @@ internal class TsTest : ConsumerTestBase() {
         }
 
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.TILLEGGSSTØNADER,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 1.jun, 30.jun, null, 3000u, "TSBUASIA-OP"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .has(transactionId) {
+                Ts.mottatt(Fagsystem.TILLEGGSSTØNADER) {
+                    linje(bid, 1.jun, 30.jun, 3000u, "TSBUASIA-OP")
+                }
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -714,18 +697,13 @@ internal class TsTest : ConsumerTestBase() {
         }
 
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.TILLEGGSSTØNADER,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 1.jun, 30.jun, null, 3070u, "TSBUASIA-OP"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .has(transactionId) {
+                Ts.mottatt(Fagsystem.TILLEGGSSTØNADER) {
+                    linje(bid, 1.jun, 30.jun, 3070u, "TSBUASIA-OP")
+                }
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -851,18 +829,13 @@ internal class TsTest : ConsumerTestBase() {
         }
 
 
-        val mottatt = StatusReply(
-            Status.MOTTATT,
-            Detaljer(
-                ytelse = Fagsystem.TILLEGGSSTØNADER,
-                linjer = listOf(
-                    DetaljerLinje(bid.id, 6.jun, 6.jun, null, 70u, "TSBUASIA-OP"),
-                )
-            )
-        )
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, mottatt)
+            .has(transactionId) {
+                Ts.mottatt(Fagsystem.TILLEGGSSTØNADER) {
+                    linje(bid, 6.jun, 6.jun, 70u, "TSBUASIA-OP")
+                }
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -984,17 +957,13 @@ internal class TsTest : ConsumerTestBase() {
         }
 
 
-        val mottatt = StatusReply(
-            status = Status.MOTTATT,
-            detaljer = Detaljer(
-                Fagsystem.TILLEGGSSTØNADER,
-                listOf(DetaljerLinje(bid.id, 2.jun, 13.jun, null, 0u, "TSTBASISP2-OP"))
-            )
-        )
-
         TestRuntime.topics.status.assertThat()
             .has(transactionId1)
-            .has(transactionId1, mottatt)
+            .has(transactionId1) {
+                Ts.mottatt(Fagsystem.TILLEGGSSTØNADER) {
+                    linje(bid, 2.jun, 13.jun, 0u)
+                }
+            }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
@@ -1163,15 +1132,11 @@ internal class TsTest : ConsumerTestBase() {
         }
 
 
-        val expectedError = StatusReply(
-            status = Status.FEILET,
-            detaljer = null,
-            error = ApiError(400, "Kan ikke endre 'sakId'", DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID.doc)
-        )
-
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
-            .has(transactionId, expectedError)
+            .has(transactionId) {
+                Ts.feilet(ApiError(400, "Kan ikke endre 'sakId'", DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID.doc))
+            }
     }
 
 }

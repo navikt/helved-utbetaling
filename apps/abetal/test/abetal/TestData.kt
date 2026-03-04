@@ -185,6 +185,20 @@ object Tp {
         ): List<TpPeriode> {
         return listOf(TpPeriode(meldeperiode, fom, tom, betalendeEnhet, barnetillegg, beløp, stønad))
     }
+
+    fun mottatt(linjer: MutableList<DetaljerLinje>.() -> Unit): StatusReply {
+        return StatusReply(
+            Status.MOTTATT,
+            Detaljer(Fagsystem.TILTAKSPENGER, mutableListOf<DetaljerLinje>().apply(linjer))
+        )
+    }
+
+    fun feilet(linjer: MutableList<DetaljerLinje>.() -> Unit): StatusReply {
+        return StatusReply(
+            Status.FEILET,
+            Detaljer(Fagsystem.TILTAKSPENGER, mutableListOf<DetaljerLinje>().apply(linjer))
+        )
+    }
 }
 
 object Ts {
@@ -227,6 +241,17 @@ object Ts {
     // ): List<TsPeriode> {
     //     return listOf(TsPeriode(fom, tom, beløp))
     // }
+
+    fun mottatt(fagsystem: Fagsystem = Fagsystem.TILLSTPB, linjer: MutableList<DetaljerLinje>.() -> Unit): StatusReply {
+        return StatusReply(
+            Status.MOTTATT,
+            Detaljer(fagsystem, mutableListOf<DetaljerLinje>().apply(linjer))
+        )
+    }
+
+    fun feilet(error: ApiError): StatusReply {
+        return StatusReply(Status.FEILET, null, error)
+    }
 }
 
 fun MutableList<TsPeriode>.periode(
@@ -265,6 +290,17 @@ object Historisk {
         beløp: UInt,
     ): List<HistoriskPeriode> {
         return listOf(HistoriskPeriode(fom, tom, beløp))
+    }
+
+    fun mottatt(linjer: MutableList<DetaljerLinje>.() -> Unit): StatusReply {
+        return StatusReply(
+            Status.MOTTATT,
+            Detaljer(Fagsystem.HISTORISK, mutableListOf<DetaljerLinje>().apply(linjer))
+        )
+    }
+
+    fun feilet(error: ApiError): StatusReply {
+        return StatusReply(Status.FEILET, null, error)
     }
 }
 
