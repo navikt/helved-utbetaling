@@ -34,7 +34,7 @@ object TestRuntime {
     val jdbc = Jdbc.initialize(postgres.config)
     val context = CoroutineDatasource(jdbc)
     val config = Config(
-        kafka = StreamsConfig("", "", SslConfig("", "", "")),
+        kafka = StreamsConfig("test-application", "localhost:9092", SslConfig("", "", "")),
         jdbc = postgres.config.copy(migrations = listOf(File("test/migrations"), File("migrations"))),
         azure = azure.config,
         peisschtappern.config,

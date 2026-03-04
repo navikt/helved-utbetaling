@@ -42,8 +42,8 @@ object TestRuntime {
         azure = azure.config,
         jdbc = postgres.config,
         kafka = StreamsConfig(
-            applicationId = "",
-            brokers = "",
+            applicationId = "test-application",
+            brokers = "localhost:9092",
             ssl = SslConfig("", "", ""),
             additionalProperties = Properties().apply {
                 this["state.dir"] = "build/kafka-streams/state"

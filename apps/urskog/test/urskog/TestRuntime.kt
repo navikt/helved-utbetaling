@@ -72,7 +72,7 @@ object TestConfig {
             kvitteringsKø = MQQueue("DEV.QUEUE.2"),
             sendKø = MQQueue("DEV.QUEUE.1")
         )
-        val kafka = StreamsConfig("", "", SslConfig("", "", ""), additionalProperties = Properties().apply {
+        val kafka = StreamsConfig("test-application", "localhost:9092", SslConfig("", "", ""), additionalProperties = Properties().apply {
             put("state.dir", "build/kafka-streams")
             put("max.task.idle.ms", -1L)
             put(DSL_STORE_SUPPLIERS_CLASS_CONFIG, BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers::class.java)

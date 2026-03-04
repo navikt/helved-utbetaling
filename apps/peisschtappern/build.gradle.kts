@@ -18,7 +18,7 @@ dependencies {
     implementation(project(":models"))
     implementation("no.nav.helved:xml:$libVersion")
 
-    implementation("org.apache.kafka:kafka-clients:4.1.1")
+    implementation("org.apache.kafka:kafka-clients:4.2.0")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")

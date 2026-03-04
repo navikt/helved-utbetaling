@@ -4,9 +4,6 @@ import libs.utils.secureLog
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.streams.errors.*
-import org.apache.kafka.streams.errors.DeserializationExceptionHandler.DeserializationHandlerResponse as ConsumeHandler;
-import org.apache.kafka.streams.errors.ProcessingExceptionHandler.ProcessingHandlerResponse as ProcessingHandler;
-import org.apache.kafka.streams.errors.ProductionExceptionHandler.ProductionExceptionHandlerResponse as ProduceHandler; 
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse as StreamHandler
 
 class ReplaceThread(message: Any) : RuntimeException(message.toString())
@@ -19,7 +16,11 @@ class ReplaceThread(message: Any) : RuntimeException(message.toString())
 class ConsumeAgainHandler : DeserializationExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
-    override fun handle(context: ErrorHandlerContext, record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception): ConsumeHandler {
+    override fun handleError(
+        context: ErrorHandlerContext,
+        record: ConsumerRecord<ByteArray, ByteArray>,
+        exception: Exception
+    ): DeserializationExceptionHandler.Response {
         val msg = """
                Feil ved deserializing, forsøker igjen.
                Topic: ${record.topic()}
@@ -31,13 +32,18 @@ class ConsumeAgainHandler : DeserializationExceptionHandler {
         kafkaLog.warn(msg)
         secureLog.warn(msg, exception)
 
-        return ConsumeHandler.FAIL
+        return DeserializationExceptionHandler.Response.fail()
     }
 }
+
 class ConsumeNextHandler : DeserializationExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
-    override fun handle( context: ErrorHandlerContext, record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception): ConsumeHandler {
+    override fun handleError(
+        context: ErrorHandlerContext,
+        record: ConsumerRecord<ByteArray, ByteArray>,
+        exception: Exception
+    ): DeserializationExceptionHandler.Response {
         val msg = """
                Feil ved deserializing, fortsetter med neste record.
                Topic: ${record.topic()}
@@ -49,34 +55,35 @@ class ConsumeNextHandler : DeserializationExceptionHandler {
         kafkaLog.warn(msg)
         secureLog.warn(msg, exception)
 
-        return ConsumeHandler.CONTINUE
+        return DeserializationExceptionHandler.Response.resume()
     }
 }
 
-class ProcessAgainHandler: ProcessingExceptionHandler {
+class ProcessAgainHandler : ProcessingExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
-    override fun handle(
-        c: ErrorHandlerContext, 
-        r: org.apache.kafka.streams.processor.api.Record<*, *>, 
-        e: java.lang.Exception,
-    ): ProcessingHandler {
+    override fun handleError(
+        c: ErrorHandlerContext,
+        r: org.apache.kafka.streams.processor.api.Record<*, *>,
+        e: java.lang.Exception
+    ): ProcessingExceptionHandler.Response {
         kafkaLog.error("Feil ved prosessering i topologien, forsøker igjen.")
         secureLog.error("Feil ved prosessering i topologien, forsøker igjen.", e)
-        return ProcessingHandler.FAIL
+        return ProcessingExceptionHandler.Response.fail()
     }
 }
-class ProcessNextHandler: ProcessingExceptionHandler {
+
+class ProcessNextHandler : ProcessingExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
-    override fun handle(
-        c: ErrorHandlerContext, 
-        r: org.apache.kafka.streams.processor.api.Record<*, *>, 
-        e: java.lang.Exception,
-    ): ProcessingHandler {
+    override fun handleError(
+        c: ErrorHandlerContext,
+        r: org.apache.kafka.streams.processor.api.Record<*, *>,
+        e: java.lang.Exception
+    ): ProcessingExceptionHandler.Response {
         kafkaLog.error("Feil ved prosessering i topologien, fortsetter med neste record.")
         secureLog.error("Feil ved prosessering i topologien, fortsetter med neste record.", e)
-        return ProcessingHandler.CONTINUE
+        return ProcessingExceptionHandler.Response.resume()
     }
 }
 
@@ -107,27 +114,27 @@ class UncaughtHandler: StreamsUncaughtExceptionHandler {
 class ProduceAgainHandler : ProductionExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
-    override fun handle(
+    override fun handleError(
         c: ErrorHandlerContext?,
         r: ProducerRecord<ByteArray, ByteArray>?,
         e: java.lang.Exception?
-    ): ProduceHandler {
+    ): ProductionExceptionHandler.Response {
         kafkaLog.error("Feil ved serializing, forsøker igjen.")
         secureLog.error("Feil ved serializing, forsøker igjen.", e)
-        return ProduceHandler.FAIL
+        return ProductionExceptionHandler.Response.fail()
     }
 }
 
 class ProduceNextHandler : ProductionExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
-    override fun handle(
+    override fun handleError(
         c: ErrorHandlerContext?,
         r: ProducerRecord<ByteArray, ByteArray>?,
         e: java.lang.Exception?
-    ): ProduceHandler {
+    ): ProductionExceptionHandler.Response {
         kafkaLog.error("Feil ved serializing, fortsetter med neste record.")
         secureLog.error("Feil ved serializing, fortsetter med neste record.", e)
-        return ProduceHandler.CONTINUE
+        return ProductionExceptionHandler.Response.resume()
     }
 }
