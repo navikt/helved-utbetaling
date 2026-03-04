@@ -29,7 +29,7 @@ import libs.utils.secureLog
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
