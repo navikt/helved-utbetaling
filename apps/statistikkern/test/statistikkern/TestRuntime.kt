@@ -60,7 +60,7 @@ private fun BigQueryService.query(uid: String, table: String): List<Map<String, 
     }
 }
 
-fun utbetaling(dryrun: Boolean = false) = Utbetaling(
+fun utbetaling(dryrun: Boolean = false, perioder: List<Utbetalingsperiode> = defaultPerioder()) = Utbetaling(
     dryrun = dryrun,
     originalKey = "original-key",
     fagsystem = Fagsystem.AAP,
@@ -77,11 +77,9 @@ fun utbetaling(dryrun: Boolean = false) = Utbetaling(
     saksbehandlerId = Navident("Z999999"),
     periodetype = Periodetype.UKEDAG,
     avvent = null,
-    perioder = listOf(
-        Utbetalingsperiode(
-            fom = LocalDate.of(2025, 1, 6),
-            tom = LocalDate.of(2025, 1, 7),
-            beløp = 800u,
-        )
-    ),
+    perioder = perioder,
+)
+
+fun defaultPerioder() = listOf(
+    Utbetalingsperiode(fom = LocalDate.of(2025, 1, 6), tom = LocalDate.of(2025, 1, 7), beløp = 800u),
 )
