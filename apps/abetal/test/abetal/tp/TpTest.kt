@@ -1,7 +1,6 @@
-package abetal.consumers
+package abetal.tp
 
 import abetal.*
-import abetal.tp.linje
 import com.fasterxml.jackson.module.kotlin.readValue
 import libs.kafka.JsonSerde
 import models.*
@@ -16,7 +15,7 @@ import kotlin.test.assertNull
 internal class TpTest : ConsumerTestBase() {
 
     @Test
-    fun `simulering av tp`() {
+    fun `simulation - dry run tp utbetaling`() {
         val utbet = JsonSerde.jackson.readValue<TpUtbetaling>(
             """
             {
@@ -121,7 +120,7 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `simulering uten endring`() {
+    fun `simulation - no changes produces no oppdrag`() {
         val transactionId = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
@@ -158,7 +157,7 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `2 meldekort i 1 utbetalinger blir til 2 utbetaling med 1 oppdrag`() {
+    fun `create - two meldekort create two utbetalinger with single oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -249,7 +248,7 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `3 meldekort i 1 utbetalinger blir til 3 utbetaling med 1 oppdrag`() {
+    fun `create - three meldekort create three utbetalinger with single oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -365,7 +364,7 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `nytt meldekort på eksisterende sak`() {
+    fun `create - adding new meldekort to existing sak`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
@@ -457,7 +456,7 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endre meldekort på eksisterende sak`() {
+    fun `update - changing meldekort on existing sak`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
@@ -537,7 +536,7 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `opphør på meldekort`() {
+    fun `opphør - canceling meldekort`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -617,7 +616,7 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `3 meldekort med ulike operasjoner`() {
+    fun `edge case - multiple meldekort with mixed operations`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -775,7 +774,7 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `betalendeEnhet mapping skal gi riktig oppdragsEnhet120`() {
+    fun `mapping - betalendeEnhet maps to correct oppdragsEnhet120`() {
         val json = """
             {
               "dryrun": false,
@@ -824,7 +823,7 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `meldekort med barnetillegg gir riktig klassekode`() {
+    fun `mapping - meldekort with barnetillegg maps to correct klassekode`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()

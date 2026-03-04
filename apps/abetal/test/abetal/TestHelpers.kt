@@ -1,8 +1,5 @@
-package abetal.consumers
+package abetal
 
-import abetal.SakKey
-import abetal.TestRuntime
-import abetal.utbetaling
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.Oppdrag

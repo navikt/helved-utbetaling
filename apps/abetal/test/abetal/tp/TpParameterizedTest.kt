@@ -1,4 +1,4 @@
-package abetal.consumers
+package abetal.tp
 
 import abetal.*
 import models.*
@@ -24,10 +24,10 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
     override val expectedKlassekode: String = "TPTPAFT"
 
     // Disable tests that don't work generically for TP
-    override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
-    override fun `update existing utbetaling`() = emptyList<DynamicTest>()
-    override fun `empty utbetaling returns OK`() = emptyList<DynamicTest>()
-    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // TP has different simulation behavior - needs specific investigation
+    override fun `create - multiple perioder create utbetalinger`() = emptyList<DynamicTest>()
+    override fun `update - modifying existing utbetaling with new periode`() = emptyList<DynamicTest>()
+    override fun `edge case - empty utbetaling returns OK status`() = emptyList<DynamicTest>()
+    override fun `simulation - no changes produces no oppdrag`() = emptyList<DynamicTest>()  // TP has different simulation behavior - needs specific investigation
     
     override fun createMessage(
         sakId: String,

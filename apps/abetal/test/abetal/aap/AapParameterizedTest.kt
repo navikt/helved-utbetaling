@@ -1,8 +1,6 @@
-package abetal.consumers
+package abetal.aap
 
-import abetal.Aap
-import abetal.TestRuntime
-import abetal.meldekort
+import abetal.*
 import models.*
 import org.junit.jupiter.api.DynamicTest
 import java.time.LocalDateTime
@@ -21,9 +19,9 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
     override val expectedKlassekode: String = "AAPOR"
     
     // Disable tests that don't work generically for AAP
-    override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
-    override fun `update existing utbetaling`() = emptyList<DynamicTest>()
-    override fun `empty utbetaling returns OK`() = emptyList<DynamicTest>()
+    override fun `create - multiple perioder create utbetalinger`() = emptyList<DynamicTest>()
+    override fun `update - modifying existing utbetaling with new periode`() = emptyList<DynamicTest>()
+    override fun `edge case - empty utbetaling returns OK status`() = emptyList<DynamicTest>()
     
     override fun createMessage(
         sakId: String,
