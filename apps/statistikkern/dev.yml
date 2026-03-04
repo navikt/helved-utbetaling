@@ -1,0 +1,42 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: statistikkern
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  image: {{ image }}
+  terminationGracePeriodSeconds: 70
+  liveness:
+    path: /actuator/live
+  readiness:
+    path: /actuator/ready
+  prometheus:
+    path: /actuator/metric
+    enabled: true
+  replicas:
+    min: 1
+    max: 1
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      memory: 512Mi
+      cpu: 100m
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: loki
+        - id: elastic
+  kafka:
+    pool: nav-dev
+    streams: false
+  gcp:
+    bigQueryDatasets:
+      - cascadingDelete: true
+        name: helved_utbetaling
+        permission: READWRITE
