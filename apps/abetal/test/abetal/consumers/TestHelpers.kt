@@ -15,7 +15,7 @@ import kotlin.test.assertNull
 /**
  * Helper for testing consumer scenarios with less boilerplate.
  */
-object TestScenarios {
+object TestHelpers {
     
     /**
      * Creates an existing utbetaling in the topic for testing updates/deletes
@@ -71,36 +71,6 @@ fun String.assertStatus(
             assertEquals(expectedFagsystem, it.detaljer?.ytelse)
         }
 }
-
-/**
- * Asserts status with full details comparison (order-independent for linjer)
- */
-// fun String.assertStatusWithDetails(
-//     expectedStatus: Status = Status.MOTTATT,
-//     expectedDetaljer: Detaljer
-// ) {
-//     TestRuntime.topics.status.assertThat()
-//         .has(this)
-//         .with(this) { actual ->
-//             assertEquals(expectedStatus, actual.status)
-//             assertEquals(expectedDetaljer.ytelse, actual.detaljer?.ytelse)
-//             
-//             // Sort both lists for order-independent comparison
-//             val actualLinjer = actual.detaljer?.linjer?.sortedWith(
-//                 compareBy<DetaljerLinje> { it.behandlingId }
-//                     .thenBy { it.fom }
-//                     .thenBy { it.tom }
-//             ) ?: emptyList()
-//             
-//             val expectedLinjer = expectedDetaljer.linjer.sortedWith(
-//                 compareBy<DetaljerLinje> { it.behandlingId }
-//                     .thenBy { it.fom }
-//                     .thenBy { it.tom }
-//             )
-//             
-//             assertEquals(expectedLinjer, actualLinjer, "DetaljerLinje lists don't match (compared after sorting)")
-//         }
-// }
 
 /**
  * Gets and asserts oppdrag, returns it for further processing
