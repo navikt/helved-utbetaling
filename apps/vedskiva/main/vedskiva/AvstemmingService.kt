@@ -26,7 +26,7 @@ class AvstemmingService(
         return daos.asSequence()
             .distinctBy { dao -> dao.hashKey to dao.alvorlighetsgrad }
             .groupBy { it.hashKey }
-            .map { (_, value) -> value.firstOrNull { it.alvorlighetsgrad != null} ?: value.first() }
+            .map { (_, daos) -> daos.maxByOrNull { it.createdAt } ?: daos.first() }
             .groupBy { it.kodeFagomraade }
             .map { (kodeFagomraade, daos) ->
                 val fagsystem = Fagsystem.fromFagområde(kodeFagomraade)
