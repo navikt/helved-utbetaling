@@ -1,4 +1,4 @@
-package abetal.consumers
+package abetal.dp
 
 import abetal.*
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -15,14 +15,11 @@ import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import abetal.dp.Dp
-import abetal.dp.linje
-import abetal.dp.meldekort
 
 internal class DpTest : ConsumerTestBase() {
 
     @Test
-    fun `simulering av dp`() {
+    fun `simulation - dry run dp utbetaling`() {
         val utbet = JsonSerde.jackson.readValue<DpUtbetaling>("""
             {
               "dryrun": false,
@@ -140,7 +137,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `tombstone one utbetaling then resend meldeperioder`() {
+    fun `edge case - tombstone utbetaling then resend meldeperioder`() {
         val sid = "AZps2"
         val abid = BehandlingId("AZrupr")
         val auid = dpUId(sid, "132733037", StønadTypeDagpenger.DAGPENGER)
@@ -333,7 +330,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `AZp88bgreqOOlzsEuxzpzw==`() {
+    fun `aggregate - building utbetaling state with multiple transactions`() {
         val sid = "AZps"
         val abid = BehandlingId("AZrupr")
         val auid = dpUId(sid, "132733037", StønadTypeDagpenger.DAGPENGER)
@@ -486,7 +483,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `fom tom endres men meldeperiode står seg`() {
+    fun `update - changing fom tom while keeping meldeperiode`() {
         val sid = SakId("$nextInt")
         var bid = BehandlingId("$nextInt")
         var tid = UUID.randomUUID().toString()
@@ -533,7 +530,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `meldeperiode fom og tom endres`() {
+    fun `update - changing both meldeperiode and fom tom`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         var tid = UUID.randomUUID().toString()
@@ -591,7 +588,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `meldeperiode endres men fom og tom står seg`() {
+    fun `update - changing meldeperiode while keeping fom tom`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         var tid = UUID.randomUUID().toString()
@@ -654,7 +651,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `2 meldekort i 1 utbetalinger blir til 2 utbetaling med 1 oppdrag`() {
+    fun `create - two meldekort create two utbetalinger with single oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -748,7 +745,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `2 meldekort i ett med 2 klassekoder hver blir til 4 utbetaling med 1 oppdrag`() {
+    fun `create - multiple meldekort with multiple klassekoder`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -896,7 +893,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `3 meldekort i 1 utbetalinger blir til 3 utbetaling med 1 oppdrag`() {
+    fun `create - three meldekort create three utbetalinger with single oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -1017,7 +1014,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `nytt meldekort på eksisterende sak`() {
+    fun `create - adding new meldekort to existing sak`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
@@ -1112,7 +1109,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endre meldekort på eksisterende sak`() {
+    fun `update - changing meldekort on existing sak`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
@@ -1193,7 +1190,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `opphør på meldekort`() {
+    fun `opphør - canceling meldekort`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
@@ -1295,7 +1292,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `gjensend en opphørt meldeperiode`() {
+    fun `edge case - resending cancelled meldeperiode`() {
         val sid = SakId("$nextInt")
         val meldeperiode = "132460781"
         val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
@@ -1423,7 +1420,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `3 meldekort med ulike operasjoner`() {
+    fun `edge case - multiple meldekort with mixed operations`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -1590,7 +1587,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `skal sortere oppdragslinjer korrekt etter fom-dato`() {
+    fun `mapping - sorting oppdragslinjer by fom date`() {
         val sid = SakId("HV2511101004")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -1652,7 +1649,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `bygg opp aggregat over tid med 3 meldeperioder`() {
+    fun `aggregate - building state over time with multiple meldeperioder`() {
         val sid = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
         val tid1 = UUID.randomUUID().toString()
@@ -1882,7 +1879,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `test 1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
+    fun `create - multiple meldekort create utbetalinger with single oppdrag (1 meldekort)`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -1952,7 +1949,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `avstemmingstidspunkt blir satt til i dag kl 10 over 10`() {
+    fun `mapping - avstemmingstidspunkt set to today at 10h10m`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -1987,7 +1984,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `fagsystem header is propagated on success`() {
+    fun `edge case - fagsystem header propagated on success`() {
         val transactionId = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
@@ -2015,7 +2012,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `fagsystem header is propagated on error`() {
+    fun `edge case - fagsystem header propagated on error`() {
         val transactionId = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sakId = "too long sak id 123456789012345") {

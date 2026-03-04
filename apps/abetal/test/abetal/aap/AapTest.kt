@@ -1,4 +1,4 @@
-package abetal.consumers
+package abetal.aap
 
 import abetal.*
 import abetal.aap.linje
@@ -14,7 +14,7 @@ import kotlin.test.assertNull
 class AapTest : ConsumerTestBase() {
 
     @Test
-    fun `2 meldekort i 1 utbetalinger blir til 2 utbetaling med 1 oppdrag`() {
+    fun `create - two meldekort create two utbetalinger with single oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -97,7 +97,7 @@ class AapTest : ConsumerTestBase() {
 
 
     @Test
-    fun `3 meldekort i 1 utbetalinger blir til 3 utbetaling med 1 oppdrag`() {
+    fun `create - three meldekort create three utbetalinger with single oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -198,7 +198,7 @@ class AapTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `nytt meldekort på eksisterende sak`() {
+    fun `create - adding new meldekort to existing sak`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
@@ -280,7 +280,7 @@ class AapTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endre meldekort på eksisterende sak`() {
+    fun `update - changing meldekort on existing sak`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
@@ -358,7 +358,7 @@ class AapTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `opphør på meldekort`() {
+    fun `opphør - canceling meldekort`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
@@ -431,7 +431,7 @@ class AapTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `3 meldekort med ulike operasjoner`() {
+    fun `edge case - multiple meldekort with mixed operations`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -500,40 +500,5 @@ class AapTest : ConsumerTestBase() {
             .has(uid1.toString()).with(uid1.toString()) { assertEquals(Action.UPDATE, it.action) }
             .has(uid2.toString()).with(uid2.toString()) { assertEquals(Action.DELETE, it.action) }
             .has(uid3.toString()).with(uid3.toString()) { assertEquals(Action.CREATE, it.action) }
-    }
-
-    @Test
-    fun `test 1 meldekort i 1 utbetalinger blir til 1 utbetaling med 1 oppdrag`() {
-        val sid = SakId("$nextInt")
-        val bid = BehandlingId("$nextInt")
-        val transactionId = UUID.randomUUID().toString()
-        val meldeperiode = "132460781"
-        val uid = aapUId(sid.id, meldeperiode, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sid.id, bid.id) {
-                meldekort(meldeperiode, 7.jun, 18.jun, 1077u, 553u)
-            }
-        }
-        TestRuntime.topics.status.assertThat().has(transactionId) {
-            Aap.mottatt {
-                linje(bid, 7.jun, 18.jun, 553u, 1077u)
-            }
-        }
-
-        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-
-        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
-            .has(transactionId)
-            .with(transactionId) {
-                assertEquals("AAP", it.oppdrag110.kodeFagomraade)
-                assertEquals("kelvin", it.oppdrag110.saksbehId)
-            }
-            .get(transactionId)
-
-        kvitterOk(transactionId, oppdrag, listOf(uid))
-
-        TestRuntime.topics.utbetalinger.assertThat()
-            .has(uid.toString())
     }
 }

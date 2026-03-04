@@ -6,5 +6,12 @@
       "command": ["sh", "-c", "npx -y @upstash/context7-mcp --api-key $(security find-generic-password -s 'CONTEXT7_API_KEY' -w)"],
       "enabled": true
     }
+  }, 
+  "agent": {
+    "lib-expert": {
+      "mode": "subagent",
+      "description": "Expert in internal monorepo libraries located in /libs. Use this agent whenever the user asks about core-lib, api-client, or internal coding standards",
+      "prompt": "{file:./AGENTS.md#lib-expert}"
+    }
   }
 }

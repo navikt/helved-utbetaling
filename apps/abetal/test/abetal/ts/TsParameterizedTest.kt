@@ -1,4 +1,4 @@
-package abetal.consumers
+package abetal.ts
 
 import abetal.*
 import models.*
@@ -20,9 +20,9 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
     override val expectedKlassekode: String = "TSTBASISP2-OP"
     
     // Disable tests that don't apply to TS
-    override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
-    override fun `update existing utbetaling`() = emptyList<DynamicTest>()
-    override fun `simulering uten endring`() = emptyList<DynamicTest>()  // TS has different simulation behavior - needs specific investigation
+    override fun `create - multiple perioder create utbetalinger`() = emptyList<DynamicTest>()
+    override fun `update - modifying existing utbetaling with new periode`() = emptyList<DynamicTest>()
+    override fun `simulation - no changes produces no oppdrag`() = emptyList<DynamicTest>()  // TS has different simulation behavior - needs specific investigation
     
     override fun createMessage(
         sakId: String,

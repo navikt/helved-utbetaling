@@ -1,4 +1,4 @@
-package abetal.consumers
+package abetal
 
 import abetal.*
 import models.*
@@ -40,7 +40,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * Common test scenario: Single period creates single utbetaling
      */
     @TestFactory
-    open fun `single period creates single utbetaling and oppdrag`() = listOf(
+    open fun `create - single periode creates utbetaling with oppdrag`() = listOf(
         DynamicTest.dynamicTest("1 period creates utbetaling(er) with 1 oppdrag") {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
@@ -93,7 +93,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * Common test scenario: Multiple periods
      */
     @TestFactory
-    open fun `multiple periods create multiple utbetalinger`() = listOf(
+    open fun `create - multiple perioder create utbetalinger`() = listOf(
         DynamicTest.dynamicTest("2 periods create utbetaling(er) with 1 oppdrag") {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
@@ -144,7 +144,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * Common test scenario: Update existing utbetaling
      */
     @TestFactory
-    open fun `update existing utbetaling`() = listOf(
+    open fun `update - modifying existing utbetaling with new periode`() = listOf(
         DynamicTest.dynamicTest("updating period amount creates ENDR oppdrag") {
             val sid = SakId("$nextInt")
             val bid1 = BehandlingId("$nextInt")
@@ -212,14 +212,14 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * for better clarity and maintainability.
      */
     @TestFactory
-    open fun `delete existing utbetaling creates opphør`() = emptyList<DynamicTest>()
+    open fun `opphør - deleting utbetaling creates opphør oppdrag`() = emptyList<DynamicTest>()
     
     /**
      * Common test scenario: Empty utbetaling returns OK status
      * Should be overridden for consumers where this isn't valid behavior
      */
     @TestFactory
-    open fun `empty utbetaling returns OK`() = listOf(
+    open fun `edge case - empty utbetaling returns OK status`() = listOf(
         DynamicTest.dynamicTest("utbetaling without perioder gives status OK") {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")
@@ -245,7 +245,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * Tests that simulating the same utbetaling that already exists does not create a simulering request
      */
     @TestFactory
-    open fun `simulering uten endring`() = listOf(
+    open fun `simulation - no changes produces no oppdrag`() = listOf(
         DynamicTest.dynamicTest("simulation without changes returns OK") {
             val key = UUID.randomUUID().toString()
             val sid = SakId("$nextInt")
@@ -318,7 +318,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
      * Tests that dryrun=true creates a simulering request without persisting anything
      */
     @TestFactory
-    open fun `simuler utbetaling creates simulering request`() = listOf(
+    open fun `simulation - creating simulering request for utbetaling`() = listOf(
         DynamicTest.dynamicTest("dryrun creates simulering without persisting") {
             val sid = SakId("$nextInt")
             val bid = BehandlingId("$nextInt")

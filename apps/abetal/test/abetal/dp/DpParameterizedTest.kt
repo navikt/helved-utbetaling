@@ -1,4 +1,4 @@
-package abetal.consumers
+package abetal.dp
 
 import abetal.*
 import models.*
@@ -22,7 +22,7 @@ internal class DpParameterizedTest : ConsumerParameterizedTestBase<DpUtbetaling>
     override val expectedKlassekode: String = "DAGPENGER"
     
     // Disable multi-period test - DP has complex multi-utbetaling logic that needs specific test coverage in DpTest
-    override fun `multiple periods create multiple utbetalinger`() = emptyList<DynamicTest>()
+    override fun `create - multiple perioder create utbetalinger`() = emptyList<DynamicTest>()
     
     override fun createMessage(
         sakId: String,

@@ -1,4 +1,4 @@
-package abetal.consumers
+package abetal
 
 import abetal.TestRuntime
 import org.junit.jupiter.api.AfterEach

@@ -1,7 +1,6 @@
-package abetal.consumers
+package abetal.ts
 
 import abetal.*
-import abetal.ts.linje
 import models.*
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
@@ -14,7 +13,7 @@ import kotlin.test.assertNull
 internal class TsTest : ConsumerTestBase() {
 
     @Test
-    fun `migrer et opphør og fortsett på det`() {
+    fun `migration - continuing after migrated opphør`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -70,7 +69,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `1 utbetalinger med brukFagområdeTillst = gammel fagområde`() {
+    fun `migration - utbetaling using legacy fagområde`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -146,7 +145,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `1 utbetalinger med nytt fagområde`() {
+    fun `create - utbetaling with new fagområde`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -222,7 +221,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `utbetal på intern ts topic`() {
+    fun `create - utbetaling on internal topic`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -247,7 +246,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endre eksisterende utbetaling`() {
+    fun `update - modifying existing utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -377,7 +376,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `korriger en korrigering`() {
+    fun `update - correcting a previous correction`() {
         val sid = SakId("$nextInt")
         val uid = UtbetalingId(UUID.randomUUID())
 
@@ -520,7 +519,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `forlenge periode på eksisterende utbetaling`() {
+    fun `update - extending periode on existing utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -652,7 +651,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endre periode på eksisterende utbetaling`() {
+    fun `update - changing periode on existing utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -783,7 +782,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `legge til periode på eksisterende utbetaling`() {
+    fun `update - adding periode to existing utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -917,7 +916,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endre eksisterende utbetaling med tom periodelist = opphør`() {
+    fun `opphør - empty periode list cancels utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
@@ -1044,7 +1043,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `simulering uten endring`() {
+    fun `simulation - no changes produces no oppdrag`() {
         val key = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
@@ -1085,7 +1084,7 @@ internal class TsTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endring av sakId på utbetaling med 2 identiske perioder`() {
+    fun `update - changing sakId on utbetaling with duplicate perioder`() {
         val sid1 = SakId("$nextInt")
         val sid2 = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")

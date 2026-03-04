@@ -1,7 +1,6 @@
-package abetal.consumers
+package abetal.historisk
 
 import abetal.*
-import abetal.historisk.linje
 import models.*
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
@@ -13,7 +12,7 @@ import kotlin.test.assertNull
 internal class HistoriskTest : ConsumerTestBase() {
 
     @Test
-    fun `utbetal på intern historisk topic`() {
+    fun `create - utbetaling on internal topic`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -42,7 +41,7 @@ internal class HistoriskTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endre eksisterende utbetaling`() {
+    fun `update - modifying existing utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -135,7 +134,7 @@ internal class HistoriskTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `forlenge periode på eksisterende utbetaling`() {
+    fun `update - extending periode on existing utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -230,7 +229,7 @@ internal class HistoriskTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endre periode på eksisterende utbetaling`() {
+    fun `update - changing periode on existing utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -325,7 +324,7 @@ internal class HistoriskTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `endre eksisterende utbetaling med tom periodelist blir til opphør`() {
+    fun `opphør - empty periode list cancels utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -420,7 +419,7 @@ internal class HistoriskTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `legge til periode på eksisterende utbetaling`() {
+    fun `update - adding periode to existing utbetaling`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -517,7 +516,7 @@ internal class HistoriskTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `simulering uten endring`() {
+    fun `simulation - no changes produces no oppdrag`() {
         val transactionId = UUID.randomUUID().toString()
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
@@ -561,7 +560,7 @@ internal class HistoriskTest : ConsumerTestBase() {
 
 
     @Test
-    fun `endring av sakId på utbetaling med 2 identiske perioder`() {
+    fun `update - changing sakId on utbetaling with duplicate perioder`() {
         val sid1 = SakId("$nextInt")
         val sid2 = SakId("$nextInt")
         val bid1 = BehandlingId("$nextInt")
