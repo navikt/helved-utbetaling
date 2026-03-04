@@ -34,7 +34,7 @@ spec:
         - id: elastic
   kafka:
     pool: nav-dev
-    streams: false
+    streams: true
   gcp:
     bigQueryDatasets:
       - cascadingDelete: true
