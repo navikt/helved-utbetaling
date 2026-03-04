@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "context7": {
+      "type": "local",
+      "command": ["sh", "-c", "npx -y @upstash/context7-mcp --api-key $(security find-generic-password -s 'CONTEXT7_API_KEY' -w)"],
+      "enabled": true
+    }
+  }
+}
