@@ -11,8 +11,8 @@ class StreamsMock : Streams {
 
     val config by lazy {
         StreamsConfig(
-            applicationId = "",
-            brokers = "",
+            applicationId = "test-application",
+            brokers = "localhost:9092",
             ssl = SslConfig("", "", "")
         )
     }
