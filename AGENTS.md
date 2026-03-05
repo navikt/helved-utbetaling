@@ -191,6 +191,12 @@ No DI framework. Manual constructor injection wired in the app entry-point funct
 - **`secureLog`** for sensitive data -- NEVER log PII to `appLog`
 - Logback + logstash-logback-encoder for structured JSON logging
 
+## Module-Specific Documentation
+
+For detailed module-level documentation:
+- **Application domain knowledge**: See `apps/AGENTS.md` for app purposes, architecture, data flows, Kafka topics, database schemas, and API contracts
+- **Library APIs and usage**: See `libs/AGENTS.md` for library exports, usage patterns, and integration examples
+
 ### Modules
 
 When adding dependencies between modules, use Gradle project references:
