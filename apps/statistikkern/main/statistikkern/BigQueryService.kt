@@ -41,7 +41,7 @@ class BigQueryService(
                 "${uid}_${periode.fom}", // dedup-nøkkel per periode
                 mapOf(
                     "uid"      to uid,
-                    "fagsystem" to utbetaling.fagsystem.name,
+                    "fagsystem" to utbetaling.fagsystem.toName(),
                     "sak_id"   to utbetaling.sakId.id,
                     "belop"    to periode.beløp.toLong(),
                     "fom"      to periode.fom.toString(),

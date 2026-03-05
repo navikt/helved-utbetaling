@@ -52,5 +52,8 @@ enum class Fagsystem(val fagområde: String) {
             Fagsystem.TILLSTFL,
         )
     }
+
+    fun toName(): String =
+        if (isTilleggsstønader()) TILLEGGSSTØNADER.name else this.name
 }
 

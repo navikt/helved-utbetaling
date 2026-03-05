@@ -63,6 +63,11 @@ class KafkaConsumerFake<K: Any, V>(
              super.updateEndOffsets(partitions.associateWith { 0L })
              super.seekToEnd(partitions)
          }
+
+         override fun seekToBeginning(partitions: Collection<TopicPartition>) {
+             super.updateBeginningOffsets(partitions.associateWith { 0L })
+             super.seekToBeginning(partitions)
+         }
      }
 }
 

@@ -96,6 +96,12 @@ open class KafkaConsumer<K: Any, V>(
         consumer.seekToEnd(partitions)
     }
 
+    fun seekToBeginning(vararg partition: Int) {
+        val partitions = partition.toList().map { TopicPartition(topic.name, it) }
+        consumer.assign(partitions)
+        consumer.seekToBeginning(partitions)
+    }
+
     fun poll(timeout: Duration): List<Record<K, V?>> {
         return consumer.poll(timeout.toJavaDuration()).map { Record(it.key(), it.value(), it.partition()) }
     }
