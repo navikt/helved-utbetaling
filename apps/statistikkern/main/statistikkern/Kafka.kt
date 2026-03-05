@@ -21,7 +21,8 @@ suspend fun utbetalingConsumer(
     consumer: KafkaConsumer<String, Utbetaling>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.seekToEnd(0,1,2)
+        //consumer.seekToEnd(0,1,2)
+        consumer.seekToBeginning(0,1,2)
         while (isActive) {
             for (record in consumer.poll(50.milliseconds)) {
                 val uid = record.key
@@ -38,7 +39,8 @@ suspend fun statusConsumer(
     consumer: KafkaConsumer<String, StatusReply>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.seekToEnd(0,1,2)
+        // consumer.seekToEnd(0,1,2)
+        consumer.seekToBeginning(0,1,2)
         while (isActive) {
             for (record in consumer.poll(50.milliseconds)) {
                 val uid = record.key
