@@ -23,7 +23,7 @@ spec:
       memory: 512Mi
     requests:
       memory: 512Mi
-      cpu: 100m
+      cpu: 200m
   observability:
     autoInstrumentation:
       enabled: true
@@ -32,7 +32,7 @@ spec:
       destinations:
         - id: loki
   kafka:
-    pool: nav-dev
+    pool: nav-prod
     streams: true
   gcp:
     bigQueryDatasets:

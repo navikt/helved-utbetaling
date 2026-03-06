@@ -18,7 +18,7 @@ import models.Utbetaling
 
 class BigQueryService(
     val projectId: String = env("GCP_TEAM_PROJECT_ID"),
-    val datasetName: String = "utbetalinger",
+    val datasetName: String = "helved_stats",
     val bigQuery: BigQuery = BigQueryOptions.getDefaultInstance().service,
 ) {
     val perioderTableId = getOrCreateTable(
