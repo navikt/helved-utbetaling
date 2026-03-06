@@ -2,7 +2,7 @@ package peisschtappern
 
 object TestData {
 
-    fun oppdragXml(sakId: String = "202503271001", alvorlighetsgrad: String? = null) =
+    fun oppdragXml(sakId: String = "202503271001", alvorlighetsgrad: String? = null, fagsystem: String? = "TILTPENG") =
         """
 <ns2:oppdrag xmlns:ns2="http://www.trygdeetaten.no/skjema/oppdrag">
   ${
@@ -11,7 +11,7 @@ object TestData {
   <oppdrag-110>
     <kodeAksjon>1</kodeAksjon>
     <kodeEndring>ENDR</kodeEndring>
-    <kodeFagomraade>TILTPENG</kodeFagomraade>
+    <kodeFagomraade>$fagsystem</kodeFagomraade>
     <fagsystemId>$sakId</fagsystemId>
     <utbetFrekvens>MND</utbetFrekvens>
     <oppdragGjelderId>14439535912</oppdragGjelderId>

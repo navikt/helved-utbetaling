@@ -146,6 +146,7 @@ data class Daos(
             value: List<String>? = null,
             fom: Long? = null,
             tom: Long? = null,
+            fagsystem: List<String>? = null,
             traceId: String? = null,
             status: List<String>? = null,
             orderBy: String? = null,
@@ -184,6 +185,10 @@ data class Daos(
                         SELECT 1 FROM unnest(?::text[]) v
                         WHERE unified.status ILIKE v
                     ))
+                    AND ( ?::text[] IS NULL OR EXISTS (
+                        SELECT 1 FROM unnest(?::text[]) v
+                        WHERE unified.fagsystem ILIKE v
+                    ))
                     AND (? IS NULL OR system_time_ms > ?)
                     AND (? IS NULL OR system_time_ms < ?)
                     AND (? IS NULL OR trace_id = ?)
@@ -195,11 +200,14 @@ data class Daos(
                 var i = 1
                 val valueArray = value?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
                 val statusArray = status?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
+                val fagsystemArray = fagsystem?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
                 stmt.setObject(i++, key, Types.VARCHAR)
                 stmt.setObject(i++, valueArray, Types.ARRAY)
                 stmt.setObject(i++, valueArray, Types.ARRAY)
                 stmt.setObject(i++, statusArray, Types.ARRAY)
                 stmt.setObject(i++, statusArray, Types.ARRAY)
+                stmt.setObject(i++, fagsystemArray, Types.ARRAY)
+                stmt.setObject(i++, fagsystemArray, Types.ARRAY)
                 stmt.setObject(i++, fom, Types.BIGINT)
                 stmt.setObject(i++, fom, Types.BIGINT)
                 stmt.setObject(i++, tom, Types.BIGINT)
