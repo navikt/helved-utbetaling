@@ -25,9 +25,9 @@ suspend fun utbetalingConsumer(
         consumer.seekToBeginning(0,1,2)
         while (isActive) {
             for (record in consumer.poll(50.milliseconds)) {
-                val uid = record.key
                 val utbetaling = record.value ?: continue
-                bigQuery.upsertUtbetaling(uid, utbetaling)
+                val timestampMs = record.timestamp
+                bigQuery.upsertUtbetaling(utbetaling, timestampMs)
             }
             delay(1)
         }
@@ -43,9 +43,9 @@ suspend fun statusConsumer(
         consumer.seekToBeginning(0,1,2)
         while (isActive) {
             for (record in consumer.poll(50.milliseconds)) {
-                val uid = record.key
+                val key = record.key
                 val status = record.value ?: continue
-                bqService.upsertStatus(uid, status)
+                bqService.upsertStatus(key, status)
             }
             delay(1)
         }

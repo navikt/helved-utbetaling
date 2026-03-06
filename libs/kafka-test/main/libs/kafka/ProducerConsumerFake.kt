@@ -10,6 +10,8 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.Cluster
 import java.util.concurrent.Future
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.header.internals.RecordHeaders
+import org.apache.kafka.common.record.TimestampType
 import org.apache.kafka.common.utils.Utils
 
 class KafkaProducerFake<K: Any, V>(
@@ -45,9 +47,13 @@ class KafkaConsumerFake<K: Any, V>(
     private val consumer: MockConsumer<K, V> = InternalMockConsumer(resetPolicy)
 ): KafkaConsumer<K, V>(topic, consumer) {
 
-    fun populate(key: K, value: V?, partition: Int, offset: Long) {
-        val record = ConsumerRecord(topic.name, partition, offset, key, value)
-         consumer.addRecord(record)
+    fun populate(key: K, value: V?, partition: Int, offset: Long, timestamp: Long? = null) {
+        val record = if (timestamp != null) {
+            ConsumerRecord(topic.name, partition, offset, timestamp, TimestampType.CREATE_TIME, -1, -1, key, value, RecordHeaders(), java.util.Optional.empty())
+        } else {
+            ConsumerRecord(topic.name, partition, offset, key, value)
+        }
+        consumer.addRecord(record)
     }
 
     fun assign(vararg partition: Int) {

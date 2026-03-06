@@ -45,13 +45,13 @@ object TestRuntime {
 }
 
 
-fun BigQueryService.queryUtbetalinger(uid: String) = query(uid, "utbetalinger")
-fun BigQueryService.queryStatus(uid: String) = query(uid, "status")
+fun BigQueryService.queryUtbetalinger(key: String) = query(key, "utbetalinger")
+fun BigQueryService.queryStatus(key: String) = query(key, "status")
 
-private fun BigQueryService.query(uid: String, table: String): List<Map<String, Any?>> {
+private fun BigQueryService.query(key: String, table: String): List<Map<String, Any?>> {
     val result = bigQuery.query(
         QueryJobConfiguration.of(
-            "SELECT * FROM `$datasetName.$table` WHERE uid = '$uid'"
+            "SELECT * FROM `$datasetName.$table` WHERE key = '$key'"
         )
     )
     val fields = result.schema?.fields
@@ -62,7 +62,7 @@ private fun BigQueryService.query(uid: String, table: String): List<Map<String, 
 
 fun utbetaling(dryrun: Boolean = false, perioder: List<Utbetalingsperiode> = defaultPerioder()) = Utbetaling(
     dryrun = dryrun,
-    originalKey = "original-key",
+    originalKey = UUID.randomUUID().toString(),
     fagsystem = Fagsystem.AAP,
     uid = UtbetalingId(UUID.randomUUID()),
     action = CREATE,

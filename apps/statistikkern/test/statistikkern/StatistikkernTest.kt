@@ -28,18 +28,28 @@ class StatistikkernTest {
     fun `utbetaling lagres i bigquery`() = testApplication {
         application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
 
-        val uid = "test-uid-utbetaling"
-        TestRuntime.topics.utbetalinger.populate(uid, utbetaling(), partition = 0, offset = offset.getAndIncrement())
+        val key = "019cc21f-5913-765b-91a4-2f7c07753935"
+        val mottattTidMs = 1_700_000_000_000L
+        val utbetaling = utbetaling()
+        TestRuntime.topics.utbetalinger.populate(
+            key,
+            utbetaling,
+            partition = 0,
+            offset = offset.getAndIncrement(),
+            timestamp = mottattTidMs
+        )
 
-        awaitCondition { TestRuntime.bq.queryUtbetalinger(uid).isNotEmpty() }
+        awaitCondition { TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).isNotEmpty() }
 
-        val row = TestRuntime.bq.queryUtbetalinger(uid).single()
-        assertEquals(uid, row["uid"].toString())
+        val row = TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).single()
+        assertEquals(utbetaling.originalKey, row["key"].toString())
         assertEquals("AAP", row["fagsystem"].toString())
-        assertEquals("SAK-123", row["sak_id"].toString())
+        assertEquals("AAP_UNDER_ARBEIDSAVKLARING", row["stonad"].toString())
         assertEquals("800", row["belop"].toString())
         assertEquals("2025-01-06", row["fom"].toString())
         assertEquals("2025-01-07", row["tom"].toString())
+        assertEquals("2025-01-01T12:00:00", row["vedtakstidspunkt"].toString())
+        assertTrue(row["processed_at"].toString().isNotBlank())
         assertTrue(row["inserted_at"].toString().isNotBlank())
     }
 
@@ -47,17 +57,18 @@ class StatistikkernTest {
     fun `utbetaling med flere perioder lagres i bigquery`() = testApplication {
         application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
 
-        val uid = "test-uid-flere-perioder"
+        val key = "test-key-flere-perioder"
         val perioder = listOf(
             Utbetalingsperiode(fom = LocalDate.of(2025, 1, 6), tom = LocalDate.of(2025, 1, 7), beløp = 800u),
             Utbetalingsperiode(fom = LocalDate.of(2025, 1, 13), tom = LocalDate.of(2025, 1, 14), beløp = 900u),
             Utbetalingsperiode(fom = LocalDate.of(2025, 1, 20), tom = LocalDate.of(2025, 1, 21), beløp = 1000u),
         )
-        TestRuntime.topics.utbetalinger.populate(uid, utbetaling(perioder = perioder), partition = 0, offset = offset.getAndIncrement())
+        val utbetaling = utbetaling(perioder = perioder)
+        TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = offset.getAndIncrement())
 
-        awaitCondition { TestRuntime.bq.queryUtbetalinger(uid).size == 3 }
+        awaitCondition { TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).size == 3 }
 
-        val rows = TestRuntime.bq.queryUtbetalinger(uid).sortedBy { it["fom"].toString() }
+        val rows = TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).sortedBy { it["fom"].toString() }
         assertEquals(3, rows.size)
 
         assertEquals("2025-01-06", rows[0]["fom"].toString())
@@ -77,37 +88,38 @@ class StatistikkernTest {
     fun `dryrun utbetaling lagres ikke i bigquery`() = testApplication {
         application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
 
-        val uid = "test-uid-dryrun"
-        TestRuntime.topics.utbetalinger.populate(uid, utbetaling(dryrun = true), partition = 0, offset = offset
-            .getAndIncrement())
+        val key = "test-key-dryrun"
+        val utbetaling = utbetaling(dryrun = true)
+        TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = offset.getAndIncrement())
 
-        assertTrue(TestRuntime.bq.queryUtbetalinger(uid).isEmpty())
+        assertTrue(TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).isEmpty())
     }
 
     @Test
     fun `utbetaling upsert overskriver eksisterende rad ved duplikat`() = testApplication {
         application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
 
-        val uid = "test-uid-upsert"
-        TestRuntime.topics.utbetalinger.populate(uid, utbetaling(), partition = 0, offset = 100)
-        awaitCondition { TestRuntime.bq.queryUtbetalinger(uid).isNotEmpty() }
+        val key = "test-key-upsert"
+        val utbetaling = utbetaling()
+        TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = 100)
+        awaitCondition { TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).isNotEmpty() }
 
-        TestRuntime.topics.utbetalinger.populate(uid, utbetaling(), partition = 0, offset = 100)
+        TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = 100)
 
-        assertEquals(1, TestRuntime.bq.queryUtbetalinger(uid).size)
+        assertEquals(1, TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).size)
     }
 
     @Test
     fun `status lagres i bigquery`() = testApplication {
         application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
 
-        val uid = "test-uid-status"
-        TestRuntime.topics.status.populate(uid, StatusReply.ok(), partition = 0, offset = offset.getAndIncrement())
+        val key = "test-uid-status"
+        TestRuntime.topics.status.populate(key, StatusReply.ok(), partition = 0, offset = offset.getAndIncrement())
 
-        awaitCondition { TestRuntime.bq.queryStatus(uid).isNotEmpty() }
+        awaitCondition { TestRuntime.bq.queryStatus(key).isNotEmpty() }
 
-        val row = TestRuntime.bq.queryStatus(uid).single()
-        assertEquals(uid, row["uid"].toString())
+        val row = TestRuntime.bq.queryStatus(key).single()
+        assertEquals(key, row["key"].toString())
         assertEquals("OK", row["status"].toString())
     }
 
@@ -115,10 +127,10 @@ class StatistikkernTest {
     fun `tombstone på status-topic hoppes over`() = testApplication {
         application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
 
-        val uid = "test-uid-tombstone"
-        TestRuntime.topics.status.populate(uid, null, partition = 0, offset = offset.getAndIncrement())
+        val key = "test-uid-tombstone"
+        TestRuntime.topics.status.populate(key, null, partition = 0, offset = offset.getAndIncrement())
 
-        assertTrue(TestRuntime.bq.queryStatus(uid).isEmpty())
+        assertTrue(TestRuntime.bq.queryStatus(key).isEmpty())
     }
 }
 

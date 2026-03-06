@@ -103,7 +103,7 @@ open class KafkaConsumer<K: Any, V>(
     }
 
     fun poll(timeout: Duration): List<Record<K, V?>> {
-        return consumer.poll(timeout.toJavaDuration()).map { Record(it.key(), it.value(), it.partition()) }
+        return consumer.poll(timeout.toJavaDuration()).map { Record(it.key(), it.value(), it.partition(), it.timestamp()) }
     }
 
     fun subscribe() {
@@ -120,7 +120,8 @@ open class KafkaConsumer<K: Any, V>(
 data class Record<K: Any, V>(
     val key: K,
     val value: V,
-    val partition: Int
+    val partition: Int,
+    val timestamp: Long? = null,
 )
 
 interface KafkaFactory {
