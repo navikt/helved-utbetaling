@@ -76,6 +76,8 @@ class BigQueryService(
     )
 
     fun upsertStatus(key: String, status: StatusReply) {
+        if (status.status.name !in setOf("FEILET", "OK")) return
+
         insert(statusTableId, key, mapOf(
             "key"    to key,
             "status" to status.status.name,
