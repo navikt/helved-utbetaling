@@ -10,7 +10,7 @@ object BigQueryEmulator {
         .apply { start() }
 
     val projectId: String = container.projectId
-    val datasetName: String = "helved_utbetaling"
+    val datasetName: String = "utbetalinger"
 
     val bigQuery = BigQueryOptions.newBuilder()
         .setProjectId(projectId)
