@@ -37,7 +37,7 @@ spec:
   gcp:
     bigQueryDatasets:
       - cascadingDelete: true
-        name: utbetalinger
+        name: helved_stats
         permission: READWRITE
   accessPolicy:
     outbound:
