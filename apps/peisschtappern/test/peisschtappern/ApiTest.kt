@@ -424,6 +424,38 @@ class ApiTest {
         assertEquals(1, result.total)
     }
 
+    @Test
+    fun `fetch messages with fagsystem`() = runTest(TestRuntime.context) {
+        val offset = offset
+        val key = UUID.randomUUID().toString()
+        save(Channel.Ts, key = key, offset = offset)
+        save(Channel.Utbetalinger, key = key, offset = offset, value = """{"sakId":"123","fagsystem":"TILLST"}""")
+        save(
+            Channel.Oppdrag,
+            key = key,
+            offset = offset,
+            value = TestData.oppdragXml(alvorlighetsgrad = "00", fagsystem = "TILLEGGSSTØNADER")
+        )
+
+        TestRuntime.ktor.httpClient.get("/api/messages?page=1&key=$key&fagsystem=TILLSTDR") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }
+            .body<Page>()
+            .also {
+                assertEquals(3, it.total)
+            }
+
+        TestRuntime.ktor.httpClient.get("/api/messages?page=1&key=$key&fagsystem=AAP") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }
+            .body<Page>()
+            .also {
+                assertEquals(0, it.total)
+            }
+    }
+
     @Disabled("Denne er flaky, burde sikkert skrives om")
     @Test
     fun `fetch avstemminger between fom and tom`() = runTest(TestRuntime.context) {

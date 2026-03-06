@@ -49,6 +49,15 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             val tom = call.queryParameters["tom"]
                 ?.runCatching { Instant.parse(this).toEpochMilli() }
                 ?.getOrNull()
+            val fagsystem = call.parameters["fagsystem"]?.split(",")?.flatMap { fagsystem ->
+                listOf(
+                    listOf("TILTPENG", "TILTAKSPENGER"),
+                    listOf("TILLSTPB", "TILLSTLM", "TILLSTDR", "TILLSTBO", "TILLST", "TILLEGGSSTØNADER"),
+                    listOf("DP", "DAGPENGER"),
+                    listOf("HELSREF", "HISTORISK"),
+                    listOf("AAP")
+                ).find { it.contains(fagsystem) } ?: emptyList()
+            }
             val traceId = call.queryParameters["trace_id"]
             val status = call.queryParameters["status"]?.split(",")
             val orderBy = when (call.queryParameters["orderBy"]) {
@@ -70,7 +79,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
             val result = withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    Daos.pagedMessages(channels, page, pageSize, key, value, fom, tom, traceId, status, orderBy, direction)
+                    Daos.pagedMessages(channels, page, pageSize, key, value, fom, tom, fagsystem, traceId, status, orderBy, direction)
                 }
             }
 
