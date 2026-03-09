@@ -23,10 +23,7 @@ class AvstemmingService(
         val daos = transaction {
             OppdragDao.selectWith(avstemFom, avstemTom)
         }
-        return daos.asSequence()
-            .distinctBy { dao -> dao.hashKey to dao.alvorlighetsgrad }
-            .groupBy { it.hashKey }
-            .map { (_, daos) -> daos.maxByOrNull { it.createdAt } ?: daos.first() }
+        return daos
             .groupBy { it.kodeFagomraade }
             .map { (kodeFagomraade, daos) ->
                 val fagsystem = Fagsystem.fromFagområde(kodeFagomraade)
