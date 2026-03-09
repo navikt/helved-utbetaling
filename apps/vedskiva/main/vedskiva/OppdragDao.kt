@@ -67,7 +67,10 @@ data class OppdragDao(
                 kodeMelding,
                 beskrMelding
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (hash_key) DO NOTHING
+            ON CONFLICT (hash_key) DO UPDATE SET
+                alvorlighetsgrad = COALESCE(EXCLUDED.alvorlighetsgrad, oppdrag.alvorlighetsgrad),
+                kodeMelding = COALESCE(EXCLUDED.kodeMelding, oppdrag.kodeMelding),
+                beskrMelding = COALESCE(EXCLUDED.beskrMelding, oppdrag.beskrMelding)
         """.trimIndent()
         return update(sql) { stmt ->
             stmt.setTimestamp(1, Timestamp.valueOf(nokkelAvstemming))
