@@ -121,6 +121,7 @@ class StatistikkernTest {
         val row = TestRuntime.bq.queryStatus(key).single()
         assertEquals(key, row["key"].toString())
         assertEquals("OK", row["status"].toString())
+        assertTrue(row["processed_at"].toString().isNotBlank())
     }
 
     @Test

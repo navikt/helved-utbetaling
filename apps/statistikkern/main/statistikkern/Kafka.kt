@@ -44,8 +44,9 @@ suspend fun statusConsumer(
         while (isActive) {
             for (record in consumer.poll(50.milliseconds)) {
                 val key = record.key
+                val timestampMs = record.timestamp
                 val status = record.value ?: continue
-                bqService.upsertStatus(key, status)
+                bqService.upsertStatus(key, status, timestampMs)
             }
             delay(1)
         }
