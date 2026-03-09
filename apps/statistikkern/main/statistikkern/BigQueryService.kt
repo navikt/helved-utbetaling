@@ -90,11 +90,25 @@ class BigQueryService(
 
     private fun getOrCreateTable(name: String, schema: Schema): TableId {
         val tableId = TableId.of(projectId, datasetName, name)
-        return bigQuery.getTable(tableId)?.tableId ?: run {
+        val existingTable = bigQuery.getTable(tableId)
+
+        if (existingTable == null) {
             appLog.info("Oppretter BQ-tabell: $name")
             val tableInfo = TableInfo.newBuilder(tableId, StandardTableDefinition.of(schema)).build()
-            bigQuery.create(tableInfo).tableId
+            return bigQuery.create(tableInfo).tableId
         }
+
+        val existingFields = existingTable.getDefinition<StandardTableDefinition>().schema?.fields?.map { it.name }?.toSet() ?: emptySet()
+        val newFields = schema.fields.filter { it.name !in existingFields }
+
+        if (newFields.isNotEmpty()) {
+            appLog.info("Oppdaterer BQ-tabell $name med nye felter: ${newFields.map { it.name }}")
+            val updatedSchema = Schema.of(existingTable.getDefinition<StandardTableDefinition>().schema!!.fields + newFields)
+            val updatedTable = existingTable.toBuilder().setDefinition(StandardTableDefinition.of(updatedSchema)).build()
+            updatedTable.update()
+        }
+
+        return tableId
     }
 
     private fun insert(tableId: TableId, uid: String, row: Map<String, Any?>) {
