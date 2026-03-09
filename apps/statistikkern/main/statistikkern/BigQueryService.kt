@@ -72,16 +72,20 @@ class BigQueryService(
         schema = Schema.of(
             Field.newBuilder("key", StandardSQLTypeName.STRING).setMode(Field.Mode.REQUIRED).build(),
             Field.of("status", StandardSQLTypeName.STRING),
+            Field.of("processed_at", StandardSQLTypeName.TIMESTAMP), // TODO: Blir det riktig med record.timestamp her?
         )
     )
 
-    fun upsertStatus(key: String, status: StatusReply) {
+    fun upsertStatus(key: String, status: StatusReply, timestampMs: Long? ) {
         if (status.status.name !in setOf("FEILET", "OK")) return
 
+        val processedAt = timestampMs?.let { Instant.ofEpochMilli(it) }.toString()
+
         insert(statusTableId, key, mapOf(
-            "key"    to key,
-            "status" to status.status.name,
-        ))
+            "key"              to key,
+            "status"           to status.status.name,
+            "processed_at"     to processedAt
+            ))
     }
 
     private fun getOrCreateTable(name: String, schema: Schema): TableId {
