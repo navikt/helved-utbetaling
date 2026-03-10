@@ -11,6 +11,7 @@ import utsjekk.Topics
 import java.time.LocalDate
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class UtbetalingMigratorTest {
 
@@ -22,7 +23,6 @@ class UtbetalingMigratorTest {
         val res = httpClient.post("/utbetalinger/$uid/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            // setBody(MigrationRequest(meldeperiode, LocalDate.now(), LocalDate.now()))
             setBody(MigrationRequest(meldeperiode))
         }
 
@@ -47,7 +47,6 @@ class UtbetalingMigratorTest {
         val res = httpClient.post("/utbetalinger/$uid/migrate") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            // setBody(MigrationRequest(meldeperiode, 4.feb, 4.feb))
             setBody(MigrationRequest(meldeperiode))
         }
 
@@ -79,5 +78,188 @@ class UtbetalingMigratorTest {
         assertEquals(4.feb, actual.perioder[0].tom)
         assertEquals(null, actual.perioder[0].betalendeEnhet)
     }
-}
 
+    @Test
+    fun `migrate uid uses sak-level avvent`() = runTest(TestRuntime.context) {
+        val meldeperiode = "123"
+        val sakId = SakId("sak-avvent-${UUID.randomUUID()}")
+        val uid1 = UUID.randomUUID()
+        val uid2 = UUID.randomUUID()
+
+        val avvent = Avvent(
+            fom = 1.feb,
+            tom = 28.feb,
+            årsak = Årsak.AVVENT_AVREGNING,
+        )
+
+        // First utbetaling without avvent
+        val data1 = Utbetaling.aap(
+            vedtakstidspunkt = 1.mar,
+            sakId = sakId,
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u)),
+        )
+        // Second utbetaling with avvent (later created_at)
+        val data2 = Utbetaling.aap(
+            vedtakstidspunkt = 1.mar,
+            sakId = sakId,
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(5.feb, 5.feb, 600u)),
+            avvent = avvent,
+        )
+
+        transaction {
+            UtbetalingDao(data1, Status.OK).insert(UtbetalingId(uid1))
+            UtbetalingDao(data2, Status.OK).insert(UtbetalingId(uid2))
+        }
+
+        val new_uid = models.aapUId(data1.sakId.id, meldeperiode, models.StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+
+        val res = httpClient.post("/utbetalinger/$uid1/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(MigrationRequest(meldeperiode))
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
+        val actual = utbetaling.history().single { (key, _) -> key == new_uid.toString() }.second
+
+        // Avvent from the second utbetaling (latest on sak) should be used
+        assertNotNull(actual.avvent, "avvent should be set from sak-level lookup")
+        assertEquals(1.feb, actual.avvent!!.fom)
+        assertEquals(28.feb, actual.avvent!!.tom)
+        assertEquals(models.Årsak.AVVENT_AVREGNING, actual.avvent!!.årsak)
+    }
+
+    @Test
+    fun `batch migrate transfers all items with sak-level avvent`() = runTest(TestRuntime.context) {
+        val sakId = SakId("sak-batch-${UUID.randomUUID()}")
+        val uid1 = UUID.randomUUID()
+        val uid2 = UUID.randomUUID()
+        val meldeperiode1 = "111"
+        val meldeperiode2 = "222"
+
+        val avvent = Avvent(
+            fom = 1.feb,
+            tom = 28.feb,
+            årsak = Årsak.AVVENT_REFUSJONSKRAV,
+        )
+
+        val data1 = Utbetaling.aap(
+            vedtakstidspunkt = 1.mar,
+            sakId = sakId,
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u)),
+            avvent = avvent,
+        )
+        val data2 = Utbetaling.aap(
+            vedtakstidspunkt = 1.mar,
+            sakId = sakId,
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(5.feb, 5.feb, 600u)),
+        )
+
+        transaction {
+            UtbetalingDao(data1, Status.OK).insert(UtbetalingId(uid1))
+            UtbetalingDao(data2, Status.OK).insert(UtbetalingId(uid2))
+        }
+
+        val newUid1 = models.aapUId(sakId.id, meldeperiode1, models.StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+        val newUid2 = models.aapUId(sakId.id, meldeperiode2, models.StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+
+        val res = httpClient.post("/utbetalinger/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(MigrationBatchRequest(listOf(
+                MigrationBatchItem(uid1, meldeperiode = meldeperiode1),
+                MigrationBatchItem(uid2, meldeperiode = meldeperiode2),
+            )))
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+
+        val producer = TestRuntime.kafka.getProducer(Topics.utbetaling)
+        val history = producer.history()
+
+        val actual1 = history.single { (key, _) -> key == newUid1.toString() }.second
+        val actual2 = history.single { (key, _) -> key == newUid2.toString() }.second
+
+        // Both should have the sak-level avvent from data1
+        assertNotNull(actual1.avvent, "first migrated utbetaling should have sak-level avvent")
+        assertEquals(models.Årsak.AVVENT_REFUSJONSKRAV, actual1.avvent!!.årsak)
+
+        assertNotNull(actual2.avvent, "second migrated utbetaling should have sak-level avvent")
+        assertEquals(models.Årsak.AVVENT_REFUSJONSKRAV, actual2.avvent!!.årsak)
+    }
+
+    @Test
+    fun `batch migrate validates items from different saker`() = runTest(TestRuntime.context) {
+        val uid1 = UUID.randomUUID()
+        val uid2 = UUID.randomUUID()
+
+        val data1 = Utbetaling.aap(
+            vedtakstidspunkt = 1.mar,
+            sakId = SakId("sak-A-${UUID.randomUUID()}"),
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u)),
+        )
+        val data2 = Utbetaling.aap(
+            vedtakstidspunkt = 1.mar,
+            sakId = SakId("sak-B-${UUID.randomUUID()}"),
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(5.feb, 5.feb, 600u)),
+        )
+
+        transaction {
+            UtbetalingDao(data1, Status.OK).insert(UtbetalingId(uid1))
+            UtbetalingDao(data2, Status.OK).insert(UtbetalingId(uid2))
+        }
+
+        val res = httpClient.post("/utbetalinger/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(MigrationBatchRequest(listOf(
+                MigrationBatchItem(uid1, meldeperiode = "111"),
+                MigrationBatchItem(uid2, meldeperiode = "222"),
+            )))
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+    }
+
+    @Test
+    fun `batch migrate validates empty items`() = runTest(TestRuntime.context) {
+        val res = httpClient.post("/utbetalinger/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(MigrationBatchRequest(emptyList()))
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+    }
+
+    @Test
+    fun `batch migrate validates mutual exclusivity of meldeperiode and id`() = runTest(TestRuntime.context) {
+        val uid = UUID.randomUUID()
+        val data = Utbetaling.aap(
+            vedtakstidspunkt = 1.mar,
+            satstype = Satstype.ENGANGS,
+            perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u)),
+        )
+
+        transaction {
+            UtbetalingDao(data, Status.OK).insert(UtbetalingId(uid))
+        }
+
+        val res = httpClient.post("/utbetalinger/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(MigrationBatchRequest(listOf(
+                MigrationBatchItem(uid, meldeperiode = "111", id = UUID.randomUUID()),
+            )))
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+    }
+}

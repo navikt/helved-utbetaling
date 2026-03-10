@@ -12,6 +12,6 @@ open class ConsumerTestBase {
         TestRuntime.topics.simulering.assertThat().isEmpty()
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.saker.assertThat().isEmpty()
-        TestRuntime.topics.pendingUtbetalinger.assertThat()
+        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
     }
 }

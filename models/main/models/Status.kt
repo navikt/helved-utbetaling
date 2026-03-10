@@ -61,6 +61,6 @@ private fun detaljer(o: Oppdrag): Detaljer {
                 vedtakssats = linje.vedtakssats157?.vedtakssats?.toLong()?.toUInt(),
                 klassekode = linje.kodeKlassifik.trimEnd(),
             )
-        }
+        }.sortedBy { it.fom }
     )
 }

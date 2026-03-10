@@ -14,6 +14,7 @@ data class AapUtbetaling(
     val vedtakstidspunktet: LocalDateTime,
     val saksbehandler: String? = null,
     val beslutter: String? = null,
+    val avvent: Avvent? = null,
 )
 
 data class AapUtbetalingsdag(
@@ -130,7 +131,7 @@ object AapDto {
             beslutterId = value.beslutter?.let(::Navident) ?: Navident("kelvin"),
             saksbehandlerId = value.saksbehandler?.let(::Navident) ?: Navident("kelvin"),
             periodetype = Periodetype.UKEDAG,
-            avvent = null,
+            avvent = value.avvent,
             perioder = perioder(value.utbetalinger),
         )
     }

@@ -20,6 +20,19 @@ data class MigrationRequest(
     val id: UUID? = null,
 )
 
+/**
+ * @param uid er utbetalingsId fra REST-endepunktet
+ * @param id er den nye IDen som skal refereres til på Kafka
+ * @param meldeperiode er alternativ til id dersom man ikke får til å bruke en UUID
+ */
+data class MigrationBatchItem(
+    val uid: UUID,
+    val meldeperiode: String? = null,
+    val id: UUID? = null,
+)
+
+data class MigrationBatchRequest(val items: List<MigrationBatchItem>)
+
 class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, models.Utbetaling>) {
 
     suspend fun transfer(uid: UtbetalingId, request: MigrationRequest) {
@@ -30,19 +43,66 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
             badRequest("kan ikke sette både id og meldeperiode")
         }
         withContext(Jdbc.context) {
-            transaction { 
+            transaction {
                 val dao = UtbetalingDao.findOrNull(uid) ?: notFound("Utbetaling $uid")
-                val utbet = utbetaling(uid, request, dao.data)
+                val lastAvvent = lastAvventOnSak(utsjekk.utbetaling.SakId(dao.data.sakId.id))
+                val utbet = utbetaling(uid, request, dao.data, lastAvvent)
                 val key = utbet.uid.id.toString()
                 utbetalingProducer.send(key, utbet, partition(key))
             }
         }
     }
 
+    suspend fun transferSak(request: MigrationBatchRequest) {
+        if (request.items.isEmpty()) {
+            badRequest("items kan ikke være tom")
+        }
+        request.items.forEach { item ->
+            if (item.meldeperiode == null && item.id == null) {
+                badRequest("meldeperiode eller id må være satt for uid ${item.uid}")
+            }
+            if (item.meldeperiode != null && item.id != null) {
+                badRequest("kan ikke sette både id og meldeperiode for uid ${item.uid}")
+            }
+        }
+        withContext(Jdbc.context) {
+            transaction {
+                // Look up all items and validate they belong to the same sak
+                val daos = request.items.map { item ->
+                    val uid = UtbetalingId(item.uid)
+                    uid to (UtbetalingDao.findOrNull(uid) ?: notFound("Utbetaling ${item.uid}"))
+                }
+                val sakIds = daos.map { (_, dao) -> dao.data.sakId.id }.distinct()
+                if (sakIds.size > 1) {
+                    badRequest("alle utbetalinger må tilhøre samme sak, fant: $sakIds")
+                }
+
+                val sakId = utsjekk.utbetaling.SakId(sakIds.single())
+                val lastAvvent = lastAvventOnSak(sakId)
+
+                for ((index, item) in request.items.withIndex()) {
+                    val (uid, dao) = daos[index]
+                    val migrationReq = MigrationRequest(meldeperiode = item.meldeperiode, id = item.id)
+                    val utbet = utbetaling(uid, migrationReq, dao.data, lastAvvent)
+                    val key = utbet.uid.id.toString()
+                    utbetalingProducer.send(key, utbet, partition(key))
+                }
+            }
+        }
+    }
+
+    private suspend fun lastAvventOnSak(sakId: utsjekk.utbetaling.SakId): models.Avvent? {
+        val allOnSak = UtbetalingDao.find(sakId, history = true)
+        return allOnSak
+            .sortedByDescending { it.created_at }
+            .firstNotNullOfOrNull { it.data.avvent?.let(::avvent) }
+    }
+
     private fun utbetaling(
         transactionId: UtbetalingId,
         req: MigrationRequest,
         from: Utbetaling,
+        lastAvvent: models.Avvent?,
     ): models.Utbetaling { 
         val uid = req.id
             ?.let { models.UtbetalingId(it)}
@@ -64,7 +124,7 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
             beslutterId = Navident(from.beslutterId.ident),
             saksbehandlerId = Navident(from.saksbehandlerId.ident),
             periodetype = Periodetype.UKEDAG,
-            avvent = from.avvent?.let(::avvent),
+            avvent = lastAvvent,
             perioder = utbetalingsperioder(from.perioder),
         )
     }
@@ -98,4 +158,3 @@ private fun uuid(str: String): UUID {
         badRequest("Path param 'uid' må være en UUID")
     }
 }
-
