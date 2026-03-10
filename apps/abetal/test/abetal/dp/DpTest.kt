@@ -1949,7 +1949,7 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
-    fun `mapping - avstemmingstidspunkt set to today at 10h10m`() {
+    fun `mapping - nokkelAvstemming set to today at 10h10m`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
@@ -1972,7 +1972,7 @@ internal class DpTest : ConsumerTestBase() {
                 assertNotNull(oppdrag.oppdrag110.avstemming115)
                 assertEquals(
                     LocalDateTime.now().withHour(10).withMinute(10).withSecond(0).withNano(0),
-                    LocalDateTime.parse(oppdrag.oppdrag110.avstemming115.tidspktMelding.trimEnd(), DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+                    LocalDateTime.parse(oppdrag.oppdrag110.avstemming115.nokkelAvstemming, DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
                 )
 
             }

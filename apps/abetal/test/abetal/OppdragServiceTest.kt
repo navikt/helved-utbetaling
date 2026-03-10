@@ -7,6 +7,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
@@ -906,9 +907,17 @@ class OppdragServiceTest {
         val oppdrag = OppdragService.opprett(new)
 
         assertEquals("AAP", oppdrag.oppdrag110.avstemming115.kodeKomponent)
-        val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+
+        val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0))
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
         assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.nokkelAvstemming)
-        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.tidspktMelding)
+
+        val tidspktMelding = LocalDateTime.parse(
+            oppdrag.oppdrag110.avstemming115.tidspktMelding,
+            DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        )
+        assertTrue(tidspktMelding.isBefore(LocalDateTime.now()))
+        assertTrue(tidspktMelding.isAfter(LocalDateTime.now().minusMinutes(1)))
     }
 
     @Test
@@ -934,9 +943,16 @@ class OppdragServiceTest {
         val oppdrag = OppdragService.update(new, prev)
 
         assertEquals("AAP", oppdrag.oppdrag110.avstemming115.kodeKomponent)
+
         val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
         assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.nokkelAvstemming)
-        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.tidspktMelding)
+
+        val tidspktMelding = LocalDateTime.parse(
+            oppdrag.oppdrag110.avstemming115.tidspktMelding,
+            DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        )
+        assertTrue(tidspktMelding.isBefore(LocalDateTime.now()))
+        assertTrue(tidspktMelding.isAfter(LocalDateTime.now().minusMinutes(1)))
     }
 
     @Test

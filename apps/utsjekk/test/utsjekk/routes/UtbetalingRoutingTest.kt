@@ -11,6 +11,7 @@ import libs.jdbc.concurrency.transaction
 import models.*
 import models.kontrakter.objectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import utsjekk.Topics
 import utsjekk.iverksetting.RandomOSURId
@@ -120,10 +121,17 @@ class UtbetalingRoutingTest {
         val oppdrag = oppdragTopic.history().singleOrNull { (key, _) -> key == uid.toString() }?.second
         assertNotNull(oppdrag)
         assertEquals("DP", oppdrag.oppdrag110.avstemming115.kodeKomponent)
+
         val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0))
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
         assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.nokkelAvstemming)
-        assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.tidspktMelding)
+
+        val tidspktMelding = LocalDateTime.parse(
+            oppdrag.oppdrag110.avstemming115.tidspktMelding,
+            DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        )
+        assertTrue(tidspktMelding.isBefore(LocalDateTime.now()))
+        assertTrue(tidspktMelding.isAfter(LocalDateTime.now().minusMinutes(1)))
     }
 
     @Test

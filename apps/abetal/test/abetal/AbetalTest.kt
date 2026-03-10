@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import abetal.*
 import abetal.dp.Dp
 import abetal.dp.linje
@@ -454,7 +455,12 @@ internal class AbetalTest {
                 val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0))
                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
                 assertEquals(todayAtTen, it.oppdrag110.avstemming115.nokkelAvstemming)
-                assertEquals(todayAtTen, it.oppdrag110.avstemming115.tidspktMelding)
+                val tidspktMelding = LocalDateTime.parse(
+                    it.oppdrag110.avstemming115.tidspktMelding,
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+                )
+                assertTrue(tidspktMelding.isBefore(LocalDateTime.now()))
+                assertTrue(tidspktMelding.isAfter(LocalDateTime.now().minusMinutes(1)))
             }
 
         TestRuntime.topics.status.assertThat()
