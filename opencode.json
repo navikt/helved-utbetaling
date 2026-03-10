@@ -5,6 +5,14 @@
       "type": "local",
       "command": ["sh", "-c", "npx -y @upstash/context7-mcp --api-key $(security find-generic-password -s 'CONTEXT7_API_KEY' -w)"],
       "enabled": true
+    },
+    "mcp-grafana": {
+      "type": "local",
+      "command": ["sh", "-c", "GRAFANA_SERVICE_ACCOUNT_TOKEN=$(security find-generic-password -s 'grafana-team-helved-service-token' -w) uvx mcp-grafana --disable-write"],
+      "environment": {
+        "GRAFANA_URL": "https://grafana.nav.cloud.nais.io"
+      },
+      "enabled": true
     }
   },
   "agent": {
