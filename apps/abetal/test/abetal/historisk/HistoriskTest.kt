@@ -31,6 +31,9 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.status.assertThat().has(transactionId)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
             .get(transactionId)

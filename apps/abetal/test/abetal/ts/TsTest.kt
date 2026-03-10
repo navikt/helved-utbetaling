@@ -64,6 +64,9 @@ internal class TsTest : ConsumerTestBase() {
                 }
             }
 
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+
         TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
     }
@@ -93,6 +96,9 @@ internal class TsTest : ConsumerTestBase() {
             }
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -170,6 +176,9 @@ internal class TsTest : ConsumerTestBase() {
 
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
 
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
             .with(transactionId) {
@@ -237,6 +246,9 @@ internal class TsTest : ConsumerTestBase() {
 
         TestRuntime.topics.status.assertThat().has(transactionId)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat().has(transactionId).get(transactionId)
 

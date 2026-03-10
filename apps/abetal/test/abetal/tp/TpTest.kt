@@ -705,8 +705,8 @@ internal class TpTest : ConsumerTestBase() {
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Tp.mottatt {
                 linje(bid, 2.sep, 13.sep, 600u)
-                linje(bid, 30.sep, 10.okt, 600u)
                 linje(bid, 16.sep, 27.sep, 0u)
+                linje(bid, 30.sep, 10.okt, 600u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -800,8 +800,12 @@ internal class TpTest : ConsumerTestBase() {
 
         val utbet = JsonSerde.jackson.readValue<TpUtbetaling>(json)
         val transactionId = UUID.randomUUID().toString()
+        val uid = tpUId("HV2511260231", "20250630-20250711", StønadTypeTiltakspenger.GRUPPE_AMO)
 
         TestRuntime.topics.tp.produce(transactionId) { utbet }
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
 
         TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
@@ -841,6 +845,9 @@ internal class TpTest : ConsumerTestBase() {
                 linje(bid, 7.jun21, 18.jun21, 553u, klassekode = "TPBTAF")
             }
         }
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)

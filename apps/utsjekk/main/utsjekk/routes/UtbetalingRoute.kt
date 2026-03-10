@@ -18,6 +18,12 @@ fun Route.utbetalinger(
     utbetalingMigrator: UtbetalingMigrator,
 ) {
 
+    post("/utbetalinger/migrate") {
+        val request = call.receive<MigrationBatchRequest>()
+        utbetalingMigrator.transferSak(request)
+        call.respond(HttpStatusCode.OK)
+    }
+
     route("/utbetalinger/{uid}") {
 
         post("/migrate") {

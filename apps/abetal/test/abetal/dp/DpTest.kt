@@ -569,10 +569,10 @@ internal class DpTest : ConsumerTestBase() {
         }
         TestRuntime.topics.status.assertThat().has(tid) {
             Dp.mottatt {
-                linje(bid2, 2.aug, 16.aug, 200u, 200u)
-                linje(bid2, 3.sep, 12.sep, 200u, 200u)
-                linje(bid, 2.sep, 13.sep, 200u, 0u)
                 linje(bid, 1.aug, 15.aug, 200u, 0u)
+                linje(bid2, 2.aug, 16.aug, 200u, 200u)
+                linje(bid, 2.sep, 13.sep, 200u, 0u)
+                linje(bid2, 3.sep, 12.sep, 200u, 200u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -633,9 +633,9 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.status.assertThat().has(tid) {
             Dp.mottatt {
                 linje(bid2, 1.aug, 15.aug, 200u, 200u)
+                linje(bid, 1.aug, 15.aug, 200u, 0u)
                 linje(bid2, 2.sep, 13.sep, 200u, 200u)
                 linje(bid, 2.sep, 13.sep, 200u, 0u)
-                linje(bid, 1.aug, 15.aug, 200u, 0u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -1477,8 +1477,8 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Dp.mottatt {
                 linje(bid, 2.sep, 13.sep, 600u, 600u)
-                linje(bid, 30.sep, 10.okt, 600u, 600u)
                 linje(bid, 16.sep, 27.sep, 600u, 0u)
+                linje(bid, 30.sep, 10.okt, 600u, 600u)
             }
         }
 

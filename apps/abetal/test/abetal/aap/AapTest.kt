@@ -6,9 +6,11 @@ import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class AapTest : ConsumerTestBase() {
@@ -81,6 +83,18 @@ class AapTest : ConsumerTestBase() {
                 )
             }
             .get(transactionId)
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid1.toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .with(uid1.toString()) {
+                assertUtbetaling(expectedUtbetaling1, it)
+            }
+            .has(uid2.toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .with(uid2.toString()) {
+                assertUtbetaling(expectedUtbetaling2, it)
+            }
 
         kvitterOk(transactionId, oppdrag, listOf(uid1, uid2))
 
@@ -179,6 +193,25 @@ class AapTest : ConsumerTestBase() {
                 )
             }
             .get(transactionId)
+
+        val hashKey = hashOppdrag(oppdrag).toString()
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid1.toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashKey)
+            .with(uid1.toString()) {
+                assertUtbetaling(expectedUtbetaling1, it)
+            }
+            .has(uid2.toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashKey)
+            .with(uid2.toString()) {
+                assertUtbetaling(expectedUtbetaling2, it)
+            }
+            .has(uid3.toString())
+            .hasHeader(uid3.toString(), "hash_key" to hashKey)
+            .with(uid3.toString()) {
+                assertUtbetaling(expectedUtbetaling3, it)
+            }
 
         kvitterOk(transactionId, oppdrag, listOf(uid1, uid2, uid3))
 
@@ -474,8 +507,8 @@ class AapTest : ConsumerTestBase() {
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Aap.mottatt {
                 linje(bid, 2.sep, 13.sep, 600u, 600u)
-                linje(bid, 30.sep, 10.okt, 600u, 600u)
                 linje(bid, 16.sep, 27.sep, 600u, 0u)
+                linje(bid, 30.sep, 10.okt, 600u, 600u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -494,11 +527,73 @@ class AapTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid1.toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .has(uid2.toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .has(uid3.toString())
+            .hasHeader(uid3.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+
         kvitterOk(transactionId, oppdrag, listOf(uid1, uid2, uid3))
 
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid1.toString()).with(uid1.toString()) { assertEquals(Action.UPDATE, it.action) }
             .has(uid2.toString()).with(uid2.toString()) { assertEquals(Action.DELETE, it.action) }
             .has(uid3.toString()).with(uid3.toString()) { assertEquals(Action.CREATE, it.action) }
+    }
+
+    @Test
+    fun `create - avvent propagates to all meldekort utbetalinger`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val meldeperiode1 = "132460781"
+        val meldeperiode2 = "232460781"
+        val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+        val uid2 = aapUId(sid.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+
+        val avvent = Avvent(1.jun25, 30.jun25, årsak = Årsak.AVVENT_AVREGNING)
+
+        TestRuntime.topics.aap.produce(transactionId) {
+            Aap.utbetaling(sid.id, bid.id, avvent = avvent) {
+                meldekort(meldeperiode1, 7.jun, 18.jun, 553u, 1077u)
+                meldekort(meldeperiode2, 7.jul, 20.jul, 779u, 2377u)
+            }
+        }
+        TestRuntime.topics.status.assertThat().has(transactionId)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId, size = 1)
+            .get(transactionId)
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid1.toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .with(uid1.toString()) {
+                assertNotNull(it.avvent, "avvent should be set on first pending utbetaling")
+                assertEquals(avvent, it.avvent)
+            }
+            .has(uid2.toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .with(uid2.toString()) {
+                assertNotNull(it.avvent, "avvent should be set on second pending utbetaling")
+                assertEquals(avvent, it.avvent)
+            }
+
+        kvitterOk(transactionId, oppdrag, listOf(uid1, uid2))
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid1.toString())
+            .with(uid1.toString()) {
+                assertNotNull(it.avvent, "avvent should be set on first meldekort utbetaling")
+                assertEquals(avvent, it.avvent)
+            }
+            .has(uid2.toString())
+            .with(uid2.toString()) {
+                assertNotNull(it.avvent, "avvent should be set on second meldekort utbetaling")
+                assertEquals(avvent, it.avvent)
+            }
     }
 }
