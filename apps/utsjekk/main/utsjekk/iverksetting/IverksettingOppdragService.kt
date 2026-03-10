@@ -161,11 +161,12 @@ private fun oppdrag(utbetalingsoppdrag: Utbetalingsoppdrag): Oppdrag {
 }
 
 private fun avstemming115(fagområde: String): Avstemming115 {
-    val todayAtTen = LocalDateTime.now().with(fixedTime)
+    val todayAtTen = LocalDateTime.now().with(fixedTime).format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+    val now = LocalDateTime.now().format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
     return objectFactory.createAvstemming115().apply {
         kodeKomponent = fagområde
         nokkelAvstemming = todayAtTen.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
-        tidspktMelding = todayAtTen.format("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+        tidspktMelding = now
     }
 } 
 
