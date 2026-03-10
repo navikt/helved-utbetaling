@@ -84,7 +84,7 @@ class ApiTest {
     }
 
     @Test
-    fun `can query for value`() = runTest(TestRuntime.context) {
+    fun `can query for value, include`() = runTest(TestRuntime.context) {
         val sakId = "BFH123DN"
         save(Channel.Aap, value = "{\"sakId\":\"$sakId\"}", offset = offset)
         save(Channel.Utbetalinger, offset = offset)
@@ -97,6 +97,26 @@ class ApiTest {
 
         assertEquals(1, result.total)
         assertTrue(result.items.first().value!!.contains(sakId))
+    }
+
+    @Test
+    fun `can query for value, exclude`() = runTest(TestRuntime.context) {
+        val a = "BFH123DN"
+        val b = "LKAMSCDQ"
+        val c = "pCPCNQWn"
+        save(Channel.Aap, value = "{\"sakId\":\"$a\"}", offset = offset)
+        save(Channel.Aap, value = "{\"sakId\":\"$b\"}", offset = offset)
+        save(Channel.Aap, value = "{\"sakId\":\"$c\"}", offset = offset)
+        save(Channel.Utbetalinger, offset = offset)
+        save(Channel.Simuleringer, offset = offset)
+
+        val result = TestRuntime.ktor.httpClient.get("/api/messages?value=$b,!$a,not:$c") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Page>()
+
+        assertEquals(1, result.total)
+        assertTrue(result.items.first().value!!.contains(b))
     }
 
     @Test
