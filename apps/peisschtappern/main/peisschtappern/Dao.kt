@@ -143,7 +143,8 @@ data class Daos(
             page: Int,
             pageSize: Int,
             key: String? = null,
-            value: List<String>? = null,
+            includeValues: List<String>? = null,
+            excludeValues: List<String>? = null,
             fom: Long? = null,
             tom: Long? = null,
             fagsystem: List<String>? = null,
@@ -181,6 +182,10 @@ data class Daos(
                         SELECT 1 FROM unnest(?::text[]) v
                         WHERE unified.record_value ILIKE '%' || v || '%'
                     ))
+                    AND ( ?::text[] IS NULL OR NOT EXISTS (
+                        SELECT 1 FROM unnest(?::text[]) v
+                        WHERE unified.record_value ILIKE '%' || v || '%'
+                    ))
                     AND ( ?::text[] IS NULL OR EXISTS (
                         SELECT 1 FROM unnest(?::text[]) v
                         WHERE unified.status ILIKE v
@@ -198,12 +203,15 @@ data class Daos(
 
             return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
                 var i = 1
-                val valueArray = value?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
+                val includeArray = includeValues?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
+                val excludeArray = excludeValues?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
                 val statusArray = status?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
                 val fagsystemArray = fagsystem?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
                 stmt.setObject(i++, key, Types.VARCHAR)
-                stmt.setObject(i++, valueArray, Types.ARRAY)
-                stmt.setObject(i++, valueArray, Types.ARRAY)
+                stmt.setObject(i++, includeArray, Types.ARRAY)
+                stmt.setObject(i++, includeArray, Types.ARRAY)
+                stmt.setObject(i++, excludeArray, Types.ARRAY)
+                stmt.setObject(i++, excludeArray, Types.ARRAY)
                 stmt.setObject(i++, statusArray, Types.ARRAY)
                 stmt.setObject(i++, statusArray, Types.ARRAY)
                 stmt.setObject(i++, fagsystemArray, Types.ARRAY)

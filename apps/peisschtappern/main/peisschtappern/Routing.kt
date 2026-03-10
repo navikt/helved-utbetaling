@@ -38,48 +38,37 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 fun Route.api(manuellEndringService: ManuellEndringService) {
     route("/api") {
         get("/messages") {
-            val channels = call.queryParameters["topics"]?.split(",")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
+            val channels = call.queryParameters.strings("topics")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
             val page = call.queryParameters["page"]?.toIntOrNull() ?: 1
             val pageSize = call.queryParameters["pageSize"]?.toIntOrNull() ?: 100
             val key = call.queryParameters["key"]
-            val value = call.queryParameters["value"]?.split(",")
-            val fom = call.queryParameters["fom"]
-                ?.runCatching { Instant.parse(this).toEpochMilli() }
-                ?.getOrNull()
-            val tom = call.queryParameters["tom"]
-                ?.runCatching { Instant.parse(this).toEpochMilli() }
-                ?.getOrNull()
-            val fagsystem = call.parameters["fagsystem"]?.split(",")?.flatMap { fagsystem ->
-                listOf(
-                    listOf("TILTPENG", "TILTAKSPENGER"),
-                    listOf("TILLSTPB", "TILLSTLM", "TILLSTDR", "TILLSTBO", "TILLST", "TILLEGGSSTØNADER"),
-                    listOf("DP", "DAGPENGER"),
-                    listOf("HELSREF", "HISTORISK"),
-                    listOf("AAP")
-                ).find { it.contains(fagsystem) } ?: emptyList()
-            }
+            val includeValues = call.queryParameters.include()
+            val excludeValues = call.queryParameters.exclude()
+            val fom = call.queryParameters.milliseconds("fom")
+            val tom = call.queryParameters.milliseconds("tom")
+            val fagsystem = call.parameters.fagsystem()
             val traceId = call.queryParameters["trace_id"]
             val status = call.queryParameters["status"]?.split(",")
-            val orderBy = when (call.queryParameters["orderBy"]) {
-                "offset" -> "record_offset"
-                "timestamp" -> "system_time_ms"
-                null -> null
-                else -> {
-                    return@get call.respond(
-                        HttpStatusCode.BadRequest,
-                        "Invalid orderBy parameter: ${call.queryParameters["orderBy"]}"
-                    )
-                }
-            }
-            val direction = call.queryParameters["direction"] ?: "DESC"
-
-            if (direction != "ASC" && direction != "DESC") {
-                call.respond(HttpStatusCode.BadRequest, "Invalid direction parameter: $direction")
-            }
+            val orderBy = call.queryParameters.orderBy()
+            val direction = call.queryParameters.direction()
 
             val result = withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    Daos.pagedMessages(channels, page, pageSize, key, value, fom, tom, fagsystem, traceId, status, orderBy, direction)
+                    Daos.pagedMessages(
+                        channels = channels,
+                        page = page,
+                        pageSize = pageSize,
+                        key = key,
+                        includeValues = includeValues,
+                        excludeValues = excludeValues,
+                        fom = fom,
+                        tom = tom,
+                        fagsystem = fagsystem,
+                        traceId = traceId,
+                        status = status,
+                        orderBy = orderBy,
+                        direction = direction
+                    )
                 }
             }
 
@@ -142,6 +131,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                                     Fagsystem.TILLSTRA,
                                     Fagsystem.TILLSTFL,
                                     Fagsystem.TILLEGGSSTØNADER -> Table.ts to Table.tsIntern
+
                                     Fagsystem.HISTORISK -> Table.historisk to Table.historiskIntern
                                 }
                                 // TODO: Kanskje hente meldinger på samme måte som vi gjør lenger opp? Da må vi lagre sakId og fagsystem for alle tabellene
@@ -209,22 +199,49 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    val message = requireNotNull(Daos.findSingle(request.partition.toInt(), request.offset.toLong(), channel.table)) {
+                    val message = requireNotNull(
+                        Daos.findSingle(
+                            request.partition.toInt(),
+                            request.offset.toLong(),
+                            channel.table
+                        )
+                    ) {
                         "Fant ikke melding på topic ${request.topic} med partition ${request.partition} og offset ${request.offset}"
                     }
                     val value = requireNotNull(message.value) { "Melding mangler value" }
 
                     val success = when (channel) {
-                        is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(message.key, value, Audit.from(call, request.reason))
-                        is Channel.Dp, Channel.DpIntern -> manuellEndringService.rekjørDagpenger(message.key, value, Audit.from(call, request.reason))
-                        is Channel.Ts, Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(message.key, value, Audit.from(call, request.reason))
+                        is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(
+                            message.key,
+                            value,
+                            Audit.from(call, request.reason)
+                        )
+
+                        is Channel.Dp, Channel.DpIntern -> manuellEndringService.rekjørDagpenger(
+                            message.key,
+                            value,
+                            Audit.from(call, request.reason)
+                        )
+
+                        is Channel.Ts, Channel.TsIntern -> manuellEndringService.rekjørTilleggsstonader(
+                            message.key,
+                            value,
+                            Audit.from(call, request.reason)
+                        )
+
                         else -> error("Støtter ikke innsending av melding for topic ${channel.topic.name}")
                     }
 
                     if (success) {
-                        call.respond(HttpStatusCode.OK, "Sendte melding ${message.key} i topic ${message.topic_name} på nytt")
+                        call.respond(
+                            HttpStatusCode.OK,
+                            "Sendte melding ${message.key} i topic ${message.topic_name} på nytt"
+                        )
                     } else {
-                        call.respond(HttpStatusCode.UnprocessableEntity, "Feilet å sende melding ${message.key} i topic ${message.topic_name} på nytt")
+                        call.respond(
+                            HttpStatusCode.UnprocessableEntity,
+                            "Feilet å sende melding ${message.key} i topic ${message.topic_name} på nytt"
+                        )
                     }
                 }
             }
@@ -257,7 +274,8 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         try {
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    val oppdrag = Daos.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.Oppdrag.table)
+                    val oppdrag =
+                        Daos.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.Oppdrag.table)
                     requireNotNull(oppdrag?.value) { "Kan ikke lage kvittering for melding uten oppdrag" } // Burde i teorien ikke kunne oppstå
                     manuellEndringService.addKvitteringManuelt(
                         oppdragXml = oppdrag.value,
