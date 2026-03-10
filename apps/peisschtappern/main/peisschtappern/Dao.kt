@@ -83,7 +83,11 @@ data class Daos(
             sakId = rs.getString("sak_id"),
             fagsystem = rs.getString("fagsystem"),
             status = rs.getString("status"),
-            headers = rs.getString("headers")?.takeIf { it.isNotEmpty() }?.split(",")?.map(Header::fromString) ?: emptyList(),
+            headers = rs.getString("headers")
+                ?.takeIf { it.isNotEmpty() }
+                ?.split(Regex(",(?=\\w[\\w-]*:)"))
+                ?.map(Header::fromString)
+                ?: emptyList()
         )
 
         suspend fun find(key: String, table: Table, limit: Int = 1000): List<Daos> {
