@@ -104,19 +104,18 @@ class ApiTest {
         val a = "BFH123DN"
         val b = "LKAMSCDQ"
         val c = "pCPCNQWn"
-        save(Channel.Aap, value = "{\"sakId\":\"$a\"}", offset = offset)
-        save(Channel.Aap, value = "{\"sakId\":\"$b\"}", offset = offset)
-        save(Channel.Aap, value = "{\"sakId\":\"$c\"}", offset = offset)
-        save(Channel.Utbetalinger, offset = offset)
-        save(Channel.Simuleringer, offset = offset)
+        val key = UUID.randomUUID().toString()
+        save(Channel.Aap, value = "{\"sakId\":\"$a\"}", key = key, offset = offset)
+        save(Channel.Aap, value = "{\"sakId\":\"$b\"}", key = key, offset = offset)
+        save(Channel.Oppdrag, value = TestData.oppdragXml(c), key = key, offset = offset)
 
-        val result = TestRuntime.ktor.httpClient.get("/api/messages?value=$b,!$a,not:$c") {
+        val result = TestRuntime.ktor.httpClient.get("/api/messages?key=${key}&topics=${Channel.Aap.topic.name},${Channel.Oppdrag.topic.name}&value=!$c") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<Page>()
 
-        assertEquals(1, result.total)
-        assertTrue(result.items.first().value!!.contains(b))
+        assertEquals(2, result.total)
+        assertTrue(result.items.none { it.value?.contains(c) ?: false })
     }
 
     @Test

@@ -46,15 +46,22 @@ fun Parameters.direction() =
     }
 
 fun Parameters.include() =
-    this.strings("value")?.filter { !it.startsWith("!") && !it.startsWith("not:") }
+    this
+        .strings("value")
+        ?.filter { !it.startsWith("!") && !it.startsWith("not:") }
+        ?.takeIf { it.isNotEmpty() }
 
 fun Parameters.exclude() =
-    this.strings("value")?.filter { it.startsWith("!") || it.startsWith("not:") }?.map {
-        if (it.startsWith("!")) {
-            it.slice(IntRange(1, it.length - 1))
-        } else if (it.startsWith("not:")) {
-            it.slice(IntRange(4, it.length - 1))
-        } else {
-            it
+    this
+        .strings("value")
+        ?.filter { it.startsWith("!") || it.startsWith("not:") }
+        ?.map {
+            if (it.startsWith("!")) {
+                it.slice(IntRange(1, it.length - 1))
+            } else if (it.startsWith("not:")) {
+                it.slice(IntRange(4, it.length - 1))
+            } else {
+                it
+            }
         }
-    }
+        ?.takeIf { it.isNotEmpty() }
