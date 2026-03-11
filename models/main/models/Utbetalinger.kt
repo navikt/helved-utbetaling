@@ -478,7 +478,7 @@ fun uuid(
     return UUID(mostSigBits, leastSigBits)
 }
 
-fun fakeDelete(
+fun delete(
     dryrun: Boolean,
     originalKey: String,
     sakId: SakId,
@@ -497,6 +497,40 @@ fun fakeDelete(
     fagsystem = fagsystem,
     uid = uid,
     action = Action.DELETE,
+    førsteUtbetalingPåSak = false,
+    sakId = sakId,
+    behandlingId = behandlingId,
+    lastPeriodeId = PeriodeId(),
+    personident = personident,
+    vedtakstidspunkt = vedtakstidspunkt,
+    stønad = stønad,
+    beslutterId = beslutterId,
+    saksbehandlerId = saksbehandlerId,
+    periodetype = periodetype,
+    avvent = null,
+    perioder = listOf(Utbetalingsperiode(LocalDate.now(), LocalDate.now(), 1u)), // placeholder
+)
+
+
+fun fakeDelete(
+    dryrun: Boolean,
+    originalKey: String,
+    sakId: SakId,
+    uid: UtbetalingId,
+    fagsystem: Fagsystem,
+    stønad: Stønadstype,
+    beslutterId: Navident,
+    saksbehandlerId: Navident,
+    personident: Personident,
+    behandlingId: BehandlingId,
+    periodetype: Periodetype,
+    vedtakstidspunkt: LocalDateTime
+) = Utbetaling(
+    dryrun = dryrun,
+    originalKey = originalKey,
+    fagsystem = fagsystem,
+    uid = uid,
+    action = Action.FAKE_DELETE,
     førsteUtbetalingPåSak = false,
     sakId = sakId,
     behandlingId = behandlingId,

@@ -89,7 +89,7 @@ object AapDto {
 
         return utbetalingerPerMeldekort.map { (uid, aapUtbetaling) ->
             when (aapUtbetaling) {
-                null -> fakeDelete(
+                null -> delete(
                     dryrun = dryrun,
                     originalKey = originalKey,
                     sakId = sakId,

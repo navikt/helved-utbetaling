@@ -4,7 +4,6 @@ import abetal.*
 import models.*
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -1147,6 +1146,66 @@ internal class TsTest : ConsumerTestBase() {
             .has(transactionId)
             .has(transactionId) {
                 Ts.feilet(ApiError(400, "Kan ikke endre 'sakId'", DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID.doc))
+            }
+    }
+
+    @Test
+    fun `opphør - uses new behandlingId and saksbehandler`() {
+        val sid = SakId("$nextInt")
+        val bidOld = BehandlingId("1833")
+        val bidNew = BehandlingId("20971")
+        val transactionId = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+        val periodeId = PeriodeId()
+
+        TestRuntime.topics.utbetalinger.produce("$uid") {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid,
+                sakId = sid,
+                behandlingId = bidOld,
+                originalKey = UUID.randomUUID().toString(),
+                stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
+                lastPeriodeId = periodeId,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                beslutterId = Navident("ts"),
+                saksbehandlerId = Navident("ts"),
+                fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                periodetype = Periodetype.EN_GANG
+            ) {
+                periode(2.jun, 13.jun, 100u, null)
+            }
+        }
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.TILLEGGSSTØNADER)) {
+            setOf(uid)
+        }
+
+
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = bidNew.id,
+                vedtakstidspunkt = 15.jun.atStartOfDay(),
+            ) {
+                Ts.utbetaling(uid = uid) {
+                }
+            }
+        }
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .has(transactionId)
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+
+        TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) { oppdrag ->
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+                    assertEquals(bidNew.id, it.henvisning)
+                }
             }
     }
 

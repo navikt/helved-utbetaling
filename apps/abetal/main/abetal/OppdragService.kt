@@ -96,8 +96,8 @@ object OppdragService {
             avstemming115 = avstemming115(new.fagsystem)
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
-            val sistePeriode = new.perioder.maxBy { it.fom }
-            val opphør = new.perioder.minBy { it.fom }.fom
+            val sistePeriode = prev.perioder.maxBy { it.fom }
+            val opphør = prev.perioder.minBy { it.fom }.fom
             val oppdragslinje = oppdragsLinje150(new, true, sistePeriode, prev.lastPeriodeId, null, opphør)
             oppdragsLinje150s.add(oppdragslinje)
         }
