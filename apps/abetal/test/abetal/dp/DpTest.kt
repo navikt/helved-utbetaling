@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import libs.kafka.JsonSerde
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -569,9 +568,9 @@ internal class DpTest : ConsumerTestBase() {
         }
         TestRuntime.topics.status.assertThat().has(tid) {
             Dp.mottatt {
-                linje(bid, 1.aug, 15.aug, 200u, 0u)
+                linje(bid2, 1.aug, 15.aug, 200u, 0u)
                 linje(bid2, 2.aug, 16.aug, 200u, 200u)
-                linje(bid, 2.sep, 13.sep, 200u, 0u)
+                linje(bid2, 2.sep, 13.sep, 200u, 0u)
                 linje(bid2, 3.sep, 12.sep, 200u, 200u)
             }
         }
@@ -633,9 +632,9 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.status.assertThat().has(tid) {
             Dp.mottatt {
                 linje(bid2, 1.aug, 15.aug, 200u, 200u)
-                linje(bid, 1.aug, 15.aug, 200u, 0u)
+                linje(bid2, 1.aug, 15.aug, 200u, 0u)
                 linje(bid2, 2.sep, 13.sep, 200u, 200u)
-                linje(bid, 2.sep, 13.sep, 200u, 0u)
+                linje(bid2, 2.sep, 13.sep, 200u, 0u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -1193,6 +1192,7 @@ internal class DpTest : ConsumerTestBase() {
     fun `opphør - canceling meldekort`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
+        val bid2 = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
         val meldeperiode1 = "132460781"
         val uid1 = dpUId(sid.id, meldeperiode1, StønadTypeDagpenger.DAGPENGERFERIE)
@@ -1220,7 +1220,7 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.dp.produce(transactionId1) {
             Dp.utbetaling(
                 sakId = sid.id,
-                behandlingId = bid.id,
+                behandlingId = bid2.id,
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
             ) {
                 // empty
@@ -1229,7 +1229,7 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.status.assertThat().has(transactionId1) {
             Dp.mottatt {
-                linje(bid, 2.jun, 13.jun, 100u, 0u, "DAGPENGERFERIE")
+                linje(bid2, 2.jun, 13.jun, 100u, 0u, "DAGPENGERFERIE")
             }
         }
 
@@ -1248,7 +1248,7 @@ internal class DpTest : ConsumerTestBase() {
                     //assertEquals(periodeId.toString(), it.refDelytelseId)
                     assertNull(it.refDelytelseId)
                     assertEquals("ENDR", it.kodeEndringLinje)
-                    assertEquals(bid.id, it.henvisning)
+                    assertEquals(bid2.id, it.henvisning)
                     assertEquals("DAGPENGERFERIE", it.kodeKlassifik)
                     assertEquals(100, it.sats.toLong())
                     assertEquals(100, it.vedtakssats157.vedtakssats.toLong())
@@ -1352,7 +1352,7 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.status.assertThat().has(tid2) {
             Dp.mottatt {
                 // egentlig bid2, men vi har bare informasjon om den fra bid1
-                linje(bid1, 3.jun, 13.jun, 100u, 0u) 
+                linje(bid2, 3.jun, 13.jun, 100u, 0u)
             }
         }
 
