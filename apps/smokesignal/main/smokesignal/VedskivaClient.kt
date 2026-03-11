@@ -34,7 +34,7 @@ class VedskivaClient(
     }
 
     override suspend fun signal(req: AvstemmingRequest) {
-        val res = client.post("${config.vedskiva.host}/api/avstem") {
+        val res = client.post("${config.vedskiva.host}/api/avstem2") {
             bearerAuth(azure.getClientCredentialsToken(config.vedskiva.scope).access_token)
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
