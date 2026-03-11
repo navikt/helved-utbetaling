@@ -10,7 +10,7 @@ object AggregateService {
 
     private fun hasChanges(pair: StreamsPair<Utbetaling, Utbetaling?>) = pair.let { (new, prev) ->
         prev == null ||
-        prev.action == Action.DELETE && new.action == Action.CREATE ||
+        prev.action in listOf(Action.DELETE, Action.FAKE_DELETE) && new.action == Action.CREATE ||
         new.perioder != prev.perioder
     }
 
@@ -28,6 +28,15 @@ object AggregateService {
 
                 when {
                     new.action == Action.DELETE -> {
+                        val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
+                        val oppdrag = OppdragService.delete(new, prev)
+                        val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
+                        val utbetaling = prev.copy(action = Action.DELETE, lastPeriodeId = lastPeriodeId)
+                        secureLog.debug("opphør utbetaling ${new.uid}")
+                        utbetaling to oppdrag
+                    }
+
+                    new.action == Action.FAKE_DELETE -> {
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         val oppdrag = OppdragService.delete(prev, prev) // new is a fakeDelete
                         val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
