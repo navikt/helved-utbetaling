@@ -38,7 +38,8 @@ object AggregateService {
 
                     new.action == Action.FAKE_DELETE -> {
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
-                        val oppdrag = OppdragService.delete(prev, prev) // new is a fakeDelete
+                        val new = prev.copy(behandlingId = new.behandlingId)
+                        val oppdrag = OppdragService.delete(new, prev) // new is a fakeDelete
                         val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
                         val utbetaling = prev.copy(action = Action.DELETE, lastPeriodeId = lastPeriodeId)
                         secureLog.debug("opphør utbetaling ${new.uid}")
