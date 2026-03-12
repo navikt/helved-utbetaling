@@ -1,6 +1,9 @@
 package models
 
 import java.time.LocalDate
+import libs.utils.appLog
+import libs.utils.env
+import libs.utils.secureLog
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
@@ -11,6 +14,13 @@ data class StatusReply(
     val detaljer: Detaljer? = null,
     val error: ApiError? = null,
 ) {
+    init {
+        if (status == Status.FEILET && env("NAIS_CLUSTER_NAME", "prod-gcp") == "prod-gcp" ) {
+            appLog.error("Mottok status FEILET: $detaljer")
+            secureLog.error("Mottok status FEILET: $detaljer", error)
+        }
+    }
+
     companion object {
         fun mottatt(oppdrag: Oppdrag): StatusReply = StatusReply(Status.MOTTATT, detaljer(oppdrag))
         fun ok(oppdrag: Oppdrag): StatusReply = StatusReply(Status.OK, detaljer(oppdrag))
