@@ -42,7 +42,9 @@ class BigQueryService(
         val processedAt = timestampMs?.let { Instant.ofEpochMilli(it) }.toString()
 
         val rows = utbetaling.perioder.map { periode ->
+            val rowId = "${utbetaling.originalKey}-${periode.fom}-${periode.tom}"
             InsertAllRequest.RowToInsert.of(
+                rowId,
                 mapOf(
                     "key"              to utbetaling.originalKey,
                     "fagsystem"        to utbetaling.fagsystem.toName(),
