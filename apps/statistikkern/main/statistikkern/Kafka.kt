@@ -30,7 +30,7 @@ suspend fun utbetalingConsumer(
                     val timestampMs = record.timestamp
                     bigQuery.upsertUtbetaling(utbetaling, timestampMs)
                 } catch (e: Exception) {
-                    appLog.error("Feil ved prosessering av utbetaling, key=${record.key}: ${e.message}", e)
+                    appLog.info("Feil ved prosessering av utbetaling, key=${record.key}: ${e.message}", e)
                 }
             }
             delay(1)
