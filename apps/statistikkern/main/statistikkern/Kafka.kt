@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import libs.kafka.KafkaConsumer
 import libs.kafka.Topic
 import libs.kafka.json
+import libs.utils.appLog
 import models.StatusReply
 import models.Utbetaling
 import kotlin.time.Duration.Companion.milliseconds
@@ -25,7 +26,11 @@ suspend fun utbetalingConsumer(
         consumer.seekToBeginning(0,1,2)
         while (isActive) {
             for (record in consumer.poll(50.milliseconds)) {
-                val utbetaling = record.value ?: continue
+                val utbetaling = record.value
+                if (utbetaling == null) {
+                    appLog.warn("Kunne ikke deserialisere utbetaling, key=${record.key}")
+                    continue
+                }
                 val timestampMs = record.timestamp
                 bigQuery.upsertUtbetaling(utbetaling, timestampMs)
             }
