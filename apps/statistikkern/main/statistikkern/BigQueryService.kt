@@ -55,7 +55,7 @@ class BigQueryService(
                     "vedtakstidspunkt" to utbetaling.vedtakstidspunkt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
                     "processed_at"     to processedAt,
                     "inserted_at"      to Instant.now().toString(),
-                )
+                ).filterValues { it != null }
             )
         }
 

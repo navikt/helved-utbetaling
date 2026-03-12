@@ -22,17 +22,16 @@ suspend fun utbetalingConsumer(
     consumer: KafkaConsumer<String, Utbetaling>,
 ) {
     withContext(Dispatchers.IO) {
-        //consumer.seekToEnd(0,1,2)
-        consumer.seekToBeginning(0,1,2)
+        consumer.seekToBeginning(0, 1, 2)
         while (isActive) {
             for (record in consumer.poll(50.milliseconds)) {
-                val utbetaling = record.value
-                if (utbetaling == null) {
-                    appLog.warn("Kunne ikke deserialisere utbetaling, key=${record.key}")
-                    continue
+                try {
+                    val utbetaling = record.value ?: continue
+                    val timestampMs = record.timestamp
+                    bigQuery.upsertUtbetaling(utbetaling, timestampMs)
+                } catch (e: Exception) {
+                    appLog.error("Feil ved prosessering av utbetaling, key=${record.key}: ${e.message}", e)
                 }
-                val timestampMs = record.timestamp
-                bigQuery.upsertUtbetaling(utbetaling, timestampMs)
             }
             delay(1)
         }
