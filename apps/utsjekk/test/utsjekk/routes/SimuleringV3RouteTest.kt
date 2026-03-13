@@ -263,6 +263,169 @@ class SimuleringV3RouteTest {
         assertEquals(HttpStatusCode.OK, res.status)
         assertEquals(sim, res.body<v1.Simulering>())
     }
+
+    @Test
+    fun `dryrun dagpenger via ny route`() = runTest {
+        val key = UUID.randomUUID().toString()
+
+        val a = async {
+            httpClient.post("/api/dryrun/dagpenger") {
+                contentType(ContentType.Application.Json)
+                bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.DAGPENGER))
+                header("Transaction-ID", key)
+                setBody(
+                    DpUtbetaling(
+                        dryrun = true,
+                        behandlingId = "1234",
+                        sakId = "sakId",
+                        ident = "12345678910",
+                        vedtakstidspunktet = LocalDateTime.now(),
+                        utbetalinger = listOf(
+                            DpUtbetalingsdag(
+                                meldeperiode = "18-19 aug",
+                                dato = LocalDate.of(2025, 8, 18),
+                                sats = 573u,
+                                utbetaltBeløp = 573u,
+                                utbetalingstype = Utbetalingstype.Dagpenger
+                            ),
+                        ),
+                    )
+                )
+            }
+        }
+
+        val sim = v2.Simulering(
+            perioder = listOf(
+                v2.Simuleringsperiode(
+                    fom = LocalDate.of(2025, 8, 18),
+                    tom = LocalDate.of(2025, 8, 18),
+                    utbetalinger = listOf(
+                        v2.SimulertUtbetaling(
+                            fagsystem = Fagsystem.DAGPENGER,
+                            sakId = "sakId",
+                            utbetalesTil = "12345678910",
+                            stønadstype = StønadTypeDagpenger.DAGPENGER,
+                            tidligereUtbetalt = 573,
+                            nyttBeløp = 573,
+                            posteringer = listOf(),
+                        )
+                    )
+                )
+            )
+        )
+
+        TestRuntime.topics.dryrunDp.produce(key) {
+            sim
+        }
+
+        val res = a.await()
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        assertEquals(sim, res.body<Simulering>())
+    }
+
+    @Test
+    fun `dryrun tilleggsstonader via ny route`() = runTest {
+        val transactionId = UUID.randomUUID().toString()
+        val dto = TsDto(
+            dryrun = true,
+            sakId = "sakId",
+            behandlingId = "1234",
+            personident = "12345678910",
+            vedtakstidspunkt = LocalDateTime.now(),
+            periodetype = Periodetype.EN_GANG,
+            saksbehandler = null,
+            beslutter = null,
+            utbetalinger = listOf(
+                TsUtbetaling(
+                    id = UUID.randomUUID(),
+                    stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
+                    brukFagområdeTillst = false,
+                    perioder = listOf(
+                        TsPeriode(
+                            fom = LocalDate.of(2025, 10, 1),
+                            tom = LocalDate.of(2025, 10, 31),
+                            beløp = 573u,
+                        ),
+                    ),
+                ),
+            )
+        )
+
+        val a = async {
+            httpClient.post("/api/dryrun/tilleggsstonader") {
+                contentType(ContentType.Application.Json)
+                bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILLEGGSSTØNADER))
+                header("Transaction-ID", transactionId)
+                setBody(dto)
+            }
+        }
+
+        val sim = v1.Simulering(
+            oppsummeringer = listOf(
+                v1.OppsummeringForPeriode(
+                    fom = LocalDate.of(2025, 10, 1),
+                    tom = LocalDate.of(2025, 10, 31),
+                    tidligereUtbetalt = 573,
+                    nyUtbetaling = 573,
+                    totalEtterbetaling = 0,
+                    totalFeilutbetaling = 0,
+                ),
+            ),
+            detaljer = v1.SimuleringDetaljer(
+                gjelderId = "12345678910",
+                datoBeregnet = LocalDate.now(),
+                totalBeløp = 573,
+                perioder = listOf(
+                    v1.Periode(
+                        fom = LocalDate.of(2025, 10, 1),
+                        tom = LocalDate.of(2025, 10, 31),
+                        posteringer = listOf(
+                            v1.Postering(
+                                fagområde = v1.Fagområde.TILLSTDR,
+                                sakId = SakId("sakId"),
+                                fom = LocalDate.of(2025, 10, 1),
+                                tom = LocalDate.of(2025, 10, 31),
+                                beløp = 573,
+                                type = v1.PosteringType.YTELSE,
+                                klassekode = "TSDRASISP3-OP",
+                            )
+                        )
+                    ),
+                ),
+            )
+        )
+
+        TestRuntime.topics.dryrunTs.produce(transactionId) {
+            sim
+        }
+
+        val res = a.await()
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        assertEquals(sim, res.body<v1.Simulering>())
+    }
+
+    @Test
+    fun `dryrun aap avviser feil klient`() = runTest {
+        val res = httpClient.post("/api/dryrun/aap") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILLEGGSSTØNADER))
+            header("Transaction-ID", UUID.randomUUID().toString())
+            setBody(
+                AapUtbetaling(
+                    dryrun = true,
+                    sakId = "sakId",
+                    behandlingId = "1234",
+                    ident = "12345678910",
+                    vedtakstidspunktet = LocalDateTime.now(),
+                    utbetalinger = listOf()
+                )
+            )
+        }
+
+        assertEquals(HttpStatusCode.Forbidden, res.status)
+    }
 }
 
 

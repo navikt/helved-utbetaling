@@ -1,0 +1,1202 @@
+openapi: 3.1.1
+info:
+  title: Simuler utbetaling
+  version: "3"
+  description: |
+    Dryrun (simuler) en utbetaling. 
+    Hvert fagsystem har sitt eget endepunkt. Alle endepunktene er asynkrone via kafka i bakgrunnen, 
+    de blokkerer opp til 2 min. Etter 2 minutter vil OS/UR oppheve transaksjonen, derfor har vi også 2 minutter timeout.
+    Feltet dryrun i requesten blir alltid overstyrt ved bruk av rest-endepunktet.
+servers:
+  - url: https://utsjekk.intern.nav.no
+    description: Production
+  - url: https://utsjekk.intern.dev.nav.no
+    description: Development
+
+security:
+  - AzureAD: []
+
+tags:
+  - name: AAP
+    description: Arbeidsavklaringspenger
+  - name: Dagpenger
+    description: Dagpenger
+  - name: Tilleggsstønader
+    description: Tilleggsstønader
+  - name: Tiltakspenger
+    description: Tiltakspenger
+
+paths:
+  /api/dryrun/aap:
+    post:
+      tags:
+        - AAP
+      summary: Simuler utbetaling for AAP
+      description: |
+        Prøvekjør (dryrun) en utbetaling for AAP.
+        Det er kun arjourholdte oppdrag som blir med i en simulering.
+        Ajourhold skjer neste virkedag etter at utbetalingen er sendt inn.
+        Det er bare `utbetal´ (azp_name) som har tilgang til denne.
+      operationId: simulerAap
+      parameters:
+        - $ref: '#/components/parameters/TransactionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AapUtbetaling'
+      responses:
+        '200':
+          description: Simulering utfort.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SimuleringV1'
+                  - $ref: '#/components/schemas/SimuleringV2'
+                discriminator:
+                  propertyName: '@type'
+                  mapping:
+                    v1: '#/components/schemas/SimuleringV1'
+                    v2: '#/components/schemas/SimuleringV2'
+        '302':
+          description: |
+            Simulering er vellykket, men det er ingen posteringer aa vise.
+            Mulige aarsaker:
+            1) Oppdraget finnes fra for, ingen endring mellom simulert og eksisterende.
+            2) Det simuleres et opphor pa et oppdrag som ikke er ajourholdt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Info'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '408':
+          $ref: '#/components/responses/Timeout'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/dryrun/dagpenger:
+    post:
+      tags:
+        - Dagpenger
+      summary: Simuler utbetaling for Dagpenger
+      description: |
+        Prøvekjør (dryrun) en utbetaling for Dagpenger.
+        Det er kun arjourholdte oppdrag som blir med i en simulering.
+        Ajourhold skjer neste virkedag etter at utbetalingen er sendt inn.
+        Det er bare `dp-mellom-barken-og-veden´ (azp_name) som har tilgang til denne.
+      operationId: simulerDagpenger
+      parameters:
+        - $ref: '#/components/parameters/TransactionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpUtbetaling'
+      responses:
+        '200':
+          description: Simulering utfort.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SimuleringV1'
+                  - $ref: '#/components/schemas/SimuleringV2'
+                discriminator:
+                  propertyName: '@type'
+                  mapping:
+                    v1: '#/components/schemas/SimuleringV1'
+                    v2: '#/components/schemas/SimuleringV2'
+        '302':
+          description: |
+            Simulering er vellykket, men det er ingen posteringer aa vise.
+            Mulige aarsaker:
+            1) Oppdraget finnes fra for, ingen endring mellom simulert og eksisterende.
+            2) Det simuleres et opphor pa et oppdrag som ikke er ajourholdt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Info'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '408':
+          $ref: '#/components/responses/Timeout'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/dryrun/tilleggsstonader:
+    post:
+      tags:
+        - Tilleggsstønader
+      summary: Simuler utbetaling for Tilleggsstonader
+      description: |
+        Prøvekjør (dryrun) en utbetaling for Dagpenger.
+        Det er kun arjourholdte oppdrag som blir med i en simulering.
+        Ajourhold skjer neste virkedag etter at utbetalingen er sendt inn.
+        Det er bare `tilleggsstonader-sak´ (azp_name) som har tilgang til denne.
+      operationId: simulerTilleggsstonader
+      parameters:
+        - $ref: '#/components/parameters/TransactionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TsDto'
+      responses:
+        '200':
+          description: Simulering utfort.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SimuleringV1'
+                  - $ref: '#/components/schemas/SimuleringV2'
+                discriminator:
+                  propertyName: '@type'
+                  mapping:
+                    v1: '#/components/schemas/SimuleringV1'
+                    v2: '#/components/schemas/SimuleringV2'
+        '302':
+          description: |
+            Simulering er vellykket, men det er ingen posteringer aa vise.
+            Mulige aarsaker:
+            1) Oppdraget finnes fra for, ingen endring mellom simulert og eksisterende.
+            2) Det simuleres et opphor pa et oppdrag som ikke er ajourholdt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Info'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '408':
+          $ref: '#/components/responses/Timeout'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/dryrun/tiltakspenger:
+    post:
+      tags:
+        - Tiltakspenger
+      summary: Simuler utbetaling for Tiltakspenger
+      description: |
+        Prøvekjør (dryrun) en utbetaling for Dagpenger.
+        Det er kun arjourholdte oppdrag som blir med i en simulering.
+        Ajourhold skjer neste virkedag etter at utbetalingen er sendt inn.
+        Det er bare `tiltakspenger-saksbehandling-api´ (azp_name) som har tilgang til denne.
+      operationId: simulerTiltakspenger
+      parameters:
+        - $ref: '#/components/parameters/TransactionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TpUtbetaling'
+      responses:
+        '200':
+          description: Simulering utfort.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SimuleringV1'
+                  - $ref: '#/components/schemas/SimuleringV2'
+                discriminator:
+                  propertyName: '@type'
+                  mapping:
+                    v1: '#/components/schemas/SimuleringV1'
+                    v2: '#/components/schemas/SimuleringV2'
+        '302':
+          description: |
+            Simulering er vellykket, men det er ingen posteringer aa vise.
+            Mulige aarsaker:
+            1) Oppdraget finnes fra for, ingen endring mellom simulert og eksisterende.
+            2) Det simuleres et opphor pa et oppdrag som ikke er ajourholdt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Info'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '408':
+          $ref: '#/components/responses/Timeout'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    AzureAD:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Azure AD JWT-token. Tilgang styres av `azp_name`-claimet.
+        Se beskrivelse per endepunkt for hvilken `azp_name` som kreves.
+
+  parameters:
+    TransactionID:
+      name: Transaction-ID
+      in: header
+      required: false
+      description: |
+        Unik transaksjons-ID for denne foresporselen. Hvis ikke angitt genereres
+        en tilfeldig UUID av serveren. Brukes til korrelering via
+        `CompletableDeferred` -- duplikat-ID paa en pagaende simulering gir HTTP 423.
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: |
+        Ugyldig request. Returnerer enten `ApiError` (valideringsfeil)
+        eller `StatusReply` (feil fra nedstromssystem).
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ApiError'
+              - $ref: '#/components/schemas/StatusReply'
+    Forbidden:
+      description: |
+        Ikke autorisert. Returneres naar `azp_name` ikke matcher
+        den forventede klienten for endepunktet.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Timeout:
+      description: |
+        Timeout (120 sekunder). Simuleringen ble ikke fullfort innen
+        tidsfristen. Ingen response body.
+    Locked:
+      description: |
+        En simulering med samme `Transaction-ID` pagaar allerede.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    InternalServerError:
+      description: |
+        Uventet feil. Returneres naar det asynkrone resultatet
+        ikke er en kjent type.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+  schemas:
+    # ──────────────────────────────────────────────
+    #  Request-schemas per fagsystem
+    # ──────────────────────────────────────────────
+
+    AapUtbetaling:
+      type: object
+      description: Simuleringsrequest for AAP (Arbeidsavklaringspenger).
+      required:
+        - sakId
+        - behandlingId
+        - ident
+        - utbetalinger
+        - vedtakstidspunktet
+      properties:
+        dryrun:
+          type: boolean
+          default: false
+          description: Overstyres alltid til `true` av serveren.
+        sakId:
+          type: string
+          description: Unik sak-ID i fagsystemet.
+        behandlingId:
+          type: string
+          description: Unik behandling-ID i fagsystemet.
+        ident:
+          type: string
+          description: Fodselsnummer eller D-nummer til soker.
+        utbetalinger:
+          type: array
+          items:
+            $ref: '#/components/schemas/AapUtbetalingsdag'
+        vedtakstidspunktet:
+          type: string
+          format: date-time
+          description: Tidspunkt for vedtak.
+        saksbehandler:
+          type: string
+          nullable: true
+          description: NAV-ident til saksbehandler. Standard `kelvin` hvis ikke angitt.
+        beslutter:
+          type: string
+          nullable: true
+          description: NAV-ident til beslutter. Standard `kelvin` hvis ikke angitt.
+        avvent:
+          $ref: '#/components/schemas/Avvent'
+
+    AapUtbetalingsdag:
+      type: object
+      description: En enkelt utbetalingsdag for AAP.
+      required:
+        - meldeperiode
+        - dato
+        - sats
+        - utbetaltBeløp
+      properties:
+        meldeperiode:
+          type: string
+          description: Identifikator for meldeperioden.
+        dato:
+          type: string
+          format: date
+          description: Dato for utbetalingsdagen.
+        sats:
+          type: integer
+          minimum: 0
+          description: Dagsats i hele kroner.
+        utbetaltBeløp:
+          type: integer
+          minimum: 0
+          description: Faktisk utbetalt belop for denne dagen.
+
+    Avvent:
+      type: object
+      description: Avvent-informasjon for utbetalingen.
+      required:
+        - fom
+        - tom
+      properties:
+        fom:
+          type: string
+          format: date
+        tom:
+          type: string
+          format: date
+        overføres:
+          type: string
+          format: date
+          nullable: true
+        årsak:
+          $ref: '#/components/schemas/Årsak'
+        feilregistrering:
+          type: boolean
+          default: false
+
+    Årsak:
+      type: string
+      description: Aarsak for avvent.
+      enum:
+        - AVVENT_AVREGNING
+        - AVVENT_REFUSJONSKRAV
+
+    DpUtbetaling:
+      type: object
+      description: Simuleringsrequest for Dagpenger.
+      required:
+        - sakId
+        - behandlingId
+        - ident
+        - utbetalinger
+        - vedtakstidspunktet
+      properties:
+        dryrun:
+          type: boolean
+          default: false
+          description: Overstyres alltid til `true` av serveren.
+        sakId:
+          type: string
+          description: Unik sak-ID i fagsystemet.
+        behandlingId:
+          type: string
+          description: Unik behandling-ID i fagsystemet.
+        ident:
+          type: string
+          description: Fodselsnummer eller D-nummer til soker.
+        utbetalinger:
+          type: array
+          items:
+            $ref: '#/components/schemas/DpUtbetalingsdag'
+        vedtakstidspunktet:
+          type: string
+          format: date-time
+          description: Tidspunkt for vedtak.
+        saksbehandler:
+          type: string
+          nullable: true
+          description: NAV-ident til saksbehandler.
+        beslutter:
+          type: string
+          nullable: true
+          description: NAV-ident til beslutter.
+
+    DpUtbetalingsdag:
+      type: object
+      description: En enkelt utbetalingsdag for Dagpenger.
+      required:
+        - meldeperiode
+        - dato
+        - sats
+        - utbetaltBeløp
+        - utbetalingstype
+      properties:
+        meldeperiode:
+          type: string
+          description: Identifikator for meldeperioden.
+        dato:
+          type: string
+          format: date
+          description: Dato for utbetalingsdagen.
+        sats:
+          type: integer
+          minimum: 0
+          description: Dagsats i hele kroner.
+        utbetaltBeløp:
+          type: integer
+          minimum: 0
+          description: Faktisk utbetalt belop for denne dagen.
+        utbetalingstype:
+          $ref: '#/components/schemas/Utbetalingstype'
+
+    Utbetalingstype:
+      type: string
+      description: Type dagpengeutbetaling.
+      enum:
+        - DagpengerFerietillegg
+        - Dagpenger
+
+    TsDto:
+      type: object
+      description: Simuleringsrequest for Tilleggsstonader.
+      required:
+        - sakId
+        - behandlingId
+        - personident
+        - vedtakstidspunkt
+        - periodetype
+        - utbetalinger
+      properties:
+        dryrun:
+          type: boolean
+          default: false
+          description: Overstyres alltid til `true` av serveren.
+        sakId:
+          type: string
+          description: Unik sak-ID i fagsystemet.
+        behandlingId:
+          type: string
+          description: Unik behandling-ID i fagsystemet.
+        personident:
+          type: string
+          description: Fodselsnummer eller D-nummer til soker.
+        vedtakstidspunkt:
+          type: string
+          format: date-time
+          description: Tidspunkt for vedtak.
+        periodetype:
+          $ref: '#/components/schemas/Periodetype'
+        saksbehandler:
+          type: string
+          nullable: true
+          description: NAV-ident til saksbehandler.
+        beslutter:
+          type: string
+          nullable: true
+          description: NAV-ident til beslutter.
+        utbetalinger:
+          type: array
+          items:
+            $ref: '#/components/schemas/TsUtbetaling'
+
+    TsUtbetaling:
+      type: object
+      description: En utbetaling innenfor Tilleggsstonader.
+      required:
+        - id
+        - stønad
+        - perioder
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unik ID for denne utbetalingen.
+        stønad:
+          $ref: '#/components/schemas/StønadTypeTilleggsstønader'
+        perioder:
+          type: array
+          description: Tom liste betyr sletting (opphor).
+          items:
+            $ref: '#/components/schemas/TsPeriode'
+        brukFagområdeTillst:
+          type: boolean
+          default: false
+          description: |
+            Bruk fagomraade TILLST i stedet for spesifikke fagomraader.
+            Kun tillatt for et utvalg av stonadstyper.
+
+    TsPeriode:
+      type: object
+      description: En periode innenfor en Tilleggsstonader-utbetaling.
+      required:
+        - fom
+        - tom
+        - beløp
+      properties:
+        fom:
+          type: string
+          format: date
+          description: Fra-og-med dato.
+        tom:
+          type: string
+          format: date
+          description: Til-og-med dato.
+        beløp:
+          type: integer
+          minimum: 0
+          description: Belop i hele kroner.
+        betalendeEnhet:
+          type: string
+          nullable: true
+          description: NAV-enhet som betaler (4-sifret kode).
+
+    Periodetype:
+      type: string
+      description: Satstype for utbetalingsperioder.
+      enum:
+        - DAG
+        - UKEDAG
+        - MND
+        - EN_GANG
+
+    TpUtbetaling:
+      type: object
+      description: |
+        Simuleringsrequest for Tiltakspenger. Sendes som en liste (array)
+        i request-body.
+      required:
+        - sakId
+        - behandlingId
+        - personident
+        - vedtakstidspunkt
+        - perioder
+      properties:
+        sakId:
+          type: string
+          description: Unik sak-ID i fagsystemet.
+        behandlingId:
+          type: string
+          description: Unik behandling-ID i fagsystemet.
+        dryrun:
+          type: boolean
+          default: false
+          description: Overstyres alltid til `true` av serveren.
+        personident:
+          type: string
+          description: Fodselsnummer eller D-nummer til soker.
+        vedtakstidspunkt:
+          type: string
+          format: date-time
+          description: Tidspunkt for vedtak.
+        perioder:
+          type: array
+          items:
+            $ref: '#/components/schemas/TpPeriode'
+        saksbehandler:
+          type: string
+          nullable: true
+          description: NAV-ident til saksbehandler.
+        beslutter:
+          type: string
+          nullable: true
+          description: NAV-ident til beslutter.
+
+    TpPeriode:
+      type: object
+      description: En periode innenfor en Tiltakspenger-utbetaling.
+      required:
+        - meldeperiode
+        - fom
+        - tom
+        - beløp
+        - stønad
+      properties:
+        meldeperiode:
+          type: string
+          description: Identifikator for meldeperioden.
+        fom:
+          type: string
+          format: date
+          description: Fra-og-med dato.
+        tom:
+          type: string
+          format: date
+          description: Til-og-med dato.
+        betalendeEnhet:
+          type: string
+          nullable: true
+          description: NAV-enhet som betaler (4-sifret kode).
+        barnetillegg:
+          type: boolean
+          default: false
+          description: Om perioden gjelder barnetillegg.
+        beløp:
+          type: integer
+          minimum: 0
+          description: Belop i hele kroner.
+        stønad:
+          $ref: '#/components/schemas/StønadTypeTiltakspenger'
+
+    # ──────────────────────────────────────────────
+    #  Response-schemas (simuleringsresultater)
+    # ──────────────────────────────────────────────
+
+    SimuleringV1:
+      type: object
+      description: |
+        Simuleringsresultat v1. Inneholder oppsummeringer per periode og
+        detaljerte posteringer.
+      required:
+        - '@type'
+        - oppsummeringer
+        - detaljer
+      properties:
+        '@type':
+          type: string
+          enum:
+            - v1
+        oppsummeringer:
+          type: array
+          items:
+            $ref: '#/components/schemas/OppsummeringForPeriode'
+        detaljer:
+          $ref: '#/components/schemas/SimuleringDetaljer'
+
+    OppsummeringForPeriode:
+      type: object
+      description: Oppsummering av simulering for en periode.
+      required:
+        - fom
+        - tom
+        - tidligereUtbetalt
+        - nyUtbetaling
+        - totalEtterbetaling
+        - totalFeilutbetaling
+      properties:
+        fom:
+          type: string
+          format: date
+        tom:
+          type: string
+          format: date
+        tidligereUtbetalt:
+          type: integer
+          description: Tidligere utbetalt belop.
+        nyUtbetaling:
+          type: integer
+          description: Nytt utbetalingsbelop.
+        totalEtterbetaling:
+          type: integer
+          description: Total etterbetaling.
+        totalFeilutbetaling:
+          type: integer
+          description: Total feilutbetaling.
+
+    SimuleringDetaljer:
+      type: object
+      description: Detaljert simuleringsresultat.
+      required:
+        - gjelderId
+        - datoBeregnet
+        - totalBeløp
+        - perioder
+      properties:
+        gjelderId:
+          type: string
+          description: Person-ID simuleringen gjelder for.
+        datoBeregnet:
+          type: string
+          format: date
+          description: Dato simuleringen ble beregnet.
+        totalBeløp:
+          type: integer
+          description: Totalt belop.
+        perioder:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimuleringV1Periode'
+
+    SimuleringV1Periode:
+      type: object
+      description: En periode i det detaljerte simuleringsresultatet.
+      required:
+        - fom
+        - tom
+        - posteringer
+      properties:
+        fom:
+          type: string
+          format: date
+        tom:
+          type: string
+          format: date
+        posteringer:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimuleringV1Postering'
+
+    SimuleringV1Postering:
+      type: object
+      description: En postering i simuleringsresultatet (v1).
+      required:
+        - fagområde
+        - sakId
+        - fom
+        - tom
+        - beløp
+        - type
+        - klassekode
+      properties:
+        fagområde:
+          $ref: '#/components/schemas/Fagområde'
+        sakId:
+          type: string
+          description: Sak-ID posteringen tilhorer.
+        fom:
+          type: string
+          format: date
+        tom:
+          type: string
+          format: date
+        beløp:
+          type: integer
+        type:
+          $ref: '#/components/schemas/PosteringType'
+        klassekode:
+          type: string
+          description: Klassekode fra Oppdragssystemet.
+
+    PosteringType:
+      type: string
+      description: Type postering i simuleringsresultatet (v1).
+      enum:
+        - YTELSE
+        - FEILUTBETALING
+        - FORSKUDSSKATT
+        - JUSTERING
+        - TREKK
+        - MOTPOSTERING
+
+    Fagområde:
+      type: string
+      description: Fagomraade fra Oppdragssystemet.
+      enum:
+        # Tilleggsstønader
+        - TILLSTPB
+        - TILLSTLM
+        - TILLSTBO
+        - TILLSTDR
+        - TILLSTRS
+        - TILLSTRO
+        - TILLSTRA
+        - TILLSTFL
+        - TILLST
+        - TSTARENA
+        - MTSTAREN
+        # Dagpenger
+        - DP
+        - MDP
+        - DPARENA
+        - MDPARENA
+        # Tiltakspenger
+        - TILTPENG
+        - TPARENA
+        - MTPARENA
+        # AAP
+        - AAP
+        # Historisk
+        - HELSREF
+
+    SimuleringV2:
+      type: object
+      description: |
+        Simuleringsresultat v2. Gruppert per periode med utbetalinger og posteringer.
+      required:
+        - '@type'
+        - perioder
+      properties:
+        '@type':
+          type: string
+          enum:
+            - v2
+        perioder:
+          type: array
+          description: Kan vaere tom liste hvis opphor av noe som ikke er effektuert enna.
+          items:
+            $ref: '#/components/schemas/Simuleringsperiode'
+
+    Simuleringsperiode:
+      type: object
+      description: En periode i v2-simuleringsresultatet.
+      required:
+        - fom
+        - tom
+        - utbetalinger
+      properties:
+        fom:
+          type: string
+          format: date
+        tom:
+          type: string
+          format: date
+        utbetalinger:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimulertUtbetaling'
+
+    SimulertUtbetaling:
+      type: object
+      description: En simulert utbetaling innenfor en periode.
+      required:
+        - fagsystem
+        - sakId
+        - utbetalesTil
+        - tidligereUtbetalt
+        - nyttBeløp
+        - posteringer
+      properties:
+        fagsystem:
+          $ref: '#/components/schemas/Fagsystem'
+        sakId:
+          type: string
+          description: Sak-ID i fagsystemet.
+        utbetalesTil:
+          type: string
+          description: Person-ID for mottaker.
+        stønadstype:
+          type: string
+          description: Stonadstype -- avhenger av fagsystemet.
+        tidligereUtbetalt:
+          type: integer
+          description: Tidligere utbetalt belop for perioden.
+        nyttBeløp:
+          type: integer
+          description: Nytt belop etter simulering.
+        posteringer:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimuleringV2Postering'
+
+    SimuleringV2Postering:
+      type: object
+      description: En postering i v2-simuleringsresultatet.
+      required:
+        - fom
+        - tom
+        - beløp
+        - type
+        - klassekode
+      properties:
+        fom:
+          type: string
+          format: date
+        tom:
+          type: string
+          format: date
+        beløp:
+          type: integer
+        type:
+          $ref: '#/components/schemas/SimuleringV2Type'
+        klassekode:
+          type: string
+
+    SimuleringV2Type:
+      type: string
+      description: Type postering i simuleringsresultatet (v2).
+      enum:
+        - YTEL
+        - FEIL
+        - SKAT
+        - JUST
+        - TREK
+        - MOTP
+
+    Info:
+      type: object
+      description: |
+        Informasjonsrespons for simuleringer uten posteringer aa vise.
+        Returneres med HTTP 302.
+      required:
+        - '@type'
+        - status
+        - fagsystem
+        - message
+      properties:
+        '@type':
+          type: string
+          enum:
+            - info
+        status:
+          $ref: '#/components/schemas/InfoStatus'
+        fagsystem:
+          $ref: '#/components/schemas/Fagsystem'
+        message:
+          type: string
+          description: Forklaring paa hvorfor det ikke er posteringer aa vise.
+
+    InfoStatus:
+      type: string
+      description: Status for Info-respons.
+      enum:
+        - OK_UTEN_ENDRING
+
+    # ──────────────────────────────────────────────
+    #  Felles schemas
+    # ──────────────────────────────────────────────
+
+    Fagsystem:
+      type: string
+      description: Fagsystem-enum.
+      enum:
+        - DAGPENGER
+        - TILTAKSPENGER
+        - TILLEGGSSTØNADER
+        - TILLSTPB
+        - TILLSTLM
+        - TILLSTBO
+        - TILLSTDR
+        - TILLSTRS
+        - TILLSTRO
+        - TILLSTRA
+        - TILLSTFL
+        - AAP
+        - HISTORISK
+
+    StatusReply:
+      type: object
+      description: |
+        Statusrespons fra asynkron behandling. Returneres med HTTP 400
+        naar nedstromssystemer rapporterer feil.
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        detaljer:
+          $ref: '#/components/schemas/Detaljer'
+        error:
+          $ref: '#/components/schemas/ApiError'
+
+    Status:
+      type: string
+      description: Status for asynkron behandling.
+      enum:
+        - OK
+        - FEILET
+        - MOTTATT
+        - HOS_OPPDRAG
+
+    Detaljer:
+      type: object
+      description: Detaljer om oppdraget.
+      required:
+        - ytelse
+        - linjer
+      properties:
+        ytelse:
+          $ref: '#/components/schemas/Fagsystem'
+        linjer:
+          type: array
+          items:
+            $ref: '#/components/schemas/DetaljerLinje'
+
+    DetaljerLinje:
+      type: object
+      description: En linje i oppdragsdetaljene.
+      required:
+        - behandlingId
+        - fom
+        - tom
+        - beløp
+        - klassekode
+      properties:
+        behandlingId:
+          type: string
+        fom:
+          type: string
+          format: date
+        tom:
+          type: string
+          format: date
+        vedtakssats:
+          type: integer
+          minimum: 0
+          nullable: true
+        beløp:
+          type: integer
+          minimum: 0
+        klassekode:
+          type: string
+
+    ApiError:
+      type: object
+      description: Feilrespons fra serveren.
+      required:
+        - statusCode
+        - msg
+      properties:
+        statusCode:
+          type: integer
+          description: HTTP-statuskode.
+        msg:
+          type: string
+          description: Feilmelding.
+        doc:
+          type: string
+          nullable: true
+          description: Lenke til dokumentasjon for feilen.
+          example: https://helved-docs.ansatt.dev.nav.no
+        system:
+          $ref: '#/components/schemas/System'
+
+    System:
+      type: string
+      description: Hvilket system feilen oppstod i.
+      enum:
+        - HELVED
+        - OSUR
+
+    # ──────────────────────────────────────────────
+    #  Stonadstyper per fagsystem
+    # ──────────────────────────────────────────────
+
+    StønadTypeAAP:
+      type: string
+      description: Stonadstyper for AAP.
+      enum:
+        - AAP_UNDER_ARBEIDSAVKLARING
+
+    StønadTypeDagpenger:
+      type: string
+      description: Stonadstyper for Dagpenger.
+      enum:
+        - DAGPENGER
+        - DAGPENGERFERIE
+        - ARBEIDSSØKER_ORDINÆR
+        - PERMITTERING_ORDINÆR
+        - PERMITTERING_FISKEINDUSTRI
+        - EØS
+        - ARBEIDSSØKER_ORDINÆR_FERIETILLEGG
+        - PERMITTERING_ORDINÆR_FERIETILLEGG
+        - PERMITTERING_FISKEINDUSTRI_FERIETILLEGG
+        - EØS_FERIETILLEGG
+        - ARBEIDSSØKER_ORDINÆR_FERIETILLEGG_AVDØD
+        - PERMITTERING_ORDINÆR_FERIETILLEGG_AVDØD
+        - PERMITTERING_FISKEINDUSTRI_FERIETILLEGG_AVDØD
+        - EØS_FERIETILLEGG_AVDØD
+
+    StønadTypeTilleggsstønader:
+      type: string
+      description: Stonadstyper for Tilleggsstonader.
+      enum:
+        - TILSYN_BARN_ENSLIG_FORSØRGER
+        - TILSYN_BARN_AAP
+        - TILSYN_BARN_ETTERLATTE
+        - LÆREMIDLER_ENSLIG_FORSØRGER
+        - LÆREMIDLER_AAP
+        - LÆREMIDLER_ETTERLATTE
+        - BOUTGIFTER_AAP
+        - BOUTGIFTER_ENSLIG_FORSØRGER
+        - BOUTGIFTER_ETTERLATTE
+        - DAGLIG_REISE_ENSLIG_FORSØRGET
+        - DAGLIG_REISE_ENSLIG_FORSØRGER
+        - DAGLIG_REISE_AAP
+        - DAGLIG_REISE_ETTERLATTE
+        - REISE_TIL_SAMLING_ENSLIG_FORSØRGER
+        - REISE_TIL_SAMLING_AAP
+        - REISE_TIL_SAMLING_ETTERLATTE
+        - REISE_OPPSTART_ENSLIG_FORSØRGET
+        - REISE_OPPSTART_ENSLIG_FORSØRGER
+        - REISE_OPPSTART_AAP
+        - REISE_OPPSTART_ETTERLATTE
+        - REIS_ARBEID_ENSLIG_FORSØRGER
+        - REIS_ARBEID_AAP
+        - REIS_ARBEID_ETTERLATTE
+        - FLYTTING_ENSLIG_FORSØRGER
+        - FLYTTING_AAP
+        - FLYTTING_ETTERLATTE
+        - DAGLIG_REISE_TILTAK_ARBEIDSFORBEREDENDE
+        - DAGLIG_REISE_TILTAK_ARBEIDSRETTET_REHAB
+        - DAGLIG_REISE_TILTAK_ARBEIDSTRENING
+        - DAGLIG_REISE_TILTAK_AVKLARING
+        - DAGLIG_REISE_TILTAK_DIGITAL_JOBBKLUBB
+        - DAGLIG_REISE_TILTAK_ENKELTPLASS_AMO
+        - DAGLIG_REISE_TILTAK_ENKELTPLASS_FAG_YRKE_HOYERE_UTD
+        - DAGLIG_REISE_TILTAK_FORSØK_OPPLÆRINGSTILTAK_LENGER_VARIGHET
+        - DAGLIG_REISE_TILTAK_GRUPPE_AMO
+        - DAGLIG_REISE_TILTAK_GRUPPE_FAG_YRKE_HOYERE_UTD
+        - DAGLIG_REISE_TILTAK_HØYERE_UTDANNING
+        - DAGLIG_REISE_TILTAK_INDIVIDUELL_JOBBSTØTTE
+        - DAGLIG_REISE_TILTAK_INDIVIDUELL_JOBBSTØTTE_UNG
+        - DAGLIG_REISE_TILTAK_JOBBKLUBB
+        - DAGLIG_REISE_TILTAK_OPPFØLGING
+        - DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_NAV
+        - DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_OPPLÆRING
+
+    StønadTypeTiltakspenger:
+      type: string
+      description: Stonadstyper for Tiltakspenger (inkludert barnetillegg-varianter).
+      enum:
+        - ARBEIDSFORBEREDENDE_TRENING
+        - ARBEIDSRETTET_REHABILITERING
+        - ARBEIDSTRENING
+        - AVKLARING
+        - DIGITAL_JOBBKLUBB
+        - ENKELTPLASS_AMO
+        - ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG
+        - FORSØK_OPPLÆRING_LENGRE_VARIGHET
+        - GRUPPE_AMO
+        - GRUPPE_VGS_OG_HØYERE_YRKESFAG
+        - HØYERE_UTDANNING
+        - INDIVIDUELL_JOBBSTØTTE
+        - INDIVIDUELL_KARRIERESTØTTE_UNG
+        - JOBBKLUBB
+        - OPPFØLGING
+        - UTVIDET_OPPFØLGING_I_NAV
+        - UTVIDET_OPPFØLGING_I_OPPLÆRING
+        - ARBEIDSMARKEDSOPPLÆRING_AMO
+        - NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER
+        - FAG_OG_YRKESOPPLÆRING
+        - STUDIESPESIALISERING
+        - FAGSKOLE
+        - ARBEIDSFORBEREDENDE_TRENING_BARN
+        - ARBEIDSRETTET_REHABILITERING_BARN
+        - ARBEIDSTRENING_BARN
+        - AVKLARING_BARN
+        - DIGITAL_JOBBKLUBB_BARN
+        - ENKELTPLASS_AMO_BARN
+        - ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG_BARN
+        - FORSØK_OPPLÆRING_LENGRE_VARIGHET_BARN
+        - GRUPPE_AMO_BARN
+        - GRUPPE_VGS_OG_HØYERE_YRKESFAG_BARN
+        - HØYERE_UTDANNING_BARN
+        - INDIVIDUELL_JOBBSTØTTE_BARN
+        - INDIVIDUELL_KARRIERESTØTTE_UNG_BARN
+        - JOBBKLUBB_BARN
+        - OPPFØLGING_BARN
+        - UTVIDET_OPPFØLGING_I_NAV_BARN
+        - UTVIDET_OPPFØLGING_I_OPPLÆRING_BARN
+        - ARBEIDSMARKEDSOPPLÆRING_AMO_BARN
+        - NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER_BARN
+        - FAG_OG_YRKESOPPLÆRING_BARN
+        - STUDIESPESIALISERING_BARN
+        - FAGSKOLE_BARN
+

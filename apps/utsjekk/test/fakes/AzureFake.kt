@@ -12,6 +12,7 @@ import libs.ktor.port
 import java.net.URI
 
 object Azp {
+    const val AAP = "test:aap:utbetal"
     const val DAGPENGER = "test:helved:snickerboa"
     const val TILTAKSPENGER = "test:helved:tiltakspenger-saksbehandling-api"
     const val TILLEGGSSTØNADER = "test:helved:tilleggsstonader-sak"

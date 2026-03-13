@@ -20,32 +20,40 @@ import kotlin.time.Duration.Companion.hours
 object Topics {
     const val NUM_PARTITIONS = 3
 
-    val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
-    val status = Topic("helved.status.v1", json<StatusReply>())
+    val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
+    val dryrunTp = Topic("helved.dryrun-tp.v1", json<Simulering>())
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
-    val utbetalingDp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
-    val utbetalingAap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
-    val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
-    val utbetalingTp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
-    val utbetaling = Topic("helved.utbetalinger.v1", json<Utbetaling>())
+    val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, models.UtbetalingId>())
+    val status = Topic("helved.status.v1", json<StatusReply>())
+    val utbetaling = Topic("helved.utbetalinger.v1", json<Utbetaling>())
+    val utbetalingAap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
+    val utbetalingDp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
+    val utbetalingTp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
+    val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
 }
 
 object Tables {
-    val dryrunTs = Table(Topics.dryrunTs)
+    val dryrunAap = Table(Topics.dryrunAap)
     val dryrunDp = Table(Topics.dryrunDp)
+    val dryrunTp = Table(Topics.dryrunTp)
+    val dryrunTs = Table(Topics.dryrunTs)
     val saker = Table(Topics.saker)
 }
 
 object Stores {
-    val dryrunTs = Store(Tables.dryrunTs)
+    val dryrunAap = Store(Tables.dryrunAap)
     val dryrunDp = Store(Tables.dryrunDp)
+    val dryrunTp = Store(Tables.dryrunTp)
+    val dryrunTs = Store(Tables.dryrunTs)
 }
 
 fun createTopology(): Topology = topology {
-    globalKTable(Tables.dryrunTs, retention = 1.hours)
+    globalKTable(Tables.dryrunAap, retention = 1.hours)
     globalKTable(Tables.dryrunDp, retention = 1.hours)
+    globalKTable(Tables.dryrunTp, retention = 1.hours)
+    globalKTable(Tables.dryrunTs, retention = 1.hours)
     consumeStatus()
     utbetalingToSak()
 }

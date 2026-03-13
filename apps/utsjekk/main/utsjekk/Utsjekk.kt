@@ -164,6 +164,7 @@ ${call.bodyAsText()}""".trimIndent()
             simuleringRoutes.aap(this)
             simuleringRoutes.utsjekk(this)
             simuleringRoutes.abetal(this)
+            simuleringRoutes.dryrun(this)
         }
 
         actuator(metrics)
@@ -210,6 +211,8 @@ value class Client(
             "azure-token-generator" -> Fagsystem.AAP
             "helved-peisen" -> Fagsystem.TILLEGGSSTØNADER
             "snickerboa" -> Fagsystem.DAGPENGER
+            "utbetal" -> Fagsystem.AAP
+            "dp-mellom-barken-og-veden" -> Fagsystem.DAGPENGER
             "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
             "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
             else ->

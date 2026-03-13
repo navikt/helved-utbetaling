@@ -22,12 +22,14 @@ import utsjekk.createTopology
 val httpClient = TestRuntime.ktor.httpClient
 
 class TestTopics(kafka: StreamsMock) {
-    val oppdrag = kafka.testTopic(Topics.oppdrag) 
-    val status = kafka.testTopic(Topics.status)
+    val dryrunAap = kafka.testTopic(Topics.dryrunAap)
     val dryrunDp = kafka.testTopic(Topics.dryrunDp)
+    val dryrunTp = kafka.testTopic(Topics.dryrunTp)
     val dryrunTs = kafka.testTopic(Topics.dryrunTs)
-    val utbetaling = kafka.testTopic(Topics.utbetaling)
+    val oppdrag = kafka.testTopic(Topics.oppdrag) 
     val saker = kafka.testTopic(Topics.saker)
+    val status = kafka.testTopic(Topics.status)
+    val utbetaling = kafka.testTopic(Topics.utbetaling)
 }
 
 object TestRuntime {
