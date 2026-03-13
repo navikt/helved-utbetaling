@@ -12,8 +12,14 @@ import org.junit.jupiter.api.Test
 class ActuatorTest {
 
     @Test
-    fun health() = runTest {
-        val res = httpClient.get("/actuator/health")
+    fun ready() = runTest {
+        val res = httpClient.get("/actuator/ready")
+        assertEquals(HttpStatusCode.OK, res.status)
+    }
+
+    @Test
+    fun live() = runTest {
+        val res = httpClient.get("/actuator/live")
         assertEquals(HttpStatusCode.OK, res.status)
     }
 

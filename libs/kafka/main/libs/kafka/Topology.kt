@@ -2,8 +2,10 @@ package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
+import kotlin.concurrent.thread
 import libs.kafka.processor.LogConsumeTopicProcessor
 import libs.kafka.stream.ConsumedStream
+import libs.utils.appLog
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.KafkaStreams.State.*
 import org.apache.kafka.streams.StoreQueryParameters
@@ -23,6 +25,17 @@ interface Streams : AutoCloseable, KafkaFactory {
     fun registerInternalTopology(internalTopology: org.apache.kafka.streams.Topology)
     fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V>
     fun close(gracefulMillis: Long)
+
+    /**
+     * Connect and start Kafka Streams, pausing processing until [awaitReady] returns true.
+     * Monitors [awaitReady] continuously — pauses when false, resumes when true.
+     */
+    fun start(
+        topology: Topology,
+        config: StreamsConfig,
+        registry: MeterRegistry,
+        awaitReady: () -> Boolean,
+    )
 }
 
 class KafkaStreams : Streams {
@@ -47,9 +60,62 @@ class KafkaStreams : Streams {
     KafkaStreamsMetrics(internalStreams).bindTo(registry)
 }
 
+override fun start(
+    topology: Topology,
+    config: StreamsConfig,
+    registry: MeterRegistry,
+    awaitReady: () -> Boolean,
+) {
+    connect(topology, config, registry)
+    internalStreams.pause()
+    appLog.info("Kafka Streams started in paused state, awaiting dependency readiness")
+
+    thread(isDaemon = true, name = "kafka-dependency-monitor") {
+        var paused = true
+        var freshStart = true
+        var healthySince = 0L
+
+        while (!Thread.currentThread().isInterrupted) {
+            val dependencyReady = runCatching { awaitReady() }.getOrDefault(false)
+            when {
+                paused && dependencyReady -> {
+                    if (freshStart) {
+                        internalStreams.resume()
+                        paused = false
+                        freshStart = false
+                        appLog.info("Dependency ready, resuming Kafka Streams")
+                    } else {
+                        if (healthySince == 0L) {
+                            healthySince = System.currentTimeMillis()
+                            appLog.info("Dependency recovering, waiting 30s before resuming Kafka Streams")
+                        }
+                        if (System.currentTimeMillis() - healthySince >= 30_000) {
+                            internalStreams.resume()
+                            paused = false
+                            healthySince = 0L
+                            appLog.info("Dependency stable for 30s, resuming Kafka Streams")
+                        }
+                    }
+                }
+                paused && !dependencyReady -> {
+                    freshStart = false
+                    healthySince = 0L
+                }
+                !paused && !dependencyReady -> {
+                    internalStreams.pause()
+                    paused = true
+                    healthySince = 0L
+                    appLog.warn("Dependency unavailable, pausing Kafka Streams")
+                }
+            }
+            Thread.sleep(3000)
+        }
+    }
+}
+
 override fun ready(): Boolean { 
     val state = internalStreams.state()
-    return initiallyStarted && state == RUNNING && !restoreListener.isRestoring()
+    return initiallyStarted && state == RUNNING && !internalStreams.isPaused && !restoreListener.isRestoring()
 }
 override fun live(): Boolean = initiallyStarted && internalStreams.state() != ERROR
 override fun visulize(): TopologyVisulizer = TopologyVisulizer(internalTopology)

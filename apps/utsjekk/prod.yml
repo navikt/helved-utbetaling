@@ -9,11 +9,11 @@ spec:
   terminationGracePeriodSeconds: 70
   image: {{ image }}
   liveness:
-    path: /actuator/health
+    path: /actuator/live
     initialDelay: 30
     failureThreshold: 10
   readiness:
-    path: /actuator/health
+    path: /actuator/ready
     initialDelay: 30
     failureThreshold: 10
   prometheus:

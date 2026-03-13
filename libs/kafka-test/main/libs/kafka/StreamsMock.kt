@@ -29,6 +29,13 @@ class StreamsMock : Streams {
         internalStreams = TopologyTestDriver(internalTopology, testProperties)
     }
 
+    override fun start(
+        topology: Topology,
+        config: StreamsConfig,
+        registry: MeterRegistry,
+        awaitReady: () -> Boolean,
+    ) = connect(topology, config, registry)
+
     override fun ready(): Boolean = true
     override fun live(): Boolean = true
 

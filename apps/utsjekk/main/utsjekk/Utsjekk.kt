@@ -167,7 +167,7 @@ ${call.bodyAsText()}""".trimIndent()
             simuleringRoutes.dryrun(this)
         }
 
-        actuator(metrics)
+        actuator(kafka, metrics)
     }
 
     monitor.subscribe(ApplicationStopping) {

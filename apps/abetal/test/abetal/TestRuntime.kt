@@ -43,7 +43,6 @@ object TestRuntime {
                 config = config, 
                 kafka = kafka, 
                 topology = createTopology(kafka),
-                awaitBeforeStart = {},
             )
         }
     )

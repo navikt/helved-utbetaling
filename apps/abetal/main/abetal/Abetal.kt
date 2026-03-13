@@ -3,11 +3,6 @@ package abetal
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.http.isSuccess
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -18,16 +13,16 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
 import libs.utils.appLog
 import libs.utils.secureLog
-import java.net.URL
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.time.Duration.Companion.seconds
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -52,10 +47,8 @@ fun Application.abetal(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
     topology: Topology = createTopology(kafka),
-    awaitBeforeStart: (suspend () -> Unit) = { awaitUtsjekk(config.utsjekk) },
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-    val kafkaStarted = AtomicBoolean(false)
 
     install(MicrometerMetrics) {
         registry = prometheus
@@ -74,39 +67,23 @@ fun Application.abetal(
     }
 
     routing {
-        probes(kafka, prometheus, config.utsjekk, kafkaStarted)
+        probes(kafka, prometheus)
     }
 
-    // Production: wait for utsjekk to be ready before starting Kafka Streams,
-    // so the saker-topic is populated before abetal starts consuming.
-    launch {
-        awaitBeforeStart()
-        kafka.connect(topology, config.kafka, prometheus)
-        kafkaStarted.set(true)
-    }
-}
+    val httpClient = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(1))
+        .build()
 
-internal suspend fun awaitUtsjekk(utsjekk: URL) {
-    val client = HttpClient(CIO) {
-        install(HttpTimeout) {
-            requestTimeoutMillis = 2000
-            connectTimeoutMillis = 1000
-        }
-    }
-
-    client.use { client ->
-        while (true) {
-            val healthy = runCatching {
-                client.get("$utsjekk/actuator/health").status.isSuccess()
-            }.getOrDefault(false)
-
-            if (healthy) {
-                appLog.info("utsjekk is ready, starting Kafka Streams")
-                return
-            }
-
-            appLog.info("Waiting for utsjekk to become ready...")
-            delay(3.seconds)
-        }
+    // Starts Kafka Streams paused, resumes when utsjekk is ready.
+    // Pauses again if utsjekk becomes unavailable.
+    kafka.start(topology, config.kafka, prometheus) {
+        runCatching {
+            val request = HttpRequest.newBuilder()
+                .uri(URI("${config.utsjekk}/actuator/ready"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build()
+            httpClient.send(request, HttpResponse.BodyHandlers.discarding()).statusCode() in 200..299
+        }.getOrDefault(false)
     }
 }
