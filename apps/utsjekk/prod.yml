@@ -61,6 +61,7 @@ spec:
   accessPolicy:
     inbound:
       rules:
+        - application: abetal
         - application: helved-peisen
         - application: tiltakspenger-saksbehandling-api
           namespace: tpts

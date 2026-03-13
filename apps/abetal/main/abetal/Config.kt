@@ -2,9 +2,13 @@ package abetal
 
 import libs.kafka.ConsumeNextHandler
 import libs.kafka.StreamsConfig
+import libs.utils.env
+import java.net.URI
+import java.net.URL
 import java.util.*
 
 data class Config(
+    val utsjekk: URL = URI(env("UTSJEKK_HOST", "http://utsjekk")).toURL(),
     val kafka: StreamsConfig = StreamsConfig(
         additionalProperties = Properties().apply {
             // Vi har 3 partisjoner, for å ha en standby-replica må vi ha 4 poder.

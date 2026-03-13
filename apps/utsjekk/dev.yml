@@ -64,6 +64,7 @@ spec:
   accessPolicy:
     inbound:
       rules:
+        - application: abetal
         - application: helved-peisen
         - application: snickerboa
         - application: tiltakspenger-saksbehandling-api
