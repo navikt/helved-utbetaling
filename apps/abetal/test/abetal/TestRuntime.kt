@@ -42,7 +42,8 @@ object TestRuntime {
             abetal(
                 config = config, 
                 kafka = kafka, 
-                topology = createTopology(kafka)
+                topology = createTopology(kafka),
+                awaitBeforeStart = {},
             )
         }
     )

@@ -15,7 +15,7 @@ spec:
     periodSeconds: 1
   readiness:
     path: /actuator/ready
-    failureThreshold: 120
+    failureThreshold: 2160
     initialDelay: 10
     periodSeconds: 5
   prometheus:
@@ -46,6 +46,7 @@ spec:
       rules:
         - application: logging
           namespace: nais-system
+        - application: utsjekk
   kafka:
     pool: nav-dev
     streams: true
