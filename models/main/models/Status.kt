@@ -8,18 +8,11 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 
-
 data class StatusReply(
     val status: Status, 
     val detaljer: Detaljer? = null,
     val error: ApiError? = null,
 ) {
-    init {
-        if (status == Status.FEILET && env("NAIS_CLUSTER_NAME", "prod-gcp") == "prod-gcp" ) {
-            appLog.error("Mottok status FEILET: $detaljer")
-            secureLog.error("Mottok status FEILET: $detaljer", error)
-        }
-    }
 
     companion object {
         fun mottatt(oppdrag: Oppdrag): StatusReply = StatusReply(Status.MOTTATT, detaljer(oppdrag))
@@ -27,8 +20,15 @@ data class StatusReply(
         fun ok(): StatusReply = StatusReply(Status.OK)
         fun ok(oppdrag: Oppdrag, error: ApiError) = StatusReply(Status.OK, detaljer(oppdrag), error)
         fun sendt(oppdrag: Oppdrag): StatusReply = StatusReply(Status.HOS_OPPDRAG, detaljer(oppdrag))
-        fun err(oppdrag: Oppdrag, error: ApiError) = StatusReply(Status.FEILET, detaljer(oppdrag), error)
-        fun err(error: ApiError) = StatusReply(Status.FEILET, null, error)
+        fun err(oppdrag: Oppdrag, error: ApiError): StatusReply = StatusReply(Status.FEILET, detaljer(oppdrag), error).also (::logError)
+        fun err(error: ApiError): StatusReply = StatusReply(Status.FEILET, null, error).also (::logError)
+
+        private fun logError(statusReply: StatusReply) {
+            if (env("NAIS_CLUSTER_NAME", "prod-gcp") == "prod-gcp") {
+                appLog.error("Mottok status FEILET")
+                secureLog.error("Mottok status FEILET", statusReply.error)
+            }
+        }
     }
 }
 
