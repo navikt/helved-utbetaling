@@ -11,11 +11,11 @@ spec:
   ingresses:
     - https://utsjekk.intern.dev.nav.no
   liveness:
-    path: /actuator/health
+    path: /actuator/live
     initialDelay: 30
     failureThreshold: 10
   readiness:
-    path: /actuator/health
+    path: /actuator/ready
     initialDelay: 30
     failureThreshold: 10
   prometheus:

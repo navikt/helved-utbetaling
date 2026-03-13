@@ -7,6 +7,12 @@ class VanillaKafkaMock : Streams, KafkaFactory {
 
     val config: StreamsConfig = StreamsConfig("", "", null)
     override fun connect(topology: Topology, config: StreamsConfig, registry: MeterRegistry) {}
+    override fun start(
+        topology: Topology,
+        config: StreamsConfig,
+        registry: MeterRegistry,
+        awaitReady: () -> Boolean,
+    ) = connect(topology, config, registry)
     override fun ready() = true
     override fun live() = true
     override fun visulize(): TopologyVisulizer = TODO("Not supported")

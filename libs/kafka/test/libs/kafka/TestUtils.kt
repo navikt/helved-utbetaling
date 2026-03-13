@@ -58,6 +58,13 @@ internal class Mock : Streams {
         internalStreams = TopologyTestDriver(internalTopology)
     }
 
+    override fun start(
+        topology: Topology,
+        config: StreamsConfig,
+        registry: MeterRegistry,
+        awaitReady: () -> Boolean,
+    ) = connect(topology, config, registry)
+
     internal fun <K : Any, V : Any> inputTopic(topic: Topic<K, V>): TestInputTopic<K, V> =
         internalStreams.createInputTopic(topic.name, topic.serdes.key.serializer(), topic.serdes.value.serializer())
 
