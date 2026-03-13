@@ -10,6 +10,7 @@ RUN jlink \
     --add-modules java.naming \
     --add-modules java.security.jgss \
     --add-modules java.security.sasl \
+    --add-modules java.net.http \
     --add-modules java.sql \
     --add-modules java.compiler \
     --add-modules jdk.unsupported \
