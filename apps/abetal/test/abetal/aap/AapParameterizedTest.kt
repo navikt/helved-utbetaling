@@ -4,6 +4,7 @@ import abetal.*
 import models.*
 import org.junit.jupiter.api.DynamicTest
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * Parameterized tests for AAP consumer.
@@ -34,7 +35,7 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
         ) {
             perioder.forEach { periode ->
                 meldekort(
-                    meldeperiode = periode.uniqueKey,
+                    id = UUID.nameUUIDFromBytes("$sakId-${periode.uniqueKey}-$defaultStønad".toByteArray()),
                     fom = periode.fom,
                     tom = periode.tom,
                     sats = periode.sats,
@@ -49,7 +50,7 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
     }
     
     override fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId {
-        return aapUId(sakId, uniqueKey, stønad as StønadTypeAAP)
+        return UtbetalingId(UUID.nameUUIDFromBytes("$sakId-$uniqueKey-$stønad".toByteArray()))
     }
     
     override fun createMessageDryrun(sakId: String, behandlingId: String, perioder: List<TestPeriode>, vedtakstidspunkt: LocalDateTime): AapUtbetaling {
@@ -61,7 +62,7 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
         ) {
             perioder.forEach { periode ->
                 meldekort(
-                    meldeperiode = periode.uniqueKey,
+                    id = UUID.nameUUIDFromBytes("$sakId-${periode.uniqueKey}-$defaultStønad".toByteArray()),
                     fom = periode.fom,
                     tom = periode.tom,
                     sats = periode.sats,

@@ -20,10 +20,8 @@ class AapTest : ConsumerTestBase() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
-        val meldeperiode1 = "132460781"
-        val meldeperiode2 = "232460781"
-        val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid2 = aapUId(sid.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val uid2 = UtbetalingId(UUID.randomUUID())
 
         val expectedUtbetaling1 = utbetaling(
             action = Action.CREATE,
@@ -49,8 +47,8 @@ class AapTest : ConsumerTestBase() {
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                meldekort(meldeperiode1, 7.jun, 18.jun, 553u, 1077u)
-                meldekort(meldeperiode2, 7.jul, 20.jul, 779u, 2377u)
+                meldekort(uid1.id, 7.jun, 18.jun, 553u, 1077u)
+                meldekort(uid2.id, 7.jul, 20.jul, 779u, 2377u)
             }
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -115,12 +113,9 @@ class AapTest : ConsumerTestBase() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
-        val meldeperiode1 = "132460781"
-        val meldeperiode2 = "232460781"
-        val meldeperiode3 = "132462765"
-        val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid2 = aapUId(sid.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid3 = aapUId(sid.id, meldeperiode3, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val uid2 = UtbetalingId(UUID.randomUUID())
+        val uid3 = UtbetalingId(UUID.randomUUID())
 
         val expectedUtbetaling1 = utbetaling(
             action = Action.CREATE,
@@ -148,9 +143,9 @@ class AapTest : ConsumerTestBase() {
         )
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                meldekort(meldeperiode1, 7.jun, 20.jun, 553u, 1077u)
-                meldekort(meldeperiode2, 8.jul, 19.jul, 779u, 2377u)
-                meldekort(meldeperiode3, 7.aug, 20.aug, 3000u, 3133u)
+                meldekort(uid1.id, 7.jun, 20.jun, 553u, 1077u)
+                meldekort(uid2.id, 8.jul, 19.jul, 779u, 2377u)
+                meldekort(uid3.id, 7.aug, 20.aug, 3000u, 3133u)
             }
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -236,10 +231,8 @@ class AapTest : ConsumerTestBase() {
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
         val transactionId2 = UUID.randomUUID().toString()
-        val meldeperiode1 = "132460781"
-        val meldeperiode2 = "232460781"
-        val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid2 = aapUId(sid.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val uid2 = UtbetalingId(UUID.randomUUID())
 
         val existingUtbetaling = utbetaling(
             action = Action.CREATE,
@@ -269,8 +262,8 @@ class AapTest : ConsumerTestBase() {
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP), setOf(uid1))
         TestRuntime.topics.aap.produce(transactionId2) {
             Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
-                meldekort(meldeperiode1, 3.jun, 14.jun, 100u, 100u)
-                meldekort(meldeperiode2, 17.jun, 28.jun, 200u, 200u)
+                meldekort(uid1.id, 3.jun, 14.jun, 100u, 100u)
+                meldekort(uid2.id, 17.jun, 28.jun, 200u, 200u)
             }
         }
 
@@ -318,8 +311,7 @@ class AapTest : ConsumerTestBase() {
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
         val transactionId2 = UUID.randomUUID().toString()
-        val meldeperiode1 = "132460781"
-        val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+        val uid1 = UtbetalingId(UUID.randomUUID())
         val periodeId = PeriodeId()
 
         val utbetaling = utbetaling(
@@ -350,7 +342,7 @@ class AapTest : ConsumerTestBase() {
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP), setOf(uid1))
         TestRuntime.topics.aap.produce(transactionId2) {
             Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
-                meldekort(meldeperiode1, 3.jun, 14.jun, 80u, 100u)
+                meldekort(uid1.id, 3.jun, 14.jun, 80u, 100u)
             }
         }
         TestRuntime.topics.status.assertThat().has(transactionId2) {
@@ -395,8 +387,7 @@ class AapTest : ConsumerTestBase() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId1 = UUID.randomUUID().toString()
-        val meldeperiode1 = "132460781"
-        val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+        val uid1 = UtbetalingId(UUID.randomUUID())
         val periodeId = PeriodeId()
 
         val existingUtbetaling = utbetaling(
@@ -468,9 +459,9 @@ class AapTest : ConsumerTestBase() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
-        val uid1 = aapUId(sid.id, "132460781", StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid2 = aapUId(sid.id, "232460781", StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid3 = aapUId(sid.id, "132462765", StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val uid2 = UtbetalingId(UUID.randomUUID())
+        val uid3 = UtbetalingId(UUID.randomUUID())
 
         val utbetaling1 = utbetaling(
             action = Action.CREATE,
@@ -500,8 +491,8 @@ class AapTest : ConsumerTestBase() {
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP), setOf(uid1, uid2))
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
-                meldekort("132460781", 2.sep, 13.sep, 600u, 600u)
-                meldekort("132462765", 30.sep, 10.okt, 600u, 600u)
+                meldekort(uid1.id, 2.sep, 13.sep, 600u, 600u)
+                meldekort(uid3.id, 30.sep, 10.okt, 600u, 600u)
             }
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -548,17 +539,15 @@ class AapTest : ConsumerTestBase() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
         val transactionId = UUID.randomUUID().toString()
-        val meldeperiode1 = "132460781"
-        val meldeperiode2 = "232460781"
-        val uid1 = aapUId(sid.id, meldeperiode1, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-        val uid2 = aapUId(sid.id, meldeperiode2, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val uid2 = UtbetalingId(UUID.randomUUID())
 
         val avvent = Avvent(1.jun25, 30.jun25, årsak = Årsak.AVVENT_AVREGNING)
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id, avvent = avvent) {
-                meldekort(meldeperiode1, 7.jun, 18.jun, 553u, 1077u)
-                meldekort(meldeperiode2, 7.jul, 20.jul, 779u, 2377u)
+                meldekort(uid1.id, 7.jun, 18.jun, 553u, 1077u)
+                meldekort(uid2.id, 7.jul, 20.jul, 779u, 2377u)
             }
         }
         TestRuntime.topics.status.assertThat().has(transactionId)
