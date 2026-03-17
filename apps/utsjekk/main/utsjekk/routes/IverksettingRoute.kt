@@ -25,7 +25,7 @@ fun Route.iverksetting(
             if(request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
             if (request.meldeperiode != null && request.uidToStønad != null) badRequest("mutual exclusive: 'meldeperiode' and 'uidToStønad'")
             val utbetalinger = migrator.mapUtbetalinger(fagsystem, request)
-            utbetalinger.forEach { migrator.migrate(it) }
+            utbetalinger.forEach { migrator.migrate(request, it) }
             call.respond(HttpStatusCode.OK)
         }
 

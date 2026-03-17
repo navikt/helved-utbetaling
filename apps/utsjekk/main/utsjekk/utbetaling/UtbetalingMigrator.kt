@@ -11,8 +11,6 @@ import models.PeriodeId
 import models.Personident
 import models.SakId
 import models.StønadTypeAAP
-import utsjekk.partition
-import java.time.LocalDate
 import java.util.*
 
 data class MigrationRequest(
@@ -48,7 +46,7 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
                 val lastAvvent = lastAvventOnSak(utsjekk.utbetaling.SakId(dao.data.sakId.id))
                 val utbet = utbetaling(uid, request, dao.data, lastAvvent)
                 val key = utbet.uid.id.toString()
-                utbetalingProducer.send(key, utbet, partition(key))
+                utbetalingProducer.send(key, utbet, mapOf("migrated" to request.toString()))
             }
         }
     }
@@ -85,7 +83,7 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
                     val migrationReq = MigrationRequest(meldeperiode = item.meldeperiode, id = item.id)
                     val utbet = utbetaling(uid, migrationReq, dao.data, lastAvvent)
                     val key = utbet.uid.id.toString()
-                    utbetalingProducer.send(key, utbet, partition(key))
+                    utbetalingProducer.send(key, utbet, mapOf("migrated" to request.toString()))
                 }
             }
         }
