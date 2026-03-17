@@ -29,9 +29,9 @@ class IverksettingMigrator(
     val iverksettingService: IverksettingService,
     val utbetalingProducer: KafkaProducer<String, Utbetaling>,
 ) {
-    fun migrate(utbetaling: Utbetaling) {
+    fun migrate(req: MigrationRequest, utbetaling: Utbetaling) {
         val key = utbetaling.uid.id.toString()
-        utbetalingProducer.send(key, utbetaling, partition(key))
+        utbetalingProducer.send(key, utbetaling, mapOf("migrated" to req.toString()))
     }
 
     suspend fun mapUtbetalinger(fs: models.kontrakter.Fagsystem, req: MigrationRequest): List<Utbetaling> {
