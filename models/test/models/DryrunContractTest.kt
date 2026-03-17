@@ -144,7 +144,7 @@ class DryrunContractTest {
     @Test
     fun `AapUtbetalingsdag schema fields match Kotlin model`() {
         val specProps = schemaProperties("AapUtbetalingsdag")
-        val kotlinFields = setOf("meldeperiode", "dato", "sats", "utbetaltBeløp")
+        val kotlinFields = setOf("meldeperiode", "fom", "tom", "sats", "utbetaltBeløp")
         assertFieldsMatch(kotlinFields, specProps.keys, "AapUtbetalingsdag")
     }
 
@@ -342,7 +342,8 @@ class DryrunContractTest {
             utbetalinger = listOf(
                 AapUtbetalingsdag(
                     meldeperiode = "2025-01",
-                    dato = LocalDate.of(2025, 1, 6),
+                    fom = LocalDate.of(2025, 1, 6),
+                    tom = LocalDate.of(2025, 1, 6),
                     sats = 1000u,
                     utbetaltBeløp = 800u,
                 )

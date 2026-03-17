@@ -44,7 +44,7 @@ class AapTest : ConsumerTestBase() {
 
         val expectedUtbetaling2 = expectedUtbetaling1.copy(
             uid = uid2,
-            perioder = listOf(periode(8.jul, 19.jul, 779u, 2377u))
+            perioder = listOf(periode(7.jul, 20.jul, 779u, 2377u))
         ) 
 
         TestRuntime.topics.aap.produce(transactionId) {
@@ -56,7 +56,7 @@ class AapTest : ConsumerTestBase() {
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Aap.mottatt {
                 linje(bid, 7.jun, 18.jun, 1077u, 553u)
-                linje(bid, 8.jul, 19.jul, 2377u, 779u)
+                linje(bid, 7.jul, 20.jul, 2377u, 779u)
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()

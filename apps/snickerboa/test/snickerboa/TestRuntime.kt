@@ -43,7 +43,8 @@ fun aapUtbetaling(dryrun: Boolean = false) = AapUtbetaling(
     utbetalinger = listOf(
         AapUtbetalingsdag(
             meldeperiode = "2025-01",
-            dato = LocalDate.of(2025, 1, 6),
+            fom = LocalDate.of(2025, 1, 6),
+            tom = LocalDate.of(2025, 1, 6),
             sats = 1000u,
             utbetaltBeløp = 800u,
         )

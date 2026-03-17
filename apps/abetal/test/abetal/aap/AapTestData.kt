@@ -24,12 +24,7 @@ fun MutableList<AapUtbetalingsdag>.meldekort(
     utbetaltBeløp: UInt,
     sats: UInt,
 ) {
-    for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
-        val dato = fom.plusDays(i)
-        if (!dato.erHelg()) {
-            add(AapUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp))
-        }
-    }
+    add(AapUtbetalingsdag(meldeperiode, fom, tom, sats, utbetaltBeløp))
 }
 
 object Aap {
@@ -58,14 +53,7 @@ object Aap {
         sats: UInt,
         utbetaltBeløp: UInt = sats,
     ): List<AapUtbetalingsdag> {
-        return buildList {
-            for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
-                val dato = fom.plusDays(i)
-                if (!dato.erHelg()) {
-                    add(AapUtbetalingsdag(meldeperiode, dato, sats, utbetaltBeløp))
-                }
-            }
-        }
+        return listOf(AapUtbetalingsdag(meldeperiode, fom, tom, sats, utbetaltBeløp))
     }
 
     fun mottatt(linjer: MutableList<DetaljerLinje>.() -> Unit): StatusReply {

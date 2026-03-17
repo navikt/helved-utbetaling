@@ -346,20 +346,25 @@ components:
 
     AapUtbetalingsdag:
       type: object
-      description: En enkelt utbetalingsdag for AAP.
+      description: En utbetalingsperiode for AAP.
       required:
         - meldeperiode
-        - dato
+        - fom
+        - tom
         - sats
         - utbetaltBeløp
       properties:
         meldeperiode:
           type: string
           description: Identifikator for meldeperioden.
-        dato:
+        fom:
           type: string
           format: date
-          description: Dato for utbetalingsdagen.
+          description: Startdato for utbetalingsperioden.
+        tom:
+          type: string
+          format: date
+          description: Sluttdato for utbetalingsperioden.
         sats:
           type: integer
           minimum: 0
@@ -367,7 +372,7 @@ components:
         utbetaltBeløp:
           type: integer
           minimum: 0
-          description: Faktisk utbetalt belop for denne dagen.
+          description: Faktisk utbetalt belop for denne perioden.
 
     Avvent:
       type: object
