@@ -19,13 +19,14 @@ data class AapUtbetaling(
 
 data class AapUtbetalingsdag(
     val meldeperiode: String,
-    val dato: LocalDate,
+    val fom: LocalDate,
+    val tom: LocalDate,
     val sats: UInt,
     val utbetaltBeløp: UInt,
 ) {
     fun into(): Utbetalingsperiode = Utbetalingsperiode(
-        fom = dato,
-        tom = dato,
+        fom = fom,
+        tom = tom,
         beløp = utbetaltBeløp,
         vedtakssats = sats,
     )
@@ -37,17 +38,17 @@ fun aapUId(sakId: String, meldeperiode: String, stønad: StønadTypeAAP): Utbeta
 }
 
 private fun perioder(perioder: List<AapUtbetalingsdag>): List<Utbetalingsperiode> {
-    return perioder.sortedBy { it.dato }
+    return perioder.sortedBy { it.fom }
         .groupBy { listOf(it.utbetaltBeløp, it.sats) }
         .map { (_, p) ->
             p.splitWhen { a, b -> 
-                val harSammenhengendeDager = a.dato.plusDays(1).equals(b.dato)
-                val harSammenhengendeUker = a.dato.nesteUkedag().equals(b.dato)
+                val harSammenhengendeDager = a.tom.plusDays(1).equals(b.fom)
+                val harSammenhengendeUker = a.tom.nesteUkedag().equals(b.fom)
                 !harSammenhengendeUker && !harSammenhengendeDager
             }.map {
                 Utbetalingsperiode(
-                    fom = it.first().dato,
-                    tom = it.last().dato,
+                    fom = it.first().fom,
+                    tom = it.last().tom,
                     beløp = it.first().utbetaltBeløp,
                     vedtakssats = it.first().sats,
                 )
