@@ -348,15 +348,16 @@ components:
       type: object
       description: En utbetalingsperiode for AAP.
       required:
-        - meldeperiode
+        - id
         - fom
         - tom
         - sats
         - utbetaltBeløp
       properties:
-        meldeperiode:
+        id:
           type: string
-          description: Identifikator for meldeperioden.
+          format: uuid
+          description: Unik identifikator for utbetalingsperioden.
         fom:
           type: string
           format: date

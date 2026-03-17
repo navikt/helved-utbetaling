@@ -42,7 +42,7 @@ fun aapUtbetaling(dryrun: Boolean = false) = AapUtbetaling(
     ident = "12345678901",
     utbetalinger = listOf(
         AapUtbetalingsdag(
-            meldeperiode = "2025-01",
+            id = UUID.randomUUID(),
             fom = LocalDate.of(2025, 1, 6),
             tom = LocalDate.of(2025, 1, 6),
             sats = 1000u,

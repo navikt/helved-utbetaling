@@ -13,33 +13,26 @@ import models.SakId
 import models.StønadTypeAAP
 import java.util.*
 
-data class MigrationRequest(
-    val meldeperiode: String? = null,
-    val id: UUID? = null,
-)
+/**
+ * @param id er den nye IDen som skal refereres til på Kafka
+ */
+data class MigrationRequest(val id: UUID)
 
 /**
  * @param uid er utbetalingsId fra REST-endepunktet
  * @param id er den nye IDen som skal refereres til på Kafka
- * @param meldeperiode er alternativ til id dersom man ikke får til å bruke en UUID
  */
-data class MigrationBatchItem(
-    val uid: UUID,
-    val meldeperiode: String? = null,
-    val id: UUID? = null,
-)
+data class MigrationBatchItem(val uid: UUID, val id: UUID)
 
+/**
+ * One shot migrering av fler utbetalingsIDer (f.eks alle for samme sak)
+ * @param items er en liste med utbetalingsIDer
+ */
 data class MigrationBatchRequest(val items: List<MigrationBatchItem>)
 
 class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, models.Utbetaling>) {
 
     suspend fun transfer(uid: UtbetalingId, request: MigrationRequest) {
-        if(request.meldeperiode == null && request.id == null) {
-            badRequest("meldeperiode eller id må være satt")
-        }
-        if (request.meldeperiode != null && request.id != null) {
-            badRequest("kan ikke sette både id og meldeperiode")
-        }
         withContext(Jdbc.context) {
             transaction {
                 val dao = UtbetalingDao.findOrNull(uid) ?: notFound("Utbetaling $uid")
@@ -52,17 +45,8 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
     }
 
     suspend fun transferSak(request: MigrationBatchRequest) {
-        if (request.items.isEmpty()) {
-            badRequest("items kan ikke være tom")
-        }
-        request.items.forEach { item ->
-            if (item.meldeperiode == null && item.id == null) {
-                badRequest("meldeperiode eller id må være satt for uid ${item.uid}")
-            }
-            if (item.meldeperiode != null && item.id != null) {
-                badRequest("kan ikke sette både id og meldeperiode for uid ${item.uid}")
-            }
-        }
+        if (request.items.isEmpty()) badRequest("items kan ikke være tom")
+
         withContext(Jdbc.context) {
             transaction {
                 // Look up all items and validate they belong to the same sak
@@ -80,7 +64,7 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
 
                 for ((index, item) in request.items.withIndex()) {
                     val (uid, dao) = daos[index]
-                    val migrationReq = MigrationRequest(meldeperiode = item.meldeperiode, id = item.id)
+                    val migrationReq = MigrationRequest(id = item.id)
                     val utbet = utbetaling(uid, migrationReq, dao.data, lastAvvent)
                     val key = utbet.uid.id.toString()
                     utbetalingProducer.send(key, utbet, mapOf("migrated" to request.toString()))
@@ -102,15 +86,11 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
         from: Utbetaling,
         lastAvvent: models.Avvent?,
     ): models.Utbetaling { 
-        val uid = req.id
-            ?.let { models.UtbetalingId(it)}
-            ?: aapUId(from.sakId.id, req.meldeperiode!!, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING)
-
        return models.Utbetaling(
             dryrun = false,
             originalKey = transactionId.id.toString(),
             fagsystem = Fagsystem.AAP,
-            uid = uid,
+            uid = models.UtbetalingId(req.id),
             action = Action.CREATE,
             førsteUtbetalingPåSak = from.erFørsteUtbetaling ?: false,
             sakId = SakId(from.sakId.id),

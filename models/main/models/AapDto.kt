@@ -3,6 +3,7 @@ package models
 import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.UUID
 
 data class AapUtbetaling(
     val dryrun: Boolean = false,
@@ -18,7 +19,7 @@ data class AapUtbetaling(
 )
 
 data class AapUtbetalingsdag(
-    val meldeperiode: String,
+    val id: UUID,
     val fom: LocalDate,
     val tom: LocalDate,
     val sats: UInt,
@@ -30,11 +31,6 @@ data class AapUtbetalingsdag(
         beløp = utbetaltBeløp,
         vedtakssats = sats,
     )
-}
-
-fun aapUId(sakId: String, meldeperiode: String, stønad: StønadTypeAAP): UtbetalingId {
-    val uuid = uuid(SakId(sakId), Fagsystem.AAP, meldeperiode, stønad)
-    return UtbetalingId(uuid)
 }
 
 private fun perioder(perioder: List<AapUtbetalingsdag>): List<Utbetalingsperiode> {
@@ -74,16 +70,12 @@ object AapDto {
         val saksbehandler = aapUtbetaling.saksbehandler ?: "kelvin"
         val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, AapUtbetaling?>> = aapUtbetaling
             .utbetalinger
-            .groupBy { it.meldeperiode }
-            .map { (meldeperiode, utbetalinger) ->
-                aapUId(aapUtbetaling.sakId, meldeperiode, StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING) to aapUtbetaling.copy(
-                    utbetalinger = utbetalinger
-                )
-            }
+            .groupBy { it.id }
+            .map { (id, utbetalinger) -> UtbetalingId(id) to aapUtbetaling.copy(utbetalinger = utbetalinger) }
             .toMutableList()
 
         if (uids != null) {
-            val aapUids = utbetalingerPerMeldekort.map { (aapUid, _) -> aapUid }
+            val aapUids = utbetalingerPerMeldekort.map { (uid, _) -> uid }
             val missingMeldeperioder = uids.filter { it !in aapUids }.map { it to null }
             utbetalingerPerMeldekort.addAll(missingMeldeperioder)
         }

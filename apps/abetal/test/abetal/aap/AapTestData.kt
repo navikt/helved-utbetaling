@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import models.*
 import abetal.*
+import java.util.UUID
 
 fun MutableList<DetaljerLinje>.linje(
     behandlingId: BehandlingId,
@@ -18,13 +19,13 @@ fun MutableList<DetaljerLinje>.linje(
 }
 
 fun MutableList<AapUtbetalingsdag>.meldekort(
-    meldeperiode: String,
+    id: UUID,
     fom: LocalDate,
     tom: LocalDate,
     utbetaltBeløp: UInt,
     sats: UInt,
 ) {
-    add(AapUtbetalingsdag(meldeperiode, fom, tom, sats, utbetaltBeløp))
+    add(AapUtbetalingsdag(id, fom, tom, sats, utbetaltBeløp))
 }
 
 object Aap {
@@ -47,13 +48,13 @@ object Aap {
     )
 
     fun meldekort(
-        meldeperiode: String,
+        id: UUID,
         fom: LocalDate,
         tom: LocalDate,
         sats: UInt,
         utbetaltBeløp: UInt = sats,
     ): List<AapUtbetalingsdag> {
-        return listOf(AapUtbetalingsdag(meldeperiode, fom, tom, sats, utbetaltBeløp))
+        return listOf(AapUtbetalingsdag(id, fom, tom, sats, utbetaltBeløp))
     }
 
     fun mottatt(linjer: MutableList<DetaljerLinje>.() -> Unit): StatusReply {
