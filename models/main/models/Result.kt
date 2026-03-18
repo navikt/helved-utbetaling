@@ -85,3 +85,8 @@ fun <V, E> Result<Result<V, E>, E>.flatten(): Result<V, E> = when (this) {
     is Result.Err -> this
 }
 
+inline fun <V, E> Result<V, E>.getOrElse(onFailure: (E) -> V): V = when (this) {
+    is Result.Ok -> value
+    is Result.Err -> onFailure(error)
+}
+
