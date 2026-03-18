@@ -126,7 +126,7 @@ fun Topology.dpStream(
                 }
                 .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
                 .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-                .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.DAGPENGER, this) }
+                .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
                 .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.DAGPENGER, this) }
         }
 }
@@ -163,7 +163,7 @@ fun Topology.aapStream(
         }
         .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
         .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-        .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.AAP, this) }
+        .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
         .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.AAP, this) }
 }
 
@@ -206,7 +206,7 @@ fun Topology.tsStream(
                 }
                 .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
                 .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-                .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.TILLEGGSSTØNADER, this) }
+                .branch({ it is StreamResult.OppdragOk },  ::replyOppdragOk)
                 .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILLEGGSSTØNADER, this) }
         }
 }
@@ -242,7 +242,7 @@ fun Topology.tpStream(
         }
         .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
         .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-        .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.TILTAKSPENGER, this) }
+        .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
         .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILTAKSPENGER, this) }
 }
 
@@ -276,7 +276,7 @@ fun Topology.historiskStream(
         }
         .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
         .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-        .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.HISTORISK, this) }
+        .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
         .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.HISTORISK, this) }
 }
 
@@ -410,12 +410,11 @@ sealed interface StreamResult {
     data class SimuleringError(val status: StatusReply) : StreamResult
 }
 
-private fun replyOppdragOk(fagsystem: Fagsystem, branch: MappedStream<String, StreamResult>) {
+private fun replyOppdragOk(branch: MappedStream<String, StreamResult>) {
     val result = branch.map { (it as StreamResult.OppdragOk).oppdrag }
     result.saveUtbetalingerAsPending()
     result.sendOppdrag()
     result.replyOkIfIdempotentOppdrag()
-    result.replyOkUtenEndringOppdrag(fagsystem)
 }
 
 private fun replySimuleringOk(fagsystem: Fagsystem, branch: MappedStream<String, StreamResult>) {
@@ -451,17 +450,6 @@ private fun MappedStream<String, DryrunAggregate>.replyOkIfIdempotentSimulering(
             StatusReply.ok().copy(simulering = true)
         }
         .produce(Topics.status)
-}
-
-private fun MappedStream<String, List<OppdragAggregate>>.replyOkUtenEndringOppdrag(fagsystem: Fagsystem) {
-    val ok = this
-        .map { Info.OkUtenEndring(fagsystem) }
-
-    ok
-        .branch({ (it as Info).fagsystem == Fagsystem.AAP }) { produce(Topics.dryrunAap) }
-        .branch({ (it as Info).fagsystem == Fagsystem.DAGPENGER }) { produce(Topics.dryrunDp) }
-        .branch({ (it as Info).fagsystem == Fagsystem.TILLEGGSSTØNADER }) { produce(Topics.dryrunTs) }
-        .branch({ (it as Info).fagsystem == Fagsystem.TILTAKSPENGER }) { produce(Topics.dryrunTp) }
 }
 
 private fun MappedStream<String, DryrunAggregate>.replyOkUtenEndringSimulering(fagsystem: Fagsystem) {
