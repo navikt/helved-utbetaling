@@ -466,7 +466,7 @@ private fun MappedStream<String, List<OppdragAggregate>>.replyOkUtenEndringOppdr
 
 private fun MappedStream<String, DryrunAggregate>.replyOkUtenEndringSimulering(fagsystem: Fagsystem) {
     val ok = this
-        .filter { it.isRequested }
+        .filter { it.isRequested && it.requests.isEmpty() }
         .map { Info.OkUtenEndring(fagsystem) }
 
     ok
