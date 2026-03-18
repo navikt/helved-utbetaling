@@ -44,7 +44,7 @@ class BigQueryService(
                     "fagsystem"        to utbetaling.fagsystem.toName(),
                     "stonad"           to utbetaling.stønad.name,
                     "belop"            to periode.beløp.toLong(),
-                    "sendt"            to systemTimeMs
+                    "sendt"            to systemTimeMs?.let { Instant.ofEpochMilli(it).toString() }
                 ).filterValues { it != null }
             )
         }
@@ -69,16 +69,14 @@ class BigQueryService(
         )
     )
 
-    fun upsertStatus(key: String, status: StatusReply, timestampMs: Long?, fagsystem: String?) {
+    fun upsertStatus(key: String, status: StatusReply, systemTimeMs: Long?, fagsystem: String?) {
         if (status.simulering) return
         if (status.status.name !in setOf("FEILET", "OK")) return
-
-        val processedAt = timestampMs?.let { Instant.ofEpochMilli(it) }.toString()
 
         insert(statusTableId, key, mapOf(
             "key"       to key,
             "status"    to status.status.name,
-            "sendt"     to processedAt,
+            "sendt"     to systemTimeMs?.let { Instant.ofEpochMilli(it).toString() },
             "fagsystem" to fagsystem
             ))
     }
@@ -105,7 +103,7 @@ class BigQueryService(
         insert(oppdragTableId, key, mapOf(
             "behandling"     to henvisning,
             "sak"            to sakId,
-            "sendt"          to systemTimeMs,
+            "sendt"          to systemTimeMs?.let { Instant.ofEpochMilli(it).toString() },
             "kvittert"       to tidspktMelding,
             "fagområde"      to fagsystem,
         ))
