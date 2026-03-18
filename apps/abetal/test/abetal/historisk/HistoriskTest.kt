@@ -609,4 +609,141 @@ internal class HistoriskTest : ConsumerTestBase() {
             Historisk.feilet(ApiError(400, "Kan ikke endre 'sakId'", DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID.doc))
         }
     }
+
+    @Test
+    fun `simulation - error sets simulering flag on status`() {
+        val sid1 = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+        val periodeId = PeriodeId()
+
+        val existingUtbetaling = utbetaling(
+            action = Action.CREATE,
+            uid = uid,
+            sakId = sid1,
+            behandlingId = bid,
+            originalKey = UUID.randomUUID().toString(),
+            stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
+            periodetype = Periodetype.EN_GANG,
+            lastPeriodeId = periodeId,
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = 6.jun.atStartOfDay(),
+            beslutterId = Navident("historisk"),
+            saksbehandlerId = Navident("historisk"),
+            fagsystem = Fagsystem.HISTORISK,
+        ) {
+            periode(1.jun, 5.jun, 1000u, null)
+        }
+        TestRuntime.topics.utbetalinger.produce("$uid", existingUtbetaling)
+        TestRuntime.topics.saker.produce(SakKey(sid1, Fagsystem.HISTORISK), setOf(uid))
+
+        TestRuntime.topics.historisk.produce(transactionId) {
+            Historisk.utbetaling(
+                uid = uid,
+                sakId = sid1.id,
+                behandlingId = bid.id,
+                dryrun = true,
+            ) {
+                Historisk.periode(
+                    fom = LocalDate.of(2024, 6, 10),
+                    tom = LocalDate.of(2024, 6, 1), // valideringsfeil
+                    beløp = 1000u,
+                )
+            }
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) { statusReply ->
+                assertEquals(Status.FEILET, statusReply.status)
+                assertEquals(true, statusReply.simulering)
+            }
+
+        TestRuntime.topics.oppdrag.assertThat().hasNot(transactionId)
+        TestRuntime.topics.simulering.assertThat().hasNot(transactionId)
+    }
+
+    @Test
+    fun `simulation - idempotent dryrun sets simulering flag on status`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        val existingUtbetaling = utbetaling(
+            action = Action.CREATE,
+            uid = uid,
+            sakId = sid,
+            behandlingId = bid,
+            originalKey = UUID.randomUUID().toString(),
+            stønad = StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER,
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = 14.jun.atStartOfDay(),
+            beslutterId = Navident("historisk"),
+            saksbehandlerId = Navident("historisk"),
+            fagsystem = Fagsystem.HISTORISK,
+        ) {
+            periode(1.jan, 2.jan, 100u, null)
+        }
+        TestRuntime.topics.utbetalinger.produce("$uid", existingUtbetaling)
+
+        TestRuntime.topics.historisk.produce(transactionId) {
+            Historisk.utbetaling(uid, sid.id, bid.id, dryrun = true) {
+                Historisk.periode(
+                    fom = 1.jan,
+                    tom = 2.jan,
+                    beløp = 100u,
+                )
+            }
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) { statusReply ->
+                assertEquals(Status.OK, statusReply.status)
+                assertEquals(true, statusReply.simulering)
+            }
+
+        TestRuntime.topics.oppdrag.assertThat().hasNot(transactionId)
+        TestRuntime.topics.simulering.assertThat().hasNot(transactionId)
+    }
+
+    @Test
+    fun `oppdrag - does not set simulering flag on status`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        TestRuntime.topics.historiskIntern.produce(transactionId) {
+            Historisk.utbetaling(uid, sid.id, bid.id) {
+                Historisk.periode(
+                    fom = LocalDate.of(2021, 6, 7),
+                    tom = LocalDate.of(2021, 6, 18),
+                    beløp = 1077u,
+                )
+            }
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) { statusReply ->
+                assertEquals(Status.MOTTATT, statusReply.status)
+                assertEquals(false, statusReply.simulering)
+            }
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .get(transactionId)
+
+        kvitterOk(transactionId, oppdrag, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+    }
+
+
 }
