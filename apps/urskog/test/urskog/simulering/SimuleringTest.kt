@@ -22,9 +22,9 @@ class SimuleringTest {
         TestRuntime.topics.dryrunTilleggsstønader.assertThat()
             .has(uid)
             .with(uid) {
-                val expected = models.v1.Simulering(
+                val expected = v1.Simulering(
                     oppsummeringer = listOf(
-                        models.v1.OppsummeringForPeriode(
+                        v1.OppsummeringForPeriode(
                             fom = LocalDate.of(2026, 2, 4),
                             tom = LocalDate.of(2026, 2, 4),
                             tidligereUtbetalt = 970,
@@ -33,58 +33,58 @@ class SimuleringTest {
                             totalFeilutbetaling = 630,
                         ),
                     ),
-                    detaljer = models.v1.SimuleringDetaljer(
+                    detaljer = v1.SimuleringDetaljer(
                         gjelderId = "12345678910",
                         datoBeregnet = LocalDate.of(2026, 2, 12),
                         totalBeløp = 0,
                         perioder = listOf(
-                            models.v1.Periode(
+                            v1.Periode(
                                 fom = LocalDate.of(2026, 2, 4),
                                 tom = LocalDate.of(2026, 2, 4),
                                 posteringer = listOf(
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLSTDR,
                                         sakId = SakId("200001495"),
                                         fom = LocalDate.of(2026, 2, 4),
                                         tom = LocalDate.of(2026, 2, 4),
                                         beløp = 630,
-                                        type = models.v1.PosteringType.YTELSE,
+                                        type = v1.PosteringType.YTELSE,
                                         klassekode = "TSDRASISP3-OP"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLSTDR,
                                         sakId = SakId("200001495"),
                                         fom = LocalDate.of(2026, 2, 4),
                                         tom = LocalDate.of(2026, 2, 4),
                                         beløp = 340,
-                                        type = models.v1.PosteringType.YTELSE,
+                                        type = v1.PosteringType.YTELSE,
                                         klassekode = "TSDRASISP3-OP"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLSTDR,
                                         sakId = SakId("200001495"),
                                         fom = LocalDate.of(2026, 2, 4),
                                         tom = LocalDate.of(2026, 2, 4),
                                         beløp = 630,
-                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        type = v1.PosteringType.FEILUTBETALING,
                                         klassekode = "KL_KODE_FEIL_TILLST"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLSTDR,
                                         sakId = SakId("200001495"),
                                         fom = LocalDate.of(2026, 2, 4),
                                         tom = LocalDate.of(2026, 2, 4),
                                         beløp = -630,
-                                        type = models.v1.PosteringType.MOTPOSTERING,
+                                        type = v1.PosteringType.MOTPOSTERING,
                                         klassekode = "TBMOTOBS"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLSTDR,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLSTDR,
                                         sakId = SakId("200001495"),
                                         fom = LocalDate.of(2026, 2, 4),
                                         tom = LocalDate.of(2026, 2, 4),
                                         beløp = -970,
-                                        type = models.v1.PosteringType.YTELSE,
+                                        type = v1.PosteringType.YTELSE,
                                         klassekode = "TSDRASISP3-OP"
                                     ),
                                 )
@@ -183,9 +183,9 @@ class SimuleringTest {
         TestRuntime.topics.dryrunTilleggsstønader.assertThat()
             .has(uid)
             .with(uid, 0) {
-                val expected = models.v1.Simulering(
+                val expected = v1.Simulering(
                     listOf(
-                        models.v1.OppsummeringForPeriode(
+                        v1.OppsummeringForPeriode(
                             fom = LocalDate.of(2025, 8, 1),
                             tom = LocalDate.of(2025, 8, 1),
                             tidligereUtbetalt = 4505,
@@ -193,7 +193,7 @@ class SimuleringTest {
                             totalEtterbetaling = 0, 
                             totalFeilutbetaling = 212, 
                         ),
-                        models.v1.OppsummeringForPeriode(
+                        v1.OppsummeringForPeriode(
                             fom = LocalDate.of(2026, 1, 27),
                             tom = LocalDate.of(2026, 1, 27),
                             tidligereUtbetalt = 0,
@@ -202,177 +202,177 @@ class SimuleringTest {
                             totalFeilutbetaling = 0, 
                         )
                     ),
-                    models.v1.SimuleringDetaljer(
+                    v1.SimuleringDetaljer(
                         gjelderId = "12345678910", 
                         datoBeregnet = LocalDate.of(2026, 1, 20), 
                         totalBeløp = 4499, 
                         perioder = listOf(
-                            models.v1.Periode(
+                            v1.Periode(
                                 fom = LocalDate.of(2025, 8, 1),
                                 tom = LocalDate.of(2025, 8, 1),
                                 posteringer = listOf(
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("223"),
                                         fom = LocalDate.of(2025, 8, 1),
                                         tom = LocalDate.of(2025, 8, 1),
                                         beløp = 638,
-                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        type = v1.PosteringType.FEILUTBETALING,
                                         klassekode = "KL_KODE_JUST_ARBYT"
                                     ),
 
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("223"),
                                         fom = LocalDate.of(2025, 8, 1),
                                         tom = LocalDate.of(2025, 8, 1),
                                         beløp = -638,
-                                        type = models.v1.PosteringType.YTELSE,
+                                        type = v1.PosteringType.YTELSE,
                                         klassekode = "TSTBASISP2-OP"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("223"),
                                         fom = LocalDate.of(2025, 8, 1),
                                         tom = LocalDate.of(2025, 8, 1),
                                         beløp = 638,
-                                        type = models.v1.PosteringType.MOTPOSTERING,
+                                        type = v1.PosteringType.MOTPOSTERING,
                                         klassekode = "TBMOTOBS"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("223"),
                                         fom = LocalDate.of(2025, 8, 1),
                                         tom = LocalDate.of(2025, 8, 1),
                                         beløp = -638,
-                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        type = v1.PosteringType.FEILUTBETALING,
                                         klassekode = "KL_KODE_FEIL_ARBYT"
                                     ),
                                 )
                             ),
-                            models.v1.Periode(
+                            v1.Periode(
                                 fom = LocalDate.of(2025, 8, 11),
                                 tom = LocalDate.of(2025, 8, 11),
                                 posteringer = listOf(
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("4819"),
                                         fom = LocalDate.of(2025, 8, 11),
                                         tom = LocalDate.of(2025, 8, 11),
                                         beløp = 3867,
-                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        type = v1.PosteringType.FEILUTBETALING,
                                         klassekode = "KL_KODE_JUST_ARBYT"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("4819"),
                                         fom = LocalDate.of(2025, 8, 11),
                                         tom = LocalDate.of(2025, 8, 11),
                                         beløp = -3867,
-                                        type = models.v1.PosteringType.YTELSE,
+                                        type = v1.PosteringType.YTELSE,
                                         klassekode = "TSLMASISP2-OP"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("4819"),
                                         fom = LocalDate.of(2025, 8, 11),
                                         tom = LocalDate.of(2025, 8, 11),
                                         beløp = 3867,
-                                        type = models.v1.PosteringType.MOTPOSTERING,
+                                        type = v1.PosteringType.MOTPOSTERING,
                                         klassekode = "TBMOTOBS"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("4819"),
                                         fom = LocalDate.of(2025, 8, 11),
                                         tom = LocalDate.of(2025, 8, 11),
                                         beløp = -3867,
-                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        type = v1.PosteringType.FEILUTBETALING,
                                         klassekode = "KL_KODE_FEIL_ARBYT"
                                     ),
                                 )
                             ),
-                            models.v1.Periode(
+                            v1.Periode(
                                 fom = LocalDate.of(2025, 8, 27),
                                 tom = LocalDate.of(2025, 8, 27),
                                 posteringer = listOf(
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("223"),
                                         fom = LocalDate.of(2025, 8, 27),
                                         tom = LocalDate.of(2025, 8, 27),
                                         beløp = -106,
-                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        type = v1.PosteringType.FEILUTBETALING,
                                         klassekode = "KL_KODE_JUST_ARBYT"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("223"),
                                         fom = LocalDate.of(2025, 8, 27),
                                         tom = LocalDate.of(2025, 8, 27),
                                         beløp = 106,
-                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        type = v1.PosteringType.FEILUTBETALING,
                                         klassekode = "KL_KODE_FEIL_ARBYT"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("223"),
                                         fom = LocalDate.of(2025, 8, 27),
                                         tom = LocalDate.of(2025, 8, 27),
                                         beløp = -106,
-                                        type = models.v1.PosteringType.MOTPOSTERING,
+                                        type = v1.PosteringType.MOTPOSTERING,
                                         klassekode = "TBMOTOBS"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("223"),
                                         fom = LocalDate.of(2025, 8, 27),
                                         tom = LocalDate.of(2025, 8, 27),
                                         beløp = 106,
-                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        type = v1.PosteringType.FEILUTBETALING,
                                         klassekode = "KL_KODE_FEIL_ARBYT"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("223"),
                                         fom = LocalDate.of(2025, 8, 27),
                                         tom = LocalDate.of(2025, 8, 27),
                                         beløp = -106,
-                                        type = models.v1.PosteringType.MOTPOSTERING,
+                                        type = v1.PosteringType.MOTPOSTERING,
                                         klassekode = "TBMOTOBS"
                                     ),
 
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("4819"),
                                         fom = LocalDate.of(2025, 8, 27),
                                         tom = LocalDate.of(2025, 8, 27),
                                         beløp = -4505,
-                                        type = models.v1.PosteringType.FEILUTBETALING,
+                                        type = v1.PosteringType.FEILUTBETALING,
                                         klassekode = "KL_KODE_JUST_ARBYT"
                                     ),
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("4819"),
                                         fom = LocalDate.of(2025, 8, 27),
                                         tom = LocalDate.of(2025, 8, 27),
                                         beløp = 4505,
-                                        type = models.v1.PosteringType.YTELSE,
+                                        type = v1.PosteringType.YTELSE,
                                         klassekode = "TSLMASISP2-OP"
                                     ),
                                 )
                             ),
-                            models.v1.Periode(
+                            v1.Periode(
                                 fom = LocalDate.of(2026, 1, 27),
                                 tom = LocalDate.of(2026, 1, 27),
                                 posteringer = listOf(
-                                    models.v1.Postering(
-                                        fagområde = models.v1.Fagområde.TILLST,
+                                    v1.Postering(
+                                        fagområde = v1.Fagområde.TILLST,
                                         sakId = SakId("4819"),
                                         fom = LocalDate.of(2026, 1, 27),
                                         tom = LocalDate.of(2026, 1, 27),
                                         beløp = 4605,
-                                        type = models.v1.PosteringType.YTELSE,
+                                        type = v1.PosteringType.YTELSE,
                                         klassekode = "TSLMASISP2-OP"
                                     ),
                                 )
@@ -629,7 +629,9 @@ class SimuleringTest {
 
         val expectedStatus = StatusReply(
             status = Status.FEILET,
-            error = ApiError(400, "ukjent soap feil Fault(faultcode=SOAP-ENV:Client, faultstring=Malformed SOAP message, detail={cics:FaultDetail={cics:XMLSSParser={cics:ParserResponse=XRC_NOT_WELL_FORMED, cics:ParserReason=00012388, cics:ParserOffset=00000732}}})")
+            error = ApiError(400, "ukjent soap feil Fault(faultcode=SOAP-ENV:Client, faultstring=Malformed SOAP message, " +
+                    "detail={cics:FaultDetail={cics:XMLSSParser={cics:ParserResponse=XRC_NOT_WELL_FORMED, cics:ParserReason=00012388, cics:ParserOffset=00000732}}})"),
+            simulering = true
         )
 
         TestRuntime.topics.status.assertThat()
@@ -650,7 +652,8 @@ class SimuleringTest {
 
         val expectedStatus = StatusReply(
             status = Status.FEILET,
-            error = ApiError(422, "DELYTELSE-ID/LINJE-ID ved endring finnes ikke: 0nMih85oRkaV5FqgMN6E")
+            error = ApiError(422, "DELYTELSE-ID/LINJE-ID ved endring finnes ikke: 0nMih85oRkaV5FqgMN6E"),
+            simulering = true
         )
 
         TestRuntime.topics.status.assertThat()
@@ -671,7 +674,9 @@ class SimuleringTest {
 
         val expectedStatus = StatusReply(
             status = Status.FEILET,
-            error = ApiError(400, "DFHPI1009 02/09/2025 13:45:58 CICSQ1OS OSW8 21049 XML to data transformation failed. A conversion error (OUTPUT_OVERFLOW) occurred when converting field saksbehId for WEBSERVICE simulerFpServiceWSBinding.")
+            error = ApiError(400, "DFHPI1009 02/09/2025 13:45:58 CICSQ1OS OSW8 21049 XML to data transformation failed. A conversion error (OUTPUT_OVERFLOW) occurred when converting field saksbehId" +
+                    " for WEBSERVICE simulerFpServiceWSBinding."),
+            simulering = true
         )
 
         TestRuntime.topics.status.assertThat()

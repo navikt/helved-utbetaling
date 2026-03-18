@@ -9,10 +9,11 @@ import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 
 data class StatusReply(
-    val status: Status, 
+    val status: Status,
     val detaljer: Detaljer? = null,
     val error: ApiError? = null,
-) {
+    val simulering: Boolean = false
+    ) {
 
     companion object {
         fun mottatt(oppdrag: Oppdrag): StatusReply = StatusReply(Status.MOTTATT, detaljer(oppdrag))

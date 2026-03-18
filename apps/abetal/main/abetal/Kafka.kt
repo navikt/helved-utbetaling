@@ -17,6 +17,7 @@ object Topics {
     val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
     val aap = Topic("aap.utbetaling.v1", json<AapUtbetaling>())
     val ts = Topic("tilleggsstonader.utbetaling.v1", json<TsDto>())
+
     // TODO: rename denne til tpUtbetalinger når ts har laget topic
     val tp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
@@ -60,7 +61,6 @@ fun createTopology(kafka: Streams): Topology = topology {
 }
 
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
-data class PKs(val originalKey: String, val uids: List<String>)
 
 data class AapTuple(val key: String, val value: AapUtbetaling)
 data class DpTuple(val key: String, val value: DpUtbetaling)
@@ -102,25 +102,35 @@ fun Topology.dpStream(
                 .map { sakKey, (req, uids) -> DpDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
                 .rekey { _, dtos -> dtos.first().originalKey }
                 .map { _, utbetalinger ->
+                    require(utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun }) {
+                        "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
+                    }
+
+                    if (utbetalinger.any { it.dryrun }) {
+                        return@map Result.catch {
+                            val store = kafka.getStore(Stores.utbetalinger)
+                            val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+                            AggregateService.utledSimulering(aggregate)
+                        }
+                            .map(StreamResult::SimuleringOk)
+                            .getOrElse(StreamResult::SimuleringError)
+                    }
+
                     Result.catch {
                         val store = kafka.getStore(Stores.utbetalinger)
-                        val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString()))}
-                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
-                        val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
-                        oppdragToUtbetalinger to hasDryrunTosimuleringer
+                        val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+                        AggregateService.utledOppdrag(aggregate)
                     }
+                        .map(StreamResult::OppdragOk)
+                        .getOrElse(StreamResult::OppdragError)
                 }
-                .branch(Result<*, *>::isErr, ::replyError)
-                .default {
-                    val result = this.map { it.unwrap() }
-                    result.saveUtbetalingerAsPending()
-                    result.sendSimulering()
-                    result.sendOppdrag()
-                    result.replyOkIfIdempotent()
-                    result.replyOkUtenEndring(Fagsystem.DAGPENGER)
-                }
+                .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
+                .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+                .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.DAGPENGER, this) }
+                .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.DAGPENGER, this) }
         }
 }
+
 
 fun Topology.aapStream(
     saker: KTable<SakKey, Set<UtbetalingId>>,
@@ -137,23 +147,24 @@ fun Topology.aapStream(
         .map { sakKey, req, uids -> AapDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
         .rekey { _, dtos -> dtos.first().originalKey }
         .map { value ->
-            Result.catch {
-                val store = kafka.getStore(Stores.utbetalinger)
-                val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
-                val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
-                oppdragToUtbetalinger to hasDryrunTosimuleringer
+            val store = kafka.getStore(Stores.utbetalinger)
+            val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+            require(value.all { it.dryrun } || value.none { it.dryrun }) {
+                "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
             }
+            if (value.any { it.dryrun }) {
+                return@map Result.catch { AggregateService.utledSimulering(aggregate) }
+                    .map(StreamResult::SimuleringOk)
+                    .getOrElse(StreamResult::SimuleringError)
+            }
+            Result.catch { AggregateService.utledOppdrag(aggregate) }
+                .map(StreamResult::OppdragOk)
+                .getOrElse(StreamResult::OppdragError)
         }
-        .branch(Result<*, *>::isErr, ::replyError)
-        .default {
-            val result = this.map { it.unwrap() }
-            result.saveUtbetalingerAsPending()
-            result.sendSimulering()
-            result.sendOppdrag()
-            result.replyOkIfIdempotent()
-            result.replyOkUtenEndring(Fagsystem.AAP)
-        }
+        .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
+        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+        .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.AAP, this) }
+        .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.AAP, this) }
 }
 
 fun Topology.tsStream(
@@ -175,27 +186,28 @@ fun Topology.tsStream(
         .branch(Guard::ifNoUtbetalinger, Guard::replyOkTs)
         .default {
             this
-                .map { originalKey, (req, uids) ->
-                    Result.catch {
-                        val dto = req.value ?: req.dto!!
-                        val key = req.key ?: req.transactionId!!
-                        val utbetalinger = TsDto.toDomain(SakId(dto.sakId), key, dto, uids)
-                        val store = kafka.getStore(Stores.utbetalinger)
-                        val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
-                        val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
-                        val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
-                        oppdragToUtbetalinger to hasDryrunTosimuleringer
-}
+                .map { _, (req, uids) ->
+                    val dto = req.value ?: req.dto!!
+                    val key = req.key ?: req.transactionId!!
+                    val utbetalinger = TsDto.toDomain(SakId(dto.sakId), key, dto, uids)
+                    val store = kafka.getStore(Stores.utbetalinger)
+                    val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+                    require(utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun }) {
+                        "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
+                    }
+                    if (utbetalinger.any { it.dryrun }) {
+                        return@map Result.catch { AggregateService.utledSimulering(aggregate) }
+                            .map(StreamResult::SimuleringOk)
+                            .getOrElse(StreamResult::SimuleringError)
+                    }
+                    Result.catch { AggregateService.utledOppdrag(aggregate) }
+                        .map(StreamResult::OppdragOk)
+                        .getOrElse(StreamResult::OppdragError)
                 }
-                .branch(Result<*, *>::isErr, ::replyError)
-                .default {
-                    val result = this.map { it.unwrap() }
-                    result.saveUtbetalingerAsPending()
-                    result.sendSimulering()
-                    result.sendOppdrag()
-                    result.replyOkIfIdempotent()
-                    result.replyOkUtenEndring(Fagsystem.TILLEGGSSTØNADER)
-                }
+                .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
+                .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+                .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.TILLEGGSSTØNADER, this) }
+                .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILLEGGSSTØNADER, this) }
         }
 }
 
@@ -214,23 +226,24 @@ fun Topology.tpStream(
         .map { sakKey, req, ids -> TpDto.splitToDomain(sakKey.sakId, req.key, req.value, ids) }
         .rekey { dtos -> dtos.first().originalKey }
         .map { value ->
-            Result.catch {
-                val store = kafka.getStore(Stores.utbetalinger)
-                val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
-                val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
-                oppdragToUtbetalinger to hasDryrunTosimuleringer
-}
+            val store = kafka.getStore(Stores.utbetalinger)
+            val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+            require(value.all { it.dryrun } || value.none { it.dryrun }) {
+                "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
+            }
+            if (value.any { it.dryrun }) {
+                return@map Result.catch { AggregateService.utledSimulering(aggregate) }
+                    .map(StreamResult::SimuleringOk)
+                    .getOrElse(StreamResult::SimuleringError)
+            }
+            Result.catch { AggregateService.utledOppdrag(aggregate) }
+                .map(StreamResult::OppdragOk)
+                .getOrElse(StreamResult::OppdragError)
         }
-        .branch(Result<*, *>::isErr, ::replyError)
-        .default {
-            val result = this.map { it.unwrap() }
-            result.saveUtbetalingerAsPending()
-            result.sendSimulering()
-            result.sendOppdrag()
-            result.replyOkIfIdempotent()
-            result.replyOkUtenEndring(Fagsystem.TILTAKSPENGER)
-        }
+        .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
+        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+        .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.TILTAKSPENGER, this) }
+        .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILTAKSPENGER, this) }
 }
 
 fun Topology.historiskStream(
@@ -248,23 +261,23 @@ fun Topology.historiskStream(
         .map { req, uids -> HistoriskUtbetaling.toDomain(req.key, req.value, uids) }
         .rekey { dto -> dto.originalKey }
         .map { new ->
-            Result.catch {
-                val store = kafka.getStore(Stores.utbetalinger)
-                val aggregate = listOf(StreamsPair(new, store.getOrNull(new.uid.toString())))
-                val oppdragToUtbetalinger = AggregateService.utledOppdrag(aggregate)
-                val hasDryrunTosimuleringer = AggregateService.utledSimulering(aggregate)
-                oppdragToUtbetalinger to hasDryrunTosimuleringer
-}
+            val store = kafka.getStore(Stores.utbetalinger)
+            val aggregate = listOf(StreamsPair(new, store.getOrNull(new.uid.toString())))
+
+            if (new.dryrun) {
+                return@map Result.catch { AggregateService.utledSimulering(aggregate) }
+                    .map(StreamResult::SimuleringOk)
+                    .getOrElse(StreamResult::SimuleringError)
+            }
+
+            Result.catch { AggregateService.utledOppdrag(aggregate) }
+                .map(StreamResult::OppdragOk)
+                .getOrElse(StreamResult::OppdragError)
         }
-        .branch(Result<*, *>::isErr, ::replyError)
-        .default {
-            val result = this.map { it.unwrap() }
-            result.saveUtbetalingerAsPending()
-            result.sendSimulering()
-            result.sendOppdrag()
-            result.replyOkIfIdempotent()
-            result.replyOkUtenEndring(Fagsystem.HISTORISK)
-        }
+        .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
+        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+        .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(Fagsystem.HISTORISK, this) }
+        .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.HISTORISK, this) }
 }
 
 /**
@@ -280,7 +293,7 @@ private object Guard {
 
     fun replyOk(branch: MappedStream<SakKey, StreamsPair<DpTuple, Set<UtbetalingId>?>>) {
         branch.rekey { (dpTuple, _) -> dpTuple.key }
-            .map { 
+            .map {
                 appLog.info("idempotens guard (DP) - will reply OK for sakId=${it.left.value.sakId}")
                 StatusReply.ok()
             }.produce(Topics.status)
@@ -296,7 +309,7 @@ private object Guard {
     }
 
     fun replyOkTs(branch: MappedStream<String, StreamsPair<TsTuple, Set<UtbetalingId>?>>) {
-        branch.map { 
+        branch.map {
             appLog.info("idempotens guard (TS) - will reply OK for sakId=${it.left.value?.sakId}")
             StatusReply.ok()
         }.produce(Topics.status)
@@ -334,8 +347,8 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
         .merge(consume(Topics.retryOppdrag))
         .processor(Processor { EnrichMetadataProcessor() })
         .filter { key, (oppdrag: Oppdrag, meta) ->
-            val hasKvittering = oppdrag.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04") 
-            if (!hasKvittering) return@filter false 
+            val hasKvittering = oppdrag.mmel?.alvorlighetsgrad?.trimEnd() in listOf("00", "04")
+            if (!hasKvittering) return@filter false
 
             val uids = meta.headers["uids"].intoUids()
             if (uids.isEmpty()) {
@@ -385,30 +398,63 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
 
 typealias DryrunAggregate = Pair<Boolean, List<SimulerBeregningRequest>>
 typealias OppdragAggregate = Pair<Oppdrag, List<Utbetaling>>
-typealias Aggregate = Pair<List<OppdragAggregate>, DryrunAggregate>
 
 private val DryrunAggregate.isRequested: Boolean get() = first
 private val DryrunAggregate.requests: List<SimulerBeregningRequest> get() = second
 
-private fun replyError(branch: MappedStream<String, Result<Aggregate, StatusReply>>) {
-    branch
-        .map { it.unwrapErr() }
-        .produce(Topics.status)
+sealed interface StreamResult {
+    data class OppdragOk(val oppdrag: List<OppdragAggregate>) : StreamResult
+    data class SimuleringOk(val simulering: DryrunAggregate) : StreamResult
+
+    data class OppdragError(val status: StatusReply) : StreamResult
+    data class SimuleringError(val status: StatusReply) : StreamResult
 }
 
-private fun MappedStream<String, Aggregate>.replyOkIfIdempotent() {
+private fun replyOppdragOk(fagsystem: Fagsystem, branch: MappedStream<String, StreamResult>) {
+    val result = branch.map { (it as StreamResult.OppdragOk).oppdrag }
+    result.saveUtbetalingerAsPending()
+    result.sendOppdrag()
+    result.replyOkIfIdempotentOppdrag()
+    result.replyOkUtenEndringOppdrag(fagsystem)
+}
+
+private fun replySimuleringOk(fagsystem: Fagsystem, branch: MappedStream<String, StreamResult>) {
+    val result = branch.map { (it as StreamResult.SimuleringOk).simulering }
+    result.sendSimulering()
+    result.replyOkIfIdempotentSimulering()
+    result.replyOkUtenEndringSimulering(fagsystem)
+}
+
+private fun replyOppdragError(branch: MappedStream<String, StreamResult>) {
+    branch.map { (it as StreamResult.OppdragError).status }.produce(Topics.status)
+}
+
+private fun replySimuleringError(branch: MappedStream<String, StreamResult>) {
+    branch.map { (it as StreamResult.SimuleringError).status.copy(simulering = true) }.produce(Topics.status)
+}
+
+private fun MappedStream<String, List<OppdragAggregate>>.replyOkIfIdempotentOppdrag() {
     this
-        .filter { (oppdragToUtbetalinger, simuleringer) -> oppdragToUtbetalinger.isEmpty() && simuleringer.requests.isEmpty() }
-        .map { 
+        .filter { it.isEmpty() }
+        .map {
             appLog.info("idempotent aggregat kicked in. Will reply OK")
             StatusReply.ok()
         }
         .produce(Topics.status)
 }
 
-private fun MappedStream<String, Aggregate>.replyOkUtenEndring(fagsystem: Fagsystem) {
+private fun MappedStream<String, DryrunAggregate>.replyOkIfIdempotentSimulering() {
+    this
+        .filter { it.requests.isEmpty() }
+        .map {
+            appLog.info("idempotent aggregat kicked in. Will reply OK")
+            StatusReply.ok().copy(simulering = true)
+        }
+        .produce(Topics.status)
+}
+
+private fun MappedStream<String, List<OppdragAggregate>>.replyOkUtenEndringOppdrag(fagsystem: Fagsystem) {
     val ok = this
-        .filter { (_, simuleringer) -> simuleringer.requests.isEmpty() && simuleringer.isRequested }
         .map { Info.OkUtenEndring(fagsystem) }
 
     ok
@@ -418,9 +464,21 @@ private fun MappedStream<String, Aggregate>.replyOkUtenEndring(fagsystem: Fagsys
         .branch({ (it as Info).fagsystem == Fagsystem.TILTAKSPENGER }) { produce(Topics.dryrunTp) }
 }
 
-private fun MappedStream<String, Aggregate>.sendOppdrag() {
+private fun MappedStream<String, DryrunAggregate>.replyOkUtenEndringSimulering(fagsystem: Fagsystem) {
+    val ok = this
+        .filter { it.isRequested }
+        .map { Info.OkUtenEndring(fagsystem) }
+
+    ok
+        .branch({ (it as Info).fagsystem == Fagsystem.AAP }) { produce(Topics.dryrunAap) }
+        .branch({ (it as Info).fagsystem == Fagsystem.DAGPENGER }) { produce(Topics.dryrunDp) }
+        .branch({ (it as Info).fagsystem == Fagsystem.TILLEGGSSTØNADER }) { produce(Topics.dryrunTs) }
+        .branch({ (it as Info).fagsystem == Fagsystem.TILTAKSPENGER }) { produce(Topics.dryrunTp) }
+}
+
+private fun MappedStream<String, List<OppdragAggregate>>.sendOppdrag() {
     val oppdrag = this
-        .flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger }
+        .flatMap { it }
         .includeHeader("uids") { (_, utbetalinger) -> utbetalinger.joinToString(",") { it.uid.toString() } }
         .map { (oppdrag, _) -> oppdrag }
 
@@ -428,17 +486,17 @@ private fun MappedStream<String, Aggregate>.sendOppdrag() {
     oppdrag.map(StatusReply::mottatt).produce(Topics.status)
 }
 
-private fun MappedStream<String, Aggregate>.sendSimulering() {
+private fun MappedStream<String, DryrunAggregate>.sendSimulering() {
     this
-        .flatMap { (_, simuleringer) -> simuleringer.requests }
+        .flatMap { it.requests }
         .produce(Topics.simulering)
 }
 
 val oppdragMapper = XMLMapper<Oppdrag>()
 
-private fun MappedStream<String, Aggregate>.saveUtbetalingerAsPending() {
+private fun MappedStream<String, List<OppdragAggregate>>.saveUtbetalingerAsPending() {
     this
-        .flatMap { (oppdragToUtbetalinger, _) -> oppdragToUtbetalinger }
+        .flatMap { it }
         .includeHeader("hash_key") { (oppdrag, _) -> oppdragMapper.writeValueAsString(oppdrag).hashCode().toString() }
         .flatMapKeyAndValue { _, (_, utbetalinger) -> utbetalinger.map { KeyValue(it.uid.toString(), it) } }
         .produce(Topics.pendingUtbetalinger)

@@ -184,29 +184,29 @@ fun Topology.simulering(simuleringService: SimuleringService) {
                     map { (sim, _) -> sim }
                         .map { Result.catch { v2.Simulering.from(it) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunAap) }
-                        .default { map { it.unwrapErr() }.produce(Topics.status) }
+                        .default { map { it.unwrapErr().copy(simulering = true) }.produce(Topics.status) }
                 }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.DAGPENGER }) {
                     map { (sim, _) -> sim }
                         .map { Result.catch { v2.Simulering.from(it) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunDp) }
-                        .default { map { it.unwrapErr() }.produce(Topics.status) }
+                        .default { map { it.unwrapErr().copy(simulering = true) }.produce(Topics.status) }
                 }
                 .branch({ (_, fagsystem) -> fagsystem.isTilleggsstønader() }) {
                     map { (sim, _) -> sim }
                         .map { Result.catch { intoV1(it) ?: Info.OkUtenEndring(Fagsystem.TILLEGGSSTØNADER) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunTilleggsstønader) }
-                        .default { map { it.unwrapErr() }.produce(Topics.status) }
+                        .default { map { it.unwrapErr().copy(simulering = true) }.produce(Topics.status) }
                 }
                 .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILTAKSPENGER }) {
                     map { (sim, _) -> sim }
                         .map { Result.catch { intoV1(it) ?: Info.OkUtenEndring(Fagsystem.TILTAKSPENGER) } }
                         .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunTiltakspenger) }
-                        .default { map { it.unwrapErr() }.produce(Topics.status) }
+                        .default { map { it.unwrapErr().copy(simulering = true) }.produce(Topics.status) }
                 }
         }
         .default {
-            map { result -> result.unwrapErr() }.produce(Topics.status)
+            map { result -> result.unwrapErr().copy(simulering = true) }.produce(Topics.status)
         }
 }
 
