@@ -10,6 +10,7 @@ import com.google.cloud.bigquery.StandardTableDefinition
 import com.google.cloud.bigquery.TableId
 import com.google.cloud.bigquery.TableInfo
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 import libs.utils.appLog
 import libs.utils.env
 import models.StatusReply
@@ -44,7 +45,7 @@ class BigQueryService(
                     "fagsystem"        to utbetaling.fagsystem.toName(),
                     "stonad"           to utbetaling.stønad.name,
                     "belop"            to periode.beløp.toLong(),
-                    "sendt"            to systemTimeMs?.let { Instant.ofEpochMilli(it).toString() }
+                    "sendt"            to systemTimeMs?.let { Instant.ofEpochMilli(TimeUnit.NANOSECONDS.toMillis(it)).toString() }
                 ).filterValues { it != null }
             )
         }
@@ -76,7 +77,7 @@ class BigQueryService(
         insert(statusTableId, key, mapOf(
             "key"       to key,
             "status"    to status.status.name,
-            "sendt"     to systemTimeMs?.let { Instant.ofEpochMilli(it).toString() },
+            "sendt"     to systemTimeMs?.let { Instant.ofEpochMilli(TimeUnit.NANOSECONDS.toMillis(it)).toString() },
             "fagsystem" to fagsystem
             ))
     }
@@ -103,7 +104,7 @@ class BigQueryService(
         insert(oppdragTableId, key, mapOf(
             "behandling"     to henvisning,
             "sak"            to sakId,
-            "sendt"          to systemTimeMs?.let { Instant.ofEpochMilli(it).toString() },
+            "sendt"          to systemTimeMs?.let { Instant.ofEpochMilli(TimeUnit.NANOSECONDS.toMillis(it)).toString() },
             "kvittert"       to tidspktMelding,
             "fagområde"      to fagsystem,
         ))
