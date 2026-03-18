@@ -38,6 +38,13 @@ object TestRuntime {
     )
     val config = Config(kafka = kafka.config)
     val topics = TestTopics(kafka)
+
+    val ktor = KtorRuntime<Config>(
+        appName = "statistikkern",
+        module = {
+            statistikkern(config, kafka, bq, kafka)
+        }
+    )
 }
 
 
