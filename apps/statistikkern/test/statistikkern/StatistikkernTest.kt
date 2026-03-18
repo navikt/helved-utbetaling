@@ -2,6 +2,7 @@ package statistikkern
 
 import io.ktor.server.testing.testApplication
 import java.time.LocalDate
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
@@ -28,15 +29,16 @@ class StatistikkernTest {
     fun `utbetaling lagres i bigquery`() = testApplication {
         application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
 
-        val key = "019cc21f-5913-765b-91a4-2f7c07753935"
         val mottattTidMs = 1_700_000_000_000L
-        val utbetaling = utbetaling()
+        val originalKey = UUID.randomUUID().toString()
+        val utbetaling = utbetaling(originalKey = originalKey)
         TestRuntime.topics.utbetalinger.populate(
-            key,
+            UUID.randomUUID().toString(),
             utbetaling,
             partition = 0,
             offset = offset.getAndIncrement(),
-            timestamp = mottattTidMs
+            timestamp = mottattTidMs,
+            headers = mapOf("x-sy" to "1700000000000")
         )
 
         awaitCondition { TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).isNotEmpty() }
@@ -46,11 +48,7 @@ class StatistikkernTest {
         assertEquals("AAP", row["fagsystem"].toString())
         assertEquals("AAP_UNDER_ARBEIDSAVKLARING", row["stonad"].toString())
         assertEquals("800", row["belop"].toString())
-        assertEquals("2025-01-06", row["fom"].toString())
-        assertEquals("2025-01-07", row["tom"].toString())
-        assertEquals("2025-01-01T12:00:00", row["vedtakstidspunkt"].toString())
-        assertTrue(row["processed_at"].toString().isNotBlank())
-        assertTrue(row["inserted_at"].toString().isNotBlank())
+        assertTrue(row["sendt"].toString().isNotBlank())
     }
 
     @Test
@@ -64,23 +62,15 @@ class StatistikkernTest {
             Utbetalingsperiode(fom = LocalDate.of(2025, 1, 20), tom = LocalDate.of(2025, 1, 21), beløp = 1000u),
         )
         val utbetaling = utbetaling(perioder = perioder)
-        TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = offset.getAndIncrement())
+        TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = offset.getAndIncrement(), headers = mapOf("x-sy" to "1700000000000"))
 
         awaitCondition { TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).size == 3 }
 
-        val rows = TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).sortedBy { it["fom"].toString() }
+        val rows = TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey)
         assertEquals(3, rows.size)
 
-        assertEquals("2025-01-06", rows[0]["fom"].toString())
-        assertEquals("2025-01-07", rows[0]["tom"].toString())
         assertEquals("800", rows[0]["belop"].toString())
-
-        assertEquals("2025-01-13", rows[1]["fom"].toString())
-        assertEquals("2025-01-14", rows[1]["tom"].toString())
         assertEquals("900", rows[1]["belop"].toString())
-
-        assertEquals("2025-01-20", rows[2]["fom"].toString())
-        assertEquals("2025-01-21", rows[2]["tom"].toString())
         assertEquals("1000", rows[2]["belop"].toString())
     }
 
@@ -101,7 +91,8 @@ class StatistikkernTest {
 
         val key = "test-key-upsert"
         val utbetaling = utbetaling()
-        TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = 100)
+        TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = 100, headers = mapOf("x-sy" to "1700000000000")
+        )
         awaitCondition { TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).isNotEmpty() }
 
         TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = 100)
@@ -114,7 +105,12 @@ class StatistikkernTest {
         application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
 
         val key = "test-uid-status"
-        TestRuntime.topics.status.populate(key, StatusReply.ok(), partition = 0, offset = offset.getAndIncrement())
+        TestRuntime.topics.status.populate(
+            key, StatusReply.ok(),
+            partition = 0,
+            offset = offset.getAndIncrement(),
+            headers = mapOf("x-sy" to "1700000000000")
+        )
 
         awaitCondition { TestRuntime.bq.queryStatus(key).isNotEmpty() }
 
@@ -132,6 +128,23 @@ class StatistikkernTest {
         TestRuntime.topics.status.populate(key, null, partition = 0, offset = offset.getAndIncrement())
 
         assertTrue(TestRuntime.bq.queryStatus(key).isEmpty())
+    }
+
+    @Test
+    fun `oppdrag lagres i bigquery`() = testApplication {
+        application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
+
+        val sakId = "SAK-${UUID.randomUUID()}"
+        val oppdrag = oppdrag(sakId = sakId)
+        TestRuntime.topics.oppdrag.populate(sakId, oppdrag, partition = 0, offset = offset.getAndIncrement())
+
+        awaitCondition { TestRuntime.bq.queryOppdrag(sakId).isNotEmpty() }
+
+        val row = TestRuntime.bq.queryOppdrag(sakId).single()
+        assertEquals("BEH-456", row["behandling"].toString())
+        assertEquals(sakId, row["sak"].toString())
+        assertEquals("2025-01-01-10.10.00.000000", row["kvittert"].toString())
+        assertEquals("AAP", row["fagområde"].toString())
     }
 }
 

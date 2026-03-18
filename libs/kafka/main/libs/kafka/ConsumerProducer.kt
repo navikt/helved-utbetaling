@@ -103,7 +103,10 @@ open class KafkaConsumer<K: Any, V>(
     }
 
     fun poll(timeout: Duration): List<Record<K, V?>> {
-        return consumer.poll(timeout.toJavaDuration()).map { Record(it.key(), it.value(), it.partition(), it.timestamp()) }
+        return consumer.poll(timeout.toJavaDuration()).map {
+            val headers = it.headers().associate { h -> h.key() to h.value().toString(Charsets.UTF_8) }
+            Record(it.key(), it.value(), it.partition(), it.timestamp(), headers)
+        }
     }
 
     fun subscribe() {
@@ -122,6 +125,7 @@ data class Record<K: Any, V>(
     val value: V,
     val partition: Int,
     val timestamp: Long? = null,
+    val headers: Map<String, String> = emptyMap(),
 )
 
 interface KafkaFactory {

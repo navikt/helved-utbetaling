@@ -47,11 +47,14 @@ class KafkaConsumerFake<K: Any, V>(
     private val consumer: MockConsumer<K, V> = InternalMockConsumer(resetPolicy)
 ): KafkaConsumer<K, V>(topic, consumer) {
 
-    fun populate(key: K, value: V?, partition: Int, offset: Long, timestamp: Long? = null) {
+    fun populate(key: K, value: V?, partition: Int, offset: Long, timestamp: Long? = null, headers: Map<String, String> = emptyMap()) {
+        val recordHeaders = RecordHeaders()
+        headers.forEach { (k, v) -> recordHeaders.add(k, v.toByteArray()) }
+
         val record = if (timestamp != null) {
-            ConsumerRecord(topic.name, partition, offset, timestamp, TimestampType.CREATE_TIME, -1, -1, key, value, RecordHeaders(), java.util.Optional.empty())
+            ConsumerRecord(topic.name, partition, offset, timestamp, TimestampType.CREATE_TIME, -1, -1, key, value, recordHeaders, java.util.Optional.empty())
         } else {
-            ConsumerRecord(topic.name, partition, offset, key, value)
+            ConsumerRecord(topic.name, partition, offset, timestamp ?: -1L, TimestampType.NO_TIMESTAMP_TYPE, -1, -1, key, value, recordHeaders, java.util.Optional.empty())
         }
         consumer.addRecord(record)
     }

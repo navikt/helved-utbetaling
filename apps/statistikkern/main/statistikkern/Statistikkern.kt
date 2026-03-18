@@ -68,9 +68,11 @@ fun Application.statistikkern(
 
     val utbetalingConsumer = factory.createConsumer(config.kafka, Topics.utbetalinger)
     val statusConsumer = factory.createConsumer(config.kafka, Topics.status)
+    val oppdragConsumer = factory.createConsumer(config.kafka, Topics.oppdrag)
 
     val utbetalingJob = launch { utbetalingConsumer(bqService, utbetalingConsumer) }
     val statusJob = launch { statusConsumer(bqService, statusConsumer) }
+    val oppdragJob = launch { oppdragConsumer(bqService, oppdragConsumer) }
 
     routing {
         probes(prometheus)
@@ -79,6 +81,7 @@ fun Application.statistikkern(
     monitor.subscribe(ApplicationStopping) {
         utbetalingJob.cancelJob()
         statusJob.cancelJob()
+        oppdragJob.cancelJob()
         kafka.close()
     }
 }
