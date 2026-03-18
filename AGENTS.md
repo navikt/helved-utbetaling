@@ -33,6 +33,10 @@ You can explicitly invoke it by adding `use context7` to your prompt, or referen
 Implement auth with Ktor. use library /ktor/ktor for API and docs.
 ```
 
+### Context Window Efficiency
+
+Prefer delegating Context7 documentation lookups to subagents (via Task tool) rather than querying directly in the main conversation. This keeps the main context lean -- the subagent returns only the relevant snippet instead of injecting full documentation pages.
+
 ## Build System
 
 - **Gradle 8.13** (Kotlin DSL), **Kotlin 2.3.10**, **JVM 21**
@@ -195,7 +199,9 @@ No DI framework. Manual constructor injection wired in the app entry-point funct
 
 For detailed module-level documentation:
 - **Application domain knowledge**: See `apps/AGENTS.md` for app purposes, architecture, data flows, Kafka topics, database schemas, and API contracts
-- **Library APIs and usage**: See `libs/AGENTS.md` for library exports, usage patterns, and integration examples
+- **Library APIs and usage**: Load the `libs-reference` skill for library exports, usage patterns, and integration examples
+
+When writing or modifying code, load the `readable-code` skill.
 
 ### Modules
 

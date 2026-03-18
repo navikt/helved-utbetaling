@@ -1,3 +1,15 @@
+---
+name: libs-reference
+description: Library API reference for helved-utbetaling internal /libs
+license: MIT
+compatibility: opencode
+metadata:
+  audience: ai-assistant
+  language: kotlin
+  framework: ktor
+  domain: nav-payment-system
+---
+
 # Library API Reference
 
 > **Parent context:** See root `AGENTS.md` for conventions, build system, and patterns.
@@ -106,7 +118,6 @@ object Topics {
 
 val topology = topology("app-name") {
     Topics.input.consume { key, value ->
-        // Process payment
         val result = processPayment(value)
         Topics.output.produce(key, result)
     }
@@ -378,7 +389,6 @@ val response = soapClient.call<SimulerBeregningResponse>(request)
 val span = tracer.spanBuilder("operation-name").startSpan()
 try {
     span.makeCurrent().use {
-        // Operation with tracing context
         performOperation()
     }
     span.setStatus(StatusCode.OK)
@@ -484,14 +494,9 @@ fun Application.myApp() {
 
 val topology = topology("app") {
     Topics.input.consume { key, value ->
-        // Process in Kafka Streams (not async)
         val result = process(value)
-        
-        // Store in state store for coordination
         store.put(key, result)
-        
         // Separate coroutine-based consumer reads from store and writes to DB
-        // See urskog for full pattern
     }
 }
 ```
@@ -502,12 +507,10 @@ val topology = topology("app") {
 
 val topology = topology("app") {
     Topics.status.consume { key, statusUpdate ->
-        // Store in state store
         statusStore.put(key, statusUpdate)
     }
 }
 
-// Separate HTTP endpoint queries DB (not Kafka state)
 routing {
     get("/status/{id}") {
         withContext(Jdbc.context) {
@@ -517,7 +520,6 @@ routing {
     }
 }
 
-// Background job syncs Kafka state → PostgreSQL
 launch {
     while (true) {
         syncStateToDb()
@@ -541,19 +543,15 @@ object TestRuntime {
 }
 
 @Test fun `full integration test`() = runTest(TestRuntime.context) {
-    // Start Kafka topology
     TestRuntime.streamsMock.start(createTopology())
     
-    // Produce to Kafka
     val inputTopic = TestTopic(Topics.input)
     inputTopic.produce("key1", PaymentRequest(...))
     
-    // Wait for processing
     TestRuntime.datasource.await {
         MyDao.findById("key1") != null
     }
     
-    // Query HTTP API
     val response = TestRuntime.httpClient.get("/payment/key1")
     assertEquals(HttpStatusCode.OK, response.status)
 }
@@ -571,7 +569,6 @@ object TestRuntime {
 
 When adding library dependencies between modules:
 ```kotlin
-// In app's build.gradle.kts
 dependencies {
     implementation(project(":libs:jdbc"))
     implementation(project(":libs:kafka"))
@@ -603,7 +600,7 @@ implementation("io.ktor:ktor-server-core:$ktorVersion")
 ### Test Library Companion
 
 If creating a production library, consider creating a test companion:
-- `libs:jdbc` → `libs:jdbc-test`
-- `libs:kafka` → `libs:kafka-test`
-- `libs:auth` → `libs:auth-test`
+- `libs:jdbc` -> `libs:jdbc-test`
+- `libs:kafka` -> `libs:kafka-test`
+- `libs:auth` -> `libs:auth-test`
 - Pattern: Production lib = real impl, test lib = fakes/mocks/Testcontainers
