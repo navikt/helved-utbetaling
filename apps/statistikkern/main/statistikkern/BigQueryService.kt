@@ -10,11 +10,11 @@ import com.google.cloud.bigquery.StandardTableDefinition
 import com.google.cloud.bigquery.TableId
 import com.google.cloud.bigquery.TableInfo
 import java.time.Instant
-import java.time.format.DateTimeFormatter
 import libs.utils.appLog
 import libs.utils.env
 import models.StatusReply
 import models.Utbetaling
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class BigQueryService(
     val projectId: String = env("GCP_TEAM_PROJECT_ID"),
@@ -28,18 +28,12 @@ class BigQueryService(
             Field.of("fagsystem", StandardSQLTypeName.STRING),
             Field.of("stonad", StandardSQLTypeName.STRING),
             Field.of("belop", StandardSQLTypeName.NUMERIC),
-            Field.of("fom", StandardSQLTypeName.DATE),
-            Field.of("tom", StandardSQLTypeName.DATE),
-            Field.of("vedtakstidspunkt", StandardSQLTypeName.DATETIME),
-            Field.of("processed_at", StandardSQLTypeName.TIMESTAMP), // TODO: Blir det riktig med record.timestamp her?
-            Field.of("inserted_at", StandardSQLTypeName.TIMESTAMP),
+            Field.of("sendt", StandardSQLTypeName.TIMESTAMP)
         )
     )
 
-    fun upsertUtbetaling(utbetaling: Utbetaling, timestampMs: Long?) {
+    fun upsertUtbetaling(utbetaling: Utbetaling, systemTimeMs: Long?) {
         if (utbetaling.dryrun) return
-
-        val processedAt = timestampMs?.let { Instant.ofEpochMilli(it) }.toString()
 
         val rows = utbetaling.perioder.map { periode ->
             val rowId = "${utbetaling.originalKey}-${periode.fom}-${periode.tom}"
@@ -50,11 +44,7 @@ class BigQueryService(
                     "fagsystem"        to utbetaling.fagsystem.toName(),
                     "stonad"           to utbetaling.stønad.name,
                     "belop"            to periode.beløp.toLong(),
-                    "fom"              to periode.fom.toString(),
-                    "tom"              to periode.tom.toString(),
-                    "vedtakstidspunkt" to utbetaling.vedtakstidspunkt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
-                    "processed_at"     to processedAt,
-                    "inserted_at"      to Instant.now().toString(),
+                    "sendt"            to systemTimeMs
                 ).filterValues { it != null }
             )
         }
@@ -74,20 +64,51 @@ class BigQueryService(
         schema = Schema.of(
             Field.newBuilder("key", StandardSQLTypeName.STRING).setMode(Field.Mode.REQUIRED).build(),
             Field.of("status", StandardSQLTypeName.STRING),
-            Field.of("processed_at", StandardSQLTypeName.TIMESTAMP), // TODO: Blir det riktig med record.timestamp her?
+            Field.of("sendt", StandardSQLTypeName.TIMESTAMP),
+            Field.of("fagsystem", StandardSQLTypeName.STRING),
         )
     )
 
-    fun upsertStatus(key: String, status: StatusReply, timestampMs: Long? ) {
+    fun upsertStatus(key: String, status: StatusReply, timestampMs: Long?, fagsystem: String?) {
+        if (status.simulering) return
         if (status.status.name !in setOf("FEILET", "OK")) return
 
         val processedAt = timestampMs?.let { Instant.ofEpochMilli(it) }.toString()
 
         insert(statusTableId, key, mapOf(
-            "key"              to key,
-            "status"           to status.status.name,
-            "processed_at"     to processedAt
+            "key"       to key,
+            "status"    to status.status.name,
+            "sendt"     to processedAt,
+            "fagsystem" to fagsystem
             ))
+    }
+
+    val oppdragTableId = getOrCreateTable(
+        name = "oppdrag",
+        schema = Schema.of(
+            Field.of("behandling", StandardSQLTypeName.STRING),
+            Field.of("sak", StandardSQLTypeName.STRING),
+            Field.of("sendt", StandardSQLTypeName.TIMESTAMP),
+            Field.of("kvittert", StandardSQLTypeName.STRING),
+            Field.of("fagområde", StandardSQLTypeName.STRING),
+        )
+    )
+
+    fun upsertOppdrag(oppdrag: Oppdrag, systemTimeMs: Long?) {
+        val oppdrag110 = oppdrag.oppdrag110 ?: return
+        val henvisning = oppdrag110.oppdragsLinje150s.firstOrNull()?.henvisning
+        val sakId = oppdrag110.fagsystemId
+        val tidspktMelding = oppdrag110.avstemming115?.tidspktMelding
+        val fagsystem = oppdrag110.kodeFagomraade
+
+        val key = "$sakId-$henvisning"
+        insert(oppdragTableId, key, mapOf(
+            "behandling"     to henvisning,
+            "sak"            to sakId,
+            "sendt"          to systemTimeMs,
+            "kvittert"       to tidspktMelding,
+            "fagområde"      to fagsystem,
+        ))
     }
 
     private fun getOrCreateTable(name: String, schema: Schema): TableId {

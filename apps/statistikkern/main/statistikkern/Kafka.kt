@@ -7,14 +7,17 @@ import kotlinx.coroutines.withContext
 import libs.kafka.KafkaConsumer
 import libs.kafka.Topic
 import libs.kafka.json
+import libs.kafka.xml
 import libs.utils.appLog
 import models.StatusReply
 import models.Utbetaling
-import kotlin.time.Duration.Companion.milliseconds
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import kotlin.time.Duration.Companion.seconds
 
 object Topics {
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val status = Topic("helved.status.v1", json<StatusReply>())
+    val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
 }
 
 suspend fun utbetalingConsumer(
@@ -24,13 +27,36 @@ suspend fun utbetalingConsumer(
     withContext(Dispatchers.IO) {
         consumer.seekToBeginning(0, 1, 2)
         while (isActive) {
-            for (record in consumer.poll(50.milliseconds)) {
+            for (record in consumer.poll(1.seconds)) {
                 try {
                     val utbetaling = record.value ?: continue
-                    val timestampMs = record.timestamp
-                    bigQuery.upsertUtbetaling(utbetaling, timestampMs)
+                    val systemTimeMs = record.headers["x-sy"]?.toLong()
+
+                    bigQuery.upsertUtbetaling(utbetaling, systemTimeMs)
                 } catch (e: Exception) {
                     appLog.info("Feil ved prosessering av utbetaling, key=${record.key}: ${e.message}", e)
+                }
+            }
+            delay(1)
+        }
+    }
+}
+
+suspend fun oppdragConsumer(
+    bigQuery: BigQueryService,
+    consumer: KafkaConsumer<String, Oppdrag>,
+) {
+    withContext(Dispatchers.IO) {
+        consumer.seekToBeginning(0, 1, 2)
+        while (isActive) {
+            for (record in consumer.poll(1.seconds)) {
+                try {
+                    val oppdrag = record.value ?: continue
+                    val systemTimeMs = record.headers["x-sy"]?.toLong()
+
+                    bigQuery.upsertOppdrag(oppdrag, systemTimeMs)
+                } catch (e: Exception) {
+                    appLog.info("Feil ved prosessering av oppdrag, key=${record.key}: ${e.message}", e)
                 }
             }
             delay(1)
@@ -46,11 +72,12 @@ suspend fun statusConsumer(
         // consumer.seekToEnd(0,1,2)
         consumer.seekToBeginning(0,1,2)
         while (isActive) {
-            for (record in consumer.poll(50.milliseconds)) {
-                val key = record.key
-                val timestampMs = record.timestamp
+            for (record in consumer.poll(1.seconds)) {
                 val status = record.value ?: continue
-                bqService.upsertStatus(key, status, timestampMs)
+                val systemTimeMs = record.headers["x-sy"]?.toLong()
+                val fagsystem = record.headers["fagsystem"]
+
+                bqService.upsertStatus(record.key, status, systemTimeMs, fagsystem)
             }
             delay(1)
         }
