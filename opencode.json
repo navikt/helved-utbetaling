@@ -12,7 +12,7 @@
       "environment": {
         "GRAFANA_URL": "https://grafana.nav.cloud.nais.io"
       },
-      "enabled": true
+      "enabled": false
     }
   },
   "agent": {
