@@ -6,6 +6,7 @@ import libs.utils.env
 import java.net.URI
 import java.net.URL
 import java.util.*
+import libs.kafka.ProcessNextHandler
 
 data class Config(
     val utsjekk: URL = URI(env("UTSJEKK_HOST", "http://utsjekk")).toURL(),
@@ -20,8 +21,8 @@ data class Config(
             this[org.apache.kafka.streams.StreamsConfig.NUM_STREAM_THREADS_CONFIG] = 3
 
             // this[org.apache.kafka.streams.StreamsConfig.PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProduceNextHandler::class.java
-            // this[org.apache.kafka.streams.StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessNextHandler::class.java
-            this[org.apache.kafka.streams.StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeNextHandler::class.java
+            this[org.apache.kafka.streams.StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessNextHandler::class.java
+            //this[org.apache.kafka.streams.StreamsConfig.DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeNextHandler::class.java
 
             // AdminClient trenger lengre tid ved opprettelse av internal topics
             this[org.apache.kafka.streams.StreamsConfig.RETRY_BACKOFF_MS_CONFIG] = 1000
