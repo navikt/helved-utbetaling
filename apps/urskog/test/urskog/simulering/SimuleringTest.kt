@@ -49,7 +49,7 @@ class SimuleringTest {
                                         tom = LocalDate.of(2026, 2, 4),
                                         beløp = 630,
                                         type = v1.PosteringType.YTELSE,
-                                        klassekode = "TSDRASISP3-OP"
+                                        klassekode = "TSDRASISP1-OP"
                                     ),
                                     v1.Postering(
                                         fagområde = v1.Fagområde.TILLSTDR,
@@ -58,7 +58,7 @@ class SimuleringTest {
                                         tom = LocalDate.of(2026, 2, 4),
                                         beløp = 340,
                                         type = v1.PosteringType.YTELSE,
-                                        klassekode = "TSDRASISP3-OP"
+                                        klassekode = "TSDRASISP1-OP"
                                     ),
                                     v1.Postering(
                                         fagområde = v1.Fagområde.TILLSTDR,
@@ -85,7 +85,7 @@ class SimuleringTest {
                                         tom = LocalDate.of(2026, 2, 4),
                                         beløp = -970,
                                         type = v1.PosteringType.YTELSE,
-                                        klassekode = "TSDRASISP3-OP"
+                                        klassekode = "TSDRASISP1-OP"
                                     ),
                                 )
                             )
@@ -129,14 +129,14 @@ class SimuleringTest {
                                             tom = LocalDate.of(2026, 2, 4),
                                             beløp = 630,
                                             type = v2.Type.YTEL,
-                                            klassekode = "TSDRASISP3-OP"
+                                            klassekode = "TSDRASISP1-OP"
                                         ),
                                         v2.Postering(
                                             fom = LocalDate.of(2026, 2, 4),
                                             tom = LocalDate.of(2026, 2, 4),
                                             beløp = 340,
                                             type = v2.Type.YTEL,
-                                            klassekode = "TSDRASISP3-OP"
+                                            klassekode = "TSDRASISP1-OP"
                                         ),
                                         v2.Postering(
                                             fom = LocalDate.of(2026, 2, 4),
@@ -157,7 +157,7 @@ class SimuleringTest {
                                             tom = LocalDate.of(2026, 2, 4),
                                             beløp = -970,
                                             type = v2.Type.YTEL,
-                                            klassekode = "TSDRASISP3-OP"
+                                            klassekode = "TSDRASISP1-OP"
                                         ),
                                     )
                                 ),
