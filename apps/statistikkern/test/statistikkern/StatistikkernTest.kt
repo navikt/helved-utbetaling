@@ -38,7 +38,7 @@ class StatistikkernTest {
             partition = 0,
             offset = offset.getAndIncrement(),
             timestamp = mottattTidMs,
-            headers = mapOf("x-sy" to "1700000000000000000")
+            headers = mapOf("x-sy" to "1700000000000")
         )
 
         awaitCondition { TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).isNotEmpty() }
@@ -109,7 +109,7 @@ class StatistikkernTest {
             key, StatusReply.ok(),
             partition = 0,
             offset = offset.getAndIncrement(),
-            headers = mapOf("x-sy" to "1700000000000000000")
+            headers = mapOf("x-sy" to "1700000000000")
         )
 
         awaitCondition { TestRuntime.bq.queryStatus(key).isNotEmpty() }
@@ -117,7 +117,7 @@ class StatistikkernTest {
         val row = TestRuntime.bq.queryStatus(key).single()
         assertEquals(key, row["key"].toString())
         assertEquals("OK", row["status"].toString())
-        assertTrue(row["processed_at"].toString().isNotBlank())
+        assertTrue(row["sendt"].toString().isNotBlank())
     }
 
     @Test
