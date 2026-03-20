@@ -30,7 +30,7 @@ suspend fun utbetalingConsumer(
             for (record in consumer.poll(1.seconds)) {
                 try {
                     val utbetaling = record.value ?: continue
-                    val systemTimeMs = record.headers["x-sy"]?.toLong()
+                    val systemTimeMs = record.headers["x-sy"]?.toLongOrNull() // Er null for utbetalinger som ikke kommer via kafka
 
                     bigQuery.upsertUtbetaling(utbetaling, systemTimeMs)
                 } catch (e: Exception) {
@@ -52,7 +52,7 @@ suspend fun oppdragConsumer(
             for (record in consumer.poll(1.seconds)) {
                 try {
                     val oppdrag = record.value ?: continue
-                    val systemTimeMs = record.headers["x-sy"]?.toLong()
+                    val systemTimeMs = record.headers["x-sy"]?.toLongOrNull()
 
                     bigQuery.upsertOppdrag(oppdrag, systemTimeMs)
                 } catch (e: Exception) {
@@ -74,7 +74,7 @@ suspend fun statusConsumer(
         while (isActive) {
             for (record in consumer.poll(1.seconds)) {
                 val status = record.value ?: continue
-                val systemTimeMs = record.headers["x-sy"]?.toLong()
+                val systemTimeMs = record.headers["x-sy"]?.toLongOrNull()
                 val fagsystem = record.headers["fagsystem"]
 
                 bqService.upsertStatus(record.key, status, systemTimeMs, fagsystem)
