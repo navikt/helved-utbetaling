@@ -34,6 +34,7 @@ class BigQueryService(
 
     fun upsertUtbetaling(utbetaling: Utbetaling, systemTimeMs: Long?) {
         if (utbetaling.dryrun) return
+        if (utbetaling.perioder.isEmpty()) return
 
         val rows = utbetaling.perioder.map { periode ->
             val rowId = "${utbetaling.originalKey}-${periode.fom}-${periode.tom}"
