@@ -3,16 +3,9 @@ package abetal.dp
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.UUID
-import no.trygdeetaten.skjema.oppdrag.*
-import java.time.format.DateTimeFormatter
-import java.math.BigDecimal
-import javax.xml.datatype.DatatypeFactory
-import java.time.*
-import java.util.GregorianCalendar
-import javax.xml.datatype.XMLGregorianCalendar
 import models.*
 import abetal.*
+import models.kontrakter.objectMapper
 
 fun MutableList<DetaljerLinje>.linje(
     behandlingId: BehandlingId,
@@ -33,7 +26,7 @@ fun MutableList<DpUtbetalingsdag>.meldekort(
     utbetaltBeløp: UInt = sats,
     utbetalingstype: Utbetalingstype = Utbetalingstype.Dagpenger,
 ) {
-    addAll(buildList<DpUtbetalingsdag> {
+    addAll(buildList {
         for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
             val dato = fom.plusDays(i)
             if (!dato.erHelg()) {
@@ -68,7 +61,7 @@ object Dp {
         utbetaltBeløp: UInt = sats,
         utbetalingstype: Utbetalingstype = Utbetalingstype.Dagpenger,
     ): List<DpUtbetalingsdag> {
-        return buildList<DpUtbetalingsdag> {
+        return buildList {
             for(i in 0 ..< ChronoUnit.DAYS.between(fom, tom) + 1) {
                 val dato = fom.plusDays(i)
                 if (!dato.erHelg()) {
@@ -85,7 +78,7 @@ object Dp {
     }
 }
 
-val meldeperiode = "2025-08-01-2025-08-14"
+const val meldeperiode = "2025-08-01-2025-08-14"
 val dagpengerMeldeperiodeDager = listOf(
     DpUtbetalingsdag(
         meldeperiode = meldeperiode,
@@ -166,3 +159,4 @@ val dagpengerMeldeperiodeDager = listOf(
     )
 )
 
+internal fun DpUtbetaling.asBytes() = objectMapper.writeValueAsBytes(this)

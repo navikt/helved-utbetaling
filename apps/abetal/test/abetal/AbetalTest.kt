@@ -1,21 +1,16 @@
 package abetal
 
+import abetal.dp.*
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Test
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
-import abetal.*
-import abetal.dp.Dp
-import abetal.dp.linje
-import abetal.dp.meldekort
+import kotlin.test.*
 
 internal class AbetalTest {
-
 
     @AfterEach
     fun `assert empty topic`() {
@@ -40,9 +35,9 @@ internal class AbetalTest {
 
         TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
-                meldekort(meldeperiode1, 7.jun21, 18.jun21, 1077u, 553u) 
+                meldekort(meldeperiode1, 7.jun21, 18.jun21, 1077u, 553u)
                 meldekort(meldeperiode2, 7.jul21, 20.jul21, 2377u, 779u)
-            }
+            }.asBytes()
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Dp.mottatt {
@@ -194,7 +189,7 @@ internal class AbetalTest {
                     sats = 100u,
                     utbetaltBeløp = 100u,
                 )
-            }
+            }.asBytes()
         }
 
 
@@ -227,7 +222,7 @@ internal class AbetalTest {
                     sats = 100u,
                     utbetaltBeløp = 100u,
                 )
-            }
+            }.asBytes()
         }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -261,7 +256,7 @@ internal class AbetalTest {
                     sats = 100u,
                     utbetaltBeløp = 100u,
                 )
-            }
+            }.asBytes()
         }
         TestRuntime.topics.status.assertThat().has(key)
 
@@ -286,7 +281,7 @@ internal class AbetalTest {
                     sats = 100u,
                     utbetaltBeløp = 100u,
                 )
-            }
+            }.asBytes()
         }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -341,7 +336,7 @@ internal class AbetalTest {
                     sats = 100u,
                     utbetaltBeløp = 100u,
                 )
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.oppdrag.assertThat().isEmpty()
@@ -373,7 +368,7 @@ internal class AbetalTest {
                     tom = 14.jun,
                     sats = 500u
                 )
-            }
+            }.asBytes()
         }
         val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId1)
@@ -405,7 +400,7 @@ internal class AbetalTest {
                     sats = 550u
                 )
                 addAll(originalDays + newDays)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.oppdrag.assertThat().has(transactionId2)
@@ -445,7 +440,7 @@ internal class AbetalTest {
                     sats = 100u,
                     utbetaltBeløp = 100u,
                 )
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.oppdrag.assertThat()
@@ -481,8 +476,8 @@ internal class AbetalTest {
         val key = UUID.randomUUID().toString()
         val uid = randomUtbetalingId()
 
-        val oppdrag = OppdragService.opprett(utbetaling(Action.CREATE, uid) { 
-            periode(1.jan, 3.jan, 123u) 
+        val oppdrag = OppdragService.opprett(utbetaling(Action.CREATE, uid) {
+            periode(1.jan, 3.jan, 123u)
         }).apply {
             mmel = Mmel().apply { alvorlighetsgrad = "00" }
         }

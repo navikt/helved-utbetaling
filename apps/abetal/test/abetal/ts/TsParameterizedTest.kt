@@ -45,7 +45,7 @@ internal class TsParameterizedTest : ConsumerParameterizedTestBase<TsDto>() {
     }
     
     override fun produceMessage(transactionId: String, message: TsDto) {
-        TestRuntime.topics.ts.produce(transactionId) { message }
+        TestRuntime.topics.ts.produce(transactionId) { message.asBytes() }
     }
     
     override fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId {

@@ -4,6 +4,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import models.*
 import abetal.*
+import models.kontrakter.objectMapper
 
 fun MutableList<DetaljerLinje>.linje(
     behandlingId: BehandlingId,
@@ -68,3 +69,4 @@ object Ts {
     }
 }
 
+internal fun TsDto.asBytes() = objectMapper.writeValueAsBytes(this)

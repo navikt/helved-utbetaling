@@ -48,7 +48,7 @@ internal class HistoriskParameterizedTest : ConsumerParameterizedTestBase<Histor
     }
     
     override fun produceMessage(transactionId: String, message: HistoriskUtbetaling) {
-        TestRuntime.topics.historiskIntern.produce(transactionId) { message }
+        TestRuntime.topics.historiskIntern.produce(transactionId) { message.asBytes() }
     }
     
     override fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId {
