@@ -6,7 +6,7 @@ application {
     mainClass.set("snickerboa.SnickerboaKt")
 }
 
-val ktorVersion = "3.4.0"
+val ktorVersion = "3.4.1"
 val libVersion = "3.1.232"
 
 dependencies {
