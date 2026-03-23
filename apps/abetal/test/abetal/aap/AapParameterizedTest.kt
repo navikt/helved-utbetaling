@@ -46,7 +46,7 @@ internal class AapParameterizedTest : ConsumerParameterizedTestBase<AapUtbetalin
     }
     
     override fun produceMessage(transactionId: String, message: AapUtbetaling) {
-        TestRuntime.topics.aap.produce(transactionId) { message }
+        TestRuntime.topics.aap.produce(transactionId) { message.asBytes() }
     }
     
     override fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId {

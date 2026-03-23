@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 internal class TsTest : ConsumerTestBase() {
@@ -52,7 +53,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
                     periode(3.jun, 7.jun, 1500u)
                 }
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat()
@@ -82,7 +83,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid, brukFagområdeTillst = true) {
                     periode(7.jun, 18.jun, 1077u)
                 }
-            }
+            }.asBytes()
         }
 
 
@@ -161,7 +162,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
                     periode(7.jun, 18.jun, 1077u)
                 }
-            }
+            }.asBytes()
         }
 
 
@@ -240,7 +241,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid) {
                     periode(7.jun21, 18.jun21, 1077u)
                 }
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId)
@@ -297,7 +298,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
                     periode(3.jun, 7.jun, 1500u)
                 }
-            }
+            }.asBytes()
         }
 
 
@@ -402,7 +403,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
                     periode(1.jun, 30.jun, 1100u)
                 }
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId)
@@ -448,7 +449,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
                     periode(1.jun, 30.jun, 1200u)
                 }
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId2)
@@ -493,7 +494,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid, brukFagområdeTillst = false) {
                     periode(1.jun, 30.jun, 1300u)
                 }
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId3)
@@ -572,7 +573,7 @@ internal class TsTest : ConsumerTestBase() {
                     periode(1.jun, 30.jun, 3000u)
                 }
                 
-            }
+            }.asBytes()
         }
 
 
@@ -703,7 +704,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid = uid1, stønad = StønadTypeTilleggsstønader.BOUTGIFTER_AAP) { // tillst=tru3?
                     periode(1.jun, 30.jun, 3070u)
                 }
-            }
+            }.asBytes()
         }
 
 
@@ -835,7 +836,7 @@ internal class TsTest : ConsumerTestBase() {
                     periode(1.jun, 3.jun, 210u)
                     periode(6.jun, 6.jun, 70u)
                 }
-            }
+            }.asBytes()
         }
 
 
@@ -963,7 +964,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid = uid1) {
                     // empty
                 }
-            }
+            }.asBytes()
         }
 
 
@@ -1083,7 +1084,7 @@ internal class TsTest : ConsumerTestBase() {
                 Ts.utbetaling(uid1) {
                     periode(1.jan, 2.jan, 100u)
                 }
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
@@ -1138,7 +1139,7 @@ internal class TsTest : ConsumerTestBase() {
                     periode(1.jun, 5.jun, 1000u)
                     periode(8.jun, 10.jun, 500u)
                 }
-            }
+            }.asBytes()
         }
 
 
@@ -1190,7 +1191,7 @@ internal class TsTest : ConsumerTestBase() {
             ) {
                 Ts.utbetaling(uid = uid) {
                 }
-            }
+            }.asBytes()
         }
         TestRuntime.topics.status.assertThat()
             .has(transactionId)
@@ -1209,5 +1210,42 @@ internal class TsTest : ConsumerTestBase() {
             }
     }
 
-}
+    @Test
+    fun `status - FEILET ved deserialiseringsfeil`() {
+        val transactionId = UUID.randomUUID().toString()
 
+        TestRuntime.topics.ts.produce(transactionId) {
+            """{ "ugyldig-json": """.toByteArray()
+        }
+
+        val status = TestRuntime.topics.status.readValue()
+        assertEquals(Status.FEILET, status.status)
+        assertNotNull(status.error)
+    }
+
+    @Test
+    fun `status - FEILET ved prosesseringsfeil`() {
+        val transactionId = UUID.randomUUID().toString()
+
+        TestRuntime.topics.ts.produce(transactionId) {
+            Ts.dto(
+                sakId = "sak-1",
+                behandlingId = "beh-1",
+                periodetype = Periodetype.EN_GANG,
+            ) {
+                Ts.utbetaling(
+                    uid = UtbetalingId(UUID.randomUUID()),
+                    brukFagområdeTillst = true,
+                    stønad = StønadTypeTilleggsstønader.REIS_ARBEID_AAP,
+                ) {
+                    periode(1.jun, 1.jun, 100u)
+                }
+            }.asBytes()
+        }
+
+        val status = TestRuntime.topics.status.readValue()
+        assertEquals(Status.FEILET, status.status)
+        assertNotNull(status.error)
+    }
+
+}

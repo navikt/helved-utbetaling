@@ -2,9 +2,9 @@ package abetal.aap
 
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 import models.*
 import abetal.*
+import models.kontrakter.objectMapper
 import java.util.UUID
 
 fun MutableList<DetaljerLinje>.linje(
@@ -64,3 +64,5 @@ object Aap {
         )
     }
 }
+
+internal fun AapUtbetaling.asBytes() = objectMapper.writeValueAsBytes(this)

@@ -14,9 +14,10 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 const val FS_KEY = "fagsystem"
 
 object Topics {
-    val dp = Topic("teamdagpenger.utbetaling.v1", json<DpUtbetaling>())
-    val aap = Topic("aap.utbetaling.v1", json<AapUtbetaling>())
-    val ts = Topic("tilleggsstonader.utbetaling.v1", json<TsDto>())
+    val dp = Topic("teamdagpenger.utbetaling.v1", bytes())
+    val aap = Topic("aap.utbetaling.v1", bytes())
+    val ts = Topic("tilleggsstonader.utbetaling.v1", bytes())
+    val historisk = Topic("historisk.utbetaling.v1", bytes())
 
     // TODO: rename denne til tpUtbetalinger når ts har laget topic
     val tp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
@@ -26,11 +27,10 @@ object Topics {
     val status = Topic("helved.status.v1", json<StatusReply>())
     val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, UtbetalingId>())
     val pendingUtbetalinger = Topic("helved.pending-utbetalinger.v1", json<Utbetaling>())
-    val dpIntern = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
-    val aapIntern = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
-    val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
-    val historisk = Topic("historisk.utbetaling.v1", json<HistoriskUtbetaling>())
-    val historiskIntern = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
+    val dpIntern = Topic("helved.utbetalinger-dp.v1", bytes())
+    val aapIntern = Topic("helved.utbetalinger-aap.v1", bytes())
+    val tsIntern = Topic("helved.utbetalinger-ts.v1", bytes())
+    val historiskIntern = Topic("helved.utbetalinger-historisk.v1", bytes())
     val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
@@ -91,7 +91,7 @@ fun Topology.dpStream(
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
         .merge(consume(Topics.dpIntern))
-        .map { key, dp -> DpTuple(key, dp) }
+        .map { key, payload -> DpTuple(key, deserialize(Topics.dp.name, payload, DpUtbetaling::class)) }
         .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -139,7 +139,7 @@ fun Topology.aapStream(
     consume(Topics.aap)
         .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
         .merge(consume(Topics.aapIntern))
-        .map { key, aap -> AapTuple(key, aap) }
+        .map { key, payload -> AapTuple(key, deserialize(Topics.aap.name, payload, AapUtbetaling::class)) }
         .rekey { (_, aap) -> SakKey(SakId(aap.sakId), Fagsystem.AAP) }
         .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -174,7 +174,7 @@ fun Topology.tsStream(
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
         .merge(consume(Topics.tsIntern))
-        .map { key, ts -> TsTuple(null, null, key, ts) }
+        .map { key, payload -> TsTuple(null, null, key, deserialize(Topics.ts.name, payload, TsDto::class)) }
         .rekey { (_, dto, _, value) ->
             val ts = dto ?: value!!
             SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER)
@@ -253,7 +253,7 @@ fun Topology.historiskStream(
     consume(Topics.historisk)
         .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
         .merge(consume(Topics.historiskIntern))
-        .map { key, historisk -> HistoriskTuple(key, historisk) }
+        .map { key, payload -> HistoriskTuple(key, deserialize(Topics.historisk.name, payload, HistoriskUtbetaling::class)) }
         .rekey { (_, historisk) -> SakKey(SakId(historisk.sakId), Fagsystem.HISTORISK) }
         .leftJoin(Serde.json(), Serde.json(), saker, "historisktuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 internal class HistoriskTest : ConsumerTestBase() {
@@ -25,7 +26,7 @@ internal class HistoriskTest : ConsumerTestBase() {
                     tom = LocalDate.of(2021, 6, 18),
                     beløp = 1077u,
                 )
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId)
@@ -79,7 +80,7 @@ internal class HistoriskTest : ConsumerTestBase() {
                 vedtakstidspunkt = 7.jun.atStartOfDay(),
             ) {
                 Historisk.periode(3.jun, 7.jun, 1500u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -174,7 +175,7 @@ internal class HistoriskTest : ConsumerTestBase() {
                 vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
                 Historisk.periode(1.jun, 30.jun, 3000u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -269,7 +270,7 @@ internal class HistoriskTest : ConsumerTestBase() {
                 vedtakstidspunkt = 1.jun.atStartOfDay(),
             ) {
                 Historisk.periode(1.jun, 30.jun, 3070u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -361,7 +362,7 @@ internal class HistoriskTest : ConsumerTestBase() {
                 vedtakstidspunkt = 14.jun.atStartOfDay(),
             ) {
                 emptyList()
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -460,7 +461,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             ) {
                 Historisk.periode(1.jun, 3.jun, 210u) +
                         Historisk.periode(6.jun, 6.jun, 70u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -549,7 +550,7 @@ internal class HistoriskTest : ConsumerTestBase() {
                     tom = 2.jan,
                     beløp = 100u,
                 )
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat()
@@ -602,7 +603,7 @@ internal class HistoriskTest : ConsumerTestBase() {
             ) {
                 Historisk.periode(1.jun, 5.jun, 1000u)
                 Historisk.periode(8.jun, 10.jun, 500u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -650,7 +651,7 @@ internal class HistoriskTest : ConsumerTestBase() {
                     tom = LocalDate.of(2024, 6, 1), // valideringsfeil
                     beløp = 1000u,
                 )
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat()
@@ -695,7 +696,7 @@ internal class HistoriskTest : ConsumerTestBase() {
                     tom = 2.jan,
                     beløp = 100u,
                 )
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat()
@@ -723,7 +724,7 @@ internal class HistoriskTest : ConsumerTestBase() {
                     tom = LocalDate.of(2021, 6, 18),
                     beløp = 1077u,
                 )
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat()
@@ -743,6 +744,41 @@ internal class HistoriskTest : ConsumerTestBase() {
         kvitterOk(transactionId, oppdrag, listOf(uid))
 
         TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+    }
+
+    @Test
+    fun `status - FEILET ved deserialiseringsfeil`() {
+        val transactionId = UUID.randomUUID().toString()
+
+        TestRuntime.topics.historisk.produce(transactionId) {
+            """{ "ugyldig-json": """.toByteArray()
+        }
+
+        val status = TestRuntime.topics.status.readValue()
+        assertEquals(Status.FEILET, status.status)
+        assertNotNull(status.error)
+    }
+
+    @Test
+    fun `status - FEILET ved prosesseringsfeil`() {
+        val transactionId = UUID.randomUUID().toString()
+
+        TestRuntime.topics.historisk.produce(transactionId) {
+            Historisk.utbetaling(
+                uid = UtbetalingId(UUID.randomUUID()),
+                periodetype = Periodetype.DAG,
+            ) {
+                Historisk.periode(
+                    fom = LocalDate.now(),
+                    tom = LocalDate.now(),
+                    beløp = 100u,
+                )
+            }.asBytes()
+        }
+
+        val status = TestRuntime.topics.status.readValue()
+        assertEquals(Status.FEILET, status.status)
+        assertNotNull(status.error)
     }
 
 

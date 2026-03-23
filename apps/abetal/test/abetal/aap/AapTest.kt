@@ -1,12 +1,9 @@
 package abetal.aap
 
 import abetal.*
-import abetal.aap.linje
 import models.*
-import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.test.assertEquals
@@ -49,7 +46,7 @@ class AapTest : ConsumerTestBase() {
             Aap.utbetaling(sid.id, bid.id) {
                 meldekort(uid1.id, 7.jun, 18.jun, 553u, 1077u)
                 meldekort(uid2.id, 7.jul, 20.jul, 779u, 2377u)
-            }
+            }.asBytes()
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Aap.mottatt {
@@ -146,7 +143,7 @@ class AapTest : ConsumerTestBase() {
                 meldekort(uid1.id, 7.jun, 20.jun, 553u, 1077u)
                 meldekort(uid2.id, 8.jul, 19.jul, 779u, 2377u)
                 meldekort(uid3.id, 7.aug, 20.aug, 3000u, 3133u)
-            }
+            }.asBytes()
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Aap.mottatt {
@@ -264,7 +261,7 @@ class AapTest : ConsumerTestBase() {
             Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
                 meldekort(uid1.id, 3.jun, 14.jun, 100u, 100u)
                 meldekort(uid2.id, 17.jun, 28.jun, 200u, 200u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId2) {
@@ -343,7 +340,7 @@ class AapTest : ConsumerTestBase() {
         TestRuntime.topics.aap.produce(transactionId2) {
             Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
                 meldekort(uid1.id, 3.jun, 14.jun, 80u, 100u)
-            }
+            }.asBytes()
         }
         TestRuntime.topics.status.assertThat().has(transactionId2) {
             Aap.mottatt {
@@ -416,7 +413,7 @@ class AapTest : ConsumerTestBase() {
         TestRuntime.topics.aap.produce(transactionId1) {
             Aap.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
                 // Empty - opphør
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId1) {
@@ -493,7 +490,7 @@ class AapTest : ConsumerTestBase() {
             Aap.utbetaling(sid.id, bid.id) {
                 meldekort(uid1.id, 2.sep, 13.sep, 600u, 600u)
                 meldekort(uid3.id, 30.sep, 10.okt, 600u, 600u)
-            }
+            }.asBytes()
         }
         TestRuntime.topics.status.assertThat().has(transactionId) {
             Aap.mottatt {
@@ -548,7 +545,7 @@ class AapTest : ConsumerTestBase() {
             Aap.utbetaling(sid.id, bid.id, avvent = avvent) {
                 meldekort(uid1.id, 7.jun, 18.jun, 553u, 1077u)
                 meldekort(uid2.id, 7.jul, 20.jul, 779u, 2377u)
-            }
+            }.asBytes()
         }
         TestRuntime.topics.status.assertThat().has(transactionId)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
@@ -584,5 +581,31 @@ class AapTest : ConsumerTestBase() {
                 assertNotNull(it.avvent, "avvent should be set on second meldekort utbetaling")
                 assertEquals(avvent, it.avvent)
             }
+    }
+
+    @Test
+    fun `status - FEILET ved deserialiseringsfeil`() {
+        val transactionId = UUID.randomUUID().toString()
+
+        TestRuntime.topics.aap.produce(transactionId) {
+            """{ "ugyldig-json": """.toByteArray()
+        }
+
+        val status = TestRuntime.topics.status.readValue()
+        assertEquals(Status.FEILET, status.status)
+        assertNotNull(status.error)
+    }
+
+    @Test
+    fun `status - FEILET ved prosesseringsfeil`() {
+        val transactionId = UUID.randomUUID().toString()
+
+        TestRuntime.topics.aap.produce(transactionId) {
+            Aap.utbetaling(sakId = "sak-1", behandlingId = "beh-1") { }.asBytes()
+        }
+
+        val status = TestRuntime.topics.status.readValue()
+        assertEquals(Status.FEILET, status.status)
+        assertNotNull(status.error)
     }
 }
