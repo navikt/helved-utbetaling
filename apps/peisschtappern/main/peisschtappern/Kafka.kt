@@ -4,10 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import libs.jdbc.concurrency.transaction
 import libs.kafka.*
-import libs.xml.XMLMapper
 import libs.kafka.processor.*
 import libs.tracing.Tracing
 
@@ -85,15 +83,13 @@ private fun Topology.save(
                             stream_time_ms = aud.streamTimeMs,
                             system_time_ms = aud.systemTimeMs,
                             trace_id = Tracing.getCurrentTraceId(),
-                            commit = commitHash, 
-                            headers = headers, 
+                            commit = commitHash,
+                            headers = headers,
                         ).insert(table)
                     }
                 }
             }
         }
 }
-
-class DefaultKafkaFactory : KafkaFactory {}
 
 private fun String.commitHash(): String = substringAfterLast(":")

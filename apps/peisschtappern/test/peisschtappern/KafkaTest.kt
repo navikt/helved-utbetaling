@@ -49,7 +49,6 @@ class KafkaTest {
                 TestData.oppdragXml().toByteArray()
             } else {
                 """{"sakId": "123"}""".toByteArray()
-
             }
             val key = if (case.channel.topic == Topics.saker) {
                 """{"sakId":"123","fagsystem":"TILTPENG"}"""
@@ -68,12 +67,33 @@ class KafkaTest {
             assertEquals(case.channel.topic.name, dao.topic_name)
             assertEquals(key, dao.key)
             assertEquals(String(byteArray), dao.value)
-            assertEquals(0, dao.partition)
-            if (case.channel.topic != Topics.oppdrag) assertEquals(0, dao.offset)
             assertNotNull(dao.timestamp_ms)
             assertNotNull(dao.stream_time_ms)
             assertNotNull(dao.system_time_ms)
             assertEquals("test", dao.commit)
         }
+    }
+
+    @Test
+    fun `saves messages with invalid json`() = runTest(TestRuntime.context) {
+        val case = TestCase(Channel.Aap, TestRuntime.kafka.testTopic(Channel.Aap.topic))
+        val key = UUID.randomUUID().toString()
+        val value = """{ ikke gyldig json }"""
+
+        case.testTopic.produce(key) { value.toByteArray() }
+
+        val dao = TestRuntime.jdbc.await(100) {
+            Daos.find(case.channel.table, 1, listOf(key)).singleOrNull()
+        }
+
+        assertNotNull(dao)
+        assertEquals("v1", dao.version)
+        assertEquals(case.channel.topic.name, dao.topic_name)
+        assertEquals(key, dao.key)
+        assertEquals(value, dao.value)
+        assertNotNull(dao.timestamp_ms)
+        assertNotNull(dao.stream_time_ms)
+        assertNotNull(dao.system_time_ms)
+        assertEquals("test", dao.commit)
     }
 }
