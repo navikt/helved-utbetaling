@@ -69,7 +69,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
     }
 
     // Brukes for å teste ikke-deserialiserbare meldinger
-    post("/abetal/{fagsystem}/raw") {
+    post("/abetal/raw/{fagsystem}") {
         val fagsystem = call.parameters["fagsystem"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Fagsystem parameter is required")
         val body = call.receive<ByteArray>()
         val txId = UUID.randomUUID()
