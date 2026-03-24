@@ -69,19 +69,30 @@ class TestRuntime : Sts, Soap, AutoCloseable {
         receivedSoapRequests.add(req)
     }
 
-    private var soapResponse: String = Resource.read("/simuler-body-response.xml")
+    private val soapResponseQueue: ArrayDeque<String> = ArrayDeque<String>().apply {
+        add(Resource.read("/simuler-body-response.xml"))
+    }
+
+    var stsCallCount = 0
 
     fun soapRespondWith(resource: String) {
-        soapResponse = resource
+        soapResponseQueue.clear()
+        soapResponseQueue.add(resource)
+    }
+
+    fun soapRespondWithSequence(vararg responses: String) {
+        soapResponseQueue.clear()
+        soapResponseQueue.addAll(responses.toList())
     }
 
     override suspend fun call(action: String, body: String): String {
+        val response = if (soapResponseQueue.size > 1) soapResponseQueue.removeFirst() else soapResponseQueue.first()
         return SoapXml.envelope(
             action = action,
             messageId = UUID.randomUUID(),
             serviceUrl = "http://localhost:8083".let(::URI).toURL(),
             assertion = "token",
-            body = soapResponse
+            body = response
         )
     }
 
@@ -123,6 +134,7 @@ private fun Application.fakes(fake: TestRuntime) {
 
     routing {
         get("/gandalf/rest/v1/sts/samltoken") {
+            fake.stsCallCount++
             call.respond(GandalfOIDCSamlToken())
         }
         post("/cics") {

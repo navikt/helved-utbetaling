@@ -76,6 +76,41 @@ class ErrorHandlingTest {
             }
         }
     }
+
+    @Test
+    fun `fornyer STS-token og prøver på nytt ved FailedAuthentication`() {
+        TestRuntime().use { runtime ->
+            testApplication {
+                application {
+                    simulering(config = runtime.config)
+                }
+
+                val http = createClient {
+                    install(ContentNegotiation) {
+                        jackson {
+                            registerModule(JavaTimeModule())
+                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                        }
+                    }
+                }
+
+                runtime.soapRespondWithSequence(
+                    failedAuthenticationFault,
+                    Resource.read("/simuler-body-response.xml"),
+                )
+
+                val res = http.post("/simulering") {
+                    contentType(ContentType.Application.Json)
+                    setBody(enSimuleringRequestBody())
+                }
+
+                assertEquals(HttpStatusCode.OK, res.status)
+                assertEquals(2, runtime.receivedSoapRequests.size)
+                assertEquals(2, runtime.stsCallCount)
+            }
+        }
+    }
 }
 
 enum class SoapFaultCode {
@@ -84,6 +119,13 @@ enum class SoapFaultCode {
     Client,
     Server
 }
+
+private val failedAuthenticationFault = """
+<soap:Fault xmlns="">
+    <faultcode>wsse:FailedAuthentication</faultcode>
+    <faultstring>A security token could not be authenticated</faultstring>
+</soap:Fault>
+""".trimIndent()
 
 private val serverFault = """
 <soap:Fault xmlns="">
