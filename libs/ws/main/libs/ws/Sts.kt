@@ -78,6 +78,10 @@ class StsClient(
         return samlToken
     }
 
+    suspend fun invalidate() {
+        cache.rm(config.user)
+    }
+
     private suspend fun <T : Any> HttpResponse.tryInto(from: (JsonNode) -> T): T {
         when (status) {
             HttpStatusCode.OK -> {
@@ -116,6 +120,6 @@ data class SamlToken(
         expirationTime <= LocalDateTime.now().plus(EXP_LEEWAY)
 
     companion object {
-        private val EXP_LEEWAY = Duration.ofSeconds(10)
+        private val EXP_LEEWAY = Duration.ofSeconds(10) // TODO: burde vi øke denne?
     }
 }

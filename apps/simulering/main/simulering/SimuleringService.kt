@@ -40,17 +40,31 @@ class SimuleringService(private val config: Config) {
     private val sts = StsClient(config.simulering.sts, http, proxyAuth = ::getAzureToken)
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
 
-    suspend fun simuler(request: SimulerBeregningRequest): rest.SimuleringResponse {
+    suspend fun simuler(request: SimulerBeregningRequest): rest.SimuleringResponse = withAuthRetry {
         val xml = xmlMapper.writeValueAsString(request).replace(Regex("ns\\d="), "xmlns:$0")
         val response = soap.call(SimulerAction.BEREGNING, xml)
-        return (json(response) ?: Beregning.empty(request)).intoDto()
+        (json(response) ?: Beregning.empty(request)).intoDto()
     }
 
-    suspend fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse {
+    suspend fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse = withAuthRetry {
         val request = SimulerBeregningRequest.from(request)
         val xml = xmlMapper.writeValueAsString(request).replace(Regex("ns\\d="), "xmlns:$0")
         val response = soap.call(SimulerAction.BEREGNING, xml)
-        return (json(response) ?: Beregning.empty(request)).intoDto()
+        (json(response) ?: Beregning.empty(request)).intoDto()
+    }
+
+    private suspend fun <T> withAuthRetry(block: suspend () -> T): T {
+        return try {
+            block()
+        } catch (e: SoapException) {
+            if (e.message?.contains("FailedAuthentication") == true) {
+                wsLog.warn("STS-token feilet med FailedAuthentication, invaliderer cache og prøver på nytt")
+                sts.invalidate()
+                block()
+            } else {
+                throw e
+            }
+        }
     }
 
     fun json(xml: String): Beregning? {
