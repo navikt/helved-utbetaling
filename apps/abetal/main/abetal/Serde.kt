@@ -4,6 +4,8 @@ import libs.kafka.JacksonDeserializer
 import kotlin.reflect.KClass
 
 
+class DeserialiseringFeiletException(msg: String) : Exception(msg)
+
 internal fun <T : Any> deserialize(
     topic: String,
     payload: ByteArray,
@@ -13,7 +15,7 @@ internal fun <T : Any> deserialize(
         checkNotNull(JacksonDeserializer(target).deserialize(topic, payload)) {
             "Mottok tom payload på $topic"
         }
-    } catch (e: Exception) {
-        throw IllegalArgumentException("Feil ved deserialisering av melding fra $topic", e)
+    } catch (_: Exception) {
+        throw DeserialiseringFeiletException("Feil ved deserialisering av melding fra $topic")
     }
 }

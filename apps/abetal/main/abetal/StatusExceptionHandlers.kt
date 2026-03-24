@@ -26,7 +26,8 @@ class StatusOnProcessingErrorHandler : ProcessingExceptionHandler {
 
         val error = when (exception) {
             is ApiError -> exception
-            else -> ApiError(statusCode = 500, msg = "Feil ved prosessering av melding fra ${context.topic()} (partition=${context.partition()}, offset=${context.offset()}): ${exception.summary()}")
+            is DeserialiseringFeiletException -> ApiError(400, exception.summary())
+            else -> ApiError(500, "Feil ved prosessering av melding fra ${context.topic()} (partition=${context.partition()}, offset=${context.offset()}): ${exception.summary()}")
         }
 
         kafkaLog.error(error.msg, error)
