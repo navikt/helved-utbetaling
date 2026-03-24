@@ -25,7 +25,7 @@ suspend fun utbetalingConsumer(
     consumer: KafkaConsumer<String, Utbetaling>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.seekToBeginning(0, 1, 2)
+        consumer.seekToEnd(0, 1, 2)
         while (isActive) {
             for (record in consumer.poll(1.seconds)) {
                 try {
@@ -34,7 +34,7 @@ suspend fun utbetalingConsumer(
 
                     bigQuery.upsertUtbetaling(utbetaling, systemTimeMs)
                 } catch (e: Exception) {
-                    appLog.info("Feil ved prosessering av utbetaling, key=${record.key}: ${e.message}", e)
+                    appLog.warn("Feil ved prosessering av utbetaling, key=${record.key}: ${e.message}", e)
                 }
             }
             delay(1)
@@ -47,7 +47,7 @@ suspend fun oppdragConsumer(
     consumer: KafkaConsumer<String, Oppdrag>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.seekToBeginning(0, 1, 2)
+        consumer.seekToEnd(0,1,2)
         while (isActive) {
             for (record in consumer.poll(1.seconds)) {
                 try {
@@ -56,7 +56,7 @@ suspend fun oppdragConsumer(
 
                     bigQuery.upsertOppdrag(oppdrag, systemTimeMs)
                 } catch (e: Exception) {
-                    appLog.info("Feil ved prosessering av oppdrag, key=${record.key}: ${e.message}", e)
+                    appLog.warn("Feil ved prosessering av oppdrag, key=${record.key}: ${e.message}", e)
                 }
             }
             delay(1)
@@ -69,8 +69,7 @@ suspend fun statusConsumer(
     consumer: KafkaConsumer<String, StatusReply>,
 ) {
     withContext(Dispatchers.IO) {
-        // consumer.seekToEnd(0,1,2)
-        consumer.seekToBeginning(0,1,2)
+        consumer.seekToEnd(0,1,2)
         while (isActive) {
             for (record in consumer.poll(1.seconds)) {
                 val status = record.value ?: continue
