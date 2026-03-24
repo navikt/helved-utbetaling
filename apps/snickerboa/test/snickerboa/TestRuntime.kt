@@ -10,11 +10,11 @@ import libs.ktor.KtorRuntime
 import models.*
 
 class TestTopics(kafka: VanillaKafkaMock) {
-    val aapIntern: KafkaProducerFake<String, AapUtbetaling> = kafka.getProducer(Topics.aapIntern)
-    val dpIntern: KafkaProducerFake<String, DpUtbetaling> = kafka.getProducer(Topics.dpIntern)
-    val tsIntern: KafkaProducerFake<String, TsDto> = kafka.getProducer(Topics.tsIntern)
-    val tpIntern: KafkaProducerFake<String, TpUtbetaling> = kafka.getProducer(Topics.tpIntern)
-    val historiskIntern: KafkaProducerFake<String, HistoriskUtbetaling> = kafka.getProducer(Topics.historiskIntern)
+    val aapIntern: KafkaProducerFake<String, ByteArray> = kafka.getProducer(Topics.aapIntern)
+    val dpIntern: KafkaProducerFake<String, ByteArray> = kafka.getProducer(Topics.dpIntern)
+    val tsIntern: KafkaProducerFake<String, ByteArray> = kafka.getProducer(Topics.tsIntern)
+    val tpIntern: KafkaProducerFake<String, ByteArray> = kafka.getProducer(Topics.tpIntern)
+    val historiskIntern: KafkaProducerFake<String, ByteArray> = kafka.getProducer(Topics.historiskIntern)
 
     val status: KafkaConsumerFake<String, StatusReply> = kafka.getConsumer(Topics.status)
     val dryrunAap: KafkaConsumerFake<String, Simulering> = kafka.getConsumer(Topics.dryrunAap)

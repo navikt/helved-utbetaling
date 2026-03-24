@@ -12,6 +12,7 @@ import models.DpUtbetaling
 import models.HistoriskUtbetaling
 import models.TpUtbetaling
 import models.TsDto
+import models.kontrakter.objectMapper
 
 fun Route.api(correlator: RequestReplyCorrelator) {
     suspend fun ApplicationCall.respond(response: UtbetalingResponse) {
@@ -22,7 +23,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<AapUtbetaling>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceAap(it, dto)
+            correlator.producers.produceAap(it, objectMapper.writeValueAsBytes(dto))
         })
     }
 
@@ -30,7 +31,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<DpUtbetaling>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceDp(it, dto)
+            correlator.producers.produceDp(it, objectMapper.writeValueAsBytes(dto))
         })
     }
 
@@ -39,7 +40,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
             ?: throw IllegalArgumentException("Ugyldig UUID i path")
         val dto = call.receive<DpUtbetaling>()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceDp(it, dto)
+            correlator.producers.produceDp(it, objectMapper.writeValueAsBytes(dto))
         })
     }
 
@@ -47,7 +48,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<TsDto>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceTs(it, dto)
+            correlator.producers.produceTs(it, objectMapper.writeValueAsBytes(dto))
         })
     }
 
@@ -55,7 +56,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<TpUtbetaling>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceTp(it, dto)
+            correlator.producers.produceTp(it, objectMapper.writeValueAsBytes(dto))
         })
     }
 
@@ -63,7 +64,24 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<HistoriskUtbetaling>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceHistorisk(it, dto)
+            correlator.producers.produceHistorisk(it, objectMapper.writeValueAsBytes(dto))
+        })
+    }
+
+    // Brukes for å teste ikke-deserialiserbare meldinger
+    post("/abetal/{fagsystem}/raw") {
+        val fagsystem = call.parameters["fagsystem"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Fagsystem parameter is required")
+        val body = call.receive<ByteArray>()
+        val txId = UUID.randomUUID()
+
+        call.respond(correlator.handleUtbetaling(false, txId) {
+            when (fagsystem) {
+                "dp" -> correlator.producers.produceDp(it, body)
+                "ts" -> correlator.producers.produceTs(it, body)
+                "tp" -> correlator.producers.produceTp(it, body)
+                "aap" -> correlator.producers.produceAap(it, body)
+                "historisk" -> correlator.producers.produceHistorisk(it, body)
+            }
         })
     }
 }
