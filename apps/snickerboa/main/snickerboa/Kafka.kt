@@ -9,17 +9,18 @@ import libs.kafka.KafkaFactory
 import libs.kafka.KafkaProducer
 import libs.kafka.StreamsConfig
 import libs.kafka.Topic
+import libs.kafka.bytes
 import libs.kafka.json
 import models.*
 import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
 
 object Topics {
-    val aapIntern = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
-    val dpIntern = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
-    val tsIntern = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
-    val tpIntern = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
-    val historiskIntern = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
+    val aapIntern = Topic("helved.utbetalinger-aap.v1", bytes())
+    val dpIntern = Topic("helved.utbetalinger-dp.v1", bytes())
+    val tsIntern = Topic("helved.utbetalinger-ts.v1", bytes())
+    val tpIntern = Topic("helved.utbetalinger-tp.v1", bytes())
+    val historiskIntern = Topic("helved.utbetalinger-historisk.v1", bytes())
 
     val status = Topic("helved.status.v1", json<StatusReply>())
     val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
@@ -29,18 +30,18 @@ object Topics {
 }
 
 class UtbetalingProducers(
-    private val aap: KafkaProducer<String, AapUtbetaling>,
-    private val dp: KafkaProducer<String, DpUtbetaling>,
-    private val ts: KafkaProducer<String, TsDto>,
-    private val tp: KafkaProducer<String, TpUtbetaling>,
-    private val historisk: KafkaProducer<String, HistoriskUtbetaling>,
+    private val aap: KafkaProducer<String, ByteArray>,
+    private val dp: KafkaProducer<String, ByteArray>,
+    private val ts: KafkaProducer<String, ByteArray>,
+    private val tp: KafkaProducer<String, ByteArray>,
+    private val historisk: KafkaProducer<String, ByteArray>,
 ) : AutoCloseable {
 
-    fun produceAap(uid: UUID, data: AapUtbetaling) = aap.send(uid.toString(), data)
-    fun produceDp(uid: UUID, data: DpUtbetaling) = dp.send(uid.toString(), data)
-    fun produceTs(uid: UUID, data: TsDto) = ts.send(uid.toString(), data)
-    fun produceTp(uid: UUID, data: TpUtbetaling) = tp.send(uid.toString(), data)
-    fun produceHistorisk(uid: UUID, data: HistoriskUtbetaling) = historisk.send(uid.toString(), data)
+    fun produceAap(uid: UUID, data: ByteArray) = aap.send(uid.toString(), data)
+    fun produceDp(uid: UUID, data: ByteArray) = dp.send(uid.toString(), data)
+    fun produceTs(uid: UUID, data: ByteArray) = ts.send(uid.toString(), data)
+    fun produceTp(uid: UUID, data: ByteArray) = tp.send(uid.toString(), data)
+    fun produceHistorisk(uid: UUID, data: ByteArray) = historisk.send(uid.toString(), data)
 
     override fun close() {
         aap.close()
