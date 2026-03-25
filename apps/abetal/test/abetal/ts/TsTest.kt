@@ -9,6 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 internal class TsTest : ConsumerTestBase() {
 
@@ -1093,6 +1094,144 @@ internal class TsTest : ConsumerTestBase() {
 
         TestRuntime.topics.simulering.assertThat().hasNot(key)
 
+        TestRuntime.topics.dryrunTs.assertThat()
+            .has(key)
+            .with(key) { simulering ->
+                assertTrue(simulering is Info)
+                assertEquals(Info.Status.OK_UTEN_ENDRING, simulering.status)
+                assertEquals(Fagsystem.TILLEGGSSTØNADER, simulering.fagsystem)
+            }
+
+    }
+
+    @Test
+    fun `simulation - ny sak med dryrun produserer simuleringsrequest, ikke OK_UTEN_ENDRING`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val tid = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        TestRuntime.topics.ts.produce(tid) {
+            Ts.dto(sid.id, bid.id, dryrun = true) {
+                Ts.utbetaling(uid) {
+                    periode(7.jun, 18.jun, 553u)
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.simulering.assertThat()
+            .hasTotal(1)
+            .has(tid)
+            .with(tid) { simulering ->
+                assertEquals("NY", simulering.request.oppdrag.kodeEndring)
+                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
+                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
+            }
+
+        TestRuntime.topics.dryrunTs.assertThat().isEmpty()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+    }
+
+    @Test
+    fun `simulation - dryrun med endringer produserer ENDR simuleringsrequest`() {
+        val key = UUID.randomUUID().toString()
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        TestRuntime.topics.utbetalinger.produce("$uid") {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = key,
+                stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
+                periodetype = Periodetype.EN_GANG,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                beslutterId = Navident("ts"),
+                saksbehandlerId = Navident("ts"),
+                fagsystem = Fagsystem.TILLEGGSSTØNADER,
+            ) {
+                periode(1.jan, 2.jan, 100u, null)
+            }
+        }
+
+        TestRuntime.topics.ts.produce(key) {
+            Ts.dto(sid.id, bid.id, dryrun = true) {
+                Ts.utbetaling(uid) {
+                    periode(1.jan, 2.jan, 200u)
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.simulering.assertThat()
+            .has(key)
+            .with(key) { simulering ->
+                assertEquals("ENDR", simulering.request.oppdrag.kodeEndring)
+                assertEquals("TILLST", simulering.request.oppdrag.kodeFagomraade)
+                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
+                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
+                assertNull(simulering.request.oppdrag.oppdragslinjes[0].kodeStatusLinje)
+            }
+
+        TestRuntime.topics.dryrunTs.assertThat().isEmpty()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+    }
+
+    @Test
+    fun `simulation - opphør med dryrun produserer simuleringsrequest`() {
+        val key = UUID.randomUUID().toString()
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val uid = UtbetalingId(UUID.randomUUID())
+        val periodeId = PeriodeId()
+
+        TestRuntime.topics.utbetalinger.produce("$uid") {
+            utbetaling(
+                action = Action.CREATE,
+                uid = uid,
+                sakId = sid,
+                behandlingId = bid,
+                originalKey = key,
+                stønad = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
+                lastPeriodeId = periodeId,
+                personident = Personident("12345678910"),
+                vedtakstidspunkt = 14.jun.atStartOfDay(),
+                beslutterId = Navident("ts"),
+                saksbehandlerId = Navident("ts"),
+                fagsystem = Fagsystem.TILLEGGSSTØNADER,
+            ) {
+                periode(1.jan, 2.jan, 100u, null)
+            }
+        }
+
+        TestRuntime.topics.ts.produce(key) {
+            Ts.dto(sid.id, bid.id, dryrun = true) {
+                Ts.utbetaling(uid) {
+                    // empty - triggers opphør
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.simulering.assertThat()
+            .has(key)
+            .with(key) { simulering ->
+                assertEquals("ENDR", simulering.request.oppdrag.kodeEndring)
+                assertEquals("TILLST", simulering.request.oppdrag.kodeFagomraade)
+                assertEquals(sid.id, simulering.request.oppdrag.fagsystemId)
+                assertEquals("12345678910", simulering.request.oppdrag.oppdragGjelderId)
+                assertEquals(1, simulering.request.oppdrag.oppdragslinjes.size)
+                assertNotNull(simulering.request.oppdrag.oppdragslinjes[0].kodeStatusLinje)
+            }
+
+        TestRuntime.topics.dryrunTs.assertThat().isEmpty()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
     }
 
     @Test
