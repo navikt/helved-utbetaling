@@ -226,13 +226,24 @@ class ApiTest {
         }.body<List<TimerDao>>()
     }
 
-    @Disabled("Denne feiler om man kjører den sammen med andre tester som produserer ugyldig json/xml i db")
     @Test
     fun `get hendelser for sak`() = runTest(TestRuntime.context) {
-        TestRuntime.ktor.httpClient.get("/api/saker/test/test") {
+        val fagsystem = "AAP"
+        val sakId = "acoqwucbqwodijc"
+        val value = """{"sakId":"$sakId","fagsystem":"$fagsystem"}"""
+        val key = UUID.randomUUID().toString()
+        save(Channel.AapIntern, value = value, offset = offset)
+        save(Channel.Utbetalinger, value = value, offset = offset)
+        save(Channel.Simuleringer, value = TestData.simuleringXml(sakId, fagsystem), offset = offset)
+        save(Channel.Oppdrag, key = key, value = TestData.oppdragXml(sakId, fagsystem = fagsystem), offset = offset)
+        save(Channel.Status, key = key, value = value, offset = offset)
+
+        val daos = TestRuntime.ktor.httpClient.get("/api/saker/$sakId/$fagsystem") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Daos>>()
+
+        assertEquals(5, daos.size)
     }
 
     private suspend fun save(
