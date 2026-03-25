@@ -232,7 +232,7 @@ class ApiTest {
         val sakId = "acoqwucbqwodijc"
         val value = """{"sakId":"$sakId","fagsystem":"$fagsystem"}"""
         val key = UUID.randomUUID().toString()
-        save(Channel.AapIntern, value = value, offset = offset)
+        save(Channel.AapIntern, key = key, value = value, offset = offset)
         save(Channel.Utbetalinger, value = value, offset = offset)
         save(Channel.Simuleringer, value = TestData.simuleringXml(sakId, fagsystem), offset = offset)
         save(Channel.Oppdrag, key = key, value = TestData.oppdragXml(sakId, fagsystem = fagsystem), offset = offset)
@@ -244,6 +244,30 @@ class ApiTest {
         }.body<List<Daos>>()
 
         assertEquals(5, daos.size)
+    }
+
+    @Test
+    fun `tomme statuser kobles til sak`() = runTest(TestRuntime.context) {
+        val fagsystem = "AAP"
+        val sakId = "lkvlinweoc"
+        val tomStatus = """
+            {
+              "status": "OK",
+              "detaljer": null,
+              "error": null,
+              "simulering": false
+            }
+        """.trimIndent()
+        val key = UUID.randomUUID().toString()
+        save(Channel.Status, key = key, value = tomStatus, offset = offset)
+        save(Channel.Aap, key = key, value = """{"sakId":"$sakId"}""", offset = offset)
+
+        val daos = TestRuntime.ktor.httpClient.get("/api/saker/$sakId/$fagsystem") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<Daos>>()
+
+        assertEquals(2, daos.size)
     }
 
     private suspend fun save(
