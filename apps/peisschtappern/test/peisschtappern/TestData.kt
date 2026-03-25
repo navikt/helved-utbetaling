@@ -2,12 +2,49 @@ package peisschtappern
 
 object TestData {
 
+    fun simuleringXml(sakId: String, fagsystem: String) = """
+        <ns3:simulerBeregningRequest xmlns:ns2="http://nav.no/system/os/entiteter/oppdragSkjema" xmlns:ns3="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt">
+            <request>
+                <oppdrag>
+                    <kodeEndring>NY</kodeEndring>
+                    <kodeFagomraade>$fagsystem</kodeFagomraade>
+                    <fagsystemId>$sakId</fagsystemId>
+                    <utbetFrekvens>MND</utbetFrekvens>
+                    <oppdragGjelderId>16499045070</oppdragGjelderId>
+                    <datoOppdragGjelderFom>2000-01-01</datoOppdragGjelderFom>
+                    <saksbehId>ts</saksbehId>
+                    <ns2:enhet>
+                        <typeEnhet>BOS</typeEnhet>
+                        <enhet>8020</enhet>
+                        <datoEnhetFom>1970-01-01</datoEnhetFom>
+                    </ns2:enhet>
+                    <oppdragslinje>
+                        <kodeEndringLinje>NY</kodeEndringLinje>
+                        <delytelseId>/wLcR7N0Txm5mzUBJ6elQQ==</delytelseId>
+                        <kodeKlassifik>TSDRASISP3-OP</kodeKlassifik>
+                        <datoKlassifikFom>2026-01-05</datoKlassifikFom>
+                        <datoVedtakFom>2026-01-05</datoVedtakFom>
+                        <datoVedtakTom>2026-01-05</datoVedtakTom>
+                        <sats>2080</sats>
+                        <fradragTillegg>T</fradragTillegg>
+                        <typeSats>DAG</typeSats>
+                        <brukKjoreplan>N</brukKjoreplan>
+                        <saksbehId>ts</saksbehId>
+                        <utbetalesTilId>16499045070</utbetalesTilId>
+                        <ns2:attestant>
+                            <attestantId>ts</attestantId>
+                        </ns2:attestant>
+                    </oppdragslinje>
+                </oppdrag>
+            </request>
+        </ns3:simulerBeregningRequest>
+
+    """.trimIndent()
+
     fun oppdragXml(sakId: String = "202503271001", alvorlighetsgrad: String? = null, fagsystem: String? = "TILTPENG") =
         """
 <ns2:oppdrag xmlns:ns2="http://www.trygdeetaten.no/skjema/oppdrag">
-  ${
-      alvorlighetsgrad?.let { "<mmel><alvorlighetsgrad>$it</alvorlighetsgrad></mmel>" } ?: ""
-  }
+  ${alvorlighetsgrad?.let { "<mmel><alvorlighetsgrad>$it</alvorlighetsgrad></mmel>" } ?: ""}
   <oppdrag-110>
     <kodeAksjon>1</kodeAksjon>
     <kodeEndring>ENDR</kodeEndring>

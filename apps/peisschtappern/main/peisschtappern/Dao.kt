@@ -296,8 +296,7 @@ data class Daos(
             val sql = """
                 SELECT *
                 FROM ${table.name}
-                WHERE record_value IS JSON 
-                    AND json(record_value) ->> 'sakId' = '$sakId';
+                WHERE try_jsonb_get_text(record_value, 'sakId') = '$sakId';
             """.trimIndent()
 
             return query(sql)
