@@ -30,7 +30,10 @@ class StatusOnProcessingErrorHandler : ProcessingExceptionHandler {
             else -> ApiError(500, "Feil ved prosessering av melding fra ${context.topic()} (partition=${context.partition()}, offset=${context.offset()}): ${exception.summary()}")
         }
 
-        kafkaLog.error(error.msg, error)
+        when {
+            error.statusCode >= 500 -> kafkaLog.error(error.msg, error)
+            error.statusCode >= 400 -> kafkaLog.warn(error.msg, error)
+        }
 
         val fagsystem = fagsystemForTopic(context.topic()) ?: return ProcessingExceptionHandler.Response.resume()
 
