@@ -134,7 +134,6 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
                                     Fagsystem.HISTORISK -> Table.historisk to Table.historiskIntern
                                 }
-                                // TODO: Kanskje hente meldinger på samme måte som vi gjør lenger opp? Da må vi lagre sakId og fagsystem for alle tabellene
                                 val deferred: List<Deferred<List<Daos>>> = listOf(
                                     async { Daos.findOppdrag(sakId, fagsystem.fagområde) },
                                     async { Daos.findUtbetalinger(sakId, fagsystem.name) },
@@ -144,17 +143,14 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                                     async { Daos.findUtbetalinger(sakId, internalTable) },
                                     async { Daos.findSaker(sakId, fagsystem.name) },
                                     async {
-                                        val keys = Daos.findOppdrag(sakId, fagsystem.fagområde).map { it.key }
+                                        val keys = listOf(
+                                            if (table !== null) Daos.findUtbetalinger(sakId, table) else emptyList(),
+                                            Daos.findUtbetalinger(sakId, internalTable)
+                                        ).flatten().map { it.key }.distinct()
                                         if (keys.isNotEmpty()) {
                                             Daos.findStatusByKeys(keys)
                                         } else emptyList()
                                     },
-                                    async {
-                                        val internalKeys = Daos.findUtbetalinger(sakId, internalTable).map { it.key }
-                                        if (internalKeys.isNotEmpty()) {
-                                            Daos.findStatusByKeys(internalKeys)
-                                        } else emptyList()
-                                    }
                                 )
 
                                 deferred.awaitAll().flatten()
