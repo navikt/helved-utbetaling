@@ -7,10 +7,10 @@ import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 internal class TpTest : ConsumerTestBase() {
 
@@ -154,6 +154,14 @@ internal class TpTest : ConsumerTestBase() {
         }
 
         TestRuntime.topics.simulering.assertThat().hasNot(transactionId)
+
+        TestRuntime.topics.dryrunTp.assertThat()
+            .has(transactionId)
+            .with(transactionId) { simulering ->
+                assertTrue(simulering is Info)
+                assertEquals(Info.Status.OK_UTEN_ENDRING, simulering.status)
+                assertEquals(Fagsystem.TILTAKSPENGER, simulering.fagsystem)
+            }
     }
 
     @Test

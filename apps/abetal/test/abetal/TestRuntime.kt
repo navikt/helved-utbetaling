@@ -23,6 +23,10 @@ class TestTopics(kafka: StreamsMock) {
     val tsIntern = kafka.testTopic(Topics.tsIntern)
     val historiskIntern = kafka.testTopic(Topics.historiskIntern)
     val retryOppdrag = kafka.testTopic(Topics.retryOppdrag)
+    val dryrunAap = kafka.testTopic(Topics.dryrunAap)
+    val dryrunDp = kafka.testTopic(Topics.dryrunDp)
+    val dryrunTs = kafka.testTopic(Topics.dryrunTs)
+    val dryrunTp = kafka.testTopic(Topics.dryrunTp)
 }
 
 object TestRuntime {
@@ -36,15 +40,17 @@ object TestRuntime {
             put(DSL_STORE_SUPPLIERS_CLASS_CONFIG, BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers::class.java)
         })
     )
-    val ktor = KtorRuntime<Config>(
-        appName = "abetal",
-        module = {
-            abetal(
-                config = config,
-                kafka = kafka,
-                topology = createTopology(kafka),
-            )
-        }
-    )
+    init {
+        KtorRuntime<Config>(
+            appName = "abetal",
+            module = {
+                abetal(
+                    config = config,
+                    kafka = kafka,
+                    topology = createTopology(kafka),
+                )
+            }
+        )
+    }
     val topics: TestTopics = TestTopics(kafka)
 }

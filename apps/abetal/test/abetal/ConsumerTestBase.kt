@@ -1,6 +1,5 @@
 package abetal
 
-import abetal.TestRuntime
 import org.junit.jupiter.api.AfterEach
 
 open class ConsumerTestBase {
@@ -13,5 +12,9 @@ open class ConsumerTestBase {
         TestRuntime.topics.status.assertThat().isEmpty()
         TestRuntime.topics.saker.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.dryrunAap.assertThat().isEmpty()
+        TestRuntime.topics.dryrunDp.assertThat().isEmpty()
+        TestRuntime.topics.dryrunTs.assertThat().isEmpty()
+        TestRuntime.topics.dryrunTp.assertThat().isEmpty()
     }
 }

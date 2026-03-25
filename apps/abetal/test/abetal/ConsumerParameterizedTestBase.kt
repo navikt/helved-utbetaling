@@ -1,6 +1,5 @@
 package abetal
 
-import abetal.*
 import models.*
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
@@ -9,6 +8,7 @@ import java.time.LocalDateTime
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Parameterized test scenarios that can be run across all consumers.
@@ -303,6 +303,22 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             
             // Should not create a simulering since nothing changed
             TestRuntime.topics.simulering.assertThat().hasNot(key)
+
+            // Should produce OK_UTEN_ENDRING on the fagsystem-specific dryrun topic
+            val dryrunTopic = when (fagsystem) {
+                Fagsystem.AAP -> TestRuntime.topics.dryrunAap
+                Fagsystem.DAGPENGER -> TestRuntime.topics.dryrunDp
+                Fagsystem.TILLEGGSSTØNADER, Fagsystem.TILLSTPB -> TestRuntime.topics.dryrunTs
+                Fagsystem.TILTAKSPENGER -> TestRuntime.topics.dryrunTp
+                else -> null
+            }
+            dryrunTopic?.assertThat()
+                ?.has(key)
+                ?.with(key) { simulering ->
+                    assertTrue(simulering is Info)
+                    assertEquals(Info.Status.OK_UTEN_ENDRING, simulering.status)
+                }
+
             `assert empty topic`()
         }
     )
