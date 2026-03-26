@@ -98,7 +98,7 @@ class MigrationsTest {
         saveAvstemming(key, avstemming())
 
         val dao = transaction {
-            Daos.find(Table.avstemming, 1, listOf(key)).single()
+            Daos.find(key, Table.avstemming, 1).single()
         }
 
         assertEquals("TILTPENG", dao.fagsystem)

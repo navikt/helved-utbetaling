@@ -115,33 +115,6 @@ data class Daos(
             }.singleOrNull()
         }
 
-        suspend fun find(
-            table: Table,
-            limit: Int,
-            key: List<String>? = null,
-            value: List<String>? = null,
-            fom: Long? = null,
-            tom: Long? = null,
-        ): List<Daos> {
-            val whereClause = if (key != null || value != null || fom != null || tom != null) {
-                val keyQuery = if (key != null) " (" + key.joinToString(" OR ") { "record_key like '%$it%'" } + ") AND" else ""
-                val valueQuery = if (value != null) " (" + value.joinToString(" OR ") { "record_value like '%$it%'" } + ") AND" else ""
-                val fomQuery = if (fom != null) " system_time_ms > $fom AND" else ""
-                val tomQuery = if (tom != null) " system_time_ms < $tom AND" else ""
-                val query = "WHERE$keyQuery$valueQuery$fomQuery$tomQuery"
-                query.removeSuffix(" AND").removeSuffix(" ")
-            } else ""
-
-            val sql = """
-                SELECT * FROM ${table.name} 
-                $whereClause
-                ORDER BY system_time_ms DESC
-                LIMIT $limit 
-            """.trimIndent()
-
-            return query(sql)
-        }
-
         suspend fun pagedMessages(
             channels: List<Channel>,
             page: Int,
@@ -260,10 +233,13 @@ data class Daos(
             val sql = """
                 SELECT *
                 FROM status
-                WHERE record_key IN (${keys.joinToString { "'$it'" }});
+                WHERE record_key = ANY (?);
             """.trimIndent()
 
-            return query(sql)
+            return query(sql) { stmt ->
+                val array = stmt.connection.createArrayOf("text", keys.toTypedArray())
+                stmt.setArray(1, array)
+            }
         }
 
         suspend fun findUtbetalinger(sakId: String, fagsystem: String): List<Daos> {
@@ -296,10 +272,12 @@ data class Daos(
             val sql = """
                 SELECT *
                 FROM ${table.name}
-                WHERE try_jsonb_get_text(record_value, 'sakId') = '$sakId';
+                WHERE try_jsonb_get_text(record_value, 'sakId') = ?;
             """.trimIndent()
 
-            return query(sql)
+            return query(sql) { stmt ->
+                stmt.setString(1, sakId)
+            }
         }
 
         suspend fun findSimuleringer(sakId: String, fagsystem: String): List<Daos> {
@@ -319,11 +297,14 @@ data class Daos(
             val sql = """
                 SELECT *
                 FROM saker
-                WHERE json(record_key) ->> 'sakId' = '$sakId'
-                    AND json(record_key) ->> 'fagsystem' = '$fagsystem';
+                WHERE json(record_key) ->> 'sakId' = ?
+                    AND json(record_key) ->> 'fagsystem' = ?;
             """.trimIndent()
 
-            return query(sql)
+            return query(sql) { stmt ->
+                stmt.setString(1, sakId)
+                stmt.setString(2, fagsystem)
+            }
         }
 
         suspend fun findAvstemminger(fom: Long, tom: Long): List<Daos> {

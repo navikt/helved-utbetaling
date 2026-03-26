@@ -100,20 +100,9 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         }
 
         route("/saker") {
-            get {
-                val saker = withContext(Jdbc.context + Dispatchers.IO) {
-                    transaction {
-                        Daos.find(Channel.Saker.table, Integer.MAX_VALUE)
-                    }
-                }
-
-                call.respond(saker)
-            }
-
             get("/{sakId}/{fagsystem}") {
                 val sakId = call.parameters["sakId"]!!
-                val fagsystemer: List<Fagsystem> =
-                    call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
+                val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
                 val hendelser: List<Daos> = withContext(Jdbc.context + Dispatchers.IO) {
                     transaction {
                         coroutineScope {
