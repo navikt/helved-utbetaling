@@ -83,7 +83,7 @@ class KafkaTest {
         case.testTopic.produce(key) { value.toByteArray() }
 
         val dao = TestRuntime.jdbc.await(100) {
-            Daos.find(case.channel.table, 1, listOf(key)).singleOrNull()
+            Daos.find(key, case.channel.table, 1).singleOrNull()
         }
 
         assertNotNull(dao)

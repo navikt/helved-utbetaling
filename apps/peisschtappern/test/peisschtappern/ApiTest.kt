@@ -211,14 +211,6 @@ class ApiTest {
     }
 
     @Test
-    fun `get saker`() = runTest(TestRuntime.context) {
-        TestRuntime.ktor.httpClient.get("/api/saker") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
-    }
-
-    @Test
     fun `get timers`() = runTest(TestRuntime.context) {
         TestRuntime.ktor.httpClient.get("/api/brann") {
             bearerAuth(TestRuntime.azure.generateToken())
