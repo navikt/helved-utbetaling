@@ -1,13 +1,13 @@
 package peisschtappern
 
-import libs.jdbc.Dao
-import java.sql.ResultSet
 import kotlinx.coroutines.currentCoroutineContext
-import libs.utils.logger
-import java.sql.Types
+import libs.jdbc.Dao
 import libs.jdbc.concurrency.connection
 import libs.jdbc.map
+import libs.utils.logger
 import libs.utils.secureLog
+import java.sql.ResultSet
+import java.sql.Types
 
 private val daoLog = logger("dao")
 
@@ -65,7 +65,7 @@ data class Daos(
     val status: String? = null,
     val headers: List<Header> = emptyList(),
 ) {
-    companion object: Dao<Daos> {
+    companion object : Dao<Daos> {
         override val table = "PLACEHODLER"
 
         override fun from(rs: ResultSet) = Daos(
@@ -132,27 +132,25 @@ data class Daos(
         ): Page {
             val orderClause = if (orderBy != null) "ORDER BY $orderBy $direction" else ""
             val sql = """
-                WITH unified AS (
-                    ${channels.joinToString(" UNION ALL ") { channel -> """
-                        SELECT 
-                            version,
-                            topic_name, 
-                            record_key, 
-                            record_value,
-                            record_partition,
-                            record_offset,
-                            timestamp_ms,
-                            stream_time_ms,
-                            system_time_ms,
-                            trace_id,
-                            commit,
-                            sak_id,
-                            fagsystem,
-                            status,
-                            headers
-                        FROM ${channel.table.name}
-                    """.trimIndent() }}
-                )
+                WITH unified AS (${channels.joinToString(" UNION ALL ") { channel -> """
+                    SELECT 
+                        version,
+                        topic_name, 
+                        record_key, 
+                        record_value,
+                        record_partition,
+                        record_offset,
+                        timestamp_ms,
+                        stream_time_ms,
+                        system_time_ms,
+                        trace_id,
+                        commit,
+                        sak_id,
+                        fagsystem,
+                        status,
+                        headers
+                    FROM ${channel.table.name}
+                """.trimIndent() }})
                 SELECT *, count(*) OVER () AS total FROM unified
                 WHERE record_key ILIKE COALESCE(?, record_key)
                     AND ( ?::text[] IS NULL OR EXISTS (
@@ -229,10 +227,10 @@ data class Daos(
             }
         }
 
-        suspend fun findStatusByKeys(keys: List<String>): List<Daos> {
+        suspend fun findByKeys(table: Table, keys: List<String>): List<Daos> {
             val sql = """
                 SELECT *
-                FROM status
+                FROM ${table.name}
                 WHERE record_key = ANY (?);
             """.trimIndent()
 
@@ -268,11 +266,28 @@ data class Daos(
             }
         }
 
+        suspend fun findKeys(sakId: String, table: Table?, internalTable: Table): List<String> {
+            val tables = listOfNotNull(table, internalTable)
+            val sql = tables.joinToString(" UNION ") {
+                """
+                    SELECT record_key
+                    FROM ${it.name}
+                    WHERE try_jsonb_get_text(record_value, 'sakId') = ?
+                """.trimIndent()
+            }
+
+            return query(sql, { it.getString("record_key") }) { stmt ->
+                tables.indices.forEach { i ->
+                    stmt.setString(i + 1, sakId)
+                }
+            }.filterNotNull()
+        }
+
         suspend fun findUtbetalinger(sakId: String, table: Table): List<Daos> {
             val sql = """
                 SELECT *
                 FROM ${table.name}
-                WHERE try_jsonb_get_text(record_value, 'sakId') = ?;
+                WHERE try_jsonb_get_text(record_value, 'sakId') = ?
             """.trimIndent()
 
             return query(sql) { stmt ->
