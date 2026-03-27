@@ -262,35 +262,6 @@ class ApiTest {
         assertEquals(2, daos.size)
     }
 
-    private suspend fun save(
-        channel: Channel,
-        key: String = UUID.randomUUID().toString(),
-        value: String = """{ "sakId": "123" }""",
-        timestamp: Long = Instant.now().toEpochMilli(),
-        commitHash: String = "test",
-        offset: Long,
-        headers: List<Header> = emptyList(),
-    ) {
-        val dao = Daos(
-            topic_name = channel.topic.name,
-            version = "v1",
-            key = key,
-            value = value,
-            partition = 0,
-            offset = offset,
-            timestamp_ms = timestamp,
-            stream_time_ms = timestamp,
-            system_time_ms = timestamp,
-            trace_id = null,
-            commit = commitHash,
-            headers = headers,
-        )
-
-        transaction {
-            dao.insert(channel.table)
-        }
-    }
-
     @Test
     fun `pending til utbetaling sends json to kafka`() = runTest(TestRuntime.context) {
         val offset = offset
@@ -523,6 +494,50 @@ class ApiTest {
 
         assertEquals(1, result.size)
         assertEquals("match", result.first().key)
+    }
+
+    @Test
+    fun `fetch dryrun for sak`() = runTest(TestRuntime.context) {
+        val sakId = "kjsadnbcqiojwck"
+        val key = UUID.randomUUID().toString()
+        save(Channel.Dp, key = key, value = """{"sakId":"$sakId"}""", offset = offset)
+        save(Channel.DryrunDp, key = key, offset = offset)
+
+        val daos = TestRuntime.ktor.httpClient.get("/api/saker/$sakId/DP") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<Daos>>()
+
+        assertEquals(2, daos.size)
+    }
+
+    private suspend fun save(
+        channel: Channel,
+        key: String = UUID.randomUUID().toString(),
+        value: String = """{ "sakId": "123" }""",
+        timestamp: Long = Instant.now().toEpochMilli(),
+        commitHash: String = "test",
+        offset: Long,
+        headers: List<Header> = emptyList(),
+    ) {
+        val dao = Daos(
+            topic_name = channel.topic.name,
+            version = "v1",
+            key = key,
+            value = value,
+            partition = 0,
+            offset = offset,
+            timestamp_ms = timestamp,
+            stream_time_ms = timestamp,
+            system_time_ms = timestamp,
+            trace_id = null,
+            commit = commitHash,
+            headers = headers,
+        )
+
+        transaction {
+            dao.insert(channel.table)
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 package peisschtappern
 
 import io.ktor.http.Parameters
+import models.Fagsystem
 import java.time.Instant
 import kotlin.collections.filter
 import kotlin.collections.map
@@ -65,3 +66,20 @@ fun Parameters.exclude() =
             }
         }
         ?.takeIf { it.isNotEmpty() }
+
+fun Fagsystem.tables(): Triple<Table?, Table, Table?> =
+    when (this) {
+        Fagsystem.AAP -> Triple(Table.aap, Table.aapIntern, Table.dryrun_aap)
+        Fagsystem.DAGPENGER -> Triple(Table.dp, Table.dpIntern, Table.dryrun_dp)
+        Fagsystem.TILTAKSPENGER -> Triple(null, Table.tpIntern, Table.dryrun_tp)
+        Fagsystem.TILLSTPB,
+        Fagsystem.TILLSTLM,
+        Fagsystem.TILLSTBO,
+        Fagsystem.TILLSTDR,
+        Fagsystem.TILLSTRS,
+        Fagsystem.TILLSTRO,
+        Fagsystem.TILLSTRA,
+        Fagsystem.TILLSTFL,
+        Fagsystem.TILLEGGSSTØNADER -> Triple(Table.ts, Table.tsIntern, Table.dryrun_ts)
+        Fagsystem.HISTORISK -> Triple(Table.historisk, Table.historiskIntern, null)
+    }

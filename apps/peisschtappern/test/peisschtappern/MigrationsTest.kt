@@ -49,7 +49,7 @@ class MigrationsTest {
         saveStatus(key, status("OK"))
 
         val dao = transaction {
-            Daos.findStatusByKeys(listOf(key)).single()
+            Daos.findByKeys(Channel.Status.table, listOf(key)).single()
         }
 
         assertEquals("OK", dao.status)
@@ -61,7 +61,7 @@ class MigrationsTest {
         saveStatus(key, status("FEILET"))
 
         val dao = transaction {
-            Daos.findStatusByKeys(listOf(key)).single()
+            Daos.findByKeys(Channel.Status.table, listOf(key)).single()
         }
 
         assertEquals("FEILET", dao.status)
@@ -73,7 +73,7 @@ class MigrationsTest {
         saveStatus(key, status("FEILET", "TILTPENG"))
 
         val dao = transaction {
-            Daos.findStatusByKeys(listOf(key)).single()
+            Daos.findByKeys(Channel.Status.table, listOf(key)).single()
         }
 
         assertEquals("TILTPENG", dao.fagsystem)

@@ -99,58 +99,42 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             call.respond(HttpStatusCode.NotFound)
         }
 
-        route("/saker") {
-            get("/{sakId}/{fagsystem}") {
-                val sakId = call.parameters["sakId"]!!
-                val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
-                val hendelser: List<Daos> = withContext(Jdbc.context + Dispatchers.IO) {
-                    transaction {
-                        coroutineScope {
-                            fagsystemer.flatMap { fagsystem ->
-                                val (table, internalTable) = when (fagsystem) {
-                                    Fagsystem.AAP -> Table.aap to Table.aapIntern
-                                    Fagsystem.DAGPENGER -> Table.dp to Table.dpIntern
-                                    Fagsystem.TILTAKSPENGER -> null to Table.tpIntern
-                                    Fagsystem.TILLSTPB,
-                                    Fagsystem.TILLSTLM,
-                                    Fagsystem.TILLSTBO,
-                                    Fagsystem.TILLSTDR,
-                                    Fagsystem.TILLSTRS,
-                                    Fagsystem.TILLSTRO,
-                                    Fagsystem.TILLSTRA,
-                                    Fagsystem.TILLSTFL,
-                                    Fagsystem.TILLEGGSSTØNADER -> Table.ts to Table.tsIntern
+        get("/saker/{sakId}/{fagsystem}") {
+            val sakId = call.parameters["sakId"]!!
+            val fagsystemer: List<Fagsystem> =
+                call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
+            val hendelser: List<Daos> = withContext(Jdbc.context + Dispatchers.IO) {
+                transaction {
+                    coroutineScope {
+                        fagsystemer.flatMap { fagsystem ->
+                            val (table, internalTable, dryrun) = fagsystem.tables()
+                            val deferred: List<Deferred<List<Daos>>> = listOf(
+                                async { Daos.findOppdrag(sakId, fagsystem.fagområde) },
+                                async { Daos.findUtbetalinger(sakId, fagsystem.name) },
+                                async { Daos.findPendingUtbetalinger(sakId, fagsystem.name) },
+                                async { Daos.findSimuleringer(sakId, fagsystem.fagområde) },
+                                async { table?.let { Daos.findUtbetalinger(sakId, it) } ?: emptyList() },
+                                async { Daos.findUtbetalinger(sakId, internalTable) },
+                                async { Daos.findSaker(sakId, fagsystem.name) },
+                                async {
+                                    val keys = Daos.findKeys(sakId, table, internalTable)
+                                    if (keys.isNotEmpty()) {
+                                        listOf(
+                                            Daos.findByKeys(Channel.Status.table, keys),
+                                            dryrun?.let { Daos.findByKeys(it, keys) } ?: emptyList(),
+                                        ).flatten()
+                                    } else emptyList()
+                                },
+                            )
 
-                                    Fagsystem.HISTORISK -> Table.historisk to Table.historiskIntern
-                                }
-                                val deferred: List<Deferred<List<Daos>>> = listOf(
-                                    async { Daos.findOppdrag(sakId, fagsystem.fagområde) },
-                                    async { Daos.findUtbetalinger(sakId, fagsystem.name) },
-                                    async { Daos.findPendingUtbetalinger(sakId, fagsystem.name) },
-                                    async { Daos.findSimuleringer(sakId, fagsystem.fagområde) },
-                                    async { if (table !== null) Daos.findUtbetalinger(sakId, table) else emptyList() },
-                                    async { Daos.findUtbetalinger(sakId, internalTable) },
-                                    async { Daos.findSaker(sakId, fagsystem.name) },
-                                    async {
-                                        val keys = listOf(
-                                            if (table !== null) Daos.findUtbetalinger(sakId, table) else emptyList(),
-                                            Daos.findUtbetalinger(sakId, internalTable)
-                                        ).flatten().map { it.key }.distinct()
-                                        if (keys.isNotEmpty()) {
-                                            Daos.findStatusByKeys(keys)
-                                        } else emptyList()
-                                    },
-                                )
-
-                                deferred.awaitAll().flatten()
-                            }
-                                .sortedByDescending { it.system_time_ms }
+                            deferred.awaitAll().flatten()
                         }
+                            .sortedByDescending { it.system_time_ms }
                     }
                 }
-
-                call.respond(hendelser)
             }
+
+            call.respond(hendelser)
         }
 
         route("/brann") {
