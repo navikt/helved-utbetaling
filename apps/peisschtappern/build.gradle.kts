@@ -29,7 +29,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
