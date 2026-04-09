@@ -1,6 +1,7 @@
 package vedskiva
 
 import libs.kafka.*
+import libs.utils.sha256
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.time.LocalDateTime
@@ -26,7 +27,7 @@ fun topology() = topology {
         val hashKey = mapper
             .copy(oppdrag)
             .apply { mmel = null }
-            .let { mapper.writeValueAsString(it).hashCode() }
+            .let { mapper.writeValueAsString(it).sha256() }
         val dao = OppdragDao(
             nokkelAvstemming = avstemming.nokkelAvstemming.trimEnd().toLocalDateTime(),
             hashKey = hashKey,
