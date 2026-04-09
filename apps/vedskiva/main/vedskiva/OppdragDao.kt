@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 
 data class OppdragDao(
     val nokkelAvstemming: LocalDateTime,
-    val hashKey: Int,
+    val hashKey: String,
     val kodeFagomraade: String,
     val personident: String,
     val fagsystemId: String,
@@ -29,7 +29,7 @@ data class OppdragDao(
 
         override fun from(rs: ResultSet) = OppdragDao(
             nokkelAvstemming = rs.getTimestamp("nokkelAvstemming").toLocalDateTime(),
-            hashKey = rs.getInt("hash_key"),
+            hashKey = rs.getString("hash_key"),
             kodeFagomraade = rs.getString("kodeFagomraade"),
             personident = rs.getString("personident"),
             fagsystemId = rs.getString("fagsystemId"),
@@ -74,7 +74,7 @@ data class OppdragDao(
         """.trimIndent()
         return update(sql) { stmt ->
             stmt.setTimestamp(1, Timestamp.valueOf(nokkelAvstemming))
-            stmt.setInt(2, hashKey)
+            stmt.setString(2, hashKey)
             stmt.setString(3, kodeFagomraade)
             stmt.setString(4, personident)
             stmt.setString(5, fagsystemId)
