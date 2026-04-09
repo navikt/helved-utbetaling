@@ -6,6 +6,7 @@ import libs.kafka.processor.Processor
 import libs.kafka.stream.MappedStream
 import libs.utils.appLog
 import libs.utils.intoUids
+import libs.utils.sha256
 import libs.xml.XMLMapper
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
@@ -485,7 +486,7 @@ val oppdragMapper = XMLMapper<Oppdrag>()
 private fun MappedStream<String, List<OppdragAggregate>>.saveUtbetalingerAsPending() {
     this
         .flatMap { it }
-        .includeHeader("hash_key") { (oppdrag, _) -> oppdragMapper.writeValueAsString(oppdrag).hashCode().toString() }
+        .includeHeader("hash_key") { (oppdrag, _) -> oppdragMapper.writeValueAsString(oppdrag).sha256() }
         .flatMapKeyAndValue { _, (_, utbetalinger) -> utbetalinger.map { KeyValue(it.uid.toString(), it) } }
         .produce(Topics.pendingUtbetalinger)
 }

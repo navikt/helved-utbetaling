@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 import no.trygdeetaten.skjema.oppdrag.*
 import javax.xml.datatype.XMLGregorianCalendar
+import libs.utils.sha256
 import models.*
 
 /** 2021*/
@@ -40,9 +41,8 @@ val Int.jun25: LocalDate get() = LocalDate.of(2025, 6, this)
 /** 2025*/
 val Int.des25: LocalDate get() = LocalDate.of(2025, 12, this)
 
-fun hashOppdrag(oppdrag: Oppdrag): Int { 
-    return oppdragMapper.writeValueAsString(oppdrag).hashCode()
-}
+fun hashOppdrag(oppdrag: Oppdrag): String =
+    oppdragMapper.writeValueAsString(oppdrag).sha256()
 
 fun kvitterOk(oppdrag: Oppdrag): Oppdrag {
     return oppdragMapper.copy(oppdrag).apply {

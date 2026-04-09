@@ -221,7 +221,7 @@ internal class DpTest : ConsumerTestBase() {
             .get(atid)
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(auid.toString())
-            .hasHeader(auid.toString(), "hash_key" to hashOppdrag(aoppdrag).toString())
+            .hasHeader(auid.toString(), "hash_key" to hashOppdrag(aoppdrag))
             .with(auid.toString()) {
                 assertUtbetaling(expectedUtbetalingA, it)
             }
@@ -252,7 +252,7 @@ internal class DpTest : ConsumerTestBase() {
             .get(btid)
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(buid.toString())
-            .hasHeader(buid.toString(), "hash_key" to hashOppdrag(boppdrag).toString())
+            .hasHeader(buid.toString(), "hash_key" to hashOppdrag(boppdrag))
             .with(buid.toString()) {
                 assertUtbetaling(expectedUtbetalingB, it)
             }
@@ -283,7 +283,7 @@ internal class DpTest : ConsumerTestBase() {
             .get(ctid)
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(cuid.toString())
-            .hasHeader(cuid.toString(), "hash_key" to hashOppdrag(coppdrag).toString())
+            .hasHeader(cuid.toString(), "hash_key" to hashOppdrag(coppdrag))
             .with(cuid.toString()) {
                 assertUtbetaling(expectedUtbetalingC, it)
             }
@@ -319,7 +319,7 @@ internal class DpTest : ConsumerTestBase() {
             .get(etid)
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(cuid.toString())
-            .hasHeader(cuid.toString(), "hash_key" to hashOppdrag(eoppdrag).toString())
+            .hasHeader(cuid.toString(), "hash_key" to hashOppdrag(eoppdrag))
             .with(cuid.toString()) {
                 assertUtbetaling(expectedUtbetalingE, it)
             }
@@ -394,7 +394,7 @@ internal class DpTest : ConsumerTestBase() {
         
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(auid.toString())
-            .hasHeader(auid.toString(), "hash_key" to hashOppdrag(aoppdrag).toString())
+            .hasHeader(auid.toString(), "hash_key" to hashOppdrag(aoppdrag))
             .with(auid.toString()) {
                 assertUtbetaling(expectedUtbetalingA, it)
             }
@@ -434,7 +434,7 @@ internal class DpTest : ConsumerTestBase() {
         
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(buid.toString())
-            .hasHeader(buid.toString(), "hash_key" to hashOppdrag(boppdrag).toString())
+            .hasHeader(buid.toString(), "hash_key" to hashOppdrag(boppdrag))
             .with(buid.toString()) {
                 assertUtbetaling(expectedUtbetalingB, it)
             }
@@ -473,7 +473,7 @@ internal class DpTest : ConsumerTestBase() {
         
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(cuid.toString())
-            .hasHeader(cuid.toString(), "hash_key" to hashOppdrag(coppdrag).toString())
+            .hasHeader(cuid.toString(), "hash_key" to hashOppdrag(coppdrag))
             .with(cuid.toString()) {
                 assertUtbetaling(expectedUtbetalingC, it)
             }
@@ -720,12 +720,12 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
-            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid1.toString()) {
                 assertUtbetaling(expectedUtbetaling1, it)
             }
             .has(uid2.toString())
-            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid2.toString()) {
                 assertUtbetaling(expectedUtbetaling2, it)
             }
@@ -850,22 +850,22 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
-            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid1.toString()) {
                 assertUtbetaling(expectedUtbetaling1, it)
             }
             .has(uid2.toString())
-            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid2.toString()) {
                 assertUtbetaling(expectedUtbetaling2, it)
             }
             .has(uid3.toString())
-            .hasHeader(uid3.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid3.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid3.toString()) {
                 assertUtbetaling(expectedUtbetaling3, it)
             }
             .has(uid4.toString())
-            .hasHeader(uid4.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid4.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid4.toString()) {
                 assertUtbetaling(expectedUtbetaling4, it)
             }
@@ -949,7 +949,7 @@ internal class DpTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        val hashKey = hashOppdrag(oppdrag).toString()
+        val hashKey = hashOppdrag(oppdrag)
         
         val expectedUtbetaling1 = utbetaling(
             action = Action.CREATE,
@@ -1093,7 +1093,7 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid2.toString())
-            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid2.toString()) {
                 assertUtbetaling(expectedUtbetaling, it)
             }
@@ -1174,7 +1174,7 @@ internal class DpTest : ConsumerTestBase() {
         
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
-            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid1.toString()) {
                 assertUtbetaling(expectedUtbetaling, it)
             }
@@ -1276,7 +1276,7 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
-            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid1.toString()) {
                 assertUtbetaling(expectedUtbetaling, it)
             }
@@ -1337,7 +1337,7 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
-            .hasHeader(uid.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid.toString()) {
                 assertUtbetaling(expectedUtbetaling, it)
             }
@@ -1379,7 +1379,7 @@ internal class DpTest : ConsumerTestBase() {
 
         val pendingDelete = TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
-            .hasHeader(uid.toString(), "hash_key" to hashOppdrag(oppdrag2).toString())
+            .hasHeader(uid.toString(), "hash_key" to hashOppdrag(oppdrag2))
             .with(uid.toString()) {
                 assertUtbetaling(expectedDelete, it)
             }
@@ -1520,7 +1520,7 @@ internal class DpTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        val hashKey = hashOppdrag(oppdrag).toString()
+        val hashKey = hashOppdrag(oppdrag)
 
         val expectedUtbetaling1 = utbetaling(
             action = Action.UPDATE,
@@ -1629,7 +1629,7 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
-            .hasHeader(uid.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid.toString(), "hash_key" to hashOppdrag(oppdrag))
 
         TestRuntime.topics.status.assertThat().has(transactionId)
 
@@ -1685,7 +1685,7 @@ internal class DpTest : ConsumerTestBase() {
             }
             .get(tid1)
 
-        val hashKey1 = hashOppdrag(oppdrag1).toString()
+        val hashKey1 = hashOppdrag(oppdrag1)
 
         val expectedUtbetaling1 = utbetaling(
             action = Action.CREATE,
@@ -1760,7 +1760,7 @@ internal class DpTest : ConsumerTestBase() {
             }
             .get(tid2)
 
-        val hashKey2 = hashOppdrag(oppdrag2).toString()
+        val hashKey2 = hashOppdrag(oppdrag2)
 
         val expectedUtbetaling2 = utbetaling(
             action = Action.CREATE,
@@ -1837,7 +1837,7 @@ internal class DpTest : ConsumerTestBase() {
             }
             .get(tid3)
 
-        val hashKey3 = hashOppdrag(oppdrag3).toString()
+        val hashKey3 = hashOppdrag(oppdrag3)
 
         val expectedUtbetaling3 = utbetaling(
             action = Action.CREATE,
@@ -2008,7 +2008,7 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
-            .hasHeader(uid.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid.toString(), "hash_key" to hashOppdrag(oppdrag))
     }
 
     @Test
