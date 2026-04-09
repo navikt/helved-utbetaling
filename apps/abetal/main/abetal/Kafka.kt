@@ -132,7 +132,6 @@ fun Topology.dpStream(
         }
 }
 
-
 fun Topology.aapStream(
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
@@ -145,27 +144,30 @@ fun Topology.aapStream(
         .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
         .includeHeader(FS_KEY) { Fagsystem.AAP.name }
-        .map { sakKey, req, uids -> AapDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
-        .rekey { _, dtos -> dtos.first().originalKey }
-        .map { value ->
-            val store = kafka.getStore(Stores.utbetalinger)
-            val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
-            require(value.all { it.dryrun } || value.none { it.dryrun }) {
-                "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
-            }
-            if (value.any { it.dryrun }) {
-                return@map Result.catch { AggregateService.utledSimulering(aggregate) }
-                    .map(StreamResult::SimuleringOk)
-                    .getOrElse(StreamResult::SimuleringError)
-            }
-            Result.catch { AggregateService.utledOppdrag(aggregate) }
-                .map(StreamResult::OppdragOk)
-                .getOrElse(StreamResult::OppdragError)
+        .branch(Guard::ifNoAapUtbetalinger, Guard::replyOkAap)
+        .default {
+            this.map { sakKey, (req, uids) -> AapDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
+                .rekey { _, dtos -> dtos.first().originalKey }
+                .map { value ->
+                    val store = kafka.getStore(Stores.utbetalinger)
+                    val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+                    require(value.all { it.dryrun } || value.none { it.dryrun }) {
+                        "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
+                    }
+                    if (value.any { it.dryrun }) {
+                        return@map Result.catch { AggregateService.utledSimulering(aggregate) }
+                            .map(StreamResult::SimuleringOk)
+                            .getOrElse(StreamResult::SimuleringError)
+                    }
+                    Result.catch { AggregateService.utledOppdrag(aggregate) }
+                        .map(StreamResult::OppdragOk)
+                        .getOrElse(StreamResult::OppdragError)
+                }
+                .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
+                .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+                .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
+                .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.AAP, this) }
         }
-        .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-        .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
-        .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.AAP, this) }
 }
 
 fun Topology.tsStream(
@@ -207,7 +209,7 @@ fun Topology.tsStream(
                 }
                 .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
                 .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-                .branch({ it is StreamResult.OppdragOk },  ::replyOppdragOk)
+                .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
                 .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILLEGGSSTØNADER, this) }
         }
 }
@@ -296,6 +298,19 @@ private object Guard {
         branch.rekey { (dpTuple, _) -> dpTuple.key }
             .map {
                 appLog.info("idempotens guard (DP) - will reply OK for sakId=${it.left.value.sakId}")
+                StatusReply.ok()
+            }.produce(Topics.status)
+    }
+
+    fun ifNoAapUtbetalinger(pair: StreamsPair<AapTuple, Set<UtbetalingId>?>): Boolean {
+        val (utbetalinger, saker) = pair.left.value.utbetalinger to pair.right
+        return utbetalinger.isEmpty() && saker.isNullOrEmpty()
+    }
+
+    fun replyOkAap(branch: MappedStream<SakKey, StreamsPair<AapTuple, Set<UtbetalingId>?>>) {
+        branch.rekey { (aapTuple, _) -> aapTuple.key }
+            .map {
+                appLog.info("idempotens guard (AAP) - will reply OK for sakId=${it.left.value.sakId}")
                 StatusReply.ok()
             }.produce(Topics.status)
     }

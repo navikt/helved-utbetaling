@@ -40,7 +40,7 @@ class AapTest : ConsumerTestBase() {
         val expectedUtbetaling2 = expectedUtbetaling1.copy(
             uid = uid2,
             perioder = listOf(periode(7.jul, 20.jul, 779u, 2377u))
-        ) 
+        )
 
         TestRuntime.topics.aap.produce(transactionId) {
             Aap.utbetaling(sid.id, bid.id) {
@@ -253,7 +253,7 @@ class AapTest : ConsumerTestBase() {
             originalKey = transactionId2,
             førsteUtbetalingPåSak = false,
             perioder = listOf(periode(17.jun, 28.jun, 200u, 200u))
-        ) 
+        )
 
         TestRuntime.topics.utbetalinger.produce(uid1.toString(), existingUtbetaling)
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.AAP), setOf(uid1))
@@ -300,6 +300,24 @@ class AapTest : ConsumerTestBase() {
             .with(uid2.toString()) {
                 assertUtbetaling(expectedUtbetaling, it)
             }
+    }
+
+    @Test
+    fun `create - melding med tom liste for ny sak returnerer OK`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+
+        TestRuntime.topics.aap.produce(transactionId) {
+            Aap.utbetaling(sid.id, bid.id) { }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId) {
+            StatusReply.ok()
+        }
+
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
     }
 
     @Test
@@ -372,7 +390,7 @@ class AapTest : ConsumerTestBase() {
 
         kvitterOk(transactionId2, oppdrag, listOf(uid1))
 
-        TestRuntime.topics.utbetalinger.assertThat().has(uid1.toString()) 
+        TestRuntime.topics.utbetalinger.assertThat().has(uid1.toString())
             .has(uid1.toString())
             .with(uid1.toString()) {
                 assertUtbetaling(expectedUtbetaling, it)
@@ -481,7 +499,7 @@ class AapTest : ConsumerTestBase() {
             uid = uid2,
             førsteUtbetalingPåSak = false,
             perioder = listOf(periode(16.sep, 27.sep, 600u, 600u))
-        ) 
+        )
 
         TestRuntime.topics.utbetalinger.produce(uid1.toString(), utbetaling1)
         TestRuntime.topics.utbetalinger.produce(uid2.toString(), utbetaling2)
@@ -589,19 +607,6 @@ class AapTest : ConsumerTestBase() {
 
         TestRuntime.topics.aap.produce(transactionId) {
             """{ "ugyldig-json": """.toByteArray()
-        }
-
-        val status = TestRuntime.topics.status.readValue()
-        assertEquals(Status.FEILET, status.status)
-        assertNotNull(status.error)
-    }
-
-    @Test
-    fun `status - FEILET ved prosesseringsfeil`() {
-        val transactionId = UUID.randomUUID().toString()
-
-        TestRuntime.topics.aap.produce(transactionId) {
-            Aap.utbetaling(sakId = "sak-1", behandlingId = "beh-1") { }.asBytes()
         }
 
         val status = TestRuntime.topics.status.readValue()
