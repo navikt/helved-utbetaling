@@ -14,6 +14,7 @@ import libs.mq.DefaultMQProducer
 import libs.mq.MQ
 import libs.mq.mqLog
 import libs.utils.secureLog
+import libs.utils.sha256
 import libs.xml.XMLMapper
 import models.BehandlingId
 import models.Fagsystem
@@ -29,7 +30,7 @@ class OppdragMQProducer(config: Config, mq: MQ, private val meters: MeterRegistr
 
     fun send(oppdrag: Oppdrag): Oppdrag {
         val oppdragXml = mapper.writeValueAsString(oppdrag)
-        val hash = oppdragXml.hashCode()
+        val hash = oppdragXml.sha256()
         val sid = oppdrag.oppdrag110.fagsystemId 
         val bid = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId)
         val lastDelytelsesId = oppdrag.lastDelytelseId() 
@@ -86,7 +87,8 @@ class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams): AutoCloseabl
         val dao = runBlocking {
             withContext(Jdbc.context + Dispatchers.IO) {
                 transaction {
-                    DaoOppdrag.find(hashKey) ?: error("fant ikke noe sted å lagre kvittering for hashKey($hashKey) sakId:${kvittering.sakId()}")
+                    DaoOppdrag.findOrLegacy(hashKey, stripped)
+                        ?: error("fant ikke noe sted å lagre kvittering for hashKey($hashKey) sakId:${kvittering.sakId()}")
                 }
             }
         }
@@ -125,4 +127,3 @@ private fun Oppdrag.alvorlighetsgrad(): String? = mmel?.alvorlighetsgrad?.trimEn
 private fun Oppdrag.behandlingId(): BehandlingId? {
     return oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId)
 }
-
