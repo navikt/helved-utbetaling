@@ -81,12 +81,12 @@ class AapTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
-            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid1.toString()) {
                 assertUtbetaling(expectedUtbetaling1, it)
             }
             .has(uid2.toString())
-            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid2.toString()) {
                 assertUtbetaling(expectedUtbetaling2, it)
             }
@@ -186,7 +186,7 @@ class AapTest : ConsumerTestBase() {
             }
             .get(transactionId)
 
-        val hashKey = hashOppdrag(oppdrag).toString()
+        val hashKey = hashOppdrag(oppdrag)
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
@@ -517,11 +517,11 @@ class AapTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
-            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag))
             .has(uid2.toString())
-            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag))
             .has(uid3.toString())
-            .hasHeader(uid3.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid3.toString(), "hash_key" to hashOppdrag(oppdrag))
 
         kvitterOk(transactionId, oppdrag, listOf(uid1, uid2, uid3))
 
@@ -556,13 +556,13 @@ class AapTest : ConsumerTestBase() {
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
-            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid1.toString()) {
                 assertNotNull(it.avvent, "avvent should be set on first pending utbetaling")
                 assertEquals(avvent, it.avvent)
             }
             .has(uid2.toString())
-            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag).toString())
+            .hasHeader(uid2.toString(), "hash_key" to hashOppdrag(oppdrag))
             .with(uid2.toString()) {
                 assertNotNull(it.avvent, "avvent should be set on second pending utbetaling")
                 assertEquals(avvent, it.avvent)
