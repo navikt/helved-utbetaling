@@ -2,6 +2,7 @@ package urskog
 
 import libs.jdbc.Dao
 import libs.utils.jdbcLog
+import libs.utils.sha256
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -10,7 +11,7 @@ import java.time.LocalDateTime
 private val mapper = libs.xml.XMLMapper<Oppdrag>()
 
 data class DaoPendingUtbetaling (
-    val hashKey: Int,
+    val hashKey: String,
     val uid: String,
     val mottatt: Boolean = true,
     val mottattAt: LocalDateTime = LocalDateTime.now(),
@@ -19,24 +20,22 @@ data class DaoPendingUtbetaling (
         override val table = "pending_utbetaling"
 
         override fun from(rs: ResultSet) = DaoPendingUtbetaling(
-            hashKey = rs.getInt("hash_key"),
+            hashKey = rs.getString("hash_key"),
             uid = rs.getString("uid"),
             mottatt = rs.getBoolean("mottatt"),
             mottattAt = rs.getTimestamp("mottatt_at").toLocalDateTime(),
         )
 
-        fun hash(oppdrag: Oppdrag): Int { 
-            return mapper.writeValueAsString(oppdrag).hashCode()
-        }
+        fun hash(oppdrag: Oppdrag): String = mapper.writeValueAsString(oppdrag).sha256()
 
-        suspend fun findAll(hashKey: Int): List<DaoPendingUtbetaling> {
+        suspend fun findAll(hashKey: String): List<DaoPendingUtbetaling> {
             val sql = """
                 SELECT * FROM $table 
                 WHERE hash_key = ? 
             """.trimIndent()
 
             return query(sql) { stmt ->
-                stmt.setInt(1, hashKey)
+                stmt.setString(1, hashKey)
             }
         }
     }
@@ -53,7 +52,7 @@ data class DaoPendingUtbetaling (
         """.trimIndent()
 
         val rowsAffected = update(sql) { stmt ->
-            stmt.setInt(1, hashKey)
+            stmt.setString(1, hashKey)
             stmt.setString(2, uid)
             stmt.setBoolean(3, mottatt)
             stmt.setTimestamp(4, Timestamp.valueOf(mottattAt))
@@ -65,4 +64,3 @@ data class DaoPendingUtbetaling (
         }
     }
 }
-

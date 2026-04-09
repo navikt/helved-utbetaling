@@ -88,7 +88,7 @@ private fun saveOppdragAndSendIfReady(
             saveIdempotent(key, hashKey, oppdrag, meta)
         }
         transaction {
-            val lockedOppdrag = DaoOppdrag.findWithLock(hashKey)
+            val lockedOppdrag = DaoOppdrag.findWithLockOrLegacy(hashKey, oppdrag)
                 ?: return@transaction StatusReply.mottatt(oppdrag)
             val alreadySent = lockedOppdrag.sent && meta.headers["resend"] != "true"
             if (!alreadySent && pendingIsReady(hashKey, lockedOppdrag.uids)) {
@@ -109,7 +109,7 @@ private fun updatePendingAndOppdrag(
     meta: Metadata, 
 ): KeyValue<String, StatusReply> { 
     return runBlocking(Jdbc.context + Dispatchers.IO) {
-        val hashKey = meta.headers["hash_key"]?.toInt()
+        val hashKey = meta.headers["hash_key"]
         if (hashKey == null) {
             kafkaLog.warn("pendingUtbetaling med key:$key mangler header hash_key")
             return@runBlocking KeyValue(value.originalKey, StatusReply(Status.MOTTATT))
@@ -130,7 +130,7 @@ private fun updatePendingAndOppdrag(
     }
 }
 
-private suspend fun pendingIsReady(hashKey: Int, expectedUids: List<String>): Boolean {
+private suspend fun pendingIsReady(hashKey: String, expectedUids: List<String>): Boolean {
     val receivedUids = transaction {
         DaoPendingUtbetaling
             .findAll(hashKey)
@@ -145,7 +145,7 @@ private suspend fun pendingIsReady(hashKey: Int, expectedUids: List<String>): Bo
 
 private suspend fun saveIdempotent(
     key: String,
-    hashKey: Int,
+    hashKey: String,
     oppdrag: Oppdrag,
     meta: Metadata,
 ): DaoOppdrag {
@@ -159,7 +159,7 @@ private suspend fun saveIdempotent(
         sentAt =  null,
     )
     if (new.insertIdempotent()) return new
-    return DaoOppdrag.find(hashKey)!!
+    return DaoOppdrag.findOrLegacy(hashKey, new.oppdrag)!!
 }
 
 fun Topology.avstemming(avstemProducer: AvstemmingMQProducer) {

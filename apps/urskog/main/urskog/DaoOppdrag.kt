@@ -3,6 +3,7 @@ package urskog
 import libs.jdbc.Dao
 import libs.utils.intoUids
 import libs.utils.jdbcLog
+import libs.utils.sha256
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -33,22 +34,28 @@ data class DaoOppdrag (
             sentAt = rs.getTimestamp("sent_at")?.toLocalDateTime(),
         )
 
-        fun hash(oppdrag: Oppdrag): Int { 
-            return mapper.writeValueAsString(oppdrag).hashCode()
+        fun hash(oppdrag: Oppdrag): String = mapper.writeValueAsString(oppdrag).sha256()
+
+        suspend fun findOrLegacy(hashKey: String, oppdrag: Oppdrag): DaoOppdrag? {
+            return find(hashKey) ?: find(oppdrag.legacyHash())
         }
 
-        suspend fun find(hashKey: Int): DaoOppdrag? {
+        suspend fun findWithLockOrLegacy(hashKey: String, oppdrag: Oppdrag): DaoOppdrag? {
+            return findWithLock(hashKey) ?: findWithLock(oppdrag.legacyHash())
+        }
+
+        private suspend fun find(hashKey: String): DaoOppdrag? {
             val sql = """
                 SELECT * FROM $table 
                 WHERE hash_key = ? 
             """.trimIndent()
 
             return query(sql) { stmt ->
-                stmt.setInt(1, hashKey)
+                stmt.setString(1, hashKey)
             }.firstOrNull()
         }
 
-        suspend fun findWithLock(hashKey: Int): DaoOppdrag? {
+        suspend fun findWithLock(hashKey: String): DaoOppdrag? {
             val sql = """
                 SELECT * FROM $table 
                 WHERE hash_key = ? 
@@ -56,7 +63,7 @@ data class DaoOppdrag (
             """.trimIndent()
 
             return query(sql) { stmt ->
-                stmt.setInt(1, hashKey)
+                stmt.setString(1, hashKey)
             }.firstOrNull()
         }
     }
@@ -79,7 +86,7 @@ data class DaoOppdrag (
         val hashKey = hash(oppdrag)
 
         val rowsAffected = update(sql) { stmt ->
-            stmt.setInt(1, hashKey)
+            stmt.setString(1, hashKey)
             stmt.setString(2, kafkaKey)
             stmt.setString(3, mapper.writeValueAsString(oppdrag))
             stmt.setString(4, sakId)
@@ -107,7 +114,9 @@ data class DaoOppdrag (
         update(sql) { stmt ->
             stmt.setBoolean(1, true)
             stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
-            stmt.setInt(3, hash(oppdrag))
+            stmt.setString(3, hash(oppdrag))
         }
     }
 }
+
+private fun Oppdrag.legacyHash(): String = mapper.writeValueAsString(this).hashCode().toString()

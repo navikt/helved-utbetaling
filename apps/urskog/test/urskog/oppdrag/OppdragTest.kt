@@ -81,7 +81,7 @@ class OppdragTest {
         TestRuntime.topics.status.assertThat().isEmpty()
         assertEquals(0, TestRuntime.mq.sentOppdrag().size)
 
-        val hashKey = DaoOppdrag.hash(oppdrag).toString()
+        val hashKey = DaoOppdrag.hash(oppdrag)
         TestRuntime.topics.pendingUtbetalinger.produce(uid.toString(), mapOf("hash_key" to hashKey)) {
             TestData.utbetaling(uid = uid, originalKey = transaction)
         }
@@ -119,7 +119,7 @@ class OppdragTest {
         )
 
 
-        val hashKey = DaoOppdrag.hash(oppdrag).toString()
+        val hashKey = DaoOppdrag.hash(oppdrag)
         TestRuntime.topics.pendingUtbetalinger.produce(uid.toString(), mapOf("hash_key" to hashKey)) {
             TestData.utbetaling(uid = uid)
         }
@@ -218,4 +218,3 @@ class OppdragTest {
         assertEquals(1, TestRuntime.mq.sentOppdrag().size)
     }
 }
-
