@@ -74,23 +74,17 @@ class SimuleringService(private val config: Config) {
             return wrapper.response?.simulering
         } catch (e: Throwable) {
             try {
-                wsLog.error("Feilet deserialisering av simulering", e)
                 fault(xml)
             } catch (e2: Throwable) {
-                wsLog.error("Feilet deserialisering av simulering", e2)
+                wsLog.error("Feilet deserialisering av simulering")
+                secureLog.error("Feilet deserialisering av simulering: $xml", e)
                 throw e2
             }
         }
     }
 
     private fun simulerBeregningResponse(xml: String): soap.SimulerBeregningResponse =
-        runCatching {
-            tryInto<soap.SimuleringResponse>(xml).simulerBeregningResponse
-        }.getOrElse {
-            wsLog.warn("Feilet deserialisering av SOAP-melding")
-            secureLog.warn("Feilet deserialisering av SOAP-melding: ${it.message}", it)
-            throw it
-        }
+        tryInto<soap.SimuleringResponse>(xml).simulerBeregningResponse
 
     // denne kaster exception oppover i call-stacken
     private fun fault(xml: String): Nothing {
