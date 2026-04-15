@@ -5,11 +5,11 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import models.*
 import kotlin.math.abs
-import no.nav.system.os.entiteter.beregningskjema.*;
+import no.nav.system.os.entiteter.beregningskjema.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
-fun intoV1(jaxb: SimulerBeregningResponse): models.Simulering? { 
-    return jaxb.response.let { response -> 
+fun intoV1(jaxb: SimulerBeregningResponse): Simulering? {
+    return jaxb.response?.let { response ->
         v1.Simulering(
             oppsummeringer = oppsummeringer(response.simulering.beregningsPeriodes),
             detaljer = response.simulering.into(),
@@ -17,7 +17,7 @@ fun intoV1(jaxb: SimulerBeregningResponse): models.Simulering? {
     }
 }
 
-private fun Beregning.into(): models.v1.SimuleringDetaljer {
+private fun Beregning.into(): v1.SimuleringDetaljer {
     return v1.SimuleringDetaljer(
         gjelderId = this.gjelderId,
         datoBeregnet = LocalDate.parse(this.datoBeregnet),
@@ -26,7 +26,7 @@ private fun Beregning.into(): models.v1.SimuleringDetaljer {
     )
 }
 
-private fun into(periode: BeregningsPeriode): models.v1.Periode {
+private fun into(periode: BeregningsPeriode): v1.Periode {
     return v1.Periode(
         fom = LocalDate.parse(periode.periodeFom),
         tom = LocalDate.parse(periode.periodeTom),
