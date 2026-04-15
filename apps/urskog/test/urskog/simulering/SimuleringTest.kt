@@ -6,7 +6,10 @@ import org.junit.jupiter.api.Test
 import urskog.TestRuntime
 import java.time.LocalDate
 import java.util.*
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
+import urskog.intoV1
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class SimuleringTest {
 
@@ -682,6 +685,15 @@ class SimuleringTest {
         TestRuntime.topics.status.assertThat()
             .has(uid)
             .has(uid, expectedStatus)
+    }
+
+    @Test
+    fun `skal returnere null når jaxb response er null`() {
+        val tomResponse = SimulerBeregningResponse().apply {
+            response = null
+        }
+        val result = intoV1(tomResponse)
+        assertNull(result)
     }
 }
 
