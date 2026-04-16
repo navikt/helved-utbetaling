@@ -50,6 +50,7 @@ data class Utbetaling(
     val sakId: SakId,
     val behandlingId: BehandlingId,
     val lastPeriodeId: PeriodeId,
+    val sistePeriode: Utbetalingsperiode? = null,
     val personident: Personident,
     val vedtakstidspunkt: LocalDateTime,
     val stønad: Stønadstype,
@@ -101,7 +102,6 @@ data class Utbetaling(
         return isDuplicate
     }
 }
-
 
 enum class Årsak(val kode: String) {
     AVVENT_AVREGNING("AVAV"),

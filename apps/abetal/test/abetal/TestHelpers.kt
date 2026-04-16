@@ -127,6 +127,7 @@ fun assertUtbetaling(expected: Utbetaling, actual: Utbetaling) {
     val expected = expected.copy(
         lastPeriodeId = actual.lastPeriodeId,       // generated runtime
         vedtakstidspunkt = actual.vedtakstidspunkt, // generated runtime
+        sistePeriode = actual.sistePeriode,         // generated runtime
     )
     assertEquals(expected, actual)
 }

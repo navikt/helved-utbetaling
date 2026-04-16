@@ -110,7 +110,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -133,7 +133,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
     }
 
@@ -205,7 +205,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -228,7 +228,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
     }
 
@@ -300,7 +300,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -323,7 +323,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
     }
 
@@ -392,7 +392,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -418,7 +418,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, sistePeriode = it.sistePeriode), it)
             }
     }
 
@@ -492,7 +492,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -515,7 +515,7 @@ internal class HistoriskTest : ConsumerTestBase() {
         TestRuntime.topics.utbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
     }
 

@@ -147,7 +147,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(7.jun, 18.jun, 1077u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
     }
 
@@ -226,7 +226,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(7.jun, 18.jun, 1077u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
     }
 
@@ -334,7 +334,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(3.jun, 7.jun, 1500u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -383,7 +383,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(3.jun, 7.jun, 1500u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
 
     }
@@ -609,7 +609,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(1.jun, 30.jun, 3000u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -658,7 +658,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(1.jun, 30.jun, 3000u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
 
     }
@@ -740,7 +740,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(1.jun, 30.jun, 3070u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -789,7 +789,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(1.jun, 30.jun, 3070u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
 
     }
@@ -873,7 +873,7 @@ internal class TsTest : ConsumerTestBase() {
                     periode(1.jun, 3.jun, 210u, null)
                     periode(6.jun, 6.jun, 70u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -923,7 +923,7 @@ internal class TsTest : ConsumerTestBase() {
                     periode(1.jun, 3.jun, 210u, null)
                     periode(6.jun, 6.jun, 70u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
 
     }
@@ -999,7 +999,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(2.jun, 13.jun, 100u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
 
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
@@ -1051,7 +1051,7 @@ internal class TsTest : ConsumerTestBase() {
                 ) {
                     periode(2.jun, 13.jun, 100u, null)
                 }
-                assertEquals(expected, it)
+                assertEquals(expected.copy(sistePeriode = it.sistePeriode), it)
             }
     }
 
@@ -1385,6 +1385,153 @@ internal class TsTest : ConsumerTestBase() {
         val status = TestRuntime.topics.status.readValue()
         assertEquals(Status.FEILET, status.status)
         assertNotNull(status.error)
+    }
+
+    @Test
+    fun `opphør - successive opphør removes last period twice`() {
+        val sid = SakId("$nextInt")
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        // UTGANGSPUNKT - opprett utbetaling med 3 perioder
+        val transactionId1 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId1) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = BehandlingId("$nextInt").id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    periode(1.jun, 5.jun, 100u)
+                    periode(8.jun, 12.jun, 100u)
+                    periode(15.jun, 19.jun, 100u)
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId1)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        var periodeId1: PeriodeId? = null
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertNotEquals(it.lastPeriodeId, periodeId1)
+                periodeId1 = it.lastPeriodeId
+            }
+
+        val oppdrag1 = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId1)
+            .with(transactionId1) { oppdrag ->
+                assertEquals("NY", oppdrag.oppdrag110.kodeEndring)
+                assertEquals(3, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                assertNull(oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                assertEquals(periodeId1.toString(), oppdrag.oppdrag110.oppdragsLinje150s[2].delytelseId)
+                oppdrag.oppdrag110.oppdragsLinje150s.forEach {
+                    assertEquals("NY", it.kodeEndringLinje)
+                }
+            }
+            .get(transactionId1)
+
+        kvitterOk(transactionId1, oppdrag1, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertEquals(periodeId1, it.lastPeriodeId)
+            }
+
+        // FØRSTE OPPHØR - fjern siste periode (3 → 2 perioder)
+        val transactionId2 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId2) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = BehandlingId("$nextInt").id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    periode(1.jun, 5.jun, 100u)
+                    periode(8.jun, 12.jun, 100u)
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId2)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+
+        val oppdrag2 = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId2)
+            .with(transactionId2) { oppdrag ->
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+                    assertEquals(13.jun, it.datoStatusFom.toLocalDate())
+                    assertEquals("ENDR", it.kodeEndringLinje)
+                    assertEquals(periodeId1.toString(), it.delytelseId)
+                    assertNull(it.refDelytelseId)
+                    assertEquals(100, it.sats.toLong())
+                    assertEquals(15.jun, it.datoVedtakFom.toLocalDate())
+                    assertEquals(19.jun, it.datoVedtakTom.toLocalDate())
+                }
+            }
+            .get(transactionId2)
+
+        kvitterOk(transactionId2, oppdrag2, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertEquals(periodeId1, it.lastPeriodeId)
+            }
+
+        // ANDRE OPPHØR - fjern ny siste periode (2 → 1 periode)
+        val transactionId3 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId3) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = BehandlingId("$nextInt").id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    periode(1.jun, 5.jun, 100u)
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId3)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+
+        val oppdrag3 = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId3)
+            .with(transactionId3) { oppdrag ->
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+                    assertEquals(6.jun, it.datoStatusFom.toLocalDate())
+                    assertEquals("ENDR", it.kodeEndringLinje)
+                    assertEquals(periodeId1.toString(), it.delytelseId)
+                    assertNull(it.refDelytelseId)
+                    assertEquals(100, it.sats.toLong())
+                    assertEquals(15.jun, it.datoVedtakFom.toLocalDate())
+                    assertEquals(19.jun, it.datoVedtakTom.toLocalDate())
+                }
+            }
+            .get(transactionId3)
+
+        kvitterOk(transactionId3, oppdrag3, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertEquals(periodeId1, it.lastPeriodeId)
+            }
     }
 
 }
