@@ -5,8 +5,11 @@ import libs.utils.secureLog
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import javax.xml.datatype.XMLGregorianCalendar
 
 object AggregateService {
+
+    private fun XMLGregorianCalendar.toLocalDate() = toGregorianCalendar().toZonedDateTime().toLocalDate()
 
     private fun hasChanges(pair: StreamsPair<Utbetaling, Utbetaling?>) = pair.let { (new, prev) ->
         prev == null ||
@@ -30,8 +33,17 @@ object AggregateService {
                     new.action == Action.DELETE -> {
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         val oppdrag = OppdragService.delete(new, prev)
-                        val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                        val utbetaling = prev.copy(action = Action.DELETE, lastPeriodeId = lastPeriodeId)
+                        val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
+                        val utbetaling = prev.copy(
+                            action = Action.DELETE, 
+                            lastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId),
+                            sistePeriode = Utbetalingsperiode(
+                                fom = sisteLinje.datoVedtakFom.toLocalDate(),
+                                tom = sisteLinje.datoVedtakTom.toLocalDate(),
+                                beløp = sisteLinje.sats.toLong().toUInt(),
+                                vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
+                            )
+                        )
                         secureLog.debug("opphør utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
@@ -40,8 +52,17 @@ object AggregateService {
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         val new = prev.copy(behandlingId = new.behandlingId)
                         val oppdrag = OppdragService.delete(new, prev) // new is a fakeDelete
-                        val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                        val utbetaling = prev.copy(action = Action.DELETE, lastPeriodeId = lastPeriodeId)
+                        val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
+                        val utbetaling = prev.copy(
+                            action = Action.DELETE,
+                            lastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId),
+                            sistePeriode = Utbetalingsperiode(
+                                fom = sisteLinje.datoVedtakFom.toLocalDate(),
+                                tom = sisteLinje.datoVedtakTom.toLocalDate(),
+                                beløp = sisteLinje.sats.toLong().toUInt(),
+                                vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
+                            )
+                        )
                         secureLog.debug("opphør utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
@@ -49,24 +70,51 @@ object AggregateService {
                     // reintroduser en tidligere opphørt utbetaling
                     prev?.action == Action.DELETE && new.action == Action.CREATE -> {
                         val oppdrag = OppdragService.opprett(new, prev.lastPeriodeId)
-                        val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                        val utbetaling = new.copy(action = Action.CREATE, lastPeriodeId = lastPeriodeId)
+                        val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
+                        val utbetaling = new.copy(
+                            action = Action.CREATE, 
+                            lastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId),
+                            sistePeriode = Utbetalingsperiode(
+                                fom = sisteLinje.datoVedtakFom.toLocalDate(),
+                                tom = sisteLinje.datoVedtakTom.toLocalDate(),
+                                beløp = sisteLinje.sats.toLong().toUInt(),
+                                vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
+                            )
+                        )
                         secureLog.debug("reintroduser en tidligere opphørt utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
 
                     prev == null -> {
                         val oppdrag = OppdragService.opprett(new)
-                        val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                        val utbetaling = new.copy(action = Action.CREATE, lastPeriodeId = lastPeriodeId)
+                        val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
+                        val utbetaling = new.copy(
+                            action = Action.CREATE, 
+                            lastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId),
+                            sistePeriode = Utbetalingsperiode(
+                                fom = sisteLinje.datoVedtakFom.toLocalDate(),
+                                tom = sisteLinje.datoVedtakTom.toLocalDate(),
+                                beløp = sisteLinje.sats.toLong().toUInt(),
+                                vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
+                            )
+                        )
                         secureLog.debug("opprett utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
 
                     else -> {
                         val oppdrag = OppdragService.update(new, prev)
-                        val lastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                        val utbetaling = new.copy(action = Action.UPDATE, lastPeriodeId = lastPeriodeId)
+                        val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
+                        val utbetaling = new.copy(
+                            action = Action.UPDATE, 
+                            lastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId),
+                            sistePeriode = Utbetalingsperiode(
+                                fom = sisteLinje.datoVedtakFom.toLocalDate(),
+                                tom = sisteLinje.datoVedtakTom.toLocalDate(),
+                                beløp = sisteLinje.sats.toLong().toUInt(),
+                                vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
+                            )
+                        )
                         secureLog.debug("endre utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }

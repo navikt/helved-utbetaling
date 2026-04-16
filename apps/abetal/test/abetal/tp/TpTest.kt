@@ -235,11 +235,11 @@ internal class TpTest : ConsumerTestBase() {
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .with(uid1.toString()) {
-                assertEquals(expected1.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected1.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
             .has(uid2.toString())
             .with(uid2.toString()) {
-                assertEquals(expected2.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected2.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
 
         kvitterOk(transactionId, oppdrag, listOf(uid1, uid2))
@@ -343,15 +343,15 @@ internal class TpTest : ConsumerTestBase() {
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .with(uid1.toString()) {
-                assertEquals(expected1.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected1.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
             .has(uid2.toString())
             .with(uid2.toString()) {
-                assertEquals(expected2.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected2.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
             .has(uid3.toString())
             .with(uid3.toString()) {
-                assertEquals(expected3.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected3.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
 
         kvitterOk(transactionId, oppdrag, listOf(uid1, uid2, uid3))
@@ -611,7 +611,7 @@ internal class TpTest : ConsumerTestBase() {
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
             .with(uid.toString()) {
-                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
 
         kvitterOk(transactionId, oppdrag, listOf(uid))
@@ -753,15 +753,15 @@ internal class TpTest : ConsumerTestBase() {
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .with(uid1.toString()) {
-                assertEquals(expected1.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected1.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
             .has(uid2.toString())
             .with(uid2.toString()) {
-                assertEquals(expected2.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected2.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
             .has(uid3.toString())
             .with(uid3.toString()) {
-                assertEquals(expected3.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt), it)
+                assertEquals(expected3.copy(lastPeriodeId = it.lastPeriodeId, vedtakstidspunkt = it.vedtakstidspunkt, sistePeriode = it.sistePeriode), it)
             }
 
         kvitterOk(transactionId, oppdrag, listOf(uid1, uid2, uid3))

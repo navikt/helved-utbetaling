@@ -68,8 +68,9 @@ object OppdragService {
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
             val nyeLinjer = nyeLinjer(new, prev)
             val opphørsdato = opphørsdato(new.perioder, prev.perioder)
+            val sistePeriode = prev.sistePeriode ?: prev.perioder.lastOrNull() ?: new.perioder.last()
             if (skalTilføreOpphørslinje(opphørsdato, nyeLinjer)) {
-                val opphørslinje = oppdragsLinje150(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
+                val opphørslinje = oppdragsLinje150(new, true, sistePeriode, prev.lastPeriodeId, null, opphørsdato)
                 oppdragsLinje150s.add(opphørslinje)
             }
 
@@ -80,7 +81,6 @@ object OppdragService {
         }
     }
 
-    // TODO: Trenger vi både new og prev?
     fun delete(new: Utbetaling, prev: Utbetaling): Oppdrag {
         prev.validateLockedFields(new)
 
