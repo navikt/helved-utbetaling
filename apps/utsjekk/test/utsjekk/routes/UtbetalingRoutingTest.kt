@@ -1060,6 +1060,97 @@ class UtbetalingRoutingTest {
 
 
     @Test
+    fun `successive opphør removes last period twice`() = runTest(TestRuntime.context) {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
+                UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u),
+                UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u),
+                UtbetalingsperiodeApi(1.aug, 31.aug, 24_000u),
+            ),
+        )
+
+        val uid = UUID.randomUUID()
+
+        // 1. POST — create with 3 periods
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
+        }
+
+        // 2. First PUT — remove last period (3 → 2)
+        val firstUpdate = utbetaling.copy(
+            perioder = utbetaling.perioder.dropLast(1),
+        )
+        httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(firstUpdate)
+        }.also {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        val afterFirstUpdate = oppdragTopic.history().filter { (key, _) -> key == uid.toString() }
+        assertEquals(2, afterFirstUpdate.size)
+
+        val firstOpphørOppdrag = afterFirstUpdate[1].second
+        assertEquals("ENDR", firstOpphørOppdrag.oppdrag110.kodeEndring)
+        val firstOpphørLinje = firstOpphørOppdrag.oppdrag110.oppdragsLinje150s.single()
+        assertEquals("ENDR", firstOpphørLinje.kodeEndringLinje)
+        assertNotNull(firstOpphørLinje.kodeStatusLinje)
+
+        // capture the delytelseId from the first opphør line — the second opphør must reuse it
+        val firstOpphørDelytelseId = firstOpphørLinje.delytelseId
+        val firstOpphørFom = firstOpphørLinje.datoVedtakFom
+        val firstOpphørTom = firstOpphørLinje.datoVedtakTom
+
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
+        }
+
+        // 3. Second PUT — remove another period (2 → 1)
+        val secondUpdate = utbetaling.copy(
+            perioder = utbetaling.perioder.dropLast(2),
+        )
+        httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(secondUpdate)
+        }.also {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+
+        val afterSecondUpdate = oppdragTopic.history().filter { (key, _) -> key == uid.toString() }
+        assertEquals(3, afterSecondUpdate.size)
+
+        val secondOpphørOppdrag = afterSecondUpdate[2].second
+        assertEquals("ENDR", secondOpphørOppdrag.oppdrag110.kodeEndring)
+        val secondOpphørLinje = secondOpphørOppdrag.oppdrag110.oppdragsLinje150s.single()
+        assertEquals("ENDR", secondOpphørLinje.kodeEndringLinje)
+        assertNotNull(secondOpphørLinje.kodeStatusLinje)
+
+        // the second opphør must reference the same delytelseId and period as the first
+        assertEquals(firstOpphørDelytelseId, secondOpphørLinje.delytelseId)
+        assertEquals(firstOpphørFom.toString(), secondOpphørLinje.datoVedtakFom.toString())
+        assertEquals(firstOpphørTom.toString(), secondOpphørLinje.datoVedtakTom.toString())
+    }
+
+    @Test
     fun `can get UtbetalingStatus`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
