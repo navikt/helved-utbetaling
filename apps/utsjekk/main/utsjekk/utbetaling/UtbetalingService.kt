@@ -100,10 +100,15 @@ class UtbetalingService(
 
         return withContext(Jdbc.context) {
             transaction {
-                // val newLastPeriodeId = PeriodeId.decode(oppdrag.utbetalingsperioder.last().id)
-                val newLastPeriodeId =
-                    PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId) // TODO: riktig?
-                UtbetalingDao(data = utbetaling.copy(lastPeriodeId = newLastPeriodeId)).insert(uid)
+                val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
+                val newLastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId)
+                val sistePeriode = Utbetalingsperiode(
+                    fom = sisteLinje.datoVedtakFom.toLocalDate(),
+                    tom = sisteLinje.datoVedtakTom.toLocalDate(),
+                    beløp = sisteLinje.sats.toLong().toUInt(),
+                    fastsattDagsats = sisteLinje.vedtakssats157?.vedtakssats?.toLong()?.toUInt(),
+                )
+                UtbetalingDao(data = utbetaling.copy(lastPeriodeId = newLastPeriodeId, sistePeriode = sistePeriode)).insert(uid)
             }
         }
     }
@@ -132,8 +137,15 @@ class UtbetalingService(
 
         return withContext(Jdbc.context) {
             transaction {
-                val newLastPeriodeId = PeriodeId.decode(oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId)
-                dao.copy(data = existing.copy(lastPeriodeId = newLastPeriodeId)).delete(uid)
+                val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
+                val newLastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId)
+                val sistePeriode = Utbetalingsperiode(
+                    fom = sisteLinje.datoVedtakFom.toLocalDate(),
+                    tom = sisteLinje.datoVedtakTom.toLocalDate(),
+                    beløp = sisteLinje.sats.toLong().toUInt(),
+                    fastsattDagsats = sisteLinje.vedtakssats157?.vedtakssats?.toLong()?.toUInt(),
+                )
+                dao.copy(data = existing.copy(lastPeriodeId = newLastPeriodeId, sistePeriode = sistePeriode)).delete(uid)
             }
         }
     }

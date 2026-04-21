@@ -88,7 +88,8 @@ object UtbetalingOppdragService {
             val nyeLinjer = nyeLinjer(new, prev)
 
             if (skalTilføreOpphørslinje(opphørsdato, nyeLinjer)) {
-                val opphørslinje = oppdragsLinje150(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato)
+                val sistePeriode = prev.sistePeriode ?: prev.perioder.last()
+                val opphørslinje = oppdragsLinje150(new, true, sistePeriode, prev.lastPeriodeId, null, opphørsdato)
                 oppdragsLinje150s.add(opphørslinje)
             }
 
@@ -118,7 +119,7 @@ object UtbetalingOppdragService {
             avstemming115 = avstemming115(fagsystemDto.kodekomponent()) 
             new.avvent?.let { avvent118 = avvent118(it) }
             oppdragsEnhet120s.addAll(oppdragsEnhet120(new))
-            val sistePeriode = new.perioder.maxBy { it.fom }
+            val sistePeriode = prev.sistePeriode ?: new.perioder.maxBy { it.fom }
             val opphør = new.perioder.minBy { it.fom }.fom
             val oppdragslinje = oppdragsLinje150(new, true, sistePeriode, prev.lastPeriodeId, null, opphør)
             oppdragsLinje150s.add(oppdragslinje)
@@ -129,7 +130,7 @@ object UtbetalingOppdragService {
     }
 }
 
-private fun XMLGregorianCalendar.toLocalDate() = toGregorianCalendar().toZonedDateTime().toLocalDate()
+internal fun XMLGregorianCalendar.toLocalDate() = toGregorianCalendar().toZonedDateTime().toLocalDate()
 
 private fun skalTilføreOpphørslinje(
     opphørsdato: LocalDate?,
