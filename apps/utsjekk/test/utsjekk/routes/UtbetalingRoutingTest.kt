@@ -1151,6 +1151,66 @@ class UtbetalingRoutingTest {
     }
 
     @Test
+    fun `can retry update after FEILET_MOT_OPPDRAG`() = runTest(TestRuntime.context) {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
+                UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u),
+                UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u),
+                UtbetalingsperiodeApi(1.aug, 31.aug, 24_000u),
+            ),
+        )
+
+        val uid = UUID.randomUUID()
+
+        // 1. POST — create with 3 periods
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
+        }
+
+        // 2. PUT — remove last period (opphør)
+        val update = utbetaling.copy(
+            perioder = utbetaling.perioder.dropLast(1),
+        )
+        httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(update)
+        }.also {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+
+        // 3. Simulate OS rejection
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.FEILET_MOT_OPPDRAG)
+                .update(UtbetalingId(uid))
+        }
+
+        // 4. Retry the same update — should succeed, not fail with "Ingen reell endring"
+        httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(update)
+        }.also {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+    }
+
+    @Test
     fun `can get UtbetalingStatus`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,

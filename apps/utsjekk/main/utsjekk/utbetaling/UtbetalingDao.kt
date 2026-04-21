@@ -52,6 +52,19 @@ data class UtbetalingDao(
                 .singleOrNull { it.deleted_at == null || history }
         }
 
+        suspend fun findLastOk(id: UtbetalingId): UtbetalingDao? {
+            val sql = """
+                SELECT * FROM $table
+                WHERE utbetaling_id = ?
+                AND status = 'OK'
+                ORDER BY created_at DESC
+                LIMIT 1
+            """.trimIndent()
+
+            return query(sql) { stmt -> stmt.setObject(1, id.id) }
+                .singleOrNull()
+        }
+
         suspend fun find(sakId: SakId, history: Boolean = false): List<UtbetalingDao> {
             val sql = """
                 SELECT * FROM $table
