@@ -92,9 +92,12 @@ class UtbetalingService(
 
         // The failed oppdrag never took effect at OS, use the last OK state
         val existing = if (dao.status == Status.FEILET_MOT_OPPDRAG) {
-            withContext(Jdbc.context) {
+            val lastOk = withContext(Jdbc.context) {
                 transaction { UtbetalingDao.findLastOk(uid) }
-            }?.data ?: dao.data
+            }?.data
+            // sistePeriode may be null on legacy rows created before the field was added
+            lastOk?.copy(sistePeriode = lastOk.sistePeriode ?: dao.data.sistePeriode)
+                ?: dao.data
         } else {
             dao.data
         }
@@ -136,9 +139,12 @@ class UtbetalingService(
 
         // The failed oppdrag never took effect at OS, use the last OK state
         val existing = if (dao.status == Status.FEILET_MOT_OPPDRAG) {
-            withContext(Jdbc.context) {
+            val lastOk = withContext(Jdbc.context) {
                 transaction { UtbetalingDao.findLastOk(uid) }
-            }?.data ?: dao.data
+            }?.data
+            // sistePeriode may be null on legacy rows created before the field was added
+            lastOk?.copy(sistePeriode = lastOk.sistePeriode ?: dao.data.sistePeriode)
+                ?: dao.data
         } else {
             dao.data
         }
