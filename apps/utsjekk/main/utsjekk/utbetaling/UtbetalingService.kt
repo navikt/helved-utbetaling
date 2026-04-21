@@ -86,7 +86,7 @@ class UtbetalingService(
             }
         }
 
-        if (dao.status != Status.OK) {
+        if (dao.status in setOf(Status.IKKE_PÅBEGYNT, Status.SENDT_TIL_OPPDRAG)) {
             locked("Utbetalingen har et pågående oppdrag, vent til dette er ferdig")
         }
 
@@ -123,7 +123,7 @@ class UtbetalingService(
             }
         }
 
-        if (dao.status != Status.OK) {
+        if (dao.status in setOf(Status.IKKE_PÅBEGYNT, Status.SENDT_TIL_OPPDRAG)) {
             locked("utbetalingen har et pågående oppdrag, vent til dette er ferdig")
         }
 
