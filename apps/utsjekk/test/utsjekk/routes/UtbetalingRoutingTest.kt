@@ -1211,6 +1211,99 @@ class UtbetalingRoutingTest {
     }
 
     @Test
+    fun `retry after FEILET_MOT_OPPDRAG uses sistePeriode from failed row when OK row is legacy`() = runTest(TestRuntime.context) {
+        val utbetaling = UtbetalingApi.dagpenger(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(
+                UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u),
+                UtbetalingsperiodeApi(1.mar, 31.mar, 24_000u),
+                UtbetalingsperiodeApi(1.aug, 31.aug, 24_000u),
+            ),
+        )
+
+        val uid = UUID.randomUUID()
+
+        // 1. POST — create with 3 periods
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
+        }
+
+        // 2. First PUT — remove last period (opphør aug)
+        val firstUpdate = utbetaling.copy(
+            perioder = utbetaling.perioder.dropLast(1),
+        )
+        httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(firstUpdate)
+        }.also {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+
+        // 3. Simulate legacy: clear sistePeriode on the OK row, then set status to OK
+        //    This mimics a row created before the sistePeriode field was added.
+        transaction {
+            val dao = UtbetalingDao.findOrNull(UtbetalingId(uid))!!
+            dao.copy(
+                status = Status.OK,
+                data = dao.data.copy(sistePeriode = null),
+            ).update(UtbetalingId(uid))
+        }
+
+        // 4. Second PUT — remove another period (opphør mar), consecutive opphør
+        val secondUpdate = utbetaling.copy(
+            perioder = utbetaling.perioder.dropLast(2),
+        )
+        httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(secondUpdate)
+        }.also {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        val oppdragHistory = oppdragTopic.history().filter { (key, _) -> key == uid.toString() }
+        val firstOpphørLinje = oppdragHistory[1].second.oppdrag110.oppdragsLinje150s.single()
+
+        // 5. Simulate OS rejection of the second opphør
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.FEILET_MOT_OPPDRAG)
+                .update(UtbetalingId(uid))
+        }
+
+        // 6. Retry — should use sistePeriode from the failed row since the OK row has null
+        httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(secondUpdate)
+        }.also {
+            assertEquals(HttpStatusCode.NoContent, it.status)
+        }
+
+        // Verify the retry opphør reuses the same delytelseId as the first opphør
+        val retryOppdragHistory = oppdragTopic.history().filter { (key, _) -> key == uid.toString() }
+        val retryOpphørLinje = retryOppdragHistory.last().second.oppdrag110.oppdragsLinje150s.single { it.kodeStatusLinje != null }
+        assertEquals(firstOpphørLinje.delytelseId, retryOpphørLinje.delytelseId)
+        assertEquals(firstOpphørLinje.datoVedtakFom.toString(), retryOpphørLinje.datoVedtakFom.toString())
+        assertEquals(firstOpphørLinje.datoVedtakTom.toString(), retryOpphørLinje.datoVedtakTom.toString())
+    }
+
+    @Test
     fun `can get UtbetalingStatus`() = runTest() {
         val utbetaling = UtbetalingApi.dagpenger(
             vedtakstidspunkt = 1.feb,
