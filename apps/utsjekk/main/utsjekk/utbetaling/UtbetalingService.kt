@@ -90,7 +90,14 @@ class UtbetalingService(
             locked("Utbetalingen har et pågående oppdrag, vent til dette er ferdig")
         }
 
-        val existing = dao.data
+        // The failed oppdrag never took effect at OS, use the last OK state
+        val existing = if (dao.status == Status.FEILET_MOT_OPPDRAG) {
+            withContext(Jdbc.context) {
+                transaction { UtbetalingDao.findLastOk(uid) }
+            }?.data ?: dao.data
+        } else {
+            dao.data
+        }
 
         existing.validateLockedFields(utbetaling)
         existing.validateMinimumChanges(utbetaling)
@@ -127,7 +134,14 @@ class UtbetalingService(
             locked("utbetalingen har et pågående oppdrag, vent til dette er ferdig")
         }
 
-        val existing = dao.data
+        // The failed oppdrag never took effect at OS, use the last OK state
+        val existing = if (dao.status == Status.FEILET_MOT_OPPDRAG) {
+            withContext(Jdbc.context) {
+                transaction { UtbetalingDao.findLastOk(uid) }
+            }?.data ?: dao.data
+        } else {
+            dao.data
+        }
 
         existing.validateLockedFields(utbetaling)
         existing.validateEqualityOnDelete(utbetaling)
