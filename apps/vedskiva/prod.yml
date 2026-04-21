@@ -58,6 +58,9 @@ spec:
   azure:
     application:
       enabled: true
+      claims:
+        groups:
+          - id: "3f7cfd77-588c-4788-8be0-9431dda4b36e" # 0000-CA-HelvedPeisen_admin
   accessPolicy:
     inbound:
       rules:
