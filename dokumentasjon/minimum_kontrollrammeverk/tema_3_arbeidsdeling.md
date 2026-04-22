@@ -22,5 +22,4 @@ Kravet er ikke relevant, ref første punkt.
 
 ## Periodisk gjennomgang​
 
-Kravet er ikke relevant, ref første punkt. 
-
+[Periodisk kontroll](https://navno.sharepoint.com/sites/intranett-it/SitePages/Periodisk-kontroll-2025.aspx) håndteres av identrutina / Mine tilganger.

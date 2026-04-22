@@ -24,7 +24,7 @@ Listen over medlemmer i ovennevnte Nais-team kontrolleres og godkjennes månedli
 
 Ved utskiftninger i Team hel ved vil tinganger bli gitt til nye medlemmer og trukket tilbake fra de som forlater.
 
-Se [periodisk kontroll](https://navno.sharepoint.com/sites/intranett-it/SitePages/Periodisk-kontroll-2025.aspx)
+[Periodisk kontroll](https://navno.sharepoint.com/sites/intranett-it/SitePages/Periodisk-kontroll-2025.aspx) håndteres av identrutina / Mine tilganger.
 
 
 ## Endring i tilgangsbehov​
@@ -33,4 +33,4 @@ Kravet er ikke relevant, ref første punkt.
 
 ## Terminering​
 
-Team hel ved håndterer ikke terminering av brukeridenter. Det håndteres av identadministrator. Se [Mine Tilganger](https://navno.sharepoint.com/sites/intranett-it/SitePages/Mine-Tilganger-%E2%80%93-NAVs-nye-tilgangsstyringsl%C3%B8sning.aspx).
+Terminering håndteres av identadministrator. Se [Mine Tilganger](https://navno.sharepoint.com/sites/intranett-it/SitePages/Mine-Tilganger-%E2%80%93-NAVs-nye-tilgangsstyringsl%C3%B8sning.aspx).
