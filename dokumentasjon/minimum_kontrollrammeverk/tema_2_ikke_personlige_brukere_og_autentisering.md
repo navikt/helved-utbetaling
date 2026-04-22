@@ -28,6 +28,4 @@ Vi har et verktøy kalt Peisen som vi bruker til overvåking og debugging av utb
 
 Alle endepunkter i Utsjekk har tilgangskontroll. 
 
-Tilgang til Peisen (internt verktøy) gis via en egen Entra ID-gruppe og administreres via Mine tilganger. Vi bruker ellers standard NAIS-funksjonalitet.
-
-Se punktet over for mer utfyllende dokumentasjon og lenker.
+Tilgang til Peisen (internt verktøy) gis via en egen Entra ID-gruppe og administreres via Mine tilganger. Vi bruker ellers standard NAIS-funksjonalitet for autentisering.
