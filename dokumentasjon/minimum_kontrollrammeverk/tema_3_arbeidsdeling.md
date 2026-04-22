@@ -1,23 +1,26 @@
-# Arbeidsdeling​
+# Tema 3: Arbeidsdeling, periodisk gjennomgang og kritikalitet
 
-_Risiko for brudd på arbeidsdeling (uheldige rollekombinasjoner) skal håndteres._​_
+Lenker til utfyllende informasjon om kravene:
 
-_Standard for brukeridentitets-og tilgangsforvaltning: 6.1.2._
+- [Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%203%20oppstartsm%C3%B8te.pptx?d=w60c4a9a2f50e44b2b0a96f48031cf6d8&csf=1&web=1&e=kfgnoU) med kravene for _Arbeidsdeling, periodisk gjennomgang og kritikalitet_
+- [Excel](https://navno.sharepoint.com/:x:/r/sites/Helhetligkvalitetssystem/_layouts/15/Doc.aspx?sourcedoc=%7B1416B70A-089A-49D8-99C1-AA5CA1D5DB1C%7D&file=Minimum%20kontrollrammeverk%20%25u00f8konomisystem%20(v1.1).xlsx&action=default&mobileredirect=true) med hele kontrollrammeverket
 
 
-# Kritikalitet i tilganger​
 
-Retningslinje for tilgangsforvaltning: ​
+## Arbeidsdeling​
 
-- 6.1.2 Alle tilganger skal gjennomgå en kritikalitetsvurdering og gis et kritikalitetsnivå. ​
-- 6.1.3 Alle tilganger skal gjennomgå en jevnlig revisjon av sitt ​
+Vi har ingen risiko for uheldige rollekombinasjoner da det ikke er innlogging for Nav-ansatte i plattformtjenesten Utsjekk. Det gjøres ingen saksbehandling i løsningen. 
 
-kritikalitetsnivå, minimum en gang i året.
+Vi har et verktøy kalt Peisen som vi bruker til overvåking og debugging av utbetalinger. I produksjon er det kun Team hel ved som har tilgang til Peisen. Tilgang administreres via Mine tilganger.
 
-# Periodisk gjennomgang​
+Tilgang til Nais-plattformen administreres via et eget Nais-team (tilgangsgruppe). Listen over medlemmer i dette teamet godkjennes månedlig via varsel fra Nais på Slack.
 
-Retningslinje for tilgangsforvaltning: ​
+## Kritikalitet i tilganger​
 
-- 6.1.6 Tilganger knyttet til tjenstlig behov skal jevnlig revideres, bekreftes og rapporteres iht. prosess for periodisk kontroll.​
-- 6.1.9: Nærmeste leder skal jevnlig, og minst årlig, revidere tjenstlig behov for alle tilganger for de digitale brukeridentitetene de har ansvar for, og gjøre nødvendige endringer.
+Kravet er ikke relevant, ref første punkt. 
+
+
+## Periodisk gjennomgang​
+
+Kravet er ikke relevant, ref første punkt. 
 
