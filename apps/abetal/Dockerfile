@@ -1,39 +1,8 @@
-FROM eclipse-temurin:21-jdk-alpine AS jre
-# jdeps --print-module-deps --ignore-missing-deps apps/abetal/build/libs/abetal-all.jar
-# explicit add "--add-modules jdk.jcmd" a tool for creating heap dumps
-RUN jlink \
-    --verbose \
-    --module-path $JAVA_HOME/bin/jmods/ \
-    # --add-modules java.base \
-    --add-modules java.desktop \
-    --add-modules java.instrument \
-    --add-modules java.naming \
-    --add-modules java.security.jgss \
-    --add-modules java.security.sasl \
-    --add-modules java.net.http \
-    --add-modules java.sql \
-    --add-modules java.compiler \
-    --add-modules jdk.unsupported \
-    --add-modules jdk.jcmd \ 
-    --add-modules jdk.jfr \
-    --add-modules jdk.management \
-    --strip-debug \
-    --no-man-pages \
-    --no-header-files \
-    --compress=2 \
-    --output /customjre
-
-FROM alpine:latest AS app
-ENV LANG="nb_NO.UTF-8" LANGUAGE="nb_NO:nb" LC_ALL="nb:NO.UTF-8" TZ="Europe/Oslo"
-ENV JAVA_HOME=/jre
-ENV PATH="${JAVA_HOME}/bin:${PATH}"
-
-RUN apk add --no-cache gcompat libstdc++ snappy
-
-COPY --from=jre /customjre $JAVA_HOME
-COPY apps/abetal/build/libs/abetal-all.jar /app.jar
-ENTRYPOINT [                              \
-    "java",                               \
+FROM europe-north1-docker.pkg.dev/cgr-nav/pull-through/nav.no/jre:openjdk-21
+ENV TZ="Europe/Oslo"
+COPY --chown=1069:1069 apps/abetal/build/libs/abetal-all.jar /app/app.jar
+WORKDIR /app
+CMD [                                     \
     "--enable-native-access=ALL-UNNAMED", \
     "-XX:+UseG1GC",                       \
     "-XX:MaxRAMPercentage=60.0",          \
