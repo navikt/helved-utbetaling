@@ -9,7 +9,6 @@ on:
       - 'libs/kafka/**'
       - '.github/workflows/urskog.yml'
       - 'build.gradle.kts'
-      - 'Dockerfile.streams'
       - 'models/**'
 
 jobs:
