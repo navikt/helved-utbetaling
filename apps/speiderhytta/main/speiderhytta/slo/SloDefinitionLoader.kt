@@ -2,6 +2,7 @@ package speiderhytta.slo
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import libs.utils.appLog
@@ -24,7 +25,7 @@ import java.io.File
  * mapper configured below.
  */
 data class SloDefinition(
-    val service: String,
+    val service: String = "",
     val name: String,
     val objective: Double,
     val description: String? = null,
@@ -61,6 +62,9 @@ class SloDefinitionLoader(private val dir: File) {
         .registerKotlinModule()
         .findAndRegisterModules()
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        // Sloth's YAML spec uses snake_case (error_query, total_query, time_window, ...).
+        // Our Kotlin data classes are camelCase, so let Jackson translate.
+        .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
 
     fun load(): List<SloDefinition> {
         if (!dir.isDirectory) {
