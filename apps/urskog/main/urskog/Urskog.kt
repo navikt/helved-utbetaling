@@ -20,7 +20,6 @@ import libs.mq.MQ
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.erHelligdag
-import java.io.File
 import java.time.LocalDate
 
 fun main() {
