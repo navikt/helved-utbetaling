@@ -29,7 +29,7 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
-    implementation("jakarta.xml.ws:jakarta.xml.ws-api:4.0.2")
+    implementation("jakarta.xml.ws:jakarta.xml.ws-api:4.0.3")
     implementation("com.sun.xml.ws:jaxws-rt:4.0.3")
 
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
