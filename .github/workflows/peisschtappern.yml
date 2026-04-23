@@ -9,7 +9,6 @@ on:
       - 'libs/kafka/**'
       - '.github/workflows/peisschtappern.yml'
       - 'build.gradle.kts'
-      - 'Dockerfile.streams'
 
 jobs:
   build:
