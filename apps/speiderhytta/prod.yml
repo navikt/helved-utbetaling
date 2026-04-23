@@ -1,0 +1,69 @@
+apiVersion: nais.io/v1alpha1
+kind: Application
+metadata:
+  name: speiderhytta
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  terminationGracePeriodSeconds: 30
+  image: {{ image }}
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      memory: 256Mi
+      cpu: 50m
+  liveness:
+    path: /actuator/health
+    initialDelay: 30
+    failureThreshold: 10
+  readiness:
+    path: /actuator/health
+    initialDelay: 30
+    failureThreshold: 10
+  prometheus:
+    path: /actuator/metric
+    enabled: true
+  replicas:
+    min: 1
+    max: 1
+  gcp:
+    sqlInstances:
+      - type: POSTGRES_17
+        tier: db-f1-micro
+        cascadingDelete: false
+        databases:
+          - name: speiderhytta
+            envVarPrefix: DB
+        flags:
+          - name: "cloudsql.enable_pgaudit"
+            value: "on"
+          - name: "pgaudit.log"
+            value: "write,ddl"
+          - name: "pgaudit.log_parameter"
+            value: "on"
+  observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
+    logging:
+      destinations:
+        - id: loki
+        - id: elastic
+  envFrom:
+    - secret: helved-speiderhytta-gh-pem
+  filesFrom:
+    - configmap: helved-slo-definitions
+      mountPath: /var/run/slos
+  accessPolicy:
+    inbound:
+      rules:
+        - application: helved-peisen
+    outbound:
+      external:
+        - host: api.github.com
+        - host: prometheus.nav.cloud.nais.io
+      rules:
+        - application: logging
+          namespace: nais-system

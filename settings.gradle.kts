@@ -10,6 +10,7 @@ include(
     "apps:utsjekk",
     "apps:vedskiva",
     "apps:snickerboa",
+    "apps:speiderhytta",
     "apps:statistikkern"
     )
 

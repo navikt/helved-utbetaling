@@ -1,0 +1,42 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: speiderhytta-alerts
+  namespace: helved
+  labels:
+    team: helved
+spec:
+  groups:
+    - name: app
+      rules:
+        - alert: unavailable
+          expr: sum(kube_deployment_status_replicas_available{app="speiderhytta", namespace="helved"} offset 5m) by (deployment, namespace) == 0
+          for: 5m
+          annotations:
+            consequence: 'speiderhytta er dau - ingen DORA/SLO-data oppdateres'
+            action: '`kubectl describe pod -l app=speiderhytta` -> `kubectl logs -l app=speiderhytta`'
+          labels:
+            namespace: helved
+            severity: warning
+
+    - name: poller
+      rules:
+        - alert: deploy_poller_stale
+          expr: time() - speiderhytta_last_successful_poll_seconds{poller="deploy"} > 1800
+          for: 10m
+          annotations:
+            summary: 'Deploy-poller har ikke lykkes på 30 min'
+            action: 'Sjekk speiderhytta-logger og NAIS Deploy API tilgjengelighet'
+          labels:
+            namespace: helved
+            severity: warning
+
+        - alert: incident_poller_stale
+          expr: time() - speiderhytta_last_successful_poll_seconds{poller="incident"} > 1800
+          for: 10m
+          annotations:
+            summary: 'Incident-poller har ikke lykkes på 30 min'
+            action: 'Sjekk GitHub App-credentials og api.github.com-tilgjengelighet'
+          labels:
+            namespace: helved
+            severity: warning

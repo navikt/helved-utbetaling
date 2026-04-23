@@ -1,0 +1,103 @@
+name: speiderhytta
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/speiderhytta/**'
+      - 'apps/*/slo.yml'
+      - '.github/workflows/speiderhytta.yml'
+      - 'build.gradle.kts'
+      - 'Dockerfile'
+
+jobs:
+  build:
+    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      actions: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5.2.0
+        with:
+          java-version: 21
+          distribution: temurin
+
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          dependency-graph: generate-and-submit
+
+      - run: ./gradlew apps:${{ github.workflow }}:test apps:${{ github.workflow }}:buildFatJar --continue --no-daemon
+
+      - uses: dorny/test-reporter@v2.5.0
+        if: success() || failure()
+        with:
+          name: tests
+          path: "**/**/build/test-results/test/TEST-*.xml"
+          reporter: java-junit
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: nais/docker-build-push@v0
+        with:
+          team: helved
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+          image_suffix: ${{ github.workflow }}
+          tag: ${{ github.sha }}
+          dockerfile: Dockerfile
+
+  deploy-prod:
+    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build]
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build SLO definitions ConfigMap
+        run: |
+          mkdir -p generated
+          args=()
+          for f in apps/*/slo.yml; do
+            [ -f "$f" ] || continue
+            app=$(basename "$(dirname "$f")")
+            args+=(--from-file="${app}.yml=${f}")
+          done
+          if [ ${#args[@]} -eq 0 ]; then
+            # ensure the configmap exists even if no SLOs are defined yet,
+            # so the filesFrom mount in prod.yml stays valid.
+            kubectl create configmap helved-slo-definitions \
+              --namespace helved \
+              --dry-run=client -o yaml \
+              > apps/${{ github.workflow }}/slo-configmap.yml
+          else
+            kubectl create configmap helved-slo-definitions \
+              --namespace helved \
+              "${args[@]}" \
+              --dry-run=client -o yaml \
+              > apps/${{ github.workflow }}/slo-configmap.yml
+          fi
+          # add the standard team label so the ConfigMap matches our other resources
+          sed -i '/^metadata:/a\  labels:\n    team: helved' apps/${{ github.workflow }}/slo-configmap.yml
+          cat apps/${{ github.workflow }}/slo-configmap.yml
+
+      - uses: nais/login@v0
+        id: login
+        with:
+          team: helved
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+      - uses: nais/deploy/actions/deploy@v2
+        env:
+          PRINT_PAYLOAD: true
+          CLUSTER: prod-gcp
+          RESOURCE: apps/${{ github.workflow }}/slo-configmap.yml,apps/${{ github.workflow }}/prod.yml,apps/${{ github.workflow }}/alert.yml
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
