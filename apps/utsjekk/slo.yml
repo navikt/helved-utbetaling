@@ -1,0 +1,35 @@
+version: prometheus/v1
+service: utsjekk
+labels:
+  team: helved
+  app: utsjekk
+slos:
+  - name: iverksetting-availability
+    objective: 99.9
+    description: |
+      Iverksetting endpoint should respond successfully (non-5xx) for at
+      least 99.9% of requests over a 30-day window.
+    sli:
+      events:
+        # Adjust label names to whatever the ktor micrometer binder emits.
+        error_query: |
+          sum(rate(ktor_http_server_requests_seconds_count{
+            app="utsjekk",
+            k8s_cluster_name="prod",
+            route=~"/api/iverksetting.*",
+            status=~"5.."
+          }[5m]))
+        total_query: |
+          sum(rate(ktor_http_server_requests_seconds_count{
+            app="utsjekk",
+            k8s_cluster_name="prod",
+            route=~"/api/iverksetting.*"
+          }[5m]))
+    alerting:
+      name: UtsjekkIverksettingErrorBudgetBurn
+      page_alert:
+        labels:
+          severity: critical
+      ticket_alert:
+        labels:
+          severity: warning
