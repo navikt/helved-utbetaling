@@ -632,7 +632,7 @@ class SimuleringTest {
 
         val expectedStatus = StatusReply(
             status = Status.FEILET,
-            error = ApiError(400, "ukjent soap feil Fault(faultcode=SOAP-ENV:Client, faultstring=Malformed SOAP message, " +
+            error = ApiError(400, "ukjent soap feil fra Oppdragssystemet (OS): Fault(faultcode=SOAP-ENV:Client, faultstring=Malformed SOAP message, " +
                     "detail={cics:FaultDetail={cics:XMLSSParser={cics:ParserResponse=XRC_NOT_WELL_FORMED, cics:ParserReason=00012388, cics:ParserOffset=00000732}}})"),
             simulering = true
         )
@@ -679,6 +679,31 @@ class SimuleringTest {
             status = Status.FEILET,
             error = ApiError(400, "DFHPI1009 02/09/2025 13:45:58 CICSQ1OS OSW8 21049 XML to data transformation failed. A conversion error (OUTPUT_OVERFLOW) occurred when converting field saksbehId" +
                     " for WEBSERVICE simulerFpServiceWSBinding."),
+            simulering = true
+        )
+
+        TestRuntime.topics.status.assertThat()
+            .has(uid)
+            .has(uid, expectedStatus)
+    }
+
+    @Test
+    fun `OS returnerer tom SOAP Body`() {
+        TestRuntime.ws.respondWith = Resource.read("/simuler-fault-no-soap-body.xml")
+        val uid = UUID.randomUUID().toString()
+
+        TestRuntime.topics.simuleringer.produce(uid) {
+            simulering()
+        }
+
+        TestRuntime.topics.dryrunAap.assertThat().hasNot(uid)
+
+        val expectedStatus = StatusReply(
+            status = Status.FEILET,
+            error = ApiError(
+                503,
+                "Simulering er midlertidig utilgjengelig: Oppdragssystemet (OS) returnerte en tom SOAP Body. Prøv igjen senere."
+            ),
             simulering = true
         )
 

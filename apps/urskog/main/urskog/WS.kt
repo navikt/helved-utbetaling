@@ -11,6 +11,7 @@ import libs.xml.XMLMapper
 import models.DocumentedErrors
 import models.badRequest
 import models.notFound
+import models.unavailable
 import models.unprocessable
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
@@ -63,7 +64,7 @@ private fun String.intoFault(): Fault {
     val fault = document.getElementsByTagName("SOAP-ENV:Fault").item(0) as org.w3c.dom.Element
     val faultcode = fault.getElementsByTagName("faultcode").item(0).textContent.trim()
     val faultstring = fault.getElementsByTagName("faultstring").item(0).textContent.trim()
-    val detailElement = fault.getElementsByTagName("detail")?.item(0) as? org.w3c.dom.Element
+    val detailElement = fault.getElementsByTagName("detail").item(0) as? org.w3c.dom.Element
 
     fun toMap(element: org.w3c.dom.Element): Map<String, Any> {
         val res = mutableMapOf<String, Any>()
@@ -100,14 +101,16 @@ private fun Fault.panic(): Nothing {
             detail["CICSFault"]?.let { badRequest(it as String) }
         }
         "Personen finnes ikke"  -> notFound(DocumentedErrors.Async.Simulering.PERSONEN_FINNES_IKKE)
+        "The target application did not create a new SOAP Body" ->
+            unavailable("Simulering er midlertidig utilgjengelig: Oppdragssystemet (OS) returnerte en tom SOAP Body. Prøv igjen senere.")
         else -> panic(this) 
     }
     panic(this) // fallback
 }
 
 private fun panic(any: Any): Nothing {
-    wsLog.error("ukjent soap feil {}", any)
+    wsLog.error("ukjent soap feil fra Oppdragssystemet (OS): {}", any)
     // secureLog.error("ukjent soap feil {}", any)
-    badRequest("ukjent soap feil $any")
+    badRequest("ukjent soap feil fra Oppdragssystemet (OS): $any")
 }
 
