@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write  # submit dependency-graph
       id-token: write  # publish docker image
       actions: read    #
       checks: write    # write test results
@@ -28,11 +27,7 @@ jobs:
           java-version: 21
           distribution: temurin
 
-      - uses: gradle/actions/setup-gradle@v5
-        with:
-          dependency-graph: generate-and-submit
-
-      - run: ./gradlew apps:${{ github.workflow }}:test apps:${{ github.workflow }}:buildFatJar --continue --no-daemon
+      - run: ./gradlew apps:${{ github.workflow }}:test apps:${{ github.workflow }}:buildFatJar --continue --parallel
 
       - uses: dorny/test-reporter@v2.5.0
         if: success() || failure()
