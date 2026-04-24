@@ -40,8 +40,12 @@ spec:
           - id: "c1e9edec-0c10-4df2-8c74-324ab9922220" # Saksbehandler Tilleggsstønader
   liveness:
     path: /actuator/live
+    initialDelay: 5
+    periodSeconds: 2
   readiness:
     path: /actuator/ready
+    initialDelay: 5
+    periodSeconds: 2
   prometheus:
     enabled: true
     path: /actuator/metrics

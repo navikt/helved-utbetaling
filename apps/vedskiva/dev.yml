@@ -18,11 +18,13 @@ spec:
       cpu: 500m
   liveness:
     path: /actuator/health
-    initialDelay: 30
+    initialDelay: 5
+    periodSeconds: 2
     failureThreshold: 10
   readiness:
     path: /actuator/health
-    initialDelay: 30
+    initialDelay: 5
+    periodSeconds: 2
     failureThreshold: 10
   prometheus:
     path: /actuator/metric
