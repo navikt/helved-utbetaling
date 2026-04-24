@@ -1,6 +1,7 @@
 FROM europe-north1-docker.pkg.dev/cgr-nav/pull-through/nav.no/jre:openjdk-21
 ENV TZ="Europe/Oslo"
-COPY --chown=1069:1069 apps/branntaarn/build/libs/branntaarn-all.jar /app/app.jar
+COPY --chown=1069:1069 apps/branntaarn/build/split-jars/deps.jar /app/deps.jar
+COPY --chown=1069:1069 apps/branntaarn/build/split-jars/app.jar /app/app.jar
 WORKDIR /app
 CMD [                                     \
     "--enable-native-access=ALL-UNNAMED", \

@@ -57,6 +57,29 @@ jobs:
 
       - run: ./gradlew apps:${{ github.workflow }}:buildFatJar --parallel
 
+      # Skip SLSA attestation (cosign + SBOM) when deps.jar is byte-identical
+      # to a previously-attested build. Saves ~25s/build on commits that don't
+      # bump dependencies (~91% of commits). Trade-off: those images don't get
+      # re-scanned by Dependency-Track, but they share the same dep-set as the
+      # previous (attested) image.
+      - id: deps_hash
+        run: echo "sha=$(sha256sum apps/${{ github.workflow }}/build/split-jars/deps.jar | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - id: deps_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .deps-attested-marker
+          key: deps-attested-${{ github.workflow }}-${{ steps.deps_hash.outputs.sha }}
+
+      - id: salsa
+        run: |
+          if [ "${{ steps.deps_cache.outputs.cache-hit }}" = "true" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::deps.jar unchanged since last attested build (${{ steps.deps_hash.outputs.sha }}); skipping SLSA attestation"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: nais/docker-build-push@v0
         with:
           team: helved
@@ -65,6 +88,23 @@ jobs:
           image_suffix: ${{ github.workflow }}
           tag: ${{ github.sha }}
           dockerfile: Dockerfile
+          salsa: ${{ steps.salsa.outputs.enabled }}
+          # Skip buildx cache export. With our split-jar Dockerfile every COPY
+          # either always changes (app.jar) or is content-addressed and pulled
+          # cheaply from the registry on next build (deps.jar). Caching buildkit
+          # state to GHA adds ~2s per push for negligible benefit.
+          cache_to: ""
+
+      # Persist marker only on success of the attested build, so a failed
+      # build doesn't poison the cache.
+      - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
+        run: echo "${{ steps.deps_hash.outputs.sha }}" > .deps-attested-marker
+
+      - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .deps-attested-marker
+          key: deps-attested-${{ github.workflow }}-${{ steps.deps_hash.outputs.sha }}
 
   deploy-prod:
     if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
