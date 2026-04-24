@@ -1,0 +1,48 @@
+name: refresh-caches
+
+# Heals gradle caches after dependabot merges.
+#
+# Problem: pr.yml's auto-merge step uses GITHUB_TOKEN, and GitHub policy
+# prevents GITHUB_TOKEN-authored merge commits from triggering downstream
+# workflows. So a dependabot merge to main produces zero per-app workflow
+# runs, leaving all 11 app `package` caches frozen at whichever commit last
+# wrote them. The next human commit then pays the full cost of redownloading
+# any bumped dependency.
+#
+# This workflow runs on every push to main and warms the gradle dependency
+# cache by building the whole project. setup-gradle's enhanced cache provider
+# stores downloaded dependencies as separate, content-addressed entries that
+# are shared across all jobs (per docs: "deduplication of cache entries").
+# So a fresh `./gradlew build` here populates the dep entries that every
+# app's `package` job will restore on its next run.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '**/build.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/wrapper/**'
+      - '.github/workflows/refresh-caches.yml'
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5.2.0
+        with:
+          java-version: 21
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v5
+        # Always write on main; this job exists solely to refresh caches.
+        with:
+          cache-read-only: false
+
+      # `assemble` builds every module's main artifacts (incl. shadowJar +
+      # splitFatJar for all apps) without running tests, which is the work
+      # most package jobs repeat. Dependencies downloaded here populate the
+      # shared dependency cache entries used by every per-app workflow.
+      - run: ./gradlew assemble --parallel
