@@ -12,8 +12,12 @@ spec:
   terminationGracePeriodSeconds: 70
   liveness:
     path: /actuator/live
+    initialDelay: 5
+    periodSeconds: 2
   readiness:
     path: /actuator/ready
+    initialDelay: 5
+    periodSeconds: 2
   prometheus:
     path: /actuator/metric
     enabled: true

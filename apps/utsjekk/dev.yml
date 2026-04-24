@@ -12,11 +12,13 @@ spec:
     - https://utsjekk.intern.dev.nav.no
   liveness:
     path: /actuator/live
-    initialDelay: 30
+    initialDelay: 5
+    periodSeconds: 2
     failureThreshold: 10
   readiness:
     path: /actuator/ready
-    initialDelay: 30
+    initialDelay: 5
+    periodSeconds: 2
     failureThreshold: 10
   prometheus:
     path: /actuator/metric
