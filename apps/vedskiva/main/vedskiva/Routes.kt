@@ -6,7 +6,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import models.erHelligdag
@@ -20,11 +20,11 @@ data class AvstemmingRequest(
     val fom: LocalDateTime,
     val tom: LocalDateTime,
 )
-fun Route.avstem(service: AvstemmingService) {
+fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
     route("/api") {
         post("/next_range") {
             val today = call.receive<LocalDate>()
-            withContext(Jdbc.context + Dispatchers.IO) {
+            withContext(jdbcCtx + Dispatchers.IO) {
                 val last: Scheduled? = transaction { Scheduled.lastOrNull() }
                 val avstemFom = (last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()).atStartOfDay()
                 val avstemTom = today.atStartOfDay().minusNanos(1)
@@ -37,7 +37,7 @@ fun Route.avstem(service: AvstemmingService) {
                 val req = call.receive<AvstemmingRequest>()
                 appLog.info("starter avstemming for ${req.today}, mellom [${req.fom} - ${req.tom}]")
 
-                withContext(Jdbc.context + Dispatchers.IO) {
+                withContext(jdbcCtx + Dispatchers.IO) {
                     if (req.today.erHelligdag()) {
                         appLog.info("Today is a holiday or weekend, no avstemming")
                         call.respond(HttpStatusCode.Locked, "Today is a holiday or weekend, no avstemming")
@@ -72,7 +72,7 @@ fun Route.avstem(service: AvstemmingService) {
             }
 
             post("/dryrun") {
-                withContext(Jdbc.context + Dispatchers.IO) {
+                withContext(jdbcCtx + Dispatchers.IO) {
                     val req = call.receive<AvstemmingRequest>()
                     val avstemminger = service.generate(req.fom, req.tom)
                     call.respond(avstemminger)
@@ -85,7 +85,7 @@ fun Route.avstem(service: AvstemmingService) {
                 val req = call.receive<AvstemmingRequest>()
                 appLog.info("starter avstemming for ${req.today}, mellom [${req.fom} - ${req.tom}]")
 
-                withContext(Jdbc.context + Dispatchers.IO) {
+                withContext(jdbcCtx + Dispatchers.IO) {
                     if (req.today.erHelligdag()) {
                         appLog.info("Today is a holiday or weekend, no avstemming")
                         call.respond(HttpStatusCode.Locked, "Today is a holiday or weekend, no avstemming")
@@ -121,7 +121,7 @@ fun Route.avstem(service: AvstemmingService) {
 
             post("/dryrun") {
                 val req = call.receive<AvstemmingRequest>()
-                withContext(Jdbc.context + Dispatchers.IO) {
+                withContext(jdbcCtx + Dispatchers.IO) {
                     val avstemminger = service.generate2(req.fom, req.tom)
                     call.respond(avstemminger)
                 }

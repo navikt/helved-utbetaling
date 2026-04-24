@@ -26,10 +26,6 @@ class Migrator(locations: List<File>) {
 
     private var files = locations.flatMap { it.getSqlFiles() }
 
-    init {
-        runBlocking { executeSql(Resource.read("/migrations.sql")) }
-    }
-
     /**
      * Execute all the migrations scripts.
      *
@@ -41,8 +37,17 @@ class Migrator(locations: List<File>) {
      * @throws IllegalStateException on failure.
      */
     suspend fun migrate() {
+        // Bootstrap the migrations table if it doesn't exist yet. Idempotent.
+        executeSql(Resource.read("/migrations.sql"))
+
         val migrations = Migration.all().sortedBy { it.version }
         val candidates = files.map(MigrationWithFile::from).sortedBy { it.migration.version }
+
+        // Fast-path: DB is already at HEAD with matching checksums.
+        // Skips the per-call validation/log noise so test forks that clone
+        // a pre-migrated template don't pay this cost twice.
+        if (atHead(migrations, candidates)) return
+
         val candidateWithMigration = candidates.associateWith { (candidate, _) ->
             migrations.find { it.version == candidate.version }
         }
@@ -125,12 +130,25 @@ class Migrator(locations: List<File>) {
         return left.version == right.version - 1
     }
 
+    /**
+     * True when every candidate file maps to a successful migration row
+     * with a matching checksum (i.e. there is nothing to apply and nothing
+     * to verify-and-fail). Cheap pre-flight to short-circuit `migrate()`
+     * when the DB is fresh from a template.
+     */
+    private fun atHead(applied: List<Migration>, candidates: List<MigrationWithFile>): Boolean {
+        if (applied.size != candidates.size) return false
+        val byVersion = applied.associateBy { it.version }
+        return candidates.all { (candidate, _) ->
+            val row = byVersion[candidate.version] ?: return false
+            row.success && row.checksum == candidate.checksum
+        }
+    }
+
     private suspend fun executeSql(sql: String) =
-        withContext(Jdbc.context) {
-            transaction {
-                coroutineContext.connection.prepareStatement(sql).execute()
-                jdbcLog.debug(sql)
-            }
+        transaction {
+            coroutineContext.connection.prepareStatement(sql).execute()
+            jdbcLog.debug(sql)
         }
 }
 

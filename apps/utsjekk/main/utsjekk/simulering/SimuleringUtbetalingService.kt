@@ -1,7 +1,7 @@
 package utsjekk.simulering
 
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import models.notFound
 import utsjekk.TokenType
@@ -11,13 +11,14 @@ import java.time.temporal.ChronoUnit
 
 class SimuleringUtbetalingService(
     private val client: SimuleringClient,
+    private val jdbcCtx: CoroutineDatasource,
 ) {
     suspend fun simuler(
         uid: UtbetalingId,
         utbetaling: Utbetaling,
         token: TokenType,
     ): SimuleringApi {
-        val dao = withContext(Jdbc.context) {
+        val dao = withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.findOrNull(uid)
             }
@@ -37,7 +38,7 @@ class SimuleringUtbetalingService(
         new: Utbetaling,
         token: TokenType,
     ): SimuleringApi {
-        val existing = withContext(Jdbc.context) {
+        val existing = withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.findOrNull(uid)?.data ?: notFound("Fant ikke utbetaling med uid $uid")
             }
@@ -96,7 +97,7 @@ class SimuleringUtbetalingService(
 
     /** Lager utbetalingsoppdrag for nye utbetalinger */
     private suspend fun utbetalingsoppdrag(uid: UtbetalingId, utbetaling: Utbetaling): UtbetalingsoppdragDto {
-        val erFørsteUtbetalingPåSak = withContext(Jdbc.context) {
+        val erFørsteUtbetalingPåSak = withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.find(utbetaling.sakId, history = true)
                     .map { it.stønad.asFagsystemStr() }

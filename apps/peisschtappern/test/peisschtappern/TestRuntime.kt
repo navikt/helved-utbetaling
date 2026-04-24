@@ -2,6 +2,7 @@ package peisschtappern
 
 import libs.jdbc.Jdbc
 import libs.jdbc.PostgresContainer
+import libs.jdbc.migrateTemplate
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.truncate
 import libs.kafka.KafkaConsumer
@@ -21,29 +22,51 @@ import javax.sql.DataSource
 private val testLog = logger("test")
 
 object TestRuntime {
-    private val postgres = PostgresContainer("peisschtappern")
-    val azure: AzureFake = AzureFake()
-    val kafka: StreamsMock = StreamsMock()
-    val jdbc: DataSource = Jdbc.initialize(postgres.config)
-    val context: CoroutineDatasource = CoroutineDatasource(jdbc)
-    val config: Config = Config(
-        azure = azure.config,
-        jdbc = postgres.config.copy(migrations = listOf(File("test/premigrations"), File("migrations"))),
-        kafka = kafka.config,
-        image = "test:test",
-    )
-
-    val ktor = KtorRuntime<Config>(
-        appName = "peisschtappern",
-        module = { 
-            peisschtappern(config, kafka)
-        },
-        onClose = {
-            jdbc.truncate("peisschtappern", *Table.entries.map{it.name}.toTypedArray(), TimerDao.table)
-            postgres.close()
-            azure.close()
+    private val migrationDirs = listOf(File("test/premigrations"), File("migrations"))
+    private val postgres: PostgresContainer by lazy {
+        PostgresContainer(
+            appname = "peisschtappern",
+            migrationDirs = migrationDirs,
+            migrate = ::migrateTemplate,
+        )
+    }
+    val azure: AzureFake by lazy { AzureFake() }
+    // Kafka mock and the ktor app form a chicken/egg pair: the StreamsMock
+    // instance must exist before the ktor module runs (the module wires it
+    // into the topology), but `kafka.testTopic(...)` only works AFTER the
+    // module has called `connect()` which initializes the underlying
+    // TopologyTestDriver. We construct the mock eagerly inside its first
+    // access, then trigger ktor init to register the topology.
+    private val kafkaMock: StreamsMock by lazy { StreamsMock() }
+    val kafka: StreamsMock
+        get() {
+            ktor // ensures topology is connected
+            return kafkaMock
         }
-    )
+    val jdbc: DataSource by lazy { Jdbc.initialize(postgres.config) }
+    val context: CoroutineDatasource by lazy { CoroutineDatasource(jdbc) }
+    val config: Config by lazy {
+        Config(
+            azure = azure.config,
+            jdbc = postgres.config,
+            kafka = kafkaMock.config,
+            image = "test:test",
+        )
+    }
+
+    val ktor: KtorRuntime<Config> by lazy {
+        KtorRuntime<Config>(
+            appName = "peisschtappern",
+            module = {
+                peisschtappern(config, kafkaMock)
+            },
+            onClose = {
+                jdbc.truncate("peisschtappern", *Table.entries.map{it.name}.toTypedArray(), TimerDao.table)
+                postgres.close()
+                azure.close()
+            }
+        )
+    }
 }
 
 @Suppress("UNCHECKED_CAST")

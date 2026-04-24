@@ -1,7 +1,7 @@
 package speiderhytta.dora
 
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import speiderhytta.CodeRepoConfig
@@ -51,6 +51,7 @@ class DeployService(
     private val deploys: DeployFetcher,
     private val metrics: Metrics,
     private val codeRepos: List<CodeRepoConfig>,
+    private val jdbcCtx: CoroutineDatasource,
     private val targetEnv: String = "prod-gcp",
     private val deployJobName: String = "deploy-prod",
 ) {
@@ -65,7 +66,7 @@ class DeployService(
                 val runs = deploys.runs(codeRepo.repo, workflowFile, since)
                 for (run in runs) {
                     val deployment = toDeployment(codeRepo.repo, app, run) ?: continue
-                    withContext(Jdbc.context) {
+                    withContext(jdbcCtx) {
                         transaction {
                             val inserted = deployment.insert()
                             if (inserted > 0) {

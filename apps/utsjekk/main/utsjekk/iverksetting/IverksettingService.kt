@@ -1,7 +1,7 @@
 package utsjekk.iverksetting
 
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
 import models.badRequest
@@ -15,9 +15,10 @@ import java.util.*
 
 class IverksettingService(
     private val oppdragProducer: KafkaProducer<String, Oppdrag>,
+    private val jdbcCtx: CoroutineDatasource,
 ) {
     suspend fun valider(iverksetting: Iverksetting) {
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             transaction {
                 validerAtIverksettingIkkeAlleredeErMottatt(iverksetting)
                 validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
@@ -28,7 +29,7 @@ class IverksettingService(
     }
 
     suspend fun iverksett(iverksetting: Iverksetting) {
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             transaction {
                 val now = LocalDateTime.now()
                 val uid = utsjekk.utbetaling.UtbetalingId(UUID.randomUUID())
@@ -56,7 +57,7 @@ class IverksettingService(
         behandlingId: BehandlingId,
         iverksettingId: IverksettingId?,
     ): IverksettStatus? {
-        val result = withContext(Jdbc.context) {
+        val result = withContext(jdbcCtx) {
             transaction {
                 IverksettingResultatDao.select(1) {
                     this.fagsystem = fagsystem // client.toFagsystem()

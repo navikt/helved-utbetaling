@@ -12,6 +12,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
+import libs.jdbc.context
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.topology
@@ -52,9 +54,9 @@ fun Application.urskog(
         meterBinders += LogbackMetrics()
     }
 
-    Jdbc.initialize(config.jdbc)
+    val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()
     runBlocking {
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             Migrator(config.jdbc.migrations).migrate()
         }
     }
@@ -68,7 +70,7 @@ fun Application.urskog(
         registry = prometheus,
         topology = topology {
             simulering(simuleringService)
-            oppdrag(oppdragProducer, prometheus)
+            oppdrag(oppdragProducer, prometheus, jdbcCtx)
             avstemming(avstemProducer)
         }
     )
@@ -76,7 +78,7 @@ fun Application.urskog(
     // Ønsker ikke alarm for manglende kvittering på helligdager
     prometheus.gauge("is_helligdag", if (LocalDate.now().erHelligdag()) 1 else 0)
 
-    val kvitteringConsumer = KvitteringMQConsumer(config, mq, kafka)
+    val kvitteringConsumer = KvitteringMQConsumer(config, mq, kafka, jdbcCtx)
 
     monitor.subscribe(ApplicationStarted) {
         kvitteringConsumer.start()

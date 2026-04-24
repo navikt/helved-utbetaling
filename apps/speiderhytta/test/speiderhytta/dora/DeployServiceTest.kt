@@ -157,7 +157,7 @@ class DeployServiceTest {
             )
             override suspend fun commitAuthorTime(repo: String, sha: String): Instant? = authored
         }
-        val service = DeployService(fetcher, metrics, codeRepos = listOf(backendRepo, frontendRepo))
+        val service = DeployService(fetcher, metrics, codeRepos = listOf(backendRepo, frontendRepo), jdbcCtx = TestRuntime.context)
         service.ingest(finished.minusSeconds(3600))
 
         assertEquals(
@@ -191,7 +191,7 @@ class DeployServiceTest {
             override suspend fun jobs(repo: String, runId: Long): List<WorkflowJob> = jobs[runId].orEmpty()
             override suspend fun commitAuthorTime(repo: String, sha: String): Instant? = commitTimes[sha]
         }
-        return DeployService(fetcher, metrics, codeRepos = codeRepos)
+        return DeployService(fetcher, metrics, codeRepos = codeRepos, jdbcCtx = TestRuntime.context)
     }
 
     private fun run(

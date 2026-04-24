@@ -23,6 +23,7 @@ import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
+import libs.jdbc.context
 import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
@@ -73,9 +74,9 @@ fun Application.vedskiva(
         }
     }
 
-    Jdbc.initialize(config.jdbc)
+    val jdbcCtx = Jdbc.initialize(config.jdbc).context()
     runBlocking {
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             Migrator(config.jdbc.migrations).migrate()
         }
     }
@@ -86,11 +87,11 @@ fun Application.vedskiva(
     streams.connect(
         config = config.kafka,
         registry = metrics,
-        topology = topology()
+        topology = topology(jdbcCtx)
     )
     routing {
         authenticate(TokenProvider.AZURE) {
-            avstem(service)
+            avstem(service, jdbcCtx)
         }
         route("/actuator") {
             get("/metric") { call.respond(metrics.scrape()) }

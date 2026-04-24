@@ -1,7 +1,7 @@
 package utsjekk.utbetaling
 
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.Err
 import libs.utils.Result
@@ -14,6 +14,7 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class UtbetalingService(
     private val oppdragProducer: KafkaProducer<String, Oppdrag> ,
+    private val jdbcCtx: CoroutineDatasource,
 ) {
 
     /**
@@ -21,7 +22,7 @@ class UtbetalingService(
      */
     suspend fun create(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
         // TODO: finnes det noe fra før dersom det er sendt inn 1 periode som senere har blitt slettet/annulert/opphørt?
-        val finnesFraFør = withContext(Jdbc.context) {
+        val finnesFraFør = withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.findOrNull(uid) != null
             }
@@ -31,7 +32,7 @@ class UtbetalingService(
             return Err(DatabaseError.Conflict)
         }
 
-        val erFørsteUtbetalingPåSak = utbetaling.erFørsteUtbetaling ?: withContext(Jdbc.context) {
+        val erFørsteUtbetalingPåSak = utbetaling.erFørsteUtbetaling ?: withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.find(utbetaling.sakId, history = true)
                     .map { it.stønad.asFagsystemStr() }
@@ -43,7 +44,7 @@ class UtbetalingService(
         val oppdrag = UtbetalingOppdragService.opprett(utbetaling, erFørsteUtbetalingPåSak)
         oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
 
-        return withContext(Jdbc.context) {
+        return withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao(utbetaling, Status.IKKE_PÅBEGYNT).insert(uid)
             }
@@ -54,7 +55,7 @@ class UtbetalingService(
      * Hent eksisterende utbetalingsoppdrag
      */
     suspend fun read(uid: UtbetalingId): Utbetaling? {
-        return withContext(Jdbc.context) {
+        return withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.findOrNull(uid)?.data
             }
@@ -65,7 +66,7 @@ class UtbetalingService(
      * Hent eksisterende utbetalingsoppdrag
      */
     suspend fun status(uid: UtbetalingId): Status {
-        return withContext(Jdbc.context) {
+        return withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.findOrNull(uid, history = true)?.status
                     ?: notFound("Fant ikke status for utbetaling med uid $uid")
@@ -80,7 +81,7 @@ class UtbetalingService(
      *  - opphør fra og med en dato
      */
     suspend fun update(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
-        val dao = withContext(Jdbc.context) {
+        val dao = withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.findOrNull(uid) ?: notFound("Fant ikke utbetaling med uid $uid")
             }
@@ -92,7 +93,7 @@ class UtbetalingService(
 
         // The failed oppdrag never took effect at OS, use the last OK state
         val existing = if (dao.status == Status.FEILET_MOT_OPPDRAG) {
-            val lastOk = withContext(Jdbc.context) {
+            val lastOk = withContext(jdbcCtx) {
                 transaction { UtbetalingDao.findLastOk(uid) }
             }?.data
             // sistePeriode may be null on legacy rows created before the field was added
@@ -108,7 +109,7 @@ class UtbetalingService(
         val oppdrag = UtbetalingOppdragService.update(utbetaling, existing)
         oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
 
-        return withContext(Jdbc.context) {
+        return withContext(jdbcCtx) {
             transaction {
                 val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
                 val newLastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId)
@@ -127,7 +128,7 @@ class UtbetalingService(
      * Slett en utbetalingsperiode (opphør hele perioden).
      */
     suspend fun delete(uid: UtbetalingId, utbetaling: Utbetaling): Result<Unit, DatabaseError> {
-        val dao = withContext(Jdbc.context) {
+        val dao = withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.findOrNull(uid) ?: notFound("Fant ikke utbetaling med uid $uid")
             }
@@ -139,7 +140,7 @@ class UtbetalingService(
 
         // The failed oppdrag never took effect at OS, use the last OK state
         val existing = if (dao.status == Status.FEILET_MOT_OPPDRAG) {
-            val lastOk = withContext(Jdbc.context) {
+            val lastOk = withContext(jdbcCtx) {
                 transaction { UtbetalingDao.findLastOk(uid) }
             }?.data
             // sistePeriode may be null on legacy rows created before the field was added
@@ -155,7 +156,7 @@ class UtbetalingService(
         val oppdrag = UtbetalingOppdragService.delete(utbetaling, existing)
         oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
 
-        return withContext(Jdbc.context) {
+        return withContext(jdbcCtx) {
             transaction {
                 val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
                 val newLastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId)
@@ -171,7 +172,7 @@ class UtbetalingService(
     }
 
     suspend fun lastOrNull(uid: UtbetalingId): Utbetaling? {
-        return withContext(Jdbc.context) {
+        return withContext(jdbcCtx) {
             transaction {
                 UtbetalingDao.findOrNull(uid, history = true)?.data
             }

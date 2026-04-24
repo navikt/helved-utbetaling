@@ -226,7 +226,7 @@ topology("utsjekk") {
         .forEach { key, status ->
             // Write to DB (not coroutine-based)
             runBlocking {
-                withContext(Jdbc.context) {
+                withContext(jdbcCtx) {
                     StatusDao.upsert(key, status)
                 }
             }

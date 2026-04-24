@@ -33,6 +33,7 @@ class IncidentServiceTest {
         val service = IncidentService(
             issues = { _, _ -> listOf(issue(123, body = "thing broke\n\nCaused-by: $sha\n", openedAt = opened)) },
             metrics = metrics,
+            jdbcCtx = TestRuntime.context,
         )
 
         service.ingest(opened.minusSeconds(3600))
@@ -55,6 +56,7 @@ class IncidentServiceTest {
         val service = IncidentService(
             issues = { _, _ -> listOf(issue(7, body = "no caused-by here", openedAt = opened)) },
             metrics = metrics,
+            jdbcCtx = TestRuntime.context,
         )
         service.ingest(opened.minusSeconds(3600))
 
@@ -70,6 +72,7 @@ class IncidentServiceTest {
         val service = IncidentService(
             issues = { _, _ -> listOf(issue(99, body = null, openedAt = opened)) },
             metrics = metrics,
+            jdbcCtx = TestRuntime.context,
         )
         service.ingest(opened.minusSeconds(3600))
 
@@ -87,6 +90,7 @@ class IncidentServiceTest {
         val service = IncidentService(
             issues = { _, _ -> listOf(issue(11, body = null, openedAt = opened, closedAt = closed)) },
             metrics = metrics,
+            jdbcCtx = TestRuntime.context,
         )
         service.ingest(opened.minusSeconds(3600))
 
@@ -110,6 +114,7 @@ class IncidentServiceTest {
                 )
             },
             metrics = metrics,
+            jdbcCtx = TestRuntime.context,
         )
         service.ingest(opened.minusSeconds(3600))
         val stored = transaction { Incident.findByIssue(1) }

@@ -17,3 +17,9 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("org.apache.kafka:kafka-streams-test-utils:4.2.0")
 }
+
+// Kafka topology tests share Kafka Streams test driver state (verified
+// 2026-04-24: concurrent fails). Keep same_thread.
+tasks.withType<Test> {
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+}

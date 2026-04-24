@@ -11,6 +11,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import libs.jdbc.Jdbc
 import libs.jdbc.PostgresContainer
+import libs.jdbc.migrateTemplate
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.truncate
 import libs.kafka.*
@@ -18,6 +19,7 @@ import libs.ktor.KtorRuntime
 import libs.utils.logger
 import java.io.File
 import java.net.URI
+import javax.sql.DataSource
 
 val testLog = logger("test")
 
@@ -26,39 +28,55 @@ class TestTopics(kafka: StreamsMock) {
 }
 
 object TestRuntime {
-    private val postgres = PostgresContainer("vedskiva")
-    val azure = AzureFake()
-    val peisschtappern = PeisschtappernFake()
-    val kafka = KafkaFactoryFake()
-    val streams: StreamsMock = StreamsMock()
-    val jdbc = Jdbc.initialize(postgres.config)
-    val context = CoroutineDatasource(jdbc)
-    val config = Config(
-        kafka = StreamsConfig("test-application", "localhost:9092", SslConfig("", "", "")),
-        jdbc = postgres.config.copy(migrations = listOf(File("test/migrations"), File("migrations"))),
-        azure = azure.config,
-        peisschtappern.config,
-    )
+    private val migrationDirs = listOf(File("test/migrations"), File("migrations"))
+    private val postgres: PostgresContainer by lazy {
+        PostgresContainer(
+            appname = "vedskiva",
+            migrationDirs = migrationDirs,
+            migrate = ::migrateTemplate,
+        )
+    }
+    val azure: AzureFake by lazy { AzureFake() }
+    val peisschtappern: PeisschtappernFake by lazy { PeisschtappernFake() }
+    private val kafkaFake: KafkaFactoryFake by lazy { KafkaFactoryFake() }
+    val kafka: KafkaFactoryFake
+        get() {
+            ktor // ensures producers/consumers are registered with the factory
+            return kafkaFake
+        }
+    val streams: StreamsMock by lazy { StreamsMock() }
+    val jdbc: DataSource by lazy { Jdbc.initialize(postgres.config) }
+    val context: CoroutineDatasource by lazy { CoroutineDatasource(jdbc) }
+    val config: Config by lazy {
+        Config(
+            kafka = StreamsConfig("test-application", "localhost:9092", SslConfig("", "", "")),
+            jdbc = postgres.config,
+            azure = azure.config,
+            peisschtappern.config,
+        )
+    }
 
 
-    val ktor = KtorRuntime<Config>(
-        appName = "vedskiva",
-        module = {
-            vedskiva(
-                config, 
-                streams,
-                kafka,
-            )
-        },
-        onClose = { 
-            reset() 
-            postgres.close()
-        },
-    )
+    val ktor: KtorRuntime<Config> by lazy {
+        KtorRuntime<Config>(
+            appName = "vedskiva",
+            module = {
+                vedskiva(
+                    config,
+                    streams,
+                    kafkaFake,
+                )
+            },
+            onClose = {
+                reset()
+                postgres.close()
+            },
+        )
+    }
 
     fun reset() {
         jdbc.truncate("vedskiva", Scheduled.TABLE_NAME, OppdragDao.table)
-        kafka.reset()
+        kafkaFake.reset()
         PeisschtappernFake.response.clear()
     }
 }

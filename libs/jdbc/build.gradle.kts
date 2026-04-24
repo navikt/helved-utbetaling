@@ -9,3 +9,6 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation(kotlin("test"))
 }
+
+// libs:jdbc tests each use their own in-memory H2 datasource via captured local
+// `ctx` and unique DB names, so class-concurrency is safe.

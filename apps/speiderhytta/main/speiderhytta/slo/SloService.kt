@@ -1,7 +1,7 @@
 package speiderhytta.slo
 
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import speiderhytta.Metrics
@@ -19,6 +19,7 @@ class SloService(
     private val definitions: List<SloDefinition>,
     private val prometheus: PrometheusClient,
     private val metrics: Metrics,
+    private val jdbcCtx: CoroutineDatasource,
 ) {
 
     suspend fun status(app: String): List<SloStatus> =
@@ -35,7 +36,7 @@ class SloService(
         for (def in definitions) {
             try {
                 val status = evaluate(def, now)
-                withContext(Jdbc.context) {
+                withContext(jdbcCtx) {
                     transaction {
                         SloSnapshot(
                             app = status.app,

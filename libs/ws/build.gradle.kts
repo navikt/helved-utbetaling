@@ -15,3 +15,9 @@ dependencies {
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
 }
+
+// libs:ws tests share singleton SOAP/HTTP fake state (verified 2026-04-24:
+// concurrent fails). Keep same_thread.
+tasks.withType<Test> {
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+}

@@ -9,7 +9,7 @@ import io.ktor.http.*
 import kotlinx.coroutines.withContext
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import models.*
 import utsjekk.Config
 import utsjekk.TokenType
@@ -19,6 +19,7 @@ import utsjekk.utbetaling.UtbetalingsoppdragDto
 
 class SimuleringClient(
     private val config: Config,
+    private val jdbcCtx: CoroutineDatasource,
     private val client: HttpClient = HttpClientFactory.new(
         logLevel = LogLevel.ALL, 
         retries = null, 
@@ -93,7 +94,7 @@ class SimuleringClient(
     }
 
     private suspend fun hentUtbetalingsoppdrag(sim: domain.Simulering): Utbetalingsoppdrag {
-        val forrigeTilkjenteYtelse = withContext(Jdbc.context) {
+        val forrigeTilkjenteYtelse = withContext(jdbcCtx) {
             sim.forrigeIverksetting?.let {
                 val forrigeIverksetting = IverksettingService.hent(
                     UtbetalingId(

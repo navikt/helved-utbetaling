@@ -1,7 +1,7 @@
 package speiderhytta.dora
 
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import speiderhytta.Metrics
@@ -34,6 +34,7 @@ fun GithubClient.asFetcher(): IssueFetcher = IssueFetcher { labels, since -> iss
 class IncidentService(
     private val issues: IssueFetcher,
     private val metrics: Metrics,
+    private val jdbcCtx: CoroutineDatasource,
     private val targetEnv: String = "prod-gcp",
     private val heuristicWindow: Duration = Duration.ofHours(24),
 ) {
@@ -44,7 +45,7 @@ class IncidentService(
         var newCursor = since
         for (issue in fetched) {
             val app = appLabel(issue) ?: continue
-            val incident = withContext(Jdbc.context) {
+            val incident = withContext(jdbcCtx) {
                 transaction {
                     val link = link(app, issue)
                     Incident(

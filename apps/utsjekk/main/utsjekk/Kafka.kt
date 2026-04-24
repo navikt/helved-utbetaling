@@ -2,7 +2,7 @@ package utsjekk
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.*
 import libs.utils.appLog
@@ -49,12 +49,12 @@ object Stores {
     val dryrunTs = Store(Tables.dryrunTs)
 }
 
-fun createTopology(): Topology = topology {
+fun createTopology(jdbcCtx: CoroutineDatasource): Topology = topology {
     globalKTable(Tables.dryrunAap, retention = 1.hours)
     globalKTable(Tables.dryrunDp, retention = 1.hours)
     globalKTable(Tables.dryrunTp, retention = 1.hours)
     globalKTable(Tables.dryrunTs, retention = 1.hours)
-    consumeStatus()
+    consumeStatus(jdbcCtx)
     utbetalingToSak()
 }
 
@@ -92,7 +92,7 @@ fun Topology.utbetalingToSak(): KTable<SakKey, Set<models.UtbetalingId>> {
     return ktable
 }
 
-fun Topology.consumeStatus() {
+fun Topology.consumeStatus(jdbcCtx: CoroutineDatasource) {
     // TODO: utled status fra oppdrag i stedet? Da får vi ikke noe status på topic for disse
     consume(Topics.status)
         .filterKey { uid ->
@@ -111,7 +111,7 @@ fun Topology.consumeStatus() {
             // }
 
             runBlocking {
-                withContext(Jdbc.context) {
+                withContext(jdbcCtx) {
                     val uDao = transaction {
                         UtbetalingDao.findOrNull(uid, history = true)?.also { dao ->
                             val status = when (status.status) {

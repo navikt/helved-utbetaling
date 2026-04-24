@@ -23,37 +23,42 @@ metadata:
 
 **Main Exports:**
 - `Dao<T>` interface: Pattern for database operations
-- `Jdbc` object: CoroutineContext element for connection management
+- `CoroutineDatasource`: CoroutineContext element for connection management
+- `DataSource.context()`: Wrap a DataSource as a CoroutineDatasource
 - `Migrator`: Schema migration system
 - `transaction { }`: Suspending DB transaction block
 - `concurrency.*`: Connection management primitives
 
 **Usage Pattern:**
 ```kotlin
+class UserService(private val jdbcCtx: CoroutineDatasource) {
+    suspend fun findById(id: Int): User? = withContext(jdbcCtx) {
+        UserDao.query("SELECT * FROM ${UserDao.table} WHERE id = ?") { stmt ->
+            stmt.setInt(1, id)
+        }.firstOrNull()
+    }
+
+    suspend fun insert(user: User): Int = withContext(jdbcCtx) {
+        UserDao.update("INSERT INTO ${UserDao.table} (name) VALUES (?)") { stmt ->
+            stmt.setString(1, user.name)
+        }
+    }
+}
+
 object UserDao : Dao<User> {
     override val table = "users"
     override fun from(rs: ResultSet) = User(
         id = rs.getInt("id"),
         name = rs.getString("name")
     )
-    
-    suspend fun findById(id: Int): User? = withContext(Jdbc.context) {
-        query("SELECT * FROM $table WHERE id = ?") { stmt ->
-            stmt.setInt(1, id)
-        }.firstOrNull()
-    }
-    
-    suspend fun insert(user: User): Int = withContext(Jdbc.context) {
-        update("INSERT INTO $table (name) VALUES (?)") { stmt ->
-            stmt.setString(1, user.name)
-        }
-    }
 }
 ```
 
 **Key Patterns:**
-- Companion objects implement `Dao<T>`
-- Always use `withContext(Jdbc.context)` for DB operations
+- Construct `jdbcCtx` once at the app entry point: `val jdbcCtx = Jdbc.initialize(config.jdbc).context()`
+- Pass `jdbcCtx: CoroutineDatasource` explicitly through DI to services/routes/topology functions
+- Companion objects implement `Dao<T>` (no DI in DAOs themselves)
+- Always use `withContext(jdbcCtx)` for DB operations -- never reach for a global
 - Use `transaction { }` for multi-statement atomic operations
 - `query()` returns `List<T>`, `update()` returns affected row count
 - Custom mapper: `query(sql, mapper = { rs -> CustomType(...) }) { stmt -> ... }`
@@ -72,8 +77,8 @@ object UserDao : Dao<User> {
 **Usage Pattern:**
 ```kotlin
 object TestRuntime {
-    val datasource: DataSource = PostgresContainer.dataSource
-    val context: CoroutineContext = Jdbc.context + datasource.asContextElement()
+    val datasource: DataSource by lazy { Jdbc.initialize(postgres.config) }
+    val context: CoroutineDatasource by lazy { datasource.context() }
 }
 
 @Test fun `test database operation`() = runTest(TestRuntime.context) {
@@ -477,7 +482,7 @@ fun Application.myApp() {
     routing {
         authenticate("azure-ad") {
             get("/data") {
-                withContext(Jdbc.context + datasource.asContextElement()) {
+                withContext(jdbcCtx) {
                     val data = MyDao.findAll()
                     call.respond(data)
                 }
@@ -513,7 +518,7 @@ val topology = topology("app") {
 
 routing {
     get("/status/{id}") {
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             val status = StatusDao.findById(call.parameters["id"]!!)
             call.respond(status ?: HttpStatusCode.NotFound)
         }
@@ -537,7 +542,7 @@ launch {
 object TestRuntime {
     val datasource = PostgresContainer.dataSource
     val streamsMock = StreamsMock()
-    val context = Jdbc.context + datasource.asContextElement()
+    val context = datasource.context()
     val ktorRuntime = KtorRuntime(Application::myApp)
     val httpClient = ktorRuntime.client
 }

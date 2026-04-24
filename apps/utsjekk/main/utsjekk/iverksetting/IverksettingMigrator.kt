@@ -1,7 +1,7 @@
 package utsjekk.iverksetting
 
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
 import libs.utils.appLog
@@ -28,6 +28,7 @@ data class MigrationRequest(
 class IverksettingMigrator(
     val iverksettingService: IverksettingService,
     val utbetalingProducer: KafkaProducer<String, Utbetaling>,
+    private val jdbcCtx: CoroutineDatasource,
 ) {
     fun migrate(req: MigrationRequest, utbetaling: Utbetaling) {
         val key = utbetaling.uid.id.toString()
@@ -38,7 +39,7 @@ class IverksettingMigrator(
         if (fs !in listOf(models.kontrakter.Fagsystem.TILLEGGSSTØNADER, models.kontrakter.Fagsystem.TILTAKSPENGER)) {
             notImplemented("kan ikke migrere $fs enda")
         }
-        return withContext(Jdbc.context) {
+        return withContext(jdbcCtx) {
             transaction {
                 val iverksetting = iverksettingService.hentSisteMottatte(SakId(req.sakId), fs)
                     ?: notFound("iverksetting for (sak=${req.sakId} fagsystem=$fs)")

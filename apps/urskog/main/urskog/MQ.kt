@@ -6,7 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.Streams
 import libs.mq.DefaultMQConsumer
@@ -75,7 +75,7 @@ class AvstemmingMQProducer(config: Config, mq: MQ) {
     }
 }
 
-class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams): AutoCloseable {
+class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams, private val jdbcCtx: CoroutineDatasource): AutoCloseable {
     private val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
     private val consumer = DefaultMQConsumer(mq, config.oppdrag.kvitteringsKø, ::onMessage)
@@ -85,7 +85,7 @@ class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams): AutoCloseabl
         val stripped = mapper.copy(kvittering).apply { mmel = null }
         val hashKey = DaoOppdrag.hash(stripped)
         val dao = runBlocking {
-            withContext(Jdbc.context + Dispatchers.IO) {
+            withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
                     DaoOppdrag.findOrLegacy(hashKey, stripped)
                         ?: error("fant ikke noe sted å lagre kvittering for hashKey($hashKey) sakId:${kvittering.sakId()}")

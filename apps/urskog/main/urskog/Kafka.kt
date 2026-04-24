@@ -3,7 +3,7 @@ package urskog
 import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.intoUids
 import libs.kafka.*
@@ -29,12 +29,12 @@ object Topics {
     val avstemming = Topic("helved.avstemming.v1", xml<Avstemmingsdata>())
 }
 
-fun Topology.oppdrag(mq: OppdragMQProducer, meters: MeterRegistry) {
+fun Topology.oppdrag(mq: OppdragMQProducer, meters: MeterRegistry, jdbcCtx: CoroutineDatasource) {
     consume(Topics.oppdrag)
         .branch({ it.mmel == null }) {
             this
                 .processor(Processor{ EnrichMetadataProcessor() })
-                .map { key, (oppdrag, meta) -> saveOppdragAndSendIfReady(mq, key, oppdrag, meta) }
+                .map { key, (oppdrag, meta) -> saveOppdragAndSendIfReady(mq, key, oppdrag, meta, jdbcCtx) }
                 .filter { reply -> reply.status == Status.HOS_OPPDRAG }
                 .includeHeader(FS_KEY) { reply -> 
                     val ytelse = reply.detaljer?.ytelse
@@ -63,7 +63,7 @@ fun Topology.oppdrag(mq: OppdragMQProducer, meters: MeterRegistry) {
 
     consume(Topics.pendingUtbetalinger)
         .processor(Processor{ EnrichMetadataProcessor() })
-        .mapKeyAndValue { key, (value, meta) -> updatePendingAndOppdrag(mq, key, value, meta)}
+        .mapKeyAndValue { key, (value, meta) -> updatePendingAndOppdrag(mq, key, value, meta, jdbcCtx)}
         .filter { reply -> reply.status == Status.HOS_OPPDRAG }
         .includeHeader(FS_KEY) { reply -> 
             val ytelse = reply.detaljer?.ytelse
@@ -81,8 +81,9 @@ private fun saveOppdragAndSendIfReady(
     key: String,
     oppdrag: Oppdrag,
     meta: Metadata,
+    jdbcCtx: CoroutineDatasource,
 ): StatusReply {
-    return runBlocking(Jdbc.context + Dispatchers.IO) {
+    return runBlocking(jdbcCtx + Dispatchers.IO) {
         val hashKey = DaoOppdrag.hash(oppdrag)
         transaction {
             saveIdempotent(key, hashKey, oppdrag, meta)
@@ -106,9 +107,10 @@ private fun updatePendingAndOppdrag(
     mq: OppdragMQProducer,
     key: String,
     value: Utbetaling,
-    meta: Metadata, 
+    meta: Metadata,
+    jdbcCtx: CoroutineDatasource,
 ): KeyValue<String, StatusReply> { 
-    return runBlocking(Jdbc.context + Dispatchers.IO) {
+    return runBlocking(jdbcCtx + Dispatchers.IO) {
         val hashKey = meta.headers["hash_key"]
         if (hashKey == null) {
             kafkaLog.warn("pendingUtbetaling med key:$key mangler header hash_key")

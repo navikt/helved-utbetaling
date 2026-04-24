@@ -7,7 +7,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import speiderhytta.HELVED_APPS
 import java.time.Instant
@@ -23,10 +23,10 @@ import java.time.Instant
  * No auth on the route itself — gated upstream by NAIS access policy
  * (helved-peisen is the only allowed inbound).
  */
-fun Route.doraRoutes(query: DoraQueryService, apps: List<String> = HELVED_APPS) {
+fun Route.doraRoutes(query: DoraQueryService, jdbcCtx: CoroutineDatasource, apps: List<String> = HELVED_APPS) {
     route("/dora") {
         get {
-            val summaries = withContext(Jdbc.context + Dispatchers.IO) {
+            val summaries = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction { query.summaries(apps) }
             }
             call.respond(summaries)
@@ -36,7 +36,7 @@ fun Route.doraRoutes(query: DoraQueryService, apps: List<String> = HELVED_APPS) 
             get {
                 val app = call.parameters["app"] ?: return@get call.respond(HttpStatusCode.BadRequest, "missing app")
                 if (app !in apps) return@get call.respond(HttpStatusCode.NotFound, "unknown app")
-                val summary = withContext(Jdbc.context + Dispatchers.IO) {
+                val summary = withContext(jdbcCtx + Dispatchers.IO) {
                     transaction { query.summary(app) }
                 }
                 call.respond(summary)
@@ -47,7 +47,7 @@ fun Route.doraRoutes(query: DoraQueryService, apps: List<String> = HELVED_APPS) 
                 if (app !in apps) return@get call.respond(HttpStatusCode.NotFound, "unknown app")
                 val since = sinceParam(call.request.queryParameters["since"])
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 100
-                val rows = withContext(Jdbc.context + Dispatchers.IO) {
+                val rows = withContext(jdbcCtx + Dispatchers.IO) {
                     transaction { Deployment.selectSuccessfulFor(app, "prod-gcp", since, limit) }
                 }
                 call.respond(rows)
@@ -58,7 +58,7 @@ fun Route.doraRoutes(query: DoraQueryService, apps: List<String> = HELVED_APPS) 
                 if (app !in apps) return@get call.respond(HttpStatusCode.NotFound, "unknown app")
                 val since = sinceParam(call.request.queryParameters["since"])
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 100
-                val rows = withContext(Jdbc.context + Dispatchers.IO) {
+                val rows = withContext(jdbcCtx + Dispatchers.IO) {
                     transaction { Incident.selectFor(app, since, limit) }
                 }
                 call.respond(rows)
