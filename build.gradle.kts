@@ -1,7 +1,9 @@
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.file.attribute.FileTime
 import java.util.jar.Manifest
+import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -161,16 +163,41 @@ subprojects {
 
                     ZipOutputStream(depsJar.outputStream().buffered()).use { depsOut: ZipOutputStream ->
                         ZipOutputStream(appJar.outputStream().buffered()).use { appOut: ZipOutputStream ->
-                            appOut.putNextEntry(ZipEntry("META-INF/MANIFEST.MF"))
-                            appOut.write(patchedManifest)
-                            appOut.closeEntry()
+                            // Determinism: fixed compression level and a stable
+                            // entry timestamp (1980-01-01, the ZIP format's
+                            // earliest representable date) so identical inputs
+                            // always produce byte-identical output JARs. This
+                            // is what lets CI compare deps.jar SHAs across runs
+                            // to skip SLSA attestation when nothing changed.
+                            depsOut.setLevel(Deflater.DEFAULT_COMPRESSION)
+                            appOut.setLevel(Deflater.DEFAULT_COMPRESSION)
+                            val stableTime = 315532800000L // 1980-01-01T00:00:00Z
 
-                            val entries = zf.entries()
-                            while (entries.hasMoreElements()) {
-                                val entry: ZipEntry = entries.nextElement()
-                                if (entry.name == "META-INF/MANIFEST.MF") continue
-                                if (entry.isDirectory) continue
-                                val name = entry.name
+                            fun writeEntry(target: ZipOutputStream, name: String, bytes: ByteArray) {
+                                val e = ZipEntry(name)
+                                e.time = stableTime
+                                e.creationTime = FileTime.fromMillis(stableTime)
+                                e.lastModifiedTime = FileTime.fromMillis(stableTime)
+                                e.lastAccessTime = FileTime.fromMillis(stableTime)
+                                target.putNextEntry(e)
+                                target.write(bytes)
+                                target.closeEntry()
+                            }
+
+                            writeEntry(appOut, "META-INF/MANIFEST.MF", patchedManifest)
+
+                            // Sort entries by name for deterministic ordering;
+                            // ZipFile.entries() iteration order is whatever the
+                            // shadowJar plugin happened to emit (parallel build
+                            // order varies across runs).
+                            val sortedNames = zf.entries().asSequence()
+                                .filter { !it.isDirectory && it.name != "META-INF/MANIFEST.MF" }
+                                .map { it.name }
+                                .sorted()
+                                .toList()
+
+                            for (name in sortedNames) {
+                                val entry = zf.getEntry(name)
                                 val first = name.substringBefore('/')
                                 val isApp = first in appPackages ||
                                     name == "logback.xml" ||
@@ -178,9 +205,8 @@ subprojects {
                                     migrationRegex.matches(name) ||
                                     (name.startsWith("META-INF/") && name.endsWith(".kotlin_module"))
                                 val target: ZipOutputStream = if (isApp) appOut else depsOut
-                                target.putNextEntry(ZipEntry(name))
-                                zf.getInputStream(entry).use { input -> input.copyTo(target) }
-                                target.closeEntry()
+                                val bytes = zf.getInputStream(entry).use { it.readAllBytes() }
+                                writeEntry(target, name, bytes)
                             }
                         }
                     }
