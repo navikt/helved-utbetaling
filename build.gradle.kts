@@ -1,3 +1,11 @@
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.util.jar.Manifest
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
+
 plugins {
     kotlin("jvm") version "2.3.10"
     id("io.ktor.plugin") version "3.4.0" apply false
@@ -100,4 +108,99 @@ subprojects {
             enabled = false
         }
     }
+
+    // splitFatJar: split shadowJar output into two jars so the Docker image
+    // gets two layers - a stable ~66 MB deps layer and a small ~2 MB app layer.
+    // The deps layer is cached across builds whenever third-party libraries
+    // don't change, so the docker push only uploads the app layer.
+    //
+    // Classification rule: anything under our own packages (utsjekk/, abetal/,
+    // urskog/ etc., plus libs/ and models/) plus app resources (logback.xml,
+    // migrations.sql, V*__*.sql, META-INF/<module>.kotlin_module) goes in
+    // app.jar. Everything else goes in deps.jar.
+    plugins.withId("com.gradleup.shadow") {
+        val shadowJar = tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar")
+        val splitFatJar = tasks.register("splitFatJar") {
+            group = "build"
+            description = "Split the shadow fat JAR into deps.jar (third-party) and app.jar (our code)."
+            dependsOn(shadowJar)
+
+            val fatJarFile = shadowJar.flatMap { it.archiveFile }
+            val outDir = layout.buildDirectory.dir("split-jars")
+            val moduleName = project.name
+            inputs.file(fatJarFile)
+            outputs.dir(outDir)
+
+            doLast {
+                val src: File = fatJarFile.get().asFile
+                val outDirFile: File = outDir.get().asFile.also { it.mkdirs() }
+                val depsJar = outDirFile.resolve("deps.jar")
+                val appJar = outDirFile.resolve("app.jar")
+
+                val appPackages = setOf(moduleName, "libs", "models")
+                val migrationRegex = Regex("V\\d+__.*\\.sql")
+
+                ZipFile(src).use { zf: ZipFile ->
+                    val manifestEntry: ZipEntry? = zf.getEntry("META-INF/MANIFEST.MF")
+                    val manifestBytes: ByteArray = if (manifestEntry != null) {
+                        zf.getInputStream(manifestEntry).use { input -> input.readAllBytes() }
+                    } else {
+                        "Manifest-Version: 1.0\r\n".toByteArray()
+                    }
+
+                    // Patch manifest with `Class-Path: deps.jar` so
+                    // `java -jar app.jar` resolves classes in deps.jar without
+                    // needing -cp on the command line.
+                    val patchedManifest: ByteArray = run {
+                        val mf = Manifest(ByteArrayInputStream(manifestBytes))
+                        mf.mainAttributes.putValue("Class-Path", "deps.jar")
+                        val buf = ByteArrayOutputStream()
+                        mf.write(buf)
+                        buf.toByteArray()
+                    }
+
+                    ZipOutputStream(depsJar.outputStream().buffered()).use { depsOut: ZipOutputStream ->
+                        ZipOutputStream(appJar.outputStream().buffered()).use { appOut: ZipOutputStream ->
+                            appOut.putNextEntry(ZipEntry("META-INF/MANIFEST.MF"))
+                            appOut.write(patchedManifest)
+                            appOut.closeEntry()
+
+                            val entries = zf.entries()
+                            while (entries.hasMoreElements()) {
+                                val entry: ZipEntry = entries.nextElement()
+                                if (entry.name == "META-INF/MANIFEST.MF") continue
+                                if (entry.isDirectory) continue
+                                val name = entry.name
+                                val first = name.substringBefore('/')
+                                val isApp = first in appPackages ||
+                                    name == "logback.xml" ||
+                                    name == "migrations.sql" ||
+                                    migrationRegex.matches(name) ||
+                                    (name.startsWith("META-INF/") && name.endsWith(".kotlin_module"))
+                                val target: ZipOutputStream = if (isApp) appOut else depsOut
+                                target.putNextEntry(ZipEntry(name))
+                                zf.getInputStream(entry).use { input -> input.copyTo(target) }
+                                target.closeEntry()
+                            }
+                        }
+                    }
+                }
+
+                logger.lifecycle(
+                    "splitFatJar: ${src.length() / 1024 / 1024} MB -> " +
+                        "deps ${depsJar.length() / 1024 / 1024} MB + " +
+                        "app ${appJar.length() / 1024 / 1024} MB",
+                )
+            }
+        }
+
+        // Hook into buildFatJar so the split runs as part of CI's package step.
+        tasks.matching { it.name == "buildFatJar" }.configureEach {
+            finalizedBy(splitFatJar)
+        }
+    }
 }
+
+// Removed top-level splitFatJar function; the logic is inlined in the doLast
+// block above to keep the task compatible with Gradle's configuration cache
+// (script-level function references can't be serialized).
