@@ -91,4 +91,13 @@ subprojects {
             exclude("librocksdbjni-win64.dll")
         }
     }
+
+    // The Ktor / application plugin produces distZip + distTar archives we
+    // never use - the deployable artifact is the shadow fat JAR. Disabling
+    // them shaves seconds off `buildFatJar` (which depends on `assemble`).
+    plugins.withId("application") {
+        tasks.matching { it.name == "distZip" || it.name == "distTar" }.configureEach {
+            enabled = false
+        }
+    }
 }
