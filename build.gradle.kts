@@ -69,3 +69,26 @@ allprojects {
         }
     }
 }
+
+// Fat JARs ship a 200 MB rocksdbjni dependency containing native libs for 14
+// architectures. NAIS runs cgr-nav/jre on linux/amd64 only, so strip every
+// non-linux64 native from the shadowJar output. The non-fat-jar runtime
+// classpath (used by tests) still receives the full rocksdbjni jar from
+// Maven, so macOS/arm64 dev tests continue to work.
+//
+// Per-app savings: ~66 MB compressed (utsjekk: 134 MB -> ~68 MB).
+// Total across 7 Kafka Streams apps: ~460 MB.
+subprojects {
+    plugins.withId("com.gradleup.shadow") {
+        tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+            exclude("librocksdbjni-linux32*.so")
+            exclude("librocksdbjni-linux64-musl.so")
+            exclude("librocksdbjni-linux-aarch64*.so")
+            exclude("librocksdbjni-linux-ppc64le*.so")
+            exclude("librocksdbjni-linux-s390x*.so")
+            exclude("librocksdbjni-linux-riscv64.so")
+            exclude("librocksdbjni-osx-*.jnilib")
+            exclude("librocksdbjni-win64.dll")
+        }
+    }
+}
