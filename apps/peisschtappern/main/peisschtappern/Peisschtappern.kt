@@ -26,6 +26,8 @@ import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
+import libs.jdbc.context
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.kafka.Topic
 import libs.kafka.json
 import libs.kafka.xml
@@ -79,15 +81,15 @@ fun Application.peisschtappern(
         meterBinders += LogbackMetrics()
     }
 
-    Jdbc.initialize(config.jdbc)
+    val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()
     runBlocking {
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             Migrator(config.jdbc.migrations).migrate()
         }
     }
 
     kafka.connect(
-        topology = createTopology(config),
+        topology = createTopology(config, jdbcCtx),
         config = config.kafka,
         registry = prometheus
     )
@@ -102,7 +104,7 @@ fun Application.peisschtappern(
         probes(kafka, prometheus)
 
         authenticate(TokenProvider.AZURE) {
-            api(manuellEndringService)
+            api(manuellEndringService, jdbcCtx)
         }
     }
 

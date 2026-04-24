@@ -7,8 +7,8 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.runBlocking
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
-import libs.jdbc.Jdbc
 
 private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
 private fun String.toLocalDateTime() = LocalDateTime.parse(this, formatter)
@@ -21,7 +21,7 @@ object Topics {
 
 open class Kafka : KafkaFactory
 
-fun topology() = topology {
+fun topology(jdbcCtx: CoroutineDatasource) = topology {
     consume(Topics.oppdrag).forEach { _, oppdrag ->
         val avstemming = oppdrag.oppdrag110.avstemming115 
         val hashKey = mapper
@@ -43,7 +43,7 @@ fun topology() = topology {
             beskrMelding = oppdrag.mmel?.beskrMelding,
         )
 
-        runBlocking(Jdbc.context) {
+        runBlocking(jdbcCtx) {
             transaction {
                 dao.insert()
             }

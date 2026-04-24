@@ -37,3 +37,10 @@ dependencies {
     testImplementation("org.apache.kafka:kafka-streams:4.2.0") // StreamsConfig
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
+
+// urskog tests share a single TestRuntime (Kafka topology + MQ + DB). Tests
+// rely on sequential execution to coordinate state on shared topics/queues
+// (verified 2026-04-24: concurrent fails). Keep same_thread.
+tasks.withType<Test> {
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+}

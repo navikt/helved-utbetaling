@@ -33,3 +33,10 @@ dependencies {
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
 }
+
+// abetal tests share a single TestRuntime (singleton StreamsMock + topics) and
+// each test asserts topics are empty in @AfterEach. Class-concurrency hangs the
+// build (verified 2026-04-24). Keep same_thread.
+tasks.withType<Test> {
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+}

@@ -3,7 +3,7 @@ package peisschtappern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.*
 import libs.kafka.processor.*
@@ -34,10 +34,10 @@ object Topics {
     val historiskIntern = Topic("helved.utbetalinger-historisk.v1", bytes())
 }
 
-fun createTopology(config: Config): Topology = topology {
+fun createTopology(config: Config, jdbcCtx: CoroutineDatasource): Topology = topology {
     Channel.all()
         .sortedBy { it.revision }
-        .forEach { save(it.topic, it.table, config.image.commitHash()) }
+        .forEach { save(it.topic, it.table, config.image.commitHash(), jdbcCtx) }
 }
 
 data class AuditMetadata (
@@ -60,12 +60,13 @@ private fun Topology.save(
     topic: Topic<String, ByteArray>,
     table: Table,
     commitHash: String,
+    jdbcCtx: CoroutineDatasource,
 ) {
     consume(topic, includeTombstones = true)
         .processor(Processor{ EnrichMetadataProcessor() })
         .forEach { key, (value, metadata) ->
             runBlocking {
-                withContext(Jdbc.context + Dispatchers.IO) {
+                withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {
                         if (topic == Topics.oppdrag) {
                             AlertService.missingKvitteringHandler(key, value)

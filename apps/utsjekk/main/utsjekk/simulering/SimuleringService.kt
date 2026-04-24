@@ -1,7 +1,7 @@
 package utsjekk.simulering
 
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import models.badRequest
 import models.conflict
 import utsjekk.iverksetting.OppdragStatus
@@ -9,10 +9,13 @@ import utsjekk.iverksetting.IverksettingService
 import utsjekk.iverksetting.UtbetalingId
 import utsjekk.iverksetting.behandlingId
 
-class SimuleringService(private val iverksettinger: IverksettingService) {
+class SimuleringService(
+    private val iverksettinger: IverksettingService,
+    private val jdbcCtx: CoroutineDatasource,
+) {
 
     suspend fun valider(simulering: domain.Simulering) {
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             forrigeIverksettingSkalVæreFerdigstilt(simulering)
             forrigeIverksettingErLikSisteMottatteIverksetting(simulering)
         }

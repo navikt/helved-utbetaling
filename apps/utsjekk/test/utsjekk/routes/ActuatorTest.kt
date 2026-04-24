@@ -25,6 +25,11 @@ class ActuatorTest {
 
     @Test
     fun meter() = runTest {
+        // Trigger at least one server request so ktor_http_server_requests_seconds
+        // exists in the metric registry. Under class-concurrency this test may
+        // run before any other test class has issued a request.
+        httpClient.get("/actuator/ready")
+
         val res = httpClient.get("/actuator/metric")
         assertEquals(HttpStatusCode.OK, res.status)
 

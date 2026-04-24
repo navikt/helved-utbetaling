@@ -5,6 +5,9 @@ import com.zaxxer.hikari.HikariDataSource
 import java.io.File
 import java.sql.ResultSet
 import javax.sql.DataSource
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.utils.env
 import libs.utils.logger
@@ -13,8 +16,6 @@ import libs.utils.logger
  * The Jdbc wrapper for managing the datasource
  */
 object Jdbc {
-    lateinit var context: CoroutineDatasource
-
     /**
      * Initialize the datasource once.
      *
@@ -35,9 +36,31 @@ object Jdbc {
                 minimumIdle = 1
                 maximumPoolSize = 8
             }.apply(hikariConfig)
-        ).also {
-            context = CoroutineDatasource(it)
-        }
+        )
+}
+
+/**
+ * Wrap a [DataSource] as a [CoroutineDatasource] suitable for use as a CoroutineContext element.
+ *
+ * Each app/test should construct its own [CoroutineDatasource] from its [DataSource] and pass it
+ * explicitly through DI, enabling multiple datasources to coexist in a single JVM.
+ */
+fun DataSource.context(): CoroutineDatasource = CoroutineDatasource(this)
+
+/**
+ * Run [block] with the given [CoroutineDatasource] installed on the coroutine context.
+ *
+ * Equivalent to `withContext(ds + Dispatchers.IO) { block() }` when [io] is true,
+ * otherwise just `withContext(ds) { block() }` (default).
+ */
+suspend inline fun <T> jdbc(
+    ds: CoroutineDatasource,
+    io: Boolean = false,
+    crossinline block: suspend CoroutineScope.() -> T,
+): T = if (io) {
+    withContext(ds + Dispatchers.IO) { block() }
+} else {
+    withContext(ds) { block() }
 }
 
 data class JdbcConfig(

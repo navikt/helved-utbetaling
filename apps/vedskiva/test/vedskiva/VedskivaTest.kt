@@ -6,7 +6,6 @@ import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducerFake
 import libs.utils.CsvReader
@@ -50,7 +49,7 @@ class VedskivaTest {
             Rule("createdAt") { LocalDateTime.parse(it, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")) },
         )
         runBlocking {
-            withContext(Jdbc.context) {
+            withContext(TestRuntime.context) {
                 transaction {
                     CsvReader
                         .parse<OppdragDao>(csv, rules)
@@ -243,7 +242,7 @@ class VedskivaTest {
     @Test
     fun `test with dev data from may 5th`() = runTest(TestRuntime.context) {
         runBlocking {
-            withContext(Jdbc.context) {
+            withContext(TestRuntime.context) {
                 transaction {
                     Scheduled(
                         created_at = LocalDate.of(2025, 5, 5),
@@ -986,7 +985,7 @@ class VedskivaTest {
         )
 
         runBlocking {
-            withContext(Jdbc.context) {
+            withContext(TestRuntime.context) {
                 transaction {
                     Scheduled(LocalDate.now(), LocalDate.now(), LocalDate.now()).insert()
                 }

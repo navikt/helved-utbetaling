@@ -48,13 +48,13 @@ class MigrationTest {
 
     @Test
     fun `allow no files`() = runTest(ctx) {
-        Migrator(File("test/migrations/empty"))
+        Migrator(File("test/migrations/empty")).migrate()
     }
 
     @Test
-    fun `can create migrations table`() = runTest {
-        Migrator(File("test/migrations/valid"))
-        Migrator(File("test/migrations/valid"))
+    fun `can create migrations table`() = runTest(ctx) {
+        Migrator(File("test/migrations/valid")).migrate()
+        Migrator(File("test/migrations/valid")).migrate()
     }
 
     @Test

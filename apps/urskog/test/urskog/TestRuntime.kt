@@ -5,6 +5,7 @@ import libs.auth.AzureConfig
 import libs.jdbc.Jdbc
 import libs.jdbc.JdbcConfig
 import libs.jdbc.PostgresContainer
+import libs.jdbc.migrateTemplate
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.truncate
 import libs.kafka.SslConfig
@@ -34,30 +35,50 @@ class TestTopics(kafka: StreamsMock) {
 }
 
 object TestRuntime {
-    private val postgres = PostgresContainer("urskog")
-    val jdbc: DataSource = Jdbc.initialize(postgres.config)
-    val context: CoroutineDatasource = CoroutineDatasource(jdbc)
-    val kafka: StreamsMock = StreamsMock()
-    val mq: FakeMQ = FakeMQ()
-    val ws: FakeWS = FakeWS()
-    val fakes: HttpFakes = HttpFakes()
-    val config: Config = TestConfig.create(
-        proxy = fakes.proxyConfig,
-        azure = fakes.azureConfig,
-        simulering = fakes.simuleringConfig,
-        jdbc = postgres.config.copy(migrations = listOf(File("test/premigrations"), File("migrations"))),
-    )
-    val ktor = KtorRuntime<Config>(
-        appName = "urskog",
-        module = {
-            urskog(config, kafka, mq)
-        },
-        onClose = {
-            jdbc.truncate("urskog", DaoOppdrag.table, DaoPendingUtbetaling.table)
-            postgres.close()
+    private val migrationDirs = listOf(File("test/premigrations"), File("migrations"))
+    private val postgres: PostgresContainer by lazy {
+        PostgresContainer(
+            appname = "urskog",
+            migrationDirs = migrationDirs,
+            migrate = ::migrateTemplate,
+        )
+    }
+    val jdbc: DataSource by lazy { Jdbc.initialize(postgres.config) }
+    val context: CoroutineDatasource by lazy { CoroutineDatasource(jdbc) }
+    private val kafkaMock: StreamsMock by lazy { StreamsMock() }
+    val kafka: StreamsMock
+        get() {
+            ktor // ensures topology is connected
+            return kafkaMock
         }
-    )
-    val topics: TestTopics = TestTopics(kafka)
+    val mq: FakeMQ by lazy { FakeMQ() }
+    val ws: FakeWS by lazy { FakeWS() }
+    val fakes: HttpFakes by lazy { HttpFakes() }
+    val config: Config by lazy {
+        TestConfig.create(
+            proxy = fakes.proxyConfig,
+            azure = fakes.azureConfig,
+            simulering = fakes.simuleringConfig,
+            jdbc = postgres.config,
+        )
+    }
+    val ktor: KtorRuntime<Config> by lazy {
+        KtorRuntime<Config>(
+            appName = "urskog",
+            module = {
+                urskog(config, kafkaMock, mq)
+            },
+            onClose = {
+                jdbc.truncate("urskog", DaoOppdrag.table, DaoPendingUtbetaling.table)
+                postgres.close()
+            }
+        )
+    }
+    val topics: TestTopics by lazy {
+        // Topology must be registered (via ktor) before testTopic() works.
+        ktor
+        TestTopics(kafkaMock)
+    }
 }
 
 object TestConfig {

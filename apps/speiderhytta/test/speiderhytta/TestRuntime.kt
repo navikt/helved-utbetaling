@@ -3,6 +3,7 @@ package speiderhytta
 import io.ktor.client.HttpClient
 import libs.jdbc.Jdbc
 import libs.jdbc.PostgresContainer
+import libs.jdbc.migrateTemplate
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.truncate
 import libs.ktor.KtorRuntime
@@ -24,33 +25,35 @@ val testLog = logger("test")
  * the migration path for tests.
  */
 object TestRuntime {
-    private val postgres = PostgresContainer("speiderhytta")
+    private val migrationDirs = listOf(File("test/premigrations"), File("migrations"))
+    private val postgres: PostgresContainer by lazy {
+        PostgresContainer(
+            appname = "speiderhytta",
+            migrationDirs = migrationDirs,
+            migrate = ::migrateTemplate,
+        )
+    }
 
-    val config: Config = Config(
-        jdbc = postgres.config.copy(migrations = listOf(File("test/premigrations"), File("migrations"))),
-        github = GithubConfig(appId = "1", installationId = "1", privateKeyPem = ""),
-        slo = SloConfig(definitionsDir = File("test/slos")),
-    )
+    val config: Config by lazy {
+        Config(
+            jdbc = postgres.config,
+            github = GithubConfig(appId = "1", installationId = "1", privateKeyPem = ""),
+            slo = SloConfig(definitionsDir = File("test/slos")),
+        )
+    }
 
-    val jdbc: DataSource = Jdbc.initialize(config.jdbc)
-    val context: CoroutineDatasource = CoroutineDatasource(jdbc)
+    val jdbc: DataSource by lazy { Jdbc.initialize(config.jdbc) }
+    val context: CoroutineDatasource by lazy { CoroutineDatasource(jdbc) }
 
-    val ktor: KtorRuntime<Config> = KtorRuntime(
-        appName = "speiderhytta",
-        module = { speiderhytta(config) },
-        onClose = {
-            reset()
-            postgres.close()
-        },
-    )
-
-    /**
-     * Force [ktor] (and therefore the speiderhytta module + migrations) to
-     * initialise eagerly so DAO-only tests that never touch HTTP still see
-     * the schema.
-     */
-    init {
-        ktor.hashCode()
+    val ktor: KtorRuntime<Config> by lazy {
+        KtorRuntime<Config>(
+            appName = "speiderhytta",
+            module = { speiderhytta(config) },
+            onClose = {
+                reset()
+                postgres.close()
+            },
+        )
     }
 
     val httpClient: HttpClient get() = ktor.httpClient

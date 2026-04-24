@@ -27,6 +27,8 @@ import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
+import libs.jdbc.context
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
@@ -71,7 +73,8 @@ fun main() {
 fun Application.utsjekk(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    topology: Topology = createTopology(),
+    jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context(),
+    topology: Topology = createTopology(jdbcCtx),
 ) {
     val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
@@ -127,9 +130,8 @@ ${call.bodyAsText()}""".trimIndent()
         }
     }
 
-    Jdbc.initialize(config.jdbc)
     runBlocking {
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             Migrator(File("migrations")).migrate()
         }
     }
@@ -143,8 +145,8 @@ ${call.bodyAsText()}""".trimIndent()
     val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
     val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)
 
-    val utbetalingService = UtbetalingService(oppdragProducer)
-    val iverksettingService = IverksettingService(oppdragProducer)
+    val utbetalingService = UtbetalingService(oppdragProducer, jdbcCtx)
+    val iverksettingService = IverksettingService(oppdragProducer, jdbcCtx)
 
     val simuleringRoutes = SimuleringRoutes(
         config,
@@ -152,10 +154,11 @@ ${call.bodyAsText()}""".trimIndent()
 
         iverksettingService,
         utbetalingService,
+        jdbcCtx,
     )
 
-    val utbetalingMigrator = UtbetalingMigrator(utbetalingProducer)
-    val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer)
+    val utbetalingMigrator = UtbetalingMigrator(utbetalingProducer, jdbcCtx)
+    val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer, jdbcCtx)
 
     routing {
         authenticate(TokenProvider.AZURE) {

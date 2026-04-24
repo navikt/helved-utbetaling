@@ -58,7 +58,7 @@ class KafkaTest {
             case.testTopic.produce(key) {
                 byteArray
             }
-            val dao = TestRuntime.jdbc.await(100) {
+            val dao = TestRuntime.jdbc.await(1000) {
                 Daos.find(key, case.channel.table).singleOrNull()
             }
 
@@ -82,7 +82,7 @@ class KafkaTest {
 
         case.testTopic.produce(key) { value.toByteArray() }
 
-        val dao = TestRuntime.jdbc.await(100) {
+        val dao = TestRuntime.jdbc.await(1000) {
             Daos.find(key, case.channel.table, 1).singleOrNull()
         }
 

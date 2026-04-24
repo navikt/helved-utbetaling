@@ -4,6 +4,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.JdbcConfig
 import libs.jdbc.Jdbc
+import libs.jdbc.context
 import libs.jdbc.concurrency.datasource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -21,9 +22,10 @@ class DatasourceTest {
             driver = "org.h2.Driver",
         )
     )
+    private val ctx = datasource.context()
 
     @Test
-    fun `can be in context`() = runTest(Jdbc.context) {
+    fun `can be in context`() = runTest(ctx) {
         val actual = coroutineContext.datasource
         assertEquals(datasource, actual)
     }

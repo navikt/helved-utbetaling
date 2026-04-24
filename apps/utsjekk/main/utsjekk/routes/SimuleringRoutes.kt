@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
 import libs.kafka.Streams
+import libs.jdbc.concurrency.CoroutineDatasource
 import models.*
 import models.Simulering
 import utsjekk.*
@@ -31,10 +32,11 @@ class SimuleringRoutes(
     kafka: Streams,
     iverksettingService: IverksettingService,
     private val utbetalingService: UtbetalingService,
+    jdbcCtx: CoroutineDatasource,
 ) : AutoCloseable {
-    private val validatorV2: SimuleringService = SimuleringService(iverksettingService)
-    private val simuleringClient = SimuleringClient(config)
-    private val utbetalingerSimuleringService = SimuleringUtbetalingService(simuleringClient)
+    private val validatorV2: SimuleringService = SimuleringService(iverksettingService, jdbcCtx)
+    private val simuleringClient = SimuleringClient(config, jdbcCtx)
+    private val utbetalingerSimuleringService = SimuleringUtbetalingService(simuleringClient, jdbcCtx)
 
     private val dryrunAapStore = kafka.getStore(Stores.dryrunAap)
     private val dryrunDpStore = kafka.getStore(Stores.dryrunDp)

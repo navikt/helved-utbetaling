@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import libs.auth.AzureToken
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
+import libs.jdbc.context
 import libs.utils.*
 import utsjekk.*
 
@@ -25,8 +26,9 @@ fun Application.testApp() {
     val config = TestRuntime.config
 
     runBlocking {
-        Jdbc.initialize(config.jdbc)
-        withContext(Jdbc.context) {
+        val ds = Jdbc.initialize(config.jdbc)
+        val jdbcCtx = ds.context()
+        withContext(jdbcCtx) {
             Migrator(
                 listOf(
                     File("migrations"),

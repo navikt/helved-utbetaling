@@ -10,6 +10,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.ResourceLock
 import utsjekk.iverksetting.*
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -23,6 +24,7 @@ private val Int.may: LocalDate get() = LocalDate.of(2021, 5, this)
  * Tester det samme som to av scenarioene i bdd (behaviour driven development),
  * men med eksplisitt oppbygging av utbetalingsoppdrag og forventet resultat.
  */
+@ResourceLock("AndelId")
 class UtbetalingsgeneratorTest {
 
     @AfterEach

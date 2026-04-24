@@ -29,6 +29,8 @@ import kotlinx.coroutines.withContext
 import libs.http.HttpClientFactory
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
+import libs.jdbc.context
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.utils.appLog
 import libs.utils.secureLog
 import speiderhytta.dora.DeployService
@@ -76,29 +78,29 @@ fun Application.speiderhytta(config: Config = Config()) {
         }
     }
 
-    Jdbc.initialize(config.jdbc)
+    val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()
     runBlocking {
-        withContext(Jdbc.context) { Migrator(config.jdbc.migrations).migrate() }
+        withContext(jdbcCtx) { Migrator(config.jdbc.migrations).migrate() }
     }
 
     val metrics = Metrics(meters)
     val httpClient = HttpClientFactory.new()
     val githubApp = GithubApp(config.github, httpClient)
     val github = GithubClient(config.github, app = githubApp)
-    val deployService = DeployService(github.asDeployFetcher(), metrics, codeRepos = config.github.codeRepos)
-    val incidentService = IncidentService(github.asFetcher(), metrics)
+    val deployService = DeployService(github.asDeployFetcher(), metrics, codeRepos = config.github.codeRepos, jdbcCtx = jdbcCtx)
+    val incidentService = IncidentService(github.asFetcher(), metrics, jdbcCtx)
     val doraQuery = DoraQueryService()
 
     val sloDefs = SloDefinitionLoader(config.slo.definitionsDir).load()
     appLog.info("loaded {} SLO definitions", sloDefs.size)
     val prom = PrometheusClient(config.prometheus)
-    val sloService = SloService(sloDefs, prom, metrics)
+    val sloService = SloService(sloDefs, prom, metrics, jdbcCtx)
 
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    Poller("deploy", config.pollIntervals.deploy, metrics) { since ->
+    Poller("deploy", config.pollIntervals.deploy, metrics, jdbcCtx) { since ->
         deployService.ingest(since)
     }.launchIn(scope)
-    Poller("incident", config.pollIntervals.incident, metrics) { since ->
+    Poller("incident", config.pollIntervals.incident, metrics, jdbcCtx) { since ->
         incidentService.ingest(since)
     }.launchIn(scope)
     scope.launch {
@@ -113,8 +115,8 @@ fun Application.speiderhytta(config: Config = Config()) {
     }
 
     routing {
-        doraRoutes(doraQuery, config.apps)
-        sloRoutes(sloService, config.apps)
+        doraRoutes(doraQuery, jdbcCtx, config.apps)
+        sloRoutes(sloService, jdbcCtx, config.apps)
         route("/actuator") {
             get("/metric") { call.respond(meters.scrape()) }
             get("/health") { call.respond(HttpStatusCode.OK) }

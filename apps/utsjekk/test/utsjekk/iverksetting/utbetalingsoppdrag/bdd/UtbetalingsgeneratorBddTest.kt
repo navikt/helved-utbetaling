@@ -5,12 +5,14 @@ import models.kontrakter.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.ResourceLock
 import utsjekk.iverksetting.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 private val NOR_DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
+@ResourceLock("AndelId")
 class UtbetalingsgeneratorBddTest {
 
     @AfterEach

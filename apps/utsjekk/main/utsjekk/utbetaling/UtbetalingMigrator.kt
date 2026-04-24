@@ -1,7 +1,7 @@
 package utsjekk.utbetaling
 
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
 import models.*
@@ -30,10 +30,13 @@ data class MigrationBatchItem(val uid: UUID, val id: UUID)
  */
 data class MigrationBatchRequest(val items: List<MigrationBatchItem>)
 
-class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, models.Utbetaling>) {
+class UtbetalingMigrator(
+    private val utbetalingProducer: KafkaProducer<String, models.Utbetaling>,
+    private val jdbcCtx: CoroutineDatasource,
+) {
 
     suspend fun transfer(uid: UtbetalingId, request: MigrationRequest) {
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             transaction {
                 val dao = UtbetalingDao.findOrNull(uid) ?: notFound("Utbetaling $uid")
                 val lastAvvent = lastAvventOnSak(utsjekk.utbetaling.SakId(dao.data.sakId.id))
@@ -47,7 +50,7 @@ class UtbetalingMigrator(private val utbetalingProducer: KafkaProducer<String, m
     suspend fun transferSak(request: MigrationBatchRequest) {
         if (request.items.isEmpty()) badRequest("items kan ikke være tom")
 
-        withContext(Jdbc.context) {
+        withContext(jdbcCtx) {
             transaction {
                 // Look up all items and validate they belong to the same sak
                 val daos = request.items.map { item ->

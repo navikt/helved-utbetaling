@@ -157,7 +157,7 @@ docker start mq postgres
 
 ### Coroutine Patterns
 
-- **`withContext(Jdbc.context)`** for DB operations (custom `CoroutineDatasource` element)
+- **`withContext(jdbcCtx)`** for DB operations -- `jdbcCtx: CoroutineDatasource` is constructed via `Jdbc.initialize(config).context()` and threaded through DI (no global)
 - **`transaction { }`** suspending function for DB connection management
 - **`runBlocking`** only at startup for migrations
 - Kafka Streams topology is NOT coroutine-based

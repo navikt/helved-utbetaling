@@ -6,7 +6,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import speiderhytta.Metrics
@@ -24,6 +24,7 @@ class Poller(
     private val name: String,
     private val interval: Duration,
     private val metrics: Metrics,
+    private val jdbcCtx: CoroutineDatasource,
     private val initialLookback: Instant = Instant.now().minusSeconds(60 * 60 * 24),
     private val task: suspend (Instant) -> Instant,
 ) {
@@ -44,12 +45,12 @@ class Poller(
     }
 
     private suspend fun tick() {
-        val since = withContext(Jdbc.context) {
+        val since = withContext(jdbcCtx) {
             transaction { PollerCursor.load(name)?.lastSeenTs ?: initialLookback }
         }
         val advanced = task(since)
         if (advanced.isAfter(since)) {
-            withContext(Jdbc.context) {
+            withContext(jdbcCtx) {
                 transaction {
                     PollerCursor(poller = name, lastSeenTs = advanced).save()
                 }

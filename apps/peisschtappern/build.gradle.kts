@@ -39,3 +39,10 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }
 
+// peisschtappern tests share a single TestRuntime (Kafka topology that consumes
+// every topic into shared DAOs). Tests rely on sequential execution to assert
+// state on the singleton DAO (verified 2026-04-24: concurrent fails). Keep same_thread.
+tasks.withType<Test> {
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+}
+

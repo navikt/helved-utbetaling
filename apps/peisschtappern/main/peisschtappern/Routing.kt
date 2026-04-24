@@ -6,7 +6,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.*
-import libs.jdbc.Jdbc
+import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.Streams
 import libs.kafka.Topic
@@ -35,7 +35,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     }
 }
 
-fun Route.api(manuellEndringService: ManuellEndringService) {
+fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDatasource) {
     route("/api") {
         get("/messages") {
             val channels = call.queryParameters.strings("topics")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
@@ -52,7 +52,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             val orderBy = call.queryParameters.orderBy()
             val direction = call.queryParameters.direction()
 
-            val result = withContext(Jdbc.context + Dispatchers.IO) {
+            val result = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
                     Daos.pagedMessages(
                         channels = channels,
@@ -86,7 +86,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                 "Missing or invalid offset parameter"
             }
 
-            val dao = withContext(Jdbc.context + Dispatchers.IO) {
+            val dao = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
                     Daos.findSingle(partition, offset, channel.table)
                 }
@@ -103,7 +103,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             val sakId = call.parameters["sakId"]!!
             val fagsystemer: List<Fagsystem> =
                 call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
-            val hendelser: List<Daos> = withContext(Jdbc.context + Dispatchers.IO) {
+            val hendelser: List<Daos> = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
                     coroutineScope {
                         fagsystemer.flatMap { fagsystem ->
@@ -139,7 +139,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
 
         route("/brann") {
             get {
-                val timers = withContext(Jdbc.context + Dispatchers.IO) {
+                val timers = withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {
                         TimerDao.findAll()
                     }
@@ -149,7 +149,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             }
 
             delete("/{key}") {
-                withContext(Jdbc.context + Dispatchers.IO) {
+                withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {
                         TimerDao.delete(call.parameters["key"]!!)
                     }
@@ -166,7 +166,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
                 "Fant ikke topic med navn ${request.topic}"
             }
 
-            withContext(Jdbc.context + Dispatchers.IO) {
+            withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
                     val message = requireNotNull(
                         Daos.findSingle(
@@ -227,7 +227,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
             requireNotNull(fom) { "Missing required parameter: fom" }
             requireNotNull(tom) { "Missing required parameter: tom" }
 
-            val avstemminger = withContext(Jdbc.context + Dispatchers.IO) {
+            val avstemminger = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
                     Daos.findAvstemminger(fom, tom)
                 }
@@ -241,7 +241,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         val request = call.receive<KvitteringRequest>()
 
         try {
-            withContext(Jdbc.context + Dispatchers.IO) {
+            withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
                     val oppdrag =
                         Daos.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.Oppdrag.table)
@@ -272,7 +272,7 @@ fun Route.api(manuellEndringService: ManuellEndringService) {
         val request = call.receive<MessageRequest>()
 
         try {
-            withContext(Jdbc.context + Dispatchers.IO) {
+            withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
                     val utbetaling = requireNotNull(
                         Daos.findSingle(
