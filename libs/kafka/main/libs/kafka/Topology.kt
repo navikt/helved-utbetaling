@@ -117,7 +117,10 @@ override fun ready(): Boolean {
     val state = internalStreams.state()
     return initiallyStarted && state == RUNNING && !internalStreams.isPaused && !restoreListener.isRestoring()
 }
-override fun live(): Boolean = initiallyStarted && internalStreams.state() != ERROR
+override fun live(): Boolean = when (internalStreams.state()) {
+    ERROR, PENDING_ERROR, PENDING_SHUTDOWN, NOT_RUNNING -> false
+    else -> true // CREATED, REBALANCING, RUNNING — JVM is healthy; restart will not help
+}
 override fun visulize(): TopologyVisulizer = TopologyVisulizer(internalTopology)
 override fun close() = close(45_000)
 override fun close(gracefulMillis: Long) {
