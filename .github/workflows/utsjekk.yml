@@ -93,6 +93,11 @@ jobs:
           image_suffix: ${{ github.workflow }}
           tag: ${{ github.sha }}
           salsa: ${{ steps.salsa.outputs.enabled }}
+          # Skip buildx cache export. With our split-jar Dockerfile every COPY
+          # either always changes (app.jar) or is content-addressed and pulled
+          # cheaply from the registry on next build (deps.jar). Caching buildkit
+          # state to GHA adds ~2s per push for negligible benefit.
+          cache_to: ""
 
       # Persist marker only on success of the attested build, so a failed
       # build doesn't poison the cache.
