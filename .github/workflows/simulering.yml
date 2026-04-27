@@ -65,7 +65,7 @@ jobs:
         run: echo "sha=$(sha256sum apps/${{ github.workflow }}/build/split-jars/deps.jar | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - id: deps_cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .deps-attested-marker
           key: deps-attested-${{ github.workflow }}-${{ steps.deps_hash.outputs.sha }}
@@ -99,7 +99,7 @@ jobs:
         run: echo "${{ steps.deps_hash.outputs.sha }}" > .deps-attested-marker
 
       - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .deps-attested-marker
           key: deps-attested-${{ github.workflow }}-${{ steps.deps_hash.outputs.sha }}
