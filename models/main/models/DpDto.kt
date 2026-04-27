@@ -130,6 +130,12 @@ object DpDto {
         val stønad = value.utbetalinger.first().stønadstype()
         require(value.utbetalinger.all { it.stønadstype() == stønad })
 
+        val periodetype = when (stønad) {
+            StønadTypeDagpenger.DAGPENGERFERIE -> Periodetype.EN_GANG
+            StønadTypeDagpenger.DAGPENGER -> Periodetype.UKEDAG
+            else -> Periodetype.UKEDAG
+        }
+
         return Utbetaling(
             dryrun = value.dryrun,
             originalKey = key,
@@ -145,7 +151,7 @@ object DpDto {
             stønad = stønad,
             beslutterId = value.beslutter?.let(::Navident) ?: Navident("dagpenger"),
             saksbehandlerId = value.saksbehandler?.let(::Navident) ?: Navident("dagpenger"),
-            periodetype = Periodetype.UKEDAG,
+            periodetype = periodetype,
             avvent = null,
             perioder = perioder(value.utbetalinger),
         )

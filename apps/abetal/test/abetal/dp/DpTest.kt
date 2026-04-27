@@ -19,7 +19,8 @@ internal class DpTest : ConsumerTestBase() {
 
     @Test
     fun `simulation - dry run dp utbetaling`() {
-        val utbet = JsonSerde.jackson.readValue<DpUtbetaling>("""
+        val utbet = JsonSerde.jackson.readValue<DpUtbetaling>(
+            """
             {
               "dryrun": false,
               "sakId": "rsid3",
@@ -51,7 +52,8 @@ internal class DpTest : ConsumerTestBase() {
               "vedtakstidspunktet": "2025-08-27T10:00:00Z",
               "saksbehandler": "dagpenger",
               "beslutter": "dagpenger"
-            }""".trimIndent())
+            }""".trimIndent()
+        )
         val uid = "26c8ad95-1731-e800-abd5-ba92ec6aad86"
         val transaction1 = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transaction1) { utbet.asBytes() }
@@ -66,20 +68,21 @@ internal class DpTest : ConsumerTestBase() {
                 oppdrag.assertBasics("NY", "DP", "rsid3", expectedLines = 1, ident = "15898099536")
                 assertEquals("dagpenger", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
-                kodeEndringLinje = "NY",
-                behandlingId = BehandlingId("rbid1"),
-                kodeKlassifik = "DAGPENGER",
-                sats = 1000,
-                vedtakssats = 1000,
-                typeSats = "DAG"
-            )
-        }.get(transaction1)
-        TestRuntime.topics.oppdrag.produce(transaction1, mapOf("uids" to uid)) { 
+                    kodeEndringLinje = "NY",
+                    behandlingId = BehandlingId("rbid1"),
+                    kodeKlassifik = "DAGPENGER",
+                    sats = 1000,
+                    vedtakssats = 1000,
+                    typeSats = "DAG"
+                )
+            }.get(transaction1)
+        TestRuntime.topics.oppdrag.produce(transaction1, mapOf("uids" to uid)) {
             oppdrag.apply { mmel = Mmel().apply { alvorlighetsgrad = "00" } }
         }
         TestRuntime.topics.utbetalinger.assertThat().has(uid)
 
-        val dryrun = JsonSerde.jackson.readValue<DpUtbetaling>("""
+        val dryrun = JsonSerde.jackson.readValue<DpUtbetaling>(
+            """
             {
               "dryrun": true,
               "sakId": "rsid3",
@@ -111,28 +114,29 @@ internal class DpTest : ConsumerTestBase() {
               "vedtakstidspunktet": "2025-08-27T10:00:00Z",
               "saksbehandler": "R123456",
               "beslutter": "R123456"
-            }""".trimIndent())
+            }""".trimIndent()
+        )
         val transaction2 = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(transaction2) { dryrun.asBytes() }
         TestRuntime.topics.simulering.assertThat()
             .has(transaction2)
             .with(transaction2) { simulering ->
-            assertEquals("ENDR", simulering.request.oppdrag.kodeEndring)
-            assertEquals("DP", simulering.request.oppdrag.kodeFagomraade)
-            assertEquals("rsid3", simulering.request.oppdrag.fagsystemId)
-            assertEquals("MND", simulering.request.oppdrag.utbetFrekvens)
-            assertEquals("15898099536", simulering.request.oppdrag.oppdragGjelderId)
-            assertEquals("R123456", simulering.request.oppdrag.saksbehId)
-            assertEquals(1, simulering.request.oppdrag.oppdragslinjes.size)
-            simulering.request.oppdrag.oppdragslinjes[0].let {
-                assertEquals("NY", it.kodeEndringLinje)
-                assertNull(it.kodeStatusLinje)
-                assertNull(it.datoStatusFom)
-                assertEquals("R123456", it.saksbehId)
-                assertEquals(900, it.sats.toLong())
-                assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                assertEquals("ENDR", simulering.request.oppdrag.kodeEndring)
+                assertEquals("DP", simulering.request.oppdrag.kodeFagomraade)
+                assertEquals("rsid3", simulering.request.oppdrag.fagsystemId)
+                assertEquals("MND", simulering.request.oppdrag.utbetFrekvens)
+                assertEquals("15898099536", simulering.request.oppdrag.oppdragGjelderId)
+                assertEquals("R123456", simulering.request.oppdrag.saksbehId)
+                assertEquals(1, simulering.request.oppdrag.oppdragslinjes.size)
+                simulering.request.oppdrag.oppdragslinjes[0].let {
+                    assertEquals("NY", it.kodeEndringLinje)
+                    assertNull(it.kodeStatusLinje)
+                    assertNull(it.datoStatusFom)
+                    assertEquals("R123456", it.saksbehId)
+                    assertEquals(900, it.sats.toLong())
+                    assertEquals(it.datoVedtakFom, it.datoKlassifikFom)
+                }
             }
-        }
     }
 
     @Test
@@ -173,7 +177,7 @@ internal class DpTest : ConsumerTestBase() {
             originalKey = btid,
             førsteUtbetalingPåSak = false,
             behandlingId = bbid,
-            perioder = listOf(periode(17.nov, 28.nov, 911u, 911u)), 
+            perioder = listOf(periode(17.nov, 28.nov, 911u, 911u)),
         )
 
         val expectedUtbetalingC = expectedUtbetalingA.copy(
@@ -186,9 +190,10 @@ internal class DpTest : ConsumerTestBase() {
 
         val expectedUtbetalingE = expectedUtbetalingC.copy(
             originalKey = "e19b1f18-2199-7395-b8f3-82c497ce2941"
-        ) 
+        )
 
-        val a = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$abid","ident":"12345678910","vedtakstidspunktet":"2025-12-05T14:57:21.107354","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        val a =
+            JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$abid","ident":"12345678910","vedtakstidspunktet":"2025-12-05T14:57:21.107354","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
         TestRuntime.topics.dp.produce(atid, a.asBytes())
         TestRuntime.topics.status.assertThat().has(atid) {
             Dp.mottatt {
@@ -229,7 +234,9 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.utbetalinger.assertThat().has(auid.toString())
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER), setOf(auid))
 
-        val b = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$bbid","ident":"12345678910","vedtakstidspunktet":"2025-12-08T07:09:38.510701","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        val b = JsonSerde.jackson.readValue<DpUtbetaling>(
+            """{"sakId":"$sid","behandlingId":"$bbid","ident":"12345678910","vedtakstidspunktet":"2025-12-08T07:09:38.510701","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}"""
+        )
         TestRuntime.topics.dp.produce(btid, b.asBytes())
         TestRuntime.topics.status.assertThat().has(btid) {
             Dp.mottatt {
@@ -260,7 +267,9 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.utbetalinger.assertThat().has(buid.toString())
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER), setOf(auid, buid))
 
-        val c = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$cbid","ident":"12345678910","vedtakstidspunktet":"2025-12-15T09:26:40.032951","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-01","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-02","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-03","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-04","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-05","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-08","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-09","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-10","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-11","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-12","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        val c = JsonSerde.jackson.readValue<DpUtbetaling>(
+            """{"sakId":"$sid","behandlingId":"$cbid","ident":"12345678910","vedtakstidspunktet":"2025-12-15T09:26:40.032951","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-01","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-02","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-03","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-04","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-05","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-08","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-09","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-10","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-11","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-12","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}"""
+        )
         TestRuntime.topics.dp.produce(ctid, c.asBytes())
         TestRuntime.topics.status.assertThat().has(ctid) {
             Dp.mottatt {
@@ -343,7 +352,8 @@ internal class DpTest : ConsumerTestBase() {
         val cuid = dpUId(sid, "132735021", StønadTypeDagpenger.DAGPENGER)
         val ctid = "019b1f18-2199-7395-b8f3-82c497ce2941"
 
-        val a = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$abid","ident":"12345678910","vedtakstidspunktet":"2025-12-05T14:57:21.107354","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        val a =
+            JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$abid","ident":"12345678910","vedtakstidspunktet":"2025-12-05T14:57:21.107354","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
         TestRuntime.topics.dp.produce(atid, a.asBytes())
         TestRuntime.topics.status.assertThat().has(atid) {
             Dp.mottatt {
@@ -373,7 +383,7 @@ internal class DpTest : ConsumerTestBase() {
                 }
             }
             .get(atid)
-        
+
         val expectedUtbetalingA = utbetaling(
             action = Action.CREATE,
             uid = auid,
@@ -391,7 +401,7 @@ internal class DpTest : ConsumerTestBase() {
             periode(10.nov, 13.nov, 364u, 911u)
             periode(14.nov, 14.nov, 366u, 911u)
         }
-        
+
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(auid.toString())
             .hasHeader(auid.toString(), "hash_key" to hashOppdrag(aoppdrag))
@@ -402,7 +412,9 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.utbetalinger.assertThat().has(auid.toString())
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER), setOf(auid))
 
-        val b = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$bbid","ident":"12345678910","vedtakstidspunktet":"2025-12-08T07:09:38.510701","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        val b = JsonSerde.jackson.readValue<DpUtbetaling>(
+            """{"sakId":"$sid","behandlingId":"$bbid","ident":"12345678910","vedtakstidspunktet":"2025-12-08T07:09:38.510701","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}"""
+        )
         TestRuntime.topics.dp.produce(btid, b.asBytes())
         TestRuntime.topics.status.assertThat().has(btid) {
             Dp.mottatt {
@@ -423,7 +435,7 @@ internal class DpTest : ConsumerTestBase() {
                 )
             }
             .get(btid)
-        
+
         val expectedUtbetalingB = expectedUtbetalingA.copy(
             uid = buid,
             originalKey = btid,
@@ -431,7 +443,7 @@ internal class DpTest : ConsumerTestBase() {
             behandlingId = bbid,
             perioder = listOf(periode(17.nov, 28.nov, 911u, 911u)),
         )
-        
+
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(buid.toString())
             .hasHeader(buid.toString(), "hash_key" to hashOppdrag(boppdrag))
@@ -442,7 +454,9 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.utbetalinger.assertThat().has(buid.toString())
         TestRuntime.topics.saker.produce(SakKey(SakId(sid), Fagsystem.DAGPENGER), setOf(auid, buid))
 
-        val c = JsonSerde.jackson.readValue<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$cbid","ident":"12345678910","vedtakstidspunktet":"2025-12-15T09:26:40.032951","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-01","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-02","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-03","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-04","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-05","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-08","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-09","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-10","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-11","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-12","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        val c = JsonSerde.jackson.readValue<DpUtbetaling>(
+            """{"sakId":"$sid","behandlingId":"$cbid","ident":"12345678910","vedtakstidspunktet":"2025-12-15T09:26:40.032951","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-17","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-18","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-19","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-20","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-21","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-24","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-25","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-26","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-27","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733485","dato":"2025-11-28","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-01","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-02","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-03","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-04","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-05","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-08","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-09","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-10","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-11","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132735021","dato":"2025-12-12","sats":911,"utbetaltBeløp":911,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}"""
+        )
         TestRuntime.topics.dp.produce(ctid, c.asBytes())
         TestRuntime.topics.status.assertThat().has(ctid) {
             Dp.mottatt {
@@ -463,14 +477,14 @@ internal class DpTest : ConsumerTestBase() {
                 )
             }
             .get(ctid)
-        
+
         val expectedUtbetalingC = expectedUtbetalingB.copy(
             uid = cuid,
             originalKey = ctid,
             behandlingId = cbid,
             perioder = listOf(periode(1.des25, 12.des25, 911u, 911u)),
         )
-        
+
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(cuid.toString())
             .hasHeader(cuid.toString(), "hash_key" to hashOppdrag(coppdrag))
@@ -616,7 +630,7 @@ internal class DpTest : ConsumerTestBase() {
             .has(uid1.toString())
             .has(uid2.toString())
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER)) {
-            setOf(uid1,uid2)
+            setOf(uid1, uid2)
         }
 
         val bid2 = BehandlingId("$nextInt")
@@ -775,6 +789,7 @@ internal class DpTest : ConsumerTestBase() {
         val expectedUtbetaling2 = expectedUtbetaling1.copy(
             uid = uid2,
             stønad = StønadTypeDagpenger.DAGPENGERFERIE,
+            periodetype = Periodetype.EN_GANG,
             perioder = listOf(periode(7.jun21, 18.jun21, 100u, 100u))
         )
 
@@ -786,6 +801,7 @@ internal class DpTest : ConsumerTestBase() {
         val expectedUtbetaling4 = expectedUtbetaling1.copy(
             uid = uid4,
             stønad = StønadTypeDagpenger.DAGPENGERFERIE,
+            periodetype = Periodetype.EN_GANG,
             perioder = listOf(periode(7.jul21, 20.jul21, 300u, 300u))
         )
 
@@ -819,7 +835,8 @@ internal class DpTest : ConsumerTestBase() {
                     kodeKlassifik = "DAGPENGER",
                     sats = 1000,
                     vedtakssats = 1000,
-                    refDelytelseId = null
+                    refDelytelseId = null,
+                    typeSats = Periodetype.UKEDAG.satstype
                 )
                 oppdrag.oppdrag110.oppdragsLinje150s[1].assertLine(
                     kodeEndringLinje = "NY",
@@ -827,7 +844,8 @@ internal class DpTest : ConsumerTestBase() {
                     kodeKlassifik = "DAGPENGERFERIE",
                     sats = 100,
                     vedtakssats = 100,
-                    refDelytelseId = null
+                    refDelytelseId = null,
+                    typeSats = Periodetype.EN_GANG.satstype,
                 )
                 oppdrag.oppdrag110.oppdragsLinje150s[2].assertLine(
                     kodeEndringLinje = "NY",
@@ -835,7 +853,8 @@ internal class DpTest : ConsumerTestBase() {
                     kodeKlassifik = "DAGPENGER",
                     sats = 600,
                     vedtakssats = 600,
-                    refDelytelseId = null
+                    refDelytelseId = null,
+                    typeSats = Periodetype.UKEDAG.satstype
                 )
                 oppdrag.oppdrag110.oppdragsLinje150s[3].assertLine(
                     kodeEndringLinje = "NY",
@@ -843,7 +862,8 @@ internal class DpTest : ConsumerTestBase() {
                     kodeKlassifik = "DAGPENGERFERIE",
                     sats = 300,
                     vedtakssats = 300,
-                    refDelytelseId = null
+                    refDelytelseId = null,
+                    typeSats = Periodetype.EN_GANG.satstype
                 )
             }
             .get(transactionId)
@@ -905,7 +925,7 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.dp.produce(transactionId) {
             Dp.utbetaling(sid.id, bid.id) {
-                meldekort(meldeperiode1, 7.jun21, 20.jun21, 1077u, 553u) 
+                meldekort(meldeperiode1, 7.jun21, 20.jun21, 1077u, 553u)
                 meldekort(meldeperiode2, 7.jul21, 20.jul21, 2377u, 779u)
                 meldekort(meldeperiode3, 7.aug21, 20.aug21, 3133u, 3000u)
             }.asBytes()
@@ -950,7 +970,7 @@ internal class DpTest : ConsumerTestBase() {
             .get(transactionId)
 
         val hashKey = hashOppdrag(oppdrag)
-        
+
         val expectedUtbetaling1 = utbetaling(
             action = Action.CREATE,
             uid = uid1,
@@ -967,12 +987,12 @@ internal class DpTest : ConsumerTestBase() {
         ) {
             periode(7.jun21, 18.jun21, 553u, 1077u)
         }
-        
+
         val expectedUtbetaling2 = expectedUtbetaling1.copy(
             uid = uid2,
             perioder = listOf(periode(7.jul21, 20.jul21, 779u, 2377u))
         )
-        
+
         val expectedUtbetaling3 = expectedUtbetaling1.copy(
             uid = uid3,
             perioder = listOf(periode(9.aug21, 20.aug21, 3000u, 3133u))
@@ -1154,7 +1174,7 @@ internal class DpTest : ConsumerTestBase() {
             }
         }
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
-        
+
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId2)
             .with(transactionId2) { oppdrag ->
@@ -1171,7 +1191,7 @@ internal class DpTest : ConsumerTestBase() {
                 )
             }
             .get(transactionId2)
-        
+
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid1.toString())
             .hasHeader(uid1.toString(), "hash_key" to hashOppdrag(oppdrag))
@@ -1288,7 +1308,6 @@ internal class DpTest : ConsumerTestBase() {
             .with(uid1.toString()) {
                 assertUtbetaling(expectedUtbetaling, it)
             }
-
     }
 
     @Test
@@ -1732,8 +1751,8 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.dp.produce(tid2) {
             Dp.utbetaling(sid.id, bid2.id) {
-                meldekort(m1, 2.sep, 13.sep, 300u, 300u) 
-                meldekort(m2, 16.sep, 27.sep, 300u, 300u) 
+                meldekort(m1, 2.sep, 13.sep, 300u, 300u)
+                meldekort(m2, 16.sep, 27.sep, 300u, 300u)
             }.asBytes()
         }
 
@@ -1799,7 +1818,7 @@ internal class DpTest : ConsumerTestBase() {
             }
 
         TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.DAGPENGER), setOf(uid1, uid2))
-        
+
         // ny meldeperiode
         val bid3 = BehandlingId("$nextInt")
         val tid3 = UUID.randomUUID().toString()
@@ -1808,9 +1827,9 @@ internal class DpTest : ConsumerTestBase() {
 
         TestRuntime.topics.dp.produce(tid3) {
             Dp.utbetaling(sid.id, bid3.id) {
-                meldekort(m1, 2.sep, 13.sep, 300u, 300u) 
+                meldekort(m1, 2.sep, 13.sep, 300u, 300u)
                 meldekort(m2, 16.sep, 27.sep, 300u, 300u)
-                meldekort(m3, 30.sep, 10.okt, 300u, 300u) 
+                meldekort(m3, 30.sep, 10.okt, 300u, 300u)
             }.asBytes()
         }
 
@@ -1972,7 +1991,10 @@ internal class DpTest : ConsumerTestBase() {
                 assertNotNull(oppdrag.oppdrag110.avstemming115)
                 assertEquals(
                     LocalDateTime.now().withHour(10).withMinute(10).withSecond(0).withNano(0),
-                    LocalDateTime.parse(oppdrag.oppdrag110.avstemming115.nokkelAvstemming, DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+                    LocalDateTime.parse(
+                        oppdrag.oppdrag110.avstemming115.nokkelAvstemming,
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+                    )
                 )
 
             }
