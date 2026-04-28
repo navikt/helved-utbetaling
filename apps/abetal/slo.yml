@@ -1,0 +1,27 @@
+version: prometheus/v1
+service: abetal
+labels:
+  team: helved
+  app: abetal
+slos:
+  - name: payment-processing-availability
+    objective: 99.5
+    description: |
+      Payment processing in abetal should complete successfully for at least
+      99.5% of processed payments over a 30-day window.
+    sli:
+      events:
+        error_query: |
+          sum(rate(helved_abetal_payment_processed_total{
+            result="error"
+          }[5m]))
+        total_query: |
+          sum(rate(helved_abetal_payment_processed_total[5m]))
+    alerting:
+      name: AbetalPaymentErrorBudgetBurn
+      page_alert:
+        labels:
+          severity: silenced
+      ticket_alert:
+        labels:
+          severity: silenced
