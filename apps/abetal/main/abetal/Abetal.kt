@@ -52,6 +52,7 @@ fun Application.abetal(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
     topology: Topology = createTopology(kafka),
+    startupConfigValidator: suspend (Config) -> Unit = ::validateStartupConfigOrExit,
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
@@ -73,6 +74,10 @@ fun Application.abetal(
 
     routing {
         probes(kafka, prometheus)
+    }
+
+    runBlocking {
+        startupConfigValidator(config)
     }
 
     val httpClient = HttpClient.newBuilder()

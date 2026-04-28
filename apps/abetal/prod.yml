@@ -11,7 +11,7 @@ spec:
   liveness:
     path: /actuator/live
     failureThreshold: 60
-    initialDelay: 1
+    initialDelay: 360
     periodSeconds: 1
   readiness:
     path: /actuator/ready

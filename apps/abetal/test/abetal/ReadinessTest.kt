@@ -112,6 +112,7 @@ private fun startAbetal(
             config = config,
             kafka = streams,
             topology = Topology(),
+            startupConfigValidator = {},
         )
     }
 
