@@ -102,10 +102,8 @@ fun Topology.dpStream(
             this
                 .map { sakKey, (req, uids) -> DpDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
                 .rekey { _, dtos -> dtos.first().originalKey }
-                .map { _, utbetalinger ->
-                    require(utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun }) {
-                        "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
-                    }
+                .map { key, utbetalinger ->
+                    validateSameDryrunBatch(key, utbetalinger)
 
                     if (utbetalinger.any { it.dryrun }) {
                         return@map Result.catch {
@@ -148,12 +146,10 @@ fun Topology.aapStream(
         .default {
             this.map { sakKey, (req, uids) -> AapDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
                 .rekey { _, dtos -> dtos.first().originalKey }
-                .map { value ->
+                .map { key, value ->
+                    validateSameDryrunBatch(key, value)
                     val store = kafka.getStore(Stores.utbetalinger)
                     val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
-                    require(value.all { it.dryrun } || value.none { it.dryrun }) {
-                        "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
-                    }
                     if (value.any { it.dryrun }) {
                         return@map Result.catch { AggregateService.utledSimulering(aggregate) }
                             .map(StreamResult::SimuleringOk)
@@ -189,15 +185,13 @@ fun Topology.tsStream(
         .branch(Guard::ifNoUtbetalinger, Guard::replyOkTs)
         .default {
             this
-                .map { _, (req, uids) ->
+                .map { key, (req, uids) ->
                     val dto = req.value ?: req.dto!!
-                    val key = req.key ?: req.transactionId!!
-                    val utbetalinger = TsDto.toDomain(SakId(dto.sakId), key, dto, uids)
+                    val originalKey = req.key ?: req.transactionId!!
+                    val utbetalinger = TsDto.toDomain(SakId(dto.sakId), originalKey, dto, uids)
+                    validateSameDryrunBatch(key, utbetalinger)
                     val store = kafka.getStore(Stores.utbetalinger)
                     val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
-                    require(utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun }) {
-                        "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
-                    }
                     if (utbetalinger.any { it.dryrun }) {
                         return@map Result.catch { AggregateService.utledSimulering(aggregate) }
                             .map(StreamResult::SimuleringOk)
@@ -228,12 +222,10 @@ fun Topology.tpStream(
         .includeHeader(FS_KEY) { Fagsystem.TILTAKSPENGER.name }
         .map { sakKey, req, ids -> TpDto.splitToDomain(sakKey.sakId, req.key, req.value, ids) }
         .rekey { dtos -> dtos.first().originalKey }
-        .map { value ->
+        .map { key, value ->
+            validateSameDryrunBatch(key, value)
             val store = kafka.getStore(Stores.utbetalinger)
             val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
-            require(value.all { it.dryrun } || value.none { it.dryrun }) {
-                "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
-            }
             if (value.any { it.dryrun }) {
                 return@map Result.catch { AggregateService.utledSimulering(aggregate) }
                     .map(StreamResult::SimuleringOk)
@@ -407,9 +399,22 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
         }
         .default {
             forEach { _, (kv: KeyValueAndUids, _) ->
-                error("Denne burde ikke oppstå oppdrag: ${kv.originalKey}")
+                logUnexpectedSuccessfulUtbetalingDefaultBranch(kv.originalKey)
             }
         }
+}
+
+internal fun validateSameDryrunBatch(key: String, utbetalinger: List<Utbetaling>) {
+    val hasOnlyDryrunValues = utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun }
+    if (hasOnlyDryrunValues) return
+
+    val dryrunSummary = utbetalinger.joinToString(prefix = "[", postfix = "]", separator = ",") { it.dryrun.toString() }
+    appLog.warn("Kan ikke blande dryrun og non-dryrun i samme batch. key=$key dryrun=$dryrunSummary")
+    badRequest("Kan ikke blande dryrun og non-dryrun i samme batch (key=$key)")
+}
+
+internal fun logUnexpectedSuccessfulUtbetalingDefaultBranch(originalKey: String) {
+    appLog.error("Uventet default-branch i successfulUtbetalingStream — key=$originalKey. Hopper over.")
 }
 
 typealias DryrunAggregate = Pair<Boolean, List<SimulerBeregningRequest>>
