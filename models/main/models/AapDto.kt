@@ -4,6 +4,8 @@ import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import models.kontrakter.GyldigBehandlingId
+import models.kontrakter.GyldigSakId
 
 data class AapUtbetaling(
     val dryrun: Boolean = false,
@@ -16,7 +18,19 @@ data class AapUtbetaling(
     val saksbehandler: String? = null,
     val beslutter: String? = null,
     val avvent: Avvent? = null,
-)
+) {
+    fun validate() {
+        failOnBlankSakId()
+        failOnBlankBehandlingId()
+        failOnBlankPersonident()
+        failOnFutureVedtakstidspunkt()
+        failOnEmptyUtbetalinger()
+        failOnTomBeforeFom()
+        failOnZeroBeløp()
+        failOnTooLongSakId()
+        failOnTooLongBehandlingId()
+    }
+}
 
 data class AapUtbetalingsdag(
     val id: UUID,
@@ -129,4 +143,58 @@ object AapDto {
         )
     }
 
+}
+
+private fun AapUtbetaling.failOnBlankSakId() {
+    if (sakId.isBlank()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
+    }
+}
+
+private fun AapUtbetaling.failOnBlankBehandlingId() {
+    if (behandlingId.isBlank()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
+    }
+}
+
+private fun AapUtbetaling.failOnBlankPersonident() {
+    if (ident.isBlank()) {
+        badRequest("Personident kan ikke være tom")
+    }
+}
+
+private fun AapUtbetaling.failOnFutureVedtakstidspunkt() {
+    if (vedtakstidspunktet.isAfter(LocalDateTime.now())) {
+        badRequest("Vedtakstidspunkt kan ikke være i fremtiden")
+    }
+}
+
+private fun AapUtbetaling.failOnEmptyUtbetalinger() {
+    if (utbetalinger.isEmpty()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER)
+    }
+}
+
+private fun AapUtbetaling.failOnTomBeforeFom() {
+    if (!utbetalinger.all { it.fom <= it.tom }) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE)
+    }
+}
+
+private fun AapUtbetaling.failOnZeroBeløp() {
+    if (utbetalinger.any { it.utbetaltBeløp == 0u }) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BELØP)
+    }
+}
+
+private fun AapUtbetaling.failOnTooLongSakId() {
+    if (sakId.length > GyldigSakId.MAKSLENGDE) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
+    }
+}
+
+private fun AapUtbetaling.failOnTooLongBehandlingId() {
+    if (behandlingId.length > GyldigBehandlingId.MAKSLENGDE) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
+    }
 }

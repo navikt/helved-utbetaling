@@ -3,6 +3,8 @@ package models
 import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
+import models.kontrakter.GyldigBehandlingId
+import models.kontrakter.GyldigSakId
 
 data class DpUtbetaling(
     val dryrun: Boolean = false,
@@ -14,7 +16,18 @@ data class DpUtbetaling(
     val vedtakstidspunktet: LocalDateTime,
     val saksbehandler: String? = null,
     val beslutter: String? = null,
-)
+) {
+    fun validate() {
+        failOnBlankSakId()
+        failOnBlankBehandlingId()
+        failOnBlankPersonident()
+        failOnFutureVedtakstidspunkt()
+        failOnEmptyUtbetalinger()
+        failOnZeroBeløp()
+        failOnTooLongSakId()
+        failOnTooLongBehandlingId()
+    }
+}
 
 enum class Utbetalingstype {
     DagpengerFerietillegg,
@@ -158,4 +171,50 @@ object DpDto {
     }
 }
 
+private fun DpUtbetaling.failOnBlankSakId() {
+    if (sakId.isBlank()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
+    }
+}
 
+private fun DpUtbetaling.failOnBlankBehandlingId() {
+    if (behandlingId.isBlank()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
+    }
+}
+
+private fun DpUtbetaling.failOnBlankPersonident() {
+    if (ident.isBlank()) {
+        badRequest("Personident kan ikke være tom")
+    }
+}
+
+private fun DpUtbetaling.failOnFutureVedtakstidspunkt() {
+    if (vedtakstidspunktet.isAfter(LocalDateTime.now())) {
+        badRequest("Vedtakstidspunkt kan ikke være i fremtiden")
+    }
+}
+
+private fun DpUtbetaling.failOnEmptyUtbetalinger() {
+    if (utbetalinger.isEmpty()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER)
+    }
+}
+
+private fun DpUtbetaling.failOnZeroBeløp() {
+    if (utbetalinger.any { it.utbetaltBeløp == 0u }) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BELØP)
+    }
+}
+
+private fun DpUtbetaling.failOnTooLongSakId() {
+    if (sakId.length > GyldigSakId.MAKSLENGDE) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
+    }
+}
+
+private fun DpUtbetaling.failOnTooLongBehandlingId() {
+    if (behandlingId.length > GyldigBehandlingId.MAKSLENGDE) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
+    }
+}

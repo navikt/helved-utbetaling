@@ -206,7 +206,7 @@ class SimuleringRoutes(
     }
 
     private suspend fun dryrunDagpenger(call: RoutingCall, transactionId: String): DryrunResult {
-        val dto = call.receive<DpUtbetaling>().copy(dryrun = true)
+        val dto = call.receive<DpUtbetaling>().copy(dryrun = true).also { it.validate() }
         dpProducer.send(transactionId, dto)
 
         val result = withTimeoutOrNull(dryrunTimeout) {
@@ -248,7 +248,7 @@ class SimuleringRoutes(
     }
 
     private suspend fun dryrunAap(call: RoutingCall, transactionId: String): DryrunResult {
-        val dto = call.receive<AapUtbetaling>().copy(dryrun = true)
+        val dto = call.receive<AapUtbetaling>().copy(dryrun = true).also { it.validate() }
         aapProducer.send(transactionId, dto)
 
         val result = withTimeoutOrNull(dryrunTimeout) {
@@ -290,7 +290,7 @@ class SimuleringRoutes(
     }
 
     private suspend fun dryrunTilleggsstønader(call: RoutingCall, transactionId: String): DryrunResult {
-        val dto = call.receive<TsDto>().copy(dryrun = true)
+        val dto = call.receive<TsDto>().copy(dryrun = true).also { it.validate() }
         tsProducer.send(transactionId, dto)
 
         val result = withTimeoutOrNull(dryrunTimeout) {
@@ -332,7 +332,7 @@ class SimuleringRoutes(
     }
 
     private suspend fun dryrunTiltakspenger(call: RoutingCall, transactionId: String): DryrunResult {
-        val dto = call.receive<TpUtbetaling>().copy(dryrun = true)
+        val dto = call.receive<TpUtbetaling>().copy(dryrun = true).also { it.validate() }
         tpProducer.send(transactionId, dto)
 
         val result = withTimeoutOrNull(dryrunTimeout) {

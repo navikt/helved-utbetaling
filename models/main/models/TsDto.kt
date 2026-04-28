@@ -3,6 +3,8 @@ package models
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import models.kontrakter.GyldigBehandlingId
+import models.kontrakter.GyldigSakId
 
 data class TsDto(
     val dryrun: Boolean = false,
@@ -15,6 +17,19 @@ data class TsDto(
     val beslutter: String? = null,
     val utbetalinger: List<TsUtbetaling>,
 ) {
+    fun validate() {
+        failOnBlankSakId()
+        failOnBlankBehandlingId()
+        failOnBlankPersonident()
+        failOnFutureVedtakstidspunkt()
+        failOnEmptyUtbetalinger()
+        failOnEmptyPerioder()
+        failOnTomBeforeFom()
+        failOnZeroBeløp()
+        failOnTooLongSakId()
+        failOnTooLongBehandlingId()
+    }
+
     companion object {
         fun toDomain(
             sakId: SakId,
@@ -51,6 +66,66 @@ data class TsDto(
                 )
             }
         }
+    }
+}
+
+private fun TsDto.failOnBlankSakId() {
+    if (sakId.isBlank()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
+    }
+}
+
+private fun TsDto.failOnBlankBehandlingId() {
+    if (behandlingId.isBlank()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
+    }
+}
+
+private fun TsDto.failOnBlankPersonident() {
+    if (personident.isBlank()) {
+        badRequest("Personident kan ikke være tom")
+    }
+}
+
+private fun TsDto.failOnFutureVedtakstidspunkt() {
+    if (vedtakstidspunkt.isAfter(LocalDateTime.now())) {
+        badRequest("Vedtakstidspunkt kan ikke være i fremtiden")
+    }
+}
+
+private fun TsDto.failOnEmptyUtbetalinger() {
+    if (utbetalinger.isEmpty()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER)
+    }
+}
+
+private fun TsDto.failOnEmptyPerioder() {
+    if (utbetalinger.any { it.perioder.isEmpty() }) {
+        badRequest(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER)
+    }
+}
+
+private fun TsDto.failOnTomBeforeFom() {
+    if (utbetalinger.flatMap { it.perioder }.any { it.fom > it.tom }) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE)
+    }
+}
+
+private fun TsDto.failOnZeroBeløp() {
+    if (utbetalinger.flatMap { it.perioder }.any { it.beløp == 0u }) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BELØP)
+    }
+}
+
+private fun TsDto.failOnTooLongSakId() {
+    if (sakId.length > GyldigSakId.MAKSLENGDE) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
+    }
+}
+
+private fun TsDto.failOnTooLongBehandlingId() {
+    if (behandlingId.length > GyldigBehandlingId.MAKSLENGDE) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
     }
 }
 
@@ -221,4 +296,3 @@ private fun List<TsPeriode>.toDomain(type: Periodetype): List<Utbetalingsperiode
         else -> badRequest("periodetype '$type' for tilleggsstønader er ikke implementert")
     }
 }
-

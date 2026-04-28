@@ -109,7 +109,15 @@ class MetricsTest {
                         sakId = "sakId",
                         ident = "12345678910",
                         vedtakstidspunktet = LocalDateTime.now(),
-                        utbetalinger = emptyList()
+                        utbetalinger = listOf(
+                            models.DpUtbetalingsdag(
+                                meldeperiode = "2026-01",
+                                dato = LocalDate.of(2026, 1, 1),
+                                sats = 1000u,
+                                utbetaltBeløp = 1000u,
+                                utbetalingstype = models.Utbetalingstype.Dagpenger,
+                            )
+                        )
                     )
                 )
             }

@@ -3,6 +3,8 @@ package models
 import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
+import models.kontrakter.GyldigBehandlingId
+import models.kontrakter.GyldigSakId
 
 data class TpUtbetaling(
     val sakId: String,
@@ -13,7 +15,19 @@ data class TpUtbetaling(
     val perioder: List<TpPeriode>,
     val saksbehandler: String? = null,
     val beslutter: String? = null,
-)
+) {
+    fun validate() {
+        failOnBlankSakId()
+        failOnBlankBehandlingId()
+        failOnBlankPersonident()
+        failOnFutureVedtakstidspunkt()
+        failOnEmptyPerioder()
+        failOnTomBeforeFom()
+        failOnZeroBeløp()
+        failOnTooLongSakId()
+        failOnTooLongBehandlingId()
+    }
+}
 
 data class TpPeriode(
     val meldeperiode: String,
@@ -140,3 +154,56 @@ object TpDto {
     }
 }
 
+private fun TpUtbetaling.failOnBlankSakId() {
+    if (sakId.isBlank()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
+    }
+}
+
+private fun TpUtbetaling.failOnBlankBehandlingId() {
+    if (behandlingId.isBlank()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
+    }
+}
+
+private fun TpUtbetaling.failOnBlankPersonident() {
+    if (personident.isBlank()) {
+        badRequest("Personident kan ikke være tom")
+    }
+}
+
+private fun TpUtbetaling.failOnFutureVedtakstidspunkt() {
+    if (vedtakstidspunkt.isAfter(LocalDateTime.now())) {
+        badRequest("Vedtakstidspunkt kan ikke være i fremtiden")
+    }
+}
+
+private fun TpUtbetaling.failOnEmptyPerioder() {
+    if (perioder.isEmpty()) {
+        badRequest(DocumentedErrors.Async.Utbetaling.MANGLER_PERIODER)
+    }
+}
+
+private fun TpUtbetaling.failOnTomBeforeFom() {
+    if (!perioder.all { it.fom <= it.tom }) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE)
+    }
+}
+
+private fun TpUtbetaling.failOnZeroBeløp() {
+    if (perioder.any { it.beløp == 0u }) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BELØP)
+    }
+}
+
+private fun TpUtbetaling.failOnTooLongSakId() {
+    if (sakId.length > GyldigSakId.MAKSLENGDE) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_SAK_ID)
+    }
+}
+
+private fun TpUtbetaling.failOnTooLongBehandlingId() {
+    if (behandlingId.length > GyldigBehandlingId.MAKSLENGDE) {
+        badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_BEHANDLING_ID)
+    }
+}
