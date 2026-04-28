@@ -2,6 +2,7 @@ package abetal
 
 import libs.kafka.StreamsConfig
 import libs.utils.env
+import org.apache.kafka.clients.consumer.ConsumerConfig
 import java.net.URI
 import java.net.URL
 import java.util.*
@@ -27,6 +28,18 @@ data class Config(
             this[org.apache.kafka.streams.StreamsConfig.RETRY_BACKOFF_MS_CONFIG] = 1000
             this[org.apache.kafka.streams.StreamsConfig.RECONNECT_BACKOFF_MS_CONFIG] = 1000
             this[org.apache.kafka.streams.StreamsConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG] = 5000
+
+            // 10 min. Gir treg prosessering plass før consumer blir kastet ut.
+            this[ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG] = 600_000
+
+            // 30s. Oppdager døde consumers raskere enn default uten å bli aggressiv.
+            this[ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG] = 30_000
+
+            // 10s. Må være lavere enn session timeout / 3 for stabil heartbeat.
+            this[ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG] = 10_000
+
+            // Les bare committed records. Viktig hvis noen producer er transactional.
+            this[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = "read_committed"
         }
     ),
 )
