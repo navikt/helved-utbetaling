@@ -7,29 +7,32 @@ slos:
   - name: iverksetting-availability
     objective: 99.9
     description: |
-      Iverksetting endpoint should respond successfully (non-5xx) for at
-      least 99.9% of requests over a 30-day window.
+      Iverksetting endpoint should complete successfully for at least 99.9%
+      of requests over a 30-day window.
     sli:
       events:
-        # Adjust label names to whatever the ktor micrometer binder emits.
         error_query: |
-          sum(rate(ktor_http_server_requests_seconds_count{
-            app="utsjekk",
+          sum(rate(helved_utsjekk_iverksetting_total{
             k8s_cluster_name="prod",
-            route=~"/api/iverksetting.*",
-            status=~"5.."
+            result="error"
           }[5m]))
         total_query: |
-          sum(rate(ktor_http_server_requests_seconds_count{
-            app="utsjekk",
-            k8s_cluster_name="prod",
-            route=~"/api/iverksetting.*"
+          sum(rate(helved_utsjekk_iverksetting_total{
+            k8s_cluster_name="prod"
           }[5m]))
-    alerting:
-      name: UtsjekkIverksettingErrorBudgetBurn
-      page_alert:
-        labels:
-          severity: critical
-      ticket_alert:
-        labels:
-          severity: warning
+  - name: dryrun-availability
+    objective: 99.5
+    description: |
+      Dryrun endpoints should complete successfully for at least 99.5% of
+      requests over a 30-day window.
+    sli:
+      events:
+        error_query: |
+          sum(rate(helved_utsjekk_dryrun_request_total{
+            k8s_cluster_name="prod",
+            result=~"error|timeout"
+          }[5m]))
+        total_query: |
+          sum(rate(helved_utsjekk_dryrun_request_total{
+            k8s_cluster_name="prod"
+          }[5m]))
