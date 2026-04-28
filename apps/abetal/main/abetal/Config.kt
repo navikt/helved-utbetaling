@@ -8,6 +8,7 @@ import java.util.*
 
 data class Config(
     val utsjekk: URL = URI(env("UTSJEKK_HOST", "http://utsjekk")).toURL(),
+    val readinessMaxWaitSeconds: Long = env("ABETAL_READINESS_MAX_WAIT_SECONDS", 300L),
     val kafka: StreamsConfig = StreamsConfig(
         additionalProperties = Properties().apply {
             // Vi har 3 partisjoner, for å ha en standby-replica må vi ha 4 poder.

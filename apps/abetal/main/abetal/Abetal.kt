@@ -13,6 +13,9 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
@@ -23,6 +26,8 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -74,16 +79,51 @@ fun Application.abetal(
         .connectTimeout(Duration.ofSeconds(1))
         .build()
 
+    val utsjekkReadyAtStartup = runBlocking {
+        awaitUtsjekkStartupReadiness(httpClient, config)
+    }
+
+    if (!utsjekkReadyAtStartup) {
+        appLog.error(
+            "Utsjekk readiness did not succeed within ${config.readinessMaxWaitSeconds}s. " +
+                "Starting Kafka Streams in degraded mode."
+        )
+    }
+
+    val startInDegradedMode = AtomicBoolean(!utsjekkReadyAtStartup)
+
     // Starts Kafka Streams paused, resumes when utsjekk is ready.
     // Pauses again if utsjekk becomes unavailable.
     kafka.start(topology, config.kafka, prometheus) {
-        runCatching {
-            val request = HttpRequest.newBuilder()
-                .uri(URI("${config.utsjekk}/actuator/ready"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build()
-            httpClient.send(request, HttpResponse.BodyHandlers.discarding()).statusCode() in 200..299
-        }.getOrDefault(false)
+        startInDegradedMode.getAndSet(false) || isUtsjekkReady(httpClient, config)
     }
 }
+
+private suspend fun awaitUtsjekkStartupReadiness(
+    httpClient: HttpClient,
+    config: Config,
+): Boolean {
+    var backoff = 1.seconds
+
+    return withTimeoutOrNull(config.readinessMaxWaitSeconds.seconds) {
+        while (!isUtsjekkReady(httpClient, config)) {
+            delay(backoff)
+            backoff = (backoff * 2).coerceAtMost(30.seconds)
+        }
+
+        true
+    } ?: false
+}
+
+private fun isUtsjekkReady(
+    httpClient: HttpClient,
+    config: Config,
+): Boolean = runCatching {
+    val request = HttpRequest.newBuilder()
+        .uri(URI("${config.utsjekk}/actuator/ready"))
+        .timeout(Duration.ofSeconds(2))
+        .GET()
+        .build()
+
+    httpClient.send(request, HttpResponse.BodyHandlers.discarding()).statusCode() in 200..299
+}.getOrDefault(false)
