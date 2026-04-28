@@ -49,12 +49,12 @@ object Stores {
     val dryrunTs = Store(Tables.dryrunTs)
 }
 
-fun createTopology(jdbcCtx: CoroutineDatasource): Topology = topology {
+fun createTopology(jdbcCtx: CoroutineDatasource, metrics: Metrics): Topology = topology {
     globalKTable(Tables.dryrunAap, retention = 1.hours)
     globalKTable(Tables.dryrunDp, retention = 1.hours)
     globalKTable(Tables.dryrunTp, retention = 1.hours)
     globalKTable(Tables.dryrunTs, retention = 1.hours)
-    consumeStatus(jdbcCtx)
+    consumeStatus(jdbcCtx, metrics)
     utbetalingToSak()
 }
 
@@ -92,7 +92,7 @@ fun Topology.utbetalingToSak(): KTable<SakKey, Set<models.UtbetalingId>> {
     return ktable
 }
 
-fun Topology.consumeStatus(jdbcCtx: CoroutineDatasource) {
+fun Topology.consumeStatus(jdbcCtx: CoroutineDatasource, metrics: Metrics) {
     // TODO: utled status fra oppdrag i stedet? Da får vi ikke noe status på topic for disse
     consume(Topics.status)
         .filterKey { uid ->
@@ -104,6 +104,7 @@ fun Topology.consumeStatus(jdbcCtx: CoroutineDatasource) {
             }
         }
         .forEach { key, status ->
+            metrics.statusConsumed()
             val uid = UtbetalingId(UUID.fromString(key))
 
             // if (status.status == Status.FEILET) {
@@ -157,4 +158,3 @@ fun partition(key: String): Int {
     val hash = Utils.murmur2(bytes)
     return Utils.toPositive(hash) % Topics.NUM_PARTITIONS
 }
-

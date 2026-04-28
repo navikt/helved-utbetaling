@@ -1,5 +1,7 @@
 import fakes.AzureFake
 import fakes.SimuleringFake
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.ktor.client.*
 import java.io.File
 import java.util.Properties
@@ -9,6 +11,7 @@ import libs.ktor.*
 import libs.jdbc.Jdbc
 import libs.jdbc.concurrency.CoroutineDatasource
 import utsjekk.Config
+import utsjekk.Metrics
 import utsjekk.Topics
 import utsjekk.iverksetting.IverksettingDao
 import utsjekk.iverksetting.IverksettingResultatDao
@@ -57,7 +60,11 @@ object TestRuntime {
     val simulering: SimuleringFake by lazy { SimuleringFake() }
     val jdbc: DataSource by lazy { Jdbc.initialize(postgres.config) }
     val context: CoroutineDatasource by lazy { CoroutineDatasource(jdbc) }
+    val meterRegistry: PrometheusMeterRegistry by lazy { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
+    val metrics: Metrics by lazy { Metrics(meterRegistry) }
     val config: Config by lazy {
+        val workerId = System.getProperty("org.gradle.test.worker") ?: "0"
+        val stateDir = "build/kafka-streams/state-w$workerId-${System.nanoTime()}"
         Config(
             simulering = simulering.config,
             azure = azure.config,
@@ -67,10 +74,7 @@ object TestRuntime {
                 brokers = "localhost:9092",
                 ssl = SslConfig("", "", ""),
                 additionalProperties = Properties().apply {
-                    // Per-fork state directory to avoid clobbering between
-                    // parallel JVM forks (Gradle maxParallelForks).
-                    val workerId = System.getProperty("org.gradle.test.worker") ?: "0"
-                    this["state.dir"] = "build/kafka-streams/state-w$workerId"
+                    this["state.dir"] = stateDir
                 }
             ),
         )
@@ -83,9 +87,11 @@ object TestRuntime {
                     config,
                     kafkaMock,
                     jdbcCtx = context,
-                    topology = kafkaMock.append(createTopology(context)) {
+                    topology = kafkaMock.append(createTopology(context, metrics)) {
                         consume(Tables.saker)
                     },
+                    meterRegistry = meterRegistry,
+                    metrics = metrics,
                     startupValidation = {},
                 )
             },

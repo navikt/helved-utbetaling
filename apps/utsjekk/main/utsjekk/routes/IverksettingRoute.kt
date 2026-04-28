@@ -16,6 +16,7 @@ import utsjekk.iverksetting.*
 fun Route.iverksetting(
     service: IverksettingService,
     migrator: IverksettingMigrator,
+    metrics: Metrics,
 ) {
     route("/api/iverksetting") {
 
@@ -39,27 +40,36 @@ fun Route.iverksetting(
         }
 
         post("/v2") {
-            val dto = try {
-                call.receive<IverksettV2Dto>()
-            } catch (ex: Exception) {
-                badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", "${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling")
-            }
-
-            appLog.info("Behandler sakId:${dto.sakId} behandlingId:${dto.behandlingId}")
-
-            dto.validate()
-
-            val fagsystem = call.fagsystem()
-            val iverksetting = Iverksetting.from(dto, fagsystem)
-
+            val sample = metrics.startIverksettingTimer()
             try {
-                service.valider(iverksetting)
-                service.iverksett(iverksetting)
-            } catch (e: ApiError) {
-                if (e.statusCode != 409) throw e
-            }
+                val dto = try {
+                    call.receive<IverksettV2Dto>()
+                } catch (ex: Exception) {
+                    badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", "${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling")
+                }
 
-            call.respond(HttpStatusCode.Accepted)
+                appLog.info("Behandler sakId:${dto.sakId} behandlingId:${dto.behandlingId}")
+
+                dto.validate()
+
+                val fagsystem = call.fagsystem()
+                val iverksetting = Iverksetting.from(dto, fagsystem)
+
+                try {
+                    service.valider(iverksetting)
+                    service.iverksett(iverksetting)
+                } catch (e: ApiError) {
+                    if (e.statusCode != 409) throw e
+                }
+
+                call.respond(HttpStatusCode.Accepted)
+                metrics.iverksetting(IverksettingResult.OK)
+            } catch (e: Exception) {
+                metrics.iverksetting(IverksettingResult.ERROR)
+                throw e
+            } finally {
+                metrics.stopIverksettingTimer(sample)
+            }
         }
 
         get("/{sakId}/{behandlingId}/status") {
