@@ -1,7 +1,10 @@
 package libs.kafka
 
 import libs.kafka.stream.ConsumedStream
+import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.KeyValue
+import org.apache.kafka.streams.kstream.Materialized
+import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 
 typealias StateStoreName = String
@@ -19,9 +22,17 @@ class KStore<K : Any, V : Any>(
     val store: Store<K, V>,
     val internalKTable: org.apache.kafka.streams.kstream.KTable<K, V>,
 ) {
-    fun <U : Any> join(table: KTable<K, U>): ConsumedStream<K, StreamsPair<V?, U?>> {
-        val named = Named("${store.name}-join-${table.table.stateStoreName}")
-        return ConsumedStream(internalKTable.join(table.internalKTable, ::StreamsPair, named.into()).toStream())
+    @Suppress("UNCHECKED_CAST")
+    fun <U : Any> join(
+        table: KTable<K, U>,
+        valueSerde: StreamSerde<StreamsPair<V, U?>>,
+    ): ConsumedStream<K, StreamsPair<V?, U?>> {
+        val joinName = "${store.name}-join-${table.table.stateStoreName}"
+        val materialized = Materialized.`as`<K, StreamsPair<V?, U?>, KeyValueStore<Bytes, ByteArray>>("$joinName-store")
+            .withKeySerde(store.serde.key)
+            .withValueSerde(valueSerde as StreamSerde<StreamsPair<V?, U?>>)
+        val joined = internalKTable.join(table.internalKTable, ::StreamsPair, Named(joinName).into(), materialized)
+        return ConsumedStream(joined.toStream())
     }
 }
 

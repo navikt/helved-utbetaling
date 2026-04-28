@@ -41,14 +41,6 @@ internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.leftJoin(
     return leftJoin(ktable, joiner, joined)
 }
 
-internal fun <K: Any, L : Any, R : Any, LR> KTable<K, L>.leftJoin(
-    right: KTable<K, R>,
-    joiner: (L?, R?) -> LR,
-): KStream<K, LR> {
-    val named = Named("${table.stateStoreName}-leftjoin-${right.table.stateStoreName}")
-    return internalKTable.leftJoin(right.internalKTable, joiner, named.into()).toStream()
-}
-
 internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.join(
     left: Topic<K, L>,
     right: KTable<K, R>,

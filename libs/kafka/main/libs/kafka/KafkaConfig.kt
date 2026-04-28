@@ -30,6 +30,9 @@ data class StreamsConfig(
         this[StreamsConfig.REPLICATION_FACTOR_CONFIG] = 3
         this[StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG] = 1
 
+        // Fail fast if any internal topic, state store, or changelog topic is not explicit named
+        this[StreamsConfig.ENSURE_EXPLICIT_INTERNAL_RESOURCE_NAMING_CONFIG] = true
+
         // Configuration for decreaseing latency
         this[StreamsConfig.producerPrefix(ProducerConfig.BATCH_SIZE_CONFIG)] = 0 // do not batch
         this[StreamsConfig.producerPrefix(ProducerConfig.LINGER_MS_CONFIG)] = 0 // send immediately

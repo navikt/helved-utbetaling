@@ -61,7 +61,7 @@ class KTableTest {
             val f = consume(Topics.A)
                 .map { v -> v + v }
                 .materialize(Stores.F)
-            f.join(b)
+            f.join(b, Serde.streamsPair<String>())
                 .filter { (_, b) -> b != null }
                 .map { (f, b) -> f + b }
                 .produce(Topics.C)
@@ -82,7 +82,7 @@ class KTableTest {
             val f = consume(Topics.A)
                 .map { v -> v + v }
                 .materialize(Stores.F)
-            f.join(b)
+            f.join(b, Serde.streamsPair<String>())
                 .filter { (_, b) -> b != null }
                 .map { (f, b) -> f + b }
                 .produce(Topics.C)
@@ -101,7 +101,7 @@ class KTableTest {
             val f = consume(Topics.A)
                 .map { v -> v + v }
                 .materialize(Stores.F)
-            f.join(b)
+            f.join(b, Serde.streamsPair<String>())
                 .filter { (_, b) -> b != null }
                 .map { (f, b) -> f + b }
                 .produce(Topics.C)
