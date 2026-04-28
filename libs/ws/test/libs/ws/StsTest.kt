@@ -1,5 +1,6 @@
 package libs.ws
 
+import libs.cache.TokenCache
 import io.ktor.server.request.*
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.*
@@ -12,6 +13,8 @@ import kotlin.math.abs
 import kotlin.test.assertNotEquals
 
 class StsTest {
+    private val fixedNow = LocalDateTime.of(2026, 4, 28, 12, 0)
+
     companion object {
         private val proxy = ProxyFake()
 
@@ -93,17 +96,55 @@ class StsTest {
     }
 
     @Test
-    fun `can invalidate expired tokens`() {
-        val sts = StsClient(proxy.config.sts)
-
-        proxy.sts.response = GandalfToken(expires_in = 1)
+    fun `cache keeps token within 25s leeway`() {
+        val clock = MutableClock(fixedNow)
+        val cache = TokenCache<SamlToken>()
+        val cached = tokenAt(fixedNow.plusSeconds(25), clock)
+        val sts = StsClient(proxy.config.sts, cache = cache)
 
         runBlocking {
-            val token = sts.samlToken()
-            Thread.sleep(1)
-            proxy.sts.response = GandalfToken(expires_in = 1)
-            val token2 = sts.samlToken()
-            assertNotEquals(token, token2)
+            cache.add(proxy.config.sts.user, cached)
+
+            val actual = sts.samlToken()
+
+            assertEquals(cached, actual)
+        }
+    }
+
+    @Test
+    fun `cache keeps token within 35s leeway`() {
+        val clock = MutableClock(fixedNow)
+        val cache = TokenCache<SamlToken>()
+        val cached = tokenAt(fixedNow.plusSeconds(35), clock)
+        val sts = StsClient(proxy.config.sts, cache = cache)
+
+        runBlocking {
+            cache.add(proxy.config.sts.user, cached)
+
+            val actual = sts.samlToken()
+
+            assertEquals(cached, actual)
+        }
+    }
+
+    @Test
+    fun `cache refreshes expired token`() {
+        val clock = MutableClock(fixedNow)
+        val cache = TokenCache<SamlToken>()
+        val cached = tokenAt(fixedNow.minusSeconds(1), clock, token = "cached")
+        val sts = StsClient(proxy.config.sts, cache = cache)
+
+        val refreshed = "refreshed token".let { Base64.getEncoder().encodeToString(it.toByteArray()) }
+        proxy.sts.response = GandalfToken(access_token = refreshed)
+
+        runBlocking {
+            cache.add(proxy.config.sts.user, cached)
+            clock.now = fixedNow.plusSeconds(31)
+
+            val actual = sts.samlToken()
+
+            assertEquals("refreshed token", actual.token)
+            assertNotEquals(cached, actual)
         }
     }
 
@@ -130,3 +171,11 @@ fun assertIsCloseTo(expected: LocalDateTime, actual: LocalDateTime) {
 }
 
 fun LocalDateTime.toEpochSec(): Long = atZone(ZoneId.systemDefault()).toEpochSecond()
+
+private fun tokenAt(
+    expirationTime: LocalDateTime,
+    clock: MutableClock,
+    token: String = "very secure",
+) = SamlToken(token, expirationTime) { clock.now }
+
+private data class MutableClock(var now: LocalDateTime)

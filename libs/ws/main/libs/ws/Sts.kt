@@ -111,15 +111,27 @@ fun stsError(node: JsonNode): Nothing {
     )
 }
 
-data class SamlToken(
+class SamlToken(
     val token: String,
     val expirationTime: LocalDateTime,
+    private val now: () -> LocalDateTime = LocalDateTime::now,
 ) : Token {
 
     override fun isExpired(): Boolean =
-        expirationTime <= LocalDateTime.now().plus(EXP_LEEWAY)
+        !expirationTime.plus(EXP_LEEWAY).isAfter(now())
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is SamlToken) return false
+
+        return token == other.token && expirationTime == other.expirationTime
+    }
+
+    override fun hashCode(): Int = 31 * token.hashCode() + expirationTime.hashCode()
+
+    override fun toString(): String = "SamlToken(token=$token, expirationTime=$expirationTime)"
 
     companion object {
-        private val EXP_LEEWAY = Duration.ofSeconds(10) // TODO: burde vi øke denne?
+        private val EXP_LEEWAY = Duration.ofSeconds(30) // 30s buffer for clock skew and slow STS refresh.
     }
 }
