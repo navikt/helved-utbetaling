@@ -56,6 +56,18 @@ fun Application.abetal(
     metrics: Metrics = Metrics(prometheus),
     topology: Topology = createTopology(kafka, metrics),
     startupConfigValidator: suspend (Config) -> Unit = ::validateStartupConfigOrExit,
+    awaitUtsjekkReady: suspend (Config) -> Boolean = { cfg ->
+        val httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(1))
+            .build()
+        awaitUtsjekkStartupReadiness(httpClient, cfg)
+    },
+    isUtsjekkReadyCheck: (Config) -> Boolean = { cfg ->
+        val httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(1))
+            .build()
+        isUtsjekkReady(httpClient, cfg)
+    },
 ) {
     Tracing.init("abetal")
 
@@ -84,12 +96,8 @@ fun Application.abetal(
         startupConfigValidator(config)
     }
 
-    val httpClient = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(1))
-        .build()
-
     val utsjekkReadyAtStartup = runBlocking {
-        awaitUtsjekkStartupReadiness(httpClient, config)
+        awaitUtsjekkReady(config)
     }
 
     if (!utsjekkReadyAtStartup) {
@@ -104,7 +112,7 @@ fun Application.abetal(
     // Starts Kafka Streams paused, resumes when utsjekk is ready.
     // Pauses again if utsjekk becomes unavailable.
     kafka.start(topology, config.kafka, prometheus) {
-        startInDegradedMode.getAndSet(false) || isUtsjekkReady(httpClient, config)
+        startInDegradedMode.getAndSet(false) || isUtsjekkReadyCheck(config)
     }
 }
 

@@ -64,6 +64,8 @@ object TestRuntime {
                     metrics = metrics,
                     topology = createTopology(kafka, metrics),
                     startupConfigValidator = {},
+                    awaitUtsjekkReady = { true },
+                    isUtsjekkReadyCheck = { true },
                 )
             }
         )

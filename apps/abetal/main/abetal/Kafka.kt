@@ -105,9 +105,15 @@ fun Topology.dpStream(
             this
                 .map { sakKey, (req, uids) -> DpDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
                 .rekey { _, dtos -> dtos.first().originalKey }
-                .map { key, utbetalinger ->
+                .map { _, utbetalinger ->
                     val startedAtMs = currentTimeMillis()
-                    validateSameDryrunBatch(key, utbetalinger)
+
+                    if (!(utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun })) {
+                        return@map StreamResult.OppdragError(
+                            StatusReply.err(ApiError(400, "Kan ikke blande dryrun og utbetaling i samme batch")),
+                            startedAtMs
+                        )
+                    }
 
                     if (utbetalinger.any { it.dryrun }) {
                         return@map Result.catch {
@@ -151,9 +157,14 @@ fun Topology.aapStream(
         .default {
             this.map { sakKey, (req, uids) -> AapDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
                 .rekey { _, dtos -> dtos.first().originalKey }
-                .map { key, value ->
+                .map { _, value ->
                     val startedAtMs = currentTimeMillis()
-                    validateSameDryrunBatch(key, value)
+                    if (!(value.all { it.dryrun } || value.none { it.dryrun })) {
+                        return@map StreamResult.OppdragError(
+                            StatusReply.err(ApiError(400, "Kan ikke blande dryrun og utbetaling i samme batch")),
+                            startedAtMs
+                        )
+                    }
                     val store = kafka.getStore(Stores.utbetalinger)
                     val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
                     if (value.any { it.dryrun }) {
@@ -192,12 +203,17 @@ fun Topology.tsStream(
         .branch(Guard::ifNoUtbetalinger, Guard::replyOkTs)
         .default {
             this
-                .map { key, (req, uids) ->
+                .map { _, (req, uids) ->
                     val startedAtMs = currentTimeMillis()
                     val dto = req.value ?: req.dto!!
                     val originalKey = req.key ?: req.transactionId!!
                     val utbetalinger = TsDto.toDomain(SakId(dto.sakId), originalKey, dto, uids)
-                    validateSameDryrunBatch(key, utbetalinger)
+                    if (!(utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun })) {
+                        return@map StreamResult.OppdragError(
+                            StatusReply.err(ApiError(400, "Kan ikke blande dryrun og utbetaling i samme batch")),
+                            startedAtMs
+                        )
+                    }
                     val store = kafka.getStore(Stores.utbetalinger)
                     val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
                     if (utbetalinger.any { it.dryrun }) {
@@ -231,9 +247,14 @@ fun Topology.tpStream(
         .includeHeader(FS_KEY) { Fagsystem.TILTAKSPENGER.name }
         .map { sakKey, req, ids -> TpDto.splitToDomain(sakKey.sakId, req.key, req.value, ids) }
         .rekey { dtos -> dtos.first().originalKey }
-        .map { key, value ->
+        .map { _, value ->
             val startedAtMs = currentTimeMillis()
-            validateSameDryrunBatch(key, value)
+            if (!(value.all { it.dryrun } || value.none { it.dryrun })) {
+                return@map StreamResult.OppdragError(
+                    StatusReply.err(ApiError(400, "Kan ikke blande dryrun og utbetaling i samme batch")),
+                    startedAtMs
+                )
+            }
             val store = kafka.getStore(Stores.utbetalinger)
             val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
             if (value.any { it.dryrun }) {
@@ -434,15 +455,6 @@ fun Topology.successfulUtbetalingStream(
                 logUnexpectedSuccessfulUtbetalingDefaultBranch(kv.originalKey, metrics)
             }
         }
-}
-
-internal fun validateSameDryrunBatch(key: String, utbetalinger: List<Utbetaling>) {
-    val hasOnlyDryrunValues = utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun }
-    if (hasOnlyDryrunValues) return
-
-    val dryrunSummary = utbetalinger.joinToString(prefix = "[", postfix = "]", separator = ",") { it.dryrun.toString() }
-    appLog.warn("Kan ikke blande dryrun og non-dryrun i samme batch. key=$key dryrun=$dryrunSummary")
-    badRequest("Kan ikke blande dryrun og non-dryrun i samme batch (key=$key)")
 }
 
 internal fun logUnexpectedSuccessfulUtbetalingDefaultBranch(originalKey: String, metrics: Metrics? = null) {
