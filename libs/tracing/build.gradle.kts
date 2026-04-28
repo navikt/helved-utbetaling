@@ -7,4 +7,10 @@ dependencies {
 
     // Context Propagation (for managing spans across threads/coroutines)
     api("io.opentelemetry:opentelemetry-context:1.59.0")
+
+    implementation("io.opentelemetry:opentelemetry-sdk:1.59.0")
+
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp:1.59.0")
+
+    testImplementation(kotlin("test"))
 }

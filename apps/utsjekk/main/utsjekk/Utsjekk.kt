@@ -34,6 +34,7 @@ import libs.kafka.Streams
 import libs.kafka.Topology
 import libs.ktor.CallLog
 import libs.ktor.bodyAsText
+import libs.tracing.Tracing
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.ApiError
@@ -51,6 +52,8 @@ import utsjekk.utbetaling.UtbetalingMigrator
 import utsjekk.utbetaling.UtbetalingService
 import java.io.File
 import java.util.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -75,17 +78,21 @@ fun Application.utsjekk(
     kafka: Streams = KafkaStreams(),
     jdbcCtx: CoroutineDatasource? = null,
     topology: Topology? = null,
+    meterRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
+    metrics: Metrics = Metrics(meterRegistry),
+    dryrunTimeout: Duration = 120.seconds,
     startupValidation: suspend (Config) -> Unit = ::wireWithExitOnFailure,
 ) {
+    Tracing.init("utsjekk")
+
     runBlocking {
         startupValidation(config)
     }
 
     val actualJdbcCtx = jdbcCtx ?: Jdbc.initialize(config.jdbc).context()
-    val actualTopology = topology ?: createTopology(actualJdbcCtx)
-    val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    val actualTopology = topology ?: createTopology(actualJdbcCtx, metrics)
     install(MicrometerMetrics) {
-        registry = metrics
+        registry = meterRegistry
         meterBinders += LogbackMetrics()
     }
 
@@ -146,7 +153,7 @@ ${call.bodyAsText()}""".trimIndent()
     kafka.connect(
         actualTopology,
         config.kafka,
-        metrics,
+        meterRegistry,
     )
 
     val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
@@ -158,10 +165,11 @@ ${call.bodyAsText()}""".trimIndent()
     val simuleringRoutes = SimuleringRoutes(
         config,
         kafka,
-
+        metrics,
         iverksettingService,
         utbetalingService,
         actualJdbcCtx,
+        dryrunTimeout,
     )
 
     val utbetalingMigrator = UtbetalingMigrator(utbetalingProducer, actualJdbcCtx)
@@ -169,7 +177,7 @@ ${call.bodyAsText()}""".trimIndent()
 
     routing {
         authenticate(TokenProvider.AZURE) {
-            iverksetting(iverksettingService, iverksettingMigrator)
+            iverksetting(iverksettingService, iverksettingMigrator, metrics)
             utbetalinger(utbetalingService, utbetalingMigrator)
             simuleringRoutes.aap(this)
             simuleringRoutes.utsjekk(this)
@@ -177,10 +185,11 @@ ${call.bodyAsText()}""".trimIndent()
             simuleringRoutes.dryrun(this)
         }
 
-        actuator(kafka, metrics)
+        actuator(kafka, meterRegistry)
     }
 
     monitor.subscribe(ApplicationStopping) {
+        Tracing.shutdown()
         kafka.close()
         oppdragProducer.close()
         utbetalingProducer.close()

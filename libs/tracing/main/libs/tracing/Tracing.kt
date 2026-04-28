@@ -1,21 +1,79 @@
 package libs.tracing
 
-import libs.utils.*
 import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.common.Attributes
+import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.*
 import io.opentelemetry.context.*
+import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentelemetry.context.propagation.TextMapGetter
-import io.opentelemetry.context.propagation.TextMapSetter
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
+import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.common.CompletableResultCode
+import io.opentelemetry.sdk.resources.Resource
+import io.opentelemetry.sdk.trace.SdkTracerProvider
+import io.opentelemetry.sdk.trace.`export`.BatchSpanProcessor
+import io.opentelemetry.sdk.trace.`export`.SpanExporter
+import io.opentelemetry.sdk.trace.samplers.Sampler
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
+import libs.utils.*
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import kotlin.collections.set
 
 val traceLog = logger("trace")
 
 object Tracing {
-    val tracer: Tracer = GlobalOpenTelemetry.getTracer("helved-tracer")
+    private const val tracerName = "helved-tracer"
+    private const val defaultOtlpEndpoint = "http://opentelemetry-collector.nais-system:4317"
+
+    @Volatile
+    private var openTelemetry: OpenTelemetry = GlobalOpenTelemetry.get()
+    private var tracerProvider: SdkTracerProvider? = null
+
+    val tracer: Tracer
+        get() = openTelemetry.getTracer(tracerName)
 
     private val traceparents = ConcurrentHashMap<String, String>()
+
+    fun init(serviceName: String) {
+        init(serviceName, listOf(defaultSpanExporter()))
+    }
+
+    @Synchronized
+    fun init(serviceName: String, spanExporters: List<SpanExporter>) {
+        if (tracerProvider != null) return
+
+        val provider = SdkTracerProvider.builder()
+            .setSampler(Sampler.parentBased(Sampler.alwaysOn()))
+            .setResource(resource(serviceName))
+            .apply {
+                spanExporters
+                    .map(::batchSpanProcessor)
+                    .forEach(::addSpanProcessor)
+            }
+            .build()
+
+        openTelemetry = OpenTelemetrySdk.builder()
+            .setTracerProvider(provider)
+            .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+            .build()
+
+        tracerProvider = provider
+    }
+
+    fun forceFlush(): CompletableResultCode =
+        tracerProvider?.forceFlush() ?: CompletableResultCode.ofSuccess()
+
+    @Synchronized
+    fun shutdown() {
+        tracerProvider?.forceFlush()?.join(10, TimeUnit.SECONDS)
+        (openTelemetry as? OpenTelemetrySdk)?.close()
+        tracerProvider = null
+        openTelemetry = GlobalOpenTelemetry.get()
+    }
 
     fun storeContext(key: String) {
         getTraceparent()?.let { traceparents[key] = it } ?: traceLog.warn("No traceparent on context for key: $key")
@@ -92,10 +150,27 @@ object Tracing {
     }
 
     fun contextFromTraceparent(traceparent: String): Context {
-        return GlobalOpenTelemetry
+        return openTelemetry
             .getPropagators()
             .textMapPropagator
             .extract(Context.current(), traceparent, traceContextGetter)
     }
-}
 
+    private fun defaultSpanExporter(): SpanExporter =
+        OtlpGrpcSpanExporter.builder()
+            .setEndpoint(System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")?.ifBlank { defaultOtlpEndpoint } ?: defaultOtlpEndpoint)
+            .build()
+
+    private fun batchSpanProcessor(spanExporter: SpanExporter): BatchSpanProcessor =
+        BatchSpanProcessor.builder(spanExporter)
+            .setMaxExportBatchSize(512)
+            .setScheduleDelay(5, TimeUnit.SECONDS)
+            .build()
+
+    private fun resource(serviceName: String): Resource =
+        Resource.getDefault().merge(
+            Resource.create(
+                Attributes.of(AttributeKey.stringKey("service.name"), serviceName)
+            )
+        )
+}
