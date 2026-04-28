@@ -3,39 +3,7 @@
 ## Project Overview
 
 Multi-module Kotlin monorepo for NAV (Norwegian government) payment system.
-Ktor-based (NOT Spring). Runs on NAIS (Kubernetes on GCP). 9 apps + 15 libs + shared models.
-
-## Documentation Access
-
-This project uses **Context7 MCP** for accessing up-to-date documentation. The configuration is in `opencode.json`.
-
-### Available Documentation Sources
-
-Context7 automatically provides current docs for:
-- **NAIS platform**: https://docs.nais.io/ (NAV's Kubernetes platform)
-- **NAV Security**: https://sikkerhet.nav.no/ (security playbook)
-- **Ktor 3.x**: https://ktor.io/docs/ (web framework)
-- **Kafka Streams**: https://kafka.apache.org/documentation/streams/
-- **Kotlin**: https://kotlinlang.org/docs/
-
-### Setup
-
-API key is stored in `~/.bash_profile` as `CONTEXT7_API_KEY`. After updating `.bash_profile`:
-```sh
-source ~/.bash_profile
-```
-
-### Usage in Prompts
-
-When asking code-related questions, Context7 will automatically fetch current documentation.
-You can explicitly invoke it by adding `use context7` to your prompt, or reference specific libraries:
-```
-Implement auth with Ktor. use library /ktor/ktor for API and docs.
-```
-
-### Context Window Efficiency
-
-Prefer delegating Context7 documentation lookups to subagents (via Task tool) rather than querying directly in the main conversation. This keeps the main context lean -- the subagent returns only the relevant snippet instead of injecting full documentation pages.
+Ktor-based (NOT Spring). Runs on NAIS (Kubernetes on GCP). 11 apps + 15 libs + shared models.
 
 ## Build System
 
@@ -203,6 +171,15 @@ For detailed module-level documentation:
 
 When writing or modifying code, load the `readable-code` skill.
 
+### When to Load Each Skill
+- **`libs-reference`**: When implementing code that touches /libs (jdbc, kafka, mq, ws, ktor, auth, http, cache, tracing, utils).
+- **`readable-code`**: When writing or refactoring Kotlin code (any .kt file).
+- **`kafka-topology`**: When building or modifying Kafka Streams topologies (the custom DSL).
+- **`testing`**: When writing tests (TestRuntime, runTest, fakes, Testcontainers).
+- **`database`**: When writing migrations or DAOs (custom Migrator, Dao<T>, transaction { }).
+- **`ktor-routing`**: When building Ktor routes, auth, or StatusPages handlers.
+- **`ripgrep`**: When searching code or files.
+
 ### Modules
 
 When adding dependencies between modules, use Gradle project references:
@@ -216,3 +193,11 @@ dependencies {
 
 Dependency versions are declared inline as `val` in each module's `build.gradle.kts` (no version catalog).
 
+
+## Communication Style
+
+ALWAYS load the `caveman` skill at session start and stay in caveman mode (default level: `full`) for every response. Caveman mode persists across all turns until the user explicitly says "stop caveman" or "normal mode".
+
+- Switch levels on request: `/caveman lite|full|ultra|wenyan|wenyan-lite|wenyan-ultra`
+- **Code, commits, PRs, error messages, and security warnings**: write normal prose. EXCEPTION: When using `caveman-commit` or `caveman-review` skills, use their specialized terse formats.
+- Companion skills available: `caveman-commit` (terse commit messages), `caveman-review` (one-line PR comments), `caveman-help` (quick reference), `caveman-compress` (user-invoked CLI for memory file compression)

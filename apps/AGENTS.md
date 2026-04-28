@@ -45,6 +45,7 @@ team-tillegg ──┘         │              │            │
                    [statistikkern] ──> BigQuery
                    [branntaarn] ──> Slack
                    [smokesignal] (cron)
+                   [speiderhytta] ──> GitHub API + Prometheus (pull-based observability)
 ```
 
 ### Kafka Topic Architecture
@@ -289,6 +290,55 @@ See the **Kafka Topics** section below for complete topic contracts.
 - `GET /simulering/{fagsystem}/{correlationId}` - Poll for result
 
 **No Database** (uses Kafka state stores for correlation)
+
+---
+
+#### **speiderhytta** - DORA + SLO Observability Service
+- **Location:** `apps/speiderhytta/main/speiderhytta/Speiderhytta.kt`
+- **Purpose:** Speiderhytta -- scout cabin. Observerer fra distanse hvordan helved leverer. Eier observability-metrikker for helved-teamet: DORA-metrikker (Deployment Frequency, Lead Time for Changes, Change Failure Rate, MTTR) per app og SLO-status per app, basert på definisjoner i hver `apps/*/slo.yml`. Pull-basert NAIS pod uten offentlig ingress; `helved-peisen` er eneste innkommende klient.
+
+**Key Components:**
+- `DeployPoller`: Henter workflow-runs fra `api.github.com` (GitHub Actions) hvert 60. sekund — én rad per `deploy-prod`-jobb
+- `IncidentPoller`: Henter incidents (label `incident` + `app:<name>`) fra `navikt/team-helved` GitHub Issues hvert 60. sekund
+- `SloSnapshotter`: Henter live SLI-verdier og burn rates fra `prometheus.nav.cloud.nais.io` via PromQL hvert 5. minutt
+
+**Data Sources (outbound only):**
+- GitHub Actions API (`/actions/workflows/{file}/runs` + `/actions/runs/{id}/jobs`) — kanonisk kilde for deploy-historikk (NAIS har ikke et public deployment-history-API)
+- GitHub Issues API (`navikt/team-helved`) — incidents
+- GitHub Commits API — commit-tidspunkt for lead time (lookup mot riktig code-repo per deploy)
+- NAIS Prometheus (`prometheus.nav.cloud.nais.io`) — live SLI-verdier og burn rates
+
+**Polling Intervals:**
+- DeployPoller: hvert 60. sekund
+- IncidentPoller: hvert 60. sekund
+- SloSnapshotter: hvert 5. minutt
+
+**Database Schema:**
+- `deployment` - Deploy-forsøk per app, én rad per `(app, sha, env, run_id)`. `outcome` ∈ {`success`, `failure`, `cancelled`}. Re-runs av samme commit gir nye rader (telles som separate forsøk i CFR). In-progress runs (`conclusion = null`) lagres ikke
+- `incident` - Incidents fra `navikt/team-helved` Issues, koblet til deploy via eksplisitt `Caused-by: <sha>` i body eller heuristikk (nyeste vellykka prod-deploy for samme app innen 24t før `opened_at`)
+- `slo_snapshot` - Snapshot av SLI-verdier og burn rates fra Prometheus
+
+**API Contracts:**
+- `GET /dora` - Alle apps, 30d-vindu
+- `GET /dora/{app}?window=7d` - Én app
+- `GET /dora/{app}/deployments?limit=50` - Kun success-deploys
+- `GET /dora/{app}/incidents?limit=50` - Incidents for én app
+- `GET /slo` - Alle SLOer
+- `GET /slo/{app}` - Én apps SLOer
+- `GET /slo/{app}/{slo_name}` - Én SLO med live state
+- `GET /slo/{app}/{slo_name}/history?window=30d` - Historisk SLO-status
+- `GET /actuator/health`
+- `GET /actuator/metric` - Prometheus
+
+**Kafka Usage:** None — pull-based observability service. Ingen consumers, ingen producers.
+
+**Security:**
+- Ingen offentlig ingress; inbound kun fra `helved-peisen`
+- Outbound kun til `api.github.com` og `prometheus.nav.cloud.nais.io`
+- GitHub App installert på `helved-utbetaling`, `helved-peisen` og `team-helved` med read-only `Issues`, `Contents`, `Actions` permissions; kortlivet installation token (1t)
+- Data er ikke-PII observabilitymetadata
+
+**Dependencies:** `libs:http`, `libs:jdbc`, `libs:ktor`, `libs:utils`, `models`
 
 ---
 

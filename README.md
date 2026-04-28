@@ -8,6 +8,10 @@
 │   ├── branntaarn        # varsel om manglende kvittering
 │   ├── peisschtappern    # database-sink for alle våre topics
 │   ├── simulering        # rest -> soap via proxy
+│   ├── smokesignal       # reconciliation trigger
+│   ├── snickerboa        # request-reply correlator
+│   ├── speiderhytta      # observerer fra distanse hvordan helved leverer
+│   ├── statistikkern     # analytics pipeline
 │   ├── urskog            # økosystem med urgamle teknologier som MQ
 │   ├── utsjekk           # restful betaling
 │   └── vedskiva          # scheduler for avstemming
@@ -98,4 +102,3 @@ Man kan lage 2 heap dumps med noen timer mellomrom, da kan dette verktøyet insp
 - https://github.com/navikt/tbd-libs/blob/main/minimal-soap-client/src/main/kotlin/com/github/navikt/tbd_libs/soap/SoapResponseHandler.kt
 - https://github.com/navikt/helse-spenn/blob/master/spenn-mq/src/main/kotlin/no/nav/helse/spenn/oppdrag/Kvitteringer.kt
 - https://jstobigdata.com/jms/jms-transactions-in-action/
-
