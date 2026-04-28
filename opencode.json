@@ -1,30 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "context7": {
-      "type": "local",
-      "command": ["sh", "-c", "npx -y @upstash/context7-mcp --api-key $(security find-generic-password -s 'CONTEXT7_API_KEY' -w)"],
-      "enabled": true
-    },
-    "mcp-grafana": {
-      "type": "local",
-      "command": ["sh", "-c", "GRAFANA_SERVICE_ACCOUNT_TOKEN=$(security find-generic-password -s 'grafana-team-helved-service-token' -w) uvx mcp-grafana --disable-write"],
-      "environment": {
-        "GRAFANA_URL": "https://grafana.nav.cloud.nais.io"
-      },
-      "enabled": false
-    }
-  },
+  "plugin": ["oh-my-opencode"],
   "agent": {
-    "lib-expert": {
-      "description": "Senior Architect for monorepo internal libraries - ensures code uses internal /libs instead of generic patterns",
-      "mode": "subagent",
-      "prompt": "{file:./AGENTS_LIB_EXPERT.md}",
-      "tools": {
-        "write": false,
-        "edit": false,
-        "bash": false
-      }
-    }
   }
 }

@@ -14,6 +14,15 @@ metadata:
 
 > **Parent context:** See root `AGENTS.md` for conventions, build system, and patterns.
 
+## When to use me
+
+Load this skill when:
+- Implementing code that imports from `libs/jdbc`, `libs/kafka`, `libs/mq`, `libs/ws`, `libs/ktor`, `libs/auth`, `libs/http`, `libs/cache`, `libs/tracing`, or `libs/utils`.
+- Looking up the public API of any internal library.
+- Wiring DI in a new app's `Application.<appName>()` function.
+- Choosing between similar internal libs (e.g., `libs/mq` vs `libs/ws` for outbound integration).
+- Writing test setup that needs `libs/jdbc-test`, `libs/kafka-test`, `libs/mq-test`, `libs/auth-test`, or `libs/ktor-test`.
+
 ## Production Libraries
 
 ### Infrastructure - Database

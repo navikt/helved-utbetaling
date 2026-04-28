@@ -30,3 +30,13 @@ mqjms.log*
 .http
 
 TODO
+
+# opencode plugin artifacts
+opencode.json
+node_modules/
+package-lock.json
+package.json
+oh-my-openagent.json
+oh-my-opencode.json
+.opencode/
+.sisyphus
