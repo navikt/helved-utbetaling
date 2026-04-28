@@ -83,18 +83,18 @@ subgraph Topologi
 	dptuple-leftjoin-saker --> helved.dryrun-ts.v1
 	dptuple-leftjoin-saker --> helved.dryrun-tp.v1
 	dptuple-leftjoin-saker --> helved.simuleringer.v1
-	dptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 	dptuple-leftjoin-saker --> helved.oppdrag.v1
+	dptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 	tstuple-leftjoin-saker-repartition --> tstuple-leftjoin-saker
 	helved.saker.v1-state-store --> tstuple-leftjoin-saker
 	tstuple-leftjoin-saker --> helved.status.v1
+	tstuple-leftjoin-saker --> helved.oppdrag.v1
+	tstuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 	tstuple-leftjoin-saker --> helved.dryrun-aap.v1
 	tstuple-leftjoin-saker --> helved.dryrun-dp.v1
 	tstuple-leftjoin-saker --> helved.dryrun-ts.v1
 	tstuple-leftjoin-saker --> helved.dryrun-tp.v1
 	tstuple-leftjoin-saker --> helved.simuleringer.v1
-	tstuple-leftjoin-saker --> helved.oppdrag.v1
-	tstuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 	historisktuple-leftjoin-saker-repartition --> historisktuple-leftjoin-saker
 	helved.saker.v1-state-store --> historisktuple-leftjoin-saker
 	historisktuple-leftjoin-saker --> helved.status.v1
@@ -108,13 +108,13 @@ subgraph Topologi
 	tptuple-leftjoin-saker-repartition --> tptuple-leftjoin-saker
 	helved.saker.v1-state-store --> tptuple-leftjoin-saker
 	tptuple-leftjoin-saker --> helved.status.v1
-	tptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
-	tptuple-leftjoin-saker --> helved.oppdrag.v1
-	tptuple-leftjoin-saker --> helved.simuleringer.v1
 	tptuple-leftjoin-saker --> helved.dryrun-aap.v1
 	tptuple-leftjoin-saker --> helved.dryrun-dp.v1
 	tptuple-leftjoin-saker --> helved.dryrun-ts.v1
 	tptuple-leftjoin-saker --> helved.dryrun-tp.v1
+	tptuple-leftjoin-saker --> helved.simuleringer.v1
+	tptuple-leftjoin-saker --> helved.oppdrag.v1
+	tptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 
     %% TABLE STREAMS
     
