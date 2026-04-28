@@ -73,9 +73,16 @@ fun main() {
 fun Application.utsjekk(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context(),
-    topology: Topology = createTopology(jdbcCtx),
+    jdbcCtx: CoroutineDatasource? = null,
+    topology: Topology? = null,
+    startupValidation: suspend (Config) -> Unit = ::wireWithExitOnFailure,
 ) {
+    runBlocking {
+        startupValidation(config)
+    }
+
+    val actualJdbcCtx = jdbcCtx ?: Jdbc.initialize(config.jdbc).context()
+    val actualTopology = topology ?: createTopology(actualJdbcCtx)
     val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
         registry = metrics
@@ -131,13 +138,13 @@ ${call.bodyAsText()}""".trimIndent()
     }
 
     runBlocking {
-        withContext(jdbcCtx) {
+        withContext(actualJdbcCtx) {
             Migrator(File("migrations")).migrate()
         }
     }
 
     kafka.connect(
-        topology,
+        actualTopology,
         config.kafka,
         metrics,
     )
@@ -145,8 +152,8 @@ ${call.bodyAsText()}""".trimIndent()
     val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
     val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)
 
-    val utbetalingService = UtbetalingService(oppdragProducer, jdbcCtx)
-    val iverksettingService = IverksettingService(oppdragProducer, jdbcCtx)
+    val utbetalingService = UtbetalingService(oppdragProducer, actualJdbcCtx)
+    val iverksettingService = IverksettingService(oppdragProducer, actualJdbcCtx)
 
     val simuleringRoutes = SimuleringRoutes(
         config,
@@ -154,11 +161,11 @@ ${call.bodyAsText()}""".trimIndent()
 
         iverksettingService,
         utbetalingService,
-        jdbcCtx,
+        actualJdbcCtx,
     )
 
-    val utbetalingMigrator = UtbetalingMigrator(utbetalingProducer, jdbcCtx)
-    val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer, jdbcCtx)
+    val utbetalingMigrator = UtbetalingMigrator(utbetalingProducer, actualJdbcCtx)
+    val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer, actualJdbcCtx)
 
     routing {
         authenticate(TokenProvider.AZURE) {

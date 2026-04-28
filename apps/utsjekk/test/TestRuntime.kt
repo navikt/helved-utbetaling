@@ -85,7 +85,8 @@ object TestRuntime {
                     jdbcCtx = context,
                     topology = kafkaMock.append(createTopology(context)) {
                         consume(Tables.saker)
-                    }
+                    },
+                    startupValidation = {},
                 )
             },
             onClose = {
@@ -111,4 +112,3 @@ object TestRuntime {
 val http: HttpClient by lazy {
     HttpClient()
 }
-

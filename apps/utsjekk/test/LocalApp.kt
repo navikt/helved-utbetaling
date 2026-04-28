@@ -38,7 +38,7 @@ fun Application.testApp() {
         }
         appLog.info("setup database")
     }
-    utsjekk(TestRuntime.config, TestRuntime.kafka)
+    utsjekk(TestRuntime.config, TestRuntime.kafka, startupValidation = {})
     testRouting()
 }
 
