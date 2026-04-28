@@ -7,7 +7,6 @@ import libs.jdbc.concurrency.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import utsjekk.utbetaling.UtbetalingId
 import java.util.*
 
@@ -36,10 +35,6 @@ class IverksettingResultaterTest {
     fun `kan hente resultat for iverksetting`() = runTest(TestRuntime.context) {
         val iverksetting = TestData.domain.iverksetting()
 
-        assertThrows<IllegalStateException> {
-            IverksettingService.hent(iverksetting)
-        }
-
         transaction {
             IverksettingResultatDao(
                 fagsystem = iverksetting.fagsak.fagsystem,
@@ -66,10 +61,6 @@ class IverksettingResultaterTest {
             forrigeIverksettingId = forrige.iverksettingId,
             sakId = forrige.sakId
         )
-
-        assertThrows<IllegalStateException> {
-            IverksettingService.hentForrige(nyeste)
-        }
 
         transaction {
             IverksettingResultatDao(

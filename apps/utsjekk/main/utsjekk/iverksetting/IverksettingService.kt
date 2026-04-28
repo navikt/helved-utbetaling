@@ -6,8 +6,10 @@ import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
 import models.badRequest
 import models.conflict
+import models.internalServerError
 import models.kontrakter.Fagsystem
 import models.locked
+import models.notFound
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import utsjekk.partition
 import java.time.LocalDateTime
@@ -134,12 +136,13 @@ class IverksettingService(
 
         suspend fun hent(iverksetting: Iverksetting): IverksettingResultatDao {
             return transaction {
+                // Invariant: resultat skal finnes etter opprettet iverksetting og før oppdatering.
                 IverksettingResultatDao.select(1) {
                     this.iverksettingId = iverksetting.iverksettingId
                     this.behandlingId = iverksetting.behandlingId
                     this.sakId = iverksetting.sakId
                     this.fagsystem = iverksetting.fagsak.fagsystem
-                }.singleOrNull() ?: error(
+                }.singleOrNull() ?: internalServerError(
                     """
                     Fant ikke iverksettingresultat for iverksetting med 
                         iverksettingId  ${iverksetting.iverksettingId}
@@ -153,12 +156,13 @@ class IverksettingService(
 
         suspend fun hent(utbetalingId: UtbetalingId): IverksettingResultatDao {
             return transaction {
+                // Invariant: resultat skal finnes når utbetalingId peker på eksisterende iverksetting.
                 IverksettingResultatDao.select(1) {
                     this.iverksettingId = utbetalingId.iverksettingId
                     this.behandlingId = utbetalingId.behandlingId
                     this.sakId = utbetalingId.sakId
                     this.fagsystem = utbetalingId.fagsystem
-                }.singleOrNull() ?: error(
+                }.singleOrNull() ?: internalServerError(
                     """
                     Fant ikke iverksettingresultat for iverksetting med 
                         iverksettingId  ${utbetalingId.iverksettingId}
@@ -172,12 +176,13 @@ class IverksettingService(
 
         suspend fun hentForrige(iverksetting: Iverksetting): IverksettingResultatDao {
             return transaction {
+                // User-facing missing previous result; caller can safely treat it as not found.
                 IverksettingResultatDao.select(1) {
                     this.iverksettingId = iverksetting.behandling.forrigeIverksettingId
                     this.behandlingId = iverksetting.behandling.forrigeBehandlingId
                     this.sakId = iverksetting.sakId
                     this.fagsystem = iverksetting.fagsak.fagsystem
-                }.singleOrNull() ?: error(
+                }.singleOrNull() ?: notFound(
                     """
                     Fant ikke forrige iverksettingresultat for iverksetting med 
                         forrigeIverksettingId  ${iverksetting.behandling.forrigeIverksettingId}
