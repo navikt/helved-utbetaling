@@ -19,6 +19,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
+import libs.tracing.Tracing
 import libs.utils.appLog
 import libs.utils.secureLog
 import java.net.URI
@@ -51,10 +52,12 @@ fun main() {
 fun Application.abetal(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    topology: Topology = createTopology(kafka),
+    prometheus: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
+    metrics: Metrics = Metrics(prometheus),
+    topology: Topology = createTopology(kafka, metrics),
     startupConfigValidator: suspend (Config) -> Unit = ::validateStartupConfigOrExit,
 ) {
-    val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    Tracing.init("abetal")
 
     install(MicrometerMetrics) {
         registry = prometheus
@@ -69,6 +72,7 @@ fun Application.abetal(
     }
 
     monitor.subscribe(ApplicationStopping) {
+        Tracing.shutdown()
         kafka.close()
     }
 

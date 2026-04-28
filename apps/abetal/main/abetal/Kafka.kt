@@ -11,6 +11,7 @@ import libs.xml.XMLMapper
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import java.lang.System.currentTimeMillis
 
 const val FS_KEY = "fagsystem"
 
@@ -47,18 +48,19 @@ object Tables {
 
 object Stores {
     val utbetalinger = Store(Tables.utbetalinger)
+    val pendingUtbetalinger = Store(Tables.pendingUtbetalinger)
 }
 
-fun createTopology(kafka: Streams): Topology = topology {
+fun createTopology(kafka: Streams, metrics: Metrics): Topology = topology {
     globalKTable(Tables.utbetalinger)
     val pendingUtbetalinger = consume(Tables.pendingUtbetalinger)
     val saker = consume(Tables.saker)
-    dpStream(saker, kafka)
-    aapStream(saker, kafka)
-    tsStream(saker, kafka)
-    tpStream(saker, kafka)
-    historiskStream(saker, kafka)
-    successfulUtbetalingStream(pendingUtbetalinger)
+    dpStream(saker, kafka, metrics)
+    aapStream(saker, kafka, metrics)
+    tsStream(saker, kafka, metrics)
+    tpStream(saker, kafka, metrics)
+    historiskStream(saker, kafka, metrics)
+    successfulUtbetalingStream(pendingUtbetalinger, kafka, metrics)
 }
 
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
@@ -88,6 +90,7 @@ data class TpTuple(val key: String, val value: TpUtbetaling)
 fun Topology.dpStream(
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
+    metrics: Metrics,
 ) {
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
@@ -103,6 +106,7 @@ fun Topology.dpStream(
                 .map { sakKey, (req, uids) -> DpDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
                 .rekey { _, dtos -> dtos.first().originalKey }
                 .map { key, utbetalinger ->
+                    val startedAtMs = currentTimeMillis()
                     validateSameDryrunBatch(key, utbetalinger)
 
                     if (utbetalinger.any { it.dryrun }) {
@@ -111,8 +115,8 @@ fun Topology.dpStream(
                             val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
                             AggregateService.utledSimulering(aggregate)
                         }
-                            .map(StreamResult::SimuleringOk)
-                            .getOrElse(StreamResult::SimuleringError)
+                            .map { StreamResult.SimuleringOk(it, startedAtMs) }
+                            .getOrElse { StreamResult.SimuleringError(it, startedAtMs) }
                     }
 
                     Result.catch {
@@ -120,12 +124,12 @@ fun Topology.dpStream(
                         val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
                         AggregateService.utledOppdrag(aggregate)
                     }
-                        .map(StreamResult::OppdragOk)
-                        .getOrElse(StreamResult::OppdragError)
+                        .map { StreamResult.OppdragOk(it, startedAtMs) }
+                        .getOrElse { StreamResult.OppdragError(it, startedAtMs) }
                 }
-                .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-                .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-                .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
+                .branch({ it is StreamResult.OppdragError }) { replyOppdragError(this, metrics) }
+                .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(this, metrics) }
+                .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(this, kafka, metrics) }
                 .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.DAGPENGER, this) }
         }
 }
@@ -133,6 +137,7 @@ fun Topology.dpStream(
 fun Topology.aapStream(
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
+    metrics: Metrics,
 ) {
     consume(Topics.aap)
         .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
@@ -147,21 +152,22 @@ fun Topology.aapStream(
             this.map { sakKey, (req, uids) -> AapDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
                 .rekey { _, dtos -> dtos.first().originalKey }
                 .map { key, value ->
+                    val startedAtMs = currentTimeMillis()
                     validateSameDryrunBatch(key, value)
                     val store = kafka.getStore(Stores.utbetalinger)
                     val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
                     if (value.any { it.dryrun }) {
                         return@map Result.catch { AggregateService.utledSimulering(aggregate) }
-                            .map(StreamResult::SimuleringOk)
-                            .getOrElse(StreamResult::SimuleringError)
+                            .map { StreamResult.SimuleringOk(it, startedAtMs) }
+                            .getOrElse { StreamResult.SimuleringError(it, startedAtMs) }
                     }
                     Result.catch { AggregateService.utledOppdrag(aggregate) }
-                        .map(StreamResult::OppdragOk)
-                        .getOrElse(StreamResult::OppdragError)
+                        .map { StreamResult.OppdragOk(it, startedAtMs) }
+                        .getOrElse { StreamResult.OppdragError(it, startedAtMs) }
                 }
-                .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-                .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-                .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
+                .branch({ it is StreamResult.OppdragError }) { replyOppdragError(this, metrics) }
+                .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(this, metrics) }
+                .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(this, kafka, metrics) }
                 .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.AAP, this) }
         }
 }
@@ -169,6 +175,7 @@ fun Topology.aapStream(
 fun Topology.tsStream(
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
+    metrics: Metrics,
 ) {
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
@@ -186,6 +193,7 @@ fun Topology.tsStream(
         .default {
             this
                 .map { key, (req, uids) ->
+                    val startedAtMs = currentTimeMillis()
                     val dto = req.value ?: req.dto!!
                     val originalKey = req.key ?: req.transactionId!!
                     val utbetalinger = TsDto.toDomain(SakId(dto.sakId), originalKey, dto, uids)
@@ -194,16 +202,16 @@ fun Topology.tsStream(
                     val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
                     if (utbetalinger.any { it.dryrun }) {
                         return@map Result.catch { AggregateService.utledSimulering(aggregate) }
-                            .map(StreamResult::SimuleringOk)
-                            .getOrElse(StreamResult::SimuleringError)
+                            .map { StreamResult.SimuleringOk(it, startedAtMs) }
+                            .getOrElse { StreamResult.SimuleringError(it, startedAtMs) }
                     }
                     Result.catch { AggregateService.utledOppdrag(aggregate) }
-                        .map(StreamResult::OppdragOk)
-                        .getOrElse(StreamResult::OppdragError)
+                        .map { StreamResult.OppdragOk(it, startedAtMs) }
+                        .getOrElse { StreamResult.OppdragError(it, startedAtMs) }
                 }
-                .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-                .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-                .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
+                .branch({ it is StreamResult.OppdragError }) { replyOppdragError(this, metrics) }
+                .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(this, metrics) }
+                .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(this, kafka, metrics) }
                 .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILLEGGSSTØNADER, this) }
         }
 }
@@ -211,6 +219,7 @@ fun Topology.tsStream(
 fun Topology.tpStream(
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
+    metrics: Metrics,
 ) {
     consume(Topics.tp)
         // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
@@ -223,27 +232,29 @@ fun Topology.tpStream(
         .map { sakKey, req, ids -> TpDto.splitToDomain(sakKey.sakId, req.key, req.value, ids) }
         .rekey { dtos -> dtos.first().originalKey }
         .map { key, value ->
+            val startedAtMs = currentTimeMillis()
             validateSameDryrunBatch(key, value)
             val store = kafka.getStore(Stores.utbetalinger)
             val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
             if (value.any { it.dryrun }) {
                 return@map Result.catch { AggregateService.utledSimulering(aggregate) }
-                    .map(StreamResult::SimuleringOk)
-                    .getOrElse(StreamResult::SimuleringError)
+                    .map { StreamResult.SimuleringOk(it, startedAtMs) }
+                    .getOrElse { StreamResult.SimuleringError(it, startedAtMs) }
             }
             Result.catch { AggregateService.utledOppdrag(aggregate) }
-                .map(StreamResult::OppdragOk)
-                .getOrElse(StreamResult::OppdragError)
+                .map { StreamResult.OppdragOk(it, startedAtMs) }
+                .getOrElse { StreamResult.OppdragError(it, startedAtMs) }
         }
-        .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-        .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
+        .branch({ it is StreamResult.OppdragError }) { replyOppdragError(this, metrics) }
+        .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(this, metrics) }
+        .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(this, kafka, metrics) }
         .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILTAKSPENGER, this) }
 }
 
 fun Topology.historiskStream(
     saker: KTable<SakKey, Set<UtbetalingId>>,
     kafka: Streams,
+    metrics: Metrics,
 ) {
     consume(Topics.historisk)
         .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
@@ -256,22 +267,23 @@ fun Topology.historiskStream(
         .map { req, uids -> HistoriskUtbetaling.toDomain(req.key, req.value, uids) }
         .rekey { dto -> dto.originalKey }
         .map { new ->
+            val startedAtMs = currentTimeMillis()
             val store = kafka.getStore(Stores.utbetalinger)
             val aggregate = listOf(StreamsPair(new, store.getOrNull(new.uid.toString())))
 
             if (new.dryrun) {
                 return@map Result.catch { AggregateService.utledSimulering(aggregate) }
-                    .map(StreamResult::SimuleringOk)
-                    .getOrElse(StreamResult::SimuleringError)
+                    .map { StreamResult.SimuleringOk(it, startedAtMs) }
+                    .getOrElse { StreamResult.SimuleringError(it, startedAtMs) }
             }
 
             Result.catch { AggregateService.utledOppdrag(aggregate) }
-                .map(StreamResult::OppdragOk)
-                .getOrElse(StreamResult::OppdragError)
+                .map { StreamResult.OppdragOk(it, startedAtMs) }
+                .getOrElse { StreamResult.OppdragError(it, startedAtMs) }
         }
-        .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
-        .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
+        .branch({ it is StreamResult.OppdragError }) { replyOppdragError(this, metrics) }
+        .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(this, metrics) }
+        .branch({ it is StreamResult.OppdragOk }) { replyOppdragOk(this, kafka, metrics) }
         .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.HISTORISK, this) }
 }
 
@@ -348,7 +360,11 @@ data class KeyValueAndUids(
  * Resultatet av joinen kan ikke være null, da har vi en bug.
  * TODO: når vi ikke har utsjekk lengre, skal status utledes her sammen med flyttinga.
  */
-fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
+fun Topology.successfulUtbetalingStream(
+    pending: KTable<String, Utbetaling>,
+    kafka: Streams,
+    metrics: Metrics,
+) {
     val defaultMaxRetries = 1000
 
     consume(Topics.oppdrag)
@@ -374,6 +390,13 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
             }
             shouldRetry
         }
+        .map { _, value ->
+            value.also { (_, meta) ->
+                meta.headers[Metrics.OPPDRAG_SENT_AT_HEADER]
+                    ?.toLongOrNull()
+                    ?.let(metrics::kvitteringWait)
+            }
+        }
         .flatMapKeyAndValue { key, (oppdrag, meta) ->
             val uids = meta.headers["uids"].intoUids()
             uids.map { uid -> KeyValue(uid, KeyValueAndUids(key, oppdrag, uids)) }
@@ -394,12 +417,21 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
                 .produce(Topics.retryOppdrag)
         }
         .branch({ (_, pending) -> pending != null }) {
-            this.map { (_, pending) -> pending!! }
+            this.map { (_, pending) ->
+                val utbetaling = pending!!
+                val store = kafka.getStore(Stores.utbetalinger)
+                metrics.stateStoreWrite(
+                    store = Metrics.StateStoreMetric.UTBETALINGER,
+                    isNewEntry = store.getOrNull(utbetaling.uid.toString()) == null,
+                    currentSize = storeSize(store),
+                )
+                utbetaling
+            }
                 .produce(Topics.utbetalinger)
         }
         .default {
             forEach { _, (kv: KeyValueAndUids, _) ->
-                logUnexpectedSuccessfulUtbetalingDefaultBranch(kv.originalKey)
+                logUnexpectedSuccessfulUtbetalingDefaultBranch(kv.originalKey, metrics)
             }
         }
 }
@@ -413,7 +445,8 @@ internal fun validateSameDryrunBatch(key: String, utbetalinger: List<Utbetaling>
     badRequest("Kan ikke blande dryrun og non-dryrun i samme batch (key=$key)")
 }
 
-internal fun logUnexpectedSuccessfulUtbetalingDefaultBranch(originalKey: String) {
+internal fun logUnexpectedSuccessfulUtbetalingDefaultBranch(originalKey: String, metrics: Metrics? = null) {
+    metrics?.processingError(Metrics.ProcessingErrorKind.TOPOLOGY)
     appLog.error("Uventet default-branch i successfulUtbetalingStream — key=$originalKey. Hopper over.")
 }
 
@@ -424,16 +457,23 @@ private val DryrunAggregate.isRequested: Boolean get() = first
 private val DryrunAggregate.requests: List<SimulerBeregningRequest> get() = second
 
 sealed interface StreamResult {
-    data class OppdragOk(val oppdrag: List<OppdragAggregate>) : StreamResult
-    data class SimuleringOk(val simulering: DryrunAggregate) : StreamResult
+    val startedAtMs: Long
 
-    data class OppdragError(val status: StatusReply) : StreamResult
-    data class SimuleringError(val status: StatusReply) : StreamResult
+    data class OppdragOk(val oppdrag: List<OppdragAggregate>, override val startedAtMs: Long) : StreamResult
+    data class SimuleringOk(val simulering: DryrunAggregate, override val startedAtMs: Long) : StreamResult
+
+    data class OppdragError(val status: StatusReply, override val startedAtMs: Long) : StreamResult
+    data class SimuleringError(val status: StatusReply, override val startedAtMs: Long) : StreamResult
 }
 
-private fun replyOppdragOk(branch: MappedStream<String, StreamResult>) {
-    val result = branch.map { (it as StreamResult.OppdragOk).oppdrag }
-    result.saveUtbetalingerAsPending()
+private fun replyOppdragOk(branch: MappedStream<String, StreamResult>, kafka: Streams, metrics: Metrics) {
+    val result = branch.map {
+        val oppdrag = it as StreamResult.OppdragOk
+        metrics.paymentProcessed(Metrics.PaymentResult.OK)
+        metrics.oppdragSend(oppdrag.startedAtMs)
+        oppdrag.oppdrag
+    }
+    result.saveUtbetalingerAsPending(kafka, metrics)
     result.sendOppdrag()
     result.replyOkIfIdempotentOppdrag()
 }
@@ -445,12 +485,21 @@ private fun replySimuleringOk(fagsystem: Fagsystem, branch: MappedStream<String,
     result.replyOkUtenEndringSimulering(fagsystem)
 }
 
-private fun replyOppdragError(branch: MappedStream<String, StreamResult>) {
-    branch.map { (it as StreamResult.OppdragError).status }.produce(Topics.status)
+private fun replyOppdragError(branch: MappedStream<String, StreamResult>, metrics: Metrics) {
+    branch.map {
+        val error = it as StreamResult.OppdragError
+        metrics.paymentProcessed(Metrics.PaymentResult.ERROR)
+        metrics.processingError(classifyProcessingError(error.status))
+        error.status
+    }.produce(Topics.status)
 }
 
-private fun replySimuleringError(branch: MappedStream<String, StreamResult>) {
-    branch.map { (it as StreamResult.SimuleringError).status.copy(simulering = true) }.produce(Topics.status)
+private fun replySimuleringError(branch: MappedStream<String, StreamResult>, metrics: Metrics) {
+    branch.map {
+        val error = it as StreamResult.SimuleringError
+        metrics.processingError(classifyProcessingError(error.status))
+        error.status.copy(simulering = true)
+    }.produce(Topics.status)
 }
 
 private fun MappedStream<String, List<OppdragAggregate>>.replyOkIfIdempotentOppdrag() {
@@ -489,6 +538,7 @@ private fun MappedStream<String, List<OppdragAggregate>>.sendOppdrag() {
     val oppdrag = this
         .flatMap { it }
         .includeHeader("uids") { (_, utbetalinger) -> utbetalinger.joinToString(",") { it.uid.toString() } }
+        .includeHeader(Metrics.OPPDRAG_SENT_AT_HEADER) { currentTimeMillis().toString() }
         .map { (oppdrag, _) -> oppdrag }
 
     oppdrag.produce(Topics.oppdrag)
@@ -503,10 +553,33 @@ private fun MappedStream<String, DryrunAggregate>.sendSimulering() {
 
 val oppdragMapper = XMLMapper<Oppdrag>()
 
-private fun MappedStream<String, List<OppdragAggregate>>.saveUtbetalingerAsPending() {
+private fun MappedStream<String, List<OppdragAggregate>>.saveUtbetalingerAsPending(kafka: Streams, metrics: Metrics) {
     this
         .flatMap { it }
         .includeHeader("hash_key") { (oppdrag, _) -> oppdragMapper.writeValueAsString(oppdrag).sha256() }
-        .flatMapKeyAndValue { _, (_, utbetalinger) -> utbetalinger.map { KeyValue(it.uid.toString(), it) } }
+        .flatMapKeyAndValue { _, (_, utbetalinger) ->
+            val store = kafka.getStore(Stores.pendingUtbetalinger)
+            utbetalinger.map { utbetaling ->
+                metrics.stateStoreWrite(
+                    store = Metrics.StateStoreMetric.PENDING_UTBETALINGER,
+                    isNewEntry = store.getOrNull(utbetaling.uid.toString()) == null,
+                    currentSize = storeSize(store),
+                )
+                KeyValue(utbetaling.uid.toString(), utbetaling)
+            }
+        }
         .produce(Topics.pendingUtbetalinger)
+}
+
+private fun classifyProcessingError(status: StatusReply): Metrics.ProcessingErrorKind {
+    val error = status.error ?: return Metrics.ProcessingErrorKind.OTHER
+    return when (error.statusCode) {
+        in 400..499 -> Metrics.ProcessingErrorKind.VALIDATION
+        in 500..599 -> Metrics.ProcessingErrorKind.OTHER
+        else -> Metrics.ProcessingErrorKind.OTHER
+    }
+}
+
+private fun <K : Any, V> storeSize(store: StateStore<K, V>): Int {
+    return store.filter(Int.MAX_VALUE) { true }.size
 }

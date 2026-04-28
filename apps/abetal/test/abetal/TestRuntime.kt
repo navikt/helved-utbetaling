@@ -3,6 +3,8 @@ package abetal
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import libs.kafka.StreamsMock
 import libs.ktor.KtorRuntime
 import libs.utils.appLog
@@ -36,6 +38,8 @@ class TestTopics(kafka: StreamsMock) {
 
 object TestRuntime {
     val kafka: StreamsMock = StreamsMock()
+    val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    val metrics = Metrics(prometheus)
     val logAppender: ListAppender<ILoggingEvent> = ListAppender<ILoggingEvent>().apply { start() }
     val config = Config(
         kafka = kafka.config.copy(additionalProperties = Properties().apply {
@@ -56,7 +60,9 @@ object TestRuntime {
                 abetal(
                     config = config,
                     kafka = kafka,
-                    topology = createTopology(kafka),
+                    prometheus = prometheus,
+                    metrics = metrics,
+                    topology = createTopology(kafka, metrics),
                     startupConfigValidator = {},
                 )
             }
