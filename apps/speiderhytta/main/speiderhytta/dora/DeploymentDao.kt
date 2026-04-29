@@ -67,7 +67,7 @@ data class Deployment(
 
         /**
          * Successful deploys only — feeds deploy frequency and lead-time
-         * percentiles. Also the default for the public `/deployments` API
+         * percentiles. Also, the default for the public `/deployments` API
          * because users care about "what shipped".
          */
         suspend fun selectSuccessfulFor(app: String, env: String, since: Instant, limit: Int = 1000): List<Deployment> {
@@ -103,9 +103,6 @@ data class Deployment(
                 stmt.setInt(4, limit)
             }
         }
-
-        suspend fun lastFor(app: String, env: String): Deployment? =
-            selectSuccessfulFor(app, env, Instant.EPOCH, 1).firstOrNull()
 
         /**
          * Most recent successful deployment for an app whose
