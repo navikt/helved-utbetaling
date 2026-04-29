@@ -19,7 +19,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
-import libs.tracing.Tracing
 import libs.utils.appLog
 import libs.utils.secureLog
 import java.net.URI
@@ -69,8 +68,6 @@ fun Application.abetal(
         isUtsjekkReady(httpClient, cfg)
     },
 ) {
-    Tracing.init("abetal")
-
     install(MicrometerMetrics) {
         registry = prometheus
         meterBinders += LogbackMetrics()
@@ -84,7 +81,6 @@ fun Application.abetal(
     }
 
     monitor.subscribe(ApplicationStopping) {
-        Tracing.shutdown()
         kafka.close()
     }
 

@@ -15,7 +15,6 @@ dependencies {
     implementation(project(":libs:ktor"))
     implementation(project(":libs:auth"))
     implementation(project(":libs:jdbc"))
-    implementation(project(":libs:tracing"))
     implementation("no.nav.helved:xml:$libVersion")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")

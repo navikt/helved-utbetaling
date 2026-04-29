@@ -8,7 +8,6 @@ import io.opentelemetry.api.trace.*
 import io.opentelemetry.context.*
 import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentelemetry.context.propagation.TextMapGetter
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.resources.Resource
@@ -25,9 +24,21 @@ import kotlin.collections.set
 
 val traceLog = logger("trace")
 
+/**
+ * SDK wiring is owned by the OpenTelemetry java agent injected via NAIS
+ * `observability.autoInstrumentation` in each app's nais.yml. Apps must NOT
+ * call [init] in production -- doing so would create a second TracerProvider
+ * competing with the agent's. The two-arg [init] / [shutdown] / [forceFlush]
+ * are retained for the SDK integration test in this module only.
+ *
+ * All span / context helpers (startSpan, storeContext, restoreContext,
+ * getTraceparent, getCurrentTraceId, propagateSpan, contextFromTraceparent)
+ * read [openTelemetry] which falls back to [GlobalOpenTelemetry.get] when the
+ * SDK has not been initialized in-process -- so they work transparently with
+ * the agent.
+ */
 object Tracing {
     private const val tracerName = "helved-tracer"
-    private const val defaultOtlpEndpoint = "http://opentelemetry-collector.nais-system:4317"
 
     @Volatile
     private var openTelemetry: OpenTelemetry = GlobalOpenTelemetry.get()
@@ -37,10 +48,6 @@ object Tracing {
         get() = openTelemetry.getTracer(tracerName)
 
     private val traceparents = ConcurrentHashMap<String, String>()
-
-    fun init(serviceName: String) {
-        init(serviceName, listOf(defaultSpanExporter()))
-    }
 
     @Synchronized
     fun init(serviceName: String, spanExporters: List<SpanExporter>) {
@@ -155,11 +162,6 @@ object Tracing {
             .textMapPropagator
             .extract(Context.current(), traceparent, traceContextGetter)
     }
-
-    private fun defaultSpanExporter(): SpanExporter =
-        OtlpGrpcSpanExporter.builder()
-            .setEndpoint(System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")?.ifBlank { defaultOtlpEndpoint } ?: defaultOtlpEndpoint)
-            .build()
 
     private fun batchSpanProcessor(spanExporter: SpanExporter): BatchSpanProcessor =
         BatchSpanProcessor.builder(spanExporter)

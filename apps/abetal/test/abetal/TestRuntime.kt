@@ -1,16 +1,11 @@
 package abetal
 
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.read.ListAppender
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import libs.kafka.StreamsMock
 import libs.ktor.KtorRuntime
-import libs.utils.appLog
 import org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG
 import org.apache.kafka.streams.state.BuiltInDslStoreSuppliers
-import org.slf4j.LoggerFactory
 import java.util.Properties
 
 class TestTopics(kafka: StreamsMock) {
@@ -40,7 +35,6 @@ object TestRuntime {
     val kafka: StreamsMock = StreamsMock()
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     val metrics = Metrics(prometheus)
-    val logAppender: ListAppender<ILoggingEvent> = ListAppender<ILoggingEvent>().apply { start() }
     val config = Config(
         kafka = kafka.config.copy(additionalProperties = Properties().apply {
             this[org.apache.kafka.streams.StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG] =
@@ -51,9 +45,6 @@ object TestRuntime {
         })
     )
     init {
-        (LoggerFactory.getLogger(appLog.name) as Logger).apply {
-            if (!isAttached(logAppender)) addAppender(logAppender)
-        }
         KtorRuntime<Config>(
             appName = "abetal",
             module = {
@@ -71,9 +62,4 @@ object TestRuntime {
         )
     }
     val topics: TestTopics = TestTopics(kafka)
-
-    fun clearLogs() = logAppender.list.clear()
 }
-
-private fun Logger.isAttached(appender: ListAppender<ILoggingEvent>): Boolean =
-    iteratorForAppenders().asSequence().any { it === appender }

@@ -12,7 +12,7 @@ data class Config(
     val kafka: StreamsConfig = StreamsConfig(),
     val azure: AzureConfig = AzureConfig(),
     val simulering: SimuleringConfig = SimuleringConfig(),
-    val startupValidationTimeoutSeconds: Long = env("UTSJEKK_STARTUP_VALIDATION_TIMEOUT_SECONDS", 30L),
+    val startupValidationTimeoutSeconds: Long = 30L,
 )
 
 data class SimuleringConfig(

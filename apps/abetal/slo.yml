@@ -17,11 +17,3 @@ slos:
           }[5m]))
         total_query: |
           sum(rate(helved_abetal_payment_processed_total[5m]))
-    alerting:
-      name: AbetalPaymentErrorBudgetBurn
-      page_alert:
-        labels:
-          severity: silenced
-      ticket_alert:
-        labels:
-          severity: silenced

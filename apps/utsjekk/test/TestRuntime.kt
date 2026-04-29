@@ -64,7 +64,6 @@ object TestRuntime {
     val metrics: Metrics by lazy { Metrics(meterRegistry) }
     val config: Config by lazy {
         val workerId = System.getProperty("org.gradle.test.worker") ?: "0"
-        val stateDir = "build/kafka-streams/state-w$workerId-${System.nanoTime()}"
         Config(
             simulering = simulering.config,
             azure = azure.config,
@@ -74,7 +73,7 @@ object TestRuntime {
                 brokers = "localhost:9092",
                 ssl = SslConfig("", "", ""),
                 additionalProperties = Properties().apply {
-                    this["state.dir"] = stateDir
+                    this["state.dir"] = "build/kafka-streams/state-w$workerId-${System.nanoTime()}"
                 }
             ),
         )

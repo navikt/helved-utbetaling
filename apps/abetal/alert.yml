@@ -9,76 +9,6 @@ spec:
   groups:
     - name: app
       rules:
-        - alert: AbetalPaymentErrorBudgetBurnFast
-          expr: |
-            (
-              sum(rate(helved_abetal_payment_processed_total{result="error"}[1h])) / sum(rate(helved_abetal_payment_processed_total[1h])) > (14.4 * 0.005)
-              and
-              sum(rate(helved_abetal_payment_processed_total{result="error"}[6h])) / sum(rate(helved_abetal_payment_processed_total[6h])) > (14.4 * 0.005)
-            )
-          for: 2m
-          annotations:
-            summary: Payment processing error budget burning quickly.
-            description: Error ratio for processed payments exceeds fast multi-window burn-rate thresholds over both 1h and 6h windows.
-            runbook_url: https://github.com/navikt/helved-utbetaling/blob/main/apps/abetal/runbooks/payment-error-budget-burn-fast.md
-            re_eval_after: "2026-05-05"
-          labels:
-            app: abetal
-            severity: silenced
-
-        - alert: AbetalPaymentErrorBudgetBurnSlow
-          expr: |
-            (
-              sum(rate(helved_abetal_payment_processed_total{result="error"}[24h])) / sum(rate(helved_abetal_payment_processed_total[24h])) > (1 * 0.005)
-              and
-              sum(rate(helved_abetal_payment_processed_total{result="error"}[3d])) / sum(rate(helved_abetal_payment_processed_total[3d])) > (1 * 0.005)
-            )
-          for: 15m
-          annotations:
-            summary: Payment processing error budget burning steadily.
-            description: Error ratio for processed payments exceeds slow multi-window burn-rate thresholds over both 24h and 3d windows.
-            runbook_url: https://github.com/navikt/helved-utbetaling/blob/main/apps/abetal/runbooks/payment-error-budget-burn-slow.md
-            re_eval_after: "2026-05-05"
-          labels:
-            app: abetal
-            severity: silenced
-
-        - alert: AbetalProcessingErrorRateHigh
-          expr: rate(helved_abetal_processing_error_total[5m]) > 0.1
-          for: 5m
-          annotations:
-            summary: Payment processing errors sustained above threshold.
-            description: Abetal is producing more than 0.1 processing errors per second for at least 5 minutes.
-            runbook_url: https://github.com/navikt/helved-utbetaling/blob/main/apps/abetal/runbooks/processing-error-rate.md
-            re_eval_after: "2026-05-05"
-          labels:
-            app: abetal
-            severity: silenced
-
-        - alert: AbetalOppdragSendLatencyP95High
-          expr: histogram_quantile(0.95, sum by (le) (rate(helved_abetal_oppdrag_send_seconds_bucket[5m]))) > 30
-          for: 10m
-          annotations:
-            summary: Oppdrag send latency p95 is too high.
-            description: P95 latency for sending oppdrag has stayed above 30 seconds for at least 10 minutes.
-            runbook_url: https://github.com/navikt/helved-utbetaling/blob/main/apps/abetal/runbooks/oppdrag-send-latency-p95.md
-            re_eval_after: "2026-05-05"
-          labels:
-            app: abetal
-            severity: silenced
-
-        - alert: AbetalKvitteringWaitStuck
-          expr: histogram_quantile(0.95, sum by (le) (rate(helved_abetal_kvittering_wait_seconds_bucket[5m]))) > 600
-          for: 15m
-          annotations:
-            summary: Kvittering wait p95 indicates stuck flow.
-            description: P95 wait time for kvittering has stayed above 600 seconds for at least 15 minutes.
-            runbook_url: https://github.com/navikt/helved-utbetaling/blob/main/apps/abetal/runbooks/kvittering-wait-stuck.md
-            re_eval_after: "2026-05-05"
-          labels:
-            app: abetal
-            severity: silenced
-
         - alert: unavailable
           expr: sum(kube_deployment_status_replicas_available{app="abetal", namespace="helved"} offset 5m) by (deployment, namespace) == 0
           for: 5m
@@ -88,17 +18,6 @@ spec:
           labels:
             namespace: helved
             severity: critical
-
-        # - alert: error logs
-        #   expr: sum by (app) (max_over_time(log_messages_errors{app="abetal", namespace="helved", level="Error"}[5m]) or vector(0)) - sum by (app) (max_over_time(log_messages_errors{app="abetal", namespace="helved", level="Error"}[5m] offset 5m) or vector(0)) > 0
-        #   for: 10s
-        #   annotations:
-        #     action: 'Check logs'
-        #     dashboard_url: https://grafana.nav.cloud.nais.io/a/grafana-lokiexplore-app/explore/service_namespace/helved/logs?patterns=%5B%5D&from=now-6h&to=now&var-ds=P7BE696147D279490&var-filters=service_namespace%7C%3D%7Chelved&var-filters=service_name%7C%3D%7Cabetal&var-fields=logger_name%7C%21~%7C__CV%CE%A9__%7B%22value%22:%22org.apache.kafka.%2A%22__gfc__%22parser%22:%22json%22%7D,org.apache.kafka.%2A&var-fields=logger_name%7C%21%3D%7C__CV%CE%A9__%7B%22value%22:%22%5C%22%5C%22%22__gfc__%22parser%22:%22json%22%7D,%22%22&var-levels=detected_level%7C%21%3D%7Cunknown,%21unknown&var-metadata=&var-patterns=&var-lineFilters=&urlColumns=%5B%22Time%22,%22service_name%22,%22detected_level%22,%22logger_name%22,%22message%22,%22trace_id%22%5D&visualizationType=%22table%22&displayedFields=%5B%5D&var-labelBy=$__all&var-lineFilterV2=&timezone=browser&var-all-fields=logger_name%7C%21~%7C__CV%CE%A9__%7B%22value%22:%22org.apache.kafka.%2A%22__gfc__%22parser%22:%22json%22%7D,org.apache.kafka.%2A&var-all-fields=logger_name%7C%21%3D%7C__CV%CE%A9__%7B%22value%22:%22%5C%22%5C%22%22__gfc__%22parser%22:%22json%22%7D,%22%22&sortOrder=%22Descending%22&wrapLogMessage=false
-        #   labels:
-        #     namespace: helved
-        #     severity: critical
-
     - name: kafka
       rules:
         - alert: lag

@@ -47,10 +47,6 @@ spec:
       value: api://prod-gcp.helved.utsjekk-simulering/.default
     - name: ENV
       value: prod
-    - name: OTEL_EXPORTER_OTLP_ENDPOINT
-      value: http://opentelemetry-collector.nais-system:4317
-    - name: OTEL_EXPORTER_OTLP_INSECURE
-      value: "true"
   azure:
     application:
       enabled: true

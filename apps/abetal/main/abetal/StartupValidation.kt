@@ -19,6 +19,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+data class StartupChecks(
+    val kafka: suspend (Config) -> Unit = ::validateKafkaStartup,
+)
+
 suspend fun validateStartupConfig(
     config: Config,
     timeout: Duration = config.startupValidationTimeoutSeconds.seconds,
@@ -34,13 +38,6 @@ suspend fun validateStartupConfig(
                         checks.kafka(config)
                     }
                 }
-                checks.mq?.let { validateMq ->
-                    launch {
-                        runStartupCheck("MQ") {
-                            validateMq(config)
-                        }
-                    }
-                }
             }
         }
     } catch (e: TimeoutCancellationException) {
@@ -51,20 +48,9 @@ suspend fun validateStartupConfig(
     }
 }
 
-data class StartupChecks(
-    val kafka: suspend (Config) -> Unit = ::validateKafkaStartup,
-    val mq: (suspend (Config) -> Unit)? = null,
-)
-
 internal suspend fun validateStartupConfigOrExit(config: Config) {
-    exitOnStartupValidationFailure {
-        validateStartupConfig(config)
-    }
-}
-
-private suspend fun exitOnStartupValidationFailure(block: suspend () -> Unit) {
     try {
-        block()
+        validateStartupConfig(config)
     } catch (e: Throwable) {
         appLog.error("Startup validation failed: ${e.message}")
         exitProcess(1)

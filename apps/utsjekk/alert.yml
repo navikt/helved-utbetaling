@@ -19,16 +19,6 @@ spec:
             namespace: helved
             severity: critical
 
-        # - alert: error logs
-        #   expr: sum by (app) (max_over_time(log_messages_errors{app="utsjekk", namespace="helved", level="Error"}[5m]) or vector(0)) - sum by (app) (max_over_time(log_messages_errors{app="utsjekk", namespace="helved", level="Error"}[5m] offset 5m) or vector(0)) > 0
-        #   for: 10s
-        #   annotations:
-        #     action: 'Check logs'
-        #     dashboard_url: https://grafana.nav.cloud.nais.io/a/grafana-lokiexplore-app/explore/service_namespace/helved/logs?patterns=%5B%5D&from=now-6h&to=now&var-ds=P7BE696147D279490&var-filters=service_namespace%7C%3D%7Chelved&var-filters=service_name%7C%3D%7Cutsjekk&var-fields=logger_name%7C%21~%7C__CV%CE%A9__%7B%22value%22:%22org.apache.kafka.%2A%22__gfc__%22parser%22:%22json%22%7D,org.apache.kafka.%2A&var-fields=logger_name%7C%21%3D%7C__CV%CE%A9__%7B%22value%22:%22%5C%22%5C%22%22__gfc__%22parser%22:%22json%22%7D,%22%22&var-levels=detected_level%7C%21%3D%7Cunknown,%21unknown&var-metadata=&var-patterns=&var-lineFilters=&urlColumns=%5B%22Time%22,%22service_name%22,%22detected_level%22,%22logger_name%22,%22message%22,%22trace_id%22%5D&visualizationType=%22table%22&displayedFields=%5B%5D&var-labelBy=$__all&var-lineFilterV2=&timezone=browser&var-all-fields=logger_name%7C%21~%7C__CV%CE%A9__%7B%22value%22:%22org.apache.kafka.%2A%22__gfc__%22parser%22:%22json%22%7D,org.apache.kafka.%2A&var-all-fields=logger_name%7C%21%3D%7C__CV%CE%A9__%7B%22value%22:%22%5C%22%5C%22%22__gfc__%22parser%22:%22json%22%7D,%22%22&sortOrder=%22Descending%22&wrapLogMessage=false
-        #   labels:
-        #     namespace: helved
-        #     severity: critical
-
     - name: kafka
       rules:
         - alert: lag
@@ -41,71 +31,3 @@ spec:
           labels:
             namespace: helved
             severity: warning
-
-    - name: slo
-      rules:
-        - alert: UtsjekkIverksettingErrorBudgetBurnFast
-          expr: |
-            (
-              sum(rate(helved_utsjekk_iverksetting_total{k8s_cluster_name="prod", result="error"}[1h])) / sum(rate(helved_utsjekk_iverksetting_total{k8s_cluster_name="prod"}[1h])) > (14.4 * 0.001)
-              and
-              sum(rate(helved_utsjekk_iverksetting_total{k8s_cluster_name="prod", result="error"}[6h])) / sum(rate(helved_utsjekk_iverksetting_total{k8s_cluster_name="prod"}[6h])) > (14.4 * 0.001)
-            )
-          for: 2m
-          annotations:
-            summary: Iverksetting error budget burns fast.
-            description: Iverksetting error rate is above 14.4x budget in both 1h and 6h windows. Treat as acute regression and stop further budget loss.
-            runbook_url: https://github.com/navikt/helved-utbetaling/blob/main/apps/utsjekk/runbooks/iverksetting-error-budget-burn-fast.md
-            re_eval_after: "2026-05-05"
-          labels:
-            app: utsjekk
-            namespace: helved
-            severity: silenced
-
-        - alert: UtsjekkIverksettingErrorBudgetBurnSlow
-          expr: |
-            (
-              sum(rate(helved_utsjekk_iverksetting_total{k8s_cluster_name="prod", result="error"}[24h])) / sum(rate(helved_utsjekk_iverksetting_total{k8s_cluster_name="prod"}[24h])) > (1 * 0.001)
-              and
-              sum(rate(helved_utsjekk_iverksetting_total{k8s_cluster_name="prod", result="error"}[3d])) / sum(rate(helved_utsjekk_iverksetting_total{k8s_cluster_name="prod"}[3d])) > (1 * 0.001)
-            )
-          for: 15m
-          annotations:
-            summary: Iverksetting error budget burns slowly.
-            description: Iverksetting error rate is above full 30-day budget in both 24h and 3d windows. Plan remediation before budget is exhausted.
-            runbook_url: https://github.com/navikt/helved-utbetaling/blob/main/apps/utsjekk/runbooks/iverksetting-error-budget-burn-slow.md
-            re_eval_after: "2026-05-05"
-          labels:
-            app: utsjekk
-            namespace: helved
-            severity: silenced
-
-        - alert: UtsjekkStatusConsumerLagHigh
-          expr: helved_utsjekk_status_consumer_lag_seconds{k8s_cluster_name="prod"} > 600
-          for: 5m
-          annotations:
-            summary: Status consumer lag is above 10 minutes.
-            description: utsjekk has not consumed status updates for more than 10 minutes. Payment status processing may be stalled.
-            runbook_url: https://github.com/navikt/helved-utbetaling/blob/main/apps/utsjekk/runbooks/status-consumer-lag.md
-            re_eval_after: "2026-05-05"
-          labels:
-            app: utsjekk
-            namespace: helved
-            severity: silenced
-
-        - alert: UtsjekkIverksettingLatencyP95High
-          expr: |
-            histogram_quantile(
-              0.95,
-              sum(rate(helved_utsjekk_iverksetting_seconds_bucket{k8s_cluster_name="prod"}[10m])) by (le)
-            ) > 5
-          for: 10m
-          annotations:
-            summary: Iverksetting p95 latency is above 5 seconds.
-            description: p95 latency for iverksetting stays above 5 seconds for 10 minutes. Users may see slow execution even when requests succeed.
-            runbook_url: https://github.com/navikt/helved-utbetaling/blob/main/apps/utsjekk/runbooks/iverksetting-latency-p95.md
-            re_eval_after: "2026-05-05"
-          labels:
-            app: utsjekk
-            namespace: helved
-            severity: silenced

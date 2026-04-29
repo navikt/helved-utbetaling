@@ -34,7 +34,6 @@ import libs.kafka.Streams
 import libs.kafka.Topology
 import libs.ktor.CallLog
 import libs.ktor.bodyAsText
-import libs.tracing.Tracing
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.ApiError
@@ -83,14 +82,12 @@ fun Application.utsjekk(
     dryrunTimeout: Duration = 120.seconds,
     startupValidation: suspend (Config) -> Unit = ::wireWithExitOnFailure,
 ) {
-    Tracing.init("utsjekk")
-
     runBlocking {
         startupValidation(config)
     }
 
-    val actualJdbcCtx = jdbcCtx ?: Jdbc.initialize(config.jdbc).context()
-    val actualTopology = topology ?: createTopology(actualJdbcCtx, metrics)
+    val jdbcCtx = jdbcCtx ?: Jdbc.initialize(config.jdbc).context()
+    val topology = topology ?: createTopology(jdbcCtx, metrics)
     install(MicrometerMetrics) {
         registry = meterRegistry
         meterBinders += LogbackMetrics()
@@ -145,13 +142,13 @@ ${call.bodyAsText()}""".trimIndent()
     }
 
     runBlocking {
-        withContext(actualJdbcCtx) {
+        withContext(jdbcCtx) {
             Migrator(File("migrations")).migrate()
         }
     }
 
     kafka.connect(
-        actualTopology,
+        topology,
         config.kafka,
         meterRegistry,
     )
@@ -159,8 +156,8 @@ ${call.bodyAsText()}""".trimIndent()
     val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
     val utbetalingProducer = kafka.createProducer(config.kafka, Topics.utbetaling)
 
-    val utbetalingService = UtbetalingService(oppdragProducer, actualJdbcCtx)
-    val iverksettingService = IverksettingService(oppdragProducer, actualJdbcCtx)
+    val utbetalingService = UtbetalingService(oppdragProducer, jdbcCtx)
+    val iverksettingService = IverksettingService(oppdragProducer, jdbcCtx)
 
     val simuleringRoutes = SimuleringRoutes(
         config,
@@ -168,12 +165,12 @@ ${call.bodyAsText()}""".trimIndent()
         metrics,
         iverksettingService,
         utbetalingService,
-        actualJdbcCtx,
+        jdbcCtx,
         dryrunTimeout,
     )
 
-    val utbetalingMigrator = UtbetalingMigrator(utbetalingProducer, actualJdbcCtx)
-    val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer, actualJdbcCtx)
+    val utbetalingMigrator = UtbetalingMigrator(utbetalingProducer, jdbcCtx)
+    val iverksettingMigrator = IverksettingMigrator(iverksettingService, utbetalingProducer, jdbcCtx)
 
     routing {
         authenticate(TokenProvider.AZURE) {
@@ -189,7 +186,6 @@ ${call.bodyAsText()}""".trimIndent()
     }
 
     monitor.subscribe(ApplicationStopping) {
-        Tracing.shutdown()
         kafka.close()
         oppdragProducer.close()
         utbetalingProducer.close()
