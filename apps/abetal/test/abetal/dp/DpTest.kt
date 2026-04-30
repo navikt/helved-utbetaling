@@ -1898,6 +1898,78 @@ internal class DpTest : ConsumerTestBase() {
     }
 
     @Test
+    fun `create - meldekort med 0 beløp`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val meldeperiode = "132460781"
+        val uid = dpUId(sid.id, meldeperiode, StønadTypeDagpenger.DAGPENGER)
+
+        val expectedUtbetaling = utbetaling(
+            action = Action.CREATE,
+            uid = uid,
+            originalKey = transactionId,
+            sakId = sid,
+            behandlingId = bid,
+            fagsystem = Fagsystem.DAGPENGER,
+            lastPeriodeId = PeriodeId(),
+            stønad = StønadTypeDagpenger.DAGPENGER,
+            vedtakstidspunkt = LocalDateTime.now(),
+            beslutterId = Navident("dagpenger"),
+            saksbehandlerId = Navident("dagpenger"),
+            personident = Personident("12345678910")
+        ) {
+            periode(LocalDate.of(2021, 6, 7), LocalDate.of(2021, 6, 10), 553u, 1077u)
+        }
+
+        TestRuntime.topics.dpIntern.produce(transactionId) {
+            Dp.utbetaling(sid.id, bid.id) {
+                meldekort("132460781", 1.jun21, 6.jun21, 1077u, 0u)
+                meldekort("132460781", 7.jun21, 10.jun21, 1077u, 553u)
+                meldekort("132460781", 11.jun21, 14.jun21, 1077u, 0u)
+            }.asBytes()
+        }
+        TestRuntime.topics.status.assertThat().has(transactionId) {
+            Dp.mottatt {
+                linje(bid, 7.jun21, 10.jun21, 1077u, 553u)
+            }
+        }
+
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertUtbetaling(expectedUtbetaling, it)
+            }
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) { oppdrag ->
+                oppdrag.assertBasics("NY", "DP", sid.id, expectedLines = 1)
+                assertEquals("dagpenger", oppdrag.oppdrag110.saksbehId)
+                assertNull(oppdrag.oppdrag110.oppdragsLinje150s[0].refDelytelseId)
+                oppdrag.oppdrag110.oppdragsLinje150s.windowed(2, 1) { (a, b) ->
+                    assertEquals("NY", a.kodeEndringLinje)
+                    assertEquals(bid.id, a.henvisning)
+                    assertEquals("DAGPENGER", a.kodeKlassifik)
+                    assertEquals(553, a.sats.toLong())
+                    assertEquals(1077, a.vedtakssats157.vedtakssats.toLong())
+                    assertEquals(a.delytelseId, b.refDelytelseId)
+                    assertEquals(a.datoVedtakFom, b.datoKlassifikFom)
+                }
+            }
+            .get(transactionId)
+
+        kvitterOk(transactionId, oppdrag, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) {
+                assertUtbetaling(expectedUtbetaling, it)
+            }
+    }
+
+    @Test
     fun `create - multiple meldekort create utbetalinger with single oppdrag (1 meldekort)`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
