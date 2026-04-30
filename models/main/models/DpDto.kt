@@ -86,6 +86,7 @@ object DpDto {
         val saksbehandler = dpUtbetaling.saksbehandler ?: "dagpenger"
         val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling
             .utbetalinger
+            .filter { it.utbetaltBeløp > 0u }
             .groupBy { it.meldeperiode to it.stønadstype() }
             .map { (group, utbetalinger) ->
                 val (meldeperiode, stønadstype) = group
