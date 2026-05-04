@@ -105,7 +105,26 @@ Eksempel:
 </avvent-118>
 ```
 
-## Fullstendig eksempel
+### Vanlig feil: Overlappende avvent-perioder
+
+En vanlig feil er at OS avviser utbetalinger med feilmeldingen `Overlappende avvent-perioder`. Det ser slik ut i kvitteringen fra OS:
+
+```xml
+<mmel>
+    <systemId>231-OPPD</systemId>
+    <kodeMelding>BB18011F</kodeMelding>
+    <alvorlighetsgrad>08</alvorlighetsgrad>
+    <beskrMelding>Overlappende avvent-perioder</beskrMelding>
+    <programId>K231BB18</programId>
+    <sectionNavn>CA10-INPUTKONTROLL</sectionNavn>
+</mmel>
+```
+
+Årsaken er tyisk at det kommer nye opplysninger som gjør at AAP flytter på avventperioden. Men det kan gi noe krøll. Følgende regel gjelder:
+
+**Det er ikke lov å registrere en ny avventperiode som overlapper med en annen aktiv avventperiode (ikke feilregistrert) som ennå ikke er overført, og som har en annen fra-og-med-dato.**
+
+## Fullstendig eksempel på utbetalingsoppdrag
 TODO finn eksempel med Opphør
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
