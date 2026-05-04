@@ -11,6 +11,7 @@ import libs.kafka.KafkaProducerFake
 import libs.utils.CsvReader
 import libs.utils.Resource
 import libs.utils.Rule
+import models.forrigeVirkedag
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.*
@@ -908,7 +909,6 @@ class VedskivaTest {
         assertEquals(0, avsProducer.history().size)
     }
 
-    // Hvis denne feiler så kan de hende at det er flere dager siden forrige virkedag
     @Test
     fun `will skip previous avstemminger`() = runTest(TestRuntime.context) {
         PeisschtappernFake.response.add(
@@ -918,7 +918,7 @@ class VedskivaTest {
                 offset = 2,
                 key = "avstemt 4 days ago",
                 beløper = listOf(4000),
-                avstemmingdag = LocalDate.now().minusDays(4),
+                avstemmingdag = LocalDate.now().forrigeVirkedag().minusDays(1),
             )
         )
 
