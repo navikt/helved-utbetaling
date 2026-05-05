@@ -1,10 +1,6 @@
 package peisschtappern
 
-import kotlinx.coroutines.currentCoroutineContext
 import libs.jdbc.Dao
-import libs.jdbc.concurrency.connection
-import libs.jdbc.map
-import libs.utils.jdbcLog
 import libs.utils.logger
 import libs.utils.secureLog
 import java.sql.ResultSet
