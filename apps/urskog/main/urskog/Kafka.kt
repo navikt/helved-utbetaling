@@ -154,7 +154,7 @@ private suspend fun saveIdempotent(
     val new = DaoOppdrag(
         kafkaKey = key,
         sakId = oppdrag.oppdrag110.fagsystemId.trimEnd(),
-        behandlingId = oppdrag.oppdrag110.oppdragsLinje150s.last().henvisning.trimEnd(),
+        behandlingId = oppdrag.oppdrag110.oppdragsLinje150s.lastOrNull()?.henvisning?.trimEnd() ?: "",
         oppdrag = oppdrag,
         uids = meta.headers["uids"].intoUids(),
         sent = false,
