@@ -22,32 +22,35 @@ object Topics {
 open class Kafka : KafkaFactory
 
 fun topology(jdbcCtx: CoroutineDatasource) = topology {
-    consume(Topics.oppdrag).forEach { _, oppdrag ->
-        val avstemming = oppdrag.oppdrag110.avstemming115 
-        val hashKey = mapper
-            .copy(oppdrag)
-            .apply { mmel = null }
-            .let { mapper.writeValueAsString(it).sha256() }
-        val dao = OppdragDao(
-            nokkelAvstemming = avstemming.nokkelAvstemming.trimEnd().toLocalDateTime(),
-            hashKey = hashKey,
-            kodeFagomraade = oppdrag.oppdrag110.kodeFagomraade.trimEnd(),
-            personident = oppdrag.oppdrag110.oppdragGjelderId.trimEnd(),
-            fagsystemId = oppdrag.oppdrag110.fagsystemId.trimEnd(),
-            lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
-            tidspktMelding = avstemming.tidspktMelding.trimEnd().toLocalDateTime(),
-            sats = oppdrag.oppdrag110.oppdragsLinje150s.sumOf { it.sats.toLong() },
-            createdAt = LocalDateTime.now(),
-            alvorlighetsgrad = oppdrag.mmel?.alvorlighetsgrad,
-            kodeMelding = oppdrag.mmel?.kodeMelding,
-            beskrMelding = oppdrag.mmel?.beskrMelding,
-        )
+    consume(Topics.oppdrag)
+        // ved avvent feilregistrering vi har ikke avstemming115
+        .filter { oppdrag -> oppdrag.oppdrag110.avstemming115 != null }
+        .forEach { _, oppdrag ->
+            val avstemming = oppdrag.oppdrag110.avstemming115 
+            val hashKey = mapper
+                .copy(oppdrag)
+                .apply { mmel = null }
+                .let { mapper.writeValueAsString(it).sha256() }
+            val dao = OppdragDao(
+                nokkelAvstemming = avstemming.nokkelAvstemming.trimEnd().toLocalDateTime(),
+                hashKey = hashKey,
+                kodeFagomraade = oppdrag.oppdrag110.kodeFagomraade.trimEnd(),
+                personident = oppdrag.oppdrag110.oppdragGjelderId.trimEnd(),
+                fagsystemId = oppdrag.oppdrag110.fagsystemId.trimEnd(),
+                lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
+                tidspktMelding = avstemming.tidspktMelding.trimEnd().toLocalDateTime(),
+                sats = oppdrag.oppdrag110.oppdragsLinje150s.sumOf { it.sats.toLong() },
+                createdAt = LocalDateTime.now(),
+                alvorlighetsgrad = oppdrag.mmel?.alvorlighetsgrad,
+                kodeMelding = oppdrag.mmel?.kodeMelding,
+                beskrMelding = oppdrag.mmel?.beskrMelding,
+            )
 
-        runBlocking(jdbcCtx) {
-            transaction {
-                dao.insert()
+            runBlocking(jdbcCtx) {
+                transaction {
+                    dao.insert()
+                }
             }
-        }
     }
 }
 

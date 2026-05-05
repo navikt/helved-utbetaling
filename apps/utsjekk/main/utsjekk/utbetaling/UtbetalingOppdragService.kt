@@ -128,6 +128,27 @@ object UtbetalingOppdragService {
             this.oppdrag110 = oppdrag110
         }
     }
+
+    // endre avvent på et eksisterende oppdrag
+    fun avvent(request: FeilregistrerAvventRequest): Oppdrag {
+        val fagsystemDto = FagsystemDto.from(request.stønad)
+        val oppdrag110 = objectFactory.createOppdrag110().apply {
+            kodeAksjon = "1"
+            kodeEndring = "ENDR"
+            kodeFagomraade = fagsystemDto.kode
+            fagsystemId = request.sakId
+            utbetFrekvens = fagsystemDto.utbetalingFrekvens()
+            oppdragGjelderId = request.personident
+            datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).toXMLDate()
+            saksbehId = request.saksbehandlerId
+            // avstemming115 = avstemming115(fagsystemDto.kodekomponent())
+            avvent118 = avvent118(request.avvent)
+            // oppdragsEnhet120s.addAll(oppdragsEnhet120(utbetaling))
+        }
+        return objectFactory.createOppdrag().apply {
+            this.oppdrag110 = oppdrag110
+        }
+    }
 }
 
 internal fun XMLGregorianCalendar.toLocalDate() = toGregorianCalendar().toZonedDateTime().toLocalDate()

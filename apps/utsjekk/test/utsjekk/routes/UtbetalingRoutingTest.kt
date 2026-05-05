@@ -22,6 +22,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class UtbetalingRoutingTest {
 
@@ -1477,5 +1478,94 @@ class UtbetalingRoutingTest {
 
         assertEquals(HttpStatusCode.Created, res.status)
         assertEquals("/utbetalinger/$uid", res.headers["location"])
+    }
+
+    @Test
+    fun `feilregistrer avvent produserer oppdrag uten oppdragsLinje150 og med feilreg J`() = runTest(TestRuntime.context) {
+        val uid = UUID.randomUUID()
+        val request = FeilregistrerAvventRequest(
+            stønad = StønadTypeDagpenger.DAGPENGER,
+            sakId = RandomOSURId.generate(),
+            personident = "12345678910",
+            saksbehandlerId = "Z999999",
+            avvent = Avvent(
+                fom = 1.feb,
+                tom = 28.feb,
+                årsak = Årsak.AVVENT_AVREGNING,
+                feilregistrering = true,
+            ),
+        )
+
+        val res = httpClient.post("/utbetalinger/$uid/avvent") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        assertEquals(HttpStatusCode.Created, res.status)
+
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        assertEquals(0, oppdragTopic.uncommitted().size)
+        val oppdrag = oppdragTopic.history().singleOrNull { (key, _) -> key == uid.toString() }?.second
+        assertNotNull(oppdrag)
+        assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+        assertEquals(request.sakId, oppdrag.oppdrag110.fagsystemId)
+        assertEquals(request.personident, oppdrag.oppdrag110.oppdragGjelderId)
+        assertEquals(request.saksbehandlerId, oppdrag.oppdrag110.saksbehId)
+        assertTrue(oppdrag.oppdrag110.oppdragsLinje150s.isEmpty())
+        assertNotNull(oppdrag.oppdrag110.avvent118)
+        assertEquals("J", oppdrag.oppdrag110.avvent118.feilreg)
+        assertEquals(Årsak.AVVENT_AVREGNING.kode, oppdrag.oppdrag110.avvent118.kodeArsak)
+    }
+
+    @Test
+    fun `feilregistrer avvent uten feilregistrering true gir bad request`() = runTest(TestRuntime.context) {
+        val uid = UUID.randomUUID()
+        val request = FeilregistrerAvventRequest(
+            stønad = StønadTypeDagpenger.DAGPENGER,
+            sakId = RandomOSURId.generate(),
+            personident = "12345678910",
+            saksbehandlerId = "Z999999",
+            avvent = Avvent(
+                fom = 1.feb,
+                tom = 28.feb,
+                årsak = Årsak.AVVENT_AVREGNING,
+                feilregistrering = false,
+            ),
+        )
+
+        val res = httpClient.post("/utbetalinger/$uid/avvent") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError>()
+        assertEquals("feilregistrering må være satt til true", error.msg)
+
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        assertTrue(oppdragTopic.history().none { (key, _) -> key == uid.toString() })
+    }
+
+    @Test
+    fun `feilregistrer avvent oppdrag har ikke avstemming115 eller oppdragsEnhet120`() = runTest(TestRuntime.context) {
+        val uid = UUID.randomUUID()
+        val request = FeilregistrerAvventRequest(
+            stønad = StønadTypeDagpenger.DAGPENGER,
+            sakId = RandomOSURId.generate(),
+            personident = "12345678910",
+            saksbehandlerId = "Z999999",
+            avvent = Avvent(1.feb, 28.feb, årsak = Årsak.AVVENT_AVREGNING, feilregistrering = true),
+        )
+
+        httpClient.post("/utbetalinger/$uid/avvent") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.also { assertEquals(HttpStatusCode.Created, it.status) }
+
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        val oppdrag = oppdragTopic.history().single { (key, _) -> key == uid.toString() }.second
+        assertNull(oppdrag.oppdrag110.avstemming115)
+        assertTrue(oppdrag.oppdrag110.oppdragsEnhet120s.isEmpty())
     }
 }

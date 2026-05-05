@@ -1,5 +1,6 @@
 package utsjekk.utbetaling
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
@@ -121,6 +122,13 @@ class UtbetalingService(
                 )
                 UtbetalingDao(data = utbetaling.copy(lastPeriodeId = newLastPeriodeId, sistePeriode = sistePeriode)).insert(uid)
             }
+        }
+    }
+
+    suspend fun updateAvvent(uid: UtbetalingId, request: FeilregistrerAvventRequest) {
+        val oppdrag = UtbetalingOppdragService.avvent(request)
+        withContext(Dispatchers.IO) {
+            oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
         }
     }
 
