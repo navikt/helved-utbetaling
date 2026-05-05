@@ -50,6 +50,14 @@ data class UtbetalingApi(
     }
 }
 
+data class FeilregistrerAvventRequest(
+    val stønad: Stønadstype,
+    val sakId: String,
+    val personident: String,
+    val saksbehandlerId: String,
+    val avvent: Avvent,
+)
+
 enum class PeriodeType {
     /** man - fre */
     UKEDAG,

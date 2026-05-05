@@ -37,6 +37,17 @@ fun Route.utbetalinger(
             call.respond(HttpStatusCode.OK)
         }
 
+        post("/avvent") {
+            val uid = call.parameters["uid"]
+                ?.let(::uuid)
+                ?.let(::UtbetalingId)
+                ?: badRequest("Mangler path parameter 'uid'")
+            val api = call.receive<FeilregistrerAvventRequest>()
+            if (!api.avvent.feilregistrering) badRequest("feilregistrering må være satt til true")
+            utbetalingService.updateAvvent(uid, api)
+            call.respond(HttpStatusCode.Created)
+        }
+
         post {
             val uid = call.parameters["uid"]
                 ?.let(::uuid)
