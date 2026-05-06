@@ -1491,6 +1491,7 @@ class UtbetalingRoutingTest {
             avvent = Avvent(
                 fom = 1.feb,
                 tom = 28.feb,
+                overføres = 2.jan,
                 årsak = Årsak.AVVENT_AVREGNING,
                 feilregistrering = true,
             ),
@@ -1528,6 +1529,7 @@ class UtbetalingRoutingTest {
             avvent = Avvent(
                 fom = 1.feb,
                 tom = 28.feb,
+                overføres = 2.jan,
                 årsak = Årsak.AVVENT_AVREGNING,
                 feilregistrering = false,
             ),
@@ -1554,7 +1556,7 @@ class UtbetalingRoutingTest {
             sakId = RandomOSURId.generate(),
             personident = "12345678910",
             saksbehandlerId = "Z999999",
-            avvent = Avvent(1.feb, 28.feb, årsak = Årsak.AVVENT_AVREGNING, feilregistrering = true),
+            avvent = Avvent(1.feb, 28.feb, 2.jan, Årsak.AVVENT_AVREGNING, true),
         )
 
         httpClient.post("/utbetalinger/$uid/avvent") {

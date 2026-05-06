@@ -44,6 +44,7 @@ fun Route.utbetalinger(
                 ?: badRequest("Mangler path parameter 'uid'")
             val api = call.receive<FeilregistrerAvventRequest>()
             if (!api.avvent.feilregistrering) badRequest("feilregistrering må være satt til true")
+            if (api.avvent.overføres == null) badRequest("overføres må være satt")
             utbetalingService.updateAvvent(uid, api)
             call.respond(HttpStatusCode.Created)
         }
