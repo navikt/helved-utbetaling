@@ -55,6 +55,14 @@ open class KafkaProducer<K: Any, V>(
         return send(ProducerRecord<K, V>(topic.name, partition, key, value))
     }
 
+    fun send(key: K, value: V, partition: Int, headers: Map<String, String>): SendResult {
+        val record = ProducerRecord<K, V>(topic.name, partition, key, value)
+        headers.forEach { (k, v) ->
+            record.headers().add(k, v.toByteArray(Charsets.UTF_8))
+        }
+        return send(record)
+    }
+
     fun tombstone(key: K, numberOfPartitions: Int = 3): SendResult {
         if (key is String) {
             val partition = partition(key as String, numberOfPartitions)
