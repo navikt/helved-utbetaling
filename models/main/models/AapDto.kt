@@ -4,6 +4,7 @@ import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import kotlin.collections.filter
 
 data class AapUtbetaling(
     val dryrun: Boolean = false,
@@ -62,6 +63,7 @@ object AapDto {
         val saksbehandler = aapUtbetaling.saksbehandler ?: "kelvin"
         val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, AapUtbetaling?>> = aapUtbetaling
             .utbetalinger
+            .filter { it.utbetaltBeløp > 0u }
             .groupBy { it.id }
             .map { (id, utbetalinger) -> UtbetalingId(id) to aapUtbetaling.copy(utbetalinger = utbetalinger) }
             .toMutableList()
