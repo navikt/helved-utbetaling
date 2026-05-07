@@ -128,7 +128,12 @@ class UtbetalingService(
     suspend fun updateAvvent(uid: UtbetalingId, request: FeilregistrerAvventRequest) {
         val oppdrag = UtbetalingOppdragService.avvent(request)
         withContext(Dispatchers.IO) {
-            oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
+            oppdragProducer.send(
+                key = uid.id.toString(),
+                value = oppdrag,
+                partition = partition(uid.id.toString()),
+                headers = mapOf("source" to "utsjekk-avvent"),
+            )
         }
     }
 

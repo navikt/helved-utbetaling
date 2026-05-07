@@ -1516,6 +1516,8 @@ class UtbetalingRoutingTest {
         assertNotNull(oppdrag.oppdrag110.avvent118)
         assertEquals("J", oppdrag.oppdrag110.avvent118.feilreg)
         assertEquals(Årsak.AVVENT_AVREGNING.kode, oppdrag.oppdrag110.avvent118.kodeArsak)
+        val headers = oppdragTopic.historyWithHeaders().single { (key, _, _) -> key == uid.toString() }.third
+        assertEquals("utsjekk-avvent", headers["source"])
     }
 
     @Test

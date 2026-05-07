@@ -489,6 +489,36 @@ internal class AbetalTest {
     }
 
     @Test
+    fun `oppdrag med kvittering uten oppdragsLinje150 og uten uids droppes uten exception`() {
+        // simulerer en avvent-feilregistrering fra utsjekk: ENDR-oppdrag uten linjer,
+        // round-tripped via OS med kvittering. Filteret skal droppe det stille,
+        // ikke krasje på Oppdrag.info() sin .last() over tom linjeliste.
+        val key = UUID.randomUUID().toString()
+        val of = no.trygdeetaten.skjema.oppdrag.ObjectFactory()
+        val oppdrag = of.createOppdrag().apply {
+            oppdrag110 = of.createOppdrag110().apply {
+                kodeAksjon = "1"
+                kodeEndring = "ENDR"
+                kodeFagomraade = "DP"
+                fagsystemId = "12345"
+                oppdragGjelderId = "12345678910"
+                saksbehId = "Z999999"
+                avvent118 = of.createAvvent118().apply {
+                    feilreg = "J"
+                    kodeArsak = "AVAV"
+                }
+            }
+            mmel = Mmel().apply { alvorlighetsgrad = "00" }
+        }
+
+        TestRuntime.topics.oppdrag.produce(key, mapOf("source" to "utsjekk-avvent")) { oppdrag }
+
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.retryOppdrag.assertThat().isEmpty()
+        TestRuntime.topics.status.assertThat().isEmpty()
+    }
+
+    @Test
     fun `oppdrag med kvittering og uids produserer til utbetalinger`() {
         val key = UUID.randomUUID().toString()
         val uid = randomUtbetalingId()

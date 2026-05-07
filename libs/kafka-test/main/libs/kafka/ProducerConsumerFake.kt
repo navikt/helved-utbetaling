@@ -26,6 +26,14 @@ class KafkaProducerFake<K: Any, V>(
     fun history(): List<Pair<K, V>> = producer.history().map { it.key() to it.value() }
     fun uncommitted(): List<Pair<K, V>> = producer.uncommittedRecords().map { it.key() to it.value() }
 
+    fun historyWithHeaders(): List<Triple<K, V, Map<String, String>>> = producer.history().map {
+        Triple(
+            it.key(),
+            it.value(),
+            it.headers().associate { h -> h.key() to String(h.value(), Charsets.UTF_8) },
+        )
+    }
+
     fun send(record: ProducerRecord<K, V>, callback: Callback): Future<RecordMetadata> {
         // val metadata = RecordMetadata(TopicPartition(record.topic(), 0), 0L, 0, System.currentTimeMillis(), 0, 0)
         // if (producedKeys.contains(record.key())) return CompletableFuture.completedFuture(metadata)

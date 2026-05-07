@@ -333,12 +333,12 @@ private object Guard {
 }
 
 private fun Oppdrag.info(): String {
-    val last = oppdrag110.oppdragsLinje150s.last()
+    val last = oppdrag110?.oppdragsLinje150s?.lastOrNull()
     return """
-        ${oppdrag110.kodeFagomraade} 
-        sak:${oppdrag110.fagsystemId} 
-        last.beh:${last.henvisning} 
-        last.delytelse:${last.delytelseId}
+        ${oppdrag110?.kodeFagomraade ?: "?"} 
+        sak:${oppdrag110?.fagsystemId ?: "?"} 
+        last.beh:${last?.henvisning ?: "-"} 
+        last.delytelse:${last?.delytelseId ?: "-"}
     """.trimMargin()
 }
 
