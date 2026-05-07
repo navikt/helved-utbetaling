@@ -135,7 +135,7 @@ open class DefaultMQConsumer(
             start()
             mqLog.info("Sucessfully reconnected consumer ${queue.baseQueueName}")
         } catch (e: Exception) {
-            mqLog.error("Failed to reconnect", e)
+            mqLog.error("Failed to reconnect, require manual restart of urskog", e)
         } finally {
             lastReconnect = LocalDateTime.now()
         }
