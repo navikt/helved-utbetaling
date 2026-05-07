@@ -233,7 +233,7 @@ value class PeriodeId(private val id: String) {
             return Base64.getEncoder().encodeToString(byteBuffer.array()).also {
                 require(it.length <= 30) { "base64 encoding av UUID ble over 30 tegn." }
             }
-        } catch (e: Exception) {
+        } catch (_e: Exception) {
             return id.also {
                 require(it.length <= 30) { "gammelt format av periodeid er over 30 tegn." }
             }

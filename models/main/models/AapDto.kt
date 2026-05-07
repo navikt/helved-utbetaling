@@ -7,7 +7,6 @@ import java.util.UUID
 
 data class AapUtbetaling(
     val dryrun: Boolean = false,
-
     val sakId: String,
     val behandlingId: String,
     val ident: String,
@@ -24,14 +23,7 @@ data class AapUtbetalingsdag(
     val tom: LocalDate,
     val sats: UInt,
     val utbetaltBeløp: UInt,
-) {
-    fun into(): Utbetalingsperiode = Utbetalingsperiode(
-        fom = fom,
-        tom = tom,
-        beløp = utbetaltBeløp,
-        vedtakssats = sats,
-    )
-}
+)
 
 private fun perioder(perioder: List<AapUtbetalingsdag>): List<Utbetalingsperiode> {
     return perioder.sortedBy { it.fom }
@@ -128,5 +120,4 @@ object AapDto {
             perioder = perioder(value.utbetalinger),
         )
     }
-
 }
