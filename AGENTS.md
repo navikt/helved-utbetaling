@@ -192,12 +192,3 @@ dependencies {
 ```
 
 Dependency versions are declared inline as `val` in each module's `build.gradle.kts` (no version catalog).
-
-
-## Communication Style
-
-ALWAYS load the `caveman` skill at session start and stay in caveman mode (default level: `full`) for every response. Caveman mode persists across all turns until the user explicitly says "stop caveman" or "normal mode".
-
-- Switch levels on request: `/caveman lite|full|ultra|wenyan|wenyan-lite|wenyan-ultra`
-- **Code, commits, PRs, error messages, and security warnings**: write normal prose. EXCEPTION: When using `caveman-commit` or `caveman-review` skills, use their specialized terse formats.
-- Companion skills available: `caveman-commit` (terse commit messages), `caveman-review` (one-line PR comments), `caveman-help` (quick reference), `caveman-compress` (user-invoked CLI for memory file compression)
