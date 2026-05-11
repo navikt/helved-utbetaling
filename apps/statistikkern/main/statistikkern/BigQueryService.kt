@@ -28,7 +28,9 @@ class BigQueryService(
             Field.of("fagsystem", StandardSQLTypeName.STRING),
             Field.of("stonad", StandardSQLTypeName.STRING),
             Field.of("belop", StandardSQLTypeName.NUMERIC),
-            Field.of("sendt", StandardSQLTypeName.TIMESTAMP)
+            Field.of("sendt", StandardSQLTypeName.TIMESTAMP),
+            Field.of("utbetaling_id", StandardSQLTypeName.STRING),
+            Field.of("siste_delytelses_id", StandardSQLTypeName.STRING),
         )
     )
 
@@ -41,12 +43,14 @@ class BigQueryService(
             InsertAllRequest.RowToInsert.of(
                 rowId,
                 mapOf(
-                    "key"              to utbetaling.originalKey,
-                    "fagsystem"        to utbetaling.fagsystem.toName(),
-                    "stonad"           to utbetaling.stønad.name,
-                    "belop"            to periode.beløp.toLong(),
-                    "sendt" to systemTimeMs?.let { Instant.ofEpochMilli(it).toString() },
-                    ).filterValues { it != null }
+                    "key"             to utbetaling.originalKey,
+                    "fagsystem"       to utbetaling.fagsystem.toName(),
+                    "stonad"          to utbetaling.stønad.name,
+                    "belop"           to periode.beløp.toLong(),
+                    "sendt"           to systemTimeMs?.let { Instant.ofEpochMilli(it).toString() },
+                    "utbetaling_id"   to utbetaling.uid.toString(),
+                    "siste_delytelses_id" to utbetaling.lastPeriodeId.toString(), // siste delytelses id på sak
+                ).filterValues { it != null }
             )
         }
 

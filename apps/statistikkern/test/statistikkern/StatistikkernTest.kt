@@ -49,6 +49,9 @@ class StatistikkernTest {
         assertEquals("AAP_UNDER_ARBEIDSAVKLARING", row["stonad"].toString())
         assertEquals("800", row["belop"].toString())
         assertTrue(row["sendt"].toString().isNotBlank())
+        assertEquals(utbetaling.uid.toString(), row["utbetaling_id"].toString())
+        assertEquals(utbetaling.lastPeriodeId.toString(), row["siste_delytelses_id"].toString())
+        assertTrue(row["siste_delytelses_id"].toString().length <= 30, "siste_delytelses_id må være ≤30 tegn (OS-format)")
     }
 
     @Test
@@ -72,6 +75,12 @@ class StatistikkernTest {
         assertEquals("800", rows[0]["belop"].toString())
         assertEquals("900", rows[1]["belop"].toString())
         assertEquals("1000", rows[2]["belop"].toString())
+
+        rows.forEach { row ->
+            assertEquals(utbetaling.uid.toString(), row["utbetaling_id"].toString())
+            assertEquals(utbetaling.lastPeriodeId.toString(), row["siste_delytelses_id"].toString())
+            assertTrue(row["siste_delytelses_id"].toString().length <= 30, "siste_delytelses_id må være ≤30 tegn (OS-format)")
+        }
     }
 
     @Test
