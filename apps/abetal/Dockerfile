@@ -1,4 +1,4 @@
-FROM europe-north1-docker.pkg.dev/cgr-nav/pull-through/nav.no/jre:openjdk-21
+FROM europe-north1-docker.pkg.dev/cgr-nav/pull-through/nav.no/jre:openjdk-25
 ENV TZ="Europe/Oslo"
 COPY --chown=1069:1069 apps/abetal/build/split-jars/deps.jar /app/deps.jar
 COPY --chown=1069:1069 apps/abetal/build/split-jars/app.jar /app/app.jar

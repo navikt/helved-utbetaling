@@ -1,4 +1,4 @@
-FROM europe-north1-docker.pkg.dev/cgr-nav/pull-through/nav.no/jre:openjdk-21
+FROM europe-north1-docker.pkg.dev/cgr-nav/pull-through/nav.no/jre:openjdk-25
 ENV TZ="Europe/Oslo"
 ADD --chown=1069:1069 apps/*/build/resources/main /app/migrations/
 # Layer order matters for build cache reuse: deps.jar (~60 MB, third-party
