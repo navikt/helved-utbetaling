@@ -985,6 +985,7 @@ components:
         - TILLSTFL
         - AAP
         - HISTORISK
+        - VALP
 
     StatusReply:
       type: object
