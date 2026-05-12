@@ -3,7 +3,6 @@ package urskog
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.CoroutineDatasource
@@ -26,6 +25,7 @@ import javax.jms.TextMessage
 class OppdragMQProducer(config: Config, mq: MQ, private val meters: MeterRegistry) {
     private val kvitteringQueue = config.oppdrag.kvitteringsKø
     private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
+    private val darePocAapProducer = DefaultMQProducer(mq, config.oppdrag.darePocAapKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
     fun send(oppdrag: Oppdrag): Oppdrag {
@@ -45,6 +45,7 @@ class OppdragMQProducer(config: Config, mq: MQ, private val meters: MeterRegistr
                 Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
             mqLog.info("Sender oppdrag hashKey($hash)")
+            sendDarePocAapKopi(oppdrag, oppdragXml, hash)
             return oppdrag
         }.onFailure {
             meters.counter("helved_oppdrag_mq", listOf(
@@ -54,6 +55,15 @@ class OppdragMQProducer(config: Config, mq: MQ, private val meters: MeterRegistr
             mqLog.error("Feilet sending av oppdrag hashKey($hash) sakId:$sid, behandling:$bid, lastDelytelsesId/periodeId: $lastDelytelsesId/$pid")
             secureLog.error("Feilet sending av oppdrag hashKey($hash)", it)
         }.getOrThrow()
+    }
+
+    private fun sendDarePocAapKopi(oppdrag: Oppdrag, oppdragXml: String, hash: String) {
+        if (oppdrag.fagsystem() != Fagsystem.AAP.name) return
+        runCatching {
+            darePocAapProducer.produce(oppdragXml)
+        }.onFailure {
+            secureLog.error("Feilet sending av AAP-kopi til DARE POC-kø hashKey($hash)", it)
+        }
     }
 }
 
