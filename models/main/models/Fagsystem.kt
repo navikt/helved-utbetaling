@@ -14,6 +14,7 @@ enum class Fagsystem(val fagområde: String) {
     TILLSTFL("TILLSTFL"), // TILLEGGSSTØNADER
     AAP("AAP"),
     HISTORISK("HELSREF"),
+    VALP("TILLSOPP")
 ;
 
     companion object {
@@ -22,34 +23,35 @@ enum class Fagsystem(val fagområde: String) {
             entries.single { it.fagområde == fagområde }
 
         fun from(kode: String) = when (kode) {
-            "DP" -> Fagsystem.DAGPENGER
-            "TILTPENG" -> Fagsystem.TILTAKSPENGER
-            "TILLST"   -> Fagsystem.TILLEGGSSTØNADER
-            "TILLSTPB" -> Fagsystem.TILLSTPB
-            "TILLSTLM" -> Fagsystem.TILLSTLM
-            "TILLSTBO" -> Fagsystem.TILLSTBO
-            "TILLSTDR" -> Fagsystem.TILLSTDR
-            "TILLSTRS" -> Fagsystem.TILLSTRS
-            "TILLSTRO" -> Fagsystem.TILLSTRO
-            "TILLSTRA" -> Fagsystem.TILLSTRA
-            "TILLSTFL" -> Fagsystem.TILLSTFL
-            "AAP" -> Fagsystem.AAP
-            "HELSREF" -> Fagsystem.HISTORISK
+            "DP" -> DAGPENGER
+            "TILTPENG" -> TILTAKSPENGER
+            "TILLST"   -> TILLEGGSSTØNADER
+            "TILLSTPB" -> TILLSTPB
+            "TILLSTLM" -> TILLSTLM
+            "TILLSTBO" -> TILLSTBO
+            "TILLSTDR" -> TILLSTDR
+            "TILLSTRS" -> TILLSTRS
+            "TILLSTRO" -> TILLSTRO
+            "TILLSTRA" -> TILLSTRA
+            "TILLSTFL" -> TILLSTFL
+            "AAP" -> AAP
+            "HELSREF" -> HISTORISK
+            "TILLSOPP" -> VALP
             else -> error("fagområde $kode not implemented")
         }
     }
 
     fun isTilleggsstønader(): Boolean {
         return this in listOf(
-            Fagsystem.TILLEGGSSTØNADER,
-            Fagsystem.TILLSTPB,
-            Fagsystem.TILLSTLM,
-            Fagsystem.TILLSTBO,
-            Fagsystem.TILLSTDR,
-            Fagsystem.TILLSTRS,
-            Fagsystem.TILLSTRO,
-            Fagsystem.TILLSTRA,
-            Fagsystem.TILLSTFL,
+            TILLEGGSSTØNADER,
+            TILLSTPB,
+            TILLSTLM,
+            TILLSTBO,
+            TILLSTDR,
+            TILLSTRS,
+            TILLSTRO,
+            TILLSTRA,
+            TILLSTFL,
         )
     }
 

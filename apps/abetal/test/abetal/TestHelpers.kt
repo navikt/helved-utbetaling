@@ -193,4 +193,5 @@ fun Fagsystem.saksbehandler(): String = when (this) {
     Fagsystem.TILLSTRO, Fagsystem.TILLSTRA, Fagsystem.TILLSTFL -> "ts"
     Fagsystem.TILTAKSPENGER -> "tp"
     Fagsystem.HISTORISK -> "historisk"
+    Fagsystem.VALP -> "teamvalp"
 }
