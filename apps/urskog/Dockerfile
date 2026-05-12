@@ -1,4 +1,4 @@
-FROM europe-north1-docker.pkg.dev/cgr-nav/pull-through/nav.no/jre:openjdk-21
+FROM europe-north1-docker.pkg.dev/cgr-nav/pull-through/nav.no/jre:openjdk-25
 ENV TZ="Europe/Oslo"
 ADD --chown=1069:1069 apps/urskog/build/resources/main /app/migrations/
 COPY --chown=1069:1069 apps/urskog/build/split-jars/deps.jar /app/deps.jar
