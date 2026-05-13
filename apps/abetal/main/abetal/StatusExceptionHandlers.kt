@@ -66,12 +66,14 @@ private fun fagsystemForTopic(topic: String): Fagsystem? = when (topic) {
     Topics.ts.name, Topics.tsIntern.name -> Fagsystem.TILLEGGSSTØNADER
     Topics.tp.name -> Fagsystem.TILTAKSPENGER
     Topics.historisk.name, Topics.historiskIntern.name -> Fagsystem.HISTORISK
+    Topics.valp.name, Topics.valpIntern.name -> Fagsystem.VALP
     else -> when {
         topic.contains("from-${Topics.dp.name}") || topic.contains("dptuple-") -> Fagsystem.DAGPENGER
         topic.contains("from-${Topics.aap.name}") || topic.contains("aaptuple-") -> Fagsystem.AAP
         topic.contains("from-${Topics.ts.name}") || topic.contains("tstuple-") -> Fagsystem.TILLEGGSSTØNADER
         topic.contains("tptuple-") -> Fagsystem.TILTAKSPENGER
         topic.contains("from-${Topics.historisk.name}") || topic.contains("historisktuple-") -> Fagsystem.HISTORISK
+        topic.contains("from-${Topics.valp.name}") || topic.contains("valptuple-") -> Fagsystem.VALP
         else -> null
     }
 }

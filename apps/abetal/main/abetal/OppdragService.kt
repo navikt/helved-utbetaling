@@ -19,6 +19,7 @@ fun LocalDate.toXMLDate(): XMLGregorianCalendar = DatatypeFactory.newInstance().
 
 fun Fagsystem.utbetFrekvens() = when(this) {
     Fagsystem.HISTORISK -> "ENG"
+    Fagsystem.VALP -> "ENG"
     else -> "MND"
 }
 
