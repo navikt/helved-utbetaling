@@ -21,6 +21,7 @@ object Topics {
     val tsIntern = Topic("helved.utbetalinger-ts.v1", bytes())
     val tpIntern = Topic("helved.utbetalinger-tp.v1", bytes())
     val historiskIntern = Topic("helved.utbetalinger-historisk.v1", bytes())
+    val valpIntern = Topic("helved.utbetalinger-valp.v1", bytes())
 
     val status = Topic("helved.status.v1", json<StatusReply>())
     val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
@@ -35,6 +36,7 @@ class UtbetalingProducers(
     private val ts: KafkaProducer<String, ByteArray>,
     private val tp: KafkaProducer<String, ByteArray>,
     private val historisk: KafkaProducer<String, ByteArray>,
+    private val valp: KafkaProducer<String, ByteArray>,
 ) : AutoCloseable {
 
     fun produceAap(uid: UUID, data: ByteArray) = aap.send(uid.toString(), data)
@@ -42,6 +44,7 @@ class UtbetalingProducers(
     fun produceTs(uid: UUID, data: ByteArray) = ts.send(uid.toString(), data)
     fun produceTp(uid: UUID, data: ByteArray) = tp.send(uid.toString(), data)
     fun produceHistorisk(uid: UUID, data: ByteArray) = historisk.send(uid.toString(), data)
+    fun produceValp(uid: UUID, data: ByteArray) = valp.send(uid.toString(), data)
 
     override fun close() {
         aap.close()
@@ -49,6 +52,7 @@ class UtbetalingProducers(
         ts.close()
         tp.close()
         historisk.close()
+        valp.close()
     }
 
     companion object {
@@ -58,6 +62,7 @@ class UtbetalingProducers(
             ts = factory.createProducer(config, Topics.tsIntern),
             tp = factory.createProducer(config, Topics.tpIntern),
             historisk = factory.createProducer(config, Topics.historiskIntern),
+            valp = factory.createProducer(config, Topics.valpIntern),
         )
     }
 }

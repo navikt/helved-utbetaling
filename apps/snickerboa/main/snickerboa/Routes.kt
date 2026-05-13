@@ -12,6 +12,7 @@ import models.DpUtbetaling
 import models.HistoriskUtbetaling
 import models.TpUtbetaling
 import models.TsDto
+import models.ValpUtbetaling
 import models.kontrakter.objectMapper
 
 fun Route.api(correlator: RequestReplyCorrelator) {
@@ -65,6 +66,14 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
             correlator.producers.produceHistorisk(it, objectMapper.writeValueAsBytes(dto))
+        })
+    }
+
+    post("/abetal/valp") {
+        val dto = call.receive<ValpUtbetaling>()
+        val txId = UUID.randomUUID()
+        call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
+            correlator.producers.produceValp(it, objectMapper.writeValueAsBytes(dto))
         })
     }
 
