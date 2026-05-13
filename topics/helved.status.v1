@@ -31,9 +31,6 @@ spec:
       application: dp-mellom-barken-og-veden
       access: read
     - team: helved
-      application: kafka-cli
-      access: readwrite
-    - team: helved
       application: snickerboa
       access: read
     - team: tilleggsstonader

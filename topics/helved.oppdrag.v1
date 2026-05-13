@@ -28,8 +28,5 @@ spec:
       application: vedskiva
       access: read
     - team: helved
-      application: kafka-cli
-      access: readwrite
-    - team: helved
       application: statistikkern
       access: read
