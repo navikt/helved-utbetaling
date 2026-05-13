@@ -33,6 +33,8 @@ enum class Table {
     ts,
     historisk,
     historiskIntern,
+    valp,
+    valpIntern,
 }
 
 data class Header(

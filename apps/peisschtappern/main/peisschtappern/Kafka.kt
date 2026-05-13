@@ -32,6 +32,8 @@ object Topics {
     val aapIntern = Topic("helved.utbetalinger-aap.v1", bytes())
     val historisk = Topic("historisk.utbetaling.v1", bytes())
     val historiskIntern = Topic("helved.utbetalinger-historisk.v1", bytes())
+    val valp = Topic("team-mulighetsrommet.tilskudd.utbetaling-v1", bytes())
+    val valpIntern = Topic("helved.utbetalinger-valp.v1", bytes())
 }
 
 fun createTopology(config: Config, jdbcCtx: CoroutineDatasource): Topology = topology {
@@ -74,7 +76,7 @@ private fun Topology.save(
                         val aud = AuditMetadata.parse(metadata) 
                         val headers = metadata.headers.map { (k, v) -> Header(k, v) }
                         Daos(
-                            version = topic.name.substringAfterLast("."),
+                            version = topic.name.substringAfterLast(".").substringAfterLast("-"),
                             topic_name = topic.name,
                             key = key,
                             value = value?.decodeToString(),
