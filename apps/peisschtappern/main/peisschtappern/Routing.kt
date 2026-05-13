@@ -368,6 +368,8 @@ sealed class Channel(
     data object Aap : Channel(Topics.aap, Table.aap, 20)
     data object HistoriskIntern : Channel(Topics.historiskIntern, Table.historiskIntern, 21)
     data object Historisk : Channel(Topics.historisk, Table.historisk, 22)
+    data object ValpIntern : Channel(Topics.valpIntern, Table.valpIntern, 23)
+    data object Valp : Channel(Topics.valp, Table.valp, 24)
 
     companion object {
         fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel }

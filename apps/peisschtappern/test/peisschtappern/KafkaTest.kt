@@ -38,6 +38,8 @@ class KafkaTest {
                 Channel.AapIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                 Channel.Historisk -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                 Channel.HistoriskIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+                Channel.Valp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+                Channel.ValpIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
             }
         }
     }
