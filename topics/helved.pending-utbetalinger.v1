@@ -21,6 +21,3 @@ spec:
     - team: helved
       application: peisschtappern
       access: read
-    - team: helved
-      application: kafka-cli
-      access: readwrite
