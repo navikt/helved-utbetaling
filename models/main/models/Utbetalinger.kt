@@ -282,6 +282,7 @@ sealed interface Stønadstype {
                 .recoverCatching { StønadTypeTiltakspenger.valueOf(str) }
                 .recoverCatching { StønadTypeAAP.valueOf(str) }
                 .recoverCatching { StønadTypeHistorisk.valueOf(str) }
+                .recoverCatching { StønadTypeValp.valueOf(str) }
                 .getOrThrow()
 
         fun fraKode(klassekode: String): Stønadstype =

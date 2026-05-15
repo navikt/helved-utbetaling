@@ -1,7 +1,7 @@
 apiVersion: kafka.nais.io/v1
 kind: Topic
 metadata:
-  name: utbetalinger-ts.v1
+  name: utbetalinger-valp.v1
   namespace: helved
   labels:
     team: helved
@@ -23,4 +23,4 @@ spec:
       access: write
     - team: helved
       application: peisschtappern
-      access: readwrite
+      access: read

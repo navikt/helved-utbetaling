@@ -51,26 +51,60 @@ data class ValpUtbetaling(
             uidsPåSak: Set<UtbetalingId>?,
         ): Utbetaling {
             val stønad = stønad(dto.tiltakskode, dto.tilskuddstype)
-            return Utbetaling(
-                dryrun = dto.dryrun,
-                originalKey = originalKey,
-                fagsystem = Fagsystem.HISTORISK,
-                uid = UtbetalingId(dto.id),
-                action = Action.CREATE,
-                førsteUtbetalingPåSak = uidsPåSak == null,
-                sakId = SakId(dto.sakId),
-                behandlingId = BehandlingId(dto.behandlingId),
-                lastPeriodeId = PeriodeId(),
-                personident = Personident(dto.personIdent),
-                vedtakstidspunkt = LocalDateTime.ofInstant(dto.besluttetTidspunkt, ZoneId.systemDefault()),
-                stønad = stønad,
-                beslutterId = dto.beslutter?.let(::Navident) ?: Navident("teamvalp"),
-                saksbehandlerId = Navident(dto.saksbehandler),
-                periodetype = Periodetype.EN_GANG,
-                avvent = null,
-                perioder = listOf(Utbetalingsperiode(dto.periode.fom, dto.periode.tom, dto.belop)),
-            )
+            return when (dto.belop) {
+                0u -> delete(originalKey, dto, stønad)
+                else -> create(originalKey, dto, uidsPåSak, stønad)
+            }
         }
+
+        private fun create(
+            originalKey: String,
+            dto: ValpUtbetaling,
+            uidsPåSak: Set<UtbetalingId>?,
+            stønad: StønadTypeValp,
+        ) = Utbetaling(
+            dryrun = dto.dryrun,
+            originalKey = originalKey,
+            fagsystem = Fagsystem.VALP,
+            uid = UtbetalingId(dto.id),
+            action = Action.CREATE,
+            førsteUtbetalingPåSak = uidsPåSak == null,
+            sakId = SakId(dto.sakId),
+            behandlingId = BehandlingId(dto.behandlingId),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident(dto.personIdent),
+            vedtakstidspunkt = LocalDateTime.ofInstant(dto.besluttetTidspunkt, ZoneId.systemDefault()),
+            stønad = stønad,
+            beslutterId = dto.beslutter?.let(::Navident) ?: Navident("teamvalp"),
+            saksbehandlerId = Navident(dto.saksbehandler),
+            periodetype = Periodetype.EN_GANG,
+            avvent = null,
+            perioder = listOf(Utbetalingsperiode(dto.periode.fom, dto.periode.tom, dto.belop))
+        )
+
+        private fun delete(
+            originalKey: String,
+            dto: ValpUtbetaling,
+            stønad: StønadTypeValp
+        ) = Utbetaling(
+            dryrun = dto.dryrun,
+            originalKey = originalKey,
+            fagsystem = Fagsystem.VALP,
+            uid = UtbetalingId(dto.id),
+            action = Action.FAKE_DELETE,
+            førsteUtbetalingPåSak = false,
+            sakId = SakId(dto.sakId),
+            behandlingId = BehandlingId(dto.behandlingId),
+            lastPeriodeId = PeriodeId(),
+            personident = Personident(dto.personIdent),
+            vedtakstidspunkt = LocalDateTime.ofInstant(dto.besluttetTidspunkt, ZoneId.systemDefault()),
+            stønad = stønad,
+            beslutterId = dto.beslutter?.let(::Navident) ?: Navident("teamvalp"),
+            saksbehandlerId = Navident(dto.saksbehandler),
+            periodetype = Periodetype.EN_GANG,
+            avvent = null,
+            perioder = listOf(Utbetalingsperiode(dto.periode.fom, dto.periode.tom, 1u)),
+        )
     }
 }
 

@@ -25,7 +25,8 @@ fun Parameters.fagsystem() =
                 listOf("TILLSTPB", "TILLSTLM", "TILLSTDR", "TILLSTBO", "TILLST", "TILLEGGSSTØNADER"),
                 listOf("DP", "DAGPENGER"),
                 listOf("HELSREF", "HISTORISK"),
-                listOf("AAP")
+                listOf("AAP"),
+                listOf("VALP", "TILLSOPP")
             ).find {
                 it.contains(fagsystem)
             } ?: emptyList()
@@ -82,4 +83,5 @@ fun Fagsystem.tables(): Triple<Table?, Table, Table?> =
         Fagsystem.TILLSTFL,
         Fagsystem.TILLEGGSSTØNADER -> Triple(Table.ts, Table.tsIntern, Table.dryrun_ts)
         Fagsystem.HISTORISK -> Triple(Table.historisk, Table.historiskIntern, null)
+        Fagsystem.VALP -> Triple(Table.valp, Table.valpIntern, null)
     }

@@ -19,6 +19,7 @@ object Topics {
     val aap = Topic("aap.utbetaling.v1", bytes())
     val ts = Topic("tilleggsstonader.utbetaling.v1", bytes())
     val historisk = Topic("historisk.utbetaling.v1", bytes())
+    val valp = Topic("team-mulighetsrommet.tilskudd.utbetaling-v1", bytes())
 
     // TODO: rename denne til tpUtbetalinger når ts har laget topic
     val tp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
@@ -32,6 +33,7 @@ object Topics {
     val aapIntern = Topic("helved.utbetalinger-aap.v1", bytes())
     val tsIntern = Topic("helved.utbetalinger-ts.v1", bytes())
     val historiskIntern = Topic("helved.utbetalinger-historisk.v1", bytes())
+    val valpIntern = Topic("helved.utbetalinger-valp.v1", bytes())
     val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
@@ -58,6 +60,7 @@ fun createTopology(kafka: Streams): Topology = topology {
     tsStream(saker, kafka)
     tpStream(saker, kafka)
     historiskStream(saker, kafka)
+    valpStream(saker, kafka)
     successfulUtbetalingStream(pendingUtbetalinger)
 }
 
@@ -74,6 +77,7 @@ data class TsTuple(
 
 data class HistoriskTuple(val key: String, val value: HistoriskUtbetaling)
 data class TpTuple(val key: String, val value: TpUtbetaling)
+data class ValpTuple(val key: String, val value: ValpUtbetaling)
 
 /**
  * Dagpenger sender hele saken sin hver gang, som inneholder en eller fler meldeperioder.
@@ -281,6 +285,40 @@ fun Topology.historiskStream(
         .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
         .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
         .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.HISTORISK, this) }
+}
+
+fun Topology.valpStream(
+    saker: KTable<SakKey, Set<UtbetalingId>>,
+    kafka: Streams,
+) {
+    consume(Topics.valp)
+        .repartition(Topics.valp, 3, "from-${Topics.valp.name}")
+        .merge(consume(Topics.valpIntern))
+        .map { key, payload -> ValpTuple(key, deserialize(Topics.valp.name, payload, ValpUtbetaling::class)) }
+        .rekey { (_, valp) -> SakKey(SakId(valp.sakId), Fagsystem.VALP) }
+        .leftJoin(Serde.json(), Serde.json(), saker, "valptuple-leftjoin-saker")
+        .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
+        .includeHeader(FS_KEY) { Fagsystem.VALP.name }
+        .map { req, uids -> ValpUtbetaling.toDomain(req.key, req.value, uids) }
+        .rekey { dto -> dto.originalKey }
+        .map { new ->
+            val store = kafka.getStore(Stores.utbetalinger)
+            val aggregate = listOf(StreamsPair(new, store.getOrNull(new.uid.toString())))
+
+            if (new.dryrun) {
+                return@map Result.catch { AggregateService.utledSimulering(aggregate) }
+                    .map(StreamResult::SimuleringOk)
+                    .getOrElse(StreamResult::SimuleringError)
+            }
+
+            Result.catch { AggregateService.utledOppdrag(aggregate) }
+                .map(StreamResult::OppdragOk)
+                .getOrElse(StreamResult::OppdragError)
+        }
+        .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
+        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+        .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
+        .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.VALP, this) }
 }
 
 /**

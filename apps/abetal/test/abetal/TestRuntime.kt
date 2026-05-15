@@ -12,6 +12,7 @@ class TestTopics(kafka: StreamsMock) {
     val ts = kafka.testTopic(Topics.ts)
     val tp = kafka.testTopic(Topics.tp)
     val historisk = kafka.testTopic(Topics.historisk)
+    val valp = kafka.testTopic(Topics.valp)
 
     val saker = kafka.testTopic(Topics.saker)
     val utbetalinger = kafka.testTopic(Topics.utbetalinger)
@@ -22,6 +23,7 @@ class TestTopics(kafka: StreamsMock) {
     val dpIntern = kafka.testTopic(Topics.dpIntern)
     val tsIntern = kafka.testTopic(Topics.tsIntern)
     val historiskIntern = kafka.testTopic(Topics.historiskIntern)
+    val valpIntern = kafka.testTopic(Topics.valpIntern)
     val retryOppdrag = kafka.testTopic(Topics.retryOppdrag)
     val dryrunAap = kafka.testTopic(Topics.dryrunAap)
     val dryrunDp = kafka.testTopic(Topics.dryrunDp)

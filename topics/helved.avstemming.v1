@@ -21,6 +21,3 @@ spec:
     - team: helved
       application: vedskiva
       access: write
-    - team: helved
-      application: kafka-cli
-      access: readwrite
