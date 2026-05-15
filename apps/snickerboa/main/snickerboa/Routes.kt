@@ -1,5 +1,6 @@
 package snickerboa
 
+import libs.kafka.JsonSerde
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
@@ -13,7 +14,6 @@ import models.HistoriskUtbetaling
 import models.TpUtbetaling
 import models.TsDto
 import models.ValpUtbetaling
-import models.kontrakter.objectMapper
 
 fun Route.api(correlator: RequestReplyCorrelator) {
     suspend fun ApplicationCall.respond(response: UtbetalingResponse) {
@@ -24,7 +24,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<AapUtbetaling>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceAap(it, objectMapper.writeValueAsBytes(dto))
+            correlator.producers.produceAap(it, JsonSerde.jackson.writeValueAsBytes(dto))
         })
     }
 
@@ -32,7 +32,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<DpUtbetaling>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceDp(it, objectMapper.writeValueAsBytes(dto))
+            correlator.producers.produceDp(it, JsonSerde.jackson.writeValueAsBytes(dto))
         })
     }
 
@@ -41,7 +41,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
             ?: throw IllegalArgumentException("Ugyldig UUID i path")
         val dto = call.receive<DpUtbetaling>()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceDp(it, objectMapper.writeValueAsBytes(dto))
+            correlator.producers.produceDp(it, JsonSerde.jackson.writeValueAsBytes(dto))
         })
     }
 
@@ -49,7 +49,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<TsDto>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceTs(it, objectMapper.writeValueAsBytes(dto))
+            correlator.producers.produceTs(it, JsonSerde.jackson.writeValueAsBytes(dto))
         })
     }
 
@@ -57,7 +57,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<TpUtbetaling>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceTp(it, objectMapper.writeValueAsBytes(dto))
+            correlator.producers.produceTp(it, JsonSerde.jackson.writeValueAsBytes(dto))
         })
     }
 
@@ -65,7 +65,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<HistoriskUtbetaling>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceHistorisk(it, objectMapper.writeValueAsBytes(dto))
+            correlator.producers.produceHistorisk(it, JsonSerde.jackson.writeValueAsBytes(dto))
         })
     }
 
@@ -73,7 +73,7 @@ fun Route.api(correlator: RequestReplyCorrelator) {
         val dto = call.receive<ValpUtbetaling>()
         val txId = UUID.randomUUID()
         call.respond(correlator.handleUtbetaling(dto.dryrun, txId) {
-            correlator.producers.produceValp(it, objectMapper.writeValueAsBytes(dto))
+            correlator.producers.produceValp(it, JsonSerde.jackson.writeValueAsBytes(dto))
         })
     }
 
@@ -108,4 +108,3 @@ fun Routing.probes(meters: PrometheusMeterRegistry) {
         }
     }
 }
-
