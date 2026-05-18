@@ -20,7 +20,8 @@ enum class Fagsystem(val fagområde: String) {
     companion object {
 
         fun fromFagområde(fagområde: String) =
-            entries.single { it.fagområde == fagområde }
+            entries.singleOrNull { it.fagområde == fagområde }
+            ?: notImplemented("fagområde '$fagområde' not yet mapped.")
 
         fun from(kode: String) = when (kode) {
             "DP" -> DAGPENGER

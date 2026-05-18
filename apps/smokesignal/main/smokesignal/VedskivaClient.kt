@@ -4,10 +4,12 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.utils.appLog
+import libs.utils.secureLog
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -45,7 +47,10 @@ class VedskivaClient(
             appLog.info("Allerede avstemt i dag")
             return 
         }
-        require(res.status == HttpStatusCode.OK)
+        if (res.status != HttpStatusCode.OK) {
+            appLog.error("Failed to trigger avstemming: $req => <redacted>")
+            secureLog.error("Failed to trigger avstemming: $req => ${res.bodyAsText()}")
+        }
     }
 }
 
