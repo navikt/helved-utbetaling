@@ -6,7 +6,7 @@ application {
     mainClass.set("speiderhytta.SpeiderhyttaKt")
 }
 
-val ktorVersion = "3.4.2"
+val ktorVersion = "3.4.3"
 
 dependencies {
     implementation(project(":models"))
