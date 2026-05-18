@@ -8,7 +8,7 @@ application {
 
 val ktorVersion = "3.4.2"
 val libVersion = "3.1.250"
-val nettyVersion = "4.2.11.Final"
+val nettyVersion = "4.2.13.Final"
 val jackson3Version = "3.1.1"
 
 dependencies {
