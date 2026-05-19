@@ -313,6 +313,11 @@ private fun kvitteringReadyOrRetry(
                 kafkaLog.info("kvittering for hash:$hashKey har ikke matchende oppdrag-rad ennå, ruter til retry-kvittering (forsøk $retries)")
                 return@transaction KvitteringDecision.Retry(oppdrag, retries)
             }
+            if (locked.uids.isEmpty()) {
+                val alvorlighet = oppdrag.mmel?.alvorlighetsgrad ?: "ukjent"
+                libs.utils.appLog.info("utsjekk-REST bypass: hash=$hashKey alvorlighet=$alvorlighet (uids tom -> Terminal uten barrier)")
+                return@transaction KvitteringDecision.Terminal(statusReply(oppdrag))
+            }
             val pendingReady = pendingIsReady(hashKey, locked.uids)
             val sakerReady = locked.sakerAck
             if (pendingReady && sakerReady) {
