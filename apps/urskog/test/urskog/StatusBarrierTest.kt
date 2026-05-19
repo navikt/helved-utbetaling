@@ -119,6 +119,68 @@ class StatusBarrierTest {
     }
 
     @Test
+    fun `abetal kvittering med mmel finner lagret oppdrag-rad via stripped hash`() {
+        // Regresjon: hash i kvitteringReadyOrRetry må regnes på mmel-strippet kopi for at
+        // oppslaget skal matche raden som T1-grenen lagret (uten mmel). Tidligere brukte
+        // barrieren hash(oppdrag-med-mmel) som garantert bommet -> 1000 retries -> FEILET.
+        val transaction = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+        val sakId = SakId("$seq")
+        val bid = "$seq"
+
+        val oppdrag = TestData.oppdrag(
+            fagsystemId = sakId.id,
+            fagområde = "AAP",
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    henvisning = bid,
+                    delytelsesId = PeriodeId().toString(),
+                    klassekode = "AAPOR",
+                    datoVedtakFom = 1.nov,
+                    datoVedtakTom = 14.nov,
+                    typeSats = "DAG",
+                    sats = 1000L,
+                )
+            ),
+        )
+
+        // T1: produser oppdrag (mmel=null) -> lagres med hash_key = hash(stripped)
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("uids" to uid.toString())) { oppdrag }
+        val storedHash = DaoOppdrag.hash(oppdrag)
+        TestRuntime.topics.pendingUtbetalinger.produce(uid.toString(), mapOf("hash_key" to storedHash)) {
+            TestData.utbetaling(uid = uid, sakId = sakId, originalKey = transaction, fagsystem = Fagsystem.AAP)
+        }
+
+        // Produser utbetaling slik at saker-aggregatet kjører og markSakerAck flipper sakerAck=true
+        TestRuntime.topics.utbetalinger.produce(uid.toString()) {
+            TestData.utbetaling(uid = uid, sakId = sakId, originalKey = transaction, fagsystem = Fagsystem.AAP)
+        }
+        val daoAfterSaker = runBlocking {
+            withContext(TestRuntime.context) {
+                transaction { DaoOppdrag.findWithLockOrLegacy(storedHash, oppdrag) }
+            }
+        }
+        assertNotNull(daoAfterSaker)
+        assertEquals(true, daoAfterSaker.sakerAck)
+
+        // Kvittering: samme oppdrag-instans, men nå med mmel populert. Topology re-serialiserer
+        // til XML med mmel -> barrieren får inn et Oppdrag-objekt der mmel ikke er null.
+        // Med fixen regner barrieren hash på mmel-strippet kopi og finner lagret rad -> Status.OK.
+        oppdrag.mmel = TestData.ok()
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString())) { oppdrag }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transaction, size = 2)
+            .with(transaction, index = 0) { reply ->
+                assertEquals(Status.HOS_OPPDRAG, reply.status, "T1 emitter HOS_OPPDRAG først")
+            }
+            .with(transaction, index = 1) { reply ->
+                assertEquals(Status.OK, reply.status, "Barrier må resolve abetal-kvittering via stripped hash")
+            }
+        TestRuntime.topics.retryKvittering.assertThat()
+    }
+
+    @Test
     fun `utsjekk-origin kvittering uten oppdrag-rad og uten uids-header kortsluttes til Terminal`() {
         val transaction = UUID.randomUUID().toString()
         val sakIdStr = "$seq"

@@ -301,14 +301,18 @@ private fun kvitteringReadyOrRetry(
     val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
     val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: kvitteringDefaultMaxRetries
     return runBlocking(jdbcCtx + Dispatchers.IO) {
-        val hashKey = DaoOppdrag.hash(oppdrag)
+        // Kvittering kommer tilbake fra OS med mmel populert, men oppdrag-raden ble lagret før
+        // mmel var satt. Hash må regnes på en mmel-strippet kopi for at oppslaget skal matche --
+        // samme konvensjon som MQ-consumer (MQ.kt) bruker når den lagrer rad og re-publiserer.
+        val hashKey = DaoOppdrag.hashStripped(oppdrag)
+        val stripped = DaoOppdrag.strip(oppdrag)
         // utsjekk-origin kvittering bærer ikke "uids"-header (abetal setter alltid den),
         // og utsjekk-kvitteringen får ofte hash-mismatch mot lagret oppdrag-rad (mmel-felt
         // er populert på vei inn, men null i lagret outbound). Disse skal kortsluttes til
         // Terminal -- barrieren gjelder kun abetal-flyten med pending-aggregering.
         val isUtsjekkOrigin = meta.headers["uids"].isNullOrBlank()
         transaction {
-            val locked = DaoOppdrag.findWithLockOrLegacy(hashKey, oppdrag)
+            val locked = DaoOppdrag.findWithLockOrLegacy(hashKey, stripped)
             if (locked == null) {
                 if (isUtsjekkOrigin) {
                     val alvorlighet = oppdrag.mmel?.alvorlighetsgrad ?: "ukjent"
