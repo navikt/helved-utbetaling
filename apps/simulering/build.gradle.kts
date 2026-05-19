@@ -8,8 +8,17 @@ application {
 
 val ktorVersion = "3.4.2"
 val libVersion = "3.1.250"
+val nettyVersion = "4.2.13.Final"
+val jackson3Version = "3.1.1"
 
 dependencies {
+    // Trivy 2026-05-18: Ktor 3.4.2 still resolves Netty 4.2.9.Final, and
+    // logstash-logback-encoder 9.0 pulls Jackson 3.0.1. Override those
+    // transitive versions here until the upstreams move past the fixed ranges.
+    implementation(platform("io.netty:netty-bom:$nettyVersion"))
+    implementation("tools.jackson.core:jackson-core:$jackson3Version")
+    implementation("tools.jackson.core:jackson-databind:$jackson3Version")
+
     implementation(project(":models"))
     implementation(project(":libs:http"))
     implementation(project(":libs:auth"))
