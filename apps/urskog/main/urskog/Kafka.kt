@@ -320,8 +320,8 @@ private fun kvitteringReadyOrRetry(
                     return@transaction KvitteringDecision.Terminal(statusReply(oppdrag))
                 }
                 if (retries >= maxRetries) {
-                    libs.utils.appLog.error("Kvittering barrier eksaurert for hash:$hashKey etter $retries forsøk. pendingReady=n/a, sakerReady=n/a (manglende oppdrag-rad)")
-                    val diag = ApiError(500, "Kvittering barrier eksaurert etter $retries/$maxRetries forsøk: manglende oppdrag-rad for hash:$hashKey")
+                    libs.utils.appLog.error("Kvittering for hash:$hashKey ga opp etter $retries forsøk. pendingReady=n/a, sakerReady=n/a (manglende oppdrag-rad)")
+                    val diag = ApiError(500, "Kvittering ga opp etter $retries/$maxRetries forsøk: manglende oppdrag-rad for hash:$hashKey")
                     return@transaction KvitteringDecision.Terminal(StatusReply.err(oppdrag, diag))
                 }
                 kafkaLog.info("kvittering for hash:$hashKey har ikke matchende oppdrag-rad ennå, ruter til retry-kvittering (forsøk $retries)")
@@ -338,8 +338,8 @@ private fun kvitteringReadyOrRetry(
             if (pendingReady && sakerReady) {
                 KvitteringDecision.Terminal(statusReply(oppdrag))
             } else if (retries >= maxRetries) {
-                libs.utils.appLog.error("Kvittering barrier eksaurert for hash:$hashKey etter $retries forsøk. pendingReady=$pendingReady, sakerReady=$sakerReady")
-                val diag = ApiError(500, "Kvittering barrier eksaurert etter $retries/$maxRetries forsøk: pendingReady=$pendingReady, sakerReady=$sakerReady")
+                libs.utils.appLog.error("Kvittering for hash:$hashKey ga opp etter $retries forsøk. pendingReady=$pendingReady, sakerReady=$sakerReady")
+                val diag = ApiError(500, "Kvittering ga opp etter $retries/$maxRetries forsøk: pendingReady=$pendingReady, sakerReady=$sakerReady")
                 KvitteringDecision.Terminal(StatusReply.err(oppdrag, diag))
             } else {
                 kafkaLog.info("kvittering for hash:$hashKey ikke klar (pendingReady=$pendingReady, sakerAck=${locked.sakerAck}), ruter til retry-kvittering (forsøk $retries)")
