@@ -92,7 +92,9 @@ class StatusBarrierTest {
         assertEquals(false, daoBefore.sakerAck, "sakerAck must still be false BEFORE saker aggregate catches up")
 
         oppdrag.mmel = TestData.ok()
-        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2")) { oppdrag }
+        // I produksjon setter urskog MQ-consumer alltid "uids"-header på kvittering -- abetal-origin
+        // har ikke-tom uids, utsjekk-origin har tom uids. Test simulerer abetal-flyten.
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString())) { oppdrag }
 
         val statusAfterKvittering = TestRuntime.topics.status.assertThat()
             .has(transaction, size = 1)
@@ -114,6 +116,44 @@ class StatusBarrierTest {
         }
         assertNotNull(daoAfter)
         assertEquals(true, daoAfter.sakerAck, "sakerAck must flip to true after saker aggregate catches up")
+    }
+
+    @Test
+    fun `utsjekk-origin kvittering uten oppdrag-rad og uten uids-header kortsluttes til Terminal`() {
+        val transaction = UUID.randomUUID().toString()
+        val sakIdStr = "$seq"
+        val bid = "$seq"
+
+        val oppdrag = TestData.oppdrag(
+            fagsystemId = sakIdStr,
+            fagområde = "AAP",
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    henvisning = bid,
+                    delytelsesId = PeriodeId().toString(),
+                    klassekode = "AAPOR",
+                    datoVedtakFom = 1.nov,
+                    datoVedtakTom = 14.nov,
+                    typeSats = "DAG",
+                    sats = 1000L,
+                )
+            ),
+        )
+
+        // Ingen oppdrag-row insertes (utsjekk-REST flyt: utsjekk produserer rå Oppdrag uten
+        // hash_key/uids-header, urskog T1-branch sender til MQ uten å persistere). Kvittering
+        // kommer tilbake med mmel populert, men ingen lagret rad finnes -> locked == null.
+        oppdrag.mmel = TestData.ok()
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2")) { oppdrag }
+
+        // Forventet: bypass kortslutter til Terminal med Status.OK uten retry-runde.
+        TestRuntime.topics.status.assertThat()
+            .has(transaction, size = 1)
+            .with(transaction) { reply ->
+                assertEquals(Status.OK, reply.status, "utsjekk-origin kvittering uten uids-header må bypasse barrieren")
+            }
+
+        TestRuntime.topics.retryKvittering.assertThat()
     }
 
     @Test
@@ -153,7 +193,9 @@ class StatusBarrierTest {
             ))))
 
         oppdrag.mmel = TestData.ok()
-        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2")) { oppdrag }
+        // I produksjon setter urskog MQ-consumer alltid "uids"-header på kvittering -- abetal-origin
+        // har ikke-tom uids, utsjekk-origin har tom uids. Test simulerer abetal-flyten.
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString())) { oppdrag }
 
         val statusAfterKvittering = TestRuntime.topics.status.assertThat()
             .has(transaction, size = 1)

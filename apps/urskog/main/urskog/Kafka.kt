@@ -302,9 +302,19 @@ private fun kvitteringReadyOrRetry(
     val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: kvitteringDefaultMaxRetries
     return runBlocking(jdbcCtx + Dispatchers.IO) {
         val hashKey = DaoOppdrag.hash(oppdrag)
+        // utsjekk-origin kvittering bærer ikke "uids"-header (abetal setter alltid den),
+        // og utsjekk-kvitteringen får ofte hash-mismatch mot lagret oppdrag-rad (mmel-felt
+        // er populert på vei inn, men null i lagret outbound). Disse skal kortsluttes til
+        // Terminal -- barrieren gjelder kun abetal-flyten med pending-aggregering.
+        val isUtsjekkOrigin = meta.headers["uids"].isNullOrBlank()
         transaction {
             val locked = DaoOppdrag.findWithLockOrLegacy(hashKey, oppdrag)
             if (locked == null) {
+                if (isUtsjekkOrigin) {
+                    val alvorlighet = oppdrag.mmel?.alvorlighetsgrad ?: "ukjent"
+                    libs.utils.appLog.info("utsjekk-REST bypass: hash=$hashKey alvorlighet=$alvorlighet (locked=null, uids-header mangler -> Terminal uten barrier)")
+                    return@transaction KvitteringDecision.Terminal(statusReply(oppdrag))
+                }
                 if (retries >= maxRetries) {
                     libs.utils.appLog.error("Kvittering barrier eksaurert for hash:$hashKey etter $retries forsøk. pendingReady=n/a, sakerReady=n/a (manglende oppdrag-rad)")
                     val diag = ApiError(500, "Kvittering barrier eksaurert etter $retries/$maxRetries forsøk: manglende oppdrag-rad for hash:$hashKey")
@@ -313,9 +323,10 @@ private fun kvitteringReadyOrRetry(
                 kafkaLog.info("kvittering for hash:$hashKey har ikke matchende oppdrag-rad ennå, ruter til retry-kvittering (forsøk $retries)")
                 return@transaction KvitteringDecision.Retry(oppdrag, retries)
             }
-            if (locked.uids.isEmpty()) {
+            if (locked.uids.isEmpty() || isUtsjekkOrigin) {
                 val alvorlighet = oppdrag.mmel?.alvorlighetsgrad ?: "ukjent"
-                libs.utils.appLog.info("utsjekk-REST bypass: hash=$hashKey alvorlighet=$alvorlighet (uids tom -> Terminal uten barrier)")
+                val grunn = if (locked.uids.isEmpty()) "uids tom" else "uids-header mangler"
+                libs.utils.appLog.info("utsjekk-REST bypass: hash=$hashKey alvorlighet=$alvorlighet ($grunn -> Terminal uten barrier)")
                 return@transaction KvitteringDecision.Terminal(statusReply(oppdrag))
             }
             val pendingReady = pendingIsReady(hashKey, locked.uids)
