@@ -52,6 +52,7 @@ data class Config(
             pass = env("servicebruker_passord"), // from secret utsjekk-oppdrag-simulering
         ),
     ),
+    val cluster: String = env("NAIS_CLUSTER_NAME"),
 )
 
 data class OppdragConfig(

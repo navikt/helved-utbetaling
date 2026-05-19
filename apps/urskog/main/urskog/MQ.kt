@@ -22,7 +22,7 @@ import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import javax.jms.TextMessage
 
-class OppdragMQProducer(config: Config, mq: MQ, private val meters: MeterRegistry) {
+class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: MeterRegistry) {
     private val kvitteringQueue = config.oppdrag.kvitteringsKø
     private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
     private val darePocAapProducer = DefaultMQProducer(mq, config.oppdrag.darePocAapKø)
@@ -58,6 +58,7 @@ class OppdragMQProducer(config: Config, mq: MQ, private val meters: MeterRegistr
     }
 
     private fun sendDarePocAapKopi(oppdrag: Oppdrag, oppdragXml: String, hash: String) {
+        if (config.cluster  != "dev-gcp") return
         if (oppdrag.fagsystem() != Fagsystem.AAP.name) return
         runCatching {
             darePocAapProducer.produce(oppdragXml)
