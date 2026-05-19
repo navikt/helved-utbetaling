@@ -376,7 +376,13 @@ private fun markSakerAck(sakKey: SakKey, uids: Set<UtbetalingId>, jdbcCtx: Corou
             DaoOppdrag.findPendingSakerAck(sakKey.sakId.id)
         }
         pendings.forEach { pending ->
-            val fagsystem = Fagsystem.fromFagområde(pending.oppdrag.oppdrag110.kodeFagomraade.trimEnd())
+            // Normaliser fagsystem på samme måte som utbetalingToSak (linje 49-53): alle
+            // TILLST*-sub-koder (TILLSTBO, TILLSTLM, etc.) rulles opp til TILLEGGSSTØNADER
+            // før vi sammenligner med sakKey.fagsystem. Uten denne normaliseringen treffer
+            // TS-saker aldri sakKey-aggregatet, sakerAck flippes aldri, og barrieren
+            // eksauserer 1000 retries -> Status.FEILET.
+            val rawFagsystem = Fagsystem.fromFagområde(pending.oppdrag.oppdrag110.kodeFagomraade.trimEnd())
+            val fagsystem = if (rawFagsystem.isTilleggsstønader()) Fagsystem.TILLEGGSSTØNADER else rawFagsystem
             if (fagsystem != sakKey.fagsystem) return@forEach
             if (!newUidStrings.containsAll(pending.uids)) return@forEach
 
