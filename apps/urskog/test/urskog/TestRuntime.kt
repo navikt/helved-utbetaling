@@ -115,6 +115,7 @@ object TestConfig {
             proxy = proxy,
             azure = azure,
             simulering = simulering,
+            cluster = "test-cluster",
         )
     }
 }
