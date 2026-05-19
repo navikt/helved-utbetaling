@@ -181,6 +181,54 @@ class StatusBarrierTest {
     }
 
     @Test
+    fun `TS-saker med sub-fagområde TILLSTBO flipper sakerAck via normalisert fagsystem`() {
+        // Regresjon: markSakerAck må normalisere TILLST*-sub-koder (TILLSTBO, TILLSTLM, ...)
+        // til TILLEGGSSTØNADER for å matche SakKey-aggregatet i utbetalingToSak. Uten
+        // normaliseringen blir sakerAck aldri flippet for TS-saker -> barrier eksauserer.
+        val transaction = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+        val sakId = SakId("$seq")
+        val bid = "$seq"
+
+        val oppdrag = TestData.oppdrag(
+            fagsystemId = sakId.id,
+            fagområde = "TILLSTBO", // TS sub-kode
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    henvisning = bid,
+                    delytelsesId = PeriodeId().toString(),
+                    klassekode = "TSBOTILT",
+                    datoVedtakFom = 1.nov,
+                    datoVedtakTom = 14.nov,
+                    typeSats = "DAG",
+                    sats = 500L,
+                )
+            ),
+        )
+
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("uids" to uid.toString())) { oppdrag }
+        val storedHash = DaoOppdrag.hash(oppdrag)
+        TestRuntime.topics.pendingUtbetalinger.produce(uid.toString(), mapOf("hash_key" to storedHash)) {
+            TestData.utbetaling(uid = uid, sakId = sakId, originalKey = transaction, fagsystem = Fagsystem.TILLSTBO)
+        }
+
+        // markSakerAck trigges av utbetalinger-topic. SakKey-aggregatet ruller TILLSTBO opp
+        // til TILLEGGSSTØNADER. Pending-raden ble lagret med kodeFagomraade=TILLSTBO som
+        // mapper til Fagsystem.TILLSTBO -- markSakerAck må normalisere før sammenligning.
+        TestRuntime.topics.utbetalinger.produce(uid.toString()) {
+            TestData.utbetaling(uid = uid, sakId = sakId, originalKey = transaction, fagsystem = Fagsystem.TILLSTBO)
+        }
+
+        val daoAfterSaker = runBlocking {
+            withContext(TestRuntime.context) {
+                transaction { DaoOppdrag.findWithLockOrLegacy(storedHash, oppdrag) }
+            }
+        }
+        assertNotNull(daoAfterSaker)
+        assertEquals(true, daoAfterSaker.sakerAck, "sakerAck må flippe for TS-saker med sub-fagområde")
+    }
+
+    @Test
     fun `utsjekk-origin kvittering uten oppdrag-rad og uten uids-header kortsluttes til Terminal`() {
         val transaction = UUID.randomUUID().toString()
         val sakIdStr = "$seq"
