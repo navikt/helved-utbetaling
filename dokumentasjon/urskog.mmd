@@ -12,8 +12,12 @@ subgraph Topologi
 	helved.dryrun-ts.v1([helved.dryrun-ts.v1])
 	helved.dryrun-tp.v1([helved.dryrun-tp.v1])
 	helved.oppdrag.v1([helved.oppdrag.v1])
+	helved.retry-kvittering.v1([helved.retry-kvittering.v1])
 	helved.pending-utbetalinger.v1([helved.pending-utbetalinger.v1])
 	helved.avstemming.v1([helved.avstemming.v1])
+	helved.utbetalinger.v1([helved.utbetalinger.v1])
+	utbetalinger-groupby-sakkey-repartition([utbetalinger-groupby-sakkey-repartition])
+	helved.saker.v1([helved.saker.v1])
 
     %% JOINS
     
@@ -22,7 +26,7 @@ subgraph Topologi
     
     
     %% STATE STORES
-    
+    helved.saker.v1-state-store-materialized[(helved.saker.v1-state-store-materialized)]
     
     %% DATABASES
     
@@ -56,9 +60,13 @@ subgraph Topologi
 	helved.simuleringer.v1 --> helved.status.v1
 	helved.simuleringer.v1 --> helved.dryrun-tp.v1
 	helved.simuleringer.v1 --> helved.status.v1
+	helved.oppdrag.v1 --> helved.retry-kvittering.v1
 	helved.oppdrag.v1 --> helved.status.v1
 	helved.oppdrag.v1 --> helved.status.v1
+	helved.retry-kvittering.v1 --> helved.retry-kvittering.v1
+	helved.retry-kvittering.v1 --> helved.status.v1
 	helved.pending-utbetalinger.v1 --> helved.status.v1
+	helved.utbetalinger.v1 --> utbetalinger-groupby-sakkey-repartition
     
     %% CUSTOM PROCESS STREAMS
     
@@ -79,6 +87,11 @@ style helved.dryrun-dp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:
 style helved.dryrun-ts.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.dryrun-tp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.retry-kvittering.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.pending-utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.avstemming.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style utbetalinger-groupby-sakkey-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.saker.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.saker.v1-state-store-materialized fill:#78369f, stroke:#2a204a, stroke-width:2px, color:#2a204a
 

@@ -17,7 +17,6 @@ import utsjekk.utsjekk
 import javax.sql.DataSource
 import libs.kafka.SslConfig
 import libs.kafka.StreamsConfig
-import utsjekk.Tables
 import utsjekk.createTopology
 
 val httpClient: HttpClient by lazy { TestRuntime.ktor.httpClient }
@@ -28,7 +27,6 @@ class TestTopics(kafka: StreamsMock) {
     val dryrunTp = kafka.testTopic(Topics.dryrunTp)
     val dryrunTs = kafka.testTopic(Topics.dryrunTs)
     val oppdrag = kafka.testTopic(Topics.oppdrag) 
-    val saker = kafka.testTopic(Topics.saker)
     val status = kafka.testTopic(Topics.status)
     val utbetaling = kafka.testTopic(Topics.utbetaling)
 }
@@ -83,9 +81,7 @@ object TestRuntime {
                     config,
                     kafkaMock,
                     jdbcCtx = context,
-                    topology = kafkaMock.append(createTopology(context)) {
-                        consume(Tables.saker)
-                    }
+                    topology = createTopology(context)
                 )
             },
             onClose = {

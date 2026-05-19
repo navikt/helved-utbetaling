@@ -72,6 +72,7 @@ fun Application.urskog(
             simulering(simuleringService)
             oppdrag(oppdragProducer, prometheus, jdbcCtx)
             avstemming(avstemProducer)
+            utbetalingToSak(jdbcCtx)
         }
     )
 
