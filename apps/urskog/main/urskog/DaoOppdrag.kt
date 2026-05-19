@@ -19,6 +19,8 @@ data class DaoOppdrag (
     val uids: List<String>,
     val sent: Boolean = false,
     val sentAt: LocalDateTime? = null,
+    val sakerAck: Boolean = false,
+    val sakerAckAt: LocalDateTime? = null,
 ) {
 
     companion object: Dao<DaoOppdrag> {
@@ -32,6 +34,8 @@ data class DaoOppdrag (
             uids = rs.getString("uids").intoUids(),
             sent = rs.getBoolean("sent"),
             sentAt = rs.getTimestamp("sent_at")?.toLocalDateTime(),
+            sakerAck = rs.getBoolean("saker_ack"),
+            sakerAckAt = rs.getTimestamp("saker_ack_at")?.toLocalDateTime(),
         )
 
         fun hash(oppdrag: Oppdrag): String = mapper.writeValueAsString(oppdrag).sha256()
@@ -66,6 +70,17 @@ data class DaoOppdrag (
                 stmt.setString(1, hashKey)
             }.firstOrNull()
         }
+
+        suspend fun findPendingSakerAck(sakId: String): List<DaoOppdrag> {
+            val sql = """
+                SELECT * FROM $table
+                WHERE sak_id = ? AND saker_ack = false
+            """.trimIndent()
+
+            return query(sql) { stmt ->
+                stmt.setString(1, sakId)
+            }
+        }
     }
 
     suspend fun insertIdempotent(): Boolean {
@@ -78,8 +93,10 @@ data class DaoOppdrag (
                 behandling_id,
                 uids,
                 sent,
-                sent_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                sent_at,
+                saker_ack,
+                saker_ack_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (hash_key) DO NOTHING
         """.trimIndent()
 
@@ -93,7 +110,9 @@ data class DaoOppdrag (
             stmt.setString(5, behandlingId)
             stmt.setString(6, uids.joinToString(","))
             stmt.setBoolean(7, sent)
-            stmt.setTimestamp(8, sentAt?.let { Timestamp.valueOf(it) }) 
+            stmt.setTimestamp(8, sentAt?.let { Timestamp.valueOf(it) })
+            stmt.setBoolean(9, sakerAck)
+            stmt.setTimestamp(10, sakerAckAt?.let { Timestamp.valueOf(it) })
         }
 
         return when(rowsAffected) {
@@ -115,6 +134,21 @@ data class DaoOppdrag (
             stmt.setBoolean(1, true)
             stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
             stmt.setString(3, hash(oppdrag))
+        }
+    }
+
+    suspend fun updateSakerAck() {
+        val sql = """
+            UPDATE $table
+            SET 
+                saker_ack = true,
+                saker_ack_at = ?
+            WHERE hash_key = ? AND saker_ack = false
+        """.trimIndent()
+
+        update(sql) { stmt ->
+            stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
+            stmt.setString(2, hash(oppdrag))
         }
     }
 }

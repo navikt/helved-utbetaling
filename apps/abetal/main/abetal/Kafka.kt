@@ -64,8 +64,6 @@ fun createTopology(kafka: Streams): Topology = topology {
     successfulUtbetalingStream(pendingUtbetalinger)
 }
 
-data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
-
 data class AapTuple(val key: String, val value: AapUtbetaling)
 data class DpTuple(val key: String, val value: DpUtbetaling)
 data class TsTuple(

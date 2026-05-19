@@ -24,10 +24,13 @@ import javax.sql.DataSource
 val testLog = logger("test")
 
 class TestTopics(kafka: StreamsMock) {
+    val utbetalinger = kafka.testTopic(Topics.utbetalinger)
+    val saker = kafka.testTopic(Topics.saker)
     val avstemming = kafka.testTopic(Topics.avstemming) 
     val oppdrag = kafka.testTopic(Topics.oppdrag) 
     val pendingUtbetalinger = kafka.testTopic(Topics.pendingUtbetalinger)
     val status = kafka.testTopic(Topics.status)
+    val retryKvittering = kafka.testTopic(Topics.retryKvittering)
     val simuleringer = kafka.testTopic(Topics.simuleringer) 
     val dryrunAap = kafka.testTopic(Topics.dryrunAap) 
     val dryrunTilleggsstønader = kafka.testTopic(Topics.dryrunTilleggsstønader) 
@@ -119,4 +122,3 @@ object TestConfig {
         )
     }
 }
-

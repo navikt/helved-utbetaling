@@ -144,6 +144,11 @@ class OppdragTest {
 
     @Test
     fun `can receive kvittering from MQ `() {
+        // Legacy MQ kvittering arrives without a prior oppdrag write. After the read-side
+        // completeness barrier was introduced, an unseeded kvittering can never resolve the
+        // matching oppdrag row (production correlates strictly via XML hash) and is routed
+        // through retryKvittering until the retry budget is exhausted. Use a tiny maxRetries
+        // header so the exhaustion path completes quickly inside TopologyTestDriver.
         val uid = UUID.randomUUID().toString()
         val bid = "$seq"
 
@@ -164,16 +169,21 @@ class OppdragTest {
             ),
         )
 
-        TestRuntime.topics.oppdrag.produce(uid) {
+        TestRuntime.topics.oppdrag.produce(uid, mapOf("maxRetries" to "1")) {
             kvittering
         }
 
-        TestRuntime.topics.status.assertThat()
+        // Barrier MUST NOT emit Status.OK for an unseeded kvittering. The exhaustion path
+        // produces a single FEILET record on the status topic.
+        val statusRecords = TestRuntime.topics.status.assertThat()
             .has(uid, size = 1)
             .hasHeader(uid, FS_KEY to "AAP")
-            .has(uid, value = StatusReply(Status.OK, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
-                DetaljerLinje(bid, 3.nov, 7.nov, null, 700u, "AAPOR"),
-            ))))
+        statusRecords.with(uid) { reply ->
+            kotlin.test.assertEquals(Status.FEILET, reply.status, "Barrier must not leak Status.OK")
+        }
+
+        // Drain retry topic emissions produced during the retry/exhaust loop.
+        TestRuntime.topics.retryKvittering.assertThat()
     }
 
     @Test

@@ -18,6 +18,8 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 const val FS_KEY = "fagsystem"
 
 object Topics {
+    val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
+    val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, UtbetalingId>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val pendingUtbetalinger = Topic("helved.pending-utbetalinger.v1", json<Utbetaling>())
     val simuleringer = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
@@ -27,38 +29,94 @@ object Topics {
     val dryrunTiltakspenger = Topic("helved.dryrun-tp.v1", json<Simulering>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val avstemming = Topic("helved.avstemming.v1", xml<Avstemmingsdata>())
+    val retryKvittering = Topic("helved.retry-kvittering.v1", xml<Oppdrag>())
+}
+
+object Tables {
+    val saker = Table(Topics.saker)
+}
+
+/**
+ * Hver gang helved.utbetalinger.v1 blir produsert til
+ * akkumulerer vi uids (UtbetalingID) for saken og erstatter aggregatet på helved.saker.v1.
+ * Dette gjør at vi kan holde på alle aktive uids for en sakid per fagsystem.
+ * Slettede utbetalinger fjernes fra lista.
+ * Hvis lista er tom men ikke null betyr det at det ikke er første utbetaling på sak.
+ */
+fun Topology.utbetalingToSak(jdbcCtx: CoroutineDatasource): KTable<SakKey, Set<UtbetalingId>> {
+    val ktable = consume(Topics.utbetalinger)
+        .rekey { _, utbetaling ->
+            val fagsystem = if (utbetaling.fagsystem.isTilleggsstønader()) {
+                Fagsystem.TILLEGGSSTØNADER
+            } else {
+                utbetaling.fagsystem
+            }
+            SakKey(utbetaling.sakId, fagsystem)
+        }
+        .groupByKey(Serde.json(), Serde.json(), "utbetalinger-groupby-sakkey")
+        .aggregate(Tables.saker) { _, utbetaling, uids ->
+            when (utbetaling.action) {
+                Action.DELETE -> uids - utbetaling.uid
+                else -> uids + utbetaling.uid
+            }
+        }
+
+    ktable
+        .toStream()
+        .produce(Topics.saker)
+
+    ktable
+        .toStream()
+        .forEach { sakKey, uids -> markSakerAck(sakKey, uids, jdbcCtx) }
+
+    return ktable
 }
 
 fun Topology.oppdrag(mq: OppdragMQProducer, meters: MeterRegistry, jdbcCtx: CoroutineDatasource) {
     consume(Topics.oppdrag)
-        .branch({ it.mmel == null }) {
+        .branch({ oppdrag -> oppdrag.mmel == null }) {
             this
                 .processor(Processor{ EnrichMetadataProcessor() })
                 .map { key, (oppdrag, meta) -> saveOppdragAndSendIfReady(mq, key, oppdrag, meta, jdbcCtx) }
                 .filter { reply -> reply.status == Status.HOS_OPPDRAG }
-                .includeHeader(FS_KEY) { reply -> 
+                .includeHeader(FS_KEY) { reply ->
                     val ytelse = reply.detaljer?.ytelse
                     when(ytelse?.isTilleggsstønader()) {
                         true -> Fagsystem.TILLEGGSSTØNADER.name
                         false -> ytelse.name
-                        null -> "ukjent" 
+                        null -> "ukjent"
                     }
                 }
                 .produce(Topics.status)
         }
-        .branch({ it.mmel != null }) {
-            this
+        .branch({ oppdrag -> oppdrag.mmel != null }) {
+            val decided = this
+                .merge(consume(Topics.retryKvittering))
                 .processor(Processor{ EnrichMetadataProcessor() })
-                .map { _, (oppdrag, _) -> statusReply(oppdrag) }
-                .includeHeader(FS_KEY) { reply -> 
-                    val ytelse = reply.detaljer?.ytelse
-                    when(ytelse?.isTilleggsstønader()) {
-                        true -> Fagsystem.TILLEGGSSTØNADER.name
-                        false -> ytelse.name
-                        null -> "ukjent" 
-                    }
+                .map { _, (oppdrag, meta) -> kvitteringReadyOrRetry(oppdrag, meta, jdbcCtx) }
+
+            decided
+                .branch({ it is KvitteringDecision.Terminal }) {
+                    this
+                        .map { decision -> (decision as KvitteringDecision.Terminal).reply }
+                        .includeHeader(FS_KEY) { reply ->
+                            val ytelse = reply.detaljer?.ytelse
+                            when(ytelse?.isTilleggsstønader()) {
+                                true -> Fagsystem.TILLEGGSSTØNADER.name
+                                false -> ytelse.name
+                                null -> "ukjent"
+                            }
+                        }
+                        .produce(Topics.status)
                 }
-                .produce(Topics.status)
+                .default {
+                    this
+                        .map { decision -> (decision as KvitteringDecision.Retry).let { it.oppdrag to it.retries } }
+                        .includeHeader("retries") { (_, retries) -> (retries + 1).toString() }
+                        .includeHeader("maxRetries") { _ -> kvitteringDefaultMaxRetries.toString() }
+                        .map { (oppdrag, _) -> oppdrag }
+                        .produce(Topics.retryKvittering)
+                }
         }
 
     consume(Topics.pendingUtbetalinger)
@@ -214,6 +272,63 @@ fun Topology.simulering(simuleringService: SimuleringService) {
 
 private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 
+private const val kvitteringDefaultMaxRetries: Int = 1000
+
+private sealed interface KvitteringDecision {
+    data class Terminal(val reply: StatusReply) : KvitteringDecision
+    data class Retry(val oppdrag: Oppdrag, val retries: Int) : KvitteringDecision
+}
+
+/**
+ * Read-side completeness barrier for kvittering Status.OK emission.
+ *
+ * The kvittering (OS-svar) from Oppdragsystemet may arrive before the saker aggregate
+ * has caught up with all pending utbetalinger for the same hashKey. Emitting Status.OK
+ * before pending uids are all received (or before saker_ack=true) would race utsjekk's
+ * view of the sak. Instead, we gate Status.OK on:
+ *   - locked.uids ⊆ received pending uids  (pendingIsReady)
+ *   - locked.sakerAck == true              (T5/T6 marks this when saker emits the full set)
+ *
+ * When not ready (or the oppdrag row isn't visible yet -- rare race where kvittering
+ * arrives before the corresponding oppdrag insert) we route the original kvittering XML
+ * to Topics.retryKvittering. T8 handles exhaustion of retries.
+ */
+private fun kvitteringReadyOrRetry(
+    oppdrag: Oppdrag,
+    meta: Metadata,
+    jdbcCtx: CoroutineDatasource,
+): KvitteringDecision {
+    val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
+    val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: kvitteringDefaultMaxRetries
+    return runBlocking(jdbcCtx + Dispatchers.IO) {
+        val hashKey = DaoOppdrag.hash(oppdrag)
+        transaction {
+            val locked = DaoOppdrag.findWithLockOrLegacy(hashKey, oppdrag)
+            if (locked == null) {
+                if (retries >= maxRetries) {
+                    libs.utils.appLog.error("Kvittering barrier eksaurert for hash:$hashKey etter $retries forsøk. pendingReady=n/a, sakerReady=n/a (manglende oppdrag-rad)")
+                    val diag = ApiError(500, "Kvittering barrier eksaurert etter $retries/$maxRetries forsøk: manglende oppdrag-rad for hash:$hashKey")
+                    return@transaction KvitteringDecision.Terminal(StatusReply.err(oppdrag, diag))
+                }
+                kafkaLog.info("kvittering for hash:$hashKey har ikke matchende oppdrag-rad ennå, ruter til retry-kvittering (forsøk $retries)")
+                return@transaction KvitteringDecision.Retry(oppdrag, retries)
+            }
+            val pendingReady = pendingIsReady(hashKey, locked.uids)
+            val sakerReady = locked.sakerAck
+            if (pendingReady && sakerReady) {
+                KvitteringDecision.Terminal(statusReply(oppdrag))
+            } else if (retries >= maxRetries) {
+                libs.utils.appLog.error("Kvittering barrier eksaurert for hash:$hashKey etter $retries forsøk. pendingReady=$pendingReady, sakerReady=$sakerReady")
+                val diag = ApiError(500, "Kvittering barrier eksaurert etter $retries/$maxRetries forsøk: pendingReady=$pendingReady, sakerReady=$sakerReady")
+                KvitteringDecision.Terminal(StatusReply.err(oppdrag, diag))
+            } else {
+                kafkaLog.info("kvittering for hash:$hashKey ikke klar (pendingReady=$pendingReady, sakerAck=${locked.sakerAck}), ruter til retry-kvittering (forsøk $retries)")
+                KvitteringDecision.Retry(oppdrag, retries)
+            }
+        }
+    }
+}
+
 private fun statusReply(o: Oppdrag): StatusReply {
     return when (o.mmel) {
         null -> StatusReply(Status.OK) // TODO: denne kan skape feil hvis statusReply blir kalt fra et sted som ikke har kvittering
@@ -223,6 +338,32 @@ private fun statusReply(o: Oppdrag): StatusReply {
             "08" -> StatusReply.err(o, o.mmel.apiError(400))
             "12" -> StatusReply.err(o, o.mmel.apiError(500))
             else -> StatusReply.err(o, ApiError(500, "umulig feil, skal aldri forekomme. Hvis du ser denne er alt håp ute."))
+        }
+    }
+}
+
+/**
+ * Write-side completeness barrier:
+ * For each new aggregate published to helved.saker.v1 we look up pending oppdrag rows for the same sakId
+ * and mark saker_ack=true on rows whose stored uids are all present in the current aggregate.
+ * This signals that the oppdrag's view of the sak matches utsjekk's view, and lets the kvittering
+ * barrier (T7) emit status=OK without racing the saker aggregate.
+ */
+private fun markSakerAck(sakKey: SakKey, uids: Set<UtbetalingId>, jdbcCtx: CoroutineDatasource) {
+    val newUidStrings = uids.map { it.id.toString() }.toSet()
+    runBlocking(jdbcCtx + Dispatchers.IO) {
+        val pendings = transaction {
+            DaoOppdrag.findPendingSakerAck(sakKey.sakId.id)
+        }
+        pendings.forEach { pending ->
+            val fagsystem = Fagsystem.fromFagområde(pending.oppdrag.oppdrag110.kodeFagomraade.trimEnd())
+            if (fagsystem != sakKey.fagsystem) return@forEach
+            if (!newUidStrings.containsAll(pending.uids)) return@forEach
+
+            val hashKey = DaoOppdrag.hash(pending.oppdrag)
+            transaction {
+                DaoOppdrag.findWithLock(hashKey)?.updateSakerAck()
+            }
         }
     }
 }

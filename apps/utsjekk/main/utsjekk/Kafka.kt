@@ -25,7 +25,6 @@ object Topics {
     val dryrunTp = Topic("helved.dryrun-tp.v1", json<Simulering>())
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
-    val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, models.UtbetalingId>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val utbetaling = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val utbetalingAap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
@@ -39,7 +38,6 @@ object Tables {
     val dryrunDp = Table(Topics.dryrunDp)
     val dryrunTp = Table(Topics.dryrunTp)
     val dryrunTs = Table(Topics.dryrunTs)
-    val saker = Table(Topics.saker)
 }
 
 object Stores {
@@ -55,41 +53,6 @@ fun createTopology(jdbcCtx: CoroutineDatasource): Topology = topology {
     globalKTable(Tables.dryrunTp, retention = 1.hours)
     globalKTable(Tables.dryrunTs, retention = 1.hours)
     consumeStatus(jdbcCtx)
-    utbetalingToSak()
-}
-
-data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
-
-/**
- * Hver gang helved.utbetalinger.v1 blir produsert til
- * akkumulerer vi uids (UtbetalingID) for saken og erstatter aggregatet på helved.saker.v1.
- * Dette gjør at vi kan holde på alle aktive uids for en sakid per fagsystem.
- * Slettede utbetalinger fjernes fra lista.
- * Hvis lista er tom men ikke null betyr det at det ikke er første utbetaling på sak.
- */
-fun Topology.utbetalingToSak(): KTable<SakKey, Set<models.UtbetalingId>> {
-    val ktable = consume(Topics.utbetaling)
-        .rekey { _, utbetaling ->
-            val fagsystem = if (utbetaling.fagsystem.isTilleggsstønader()) {
-                Fagsystem.TILLEGGSSTØNADER
-            } else {
-                utbetaling.fagsystem
-            }
-            SakKey(utbetaling.sakId, fagsystem)
-        }
-        .groupByKey(Serde.json(), Serde.json(), "utbetalinger-groupby-sakkey")
-        .aggregate(Tables.saker) { _, utbetaling, uids ->
-            when (utbetaling.action) {
-                Action.DELETE -> uids - utbetaling.uid
-                else -> uids + utbetaling.uid
-            }
-        }
-
-    ktable
-        .toStream()
-        .produce(Topics.saker)
-
-    return ktable
 }
 
 fun Topology.consumeStatus(jdbcCtx: CoroutineDatasource) {
@@ -157,4 +120,3 @@ fun partition(key: String): Int {
     val hash = Utils.murmur2(bytes)
     return Utils.toPositive(hash) % Topics.NUM_PARTITIONS
 }
-

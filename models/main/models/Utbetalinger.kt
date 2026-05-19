@@ -15,6 +15,8 @@ value class SakId(val id: String) {
     override fun toString(): String = id
 }
 
+data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
+
 @JvmInline
 value class BehandlingId(val id: String) {
     override fun toString(): String = id
