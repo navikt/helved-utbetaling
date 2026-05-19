@@ -93,8 +93,8 @@ class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams, private val j
 
     fun onMessage(message: TextMessage) {
         val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
-        val stripped = mapper.copy(kvittering).apply { mmel = null }
-        val hashKey = DaoOppdrag.hash(stripped)
+        val hashKey = DaoOppdrag.hashStripped(kvittering)
+        val stripped = DaoOppdrag.strip(kvittering)
         val dao = runBlocking {
             withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {

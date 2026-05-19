@@ -40,6 +40,19 @@ data class DaoOppdrag (
 
         fun hash(oppdrag: Oppdrag): String = mapper.writeValueAsString(oppdrag).sha256()
 
+        /**
+         * Kvittering fra OS kommer tilbake med mmel populert, men oppdrag-raden ble lagret før
+         * mmel var satt (T1-grenen i Topology bare aksepterer oppdrag.mmel == null). For at hash-
+         * oppslag skal matche må vi alltid hashe en mmel-strippet kopi når vi slår opp en rad fra
+         * kvittering-siden. MQ-consumer gjør det samme før den re-publiserer kvittering til topic.
+         */
+        fun hashStripped(oppdrag: Oppdrag): String {
+            val stripped = mapper.copy(oppdrag).apply { mmel = null }
+            return hash(stripped)
+        }
+
+        fun strip(oppdrag: Oppdrag): Oppdrag = mapper.copy(oppdrag).apply { mmel = null }
+
         suspend fun findOrLegacy(hashKey: String, oppdrag: Oppdrag): DaoOppdrag? {
             return find(hashKey) ?: find(oppdrag.legacyHash())
         }
