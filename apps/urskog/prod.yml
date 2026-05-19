@@ -106,3 +106,5 @@ spec:
       value: QA.P_DP_OPPDRAG.OPPDRAG_DP_XML_KVITT
     - name: MQ_AVSTEMMING_QUEUE
       value: QA.P234.OB29_AVSTEMMING_XML
+    - name: MQ_DARE_POC_AAP_QUEUE
+      value: UNUSED_IN_PROD
