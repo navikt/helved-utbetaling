@@ -298,6 +298,17 @@ private fun kvitteringReadyOrRetry(
     meta: Metadata,
     jdbcCtx: CoroutineDatasource,
 ): KvitteringDecision {
+    // Kvittering med alvorlighetsgrad utenfor {00, 04} er endelig status fra OS. Sjekken
+    // (pendingReady/sakerReady) gjelder kun for å sikre at downstream (helved.utbetalinger.v1 og
+    // helved.saker.v1) har tatt igjen før vi emitter Status.OK. For feil-kvitteringer promoterer
+    // ikke abetal til utbetalinger, og det er ingenting downstream å vente på -- vi kortslutter
+    // til Terminal med en gang, uten DB I/O og uten å brenne 1000 retries (~2.5 min) før
+    // uunngåelig FEILET. trimEnd() speiler abetal/Kafka.kt:402 (COBOL XML whitespace).
+    val alvorlighet = oppdrag.mmel?.alvorlighetsgrad?.trimEnd()
+    if (alvorlighet != null && alvorlighet !in listOf("00", "04")) {
+        libs.utils.appLog.info("kvittering med alvorlighetsgrad=$alvorlighet er endelig status, dropper retry mekanisme")
+        return KvitteringDecision.Terminal(statusReply(oppdrag))
+    }
     val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
     val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: kvitteringDefaultMaxRetries
     return runBlocking(jdbcCtx + Dispatchers.IO) {

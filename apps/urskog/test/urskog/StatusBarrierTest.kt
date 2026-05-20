@@ -324,4 +324,122 @@ class StatusBarrierTest {
         assertEquals(false, dao.sakerAck)
         assertNull(dao.sakerAckAt)
     }
+
+    @Test
+    fun `kvittering med alvorlighetsgrad 08 er endelig status og dropper retry mekanisme`() {
+        // Regresjon: feil-kvittering (08 = funksjonell feil) skal kortsluttes til Terminal med en
+        // gang, uten å vente på pendingReady/sakerReady. Sjekken gjelder kun for å sikre at
+        // downstream har tatt igjen før Status.OK -- for feil er det ingenting å vente på fordi
+        // abetal ikke promoterer feilet oppdrag til helved.utbetalinger.v1.
+        val transaction = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+        val sakIdStr = "$seq"
+        val bid = "$seq"
+
+        val oppdrag = TestData.oppdrag(
+            fagsystemId = sakIdStr,
+            fagområde = "DP",
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    henvisning = bid,
+                    delytelsesId = PeriodeId().toString(),
+                    klassekode = "DPORAS",
+                    datoVedtakFom = 1.nov,
+                    datoVedtakTom = 14.nov,
+                    typeSats = "DAG",
+                    sats = 1000L,
+                )
+            ),
+        )
+
+        // Ingen oppdrag-rad lagres, ingen pending, ingen saker-aggregat. Bare en 08-kvittering
+        // som kommer rett inn -- skal emittere Status.FEILET med en gang, uten retry-runde.
+        oppdrag.mmel = TestData.feilet(alvorlighetsgrad = "08")
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString())) { oppdrag }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transaction, size = 1)
+            .with(transaction) { reply ->
+                assertEquals(Status.FEILET, reply.status, "08 er endelig status, må emittere FEILET umiddelbart")
+                assertEquals(400, reply.error?.statusCode, "08 mapper til HTTP 400 via statusReply()")
+            }
+
+        TestRuntime.topics.retryKvittering.assertThat()
+    }
+
+    @Test
+    fun `kvittering med alvorlighetsgrad 12 er endelig status og dropper retry mekanisme`() {
+        // Regresjon: 12 = fatal feil -> Terminal med HTTP 500, ingen retry.
+        val transaction = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+        val sakIdStr = "$seq"
+        val bid = "$seq"
+
+        val oppdrag = TestData.oppdrag(
+            fagsystemId = sakIdStr,
+            fagområde = "DP",
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    henvisning = bid,
+                    delytelsesId = PeriodeId().toString(),
+                    klassekode = "DPORAS",
+                    datoVedtakFom = 1.nov,
+                    datoVedtakTom = 14.nov,
+                    typeSats = "DAG",
+                    sats = 1000L,
+                )
+            ),
+        )
+
+        oppdrag.mmel = TestData.feilet(alvorlighetsgrad = "12")
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString())) { oppdrag }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transaction, size = 1)
+            .with(transaction) { reply ->
+                assertEquals(Status.FEILET, reply.status, "12 er endelig status (fatal feil), må emittere FEILET umiddelbart")
+                assertEquals(500, reply.error?.statusCode, "12 mapper til HTTP 500 via statusReply()")
+            }
+
+        TestRuntime.topics.retryKvittering.assertThat()
+    }
+
+    @Test
+    fun `kvittering med alvorlighetsgrad 08 og trailing whitespace fra COBOL behandles som 08`() {
+        // Regresjon: OS-XML kan komme fra COBOL med trailing whitespace på alvorlighetsgrad.
+        // trimEnd() speiler abetal/Kafka.kt:402-normaliseringen. Uten trim ville "08 " hverken
+        // matche "00"/"04" (riktig) eller mappes pent i statusReply() -- begge går i else-grenen,
+        // men short-circuit-loggen og oppførselen skal være lik som ren "08".
+        val transaction = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+        val sakIdStr = "$seq"
+        val bid = "$seq"
+
+        val oppdrag = TestData.oppdrag(
+            fagsystemId = sakIdStr,
+            fagområde = "DP",
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    henvisning = bid,
+                    delytelsesId = PeriodeId().toString(),
+                    klassekode = "DPORAS",
+                    datoVedtakFom = 1.nov,
+                    datoVedtakTom = 14.nov,
+                    typeSats = "DAG",
+                    sats = 1000L,
+                )
+            ),
+        )
+
+        oppdrag.mmel = TestData.feilet(alvorlighetsgrad = "08 ")
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString())) { oppdrag }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transaction, size = 1)
+            .with(transaction) { reply ->
+                assertEquals(Status.FEILET, reply.status, "trimEnd()-normalisert 08 må også kortsluttes til endelig status")
+            }
+
+        TestRuntime.topics.retryKvittering.assertThat()
+    }
 }

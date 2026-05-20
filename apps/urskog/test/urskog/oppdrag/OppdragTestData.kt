@@ -26,6 +26,12 @@ object TestData {
         alvorlighetsgrad = "00"
     }
 
+    fun feilet(alvorlighetsgrad: String, kodeMelding: String = "B123456", beskrMelding: String = "Simulert feil fra OS"): Mmel = Mmel().apply {
+        this.alvorlighetsgrad = alvorlighetsgrad
+        this.kodeMelding = kodeMelding
+        this.beskrMelding = beskrMelding
+    }
+
     fun oppdrag(
         oppdragslinjer: List<OppdragsLinje150>,
         kodeEndring: String = "NY",
