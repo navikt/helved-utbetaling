@@ -6,6 +6,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import libs.xml.XMLMapper
 import libs.utils.auditLog
 import models.DpUtbetaling
+import models.Status
+import models.StatusReply
 import models.TsDto
 import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -16,7 +18,8 @@ class ManuellEndringService(
     private val oppdragProducer: KafkaProducer<String, Oppdrag>,
     private val utbetalingerProducer: KafkaProducer<String, Utbetaling>,
     private val dpProducer: KafkaProducer<String, DpUtbetaling>,
-    private val tsProducer: KafkaProducer<String, TsDto>
+    private val tsProducer: KafkaProducer<String, TsDto>,
+    private val statusProducer: KafkaProducer<String, StatusReply>,
 ) {
     fun addKvitteringManuelt(
         oppdragXml: String,
@@ -105,6 +108,18 @@ class ManuellEndringService(
         val result = tsProducer.send(key, ts)
         if(result.isSuccess) {
             auditLog.info("$audit -> rekjør tilleggsstønader manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
+        }
+        return result.isSuccess
+    }
+
+    fun sendOkStatus(
+        key: String,
+        audit: Audit,
+    ): Boolean {
+        val status = StatusReply(Status.OK)
+        val result = statusProducer.send(key, status)
+        if(result.isSuccess) {
+            auditLog.info("$audit -> send OK status manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
         return result.isSuccess
     }

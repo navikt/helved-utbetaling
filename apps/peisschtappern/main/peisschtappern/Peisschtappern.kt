@@ -33,6 +33,7 @@ import libs.kafka.json
 import libs.kafka.xml
 import libs.utils.*
 import models.DpUtbetaling
+import models.StatusReply
 import models.TsDto
 import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -98,7 +99,8 @@ fun Application.peisschtappern(
     val utbetalingProducer = kafka.createProducer(config.kafka, Topic("helved.utbetalinger.v1", json<Utbetaling>()))
     val dpProducer = kafka.createProducer(config.kafka, Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>()))
     val tsProducer = kafka.createProducer(config.kafka, Topic("helved.utbetalinger-ts.v1", json<TsDto>()))
-    val manuellEndringService = ManuellEndringService(oppdragsdataProducer, utbetalingProducer, dpProducer, tsProducer)
+    val statusProducer = kafka.createProducer(config.kafka, Topic("helved.status.v1", json<StatusReply>()))
+    val manuellEndringService = ManuellEndringService(oppdragsdataProducer, utbetalingProducer, dpProducer, tsProducer, statusProducer)
 
     routing {
         probes(kafka, prometheus)
