@@ -331,9 +331,13 @@ private fun kvitteringReadyOrRetry(
                     return@transaction KvitteringDecision.Terminal(statusReply(oppdrag))
                 }
                 if (retries >= maxRetries) {
-                    libs.utils.appLog.error("Kvittering for hash:$hashKey ga opp etter $retries forsøk. pendingReady=n/a, sakerReady=n/a (manglende oppdrag-rad)")
-                    val diag = ApiError(500, "Kvittering ga opp etter $retries/$maxRetries forsøk: manglende oppdrag-rad for hash:$hashKey")
-                    return@transaction KvitteringDecision.Terminal(StatusReply.err(oppdrag, diag))
+                    val tag = if (isOkAlvorlighet(oppdrag)) {
+                        "Oppdrag ble lagret OK hos OS, men helved har ingen oppdrag-rad for hash:$hashKey. Status er satt til FEILET grunnet intern helved-inkonsistens og må fikses manuelt i helved. Konsument og OS trenger IKKE gjøre noe.${beskrMelding(oppdrag)}"
+                    } else {
+                        "OS svarte feil og helved mangler oppdrag-rad for hash:$hashKey. Status FEILET.${beskrMelding(oppdrag)}"
+                    }
+                    libs.utils.appLog.error("Kvittering ga opp etter $retries/$maxRetries forsøk. $tag")
+                    return@transaction KvitteringDecision.Terminal(StatusReply.err(oppdrag, ApiError(500, tag)))
                 }
                 kafkaLog.info("kvittering for hash:$hashKey har ikke matchende oppdrag-rad ennå, ruter til retry-kvittering (forsøk $retries)")
                 return@transaction KvitteringDecision.Retry(oppdrag, retries)
@@ -349,9 +353,9 @@ private fun kvitteringReadyOrRetry(
             if (pendingReady && sakerReady) {
                 KvitteringDecision.Terminal(statusReply(oppdrag))
             } else if (retries >= maxRetries) {
-                libs.utils.appLog.error("Kvittering for hash:$hashKey ga opp etter $retries forsøk. pendingReady=$pendingReady, sakerReady=$sakerReady")
-                val diag = ApiError(500, "Kvittering ga opp etter $retries/$maxRetries forsøk: pendingReady=$pendingReady, sakerReady=$sakerReady")
-                KvitteringDecision.Terminal(StatusReply.err(oppdrag, diag))
+                val tag = "Oppdrag ble lagret OK hos OS, men helved-aggregat tok ikke igjen (pendingReady=$pendingReady, sakerReady=$sakerReady). Status er satt til FEILET grunnet intern helved-inkonsistens og må fikses manuelt i helved. Konsument og OS trenger IKKE gjøre noe.${beskrMelding(oppdrag)}"
+                libs.utils.appLog.error("Kvittering for hash:$hashKey ga opp etter $retries/$maxRetries forsøk. $tag")
+                KvitteringDecision.Terminal(StatusReply.err(oppdrag, ApiError(500, tag)))
             } else {
                 kafkaLog.info("kvittering for hash:$hashKey ikke klar (pendingReady=$pendingReady, sakerAck=${locked.sakerAck}), ruter til retry-kvittering (forsøk $retries)")
                 KvitteringDecision.Retry(oppdrag, retries)
@@ -359,6 +363,14 @@ private fun kvitteringReadyOrRetry(
         }
     }
 }
+
+private fun beskrMelding(o: Oppdrag): String {
+    val b = o.mmel?.beskrMelding?.trimEnd().orEmpty()
+    return if (b.isBlank()) "" else " (melding fra OS: '$b')"
+}
+
+private fun isOkAlvorlighet(o: Oppdrag): Boolean =
+    o.mmel?.alvorlighetsgrad?.trimEnd() in setOf("00", "04")
 
 private fun statusReply(o: Oppdrag): StatusReply {
     return when (o.mmel) {
