@@ -26,7 +26,7 @@ spec:
       access: read
     - team: helved
       application: peisschtappern
-      access: read
+      access: readwrite
     - team: teamdagpenger
       application: dp-mellom-barken-og-veden
       access: read
