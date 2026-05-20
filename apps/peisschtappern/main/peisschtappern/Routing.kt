@@ -311,6 +311,18 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             )
         }
     }
+
+    post("/ok-status") {
+        val request = call.receive<OkStatusRequest>()
+        require(request.reason.isNotBlank()) { "Må oppgi grunn for å sende OK status manuelt" }
+        when (manuellEndringService.sendOkStatus(request.key, Audit.from(call, request.reason))) {
+            true -> call.respond(HttpStatusCode.OK, "Sendte OK status på ${Topics.status.name} med key ${request.key}")
+            false -> call.respond(
+                HttpStatusCode.UnprocessableEntity,
+                "Feilet å sende OK status på ${Topics.status.name} med key ${request.key}"
+            )
+        }
+    }
     // TODD: Remove endpoint, and all calls to it, when we have verified that audit logging is working as expected
     post("/audit-test") {
         val request = call.receive<AuditTestRequest>()
@@ -341,6 +353,8 @@ data class MessageRequest(
 )
 
 data class TombstoneRequest(val key: String, val reason: String)
+
+data class OkStatusRequest(val key: String, val reason: String)
 
 sealed class Channel(
     val topic: Topic<String, ByteArray>,
