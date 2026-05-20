@@ -14,7 +14,7 @@ enum class Fagsystem(val fagområde: String) {
     TILLSTFL("TILLSTFL"), // TILLEGGSSTØNADER
     AAP("AAP"),
     HISTORISK("HELSREF"),
-    VALP("TILLSOPP")
+    VALP("TILSOPP")
 ;
 
     companion object {
@@ -37,7 +37,7 @@ enum class Fagsystem(val fagområde: String) {
             "TILLSTFL" -> TILLSTFL
             "AAP" -> AAP
             "HELSREF" -> HISTORISK
-            "TILLSOPP" -> VALP
+            "TILSOPP" -> VALP
             else -> error("fagområde $kode not implemented")
         }
     }

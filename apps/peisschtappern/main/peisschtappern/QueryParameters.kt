@@ -26,7 +26,7 @@ fun Parameters.fagsystem() =
                 listOf("DP", "DAGPENGER"),
                 listOf("HELSREF", "HISTORISK"),
                 listOf("AAP"),
-                listOf("VALP", "TILLSOPP")
+                listOf("VALP", "TILSOPP")
             ).find {
                 it.contains(fagsystem)
             } ?: emptyList()

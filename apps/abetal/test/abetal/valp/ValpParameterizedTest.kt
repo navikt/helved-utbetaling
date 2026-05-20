@@ -11,7 +11,7 @@ import java.time.LocalDateTime
 internal class ValpParameterizedTest : ConsumerParameterizedTestBase<ValpUtbetaling>() {
     
     override val fagsystem = Fagsystem.VALP
-    override val fagområde = "TILLSOPP"
+    override val fagområde = "TILSOPP"
     override val saksbehId = "teamvalp"
     override val periodetype = Periodetype.EN_GANG
 
