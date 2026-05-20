@@ -14,7 +14,6 @@ import libs.utils.appLog
 import libs.utils.secureLog
 import models.Fagsystem
 import java.time.Instant
-import libs.utils.auditLog
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
     route("/actuator") {
@@ -323,17 +322,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             )
         }
     }
-    // TODD: Remove endpoint, and all calls to it, when we have verified that audit logging is working as expected
-    post("/audit-test") {
-        val request = call.receive<AuditTestRequest>()
-        require(request.reason.isNotBlank()) { "reason må være satt" }
-        val audit = Audit.from(call, request.reason)
-        auditLog.info("$audit -> audit log test")
-        call.respond(HttpStatusCode.OK, audit.toString())
-    }
 }
-
-data class AuditTestRequest(val reason: String)
 
 data class KvitteringRequest(
     val key: String,
