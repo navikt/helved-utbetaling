@@ -47,6 +47,18 @@ data class Config(
             this[org.apache.kafka.streams.StreamsConfig.consumerPrefix(
                 org.apache.kafka.clients.consumer.ConsumerConfig.MAX_POLL_RECORDS_CONFIG
             )] = 1 // én simulering per poll-syklus, så worst-case interval er bundet til ~2 min
+
+            // EOS_v2 åpner én Kafka-transaksjon per poll-syklus. Broker default
+            // transaction.timeout.ms = 60_000, mens SOAP-kall i simulering-topologien
+            // kan blokkere stream-tråden i opptil 120_000 ms (se WS.kt requestTimeoutMs).
+            // Når åpne transaksjoner overskrider broker-timeouten bumper broker
+            // producer-epoch -> InvalidProducerEpochException / ProducerFencedException /
+            // TaskMigratedException -> rebalance-loop.
+            // Vi setter 3 min = 2 min SOAP + buffer for commit/ack/GC.
+            // NB: må være <= broker transaction.max.timeout.ms (Aiven default 900_000).
+            this[org.apache.kafka.streams.StreamsConfig.producerPrefix(
+                org.apache.kafka.clients.producer.ProducerConfig.TRANSACTION_TIMEOUT_CONFIG
+            )] = 180_000
         }
     ),
     val oppdrag: OppdragConfig = OppdragConfig(),
