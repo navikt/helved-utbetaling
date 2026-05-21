@@ -1,5 +1,9 @@
 package simulering
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -10,7 +14,9 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.testing.*
 import libs.utils.Resource
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 
 class ErrorHandlingTest {
     @Test
@@ -111,6 +117,108 @@ class ErrorHandlingTest {
             }
         }
     }
+
+    @Test
+    fun `svarer med 409 Conflict når Oppdraget finnes fra før`() {
+        TestRuntime().use { runtime ->
+            testApplication {
+                application {
+                    simulering(config = runtime.config)
+                }
+
+                val http = createClient {
+                    install(ContentNegotiation) {
+                        jackson {
+                            registerModule(JavaTimeModule())
+                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                        }
+                    }
+                }
+
+                runtime.soapRespondWith(oppdragFinnesFraFoerFault)
+
+                val res = http.post("/simulering") {
+                    contentType(ContentType.Application.Json)
+                    setBody(enSimuleringRequestBody())
+                }
+
+                assertEquals(HttpStatusCode.Conflict, res.status)
+            }
+        }
+    }
+
+    @Test
+    fun `logger ikke ERROR ved kjent fault`() {
+        val wsLogger = LoggerFactory.getLogger("ws") as Logger
+        val appender = ListAppender<ILoggingEvent>().apply { start() }
+        wsLogger.addAppender(appender)
+        try {
+            TestRuntime().use { runtime ->
+                testApplication {
+                    application {
+                        simulering(config = runtime.config)
+                    }
+
+                    val http = createClient {
+                        install(ContentNegotiation) {
+                            jackson {
+                                registerModule(JavaTimeModule())
+                                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                            }
+                        }
+                    }
+
+                    runtime.soapRespondWith(oppdragFinnesFraFoerFault)
+
+                    val res = http.post("/simulering") {
+                        contentType(ContentType.Application.Json)
+                        setBody(enSimuleringRequestBody())
+                    }
+
+                    assertEquals(HttpStatusCode.Conflict, res.status)
+                }
+            }
+            val errors = appender.list.filter { it.level == Level.ERROR }
+            assertTrue(
+                errors.isEmpty(),
+                "ws-loggeren skal ikke logge ERROR for kjent fault, men logget: ${errors.map { it.formattedMessage }}"
+            )
+        } finally {
+            wsLogger.detachAppender(appender)
+        }
+    }
+
+    @Test
+    fun `svarer med 502 Bad Gateway ved ukjent SOAP-svar`() {
+        TestRuntime().use { runtime ->
+            testApplication {
+                application {
+                    simulering(config = runtime.config)
+                }
+
+                val http = createClient {
+                    install(ContentNegotiation) {
+                        jackson {
+                            registerModule(JavaTimeModule())
+                            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                        }
+                    }
+                }
+
+                runtime.soapRespondWith("<noise>uventet</noise>")
+
+                val res = http.post("/simulering") {
+                    contentType(ContentType.Application.Json)
+                    setBody(enSimuleringRequestBody())
+                }
+
+                assertEquals(HttpStatusCode.BadGateway, res.status)
+            }
+        }
+    }
 }
 
 enum class SoapFaultCode {
@@ -125,6 +233,21 @@ private val failedAuthenticationFault = """
     <faultcode>wsse:FailedAuthentication</faultcode>
     <faultstring>A security token could not be authenticated</faultstring>
 </soap:Fault>
+""".trimIndent()
+
+private val oppdragFinnesFraFoerFault = """
+<SOAP-ENV:Fault xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns="">
+    <faultcode>SOAP-ENV:Client</faultcode>
+    <faultstring>simulerBeregningFeilUnderBehandling                                             </faultstring>
+    <detail>
+        <sf:simulerBeregningFeilUnderBehandling xmlns:sf="http://nav.no/system/os/tjenester/oppdragService">
+            <errorMessage>Oppdraget finnes fra før</errorMessage>
+            <errorSource>K231BB10 section: CA10-INP</errorSource>
+            <rootCause>Kode B110008F - SQL      - MQ</rootCause>
+            <dateTimeStamp>2026-05-21T08:44:39</dateTimeStamp>
+        </sf:simulerBeregningFeilUnderBehandling>
+    </detail>
+</SOAP-ENV:Fault>
 """.trimIndent()
 
 private val serverFault = """

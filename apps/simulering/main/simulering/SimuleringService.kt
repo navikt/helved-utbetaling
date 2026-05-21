@@ -18,6 +18,7 @@ import models.notFound
 import models.forbidden
 import models.conflict
 import models.badRequest
+import models.badGateway
 import libs.ws.*
 import simulering.models.rest.rest
 import simulering.models.soap.soap
@@ -67,20 +68,29 @@ class SimuleringService(private val config: Config) {
         }
     }
 
-    fun json(xml: String): Beregning? {
-        try {
-            wsLog.debug("Forsøker å deserialisere simulering")
-            val wrapper = simulerBeregningResponse(xml)
-            return wrapper.response?.simulering
+    fun json(xml: String): Beregning? = when (classify(xml)) {
+        EnvelopeKind.FAULT -> fault(xml) // Nothing — throws ApiError or SoapException
+        EnvelopeKind.RESPONSE -> try {
+            wsLog.debug("Forsøker å deserialisere simulerBeregningResponse")
+            simulerBeregningResponse(xml).response?.simulering
         } catch (e: Throwable) {
-            try {
-                fault(xml)
-            } catch (e2: Throwable) {
-                wsLog.error("Feilet deserialisering av simulering")
-                secureLog.error("Feilet deserialisering av simulering: $xml", e)
-                throw e2
-            }
+            wsLog.error("Feilet deserialisering av simulerBeregningResponse")
+            secureLog.error("Feilet deserialisering av simulerBeregningResponse: $xml", e)
+            badGateway("Ugyldig respons fra Oppdragssystemet")
         }
+        EnvelopeKind.UNKNOWN -> {
+            wsLog.error("Ukjent SOAP-svar fra Oppdragssystemet")
+            secureLog.error("Ukjent SOAP-svar fra Oppdragssystemet: $xml")
+            badGateway("Ukjent svar fra Oppdragssystemet")
+        }
+    }
+
+    private enum class EnvelopeKind { RESPONSE, FAULT, UNKNOWN }
+
+    private fun classify(xml: String): EnvelopeKind = when {
+        "<faultcode" in xml || ":Fault " in xml || ":Fault>" in xml -> EnvelopeKind.FAULT
+        "simulerBeregningResponse" in xml -> EnvelopeKind.RESPONSE
+        else -> EnvelopeKind.UNKNOWN
     }
 
     private fun simulerBeregningResponse(xml: String): soap.SimulerBeregningResponse =
