@@ -18,7 +18,7 @@ internal class ValpParameterizedTest : ConsumerParameterizedTestBase<ValpUtbetal
     val defaultTiltakskode: ValpUtbetaling.Tiltakskode = ValpUtbetaling.Tiltakskode.HOYERE_UTDANNING
     val defaultTilskuddstype: ValpUtbetaling.Tilskuddstype = ValpUtbetaling.Tilskuddstype.STUDIEREISE
     override val defaultStønad: Stønadstype = StønadTypeValp.HOYERE_UTDANNING_STUDIEREISE
-    override val expectedUtbetFrekvens: String = "ENG"
+    override val expectedUtbetFrekvens: String = "MND"
     override val expectedKlassekode: String = "TTOHOYUDSTUDREIS"
     
     // Disable tests that don't work generically for Valp
