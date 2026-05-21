@@ -26,6 +26,7 @@ class ApiTest {
         TestRuntime.kafka.getProducer(Channel.Utbetalinger.topic).clear()
         TestRuntime.kafka.getProducer(Channel.DpIntern.topic).clear()
         TestRuntime.kafka.getProducer(Channel.TsIntern.topic).clear()
+        TestRuntime.kafka.getProducer(Channel.Status.topic).clear()
         TestRuntime.jdbc.truncate("peisschtappern.oppdrag")
         TestRuntime.jdbc.truncate("peisschtappern.utbetalinger")
         TestRuntime.jdbc.truncate("peisschtappern.simuleringer")
@@ -509,6 +510,27 @@ class ApiTest {
         }.body<List<Daos>>()
 
         assertEquals(2, daos.size)
+    }
+
+    @Test
+    fun `send ok-status with TILLEGGSSTØNADER fagsystem header`() = runTest(TestRuntime.context) {
+        val key = UUID.randomUUID().toString()
+        val request = OkStatusRequest(key = key, reason = "manual ack", fagsystem = "TILLEGGSSTØNADER")
+
+        TestRuntime.ktor.httpClient.post("/ok-status") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+
+        val producer = TestRuntime.kafka.getProducer(Channel.Status.topic)
+        val history = producer.historyWithHeaders()
+        assertEquals(1, history.size)
+        val (recordKey, _, headers) = history.last()
+        assertEquals(key, recordKey)
+        assertEquals("TILLEGGSSTØNADER", headers["fagsystem"])
     }
 
     private suspend fun save(
