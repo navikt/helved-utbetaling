@@ -117,7 +117,7 @@ internal class ValpTest : ConsumerTestBase() {
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
             .with(transactionId) { oppdrag ->
-                oppdrag.assertBasics("ENDR", "TILSOPP", sid.id, expectedLines = 1, utbetFrekvens = "ENG")
+                oppdrag.assertBasics("ENDR", "TILSOPP", sid.id, expectedLines = 1, utbetFrekvens = "MND")
                 assertEquals("teamvalp", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
                     kodeEndringLinje = "NY",
@@ -211,7 +211,7 @@ internal class ValpTest : ConsumerTestBase() {
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
             .with(transactionId) { oppdrag ->
-                oppdrag.assertBasics("ENDR", "TILSOPP", sid.id, expectedLines = 1, utbetFrekvens = "ENG")
+                oppdrag.assertBasics("ENDR", "TILSOPP", sid.id, expectedLines = 1, utbetFrekvens = "MND")
                 assertEquals("teamvalp", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
                     kodeEndringLinje = "NY",
@@ -305,7 +305,7 @@ internal class ValpTest : ConsumerTestBase() {
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
             .with(transactionId) { oppdrag ->
-                oppdrag.assertBasics("ENDR", "TILSOPP", sid.id, expectedLines = 1, utbetFrekvens = "ENG")
+                oppdrag.assertBasics("ENDR", "TILSOPP", sid.id, expectedLines = 1, utbetFrekvens = "MND")
                 assertEquals("teamvalp", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].assertLine(
                     kodeEndringLinje = "NY",
@@ -398,7 +398,7 @@ internal class ValpTest : ConsumerTestBase() {
         val oppdrag = TestRuntime.topics.oppdrag.assertThat()
             .has(transactionId)
             .with(transactionId) { oppdrag ->
-                oppdrag.assertBasics("ENDR", "TILSOPP", sid.id, expectedLines = 1, utbetFrekvens = "ENG")
+                oppdrag.assertBasics("ENDR", "TILSOPP", sid.id, expectedLines = 1, utbetFrekvens = "MND")
                 assertEquals("teamvalp", oppdrag.oppdrag110.saksbehId)
                 oppdrag.oppdrag110.oppdragsLinje150s[0].let {
                     assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
