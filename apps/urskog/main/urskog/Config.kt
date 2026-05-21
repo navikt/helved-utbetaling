@@ -31,6 +31,22 @@ data class Config(
             // AdminClient trenger lengre tid ved opprettelse av internal topics
             this[org.apache.kafka.streams.StreamsConfig.RETRY_BACKOFF_MS_CONFIG] = 1000
             this[org.apache.kafka.streams.StreamsConfig.RECONNECT_BACKOFF_MS_CONFIG] = 1000
+
+            // Simulering gjøres synkront i topology via runBlocking { soap.call(...) }.
+            // SOAP-klienten i SimuleringService har requestTimeoutMs = 120_000 (2 min) worst case.
+            // Default max.poll.interval.ms i Kafka Streams er 5 min, og default max.poll.records er
+            // høyt nok til at 2-3 worst-case-kall i samme batch overskrider intervallet og fører til
+            // at consumer kastes ut av gruppen. Det igjen gjør at produsenten fences under EOS_v2
+            // (InvalidProducerEpochException / ProducerFencedException). Se WS.kt for SOAP-timeout.
+            // Vi prefikser med consumerPrefix slik at kun main streams consumer påvirkes
+            // (restore consumer og global consumer beholder defaults).
+            this[org.apache.kafka.streams.StreamsConfig.consumerPrefix(
+                org.apache.kafka.clients.consumer.ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG
+            )] = 600_000 // 10 min, gir rom for 2 min SOAP + GC + DB + buffer
+
+            this[org.apache.kafka.streams.StreamsConfig.consumerPrefix(
+                org.apache.kafka.clients.consumer.ConsumerConfig.MAX_POLL_RECORDS_CONFIG
+            )] = 1 // én simulering per poll-syklus, så worst-case interval er bundet til ~2 min
         }
     ),
     val oppdrag: OppdragConfig = OppdragConfig(),
