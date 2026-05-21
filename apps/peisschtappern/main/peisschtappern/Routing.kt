@@ -314,7 +314,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
     post("/ok-status") {
         val request = call.receive<OkStatusRequest>()
         require(request.reason.isNotBlank()) { "Må oppgi grunn for å sende OK status manuelt" }
-        val fagsystem = runCatching { Fagsystem.from(request.fagsystem) }
+        val fagsystem = runCatching { Fagsystem.valueOf(request.fagsystem) }
             .getOrElse { throw IllegalArgumentException("Ukjent fagsystem ${request.fagsystem}") }
         when (manuellEndringService.sendOkStatus(request.key, fagsystem, Audit.from(call, request.reason))) {
             true -> call.respond(HttpStatusCode.OK, "Sendte OK status på ${Topics.status.name} med key ${request.key}")
