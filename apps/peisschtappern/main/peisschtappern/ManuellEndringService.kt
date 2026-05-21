@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import libs.xml.XMLMapper
 import libs.utils.auditLog
 import models.DpUtbetaling
+import models.Fagsystem
 import models.Status
 import models.StatusReply
 import models.TsDto
@@ -114,12 +115,14 @@ class ManuellEndringService(
 
     fun sendOkStatus(
         key: String,
+        fagsystem: Fagsystem,
         audit: Audit,
     ): Boolean {
         val status = StatusReply(Status.OK)
-        val result = statusProducer.send(key, status)
+        val headers = mapOf("fagsystem" to fagsystem.name)
+        val result = statusProducer.send(key, status, headers)
         if(result.isSuccess) {
-            auditLog.info("$audit -> send OK status manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
+            auditLog.info("$audit -> send OK status manuelt -> key:${key} fagsystem:${fagsystem.name} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
         return result.isSuccess
     }
