@@ -6,11 +6,13 @@ COPY --chown=1069:1069 apps/urskog/build/split-jars/app.jar /app/app.jar
 WORKDIR /app
 CMD [                                     \
     "--enable-native-access=ALL-UNNAMED", \
-    "-XX:+UseG1GC",                       \
+    "-XX:+UseZGC",                        \
+    "-XX:+ZGenerational",                 \
     "-XX:MaxRAMPercentage=60.0",          \
-    "-XX:ActiveProcessorCount=3",         \
+    "-XX:ActiveProcessorCount=1",         \
     "-XX:+UseStringDeduplication",        \
     "-XX:+HeapDumpOnOutOfMemoryError",    \
+    "-XX:+ExitOnOutOfMemoryError",        \
     "-XX:HeapDumpPath=/tmp",              \
     "-jar",                               \
     "app.jar"                             \
