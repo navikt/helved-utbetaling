@@ -30,6 +30,10 @@ data class StreamsConfig(
         this[StreamsConfig.REPLICATION_FACTOR_CONFIG] = 3
         this[StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG] = 1
 
+        // HA-strategi: 1 stream-tråd per pod. Sann parallellisme oppnås via flere poder, 
+        // eller en stream thread per CPU per pod.
+        this[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = 1
+
         // Fail fast if any internal topic, state store, or changelog topic is not explicit named
         this[StreamsConfig.ENSURE_EXPLICIT_INTERNAL_RESOURCE_NAMING_CONFIG] = true
 
