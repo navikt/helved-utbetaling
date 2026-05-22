@@ -22,14 +22,14 @@ spec:
     path: /actuator/metric
     enabled: true
   replicas:
-    min: 1
-    max: 1
+    min: 3
+    max: 3
   resources:
     limits:
       memory: 1600Mi
     requests:
       memory: 800Mi
-      cpu: 3000m
+      cpu: 1000m
   observability:
     autoInstrumentation:
       enabled: true
