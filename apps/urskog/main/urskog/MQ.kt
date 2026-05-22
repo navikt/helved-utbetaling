@@ -63,6 +63,7 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
         runCatching {
             darePocAapProducer.produce(oppdragXml)
         }.onFailure {
+            mqLog.error("Feilet sending av AAP-kopi til DARE POC-kø hashKey($hash)")
             secureLog.error("Feilet sending av AAP-kopi til DARE POC-kø hashKey($hash)", it)
         }
     }
