@@ -96,7 +96,7 @@ spec:
     - name: MQ_OPPDRAG_QUEUE
       value: QA.Q1_231.OB04_OPPDRAG_XML
     - name: MQ_DARE_POC_AAP_QUEUE
-      value: Q1_DARE_POC.AAP_XML
+      value: QA.Q1_DARE_POC.AAP_XML
     - name: MQ_OPPDRAG_KVITTERING_QUEUE
       value: QA.Q1_DP_OPPDRAG.OPPDRAG_DP_XML_KVITT
     - name: MQ_AVSTEMMING_QUEUE
