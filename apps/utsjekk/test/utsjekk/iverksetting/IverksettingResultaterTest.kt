@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import utsjekk.utbetaling.UtbetalingId
+import java.time.LocalDate
 import java.util.*
 
 class IverksettingResultaterTest {
@@ -57,13 +58,10 @@ class IverksettingResultaterTest {
 
     @Test
     fun `kan hente resultat for forrige iverksetting`() = runTest(TestRuntime.context) {
-        val forrige = TestData.domain.iverksetting(
-            iverksettingId = IverksettingId("awesome splendid spectacular")
-        )
+        val forrige = TestData.domain.iverksetting()
 
         val nyeste = TestData.domain.iverksetting(
             forrigeBehandlingId = forrige.behandlingId,
-            forrigeIverksettingId = forrige.iverksettingId,
             sakId = forrige.sakId
         )
 
@@ -76,14 +74,27 @@ class IverksettingResultaterTest {
                 fagsystem = forrige.fagsak.fagsystem,
                 sakId = forrige.sakId,
                 behandlingId = forrige.behandlingId,
-                iverksettingId = forrige.iverksettingId,
-                tilkjentYtelseForUtbetaling = null,
-                oppdragResultat = OppdragResultat(OppdragStatus.KVITTERT_OK)
+                oppdragResultat = OppdragResultat(
+                    oppdragStatus = OppdragStatus.KVITTERT_OK,
+                    oppdragStatusOppdatert = LocalDate.of(2026, 1, 2).atStartOfDay()
+                )
+            ).insert(UtbetalingId(UUID.randomUUID()))
+        }
+
+        transaction {
+            IverksettingResultatDao(
+                fagsystem = forrige.fagsak.fagsystem,
+                sakId = forrige.sakId,
+                behandlingId = forrige.behandlingId,
+                oppdragResultat = OppdragResultat(
+                    oppdragStatus = OppdragStatus.KVITTERT_FUNKSJONELL_FEIL,
+                    oppdragStatusOppdatert = LocalDate.of(2026, 1, 1).atStartOfDay()
+                )
             ).insert(UtbetalingId(UUID.randomUUID()))
         }
 
         val resultat = IverksettingService.hentForrige(nyeste)
-        assertEquals(OppdragResultat(OppdragStatus.KVITTERT_OK).oppdragStatus, resultat.oppdragResultat!!.oppdragStatus)
+        assertEquals(OppdragStatus.KVITTERT_OK, resultat.oppdragResultat!!.oppdragStatus)
 
     }
 
