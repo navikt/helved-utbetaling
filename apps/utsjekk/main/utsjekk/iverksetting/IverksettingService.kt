@@ -172,12 +172,12 @@ class IverksettingService(
 
         suspend fun hentForrige(iverksetting: Iverksetting): IverksettingResultatDao {
             return transaction {
-                IverksettingResultatDao.select(1) {
+                IverksettingResultatDao.select {
                     this.iverksettingId = iverksetting.behandling.forrigeIverksettingId
                     this.behandlingId = iverksetting.behandling.forrigeBehandlingId
                     this.sakId = iverksetting.sakId
                     this.fagsystem = iverksetting.fagsak.fagsystem
-                }.singleOrNull() ?: error(
+                }.maxByOrNull { it.oppdragResultat?.oppdragStatusOppdatert ?: LocalDateTime.MIN } ?: error(
                     """
                     Fant ikke forrige iverksettingresultat for iverksetting med 
                         forrigeIverksettingId  ${iverksetting.behandling.forrigeIverksettingId}
@@ -252,7 +252,7 @@ class IverksettingService(
                 this.sakId = iverksetting.sakId
                 this.behandlingId = iverksetting.behandling.forrigeBehandlingId
                 this.iverksettingId = iverksetting.behandling.forrigeIverksettingId
-            }.firstOrNull()
+            }.maxByOrNull { it.oppdragResultat?.oppdragStatusOppdatert ?: LocalDateTime.MIN }
 
             val kvittertOk = forrigeResultat?.oppdragResultat?.oppdragStatus in listOf(
                 OppdragStatus.KVITTERT_OK,
