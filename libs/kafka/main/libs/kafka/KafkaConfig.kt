@@ -28,7 +28,11 @@ data class StreamsConfig(
         // Configuration for resilience
         this[StreamsConfig.producerPrefix(ProducerConfig.ACKS_CONFIG)] = "all"
         this[StreamsConfig.REPLICATION_FACTOR_CONFIG] = 3
-        this[StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG] = 1
+        // Workaround: standby replicas deaktivert pga. race i state-updater
+        // (transitToUpdateStandby IllegalStateException) observert på Kafka Streams
+        // 4.2.0 og 4.3.0. Cold restore (<60s for små state stores) er akseptabel
+        // tradeoff inntil upstream fix. Revurder ved ny Kafka Streams-versjon.
+        this[StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG] = 0
 
         // HA-strategi: 1 stream-tråd per pod. Sann parallellisme oppnås via flere poder, 
         // eller en stream thread per CPU per pod.
