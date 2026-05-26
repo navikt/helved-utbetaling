@@ -6,7 +6,7 @@ dependencies {
     implementation("no.nav.helved:xml:$libVersion")
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
-    api("org.apache.kafka:kafka-streams:4.2.0")
+    api("org.apache.kafka:kafka-streams:4.3.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.22")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
@@ -15,7 +15,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
 
     testImplementation(kotlin("test"))
-    testImplementation("org.apache.kafka:kafka-streams-test-utils:4.2.0")
+    testImplementation("org.apache.kafka:kafka-streams-test-utils:4.3.0")
 }
 
 // Kafka topology tests share Kafka Streams test driver state (verified
