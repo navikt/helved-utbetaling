@@ -11,14 +11,14 @@ Lenker til relevant, eksisterende dokumentasjon for Team hel ved og tjenesten Ut
 - [K205.2: NAV må sikre at utenforstående ikke får uberettiget innsyn i enkeltvedtak, forhåndsvarsel og meldinger](https://etterlevelse.ansatt.nav.no/dokumentasjon/85240a1e-2b08-4298-b7a3-bbb520472dac/EL_KOM/krav/205/2). Se suksesskriterium 2: Nav skal sikre tilgangsstyring for egne medarbeidere.
 - [K125.2: Sikkerhet i økonomisystemet](https://etterlevelse.ansatt.nav.no/dokumentasjon/85240a1e-2b08-4298-b7a3-bbb520472dac/OKONOMI/krav/125/2). Se suksesskriterium 1: Tilgangskontroll og roller.
 
-## Tildeling av rettigheter​
+## 4.1 Tildeling av rettigheter​
 Utsjekk er en plattformtjeneste uten GUI. Det er ingen innlogging for Nav-ansatte i løsningen og det gjøres ingen saksbehandling.
 
 Vi har et verktøy kalt Peisen som vi bruker til overvåking og debugging av utbetalinger. I produksjon er det kun Team hel ved som har tilgang til Peisen. Tilgang administreres via Mine tilganger.
 
 Tilgang til Nais-plattformen administreres via et eget Nais-team (tilgangsgruppe).
 
-## Forvaltning av tilganger​
+## 4.2 Forvaltning av tilganger​
 
 Listen over medlemmer i ovennevnte Nais-team kontrolleres og godkjennes månedlig via varsel fra Nais på Slack.
 
@@ -27,10 +27,10 @@ Ved utskiftninger i Team hel ved vil tinganger bli gitt til nye medlemmer og tru
 [Periodisk kontroll](https://navno.sharepoint.com/sites/intranett-it/SitePages/Periodisk-kontroll-2025.aspx) håndteres av identrutina / Mine tilganger.
 
 
-## Endring i tilgangsbehov​
+## 4.3 Endring i tilgangsbehov​
 
 Kravet er ikke relevant, ref første punkt.
 
-## Terminering​
+## 4.4 Terminering​
 
 Terminering håndteres av identadministrator. Se [Mine Tilganger](https://navno.sharepoint.com/sites/intranett-it/SitePages/Mine-Tilganger-%E2%80%93-NAVs-nye-tilgangsstyringsl%C3%B8sning.aspx).
