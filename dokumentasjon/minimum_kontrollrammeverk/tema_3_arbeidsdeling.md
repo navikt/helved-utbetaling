@@ -7,7 +7,7 @@ Lenker til utfyllende informasjon om kravene:
 
 
 
-## Arbeidsdeling​
+## 3.1 Arbeidsdeling​
 
 Vi har ingen risiko for uheldige rollekombinasjoner da det ikke er innlogging for Nav-ansatte i plattformtjenesten Utsjekk. Det gjøres ingen saksbehandling i løsningen. 
 
@@ -15,11 +15,11 @@ Vi har et verktøy kalt Peisen som vi bruker til overvåking og debugging av utb
 
 Tilgang til Nais-plattformen administreres via et eget Nais-team (tilgangsgruppe). Listen over medlemmer i dette teamet godkjennes månedlig via varsel fra Nais på Slack.
 
-## Kritikalitet i tilganger​
+## 3.2 Kritikalitet i tilganger​
 
 Kravet er ikke relevant, ref første punkt. 
 
 
-## Periodisk gjennomgang​
+## 3.3 Periodisk gjennomgang​
 
 [Periodisk kontroll](https://navno.sharepoint.com/sites/intranett-it/SitePages/Periodisk-kontroll-2025.aspx) håndteres av identrutina / Mine tilganger.

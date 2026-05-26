@@ -12,13 +12,15 @@ Lenker til relevant, eksisterende dokumentasjon for Team hel ved og tjenesten Ut
 - [K125.2: Sikkerhet i økonomisystemet](https://etterlevelse.ansatt.nav.no/dokumentasjon/85240a1e-2b08-4298-b7a3-bbb520472dac/OKONOMI/krav/125/2). Se suksesskriterium 2 (audit logging).
 
 
-## Oppsett av logger
+## 1.1 Oppsett av logger
 
-Alle våre databaser har påskrudd audit logging. Se krav [K125.2: Sikkerhet i økonomisystemet](https://etterlevelse.ansatt.nav.no/dokumentasjon/85240a1e-2b08-4298-b7a3-bbb520472dac/OKONOMI/krav/125/2) for ytterligere dokumentasjon.
+Alle våre databaser har påskrudd audit logging. Vi har i tillegg laget en egen løsning for audit logging på Kafka. 
+
+Se [K125.2: Sikkerhet i økonomisystemet](https://etterlevelse.ansatt.nav.no/dokumentasjon/85240a1e-2b08-4298-b7a3-bbb520472dac/OKONOMI/krav/125/2) for ytterligere dokumentasjon.
 
 
-## Gjennomgang av logger
+## 1.2 Gjennomgang av logger
 
 Vi har definert en [rutine for å sjekke audit logs](https://github.com/navikt/helved-utbetaling/blob/main/dokumentasjon/Rutiner/Rutine%20for%20kontroll%20av%20audit%20logs.md) minst en gang per tertial. 
 
-Vi bruker verktøyet [Gaal (gjennomgang av audit logs)](https://audit-approval.iap.nav.cloud.nais.io/?team=helved&timeRange=7d) for å kontrollere audit logs for databasene. Som beskrevet i [etterlevelsesløsningen](https://etterlevelse.ansatt.nav.no/dokumentasjon/85240a1e-2b08-4298-b7a3-bbb520472dac/OKONOMI/krav/125/2) har vi laget en egen løsning for audit logging på Kafka i tillegg. 
+Vi bruker verktøyet [Gaal (gjennomgang av audit logs)](https://audit-approval.iap.nav.cloud.nais.io/?team=helved&timeRange=7d) for å kontrollere audit logs for databasene. 
