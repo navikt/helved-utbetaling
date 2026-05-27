@@ -45,7 +45,7 @@ data class DpUtbetalingsdag(
 
 fun dpUId(sakId: String, meldeperiode: String, stønad: StønadTypeDagpenger): UtbetalingId {
     val uuid = uuid(SakId(sakId), Fagsystem.DAGPENGER, meldeperiode, stønad)
-    return UtbetalingId(uuid) 
+    return UtbetalingId(uuid)
 }
 
 private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode> {
@@ -72,18 +72,10 @@ private fun perioder(perioder: List<DpUtbetalingsdag>): List<Utbetalingsperiode>
 
 object DpDto {
     fun splitToDomain(
-        sakId: SakId,
         originalKey: String,
         dpUtbetaling: DpUtbetaling,
         uids: Set<UtbetalingId>?,
     ): List<Utbetaling> {
-        val dryrun = dpUtbetaling.dryrun
-        val personident = dpUtbetaling.ident
-        val behandlingId = dpUtbetaling.behandlingId
-        val periodetype = Periodetype.UKEDAG
-        val vedtakstidspunktet = dpUtbetaling.vedtakstidspunktet
-        val beslutterId = dpUtbetaling.beslutter ?: "dagpenger"
-        val saksbehandler = dpUtbetaling.saksbehandler ?: "dagpenger"
         val utbetalingerPerMeldekort: MutableList<Pair<UtbetalingId, DpUtbetaling?>> = dpUtbetaling
             .utbetalinger
             .filter { it.utbetaltBeløp > 0u }
@@ -102,20 +94,8 @@ object DpDto {
 
         return utbetalingerPerMeldekort.map { (uid, utbet) ->
             when (utbet) {
-                null -> fakeDelete(
-                    dryrun = dryrun,
-                    originalKey = originalKey,
-                    sakId = sakId,
-                    uid = uid,
-                    fagsystem = Fagsystem.DAGPENGER,
-                    stønad = StønadTypeDagpenger.DAGPENGER,
-                    beslutterId = Navident(beslutterId),
-                    saksbehandlerId = Navident(saksbehandler),
-                    personident = Personident(personident),
-                    behandlingId = BehandlingId(behandlingId),
-                    periodetype = periodetype,
-                    vedtakstidspunkt = vedtakstidspunktet,
-                ).also { appLog.info("creating a fake delete to force-trigger a join with existing utbetaling") }
+                null -> fakeDelete(originalKey, dpUtbetaling, uid)
+                    .also { appLog.info("creating a fake delete to force-trigger a join with existing utbetaling") }
 
                 else -> utbetaling(originalKey, utbet, uids, uid)
             }
@@ -129,7 +109,6 @@ object DpDto {
         uid: UtbetalingId,
     ): Utbetaling {
         val stønad = value.utbetalinger.first().stønadstype()
-        require(value.utbetalinger.all { it.stønadstype() == stønad })
 
         val periodetype = when (stønad) {
             StønadTypeDagpenger.DAGPENGERFERIE -> Periodetype.EN_GANG
@@ -155,6 +134,27 @@ object DpDto {
             periodetype = periodetype,
             avvent = null,
             perioder = perioder(value.utbetalinger),
+        )
+    }
+
+    private fun fakeDelete(
+        key: String,
+        value: DpUtbetaling,
+        uid: UtbetalingId,
+    ): Utbetaling {
+        return fakeDelete(
+            dryrun = value.dryrun,
+            originalKey = key,
+            sakId = SakId(value.sakId),
+            uid = uid,
+            fagsystem = Fagsystem.DAGPENGER,
+            stønad = StønadTypeDagpenger.DAGPENGER,
+            beslutterId = Navident(value.beslutter ?: "dagpenger"),
+            saksbehandlerId = Navident(value.saksbehandler ?: "dagpenger"),
+            personident = Personident(value.ident),
+            behandlingId = BehandlingId(value.behandlingId),
+            periodetype = Periodetype.UKEDAG,
+            vedtakstidspunkt = value.vedtakstidspunktet,
         )
     }
 }

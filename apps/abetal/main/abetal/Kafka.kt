@@ -102,7 +102,7 @@ fun Topology.dpStream(
         .branch(Guard::ifNoMeldeperiode, Guard::replyOk)
         .default {
             this
-                .map { sakKey, (req, uids) -> DpDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
+                .map { _, (req, uids) -> DpDto.splitToDomain(req.key, req.value, uids) }
                 .rekey { _, dtos -> dtos.first().originalKey }
                 .map { _, utbetalinger ->
                     require(utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun }) {
