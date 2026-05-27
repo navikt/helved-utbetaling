@@ -20,7 +20,7 @@ object AggregateService {
     fun utledOppdrag(aggregate: List<StreamsPair<Utbetaling, Utbetaling?>>): List<Pair<Oppdrag, List<Utbetaling>>> {
         val aggregate = aggregate.filter { (new, _) -> !new.dryrun }
 
-        aggregate.forEach { (new, prev) ->
+        aggregate.filter { it.left.action != Action.FAKE_DELETE }.forEach { (new, prev) ->
             prev?.preValidateLockedFields(new)
         }
 
@@ -51,7 +51,7 @@ object AggregateService {
                     new.action == Action.FAKE_DELETE -> {
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         val new = prev.copy(behandlingId = new.behandlingId)
-                        val oppdrag = OppdragService.delete(new, prev) // new is a fakeDelete
+                        val oppdrag = OppdragService.delete(new, prev)
                         val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
                         val utbetaling = prev.copy(
                             action = Action.DELETE,
