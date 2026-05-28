@@ -407,7 +407,7 @@ private fun markSakerAck(sakKey: SakKey, uids: Set<UtbetalingId>, jdbcCtx: Corou
             val rawFagsystem = Fagsystem.fromFagområde(pending.oppdrag.oppdrag110.kodeFagomraade.trimEnd())
             val fagsystem = if (rawFagsystem.isTilleggsstønader()) Fagsystem.TILLEGGSSTØNADER else rawFagsystem
             if (fagsystem != sakKey.fagsystem) return@forEach
-            if (!newUidStrings.containsAll(pending.uids)) return@forEach
+            if (newUidStrings.isNotEmpty() && !newUidStrings.containsAll(pending.uids)) return@forEach
 
             val hashKey = DaoOppdrag.hash(pending.oppdrag)
             transaction {
