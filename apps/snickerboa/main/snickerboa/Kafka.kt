@@ -3,7 +3,6 @@ package snickerboa
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
 import libs.kafka.KafkaConsumer
 import libs.kafka.KafkaFactory
 import libs.kafka.KafkaProducer
@@ -72,17 +71,19 @@ suspend fun statusConsumer(
     consumer: KafkaConsumer<String, StatusReply>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.seekToEnd(0,1,2)
-        while (isActive) {
-            for (record in consumer.poll(50.milliseconds)) {
-                val uid = UUID.fromString(record.key) ?: continue
-                val reply = record.value ?: continue
-                correlator.completeStatus(uid, reply)
+        try {
+            consumer.seekToEnd(0, 1, 2)
+            while (isActive) {
+                for (record in consumer.poll(50.milliseconds)) {
+                    val uid = UUID.fromString(record.key) ?: continue
+                    val reply = record.value ?: continue
+                    correlator.completeStatus(uid, reply)
+                }
             }
-            delay(1)
+        } finally {
+            consumer.unsubscribe()
+            consumer.close()
         }
-        consumer.unsubscribe()
-        consumer.close()
     }
 }
 
@@ -91,16 +92,18 @@ suspend fun dryrunConsumer(
     consumer: KafkaConsumer<String, Simulering>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.seekToEnd(0,1,2)
-        while (isActive) {
-            for (record in consumer.poll(50.milliseconds)) {
-                val uid = UUID.fromString(record.key) ?: continue
-                val simulering = record.value ?: continue
-                correlator.completeSimulering(uid, simulering)
+        try {
+            consumer.seekToEnd(0, 1, 2)
+            while (isActive) {
+                for (record in consumer.poll(50.milliseconds)) {
+                    val uid = UUID.fromString(record.key) ?: continue
+                    val simulering = record.value ?: continue
+                    correlator.completeSimulering(uid, simulering)
+                }
             }
-            delay(1)
+        } finally {
+            consumer.unsubscribe()
+            consumer.close()
         }
-        consumer.unsubscribe()
-        consumer.close()
     }
 }
