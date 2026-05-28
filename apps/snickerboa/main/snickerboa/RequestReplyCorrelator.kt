@@ -21,7 +21,6 @@ class RequestReplyCorrelator(
     val producers: UtbetalingProducers,
     private val timeout: Duration = 30.seconds,
 ) {
-    // TODO: Det kan hende vi ikke får responsen fordi den kan havne på en annen tråd en requesten
     private val statusRequests = ConcurrentHashMap<UUID, CompletableDeferred<StatusReply>>()
     private val simuleringsRequests = ConcurrentHashMap<UUID, CompletableDeferred<Simulering>>()
 
