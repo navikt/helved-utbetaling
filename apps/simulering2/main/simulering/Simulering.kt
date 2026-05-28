@@ -57,7 +57,7 @@ private val errorFilter = Filter { next ->
                 .body(Jackson.asFormatString(e))
         } catch (e: Throwable) {
             val msg = "Uhåndtert feil - Helved har fått beskjed."
-            appLog.warn(msg, e)
+            appLog.error(msg, e)
             Response(Status.INTERNAL_SERVER_ERROR).body(msg)
         }
     }
