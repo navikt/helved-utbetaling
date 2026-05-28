@@ -1,0 +1,117 @@
+name: simulering2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/simulering2/**'
+      - '.github/workflows/simulering2.yml'
+      - 'build.gradle.kts'
+
+jobs:
+  test:
+    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      checks: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5.2.0
+        with:
+          java-version: 25
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - run: ./gradlew apps:simulering2:test --continue --parallel
+
+      - uses: dorny/test-reporter@v3.0.0
+        if: success() || failure()
+        with:
+          name: tests
+          path: "**/**/build/test-results/test/TEST-*.xml"
+          reporter: java-junit
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  package:
+    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5.2.0
+        with:
+          java-version: 25
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - run: ./gradlew apps:simulering2:buildFatJar --parallel
+
+      - id: deps_hash
+        run: echo "sha=$(sha256sum apps/simulering2/build/split-jars/deps.jar | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - id: deps_cache
+        uses: actions/cache/restore@v5
+        with:
+          path: .deps-attested-marker
+          key: deps-attested-simulering2-${{ steps.deps_hash.outputs.sha }}
+
+      - id: salsa
+        run: |
+          if [ "${{ steps.deps_cache.outputs.cache-hit }}" = "true" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::deps.jar unchanged since last attested build (${{ steps.deps_hash.outputs.sha }}); skipping SLSA attestation"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: nais/docker-build-push@v0
+        with:
+          team: helved
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+          dockerfile: apps/simulering2/Dockerfile
+          image_suffix: simulering2
+          tag: ${{ github.sha }}
+          salsa: ${{ steps.salsa.outputs.enabled }}
+          cache_to: ""
+
+      - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
+        run: echo "${{ steps.deps_hash.outputs.sha }}" > .deps-attested-marker
+
+      - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: .deps-attested-marker
+          key: deps-attested-simulering2-${{ steps.deps_hash.outputs.sha }}
+
+  deploy-dev:
+    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [test, package]
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: nais/login@v0
+        id: login
+        with:
+          team: helved
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+      - uses: nais/deploy/actions/deploy@v2
+        env:
+          PRINT_PAYLOAD: true
+          CLUSTER: dev-gcp
+          RESOURCE: apps/simulering2/dev.yml,apps/simulering2/alert.yml
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-simulering2:${{ github.sha }}
