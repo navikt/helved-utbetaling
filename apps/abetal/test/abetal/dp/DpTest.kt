@@ -2149,4 +2149,19 @@ internal class DpTest : ConsumerTestBase() {
         assertEquals(Status.FEILET, status.status)
         assertNotNull(status.error)
     }
+
+    @Test
+    fun `#542 Første utbetaling på sak med 0 i sats og utbetalt beløp blir kvittert OK`() {
+        val key = UUID.randomUUID().toString()
+        TestRuntime.topics.dp.produce(key) {
+            Dp.utbetaling(sakId = "ny-sak") {
+                meldekort("blablabla", LocalDate.of(2026, 5, 28),
+                    LocalDate.of(2026, 5, 28), 0u, 0u, Utbetalingstype.DagpengerFerietillegg)
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(key)
+            .with(key) { reply -> assertEquals(Status.OK, reply.status) }
+    }
 }
