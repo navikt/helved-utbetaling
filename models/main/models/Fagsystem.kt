@@ -38,6 +38,7 @@ enum class Fagsystem(val fagområde: String) {
             "AAP" -> AAP
             "HELSREF" -> HISTORISK
             "TILSOPP" -> VALP
+            "TILLSOPP" -> VALP
             else -> error("fagområde $kode not implemented")
         }
     }
