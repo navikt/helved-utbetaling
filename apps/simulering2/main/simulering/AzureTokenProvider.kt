@@ -3,6 +3,7 @@ package simulering
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import libs.utils.env
 import libs.utils.logger
 import libs.utils.secureLog
 import org.http4k.core.*
@@ -16,11 +17,11 @@ import java.util.concurrent.ConcurrentHashMap
 private val authLog = logger("auth")
 
 data class AzureConfig(
-    val tokenEndpoint: URL,
-    val jwks: URL,
-    val issuer: String,
-    val clientId: String,
-    val clientSecret: String,
+    val tokenEndpoint: URL = env("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT"),
+    val jwks: URL = env("AZURE_OPENID_CONFIG_JWKS_URI"),
+    val issuer: String = env("AZURE_OPENID_CONFIG_ISSUER"),
+    val clientId: String = env("AZURE_APP_CLIENT_ID"),
+    val clientSecret: String = env("AZURE_APP_CLIENT_SECRET"),
 )
 
 class AzureTokenProvider(
