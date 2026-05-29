@@ -6,13 +6,7 @@ import java.net.URL
 
 data class Config(
     val proxy: ProxyConfig = ProxyConfig(),
-    val azure: AzureConfig = AzureConfig(
-        tokenEndpoint = URI(env<String>("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT")).toURL(),
-        jwks = URI(env<String>("AZURE_OPENID_CONFIG_JWKS_URI")).toURL(),
-        issuer = env("AZURE_OPENID_CONFIG_ISSUER"),
-        clientId = env("AZURE_APP_CLIENT_ID"),
-        clientSecret = env("AZURE_APP_CLIENT_SECRET"),
-    ),
+    val azure: AzureConfig = AzureConfig(),
     val simulering: SoapConfig = SoapConfig(
         host = URI("${proxy.host}/${proxy.simuleringPath}").toURL(),
         sts = StsConfig(
