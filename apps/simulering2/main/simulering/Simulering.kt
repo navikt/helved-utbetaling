@@ -7,11 +7,13 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import org.http4k.client.JavaHttpClient
 import org.http4k.filter.ServerFilters
 import org.http4k.routing.routes
+import org.http4k.server.ServerConfig
 import org.http4k.server.SunHttpLoom
 import org.http4k.server.asServer
 import org.http4k.core.*
 import org.http4k.filter.MicrometerMetrics
 import models.ApiError
+import java.time.Duration
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -22,7 +24,7 @@ fun main() {
     val config = Config()
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     val app = simulering(config, prometheus)
-    app.asServer(SunHttpLoom(8080)).start().block()
+    app.asServer(SunHttpLoom(8080, ServerConfig.StopMode.Graceful(Duration.ofSeconds(50)))).start().block()
 }
 
 fun simulering(config: Config, prometheus: PrometheusMeterRegistry): HttpHandler {

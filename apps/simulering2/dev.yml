@@ -11,6 +11,7 @@ metadata:
     team: helved
 spec:
   image: {{image}}
+  terminationGracePeriodSeconds: 70
   accessPolicy:
     inbound:
       rules:
