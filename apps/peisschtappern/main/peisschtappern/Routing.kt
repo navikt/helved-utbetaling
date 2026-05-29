@@ -13,6 +13,7 @@ import libs.kafka.Topic
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.Fagsystem
+import models.badRequest
 import java.time.Instant
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
@@ -101,8 +102,9 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
 
         get("/saker/{sakId}/{fagsystem}") {
             val sakId = call.parameters["sakId"]!!
-            val fagsystemer: List<Fagsystem> =
-                call.parameters["fagsystem"]!!.split(",").map { Fagsystem.from(it.trim()) }
+            val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { kode ->
+                try { Fagsystem.from(kode.trim()) } catch (e: IllegalStateException) { badRequest("ukjent fagområde: $kode") }
+            }
             val hendelser: List<Daos> = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
                     coroutineScope {
@@ -315,7 +317,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         val request = call.receive<OkStatusRequest>()
         require(request.reason.isNotBlank()) { "Må oppgi grunn for å sende OK status manuelt" }
         val fagsystem = runCatching { Fagsystem.valueOf(request.fagsystem) }
-            .getOrElse { throw IllegalArgumentException("Ukjent fagsystem ${request.fagsystem}") }
+            .getOrElse { badRequest("Ukjent fagsystem ${request.fagsystem}") }
         when (manuellEndringService.sendOkStatus(request.key, fagsystem, Audit.from(call, request.reason))) {
             true -> call.respond(HttpStatusCode.OK, "Sendte OK status på ${Topics.status.name} med key ${request.key}")
             false -> call.respond(
