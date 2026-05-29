@@ -327,7 +327,7 @@ private object Guard {
     // Dagpenger
     fun ifNoMeldeperiode(pair: StreamsPair<DpTuple, Set<UtbetalingId>?>): Boolean {
         val (utbetalinger, saker) = pair.left.value.utbetalinger to pair.right
-        return utbetalinger.isEmpty() && saker.isNullOrEmpty()
+        return (utbetalinger.isEmpty() || utbetalinger.all { it.sats == 0u && it.utbetaltBeløp == 0u }) && saker.isNullOrEmpty()
     }
 
     fun replyOk(branch: MappedStream<SakKey, StreamsPair<DpTuple, Set<UtbetalingId>?>>) {
