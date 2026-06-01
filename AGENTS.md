@@ -1,194 +1,84 @@
-# AGENTS.md - Coding Agent Instructions for helved-utbetaling
+# AGENTS.md - helved-utbetaling
 
-## Project Overview
+Multi-module Kotlin monorepo. NAV payment system. Ktor (NOT Spring). NAIS (K8s/GCP). 11 apps + 15 libs + shared models.
 
-Multi-module Kotlin monorepo for NAV (Norwegian government) payment system.
-Ktor-based (NOT Spring). Runs on NAIS (Kubernetes on GCP). 11 apps + 15 libs + shared models.
+## Build
 
-## Build System
-
-- **Gradle 8.13** (Kotlin DSL), **Kotlin 2.3.10**, **JVM 21**
-- Compiler: `allWarningsAsErrors = true`, `extraWarnings = true` -- all warnings are errors
-
-### Commands
+- Gradle 8.13 (Kotlin DSL), Kotlin 2.3.10, JVM 21
+- Compiler: `allWarningsAsErrors = true`, `extraWarnings = true`
 
 ```sh
-# Build everything
-./gradlew build
-
-# Run all tests
-./gradlew test --continue
-
-# Run tests for a specific module
-./gradlew apps:utsjekk:test
-./gradlew apps:abetal:test
-./gradlew libs:jdbc:test
-
-# Run a single test class
-./gradlew apps:utsjekk:test --tests "utsjekk.iverksetting.IverksettingRouteTest"
-
-# Run a single test method (use the backtick-quoted name)
-./gradlew apps:utsjekk:test --tests "utsjekk.iverksetting.IverksettingRouteTest.start iverksetting av vedtak uten utbetaling"
-
-# Build fat JAR for an app
-./gradlew apps:utsjekk:buildFatJar
+./gradlew build                          # all
+./gradlew test --continue                # all tests
+./gradlew apps:utsjekk:test              # module tests
+./gradlew apps:utsjekk:test --tests "utsjekk.iverksetting.IverksettingRouteTest"  # class
+./gradlew apps:utsjekk:test --tests "utsjekk.iverksetting.IverksettingRouteTest.start iverksetting av vedtak uten utbetaling"  # method
+./gradlew apps:utsjekk:buildFatJar       # fat JAR
 ```
 
-CI runs: `./gradlew test --continue --no-daemon`
+CI: `./gradlew test --continue --no-daemon`
 
-### Non-Standard Source Layout
+### Source Layout (non-standard)
 
-Sources are NOT in `src/main/kotlin`. The convention is:
-- **Main sources**: `<module>/main/<package>/`
-- **Test sources**: `<module>/test/<package>/`
-- **Resources**: alongside Kotlin files in `main/`
-- **DB migrations**: `<module>/migrations/`
+- Main: `<module>/main/<package>/`
+- Test: `<module>/test/<package>/`
+- Resources: alongside Kotlin in `main/`
+- Migrations: `<module>/migrations/`
 
-Example: `apps/utsjekk/main/utsjekk/Utsjekk.kt`, `apps/utsjekk/test/utsjekk/IverksettingRouteTest.kt`
+Example: `apps/utsjekk/main/utsjekk/Utsjekk.kt`
 
 ## Testing
 
-- **JUnit 5** via `kotlin("test")` -- use `kotlin.test.*` assertions (`assertEquals`, `assertNotNull`)
-- Tests run in parallel at class level (same thread within a class, concurrent across classes)
-- **No mocking frameworks** -- uses real infrastructure via Testcontainers and custom fakes
+JUnit 5, `kotlin.test.*` assertions, no mocking — Testcontainers + custom fakes. Parallel at class level. Load `testing` skill for patterns (TestRuntime, runTest, DataSource.await, TestData).
 
-### Test Infrastructure
-
-| Library | Purpose |
-|---------|---------|
-| `libs:jdbc-test` | PostgreSQL via Testcontainers |
-| `libs:kafka-test` | Kafka Streams test utils (`StreamsMock`) |
-| `libs:auth-test` | JWT test token generation |
-| `libs:ktor-test` | Ktor test host + CIO client |
-| `libs:mq-test` | IBM MQ test utilities |
-
-### Reusable Testcontainers
-
-Containers are reused between test runs. If containers are stopped and tests fail with 409:
-```sh
-docker start mq postgres
-```
-
-### Test Patterns
-
-- **Test names**: backtick-quoted descriptive sentences (Norwegian or English):
-  ```kotlin
-  @Test fun `start iverksetting av vedtak uten utbetaling`() = runTest(TestRuntime.context) { ... }
-  ```
-- **`TestRuntime` singleton** per app provides fakes, config, Kafka mock, DB datasource, Ktor test server
-- **`TestData` object** with factory methods for creating test fixtures with sensible defaults
-- **`DataSource.await { }` pattern** for polling DB in async tests
-- **`runTest(TestRuntime.context)`** wraps coroutine tests with the correct DB context
+Containers reused. If stopped → `docker start mq postgres`
 
 ## Code Style
 
-### Formatting
-
-- 4-space indent, spaces (no tabs)
-- K&R/Egyptian bracket style (opening brace on same line)
-- No trailing commas (explicitly disabled)
-- No enforced line length limit
-- ktlint configured via `.editorconfig` with most rules disabled; enabled rules:
-  indent, spacing, import-ordering, no-consecutive-blank-lines, argument-list-wrapping,
-  parameter-list-wrapping, no-blank-line-before-rbrace, value-argument-comment-spacing
-- No detekt configured
-
-### Imports
-
-- Wildcard imports are common: `io.ktor.server.application.*`, `models.*`
-- Explicit imports also used; no strict rule
-- Ordering: external libs, internal libs (`libs.*`), models (`models.*`), app-local, java stdlib
-- No blank lines between import groups
-
-### Naming Conventions
-
-- **Packages**: single lowercase word matching the module: `utsjekk`, `abetal`, `libs.jdbc`
-- **Classes**: PascalCase: `IverksettingService`, `UtbetalingDao`, `ApiError`
-- **Functions**: camelCase: `iverksett`, `valider`, `createTopology`
-- **Variables**: camelCase: `oppdragProducer`, `utbetalingService`
-- **Files**: match the primary class/function: `Utsjekk.kt`, `Config.kt`, `Routing.kt`
-- **Norwegian domain terms** used extensively: `Iverksetting`, `Utbetaling`, `Stønadstype`,
-  `vedtakstidspunkt`, `sakId`, `behandlingId`, `Fagsakdetaljer`, `Søker`
-- **Value classes** with `@JvmInline`: `SakId`, `BehandlingId`, `Personident`, `UtbetalingId`
-- **Sealed interfaces** for type hierarchies: `Stønadstype`, `Result`, `TokenType`
+- 4-space indent, K&R braces, no trailing commas
+- ktlint via `.editorconfig` (most rules disabled)
+- Wildcard imports common
+- Norwegian domain terms: Iverksetting, Utbetaling, Stønadstype, sakId, behandlingId, Søker
+- Value classes (`@JvmInline`): SakId, BehandlingId, Personident, UtbetalingId
+- Sealed interfaces for type hierarchies
 
 ### Error Handling
 
-- **`ApiError`** data class extends `RuntimeException` with `statusCode`, `msg`, `doc`, `system`
-- **Helper functions** that throw `ApiError` and return `Nothing`:
-  `badRequest()`, `notFound()`, `conflict()`, `locked()`, `unauthorized()`, `forbidden()`
-- **`DocumentedErrors`** enum links each error to a documentation URL
-- **StatusPages plugin** catches `ApiError` globally and maps to HTTP responses
-- **Custom `Result<V, E>` type** (in `libs.utils` and `models`) with `Ok`/`Err`, `unwrap()`,
-  `map()`, `fold()`, `onSuccess()`, `onFailure()`
-- **`Result.catch { }` pattern** wraps domain logic in Kafka Streams processing
+`ApiError` + helpers (`badRequest()`, `notFound()`, `conflict()`, etc.) → StatusPages catches globally. Custom `Result<V,E>` with Ok/Err in libs.utils and models.
 
-### Coroutine Patterns
+### Coroutines
 
-- **`withContext(jdbcCtx)`** for DB operations -- `jdbcCtx: CoroutineDatasource` is constructed via `Jdbc.initialize(config).context()` and threaded through DI (no global)
-- **`transaction { }`** suspending function for DB connection management
-- **`runBlocking`** only at startup for migrations
-- Kafka Streams topology is NOT coroutine-based
+`withContext(jdbcCtx)` for DB ops. `transaction { }` suspending. `runBlocking` only at startup. Kafka Streams NOT coroutine-based.
 
-## Architecture Patterns
+## Architecture
 
-### App Structure
+- `fun main()` → `embeddedServer(module = Application::appName)` → wires deps + plugins
+- Routing via `Route` extension functions
+- `Config` data class with `env()` defaults
+- No DI framework — manual constructor injection
+- DB: PostgreSQL + HikariCP, custom migrations, `Dao<T>` interface. Load `database` skill.
+- Kafka: custom `topology {}` DSL. Load `kafka-topology` skill.
+- Logging: `appLog` (no PII), `secureLog` (sensitive). Logback + logstash-encoder.
 
-Each app follows this pattern:
-1. `fun main()` sets uncaught exception handler, calls `embeddedServer(module = Application::appName)`
-2. `fun Application.appName()` wires dependencies and installs Ktor plugins
-3. Routing via extension functions on `Route`
-4. `Config` data class with defaults from `env()` calls
+## Skills
 
-### Dependency Injection
+| Skill | When |
+|-------|------|
+| `libs-reference` | Code touching /libs |
+| `readable-code` | Writing/refactoring any .kt file |
+| `kafka-topology` | Kafka Streams topologies |
+| `testing` | Writing tests |
+| `database` | Migrations, DAOs, transactions |
+| `ktor-routing` | Routes, auth, StatusPages |
+| `ripgrep` | Searching code/files |
 
-No DI framework. Manual constructor injection wired in the app entry-point function.
+## Modules
 
-### Database
-
-- PostgreSQL + HikariCP, custom migration system (not Flyway/Liquibase)
-- `Dao<T>` interface with `table`, `from(ResultSet)`, generic `query()` and `update()` methods
-- Companion objects implement `Dao<T>`
-
-### Kafka
-
-- Custom `topology { }` DSL wrapping Kafka Streams
-- `Topic` objects defined in a `Topics` object per app
-- `Table` and `Store` abstractions for state stores
-- `consume()`, `.map()`, `.branch()`, `.produce()` operations
-
-### Logging
-
-- **`appLog`** for application logs (no sensitive data)
-- **`secureLog`** for sensitive data -- NEVER log PII to `appLog`
-- Logback + logstash-logback-encoder for structured JSON logging
-
-## Module-Specific Documentation
-
-For detailed module-level documentation:
-- **Application domain knowledge**: See `apps/AGENTS.md` for app purposes, architecture, data flows, Kafka topics, database schemas, and API contracts
-- **Library APIs and usage**: Load the `libs-reference` skill for library exports, usage patterns, and integration examples
-
-When writing or modifying code, load the `readable-code` skill.
-
-### When to Load Each Skill
-- **`libs-reference`**: When implementing code that touches /libs (jdbc, kafka, mq, ws, ktor, auth, http, cache, tracing, utils).
-- **`readable-code`**: When writing or refactoring Kotlin code (any .kt file).
-- **`kafka-topology`**: When building or modifying Kafka Streams topologies (the custom DSL).
-- **`testing`**: When writing tests (TestRuntime, runTest, fakes, Testcontainers).
-- **`database`**: When writing migrations or DAOs (custom Migrator, Dao<T>, transaction { }).
-- **`ktor-routing`**: When building Ktor routes, auth, or StatusPages handlers.
-- **`ripgrep`**: When searching code or files.
-
-### Modules
-
-When adding dependencies between modules, use Gradle project references:
+Domain docs: `apps/AGENTS.md`. Deps use project refs:
 ```kotlin
 dependencies {
     implementation(project(":libs:jdbc"))
-    implementation(project(":models"))
     testImplementation(project(":libs:jdbc-test"))
 }
 ```
-
-Dependency versions are declared inline as `val` in each module's `build.gradle.kts` (no version catalog).
+Versions declared inline (no version catalog).
