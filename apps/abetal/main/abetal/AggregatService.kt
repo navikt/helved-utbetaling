@@ -35,7 +35,8 @@ object AggregateService {
                         val oppdrag = OppdragService.delete(new, prev)
                         val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
                         val utbetaling = prev.copy(
-                            action = Action.DELETE, 
+                            action = Action.DELETE,
+                            behandlingId = new.behandlingId,
                             lastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId),
                             sistePeriode = Utbetalingsperiode(
                                 fom = sisteLinje.datoVedtakFom.toLocalDate(),
@@ -55,6 +56,7 @@ object AggregateService {
                         val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
                         val utbetaling = prev.copy(
                             action = Action.DELETE,
+                            behandlingId = new.behandlingId,
                             lastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId),
                             sistePeriode = Utbetalingsperiode(
                                 fom = sisteLinje.datoVedtakFom.toLocalDate(),

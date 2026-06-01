@@ -43,7 +43,7 @@ data class Header(
 ) {
     companion object {
         fun fromString(str: String): Header {
-            daoLog.info("trying to split '$str' on ':'")
+            daoLog.debug("trying to split '$str' on ':'")
             val parts = str.split(":")
             return Header(parts[0], parts.getOrNull(1))
         }

@@ -1281,7 +1281,7 @@ internal class DpTest : ConsumerTestBase() {
             action = Action.DELETE,
             uid = uid1,
             sakId = sid,
-            behandlingId = bid,
+            behandlingId = bid2,
             originalKey = transactionId1,
             fagsystem = Fagsystem.DAGPENGER,
             lastPeriodeId = PeriodeId(),
@@ -1383,7 +1383,7 @@ internal class DpTest : ConsumerTestBase() {
             action = Action.DELETE,
             uid = uid,
             sakId = sid,
-            behandlingId = bid1, // egentlig bid2
+            behandlingId = bid2,
             originalKey = tid1,  // egentlig tid2
             fagsystem = Fagsystem.DAGPENGER,
             lastPeriodeId = PeriodeId(),

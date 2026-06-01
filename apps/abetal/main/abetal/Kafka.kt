@@ -423,7 +423,7 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
             uids.map { uid -> KeyValue(uid, KeyValueAndUids(key, oppdrag, uids)) }
         }
         .leftJoin(Serde.string(), Serde.json(), pending, "pk-leftjoin-pending")
-        .branch({ (keyAndValue, pending) -> pending == null && keyAndValue.uids.isNotEmpty() }) {
+        .branch({ (keyAndValue, pending) -> (pending == null || !pendingMatchesOppdrag(pending, keyAndValue.originalValue)) && keyAndValue.uids.isNotEmpty() }) {
             this.processor(Processor { EnrichMetadataProcessor() })
                 .includeHeader("retries") { (_: StreamsPair<KeyValueAndUids, Utbetaling?>, meta) ->
                     val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
@@ -437,7 +437,7 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
                 }
                 .produce(Topics.retryOppdrag)
         }
-        .branch({ (_, pending) -> pending != null }) {
+        .branch({ (keyAndValue, pending) -> pending != null && pendingMatchesOppdrag(pending, keyAndValue.originalValue) }) {
             this.map { (_, pending) -> pending!! }
                 .produce(Topics.utbetalinger)
         }
@@ -446,6 +446,18 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
                 error("Denne burde ikke oppstå oppdrag: ${kv.originalKey}")
             }
         }
+}
+
+/**
+ * Verifiser at pending utbetaling tilhører dette oppdraget.
+ * Uten denne sjekken kan en stale KTable (som ikke har rukket å konsumere
+ * den nyeste pending-meldingen) levere forrige generasjon til joinen.
+ * Vi sammenligner behandlingId (henvisning i oppdragslinjene) mot pending sin behandlingId.
+ */
+private fun pendingMatchesOppdrag(pending: Utbetaling, oppdrag: Oppdrag): Boolean {
+    val oppdragBehandlingId = oppdrag.oppdrag110.oppdragsLinje150s.lastOrNull()?.henvisning?.trimEnd()
+        ?: return true // ingen linjer å validere mot, anta match
+    return pending.behandlingId.id == oppdragBehandlingId
 }
 
 typealias DryrunAggregate = Pair<Boolean, List<SimulerBeregningRequest>>
