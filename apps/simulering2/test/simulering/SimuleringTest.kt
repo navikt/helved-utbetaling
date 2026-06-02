@@ -38,6 +38,23 @@ class SimuleringTest {
     }
 
     @Test
+    fun `aksepterer personident som objekt med verdi-felt`() {
+        TestRuntime().use { runtime ->
+            val app = simulering(config = runtime.config)
+
+            val json = """{"fagområde":"TILLST","sakId":"200000233","personident":{"verdi":"22479409483"},"erFørsteUtbetalingPåSak":true,"saksbehandler":"Z994230","utbetalingsperioder":[{"periodeId":"0","forrigePeriodeId":null,"erEndringPåEksisterendePeriode":false,"klassekode":"TSTBASISP4-OP","fom":"2024-05-01","tom":"2024-05-01","sats":700,"satstype":"DAG","opphør":null,"utbetalesTil":"22479409483"}]}"""
+
+            val response = app(
+                Request(Method.POST, "/simulering")
+                    .header("Content-Type", "application/json")
+                    .body(json)
+            )
+
+            assertEquals(Status.OK, response.status)
+        }
+    }
+
+    @Test
     fun `can resolve simulering response`() {
         val actual = TestRuntime().use { runtime ->
             val simulering = SimuleringService(runtime, runtime)
