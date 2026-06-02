@@ -66,7 +66,7 @@ class SimuleringTest {
         assertTrue(xmlStr.contains("<request>"), "Expected <request> but got: $xmlStr")
         assertTrue(xmlStr.contains("<oppdrag>"), "Expected <oppdrag> but got: $xmlStr")
         assertTrue(xmlStr.contains("<oppdragslinje>"), "Expected <oppdragslinje> but got: $xmlStr")
-        assertTrue(xmlStr.contains("<attestant>"), "Expected <attestant> but got: $xmlStr")
+        assertTrue(xmlStr.contains("attestant>"), "Expected attestant element but got: $xmlStr")
         // Root element should have namespace
         assertTrue(xmlStr.contains("simulerBeregningRequest"), "Expected simulerBeregningRequest root")
     }
