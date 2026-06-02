@@ -1,20 +1,22 @@
 package simulering
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
 import libs.utils.env
 import libs.utils.logger
 import libs.utils.secureLog
 import org.http4k.core.*
 import java.net.URL
-import java.util.*
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
 
 private val authLog = logger("auth")
+
+private val json = Json { ignoreUnknownKeys = true }
 
 data class AzureConfig(
     val tokenEndpoint: URL = env("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT"),
@@ -29,9 +31,6 @@ class AzureTokenProvider(
     private val http: HttpHandler,
     private val cache: TokenCache<AzureToken> = TokenCache(),
 ) {
-    private val jackson = jacksonObjectMapper()
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-
     fun getClientCredentialsToken(scope: String): AzureToken {
         cache.get(scope)?.let { return it }
 
@@ -55,7 +54,7 @@ class AzureTokenProvider(
             error("Failed to get token from Azure AD: ${config.tokenEndpoint}")
         }
 
-        val token = jackson.readValue<AzureToken>(response.bodyString())
+        val token = json.decodeFromString<AzureToken>(response.bodyString())
         cache.add(scope, token)
         return token
     }
@@ -73,11 +72,14 @@ data class SamlToken(
         expirationTime <= LocalDateTime.now().plus(Duration.ofSeconds(10))
 }
 
+@Serializable
 data class AzureToken(
     val expires_in: Long,
     val access_token: String,
 ) : Token {
+    @kotlinx.serialization.Transient 
     private val expiry: Instant = Instant.now().plusSeconds(expires_in - 60)
+
     override fun isExpired(): Boolean = Instant.now().isAfter(expiry)
 }
 
@@ -101,4 +103,3 @@ class TokenCache<T : Token> {
         tokens.remove(key)
     }
 }
-

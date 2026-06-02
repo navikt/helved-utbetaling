@@ -1,3 +1,7 @@
+plugins {
+    kotlin("plugin.serialization")
+}
+
 val ktorVersion = "3.5.0"
 
 dependencies {
@@ -6,12 +10,16 @@ dependencies {
     api(project(":libs:http"))
     api(project(":libs:utils"))
 
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+
+    // Legacy: kept for apps/simulering (deprecated), remove when it's deleted
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
 
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-core:$ktorVersion")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
     testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    testImplementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
 }

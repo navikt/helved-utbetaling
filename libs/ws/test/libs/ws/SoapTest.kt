@@ -2,9 +2,7 @@ package libs.ws
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.jackson.jackson
 import io.ktor.server.request.header
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterAll
@@ -75,11 +73,7 @@ class SoapTest {
     @Test
     fun `aksepterer 500`() {
         val sts = StsClient(proxy.config.sts)
-        val soap = SoapClient(proxy.config, sts, http = HttpClient(CIO) {
-            install(ContentNegotiation) {
-                jackson {  }
-            }
-        })
+        val soap = SoapClient(proxy.config, sts, http = HttpClient(CIO))
 
         proxy.soap.responseStatus = HttpStatusCode.InternalServerError
 

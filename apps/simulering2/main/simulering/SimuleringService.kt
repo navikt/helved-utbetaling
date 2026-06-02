@@ -1,29 +1,21 @@
 package simulering
 
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule
-import com.fasterxml.jackson.dataformat.xml.XmlMapper
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import kotlinx.serialization.Serializable
 import libs.utils.secureLog
 import models.badGateway
 import models.badRequest
 import models.conflict
 import models.forbidden
 import models.notFound
+import nl.adaptivity.xmlutil.ExperimentalXmlUtilApi
+import nl.adaptivity.xmlutil.serialization.XML
+import nl.adaptivity.xmlutil.XmlDeclMode
+import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
+import nl.adaptivity.xmlutil.serialization.OutputKind
 import simulering.models.rest.rest
 import simulering.models.soap.soap
 import simulering.models.soap.soap.Beregning
 import simulering.models.soap.soap.SimulerBeregningRequest
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 private object SimulerAction {
     private const val HOST = "http://nav.no"
@@ -33,19 +25,58 @@ private object SimulerAction {
     const val SEND_OPPDRAG = "$HOST/$PATH/$SERVICE/sendInnOppdragRequest"
 }
 
+@Suppress("DEPRECATION")
+val xml: XML = XML {
+    xmlDeclMode = XmlDeclMode.None
+    indent = 2
+    autoPolymorphic = true
+}
+
+// Separate instance for deserialization that treats primitives as elements
+@OptIn(ExperimentalXmlUtilApi::class)
+val xmlDeserializer: XML = XML.Companion.recommended_1_0 {
+    xmlDeclMode = XmlDeclMode.None
+    indentString = "  "
+    policy = DefaultXmlSerializationPolicy.Builder10().apply {
+        ignoreUnknownChildren()
+        defaultPrimitiveOutputKind = OutputKind.Element
+        defaultObjectOutputKind = OutputKind.Element
+        isInlineCollapsedDefault = true
+        verifyElementOrder = false
+        throwOnRepeatedElement = false
+    }.build()
+}
+
+@Serializable
+data class FaultDetail(
+    val simulerBeregningFeilUnderBehandling: FeilUnderBehandling? = null,
+    val CICSFault: String? = null,
+)
+
+@Serializable
+data class FeilUnderBehandling(
+    val errorMessage: String? = null,
+)
+
+data class Fault(
+    val faultcode: String,
+    val faultstring: String,
+    val detail: FaultDetail? = null,
+)
+
 class SimuleringService(private val soap: Soap, private val sts: Sts) {
 
     fun simuler(request: SimulerBeregningRequest): rest.SimuleringResponse = withAuthRetry {
-        val xml = xmlMapper.writeValueAsString(request).replace(Regex("ns\\d="), "xmlns:$0")
-        val response = soap.call(SimulerAction.BEREGNING, xml)
+        val xmlStr = xml.encodeToString(SimulerBeregningRequest.serializer(), request)
+        val response = soap.call(SimulerAction.BEREGNING, xmlStr)
         (json(response) ?: Beregning.empty(request)).intoDto()
     }
 
     fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse = withAuthRetry {
-        val request = SimulerBeregningRequest.from(request)
-        val xml = xmlMapper.writeValueAsString(request).replace(Regex("ns\\d="), "xmlns:$0")
-        val response = soap.call(SimulerAction.BEREGNING, xml)
-        (json(response) ?: Beregning.empty(request)).intoDto()
+        val req = SimulerBeregningRequest.from(request)
+        val xmlStr = xml.encodeToString(SimulerBeregningRequest.serializer(), req)
+        val response = soap.call(SimulerAction.BEREGNING, xmlStr)
+        (json(response) ?: Beregning.empty(req)).intoDto()
     }
 
     private fun <T> withAuthRetry(block: () -> T): T {
@@ -62,43 +93,69 @@ class SimuleringService(private val soap: Soap, private val sts: Sts) {
         }
     }
 
-    fun json(xml: String): Beregning? = when (classify(xml)) {
-        EnvelopeKind.FAULT -> fault(xml)
+    fun json(xmlStr: String): Beregning? = when (classify(xmlStr)) {
+        EnvelopeKind.FAULT -> fault(xmlStr)
         EnvelopeKind.RESPONSE -> try {
             wsLog.debug("Forsøker å deserialisere simulerBeregningResponse")
-            simulerBeregningResponse(xml).response?.simulering
+            simulerBeregningResponse(xmlStr)
         } catch (e: Throwable) {
             wsLog.error("Feilet deserialisering av simulerBeregningResponse")
-            secureLog.error("Feilet deserialisering av simulerBeregningResponse: $xml", e)
+            secureLog.error("Feilet deserialisering av simulerBeregningResponse: $xmlStr", e)
             badGateway("Ugyldig respons fra Oppdragssystemet")
         }
         EnvelopeKind.UNKNOWN -> {
             wsLog.error("Ukjent SOAP-svar fra Oppdragssystemet")
-            secureLog.error("Ukjent SOAP-svar fra Oppdragssystemet: $xml")
+            secureLog.error("Ukjent SOAP-svar fra Oppdragssystemet: $xmlStr")
             badGateway("Ukjent svar fra Oppdragssystemet")
         }
     }
 
     private enum class EnvelopeKind { RESPONSE, FAULT, UNKNOWN }
 
-    private fun classify(xml: String): EnvelopeKind = when {
-        "<faultcode" in xml || ":Fault " in xml || ":Fault>" in xml -> EnvelopeKind.FAULT
-        "simulerBeregningResponse" in xml -> EnvelopeKind.RESPONSE
+    private fun classify(xmlStr: String): EnvelopeKind = when {
+        "<faultcode" in xmlStr || ":Fault " in xmlStr || ":Fault>" in xmlStr -> EnvelopeKind.FAULT
+        "simulerBeregningResponse" in xmlStr -> EnvelopeKind.RESPONSE
         else -> EnvelopeKind.UNKNOWN
     }
 
-    private fun simulerBeregningResponse(xml: String): soap.SimulerBeregningResponse =
-        tryInto<soap.SimuleringResponse>(xml).simulerBeregningResponse
+    private fun simulerBeregningResponse(xmlStr: String): Beregning? {
+        // Extract <simulerBeregningResponse>...</simulerBeregningResponse> content
+        val responseBody = extractElement(xmlStr, "simulerBeregningResponse")
+            ?: return null
 
-    private fun fault(xml: String): Nothing {
+        // Parse the inner response element
+        val responseElement = extractElement(responseBody, "response")
+            ?: return null
+
+        val simuleringElement = extractElement(responseElement, "simulering")
+            ?: return null
+
+        // Strip all xmlns declarations and namespace prefixes for clean parsing
+        val cleanXml = "<simulering>${stripNamespaces(simuleringElement)}</simulering>"
+        return xmlDeserializer.decodeFromString(Beregning.serializer(), cleanXml)
+    }
+
+    private fun fault(xmlStr: String): Nothing {
         wsLog.debug("Forsøker å deserialisere fault")
-        val fault = tryInto<SoapFault>(xml).fault
+        val faultcode = extractElementText(xmlStr, "faultcode") ?: "unknown"
+        val faultstring = extractElementText(xmlStr, "faultstring") ?: "unknown"
+
+        val detail = extractFaultDetail(xmlStr)
+        val fault = Fault(faultcode, faultstring, detail)
         logAndThrow(fault)
     }
 
-    private inline fun <reified T> tryInto(xml: String): T {
-        val res = xmlMapper.readValue<SoapResponse<T>>(xml)
-        return res.body
+    private fun extractFaultDetail(xmlStr: String): FaultDetail? {
+        val detailContent = extractElement(xmlStr, "detail") ?: return null
+
+        val errorMessage = extractElementText(detailContent, "errorMessage")
+        val cicsFault = extractElementText(detailContent, "CICSFault")
+
+        val feilUnderBehandling = if (errorMessage != null) FeilUnderBehandling(errorMessage) else null
+
+        return if (feilUnderBehandling != null || cicsFault != null) {
+            FaultDetail(feilUnderBehandling, cicsFault)
+        } else null
     }
 
     private fun logAndThrow(fault: Fault): Nothing {
@@ -118,8 +175,7 @@ class SimuleringService(private val soap: Soap, private val sts: Sts) {
     }
 
     private fun resolveSoapConversionFailure(fault: Fault): Nothing {
-        val detail = fault.detail
-        val cicsFault = detail["CICSFault"]?.toString() ?: soapError(fault)
+        val cicsFault = fault.detail?.CICSFault ?: soapError(fault)
 
         if (cicsFault.contains("DFHPI1008")) {
             forbidden(
@@ -135,9 +191,7 @@ class SimuleringService(private val soap: Soap, private val sts: Sts) {
     }
 
     private fun resolveBehandlingFault(fault: Fault): Nothing {
-        val detail = fault.detail
-        val feilUnderBehandling = detail["simulerBeregningFeilUnderBehandling"] as? Map<*, *> ?: soapError(fault)
-        val errorMessage = feilUnderBehandling["errorMessage"] as? String ?: soapError(fault)
+        val errorMessage = fault.detail?.simulerBeregningFeilUnderBehandling?.errorMessage ?: soapError(fault)
         with(errorMessage) {
             when {
                 contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> notFound("SakId ikke funnet")
@@ -151,43 +205,27 @@ class SimuleringService(private val soap: Soap, private val sts: Sts) {
     }
 }
 
-@JacksonXmlRootElement(localName = "Envelope", namespace = "http://schemas.xmlsoap.org/soap/envelope/")
-data class SoapResponse<T>(
-    @param:JacksonXmlProperty(localName = "Header")
-    val header: SoapHeader?,
-    @param:JacksonXmlProperty(localName = "Body")
-    val body: T,
-)
+/** Extract inner content of an element (handles namespace prefixes) */
+private fun extractElement(xml: String, localName: String): String? {
+    // Match <prefix:localName or <localName with optional attributes
+    val openPattern = Regex("""<(?:\w+:)?$localName(?:\s[^>]*)?>""")
+    val closePattern = Regex("""</(?:\w+:)?$localName\s*>""")
 
-data class SoapHeader(
-    @param:JacksonXmlProperty(localName = "Action", namespace = "http://www.w3.org/2005/08/addressing")
-    val action: String,
-    @param:JacksonXmlProperty(localName = "MessageID", namespace = "http://www.w3.org/2005/08/addressing")
-    val messageId: String,
-)
+    val openMatch = openPattern.find(xml) ?: return null
+    val closeMatch = closePattern.find(xml, openMatch.range.last) ?: return null
 
-data class SoapFault(
-    @param:JacksonXmlProperty(localName = "Fault", namespace = "http://www.w3.org/2003/05/soap-envelope")
-    val fault: Fault,
-)
+    return xml.substring(openMatch.range.last + 1, closeMatch.range.first)
+}
 
-data class Fault(
-    val faultcode: String,
-    val faultstring: String,
-    val detail: Map<String, Any> = emptyMap(),
-)
+/** Extract text content of a simple element */
+private fun extractElementText(xml: String, localName: String): String? {
+    val pattern = Regex("""<(?:\w+:)?$localName(?:\s[^>]*)?>([^<]*)</(?:\w+:)?$localName\s*>""")
+    return pattern.find(xml)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+}
 
-private val xmlMapper: ObjectMapper =
-    XmlMapper(JacksonXmlModule().apply { setDefaultUseWrapper(false) })
-        .registerKotlinModule()
-        .enable(SerializationFeature.INDENT_OUTPUT)
-        .setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_EMPTY, JsonInclude.Include.NON_NULL))
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        .registerModule(
-            JavaTimeModule()
-                .addDeserializer(
-                    LocalDateTime::class.java,
-                    LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"))
-                )
-        )
+/** Strip xmlns declarations and namespace prefixes from XML elements */
+private fun stripNamespaces(xml: String): String =
+    xml.replace(Regex("""\s+xmlns(?::\w+)?="[^"]*""""), "")
+        .replace(Regex("""<(\w+):"""), "<")
+        .replace(Regex("""</(\w+):"""), "</")
+
