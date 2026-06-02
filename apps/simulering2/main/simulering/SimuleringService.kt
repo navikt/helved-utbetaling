@@ -26,10 +26,14 @@ private object SimulerAction {
 }
 
 @Suppress("DEPRECATION")
+@OptIn(ExperimentalXmlUtilApi::class)
 val xml: XML = XML {
     xmlDeclMode = XmlDeclMode.None
     indent = 2
     autoPolymorphic = true
+    policy = DefaultXmlSerializationPolicy.Builder10().apply {
+        defaultPrimitiveOutputKind = OutputKind.Element
+    }.build()
 }
 
 // Separate instance for deserialization that treats primitives as elements
