@@ -1,16 +1,15 @@
 package libs.ws
 
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.net.URI
 import java.util.*
 
@@ -75,14 +74,18 @@ internal object SoapFake {
 }
 
 private fun Application.proxy() {
-    install(ContentNegotiation) {
-        json()
-    }
-
     routing {
         get("/rest/v1/sts/samltoken") {
             when (StsFake.request(call)) {
-                true -> call.respond(StsFake.response)
+                true -> {
+                    val json = buildJsonObject {
+                        put("access_token", StsFake.response.access_token)
+                        put("issued_token_type", StsFake.response.issued_token_type)
+                        put("token_type", StsFake.response.token_type)
+                        put("expires_in", StsFake.response.expires_in)
+                    }
+                    call.respondText(json.toString(), ContentType.Application.Json)
+                }
                 false -> call.respondText(
                     text = "gandalf did not expect request: ${call.request}",
                     status = HttpStatusCode.InternalServerError
@@ -102,7 +105,6 @@ private fun Application.proxy() {
     }
 }
 
-@Serializable
 data class GandalfToken(
     val access_token: String = "very secure".let { Base64.getEncoder().encodeToString(it.toByteArray()) },
     val issued_token_type: String = "urn:ietf:params:oauth:token-type:saml2",
