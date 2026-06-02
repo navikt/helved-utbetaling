@@ -35,7 +35,7 @@ fun simulering(config: Config, prometheus: PrometheusMeterRegistry): HttpHandler
     val azure = AzureTokenProvider(config.azure, http)
     val proxyAuth: () -> String = { "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}" }
     val sts = StsClient(config.simulering.sts, http, proxyAuth = proxyAuth)
-    val soap = SoapClient(config.simulering, sts, http, proxyAuth = proxyAuth)
+    val soap = SoapClient(config.simulering, sts, SecureLogFilter.then(http), proxyAuth = proxyAuth)
     val service = SimuleringService(soap, sts)
 
     return errorFilter

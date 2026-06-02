@@ -2,12 +2,23 @@ package simulering
 
 import libs.utils.Resource
 import libs.utils.logger
+import libs.utils.secureLog
 import models.badGateway
 import org.http4k.core.*
 import java.net.URL
 import java.util.*
 
 val wsLog = logger("ws")
+
+val SecureLogFilter = Filter { next ->
+    { request ->
+        secureLog.info("REQUEST: ${request.method} ${request.uri} headers=${request.headers} body=${request.bodyString()}")
+        val response = next(request)
+        val body = response.bodyString()
+        secureLog.info("RESPONSE: ${response.status} headers=${response.headers} body=$body")
+        Response(response.status).headers(response.headers).body(body)
+    }
+}
 
 interface Soap {
     fun call(action: String, body: String): String
@@ -43,9 +54,10 @@ class SoapClient(
             .body(xml)
 
         val response = http(request)
+        val responseBody = response.bodyString()
 
         return when (response.status) {
-            Status.INTERNAL_SERVER_ERROR, Status.OK -> response.bodyString()
+            Status.INTERNAL_SERVER_ERROR, Status.OK -> responseBody
             Status.BAD_GATEWAY -> badGateway("simulering stengt, tilgjengelig man-fre kl 6-21")
             else -> error("Unexpected status ${response.status} from ${config.host}")
         }
