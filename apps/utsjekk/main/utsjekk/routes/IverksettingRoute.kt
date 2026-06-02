@@ -53,7 +53,6 @@ fun Route.iverksetting(
             val iverksetting = Iverksetting.from(dto, fagsystem)
 
             try {
-                service.valider(iverksetting)
                 service.iverksett(iverksetting)
             } catch (e: ApiError) {
                 if (e.statusCode != 409) throw e

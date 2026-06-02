@@ -17,37 +17,33 @@ class IverksettingService(
     private val oppdragProducer: KafkaProducer<String, Oppdrag>,
     private val jdbcCtx: CoroutineDatasource,
 ) {
-    suspend fun valider(iverksetting: Iverksetting) {
-        withContext(jdbcCtx) {
+    suspend fun iverksett(iverksetting: Iverksetting) {
+        val oppdrag = withContext(jdbcCtx) {
             transaction {
                 validerAtIverksettingIkkeAlleredeErMottatt(iverksetting)
                 validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
                 validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting)
-            }
-        }
-    }
 
-    suspend fun iverksett(iverksetting: Iverksetting) {
-        withContext(jdbcCtx) {
-            transaction {
                 val now = LocalDateTime.now()
                 val uid = utsjekk.utbetaling.UtbetalingId(UUID.randomUUID())
                 IverksettingDao(iverksetting, now).insert(uid)
                 saveEmptyResultat(iverksetting, uid, resultat = null)
-                
+
                 when (val oppdrag = IverksettingOppdragService.create(iverksetting)) {
                     null -> {
                         oppdater(
                             iverksetting = iverksetting,
                             resultat = OppdragResultat(OppdragStatus.OK_UTEN_UTBETALING),
                         )
+                        null
                     }
-                    else -> {
-                        oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
-                    }
+                    else -> uid to oppdrag
                 }
             }
+        }
+        oppdrag?.let { (uid, oppdrag) ->
+            oppdragProducer.send(uid.id.toString(), oppdrag, partition(uid.id.toString()))
         }
     }
 
