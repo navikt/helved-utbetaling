@@ -73,7 +73,8 @@ private val errorFilter = Filter { next ->
                 .body(errorJson.encodeToString(dto))
         } catch (e: Throwable) {
             val msg = "Uhåndtert feil - Helved har fått beskjed."
-            appLog.error(msg, e)
+            appLog.error(msg)
+            secureLog.error(msg, e)
             Response(Status.INTERNAL_SERVER_ERROR).body(msg)
         }
     }
