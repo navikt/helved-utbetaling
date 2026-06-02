@@ -1,4 +1,4 @@
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns2="http://nav.no/system/os/entiteter/oppdragSkjema">
     <soap:Header>
         <Action xmlns="http://www.w3.org/2005/08/addressing">$action</Action>
         <MessageID xmlns="http://www.w3.org/2005/08/addressing">urn:uuid:$messageId</MessageID>
