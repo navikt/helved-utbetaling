@@ -22,7 +22,7 @@ typealias Klasse = String // 0-20
 object LocalDateSerializer : KSerializer<LocalDate> {
     override val descriptor = PrimitiveSerialDescriptor("LocalDate", PrimitiveKind.STRING)
     override fun serialize(encoder: Encoder, value: LocalDate) = encoder.encodeString(value.toString())
-    override fun deserialize(decoder: Decoder): LocalDate = LocalDate.parse(decoder.decodeString())
+    override fun deserialize(decoder: Decoder): LocalDate = LocalDate.parse(decoder.decodeString().trim())
 }
 
 object NullableSatsTypeSerializer : KSerializer<soap.SatsType?> {
@@ -32,7 +32,7 @@ object NullableSatsTypeSerializer : KSerializer<soap.SatsType?> {
     }
     override fun deserialize(decoder: Decoder): soap.SatsType? {
         val str = decoder.decodeString()
-        return if (str.isBlank()) null else soap.SatsType.valueOf(str)
+        return if (str.isBlank()) null else soap.SatsType.valueOf(str.trim())
     }
 }
 
