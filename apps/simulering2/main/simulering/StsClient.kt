@@ -1,11 +1,8 @@
 package simulering
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import kotlinx.serialization.json.*
 import libs.utils.secureLog
 import org.http4k.core.*
-import org.http4k.filter.ClientFilters
 import java.net.URL
 import java.time.LocalDateTime
 import java.util.*
@@ -24,7 +21,6 @@ data class StsConfig(
 class StsClient(
     private val config: StsConfig,
     private val http: HttpHandler,
-    private val jackson: ObjectMapper = jacksonObjectMapper(),
     private val cache: TokenCache<SamlToken> = TokenCache(),
     private val proxyAuth: (() -> String)? = null,
 ) : Sts {
@@ -43,13 +39,13 @@ class StsClient(
             error("Unexpected status ${response.status} from STS")
         }
 
-        val json = jackson.readTree(response.bodyString())
+        val json = Json.parseToJsonElement(response.bodyString())
 
-        val accessToken = json["access_token"]?.takeIf(JsonNode::isTextual)?.asText()
+        val accessToken = json.jsonObject["access_token"]?.jsonPrimitive?.contentOrNull
             ?: stsError(json)
-        val tokenType = json["issued_token_type"]?.takeIf(JsonNode::isTextual)?.asText()
+        val tokenType = json.jsonObject["issued_token_type"]?.jsonPrimitive?.contentOrNull
             ?: stsError(json)
-        val expiresIn = json["expires_in"]?.takeIf(JsonNode::isNumber)?.asLong()
+        val expiresIn = json.jsonObject["expires_in"]?.jsonPrimitive?.longOrNull
             ?: stsError(json)
 
         if (tokenType != "urn:ietf:params:oauth:token-type:saml2") stsError(json)
@@ -72,10 +68,9 @@ private fun Credentials.toBasicAuth(): String {
 
 class StsException(msg: String) : RuntimeException(msg)
 
-fun stsError(node: JsonNode): Nothing = throw StsException(
+fun stsError(element: JsonElement): Nothing = throw StsException(
     """
-        Error from STS: ${node.path("title").asText()}
-        Details: ${node.path("detail").takeIf(JsonNode::isTextual) ?: node}
+        Error from STS: ${element.jsonObject["title"]?.jsonPrimitive?.contentOrNull ?: ""}
+        Details: ${element.jsonObject["detail"]?.jsonPrimitive?.contentOrNull ?: element}
     """.trimIndent()
 )
-

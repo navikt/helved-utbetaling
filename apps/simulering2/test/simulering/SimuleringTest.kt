@@ -16,8 +16,8 @@ import kotlin.test.assertNull
 
 class SimuleringTest {
 
-    private val requestLens: BiDiBodyLens<rest.SimuleringRequest> = Jackson.autoBody<rest.SimuleringRequest>().toLens()
-    private val responseLens: BiDiBodyLens<rest.SimuleringResponse> = Jackson.autoBody<rest.SimuleringResponse>().toLens()
+    private val requestLens: BiDiBodyLens<rest.SimuleringRequest> = KotlinxJson.autoBody<rest.SimuleringRequest>().toLens()
+    private val responseLens: BiDiBodyLens<rest.SimuleringResponse> = KotlinxJson.autoBody<rest.SimuleringResponse>().toLens()
 
     @Test
     fun `svarer med 200 OK og simuleringsresultat`() {

@@ -1,11 +1,16 @@
 package simulering.models.soap
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonPropertyOrder
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import nl.adaptivity.xmlutil.serialization.XmlSerialName
+import nl.adaptivity.xmlutil.serialization.XmlElement
 import simulering.models.rest.*
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
  * Enhet kan være enten [tknr] eller [orgnr]+[avd]
@@ -14,24 +19,44 @@ import java.time.LocalDate
 typealias FnrOrgnr = String // 9-11 tegn
 typealias Klasse = String // 0-20
 
+object LocalDateSerializer : KSerializer<LocalDate> {
+    override val descriptor = PrimitiveSerialDescriptor("LocalDate", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: LocalDate) = encoder.encodeString(value.toString())
+    override fun deserialize(decoder: Decoder): LocalDate = LocalDate.parse(decoder.decodeString())
+}
+
+object NullableSatsTypeSerializer : KSerializer<soap.SatsType?> {
+    override val descriptor = PrimitiveSerialDescriptor("SatsType", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: soap.SatsType?) {
+        if (value == null) encoder.encodeString("") else encoder.encodeString(value.name)
+    }
+    override fun deserialize(decoder: Decoder): soap.SatsType? {
+        val str = decoder.decodeString()
+        return if (str.isBlank()) null else soap.SatsType.valueOf(str)
+    }
+}
+
 object soap {
+    @Serializable
     data class SimuleringResponse(
         val simulerBeregningResponse: SimulerBeregningResponse,
     )
 
+    @Serializable
     data class SimulerBeregningResponse(
         val response: Response?,
     )
 
+    @Serializable
     data class Response(
         val simulering: Beregning,
         val infomelding: Infomelding?,
     )
 
-    // entiteten sin referanse-id 311
+    @Serializable
     data class Beregning(
         val gjelderId: FnrOrgnr,
-        /** Ved simuleringsbereging gjelder dette datoen beregningen vil kjæres på. */
+        @Serializable(with = LocalDateSerializer::class)
         val datoBeregnet: LocalDate,
         val belop: Double,
         val beregningsPeriode: List<Periode>,
@@ -54,9 +79,12 @@ object soap {
         }
     }
 
-    // entiteten sin referanse-id 312
+    @Serializable
+    @XmlSerialName("beregningsPeriode", "", "")
     data class Periode(
+        @Serializable(with = LocalDateSerializer::class)
         val periodeFom: LocalDate,
+        @Serializable(with = LocalDateSerializer::class)
         val periodeTom: LocalDate,
         val beregningStoppnivaa: List<Stoppnivå>,
     ) {
@@ -68,11 +96,13 @@ object soap {
             )
     }
 
-    // entiteten sin referanse-id 313
+    @Serializable
+    @XmlSerialName("beregningStoppnivaa", "", "")
     data class Stoppnivå(
         val kodeFagomraade: String,
         val fagsystemId: String,
         val utbetalesTilId: FnrOrgnr,
+        @Serializable(with = LocalDateSerializer::class)
         val forfall: LocalDate,
         val feilkonto: Boolean,
         val beregningStoppnivaaDetaljer: List<Detalj>,
@@ -88,13 +118,19 @@ object soap {
             )
     }
 
-    // entiteten sin referanse-id 314
+    @Serializable
+    @XmlSerialName("beregningStoppnivaaDetaljer", "", "")
     data class Detalj(
+        @Serializable(with = LocalDateSerializer::class)
         val faktiskFom: LocalDate,
+        @Serializable(with = LocalDateSerializer::class)
         val faktiskTom: LocalDate,
         val belop: Double,
         val trekkVedtakId: Long,
         val sats: Double,
+        @XmlElement(true)
+        @XmlSerialName("typeSats", "", "")
+        @Serializable(with = NullableSatsTypeSerializer::class)
         val typeSats: SatsType?,
         val klassekode: Klasse,
         val typeKlasse: Klasse,
@@ -114,11 +150,7 @@ object soap {
             )
     }
 
-    /**
-     * Satstyper for trekk:
-     * LOPD/LOPM/LOPP: Løpende trekk hhv. dagsats, månedssats, prosentsats
-     * SALD/SALM/SALP: Saldotrekk hhv. dagsats, månedssats, prosentsats
-     */
+    @Serializable
     enum class SatsType {
         DAG,
         DAG7,
@@ -136,22 +168,20 @@ object soap {
         SALP,
     }
 
+    @Serializable
     data class Infomelding(
         val beskrMelding: String,
     )
 
+    @Serializable
     data class Fault(
         val faultcode: String,
         val faultstring: String,
     )
 
-    @JacksonXmlRootElement(localName = "ns3:simulerBeregningRequest")
+    @Serializable
+    @XmlSerialName("simulerBeregningRequest", "http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt", "ns3")
     data class SimulerBeregningRequest(
-        @param:JacksonXmlProperty(isAttribute = true, localName = "ns2")
-        val ns2: String = "http://nav.no/system/os/entiteter/oppdragSkjema",
-        @param:JacksonXmlProperty(isAttribute = true, localName = "ns3")
-        val ns3: String = "http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt",
-        @param:JacksonXmlProperty(isAttribute = true)
         val request: SimulerRequest,
     ) {
         companion object {
@@ -173,21 +203,19 @@ object soap {
 
             fun from(dto: rest.SimuleringRequest): SimulerBeregningRequest =
                 SimulerBeregningRequest(
-                    request =
-                        SimulerRequest(
-                            oppdrag =
-                                Oppdrag(
-                                    kodeFagomraade = dto.fagområde,
-                                    kodeEndring = if (dto.erFørsteUtbetalingPåSak) "NY" else "ENDR",
-                                    utbetFrekvens = dto.fagområde.utbetalingFrekvens(),
-                                    fagsystemId = dto.sakId,
-                                    oppdragGjelderId = dto.personident.verdi,
-                                    saksbehId = dto.saksbehandler,
-                                    datoOppdragGjelderFom = LocalDate.EPOCH,
-                                    enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
-                                    oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) },
-                                )
-                        ),
+                    request = SimulerRequest(
+                        oppdrag = Oppdrag(
+                            kodeFagomraade = dto.fagområde,
+                            kodeEndring = if (dto.erFørsteUtbetalingPåSak) "NY" else "ENDR",
+                            utbetFrekvens = dto.fagområde.utbetalingFrekvens(),
+                            fagsystemId = dto.sakId,
+                            oppdragGjelderId = dto.personident.verdi,
+                            saksbehId = dto.saksbehandler,
+                            datoOppdragGjelderFom = LocalDate.EPOCH,
+                            enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
+                            oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) },
+                        )
+                    ),
                 )
         }
     }
@@ -202,91 +230,69 @@ object soap {
         else -> "MND"
     }
 
+    @Serializable
     data class SimulerRequest(
         val oppdrag: Oppdrag,
     )
 
-    @JsonPropertyOrder(
-        "kodeEndring",
-        "kodeFagomraade",
-        "fagsystemId",
-        "utbetFrekvens",
-        "oppdragGjelderId",
-        "datoOppdragGjelderFom",
-        "saksbehId",
-        "ns2:enhet",
-        "oppdragslinje",
-    )
+    @Serializable
     data class Oppdrag(
         val kodeEndring: String,
         val kodeFagomraade: String,
         val fagsystemId: String,
         val utbetFrekvens: String,
         val oppdragGjelderId: String,
+        @Serializable(with = LocalDateSerializer::class)
         val datoOppdragGjelderFom: LocalDate?,
         val saksbehId: String,
-        @param:JsonProperty("ns2:enhet")
+        @XmlSerialName("enhet", "http://nav.no/system/os/entiteter/oppdragSkjema", "ns2")
         val enhet: List<Enhet>,
         val oppdragslinje: List<Oppdragslinje>,
     )
 
-    @JsonPropertyOrder(
-        "typeEnhet",
-        "enhet",
-        "datoEnhetFom",
-    )
+    @Serializable
     data class Enhet(
         val typeEnhet: String,
         val enhet: String,
+        @Serializable(with = LocalDateSerializer::class)
         val datoEnhetFom: LocalDate?,
     )
 
+    @Serializable
     data class RefusjonsInfo(
         val refunderesId: String,
+        @Serializable(with = LocalDateSerializer::class)
         val datoFom: LocalDate,
+        @Serializable(with = LocalDateSerializer::class)
         val maksDato: LocalDate?,
     )
 
-    @JsonPropertyOrder(
-        "kodeEndringLinje",
-        "kodeStatusLinje",
-        "datoStatusFom",
-        "delytelseId",
-        "kodeKlassifik",
-        "datoVedtakFom",
-        "datoVedtakTom",
-        "sats",
-        "fradragTillegg",
-        "typeSats",
-        "brukKjoreplan",
-        "saksbehId",
-        "utbetalesTilId",
-        "refFagsystemId",
-        "refDelytelseId",
-        "ns2:attestant",
-        "ns2:vedtakssats",
-    )
+    @Serializable
     data class Oppdragslinje(
         val kodeEndringLinje: String,
-        val kodeStatusLinje: KodeStatusLinje?,
-        val datoStatusFom: LocalDate?,
+        val kodeStatusLinje: KodeStatusLinje? = null,
+        @Serializable(with = LocalDateSerializer::class)
+        val datoStatusFom: LocalDate? = null,
         val delytelseId: String,
         val kodeKlassifik: String,
+        @Serializable(with = LocalDateSerializer::class)
         val datoKlassifikFom: LocalDate,
+        @Serializable(with = LocalDateSerializer::class)
         val datoVedtakFom: LocalDate,
+        @Serializable(with = LocalDateSerializer::class)
         val datoVedtakTom: LocalDate,
         val sats: Int,
         val fradragTillegg: FradragTillegg,
         val typeSats: String,
         val brukKjoreplan: String,
         val saksbehId: String,
-        val utbetalesTilId: String?,
-        val refFagsystemId: String?,
-        val refDelytelseId: String?,
-        @param:JsonProperty("ns2:attestant")
+        val utbetalesTilId: String? = null,
+        val refFagsystemId: String? = null,
+        val refDelytelseId: String? = null,
+        @XmlSerialName("attestant", "http://nav.no/system/os/entiteter/oppdragSkjema", "ns2")
         val attestant: List<Attestant>,
-        @param:JsonProperty("ns2:vedtakssats")
-        val vedtakssats: Vedtakssats?,
+        @XmlSerialName("vedtakssats", "http://nav.no/system/os/entiteter/oppdragSkjema", "ns2")
+        val vedtakssats: Vedtakssats? = null,
     ) {
         companion object {
             fun from(
@@ -363,15 +369,15 @@ object soap {
                     vedtakssats = null,
                 )
         }
-
-        var refusjonsInfo: RefusjonsInfo? = null
     }
 
+    @Serializable
     enum class FradragTillegg {
         F,
         T,
     }
 
+    @Serializable
     enum class KodeStatusLinje {
         OPPH,
         HVIL,
@@ -379,10 +385,12 @@ object soap {
         REAK,
     }
 
+    @Serializable
     data class Attestant(
         val attestantId: String,
     )
 
+    @Serializable
     data class Vedtakssats(
         val vedtakssats: Int
     )

@@ -1,12 +1,12 @@
 package libs.ws
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import io.ktor.client.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import libs.http.HttpClientFactory
 import libs.utils.Resource
 import libs.utils.logger
@@ -65,7 +65,6 @@ private suspend fun HttpResponse.tryInto(): String {
     }
 }
 
-
 object SoapXml {
     fun envelope(
         action: String,
@@ -81,6 +80,9 @@ object SoapXml {
         .replace("\$body", body)
 }
 
+class SoapException(msg: String) : RuntimeException(msg)
+
+// Legacy SOAP types kept for apps/simulering (deprecated)
 @JacksonXmlRootElement(localName = "Envelope", namespace = "http://schemas.xmlsoap.org/soap/envelope/")
 data class SoapResponse<T>(
     @param:JacksonXmlProperty(localName = "Header")
@@ -98,7 +100,7 @@ data class SoapHeader(
 
 data class SoapFault(
     @param:JacksonXmlProperty(localName = "Fault", namespace = "http://www.w3.org/2003/05/soap-envelope")
-    val fault: Fault
+    val fault: Fault,
 )
 
 data class Fault(
@@ -106,8 +108,6 @@ data class Fault(
     val faultstring: String,
     val detail: Map<String, Any> = emptyMap(),
 )
-
-class SoapException(msg: String) : RuntimeException(msg)
 
 fun soapError(fault: Fault): Nothing = throw SoapException(
     """

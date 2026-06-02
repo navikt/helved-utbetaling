@@ -15,7 +15,7 @@ import simulering.models.rest.rest
 
 class ErrorHandlingTest {
 
-    private val requestLens: BiDiBodyLens<rest.SimuleringRequest> = Jackson.autoBody<rest.SimuleringRequest>().toLens()
+    private val requestLens: BiDiBodyLens<rest.SimuleringRequest> = KotlinxJson.autoBody<rest.SimuleringRequest>().toLens()
 
     @Test
     fun `svarer med 400 Bad Request ved feil på request body`() {

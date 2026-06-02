@@ -1,7 +1,7 @@
 package libs.ws
 
 import io.ktor.http.*
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -10,6 +10,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
 import java.net.URI
 import java.util.*
 
@@ -75,7 +76,7 @@ internal object SoapFake {
 
 private fun Application.proxy() {
     install(ContentNegotiation) {
-        jackson()
+        json()
     }
 
     routing {
@@ -101,6 +102,7 @@ private fun Application.proxy() {
     }
 }
 
+@Serializable
 data class GandalfToken(
     val access_token: String = "very secure".let { Base64.getEncoder().encodeToString(it.toByteArray()) },
     val issued_token_type: String = "urn:ietf:params:oauth:token-type:saml2",

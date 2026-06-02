@@ -9,9 +9,9 @@ import simulering.models.rest.UtbetalingsoppdragDto
 import simulering.models.rest.rest
 import simulering.models.soap.soap.SimulerBeregningRequest
 
-private val oppdragLens: BiDiBodyLens<UtbetalingsoppdragDto> = Jackson.autoBody<UtbetalingsoppdragDto>().toLens()
-private val simRequestLens: BiDiBodyLens<rest.SimuleringRequest> = Jackson.autoBody<rest.SimuleringRequest>().toLens()
-private val responseLens: BiDiBodyLens<rest.SimuleringResponse> = Jackson.autoBody<rest.SimuleringResponse>().toLens()
+private val oppdragLens: BiDiBodyLens<UtbetalingsoppdragDto> = KotlinxJson.autoBody<UtbetalingsoppdragDto>().toLens()
+private val simRequestLens: BiDiBodyLens<rest.SimuleringRequest> = KotlinxJson.autoBody<rest.SimuleringRequest>().toLens()
+private val responseLens: BiDiBodyLens<rest.SimuleringResponse> = KotlinxJson.autoBody<rest.SimuleringResponse>().toLens()
 
 fun simuleringRoutes(service: SimuleringService) = routes(
     "/simuler" bind Method.POST to { req ->

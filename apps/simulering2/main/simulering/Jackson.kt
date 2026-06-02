@@ -1,22 +1,58 @@
 package simulering
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
-import org.http4k.format.ConfigurableJackson
-import org.http4k.format.asConfigurable
-import org.http4k.format.withStandardMappings
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
+import models.kontrakter.Personident
+import org.http4k.format.ConfigurableKotlinxSerialization
+import simulering.models.rest.UtbetalingId
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.*
 
-object Jackson : ConfigurableJackson(
-    KotlinModule.Builder().build()
-        .asConfigurable(
-            ObjectMapper()
-                .registerModule(JavaTimeModule())
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        )
-        .withStandardMappings()
-        .done()
-)
+object PersonidentSerializer : KSerializer<Personident> {
+    override val descriptor = PrimitiveSerialDescriptor("Personident", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: Personident) = encoder.encodeString(value.verdi)
+    override fun deserialize(decoder: Decoder): Personident = Personident(decoder.decodeString())
+}
+
+object UtbetalingIdSerializer : KSerializer<UtbetalingId> {
+    override val descriptor = PrimitiveSerialDescriptor("UtbetalingId", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: UtbetalingId) = encoder.encodeString(value.id.toString())
+    override fun deserialize(decoder: Decoder): UtbetalingId = UtbetalingId(UUID.fromString(decoder.decodeString()))
+}
+
+object UUIDSerializer : KSerializer<UUID> {
+    override val descriptor = PrimitiveSerialDescriptor("UUID", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: UUID) = encoder.encodeString(value.toString())
+    override fun deserialize(decoder: Decoder): UUID = UUID.fromString(decoder.decodeString())
+}
+
+object LocalDateSerializer : KSerializer<LocalDate> {
+    override val descriptor = PrimitiveSerialDescriptor("LocalDate", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: LocalDate) = encoder.encodeString(value.toString())
+    override fun deserialize(decoder: Decoder): LocalDate = LocalDate.parse(decoder.decodeString())
+}
+
+object LocalDateTimeSerializer : KSerializer<LocalDateTime> {
+    override val descriptor = PrimitiveSerialDescriptor("LocalDateTime", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: LocalDateTime) = encoder.encodeString(value.toString())
+    override fun deserialize(decoder: Decoder): LocalDateTime = LocalDateTime.parse(decoder.decodeString())
+}
+
+val jsonModule = SerializersModule {
+    contextual(PersonidentSerializer)
+    contextual(UtbetalingIdSerializer)
+    contextual(UUIDSerializer)
+    contextual(LocalDateSerializer)
+    contextual(LocalDateTimeSerializer)
+}
+
+object KotlinxJson : ConfigurableKotlinxSerialization({
+    ignoreUnknownKeys = true
+    serializersModule = jsonModule
+})

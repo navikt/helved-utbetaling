@@ -1,5 +1,8 @@
 package simulering
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import libs.utils.appLog
 import libs.utils.secureLog
 import io.micrometer.prometheusmetrics.PrometheusConfig
@@ -49,14 +52,25 @@ fun simulering(config: Config): HttpHandler {
     return simulering(config, prometheus)
 }
 
+@Serializable
+private data class ApiErrorDto(
+    val statusCode: Int,
+    val msg: String,
+    val doc: String? = null,
+    val system: String? = null,
+)
+
+private val errorJson = Json { encodeDefaults = true }
+
 private val errorFilter = Filter { next ->
     { request ->
         try {
             next(request)
         } catch (e: ApiError) {
+            val dto = ApiErrorDto(e.statusCode, e.msg, e.doc, e.system?.name)
             Response(Status(e.statusCode, ""))
                 .header("Content-Type", "application/json")
-                .body(Jackson.asFormatString(e))
+                .body(errorJson.encodeToString(dto))
         } catch (e: Throwable) {
             val msg = "Uhåndtert feil - Helved har fått beskjed."
             appLog.error(msg, e)

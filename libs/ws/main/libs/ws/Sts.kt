@@ -1,21 +1,19 @@
 package libs.ws
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.ktor.client.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import java.net.URL
-import java.time.Duration
-import java.time.LocalDateTime
-import java.util.*
+import kotlinx.serialization.json.*
 import libs.cache.Token
 import libs.cache.TokenCache
 import libs.http.HttpClientFactory
 import libs.utils.secureLog
+import java.net.URL
+import java.time.Duration
+import java.time.LocalDateTime
+import java.util.*
 
 interface Sts {
     suspend fun samlToken(): SamlToken
@@ -34,7 +32,6 @@ private val simpleHttpClient: HttpClient = HttpClientFactory.new(LogLevel.ALL, n
 class StsClient(
     private val config: StsConfig,
     private val http: HttpClient = simpleHttpClient,
-    private val jackson: ObjectMapper = jacksonObjectMapper(),
     private val cache: TokenCache<SamlToken> = TokenCache(),
     private val proxyAuth: ProxyAuthProvider? = null,
 ) : Sts {
@@ -50,16 +47,16 @@ class StsClient(
         }
 
         val samlToken = response.tryInto {
-            val accessToken = it["access_token"]
-                ?.takeIf(JsonNode::isTextual)?.asText()
+            val accessToken = it.jsonObject["access_token"]
+                ?.jsonPrimitive?.contentOrNull
                 ?: stsError(it)
 
-            val tokenType = it["issued_token_type"]
-                ?.takeIf(JsonNode::isTextual)?.asText()
+            val tokenType = it.jsonObject["issued_token_type"]
+                ?.jsonPrimitive?.contentOrNull
                 ?: stsError(it)
 
-            val expiresIn = it["expires_in"]
-                ?.takeIf(JsonNode::isNumber)?.asLong()
+            val expiresIn = it.jsonObject["expires_in"]
+                ?.jsonPrimitive?.longOrNull
                 ?: stsError(it)
 
             if (tokenType != "urn:ietf:params:oauth:token-type:saml2") {
@@ -82,11 +79,11 @@ class StsClient(
         cache.rm(config.user)
     }
 
-    private suspend fun <T : Any> HttpResponse.tryInto(from: (JsonNode) -> T): T {
+    private suspend fun <T : Any> HttpResponse.tryInto(from: (JsonElement) -> T): T {
         when (status) {
             HttpStatusCode.OK -> {
                 val body = bodyAsText()
-                val json = jackson.readTree(body)
+                val json = Json.parseToJsonElement(body)
                 return from(json)
             }
 
@@ -102,11 +99,11 @@ class StsClient(
 
 class StsException(msg: String) : RuntimeException(msg)
 
-fun stsError(node: JsonNode): Nothing {
+fun stsError(element: JsonElement): Nothing {
     throw StsException(
         """
-            Error from STS: ${node.path("title").asText()}
-            Details: ${node.path("detail").takeIf(JsonNode::isTextual) ?: node}
+            Error from STS: ${element.jsonObject["title"]?.jsonPrimitive?.contentOrNull ?: ""}
+            Details: ${element.jsonObject["detail"]?.jsonPrimitive?.contentOrNull ?: element}
         """.trimIndent()
     )
 }
@@ -120,6 +117,6 @@ data class SamlToken(
         expirationTime <= LocalDateTime.now().plus(EXP_LEEWAY)
 
     companion object {
-        private val EXP_LEEWAY = Duration.ofSeconds(10) // TODO: burde vi øke denne?
+        private val EXP_LEEWAY = Duration.ofSeconds(10)
     }
 }
