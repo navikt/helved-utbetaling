@@ -247,7 +247,7 @@ object soap {
         @Serializable(with = LocalDateSerializer::class)
         val datoOppdragGjelderFom: LocalDate?,
         val saksbehId: String,
-        @XmlSerialName("enhet", "", "")
+        @XmlSerialName("enhet", "http://nav.no/system/os/entiteter/oppdragSkjema", "ns2")
         val enhet: List<Enhet>,
         val oppdragslinje: List<Oppdragslinje>,
     )
@@ -294,9 +294,9 @@ object soap {
         val utbetalesTilId: String? = null,
         val refFagsystemId: String? = null,
         val refDelytelseId: String? = null,
-        @XmlSerialName("attestant", "", "")
+        @XmlSerialName("attestant", "http://nav.no/system/os/entiteter/oppdragSkjema", "ns2")
         val attestant: List<Attestant>,
-        @XmlSerialName("vedtakssats", "", "")
+        @XmlSerialName("vedtakssats", "http://nav.no/system/os/entiteter/oppdragSkjema", "ns2")
         val vedtakssats: Vedtakssats? = null,
     ) {
         companion object {
