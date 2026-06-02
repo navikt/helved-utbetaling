@@ -10,7 +10,10 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import simulering.models.rest.rest
 import simulering.models.soap.soap
+import nl.adaptivity.xmlutil.serialization.XML
+import simulering.xml
 import java.time.LocalDate
+import kotlin.test.assertTrue
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -52,6 +55,20 @@ class SimuleringTest {
 
             assertEquals(Status.OK, response.status)
         }
+    }
+
+    @Test
+    fun `serialized XML uses correct element names for OS`() {
+        val request = soap.SimulerBeregningRequest.from(enSimuleringRequestBody())
+        val xmlStr = xml.encodeToString(soap.SimulerBeregningRequest.serializer(), request)
+
+        // OS requires these exact element names (camelCase, not PascalCase)
+        assertTrue(xmlStr.contains("<request>"), "Expected <request> but got: $xmlStr")
+        assertTrue(xmlStr.contains("<oppdrag>"), "Expected <oppdrag> but got: $xmlStr")
+        assertTrue(xmlStr.contains("<oppdragslinje>"), "Expected <oppdragslinje> but got: $xmlStr")
+        assertTrue(xmlStr.contains("<attestant>"), "Expected <attestant> but got: $xmlStr")
+        // Root element should have namespace
+        assertTrue(xmlStr.contains("simulerBeregningRequest"), "Expected simulerBeregningRequest root")
     }
 
     @Test

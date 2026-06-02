@@ -231,11 +231,13 @@ object soap {
     }
 
     @Serializable
+    @XmlSerialName("request", "", "")
     data class SimulerRequest(
         val oppdrag: Oppdrag,
     )
 
     @Serializable
+    @XmlSerialName("oppdrag", "", "")
     data class Oppdrag(
         val kodeEndring: String,
         val kodeFagomraade: String,
@@ -245,12 +247,13 @@ object soap {
         @Serializable(with = LocalDateSerializer::class)
         val datoOppdragGjelderFom: LocalDate?,
         val saksbehId: String,
-        @XmlSerialName("enhet", "http://nav.no/system/os/entiteter/oppdragSkjema", "ns2")
+        @XmlSerialName("enhet", "", "")
         val enhet: List<Enhet>,
         val oppdragslinje: List<Oppdragslinje>,
     )
 
     @Serializable
+    @XmlSerialName("enhet", "", "")
     data class Enhet(
         val typeEnhet: String,
         val enhet: String,
@@ -259,6 +262,7 @@ object soap {
     )
 
     @Serializable
+    @XmlSerialName("refusjonsInfo", "", "")
     data class RefusjonsInfo(
         val refunderesId: String,
         @Serializable(with = LocalDateSerializer::class)
@@ -268,6 +272,7 @@ object soap {
     )
 
     @Serializable
+    @XmlSerialName("oppdragslinje", "", "")
     data class Oppdragslinje(
         val kodeEndringLinje: String,
         val kodeStatusLinje: KodeStatusLinje? = null,
@@ -289,9 +294,9 @@ object soap {
         val utbetalesTilId: String? = null,
         val refFagsystemId: String? = null,
         val refDelytelseId: String? = null,
-        @XmlSerialName("attestant", "http://nav.no/system/os/entiteter/oppdragSkjema", "ns2")
+        @XmlSerialName("attestant", "", "")
         val attestant: List<Attestant>,
-        @XmlSerialName("vedtakssats", "http://nav.no/system/os/entiteter/oppdragSkjema", "ns2")
+        @XmlSerialName("vedtakssats", "", "")
         val vedtakssats: Vedtakssats? = null,
     ) {
         companion object {
@@ -372,12 +377,14 @@ object soap {
     }
 
     @Serializable
+    @XmlSerialName("fradragTillegg", "", "")
     enum class FradragTillegg {
         F,
         T,
     }
 
     @Serializable
+    @XmlSerialName("kodeStatusLinje", "", "")
     enum class KodeStatusLinje {
         OPPH,
         HVIL,
@@ -386,11 +393,13 @@ object soap {
     }
 
     @Serializable
+    @XmlSerialName("attestant", "", "")
     data class Attestant(
         val attestantId: String,
     )
 
     @Serializable
+    @XmlSerialName("vedtakssats", "", "")
     data class Vedtakssats(
         val vedtakssats: Int
     )
