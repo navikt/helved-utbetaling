@@ -7,6 +7,7 @@ dependencies {
     api(project(":libs:utils"))
 
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
 
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-core:$ktorVersion")
