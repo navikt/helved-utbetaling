@@ -15,7 +15,7 @@ import java.util.*
 
 class IverksettingService(
     private val oppdragProducer: KafkaProducer<String, Oppdrag>,
-    private val jdbcCtx: CoroutineDatasource,
+    val jdbcCtx: CoroutineDatasource,
 ) {
     suspend fun valider(iverksetting: Iverksetting) {
         withContext(jdbcCtx) {

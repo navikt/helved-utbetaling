@@ -5,6 +5,8 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.ktor.server.util.getOrFail
+import kotlinx.coroutines.withContext
+import libs.jdbc.concurrency.withLock
 import libs.utils.appLog
 import models.ApiError
 import models.DocumentedErrors
@@ -22,7 +24,7 @@ fun Route.iverksetting(
         post("/v2/migrate") {
             val fagsystem = call.fagsystem()
             val request = call.receive<MigrationRequest>()
-            if(request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
+            if (request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
             if (request.meldeperiode != null && request.uidToStønad != null) badRequest("mutual exclusive: 'meldeperiode' and 'uidToStønad'")
             val utbetalinger = migrator.mapUtbetalinger(fagsystem, request)
             utbetalinger.forEach { migrator.migrate(request, it) }
@@ -32,7 +34,7 @@ fun Route.iverksetting(
         post("/v2/migrate/dryrun") {
             val fagsystem = call.fagsystem()
             val request = call.receive<MigrationRequest>()
-            if(request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
+            if (request.meldeperiode == null && request.uidToStønad == null) badRequest("mangler en av: 'meldeperiode' eller 'uidToStønad'")
             if (request.meldeperiode != null && request.uidToStønad != null) badRequest("mutual exclusive: 'meldeperiode' and 'uidToStønad'")
             val utbetalinger = migrator.mapUtbetalinger(fagsystem, request)
             call.respond(HttpStatusCode.OK, utbetalinger)
@@ -42,7 +44,10 @@ fun Route.iverksetting(
             val dto = try {
                 call.receive<IverksettV2Dto>()
             } catch (ex: Exception) {
-                badRequest("Klarte ikke lese request body. Sjekk at du ikke mangler noen felter", "${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling")
+                badRequest(
+                    "Klarte ikke lese request body. Sjekk at du ikke mangler noen felter",
+                    "${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling"
+                )
             }
 
             appLog.info("Behandler sakId:${dto.sakId} behandlingId:${dto.behandlingId}")
@@ -53,8 +58,12 @@ fun Route.iverksetting(
             val iverksetting = Iverksetting.from(dto, fagsystem)
 
             try {
-                service.valider(iverksetting)
-                service.iverksett(iverksetting)
+                withContext(service.jdbcCtx) {
+                    withLock("$fagsystem ${iverksetting.sakId} ${iverksetting.behandlingId} ${iverksetting.iverksettingId}") {
+                        service.valider(iverksetting)
+                        service.iverksett(iverksetting)
+                    }
+                }
             } catch (e: ApiError) {
                 if (e.statusCode != 409) throw e
             }
