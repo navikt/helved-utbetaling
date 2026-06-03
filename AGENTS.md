@@ -82,3 +82,27 @@ dependencies {
 }
 ```
 Versions declared inline (no version catalog).
+
+## Loki Logs
+
+Query production logs via `logcli`:
+
+```sh
+logcli query '{service_name="<app>"}' --addr=https://loki.prod.nav.cloud.nais.io --org-id=helved --limit=50
+```
+
+Services: `speiderhytta`, `peisschtappern`, `abetal`, `utsjekk`, `urskog`, `branntaarn`, `helved-peisen`, `logs`, `smokesignal`, `statistikkern`, `utsjekk-simulering`, `vedskiva`, `ws-proxy`
+
+Useful patterns:
+```sh
+# Filter by text
+logcli query '{service_name="utsjekk"} |= "ERROR"' --addr=https://loki.prod.nav.cloud.nais.io --org-id=helved --limit=20
+
+# Time range (RFC3339 or relative)
+logcli query '{service_name="utsjekk"}' --addr=https://loki.prod.nav.cloud.nais.io --org-id=helved --from="2h ago" --limit=50
+
+# JSON field extraction
+logcli query '{service_name="utsjekk"} | json | level="ERROR"' --addr=https://loki.prod.nav.cloud.nais.io --org-id=helved --limit=20
+```
+
+Logs are JSON-structured (logstash-encoder). Key fields: `message`, `level`, `logger_name`, `stack_trace`.
