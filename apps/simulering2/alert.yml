@@ -10,11 +10,11 @@ spec:
     - name: app
       rules:
         - alert: unavailable
-          expr: sum(kube_deployment_status_replicas_available{app="utsjekk-simulering", namespace="helved"} offset 5m) by (deployment, namespace) == 0
+          expr: sum(kube_deployment_status_replicas_available{app="simulering", namespace="helved"} offset 5m) by (deployment, namespace) == 0
           for: 5m
           annotations:
-            consequence: 'utsjekk-simulering er dau'
-            action: '`kubectl describe pod -l app=utsjekk-simulering` -> `kubectl logs -l app=utsjekk-simulering`'
+            consequence: 'simulering er dau'
+            action: '`kubectl describe pod -l app=simulering` -> `kubectl logs -l app=simulering`'
           labels:
             namespace: helved
             severity: critical

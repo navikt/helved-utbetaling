@@ -15,7 +15,7 @@ der mottakeren har ytelser fra flere _fagområder_ i OS for perioden. Vi slår s
 Det er et designvalg som ikke nødvendigvis vil holde i alle caser i all fremtid. 
 
 Under følger en beskrivelse med eksempler på hvordan responsen fra simuleringstjenesten vil se ut for ulike caser. I mappen `eksempler/simulering` 
-finnes det et eksempel på fullstendige requester og responser, fra utsjekk til utsjekk-simulering til OS og tilbake igjen, 
+finnes det et eksempel på fullstendige requester og responser, fra utsjekk til simulering til OS og tilbake igjen, 
 med tilhørende iverksetting for første behandling.
 
 ### Ny utbetaling
