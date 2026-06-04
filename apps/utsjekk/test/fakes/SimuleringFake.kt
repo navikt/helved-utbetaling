@@ -55,12 +55,8 @@ private fun Application.simulering() {
     }
 
     routing {
-        post("/simuler") {
+        post("/simuler/legacy") {
             // val req = call.receive<UtbetalingsoppdragDto>()
-            call.respond(simuleringResponseCode,simuleringResponse)
-        }
-        post("/simulering") {
-            // val req = call.receive<client.SimuleringRequest>()
             call.respond(simuleringResponseCode,simuleringResponse)
         }
     }

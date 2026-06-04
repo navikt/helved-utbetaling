@@ -12,7 +12,7 @@ private val simRequestLens: BiDiBodyLens<rest.SimuleringRequest> = KotlinxJson.a
 private val responseLens: BiDiBodyLens<rest.SimuleringResponse> = KotlinxJson.autoBody<rest.SimuleringResponse>().toLens()
 
 fun simuleringRoutes(service: SimuleringService) = routes(
-    "/simulering" bind Method.POST to { req ->
+    "/simuler/legacy" bind Method.POST to { req ->
         val request = simRequestLens(req)
         val result = service.simuler(request)
         Response(Status.OK).with(responseLens of result)

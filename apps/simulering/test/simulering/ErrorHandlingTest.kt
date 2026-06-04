@@ -29,7 +29,7 @@ class ErrorHandlingTest {
             )
 
             val response = app(
-                Request(Method.POST, "/simulering")
+                Request(Method.POST, "/simuler/legacy")
                     .header("Content-Type", "application/json")
                     .with(requestLens of enSimuleringRequestBody())
             )
@@ -46,7 +46,7 @@ class ErrorHandlingTest {
             runtime.soapRespondWith(xmlCicsFeil)
 
             val response = app(
-                Request(Method.POST, "/simulering")
+                Request(Method.POST, "/simuler/legacy")
                     .header("Content-Type", "application/json")
                     .with(requestLens of enSimuleringRequestBody())
             )
@@ -66,7 +66,7 @@ class ErrorHandlingTest {
             )
 
             val response = app(
-                Request(Method.POST, "/simulering")
+                Request(Method.POST, "/simuler/legacy")
                     .header("Content-Type", "application/json")
                     .with(requestLens of enSimuleringRequestBody())
             )
@@ -85,7 +85,7 @@ class ErrorHandlingTest {
             runtime.soapRespondWith(oppdragFinnesFraFoerFault)
 
             val response = app(
-                Request(Method.POST, "/simulering")
+                Request(Method.POST, "/simuler/legacy")
                     .header("Content-Type", "application/json")
                     .with(requestLens of enSimuleringRequestBody())
             )
@@ -106,7 +106,7 @@ class ErrorHandlingTest {
                 runtime.soapRespondWith(oppdragFinnesFraFoerFault)
 
                 val response = app(
-                    Request(Method.POST, "/simulering")
+                    Request(Method.POST, "/simuler/legacy")
                         .header("Content-Type", "application/json")
                         .with(requestLens of enSimuleringRequestBody())
                 )
@@ -131,7 +131,7 @@ class ErrorHandlingTest {
             runtime.soapRespondWith("<noise>uventet</noise>")
 
             val response = app(
-                Request(Method.POST, "/simulering")
+                Request(Method.POST, "/simuler/legacy")
                     .header("Content-Type", "application/json")
                     .with(requestLens of enSimuleringRequestBody())
             )

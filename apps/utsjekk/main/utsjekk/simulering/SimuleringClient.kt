@@ -28,35 +28,6 @@ class SimuleringClient(
     ),
     private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
 ) {
-    suspend fun simuler(
-        utbetaling: UtbetalingsoppdragDto,
-        token: TokenType,
-    ): client.SimuleringResponse {
-        val azureToken = when(token) {
-            is TokenType.Obo -> azure.getOnBehalfOfToken(token.jwt, config.simulering.scope)
-            is TokenType.Client -> azure.getClientCredentialsToken(config.simulering.scope)
-        }
-
-        val response = client.post("${config.simulering.host}/simuler") {
-            bearerAuth(azureToken.access_token)
-            contentType(ContentType.Application.Json)
-            setBody(utbetaling)
-        }
-
-        if (response.status == HttpStatusCode.OK) {
-            return response.body<client.SimuleringResponse>()
-        }
-
-        when (response.status) {
-            HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
-            HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
-            HttpStatusCode.BadRequest -> badRequest(response.bodyAsText(), "simuleringsresultat")
-            HttpStatusCode.BadGateway -> badGateway(response.bodyAsText(), "simulering")
-            HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "simulering")
-            else -> error("HTTP ${response.status} feil fra simulering: ${response.bodyAsText()}")
-        }
-    }
-
     suspend fun hentSimuleringsresultatMedOppsummering(
         simulering: domain.Simulering,
         token: TokenType,
@@ -71,7 +42,7 @@ class SimuleringClient(
             is TokenType.Client -> azure.getClientCredentialsToken(config.simulering.scope)
         }
 
-        val response = client.post("${config.simulering.host}/simulering") {
+        val response = client.post("${config.simulering.host}/simuler/legacy") {
             bearerAuth(azureToken.access_token)
             contentType(ContentType.Application.Json)
             setBody(request)
