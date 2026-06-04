@@ -91,7 +91,7 @@ Query production logs via `logcli`:
 logcli query '{service_name="<app>"}' --addr=https://loki.prod.nav.cloud.nais.io --org-id=helved --limit=50
 ```
 
-Services: `speiderhytta`, `peisschtappern`, `abetal`, `utsjekk`, `urskog`, `branntaarn`, `helved-peisen`, `logs`, `smokesignal`, `statistikkern`, `utsjekk-simulering`, `vedskiva`, `ws-proxy`
+Services: `speiderhytta`, `peisschtappern`, `abetal`, `utsjekk`, `urskog`, `branntaarn`, `helved-peisen`, `logs`, `smokesignal`, `statistikkern`, `simulering`, `vedskiva`, `ws-proxy`
 
 Useful patterns:
 ```sh

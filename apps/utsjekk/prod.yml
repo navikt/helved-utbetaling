@@ -44,7 +44,7 @@ spec:
     streams: true
   env:
     - name: SIMULERING_SCOPE
-      value: api://prod-gcp.helved.utsjekk-simulering/.default
+      value: api://prod-gcp.helved.simulering/.default
     - name: ENV
       value: prod
   azure:
@@ -76,7 +76,7 @@ spec:
       rules:
         - application: logging
           namespace: nais-system
-        - application: utsjekk-simulering
+        - application: simulering
   gcp:
     sqlInstances:
       - type: "POSTGRES_15" #WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade

@@ -51,9 +51,9 @@ class SimuleringClient(
             HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.BadRequest -> badRequest(response.bodyAsText(), "simuleringsresultat")
-            HttpStatusCode.BadGateway -> badGateway(response.bodyAsText(), "utsjekk-simulering")
-            HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "utsjekk-simulering")
-            else -> error("HTTP ${response.status} feil fra utsjekk-simulering: ${response.bodyAsText()}")
+            HttpStatusCode.BadGateway -> badGateway(response.bodyAsText(), "simulering")
+            HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "simulering")
+            else -> error("HTTP ${response.status} feil fra simulering: ${response.bodyAsText()}")
         }
     }
 
@@ -87,9 +87,9 @@ class SimuleringClient(
             HttpStatusCode.NotFound -> notFound(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.Conflict -> conflict(response.bodyAsText(), "simuleringsresultat")
             HttpStatusCode.BadRequest -> badRequest(response.bodyAsText(), "simuleringsresultat")
-            HttpStatusCode.BadGateway -> badGateway(response.bodyAsText(), "utsjekk-simulering")
-            HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "utsjekk-simulering")
-            else -> error("HTTP ${response.status} feil fra utsjekk-simulering: ${response.bodyAsText()}")
+            HttpStatusCode.BadGateway -> badGateway(response.bodyAsText(), "simulering")
+            HttpStatusCode.ServiceUnavailable -> unavailable(response.bodyAsText(), "simulering")
+            else -> error("HTTP ${response.status} feil fra simulering: ${response.bodyAsText()}")
         }
     }
 

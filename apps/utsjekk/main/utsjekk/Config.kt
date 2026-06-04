@@ -16,6 +16,6 @@ data class Config(
 
 data class SimuleringConfig(
     val scope: String = env("SIMULERING_SCOPE"),
-    val host: URL = env("SIMULERING_HOST", URI("http://utsjekk-simulering").toURL())
+    val host: URL = env("SIMULERING_HOST", URI("http://simulering").toURL())
 )
 
