@@ -8,7 +8,7 @@ include(
     "apps:abetal",
     "apps:branntaarn",
     "apps:peisschtappern",
-    "apps:simulering2",
+    "apps:simulering",
     "apps:smokesignal",
     "apps:urskog",
     "apps:utsjekk",

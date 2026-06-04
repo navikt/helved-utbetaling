@@ -1,12 +1,12 @@
-name: simulering2
+name: simulering
 
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
     paths:
-      - 'apps/simulering2/**'
-      - '.github/workflows/simulering2.yml'
+      - 'apps/simulering/**'
+      - '.github/workflows/simulering.yml'
       - 'build.gradle.kts'
 
 jobs:
