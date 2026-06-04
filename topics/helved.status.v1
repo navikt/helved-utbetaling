@@ -42,3 +42,6 @@ spec:
     - team: helved
       application: statistikkern
       access: read
+    - team: team-mulighetsrommet
+      application: mulighetsrommet-api
+      access: read
