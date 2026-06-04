@@ -45,7 +45,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("opphør utbetaling ${new.uid}")
+                        secureLog.debug("opphør utbetaling {}", new.uid)
                         utbetaling to oppdrag
                     }
 
@@ -65,7 +65,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("opphør utbetaling ${new.uid}")
+                        secureLog.debug("opphør utbetaling {}", new.uid)
                         utbetaling to oppdrag
                     }
 
@@ -83,7 +83,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("reintroduser en tidligere opphørt utbetaling ${new.uid}")
+                        secureLog.debug("reintroduser en tidligere opphørt utbetaling {}", new.uid)
                         utbetaling to oppdrag
                     }
 
@@ -100,7 +100,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("opprett utbetaling ${new.uid}")
+                        secureLog.debug("opprett utbetaling {}", new.uid)
                         utbetaling to oppdrag
                     }
 
@@ -117,7 +117,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("endre utbetaling ${new.uid}")
+                        secureLog.debug("endre utbetaling {}", new.uid)
                         utbetaling to oppdrag
                     }
                 }
@@ -147,6 +147,8 @@ object AggregateService {
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         SimuleringService.delete(prev, prev)
                     }
+
+                    // TODO: Må håndtere fake delete i simulering etterhvert
 
                     // reintroduser en tidligere opphørt utbetaling
                     prev?.action == Action.DELETE && new.action == Action.CREATE -> {

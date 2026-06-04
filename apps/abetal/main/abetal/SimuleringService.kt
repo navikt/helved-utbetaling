@@ -62,9 +62,9 @@ object SimuleringService {
             val new = new.copy(perioder = new.perioder.sortedBy { it.fom }) // assure its sorted
             val nyeLinjer = nyeLinjer(new, prev)
             val opphørsdato = opphørsdato(new.perioder, prev.perioder)
-
+            val sistePeriode = prev.sistePeriode ?: prev.perioder.lastOrNull() ?: new.perioder.last()
             if (skalTilføreOpphørslinje(opphørsdato, nyeLinjer)) {
-                val opphørslinje = oppdragslinje(new, true, prev.perioder.last(), prev.lastPeriodeId, null, opphørsdato )
+                val opphørslinje = oppdragslinje(new, true, sistePeriode, prev.lastPeriodeId, null, opphørsdato )
                 oppdragslinjes.add(opphørslinje)
             }
 
@@ -89,9 +89,9 @@ object SimuleringService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).format()
             saksbehId = new.saksbehandlerId.ident
             enhets.addAll(enheter(new))
-            val lastPeriode = new.perioder.maxBy { it.fom }
-            val opphør = new.perioder.minBy { it.fom }.fom
-            val oppdragslinje = oppdragslinje(new, true, lastPeriode, prev.lastPeriodeId, null, opphør)
+            val sistePeriode = prev.perioder.maxBy { it.fom }
+            val opphør = prev.perioder.minBy { it.fom }.fom
+            val oppdragslinje = oppdragslinje(new, true, sistePeriode, prev.lastPeriodeId, null, opphør)
             oppdragslinjes.add(oppdragslinje)
         }
         return rootFactory.createSimulerBeregningRequest().apply {

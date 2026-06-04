@@ -1534,4 +1534,100 @@ internal class TsTest : ConsumerTestBase() {
             }
     }
 
+    @Test
+    fun `simulation - successive opphør removes last period twice`() {
+        val sid = SakId("$nextInt")
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        // 1. UTGANGSPUNKT - opprett reell utbetaling med 3 perioder
+        val transactionId1 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId1) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = BehandlingId("$nextInt").id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    periode(1.jun, 5.jun, 100u)
+                    periode(8.jun, 12.jun, 100u)
+                    periode(15.jun, 19.jun, 100u)
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId1)
+        var periodeId1: PeriodeId? = null
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) { periodeId1 = it.lastPeriodeId }
+
+        val oppdrag1 = TestRuntime.topics.oppdrag.assertThat().has(transactionId1).get(transactionId1)
+        kvitterOk(transactionId1, oppdrag1, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+
+        // 2. FØRSTE REELLE OPPHØR - fjern siste periode (3 → 2 perioder)
+        val transactionId2 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId2) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = BehandlingId("$nextInt").id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    periode(1.jun, 5.jun, 100u)
+                    periode(8.jun, 12.jun, 100u)
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId2)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
+
+        val oppdrag2 = TestRuntime.topics.oppdrag.assertThat().has(transactionId2).get(transactionId2)
+        kvitterOk(transactionId2, oppdrag2, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+
+        // 3. ANDRE OPPHØR SOM SIMULERING (DRYRUN) - fjern ny siste periode (2 → 1 periode)
+        val transactionId3 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId3) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = BehandlingId("$nextInt").id,
+                vedtakstidspunkt = 7.jun.atStartOfDay(),
+                dryrun = true
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false) {
+                    periode(1.jun, 5.jun, 100u)
+                }
+            }.asBytes()
+        }
+
+        // 4. VERIFISERING - Sjekk at simuleringen ikke muterer eller flytter datoene bakover
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+
+        TestRuntime.topics.simulering.assertThat()
+            .has(transactionId3)
+            .with(transactionId3) { simulering ->
+                assertEquals("ENDR", simulering.request.oppdrag.kodeEndring)
+                assertEquals(1, simulering.request.oppdrag.oppdragslinjes.size)
+
+                simulering.request.oppdrag.oppdragslinjes[0].let { linje ->
+                    assertEquals(no.nav.system.os.entiteter.typer.simpletypes.KodeStatusLinje.OPPH, linje.kodeStatusLinje)
+                    assertEquals("2024-06-06", linje.datoStatusFom)
+                    assertEquals("ENDR", linje.kodeEndringLinje)
+                    assertEquals(periodeId1.toString(), linje.delytelseId)
+                    assertNull(linje.refDelytelseId)
+                    assertEquals(100, linje.sats.toLong())
+
+                    assertEquals("2024-06-15", linje.datoVedtakFom)
+                    assertEquals("2024-06-19", linje.datoVedtakTom)
+                }
+            }
+    }
 }
