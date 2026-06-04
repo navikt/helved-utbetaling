@@ -185,22 +185,6 @@ object soap {
         val request: SimulerRequest,
     ) {
         companion object {
-            fun from(dto: UtbetalingsoppdragDto) = SimulerBeregningRequest(
-                request = SimulerRequest(
-                    oppdrag = Oppdrag(
-                        kodeFagomraade = dto.fagsystem.kode,
-                        kodeEndring = if (dto.erFørsteUtbetalingPåSak) "NY" else "ENDR",
-                        utbetFrekvens = dto.fagsystem.utbetalingFrekvens(),
-                        fagsystemId = dto.saksnummer,
-                        oppdragGjelderId = dto.aktør,
-                        saksbehId = dto.saksbehandlerId,
-                        datoOppdragGjelderFom = LocalDate.EPOCH,
-                        enhet = listOf(Enhet(typeEnhet = "BOS", enhet = "8020", LocalDate.EPOCH)),
-                        oppdragslinje = dto.utbetalingsperioder.map { Oppdragslinje.from(it, dto) },
-                    )
-                ),
-            )
-
             fun from(dto: rest.SimuleringRequest): SimulerBeregningRequest =
                 SimulerBeregningRequest(
                     request = SimulerRequest(
@@ -218,11 +202,6 @@ object soap {
                     ),
                 )
         }
-    }
-
-    private fun FagsystemDto.utbetalingFrekvens() = when (this) {
-        FagsystemDto.HISTORISK -> "ENG"
-        else -> "MND"
     }
 
     private fun String.utbetalingFrekvens() = when (this) {
@@ -339,40 +318,6 @@ object soap {
                     vedtakssats = null,
                 )
 
-            fun from(
-                utbetalingsperiode: UtbetalingsperiodeDto,
-                dto: UtbetalingsoppdragDto,
-            ): Oppdragslinje =
-                Oppdragslinje(
-                    delytelseId = utbetalingsperiode.id,
-                    refDelytelseId =
-                        if (utbetalingsperiode.erEndringPåEksisterendePeriode) {
-                            null
-                        } else {
-                            utbetalingsperiode.forrigePeriodeId
-                        },
-                    refFagsystemId =
-                        if (utbetalingsperiode.erEndringPåEksisterendePeriode) {
-                            null
-                        } else {
-                            utbetalingsperiode.forrigePeriodeId?.let { dto.saksnummer }
-                        },
-                    kodeEndringLinje = if (utbetalingsperiode.erEndringPåEksisterendePeriode) "ENDR" else "NY",
-                    kodeKlassifik = utbetalingsperiode.klassekode,
-                    datoKlassifikFom = utbetalingsperiode.fom,
-                    kodeStatusLinje = utbetalingsperiode.opphør?.let { KodeStatusLinje.OPPH },
-                    datoStatusFom = utbetalingsperiode.opphør?.fom,
-                    datoVedtakFom = utbetalingsperiode.fom,
-                    datoVedtakTom = utbetalingsperiode.tom,
-                    sats = utbetalingsperiode.sats.toInt(),
-                    fradragTillegg = FradragTillegg.T,
-                    typeSats = utbetalingsperiode.satstype.value,
-                    saksbehId = dto.saksbehandlerId,
-                    brukKjoreplan = "N",
-                    attestant = listOf(Attestant(dto.saksbehandlerId)),
-                    utbetalesTilId = utbetalingsperiode.utbetalesTil,
-                    vedtakssats = null,
-                )
         }
     }
 
