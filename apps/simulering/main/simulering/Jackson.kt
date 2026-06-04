@@ -13,7 +13,6 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import models.kontrakter.Personident
 import org.http4k.format.ConfigurableKotlinxSerialization
-import simulering.models.rest.UtbetalingId
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
@@ -36,12 +35,6 @@ object PersonidentSerializer : KSerializer<Personident> {
     }
 }
 
-object UtbetalingIdSerializer : KSerializer<UtbetalingId> {
-    override val descriptor = PrimitiveSerialDescriptor("UtbetalingId", PrimitiveKind.STRING)
-    override fun serialize(encoder: Encoder, value: UtbetalingId) = encoder.encodeString(value.id.toString())
-    override fun deserialize(decoder: Decoder): UtbetalingId = UtbetalingId(UUID.fromString(decoder.decodeString()))
-}
-
 object UUIDSerializer : KSerializer<UUID> {
     override val descriptor = PrimitiveSerialDescriptor("UUID", PrimitiveKind.STRING)
     override fun serialize(encoder: Encoder, value: UUID) = encoder.encodeString(value.toString())
@@ -62,7 +55,6 @@ object LocalDateTimeSerializer : KSerializer<LocalDateTime> {
 
 val jsonModule = SerializersModule {
     contextual(PersonidentSerializer)
-    contextual(UtbetalingIdSerializer)
     contextual(UUIDSerializer)
     contextual(LocalDateSerializer)
     contextual(LocalDateTimeSerializer)

@@ -164,7 +164,6 @@ ${call.bodyAsText()}""".trimIndent()
         authenticate(TokenProvider.AZURE) {
             iverksetting(iverksettingService, iverksettingMigrator)
             utbetalinger(utbetalingService, utbetalingMigrator)
-            simuleringRoutes.aap(this)
             simuleringRoutes.utsjekk(this)
             simuleringRoutes.abetal(this)
             simuleringRoutes.dryrun(this)

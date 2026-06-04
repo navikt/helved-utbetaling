@@ -5,21 +5,13 @@ import org.http4k.core.*
 import org.http4k.lens.BiDiBodyLens
 import org.http4k.routing.bind
 import org.http4k.routing.routes
-import simulering.models.rest.UtbetalingsoppdragDto
 import simulering.models.rest.rest
 import simulering.models.soap.soap.SimulerBeregningRequest
 
-private val oppdragLens: BiDiBodyLens<UtbetalingsoppdragDto> = KotlinxJson.autoBody<UtbetalingsoppdragDto>().toLens()
 private val simRequestLens: BiDiBodyLens<rest.SimuleringRequest> = KotlinxJson.autoBody<rest.SimuleringRequest>().toLens()
 private val responseLens: BiDiBodyLens<rest.SimuleringResponse> = KotlinxJson.autoBody<rest.SimuleringResponse>().toLens()
 
 fun simuleringRoutes(service: SimuleringService) = routes(
-    "/simuler" bind Method.POST to { req ->
-        val dto = oppdragLens(req)
-        val request = SimulerBeregningRequest.from(dto)
-        val result = service.simuler(request)
-        Response(Status.OK).with(responseLens of result)
-    },
     "/simulering" bind Method.POST to { req ->
         val request = simRequestLens(req)
         val result = service.simuler(request)

@@ -36,7 +36,6 @@ class SimuleringRoutes(
 ) : AutoCloseable {
     private val validatorV2: SimuleringService = SimuleringService(iverksettingService, jdbcCtx)
     private val simuleringClient = SimuleringClient(config, jdbcCtx)
-    private val utbetalingerSimuleringService = SimuleringUtbetalingService(simuleringClient, jdbcCtx)
 
     private val dryrunAapStore = kafka.getStore(Stores.dryrunAap)
     private val dryrunDpStore = kafka.getStore(Stores.dryrunDp)
@@ -53,38 +52,6 @@ class SimuleringRoutes(
         dpProducer.close()
         tpProducer.close()
         tsProducer.close()
-    }
-
-    fun aap(route: Route) {
-        route.route("/utbetalinger/{uid}/simuler") {
-            post {
-                val uid = call.parameters["uid"]
-                    ?.let(::uuid)
-                    ?.let(::UtbetalingId)
-                    ?: badRequest("Mangler path parameter 'uid'")
-
-                val dto = call.receive<UtbetalingApi>().also { it.validate() }
-                val domain = Utbetaling.from(dto)
-                val token = call.getTokenType() ?: unauthorized("Mangler claim, enten azp_name eller NAVident")
-
-                val response = utbetalingerSimuleringService.simuler(uid, domain, token)
-
-                call.respond(HttpStatusCode.OK, response)
-            }
-            delete {
-                val uid = call.parameters["uid"]
-                    ?.let(::uuid)
-                    ?.let(::UtbetalingId)
-                    ?: badRequest("Mangler path parameter 'uid'")
-
-                val dto = call.receive<UtbetalingApi>().also { it.validate() }
-                val token = call.getTokenType() ?: unauthorized("Mangler claim, enten azp_name eller NAVident")
-                val existing = utbetalingService.lastOrNull(uid) ?: notFound("Fant ikke utbetaling med uid ${uid.id}")
-                val domain = Utbetaling.from(dto, existing.lastPeriodeId)
-                val response = utbetalingerSimuleringService.simulerDelete(uid, domain, token)
-                call.respond(HttpStatusCode.OK, response)
-            }
-        }
     }
 
     fun utsjekk(route: Route) {
