@@ -38,7 +38,6 @@ spec:
     logging:
       destinations:
         - id: loki
-        - id: elastic
   kafka:
     pool: nav-prod
     streams: true

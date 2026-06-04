@@ -52,7 +52,6 @@ spec:
     logging:
       destinations:
         - id: loki
-        - id: elastic
   envFrom:
     - secret: helved-speiderhytta-gh-pem
   filesFrom:
