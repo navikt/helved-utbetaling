@@ -324,6 +324,29 @@ data class Daos(
             }
         }
 
+        suspend fun findRecentUtbetalinger(since: Long): List<Daos> {
+            val sql = """
+                SELECT * FROM utbetalinger
+                WHERE system_time_ms > ?
+            """.trimIndent()
+
+            return query(sql) { stmt ->
+                stmt.setLong(1, since)
+            }
+        }
+
+        suspend fun findPendingByUids(uids: List<String>): List<Daos> {
+            val sql = """
+                SELECT * FROM pending_utbetalinger
+                WHERE try_jsonb_get_text(record_value, 'uid') = ANY(?)
+            """.trimIndent()
+
+            return query(sql) { stmt ->
+                val array = stmt.connection.createArrayOf("text", uids.toTypedArray())
+                stmt.setArray(1, array)
+            }
+        }
+
         suspend fun findAvstemminger(fom: Long, tom: Long): List<Daos> {
             val sql = """
                 SELECT *
