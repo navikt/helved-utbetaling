@@ -1,4 +1,0 @@
-<soap:Fault>
-    <faultcode>$errorCode</faultcode>
-    <faultstring>$errorMessage</faultstring>
-</soap:Fault>
