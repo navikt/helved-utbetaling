@@ -37,7 +37,6 @@ spec:
     logging:
       destinations:
         - id: loki
-        - id: elastic
   azure:
     application:
       enabled: true
