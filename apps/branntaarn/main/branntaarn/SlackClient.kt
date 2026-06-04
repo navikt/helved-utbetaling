@@ -21,6 +21,15 @@ class SlackClient(
             }
         }
     }
+
+    fun postPendingMismatches(mismatches: List<PendingMismatch>) {
+        runBlocking {
+            client.post(config.slack.host.toString()) {
+                contentType(ContentType.Application.Json)
+                setBody(jsonPendingMismatches(mismatches, config))
+            }
+        }
+    }
 }
 
 private fun jsonAggregated(
@@ -96,4 +105,69 @@ private fun emoji(config: Config): String {
         "prod-gcp" -> "🔥"
         else -> ""
     }
+}
+
+private fun jsonPendingMismatches(
+    mismatches: List<PendingMismatch>,
+    config: Config
+): String {
+    val grouped = mismatches.groupBy { it.fagsystem ?: "ukjent" }
+    val totalCount = mismatches.size
+    val fagsystemCount = grouped.size
+    val fagsystemText = if (fagsystemCount == 1) "fagsystem" else "fagsystems"
+
+    val blocks = buildList {
+        add("""
+        {
+          "type": "header",
+          "text": {
+            "type": "plain_text",
+            "text": "${emoji(config)} Pending Mismatch Alert (${config.nais.cluster})",
+            "emoji": true
+          }
+        }
+        """.trimIndent())
+
+        add("""
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "*$totalCount pending/utbetaling mismatch(es) across $fagsystemCount $fagsystemText*\nPeriodene i pending og utbetaling samsvarer ikke."
+          }
+        }
+        """.trimIndent())
+
+        add("""{"type": "divider"}""")
+
+        grouped.entries.sortedBy { it.key }.forEach { (fagsystem, items) ->
+            val displayLimit = 20
+            val uidText = if (items.size <= displayLimit) {
+                items.joinToString(", ") { it.uid }
+            } else {
+                val shown = items.take(displayLimit).joinToString(", ") { it.uid }
+                val remaining = items.size - displayLimit
+                "$shown _(+$remaining more not shown)_"
+            }
+
+            add("""
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*$fagsystem* - ${items.size} mismatch(es)\nUID: $uidText"
+              }
+            }
+            """.trimIndent())
+
+            add("""{"type": "divider"}""")
+        }
+    }
+
+    return """{
+  "channel": "team-hel-ved-alerts",
+  "blocks": [
+    ${blocks.joinToString(",\n    ")}
+  ]
+}"""
 }

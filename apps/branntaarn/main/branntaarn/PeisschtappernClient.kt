@@ -7,9 +7,12 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import kotlinx.coroutines.runBlocking
 import io.ktor.http.contentType
+import java.time.Duration
+import java.time.Instant
 import java.time.LocalDateTime
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
@@ -36,6 +39,23 @@ class PeisschtappernClient(
         }
     }
 
+    fun pendingMismatches(): List<PendingMismatch> {
+        return try {
+            runBlocking {
+                val since = (Instant.now() - Duration.ofHours(1)).toEpochMilli()
+                val response = client.get("${config.peisschtappern.host}/api/brann/pending-mismatch") {
+                    bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
+                    contentType(ContentType.Application.Json)
+                    parameter("since", since)
+                }
+                response.body()
+            }
+        } catch (e: ConnectTimeoutException) {
+            appLog.warn("klarte ikke hente pending mismatches fra peisschtappern", e)
+            emptyList()
+        }
+    }
+
     fun slukk(brann: Brann) {
         try {
             runBlocking {
@@ -54,4 +74,10 @@ data class Brann(
     val timeout: LocalDateTime,
     val sakId: String,
     val fagsystem: String,
+)
+
+data class PendingMismatch(
+    val uid: String,
+    val sakId: String?,
+    val fagsystem: String?,
 )

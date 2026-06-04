@@ -14,6 +14,7 @@ import libs.utils.appLog
 import libs.utils.secureLog
 import models.Fagsystem
 import models.badRequest
+import java.time.Duration
 import java.time.Instant
 
 fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
@@ -148,6 +149,22 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
                 }
 
                 call.respond(timers)
+            }
+
+            get("/pending-mismatch") {
+                val since = call.queryParameters["since"]?.toLongOrNull()
+                    ?: (Instant.now() - Duration.ofHours(1)).toEpochMilli()
+
+                val mismatches = withContext(jdbcCtx + Dispatchers.IO) {
+                    transaction {
+                        val utbetalinger = Daos.findRecentUtbetalinger(since)
+                        val uids = utbetalinger.mapNotNull { parseUid(it.value) }.distinct()
+                        val pending = if (uids.isEmpty()) emptyList() else Daos.findPendingByUids(uids)
+                        detectMismatches(utbetalinger, pending)
+                    }
+                }
+
+                call.respond(mismatches)
             }
 
             delete("/{key}") {

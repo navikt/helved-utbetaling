@@ -22,15 +22,18 @@ fun branntaarn(
 
     val peisschtappern = PeisschtappernClient(config)
     val slack = SlackClient(config)
-    
+
     val branner = peisschtappern.branner()
         .filter { brann -> brann.timeout.isBefore(now) }
-    
-    if (branner.isEmpty()) return
-    
-    val grouped = branner.groupBy { it.fagsystem }
-    
-    slack.postAggregated(grouped)
-    
-    branner.forEach(peisschtappern::slukk)
+
+    if (branner.isNotEmpty()) {
+        val grouped = branner.groupBy { it.fagsystem }
+        slack.postAggregated(grouped)
+        branner.forEach(peisschtappern::slukk)
+    }
+
+    val mismatches = peisschtappern.pendingMismatches()
+    if (mismatches.isNotEmpty()) {
+        slack.postPendingMismatches(mismatches)
+    }
 }
