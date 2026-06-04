@@ -36,7 +36,7 @@ class SimuleringService(
 
             val ferdigstilteStatuser = listOf(OppdragStatus.KVITTERT_OK, OppdragStatus.OK_UTEN_UTBETALING)
             if (!ferdigstilteStatuser.contains(forrigeResultat?.oppdragResultat?.oppdragStatus)) {
-                conflict("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet")
+                conflict("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet, eller har ikke blitt iverksatt enda")
             }
         }
     }
