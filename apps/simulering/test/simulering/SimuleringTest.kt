@@ -28,7 +28,7 @@ class SimuleringTest {
             val app = simulering(config = runtime.config)
 
             val response = app(
-                Request(Method.POST, "/simulering")
+                Request(Method.POST, "/simuler/legacy")
                     .header("Content-Type", "application/json")
                     .with(requestLens of enSimuleringRequestBody())
             )
@@ -48,7 +48,7 @@ class SimuleringTest {
             val json = """{"fagområde":"TILLST","sakId":"200000233","personident":{"verdi":"22479409483"},"erFørsteUtbetalingPåSak":true,"saksbehandler":"Z994230","utbetalingsperioder":[{"periodeId":"0","forrigePeriodeId":null,"erEndringPåEksisterendePeriode":false,"klassekode":"TSTBASISP4-OP","fom":"2024-05-01","tom":"2024-05-01","sats":700,"satstype":"DAG","opphør":null,"utbetalesTil":"22479409483"}]}"""
 
             val response = app(
-                Request(Method.POST, "/simulering")
+                Request(Method.POST, "/simuler/legacy")
                     .header("Content-Type", "application/json")
                     .body(json)
             )
