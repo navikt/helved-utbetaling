@@ -106,3 +106,29 @@ logcli query '{service_name="utsjekk"} | json | level="ERROR"' --addr=https://lo
 ```
 
 Logs are JSON-structured (logstash-encoder). Key fields: `message`, `level`, `logger_name`, `stack_trace`.
+
+## Tempo Traces
+
+Query production traces via `tempo-cli-arm64`:
+
+```sh
+tempo-cli-arm64 query api search --org-id helved --header "Authorization=Bearer $(gcloud auth print-access-token)" --secure tempo.prod-gcp.nav.cloud.nais.io '{resource.service.name="<app>"}' now-15m now
+```
+
+Environments:
+- Prod: `tempo.prod-gcp.nav.cloud.nais.io`
+- Dev: `tempo.dev-gcp.nav.cloud.nais.io`
+
+Useful patterns:
+```sh
+# Search by service
+tempo-cli-arm64 query api search --org-id helved --header "Authorization=Bearer $(gcloud auth print-access-token)" --secure tempo.prod-gcp.nav.cloud.nais.io '{resource.service.name="utsjekk"}' now-1h now
+
+# Search errors
+tempo-cli-arm64 query api search --org-id helved --header "Authorization=Bearer $(gcloud auth print-access-token)" --secure tempo.prod-gcp.nav.cloud.nais.io '{status=error}' now-1h now
+
+# Fetch specific trace
+tempo-cli-arm64 query api trace-id --org-id helved --header "Authorization=Bearer $(gcloud auth print-access-token)" https://tempo.prod-gcp.nav.cloud.nais.io <trace-id>
+```
+
+Note: Uses same GCP token as Loki (`gcloud auth print-access-token`). `search` uses `--secure` flag + hostname only (no `https://`). `trace-id` uses full URL (`https://...`) — no `--secure` flag.
