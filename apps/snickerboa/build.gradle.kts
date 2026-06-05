@@ -8,8 +8,20 @@ application {
 
 val ktorVersion = "3.4.2"
 val libVersion = "3.1.232"
+val nettyVersion = "4.2.13.Final"
+val jackson3Version = "3.1.1"
 
 dependencies {
+    // Keep Ktor on 3.4.2, but override the vulnerable transitive Netty line.
+    implementation(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
+
+    constraints {
+        implementation("tools.jackson.core:jackson-core:$jackson3Version")
+        implementation("tools.jackson.core:jackson-databind:$jackson3Version")
+        testImplementation("tools.jackson.core:jackson-core:$jackson3Version")
+        testImplementation("tools.jackson.core:jackson-databind:$jackson3Version")
+    }
+
     implementation(project(":models"))
     implementation(project(":libs:utils"))
     implementation(project(":libs:kafka"))
@@ -30,6 +42,5 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
-    testImplementation("io.ktor:ktor-server-content-negotiation:${ktorVersion}")
     testImplementation("io.ktor:ktor-server-test-host:${ktorVersion}")
 }
