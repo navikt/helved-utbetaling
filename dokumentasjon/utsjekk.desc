@@ -1,0 +1,41 @@
+Topologies:
+   Sub-topology: 0 for global store (will not generate tasks)
+    Source: KSTREAM-SOURCE-0000000000 (topics: [helved.dryrun-aap.v1])
+      --> KTABLE-SOURCE-0000000001
+    Processor: KTABLE-SOURCE-0000000001 (stores: [helved.dryrun-aap.v1-state-store])
+      --> none
+      <-- KSTREAM-SOURCE-0000000000
+  Sub-topology: 1 for global store (will not generate tasks)
+    Source: KSTREAM-SOURCE-0000000002 (topics: [helved.dryrun-dp.v1])
+      --> KTABLE-SOURCE-0000000003
+    Processor: KTABLE-SOURCE-0000000003 (stores: [helved.dryrun-dp.v1-state-store])
+      --> none
+      <-- KSTREAM-SOURCE-0000000002
+  Sub-topology: 2 for global store (will not generate tasks)
+    Source: KSTREAM-SOURCE-0000000004 (topics: [helved.dryrun-tp.v1])
+      --> KTABLE-SOURCE-0000000005
+    Processor: KTABLE-SOURCE-0000000005 (stores: [helved.dryrun-tp.v1-state-store])
+      --> none
+      <-- KSTREAM-SOURCE-0000000004
+  Sub-topology: 3 for global store (will not generate tasks)
+    Source: KSTREAM-SOURCE-0000000006 (topics: [helved.dryrun-ts.v1])
+      --> KTABLE-SOURCE-0000000007
+    Processor: KTABLE-SOURCE-0000000007 (stores: [helved.dryrun-ts.v1-state-store])
+      --> none
+      <-- KSTREAM-SOURCE-0000000006
+  Sub-topology: 4
+    Source: consume-helved.status.v1 (topics: [helved.status.v1])
+      --> KSTREAM-PROCESSOR-0000000009
+    Processor: KSTREAM-PROCESSOR-0000000009 (stores: [])
+      --> KSTREAM-FILTER-0000000010
+      <-- consume-helved.status.v1
+    Processor: KSTREAM-FILTER-0000000010 (stores: [])
+      --> KSTREAM-FILTER-0000000011
+      <-- KSTREAM-PROCESSOR-0000000009
+    Processor: KSTREAM-FILTER-0000000011 (stores: [])
+      --> KSTREAM-FOREACH-0000000012
+      <-- KSTREAM-FILTER-0000000010
+    Processor: KSTREAM-FOREACH-0000000012 (stores: [])
+      --> none
+      <-- KSTREAM-FILTER-0000000011
+
