@@ -1,6 +1,7 @@
 val libVersion = "3.1.250"
 
 dependencies {
+    api(project(":libs:jackson"))
     implementation(project(":libs:utils"))
     implementation(project(":libs:tracing"))
     implementation("no.nav.helved:xml:$libVersion")

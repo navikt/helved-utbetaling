@@ -1,8 +1,5 @@
 package libs.ktor
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -12,6 +9,7 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import kotlinx.coroutines.runBlocking
+import libs.jackson.registerHelvedModules
 import libs.utils.logger
 
 private val testLog = logger("test")
@@ -40,9 +38,7 @@ open class KtorRuntime<Config: Any>(
         HttpClient(CIO) {
             install(ContentNegotiation) {
                 jackson {
-                    registerModule(JavaTimeModule())
-                    disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                    registerHelvedModules()
                 }
             }
             defaultRequest {
@@ -58,5 +54,4 @@ val NettyApplicationEngine.port: Int
     get() = runBlocking {
         resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
     }
-
 

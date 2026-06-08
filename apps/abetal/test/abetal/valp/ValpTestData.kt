@@ -2,7 +2,7 @@ package abetal.valp
 
 import abetal.nextInt
 import models.*
-import models.kontrakter.objectMapper
+import libs.jackson.objectMapper
 import java.time.*
 
 fun MutableList<DetaljerLinje>.linje(

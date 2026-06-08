@@ -1,8 +1,5 @@
 package abetal
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -13,6 +10,7 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import libs.jackson.registerHelvedModules
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
@@ -56,9 +54,7 @@ fun Application.abetal(
     }
     install(ContentNegotiation) {
         jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            registerHelvedModules()
         }
     }
 

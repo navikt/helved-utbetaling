@@ -1,11 +1,8 @@
 package utsjekk.utbetaling
 
-import kotlinx.coroutines.currentCoroutineContext
 import libs.jdbc.*
-import libs.jdbc.concurrency.connection
 import libs.utils.*
-import libs.utils.secureLog
-import models.kontrakter.objectMapper
+import libs.jackson.objectMapper
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime

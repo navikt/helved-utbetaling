@@ -8,8 +8,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.http.*
 import io.ktor.server.routing.*
-import io.ktor.server.engine.*
-import libs.auth.*
+import libs.jackson.registerHelvedModules
 import io.ktor.server.auth.jwt.*
 import kotlinx.coroutines.runBlocking
 import io.ktor.server.auth.*
@@ -18,7 +17,7 @@ import java.net.URI
 fun Application.module(config: AzureConfig) {
 
     install(ContentNegotiation) {
-        jackson {}
+        jackson { registerHelvedModules() }
     }
 
     install(Authentication) {
@@ -47,7 +46,7 @@ fun Application.module(config: AzureConfig) {
 class AzureFake: AutoCloseable {
     companion object {
         fun azure(app: Application) {
-            app.install(ContentNegotiation) { jackson() }
+            app.install(ContentNegotiation) { jackson { registerHelvedModules() } }
             app.routing {
                 get("/jwks") {
                     call.respondText(libs.auth.TEST_JWKS)
@@ -82,4 +81,3 @@ private val NettyApplicationEngine.port: Int
     get() = runBlocking {
         resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
     }
-

@@ -1,8 +1,5 @@
 package vedskiva
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -14,6 +11,7 @@ import libs.jdbc.PostgresContainer
 import libs.jdbc.migrateTemplate
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.truncate
+import libs.jackson.registerHelvedModules
 import libs.kafka.*
 import libs.ktor.KtorRuntime
 import libs.utils.logger
@@ -88,7 +86,7 @@ class AzureFake {
 
     companion object {
         fun azure(app: Application) {
-            app.install(ContentNegotiation) { jackson() }
+            app.install(ContentNegotiation) { jackson { registerHelvedModules() } }
             app.routing {
                 get("/jwks") {
                     call.respondText(libs.auth.TEST_JWKS)
@@ -121,9 +119,7 @@ class PeisschtappernFake {
         fun server(app: Application) {
             app.install(ContentNegotiation) { 
                 jackson {
-                    registerModule(JavaTimeModule())
-                    disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                    registerHelvedModules()
                 }
             }
             app.routing {
@@ -181,4 +177,3 @@ class KafkaFactoryFake: KafkaFactory {
         return producers[topic.name]!! as KafkaProducerFake<K, V>
     }
 }
-
