@@ -1,4 +1,4 @@
-val ktorVersion = "3.4.2"
+val ktorVersion = "3.5.0"
 
 dependencies {
     api(project(":models"))
