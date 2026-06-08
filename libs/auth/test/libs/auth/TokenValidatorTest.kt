@@ -1,18 +1,15 @@
 package libs.auth
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.AfterAll
 import kotlin.test.assertEquals
 import io.ktor.serialization.jackson.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.get
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
 import io.ktor.server.testing.*
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import io.ktor.client.request.bearerAuth
+import libs.jackson.registerHelvedModules
 
 class TokenValidatorTest {
 
@@ -21,7 +18,7 @@ class TokenValidatorTest {
 
     private val client = ktor.createClient {
         install(ContentNegotiation) {
-            jackson {}
+            jackson { registerHelvedModules() }
         }
     }
 
@@ -51,4 +48,3 @@ class TokenValidatorTest {
         assertEquals(HttpStatusCode.OK, res.status)
     }
 }
-

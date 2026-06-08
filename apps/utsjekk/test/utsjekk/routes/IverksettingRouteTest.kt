@@ -19,7 +19,7 @@ import models.Status
 import models.StatusReply
 import models.kontrakter.Fagsystem
 import models.kontrakter.Satstype
-import models.kontrakter.objectMapper
+import libs.jackson.objectMapper
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

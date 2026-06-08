@@ -8,6 +8,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import libs.auth.*
+import libs.jackson.registerHelvedModules
 import libs.ktor.*
 import java.net.URI
 
@@ -39,7 +40,7 @@ class AzureFake : AutoCloseable {
 
 private fun Application.azure() {
     install(ContentNegotiation) {
-        jackson {}
+        jackson { registerHelvedModules() }
     }
     routing {
         get("/jwks") {
@@ -50,4 +51,3 @@ private fun Application.azure() {
         }
     }
 }
-

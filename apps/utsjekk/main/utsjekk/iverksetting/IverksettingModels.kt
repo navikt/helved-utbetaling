@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.module.kotlin.readValue
+import libs.jackson.objectMapper
 import libs.utils.appLog
 import models.DocumentedErrors
 import models.badRequest
@@ -526,4 +527,3 @@ data class Utbetalingsperiode(
 )
 
 data class Opphør(val fom: LocalDate)
-

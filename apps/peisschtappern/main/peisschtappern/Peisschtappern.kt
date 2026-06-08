@@ -1,9 +1,6 @@
 package peisschtappern
 
 import io.ktor.server.auth.*
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.server.auth.jwt.*
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.*
@@ -22,6 +19,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
+import libs.jackson.registerHelvedModules
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.jdbc.Jdbc
@@ -71,9 +69,7 @@ fun Application.peisschtappern(
 
     install(ContentNegotiation) {
         jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            registerHelvedModules()
         }
     }
 

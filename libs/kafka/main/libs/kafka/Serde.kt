@@ -1,12 +1,10 @@
 package libs.kafka
 
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import libs.jackson.registerHelvedModules
 import libs.utils.secureLog
 import kotlin.reflect.KClass
 import libs.xml.*
@@ -101,11 +99,7 @@ object JsonSerde {
             override fun deserializer(): Deserializer<List<T>> = JacksonListTypeRefDeserializer(typeRef)
         }
     }
-    val jackson: ObjectMapper = jacksonObjectMapper().apply {
-        registerModule(JavaTimeModule())
-        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-    }
+    val jackson: ObjectMapper = jacksonObjectMapper().registerHelvedModules()
 }
 
 class JacksonSerializer<T : Any> : Serializer<T> {

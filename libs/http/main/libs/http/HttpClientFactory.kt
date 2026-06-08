@@ -1,15 +1,13 @@
 package libs.http
 
-import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.serialization.jackson.*
+import libs.jackson.registerHelvedModules
 import libs.utils.logger
 import libs.utils.secureLog
 
@@ -22,9 +20,7 @@ object HttpClientFactory {
         requestTimeoutMs: Long? = 60_000,
         connectionTimeoutMs: Long? = 30_000,
         json: (ObjectMapper.() -> Unit)? = {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            registerHelvedModules()
         },
     ) =
         HttpClient(CIO) {
