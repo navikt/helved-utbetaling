@@ -1,0 +1,40 @@
+@startuml
+!theme black-knight
+queue "helved.dryrun-aap.v1" <<topic>> as helved_dryrun_aap_v1
+queue "helved.dryrun-dp.v1" <<topic>> as helved_dryrun_dp_v1
+queue "helved.dryrun-tp.v1" <<topic>> as helved_dryrun_tp_v1
+queue "helved.dryrun-ts.v1" <<topic>> as helved_dryrun_ts_v1
+queue "helved.status.v1" <<topic>> as helved_status_v1
+package "Sub-topology: 0" {
+	database "helved.dryrun-aap.v1-state-store" <<State Store>> as helved_dryrun_aap_v1_state_store
+	helved_dryrun_aap_v1 --> KSTREAM_SOURCE_0000000000
+	helved_dryrun_aap_v1_state_store -- KTABLE_SOURCE_0000000001
+}
+package "Sub-topology: 1" {
+	database "helved.dryrun-dp.v1-state-store" <<State Store>> as helved_dryrun_dp_v1_state_store
+	helved_dryrun_dp_v1 --> KSTREAM_SOURCE_0000000002
+	helved_dryrun_dp_v1_state_store -- KTABLE_SOURCE_0000000003
+}
+package "Sub-topology: 2" {
+	database "helved.dryrun-tp.v1-state-store" <<State Store>> as helved_dryrun_tp_v1_state_store
+	helved_dryrun_tp_v1 --> KSTREAM_SOURCE_0000000004
+	helved_dryrun_tp_v1_state_store -- KTABLE_SOURCE_0000000005
+}
+package "Sub-topology: 3" {
+	database "helved.dryrun-ts.v1-state-store" <<State Store>> as helved_dryrun_ts_v1_state_store
+	helved_dryrun_ts_v1 --> KSTREAM_SOURCE_0000000006
+	helved_dryrun_ts_v1_state_store -- KTABLE_SOURCE_0000000007
+}
+package "Sub-topology: 4" {
+	agent "consume-helved.status.v1" <<Source>> as consume_helved_status_v1
+	agent "KSTREAM-PROCESSOR-0000000009" <<Processor>> as KSTREAM_PROCESSOR_0000000009
+	agent "KSTREAM-FILTER-0000000010" <<Processor>> as KSTREAM_FILTER_0000000010
+	agent "KSTREAM-FILTER-0000000011" <<Processor>> as KSTREAM_FILTER_0000000011
+	agent "KSTREAM-FOREACH-0000000012" <<Processor>> as KSTREAM_FOREACH_0000000012
+	helved_status_v1 --> consume_helved_status_v1
+	consume_helved_status_v1 --> KSTREAM_PROCESSOR_0000000009
+	KSTREAM_PROCESSOR_0000000009 --> KSTREAM_FILTER_0000000010
+	KSTREAM_FILTER_0000000010 --> KSTREAM_FILTER_0000000011
+	KSTREAM_FILTER_0000000011 --> KSTREAM_FOREACH_0000000012
+}
+@enduml

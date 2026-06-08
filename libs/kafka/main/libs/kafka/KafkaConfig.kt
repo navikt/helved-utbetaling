@@ -6,6 +6,7 @@ import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.config.SslConfigs
+import org.apache.kafka.common.config.TopicConfig
 import org.apache.kafka.streams.StreamsConfig
 
 data class StreamsConfig(
@@ -28,6 +29,8 @@ data class StreamsConfig(
         // Configuration for resilience
         this[StreamsConfig.producerPrefix(ProducerConfig.ACKS_CONFIG)] = "all"
         this[StreamsConfig.REPLICATION_FACTOR_CONFIG] = 3
+        this[StreamsConfig.topicPrefix(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG)] = 2
+
         // Workaround: standby replicas deaktivert pga. race i state-updater
         // (transitToUpdateStandby IllegalStateException) observert på Kafka Streams
         // 4.2.0 og 4.3.0. Cold restore (<60s for små state stores) er akseptabel
