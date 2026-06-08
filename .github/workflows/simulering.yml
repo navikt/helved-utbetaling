@@ -73,7 +73,8 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: nais/docker-build-push@v0
+      - id: docker
+        uses: nais/docker-build-push@v0
         with:
           team: helved
           identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
@@ -81,13 +82,27 @@ jobs:
           dockerfile: apps/${{ github.workflow }}/Dockerfile
           image_suffix: ${{ github.workflow }}
           tag: ${{ github.sha }}
-          salsa: ${{ steps.salsa.outputs.enabled }}
+          salsa: false
           cache_to: ""
 
-      - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
+      - id: image_ref
+        if: steps.salsa.outputs.enabled == 'true' && steps.docker.outcome == 'success'
+        run: |
+          IMAGE="${{ steps.docker.outputs.image }}"
+          DIGEST="${{ steps.docker.outputs.digest }}"
+          echo "value=${IMAGE%:*}@${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - id: attest
+        if: steps.salsa.outputs.enabled == 'true' && steps.docker.outcome == 'success' && steps.image_ref.outcome == 'success'
+        continue-on-error: true
+        uses: nais/attest-sign@2548fccb3e472f3f65d1cf0fe6e339c7675d3c55  # ratchet:nais/attest-sign@v2
+        with:
+          image_ref: ${{ steps.image_ref.outputs.value }}
+
+      - if: steps.attest.outcome == 'success' && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
         run: echo "${{ steps.deps_hash.outputs.sha }}" > .deps-attested-marker
 
-      - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
+      - if: steps.attest.outcome == 'success' && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
         uses: actions/cache/save@v5
         with:
           path: .deps-attested-marker
