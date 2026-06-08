@@ -19,7 +19,7 @@ jobs:
     permissions:
       checks: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
       - uses: actions/setup-java@v5.2.0
         with:
           java-version: 25
@@ -46,7 +46,7 @@ jobs:
       id-token: write
       actions: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
       - uses: actions/setup-java@v5.2.0
         with:
           java-version: 25
@@ -115,7 +115,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
 
       - name: Build SLO definitions ConfigMap
         run: |
