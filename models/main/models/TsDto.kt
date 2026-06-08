@@ -1,9 +1,14 @@
+@file:UseSerializers(LocalDateSerializer::class, LocalDateTimeSerializer::class, UUIDSerializer::class)
+
 package models
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
+@Serializable
 data class TsDto(
     val dryrun: Boolean = false,
     val sakId: String,
@@ -54,6 +59,7 @@ data class TsDto(
     }
 }
 
+@Serializable
 data class TsUtbetaling(
     val id: UUID,
     val stønad: StønadTypeTilleggsstønader,
@@ -61,6 +67,7 @@ data class TsUtbetaling(
     val brukFagområdeTillst: Boolean = false,
 )
 
+@Serializable
 data class TsPeriode(
     val fom: LocalDate,
     val tom: LocalDate,
@@ -221,4 +228,3 @@ private fun List<TsPeriode>.toDomain(type: Periodetype): List<Utbetalingsperiode
         else -> badRequest("periodetype '$type' for tilleggsstønader er ikke implementert")
     }
 }
-

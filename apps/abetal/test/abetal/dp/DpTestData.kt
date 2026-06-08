@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import models.*
 import abetal.*
-import models.kontrakter.objectMapper
+import libs.jackson.objectMapper
 
 fun MutableList<DetaljerLinje>.linje(
     behandlingId: BehandlingId,

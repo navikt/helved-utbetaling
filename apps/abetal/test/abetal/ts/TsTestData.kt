@@ -4,7 +4,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import models.*
 import abetal.*
-import models.kontrakter.objectMapper
+import libs.jackson.objectMapper
 
 fun MutableList<DetaljerLinje>.linje(
     behandlingId: BehandlingId,

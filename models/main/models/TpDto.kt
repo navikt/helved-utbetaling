@@ -1,9 +1,14 @@
+@file:UseSerializers(LocalDateSerializer::class, LocalDateTimeSerializer::class)
+
 package models
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+@Serializable
 data class TpUtbetaling(
     val sakId: String,
     val behandlingId: String,
@@ -15,6 +20,7 @@ data class TpUtbetaling(
     val beslutter: String? = null,
 )
 
+@Serializable
 data class TpPeriode(
     val meldeperiode: String,
     val fom: LocalDate,
@@ -139,4 +145,3 @@ object TpDto {
         )
     }
 }
-

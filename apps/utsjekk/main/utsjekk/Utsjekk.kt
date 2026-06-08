@@ -1,8 +1,5 @@
 package utsjekk
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -25,6 +22,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
+import libs.jackson.registerHelvedModules
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.jdbc.context
@@ -84,9 +82,7 @@ fun Application.utsjekk(
 
     install(ContentNegotiation) {
         jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            registerHelvedModules()
         }
     }
     install(Authentication) {

@@ -1,21 +1,32 @@
 package models.kontrakter
 
-import com.fasterxml.jackson.annotation.*
-import com.fasterxml.jackson.databind.*
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.datatype.jsr310.deser.YearMonthDeserializer
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
+import models.LocalDateSerializer
+import models.LocalDateTimeSerializer
+import models.UUIDSerializer
 import java.lang.IllegalArgumentException
 import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 
+@Serializable
 data class BrukersNavKontor(
     val enhet: String,
+    @Serializable(with = LocalDateSerializer::class)
     val gjelderFom: LocalDate? = null,
 )
 
+@Serializable
 enum class Fagsystem(val kode: String) {
     AAP("AAP"),
     DAGPENGER("DP"),
@@ -35,36 +46,35 @@ object GyldigBehandlingId {
     const val BESKRIVELSE = "På grunn av tekniske begrensninger hos OS/UR er det en lengdebegrensning på $MAKSLENGDE tegn for behandlingId"
 }
 
-sealed class Ident(val verdi: String) {
-    companion object {
-        @JvmStatic
-        @JsonCreator
-        fun deserialize(json: String) =
-            when (json.length) {
-                9 -> Organisasjonsnummer(json)
-                11 -> Personident(json)
-                else -> throw Exception("Ugyldig ident")
+object IdentSerializer : KSerializer<Ident> {
+    override val descriptor = PrimitiveSerialDescriptor("Ident", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: Ident) = encoder.encodeString(value.verdi)
+    override fun deserialize(decoder: Decoder): Ident {
+        val jsonDecoder = decoder as? JsonDecoder
+        val verdi = if (jsonDecoder != null) {
+            val element = jsonDecoder.decodeJsonElement()
+            when (element) {
+                is JsonPrimitive -> element.content
+                is JsonObject -> element["verdi"]!!.jsonPrimitive.content
+                else -> error("Unexpected JSON for Personident: $element")
             }
-
-        @JvmStatic
-        @JsonCreator
-        fun deserializeObject(json: JsonNode) = deserialize(json.get("verdi").asText())
+        } else {
+            decoder.decodeString()
+        }
+        return when (verdi.length) {
+            9 -> Organisasjonsnummer(verdi)
+            11 -> Personident(verdi)
+            else -> throw Exception("Ugyldig ident")
+        }
     }
 }
+
+@Serializable(with = IdentSerializer::class)
+sealed class Ident(val verdi: String)
 
 class Organisasjonsnummer(verdi: String) : Ident(verdi) {
     init {
         check(gyldig()) { "Organisasjonsnummeret er ugyldig" }
-    }
-
-    companion object {
-        @JvmStatic
-        @JsonCreator
-        fun deserialize(json: String) = Organisasjonsnummer(json)
-
-        @JvmStatic
-        @JsonCreator
-        fun deserializeObject(json: JsonNode) = Organisasjonsnummer(json.get("verdi").asText())
     }
 
     private fun gyldig(): Boolean {
@@ -80,15 +90,7 @@ class Personident(verdi: String) : Ident(verdi) {
         check(gyldig()) { "Personidenten er ugyldig" }
     }
 
-    companion object {
-        @JvmStatic
-        @JsonCreator
-        fun deserialize(json: String) = Personident(json)
-
-        @JvmStatic
-        @JsonCreator
-        fun deserializeObject(json: JsonNode) = Personident(json.get("verdi").asText())
-    }
+    companion object {}
 
     private fun gyldig(): Boolean {
         if (verdi.length != 11 || verdi.toLongOrNull() == null) {
@@ -118,6 +120,7 @@ class Personident(verdi: String) : Ident(verdi) {
     }
 }
 
+@Serializable
 enum class Satstype {
     DAGLIG,
     DAGLIG_INKL_HELG,
@@ -125,20 +128,32 @@ enum class Satstype {
     ENGANGS,
 }
 
+object StønadTypeSerializer: KSerializer<StønadType> {
+    override val descriptor = PrimitiveSerialDescriptor("StønadType", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: StønadType) = encoder.encodeString(value.name)
+    override fun deserialize(decoder: Decoder): StønadType {
+        val jsonDecoder = decoder as? JsonDecoder
+        val verdi = if (jsonDecoder != null) {
+            val element = jsonDecoder.decodeJsonElement()
+            when (element) {
+                is JsonPrimitive -> element.content
+                is JsonObject -> element["name"]!!.jsonPrimitive.content
+                else -> error("Unexpected JSON for StønadType: $element")
+            }
+        } else {
+            decoder.decodeString()
+        }
+        val stønadstypeDagpenger = StønadTypeDagpenger.entries.find { it.name == verdi }
+        val stønadstypeTiltakspenger = StønadTypeTiltakspenger.entries.find { it.name == verdi }
+        val stønadstypeTilleggsstønader = StønadTypeTilleggsstønader.entries.find { it.name == verdi }
+        return stønadstypeDagpenger ?: stønadstypeTiltakspenger ?: stønadstypeTilleggsstønader ?: error("Ukjent stønadstype: $verdi")
+    }
+}
+
+@Serializable(with = StønadTypeSerializer::class)
 sealed interface StønadType {
     val name: String
     fun tilFagsystem(): Fagsystem
-
-    companion object {
-        @JsonCreator
-        @JvmStatic
-        fun deserialize(json: String): StønadType? {
-            val stønadstypeDagpenger = StønadTypeDagpenger.values().find { it.name == json }
-            val stønadstypeTiltakspenger = StønadTypeTiltakspenger.values().find { it.name == json }
-            val stønadstypeTilleggsstønader = StønadTypeTilleggsstønader.values().find { it.name == json }
-            return stønadstypeDagpenger ?: stønadstypeTiltakspenger ?: stønadstypeTilleggsstønader
-        }
-    }
 }
 
 enum class StønadTypeDagpenger : StønadType {
@@ -198,17 +213,15 @@ enum class StønadTypeAAP: StønadType {
     override fun tilFagsystem(): Fagsystem = Fagsystem.AAP
 }
 
-val objectMapper: ObjectMapper = ObjectMapper()
-    .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
-    .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
-    .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-    .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
-    .registerKotlinModule()
-    .registerModule(
-        JavaTimeModule()
-            .addDeserializer(
-                YearMonth::class.java,
-                YearMonthDeserializer(DateTimeFormatter.ofPattern("u-MM")) // Denne trengs for å parse år over 9999 riktig.
-            )
-    )
-    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+val jsonModule = SerializersModule {
+    contextual(IdentSerializer)
+    contextual(StønadTypeSerializer)
+    contextual(UUIDSerializer)
+    contextual(LocalDateSerializer)
+    contextual(LocalDateTimeSerializer)
+}
+
+val json = Json {
+    ignoreUnknownKeys = true
+    serializersModule = jsonModule
+}

@@ -1,8 +1,5 @@
 package urskog
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.*
 import io.ktor.serialization.*
 import io.ktor.serialization.jackson.*
@@ -18,6 +15,7 @@ import io.ktor.utils.io.*
 import libs.auth.AzureConfig
 import libs.auth.AzureToken
 import libs.auth.TEST_JWKS
+import libs.jackson.registerHelvedModules
 import libs.ktor.port
 import libs.utils.Resource
 import libs.ws.*
@@ -91,9 +89,7 @@ private fun Application.fakes() {
 
     install(ContentNegotiation) {
         jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            registerHelvedModules()
         }
         register(ContentType.Application.Xml, XmlDeserializer())
     }

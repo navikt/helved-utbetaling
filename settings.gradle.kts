@@ -23,6 +23,7 @@ include(
 )
 
 include(
+    "libs:jackson",
     "libs:auth",
     "libs:auth-test",
     "libs:cache",

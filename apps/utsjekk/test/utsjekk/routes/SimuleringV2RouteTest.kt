@@ -14,7 +14,7 @@ import libs.jdbc.concurrency.transaction
 import models.kontrakter.Fagsystem
 import models.kontrakter.StønadTypeDagpenger
 import models.kontrakter.StønadTypeTiltakspenger
-import models.kontrakter.objectMapper
+import libs.jackson.objectMapper
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

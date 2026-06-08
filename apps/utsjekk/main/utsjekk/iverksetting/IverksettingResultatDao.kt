@@ -2,7 +2,7 @@ package utsjekk.iverksetting
 
 import libs.jdbc.Dao
 import models.kontrakter.Fagsystem
-import models.kontrakter.objectMapper
+import libs.jackson.objectMapper
 import utsjekk.utbetaling.UtbetalingId
 import java.sql.ResultSet
 
