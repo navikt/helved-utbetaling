@@ -1,8 +1,10 @@
 package urskog
 
+import kotlinx.serialization.Serializable
 import io.ktor.http.*
 import io.ktor.serialization.*
-import io.ktor.serialization.jackson.*
+import kotlinx.serialization.json.Json
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -15,7 +17,6 @@ import io.ktor.utils.io.*
 import libs.auth.AzureConfig
 import libs.auth.AzureToken
 import libs.auth.TEST_JWKS
-import libs.jackson.registerHelvedModules
 import libs.ktor.port
 import libs.utils.Resource
 import libs.ws.*
@@ -74,23 +75,20 @@ class HttpFakes: AutoCloseable {
     }
 }
 
+private val wsJson = Json {
+    ignoreUnknownKeys = true
+    encodeDefaults = true
+}
+
 private fun Application.fakes() {
     class XmlDeserializer : ContentConverter {
         override suspend fun deserialize(charset: Charset, typeInfo: TypeInfo, content: ByteReadChannel) = null
         override suspend fun serialize(contentType: ContentType, charset: Charset, typeInfo: TypeInfo, value: Any?) = null
     }
 
-    data class GandalfOIDCSamlToken(
-        val access_token: String = "aGVtbWVsaWcuZ2FuZGFsZi50b2tlbgo=",
-        val issued_token_type: String = "urn:ietf:params:oauth:token-type:saml2",
-        val token_type: String = "Bearer",
-        val expires_in: Long = 3600,
-    )
 
     install(ContentNegotiation) {
-        jackson {
-            registerHelvedModules()
-        }
+        json(wsJson)
         register(ContentType.Application.Xml, XmlDeserializer())
     }
 
@@ -111,3 +109,11 @@ private fun Application.fakes() {
         }
     }
 }
+
+@Serializable
+private data class GandalfOIDCSamlToken(
+    val access_token: String = "aGVtbWVsaWcuZ2FuZGFsZi50b2tlbgo=",
+    val issued_token_type: String = "urn:ietf:params:oauth:token-type:saml2",
+    val token_type: String = "Bearer",
+    val expires_in: Long = 3600,
+)

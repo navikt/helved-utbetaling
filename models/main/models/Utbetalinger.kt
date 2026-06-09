@@ -1,11 +1,18 @@
+@file:UseSerializers(LocalDateSerializer::class, LocalDateTimeSerializer::class, UUIDSerializer::class)
+
 package models
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import libs.utils.appLog
 import libs.utils.secureLog
 import java.nio.ByteBuffer
@@ -21,6 +28,7 @@ value class SakId(val id: String) {
     override fun toString(): String = id
 }
 
+@Serializable
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
 
 @JvmInline
@@ -41,6 +49,24 @@ value class Personident(val ident: String) {
     override fun toString(): String = ident
 }
 
+object PersonidentSerializer : KSerializer<Personident> {
+    override val descriptor = PrimitiveSerialDescriptor("Personident", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: Personident) = encoder.encodeString(value.ident)
+    override fun deserialize(decoder: Decoder): Personident {
+        val jsonDecoder = decoder as? JsonDecoder
+        if (jsonDecoder != null) {
+            val element = jsonDecoder.decodeJsonElement()
+            val ident = when (element) {
+                is JsonPrimitive -> element.content
+                is JsonObject -> element["ident"]!!.jsonPrimitive.content
+                else -> error("Unexpected JSON for Personident: $element")
+            }
+            return Personident(ident)
+        }
+        return Personident(decoder.decodeString())
+    }
+}
+
 @JvmInline
 @Serializable
 value class Navident(val ident: String) {
@@ -48,10 +74,12 @@ value class Navident(val ident: String) {
 }
 
 @JvmInline
+@Serializable
 value class UtbetalingId(val id: UUID) {
     override fun toString(): String = id.toString()
 }
 
+@Serializable
 data class Utbetaling(
     val dryrun: Boolean,
     val originalKey: String,
@@ -123,11 +151,8 @@ enum class Årsak(val kode: String) {
 
 @Serializable
 data class Avvent(
-    @Serializable(with = LocalDateSerializer::class)
     val fom: LocalDate,
-    @Serializable(with = LocalDateSerializer::class)
     val tom: LocalDate,
-    @Serializable(with = LocalDateSerializer::class)
     val overføres: LocalDate? = null,
     val årsak: Årsak? = null,
     val feilregistrering: Boolean = false,
@@ -212,6 +237,7 @@ fun Utbetaling.failOnTooLongBehandlingId() {
 }
 
 @JvmInline
+@Serializable
 value class PeriodeId(private val id: String) {
     constructor() : this(UUID.randomUUID().toString())
 
@@ -258,6 +284,7 @@ value class PeriodeId(private val id: String) {
     }
 }
 
+@Serializable
 data class Utbetalingsperiode(
     val fom: LocalDate,
     val tom: LocalDate,
@@ -278,6 +305,7 @@ enum class Periodetype(val satstype: String) {
     EN_GANG("ENG");
 }
 
+@Serializable
 enum class Frekvens(val utbetFrekvens: String) {
     DAG("DAG"),
     UKE("UKE"),
