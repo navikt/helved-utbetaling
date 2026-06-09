@@ -26,7 +26,11 @@ object LocalDateSerializer : KSerializer<LocalDate> {
 object LocalDateTimeSerializer : KSerializer<LocalDateTime> {
     override val descriptor = PrimitiveSerialDescriptor("LocalDateTime", PrimitiveKind.STRING)
     override fun serialize(encoder: Encoder, value: LocalDateTime) = encoder.encodeString(value.toString())
-    override fun deserialize(decoder: Decoder): LocalDateTime = LocalDateTime.parse(decoder.decodeString())
+    override fun deserialize(decoder: Decoder): LocalDateTime {
+        val text = decoder.decodeString()
+        return if (text.endsWith("Z")) LocalDateTime.parse(text.dropLast(1))
+        else LocalDateTime.parse(text)
+    }
 }
 
 object InstantSerializer : KSerializer<Instant> {

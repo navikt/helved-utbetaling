@@ -1,7 +1,6 @@
 package abetal.tp
 
 import abetal.*
-import com.fasterxml.jackson.module.kotlin.readValue
 import libs.kafka.JsonSerde
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -16,7 +15,7 @@ internal class TpTest : ConsumerTestBase() {
 
     @Test
     fun `simulation - dry run tp utbetaling`() {
-        val utbet = JsonSerde.jackson.readValue<TpUtbetaling>(
+        val utbet = JsonSerde.json.decodeFromString<TpUtbetaling>(
             """
             {
               "dryrun": false,
@@ -75,7 +74,7 @@ internal class TpTest : ConsumerTestBase() {
         }
         TestRuntime.topics.utbetalinger.assertThat().has(uid)
 
-        val dryrun = JsonSerde.jackson.readValue<TpUtbetaling>(
+        val dryrun = JsonSerde.json.decodeFromString<TpUtbetaling>(
             """
             {
               "dryrun": true,
@@ -806,7 +805,7 @@ internal class TpTest : ConsumerTestBase() {
             }
             """.trimIndent()
 
-        val utbet = JsonSerde.jackson.readValue<TpUtbetaling>(json)
+        val utbet = JsonSerde.json.decodeFromString<TpUtbetaling>(json)
         val transactionId = UUID.randomUUID().toString()
         val uid = tpUId("HV2511260231", "20250630-20250711", StønadTypeTiltakspenger.GRUPPE_AMO)
 

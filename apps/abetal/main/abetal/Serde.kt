@@ -1,18 +1,17 @@
 package abetal
 
-import libs.kafka.JacksonDeserializer
-import kotlin.reflect.KClass
+import libs.kafka.KotlinxDeserializer
+import kotlinx.serialization.serializer
 
 
 class DeserialiseringFeiletException(msg: String) : Exception(msg)
 
-internal fun <T : Any> deserialize(
+internal inline fun <reified T : Any> deserialize(
     topic: String,
     payload: ByteArray,
-    target: KClass<T>,
 ): T {
     return try {
-        checkNotNull(JacksonDeserializer(target).deserialize(topic, payload)) {
+        checkNotNull(KotlinxDeserializer(serializer<T>()).deserialize(topic, payload)) {
             "Mottok tom payload på $topic"
         }
     } catch (_: Exception) {
