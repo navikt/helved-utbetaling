@@ -11,6 +11,12 @@ import libs.xml.XMLMapper
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 const val FS_KEY = "fagsystem"
 
@@ -64,8 +70,11 @@ fun createTopology(kafka: Streams): Topology = topology {
     successfulUtbetalingStream(pendingUtbetalinger)
 }
 
+@Serializable
 data class AapTuple(val key: String, val value: AapUtbetaling)
+@Serializable
 data class DpTuple(val key: String, val value: DpUtbetaling)
+@Serializable
 data class TsTuple(
     val transactionId: String?, // FIXME: denne kan kanskje fjernes nå 
     val dto: TsDto?,            // FIXME: denne kan kanskje fjernes nå
@@ -73,8 +82,11 @@ data class TsTuple(
     val value: TsDto?
 )
 
+@Serializable
 data class HistoriskTuple(val key: String, val value: HistoriskUtbetaling)
+@Serializable
 data class TpTuple(val key: String, val value: TpUtbetaling)
+@Serializable
 data class ValpTuple(val key: String, val value: ValpUtbetaling)
 
 /**
@@ -94,7 +106,7 @@ fun Topology.dpStream(
     consume(Topics.dp)
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
         .merge(consume(Topics.dpIntern))
-        .map { key, payload -> DpTuple(key, deserialize(Topics.dp.name, payload, DpUtbetaling::class)) }
+        .map { key, payload -> DpTuple(key, deserialize<DpUtbetaling>(Topics.dp.name, payload)) }
         .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -141,7 +153,7 @@ fun Topology.aapStream(
     consume(Topics.aap)
         .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
         .merge(consume(Topics.aapIntern))
-        .map { key, payload -> AapTuple(key, deserialize(Topics.aap.name, payload, AapUtbetaling::class)) }
+        .map { key, payload -> AapTuple(key, deserialize<AapUtbetaling>(Topics.aap.name, payload)) }
         .rekey { (_, aap) -> SakKey(SakId(aap.sakId), Fagsystem.AAP) }
         .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -179,7 +191,7 @@ fun Topology.tsStream(
     consume(Topics.ts)
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
         .merge(consume(Topics.tsIntern))
-        .map { key, payload -> TsTuple(null, null, key, deserialize(Topics.ts.name, payload, TsDto::class)) }
+        .map { key, payload -> TsTuple(null, null, key, deserialize<TsDto>(Topics.ts.name, payload)) }
         .rekey { (_, dto, _, value) ->
             val ts = dto ?: value!!
             SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER)
@@ -258,7 +270,7 @@ fun Topology.historiskStream(
     consume(Topics.historisk)
         .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
         .merge(consume(Topics.historiskIntern))
-        .map { key, payload -> HistoriskTuple(key, deserialize(Topics.historisk.name, payload, HistoriskUtbetaling::class)) }
+        .map { key, payload -> HistoriskTuple(key, deserialize<HistoriskUtbetaling>(Topics.historisk.name, payload)) }
         .rekey { (_, historisk) -> SakKey(SakId(historisk.sakId), Fagsystem.HISTORISK) }
         .leftJoin(Serde.json(), Serde.json(), saker, "historisktuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -292,7 +304,7 @@ fun Topology.valpStream(
     consume(Topics.valp)
         .repartition(Topics.valp, 3, "from-${Topics.valp.name}")
         .merge(consume(Topics.valpIntern))
-        .map { key, payload -> ValpTuple(key, deserialize(Topics.valp.name, payload, ValpUtbetaling::class)) }
+        .map { key, payload -> ValpTuple(key, deserialize<ValpUtbetaling>(Topics.valp.name, payload)) }
         .rekey { (_, valp) -> SakKey(SakId(valp.sakId), Fagsystem.VALP) }
         .leftJoin(Serde.json(), Serde.json(), saker, "valptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -378,11 +390,20 @@ private fun Oppdrag.info(): String {
     """.trimMargin()
 }
 
+@Serializable
 data class KeyValueAndUids(
     val originalKey: String,
+    @Serializable(with = OppdragSerializer::class)
     val originalValue: Oppdrag,
     val uids: List<String>,
 )
+
+object OppdragSerializer : KSerializer<Oppdrag> {
+    private val mapper = XMLMapper<Oppdrag>()
+    override val descriptor = PrimitiveSerialDescriptor("Oppdrag", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: Oppdrag) = encoder.encodeString(mapper.writeValueAsString(value))
+    override fun deserialize(decoder: Decoder): Oppdrag = mapper.readValue(decoder.decodeString())
+}
 
 /**
  * Vi må vente med å lagre helved.utbetalinger.v1 til vi har fått en positiv kvittering.
