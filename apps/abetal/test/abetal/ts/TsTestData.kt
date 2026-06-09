@@ -4,7 +4,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import models.*
 import abetal.*
-import libs.jackson.objectMapper
+import kotlinx.serialization.encodeToString
+import libs.kafka.JsonSerde
 
 fun MutableList<DetaljerLinje>.linje(
     behandlingId: BehandlingId,
@@ -69,4 +70,4 @@ object Ts {
     }
 }
 
-internal fun TsDto.asBytes() = objectMapper.writeValueAsBytes(this)
+internal fun TsDto.asBytes() = JsonSerde.json.encodeToString(this).toByteArray()

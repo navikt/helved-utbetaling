@@ -2,7 +2,8 @@ package abetal.valp
 
 import abetal.nextInt
 import models.*
-import libs.jackson.objectMapper
+import kotlinx.serialization.encodeToString
+import libs.kafka.JsonSerde
 import java.time.*
 
 fun MutableList<DetaljerLinje>.linje(
@@ -53,4 +54,4 @@ object Valp {
     }
 }
 
-internal fun ValpUtbetaling.asBytes() = objectMapper.writeValueAsBytes(this)
+internal fun ValpUtbetaling.asBytes() = JsonSerde.json.encodeToString(this).toByteArray()

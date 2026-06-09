@@ -1,7 +1,8 @@
 package abetal
 
-import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
@@ -10,7 +11,6 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import libs.jackson.registerHelvedModules
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
@@ -53,9 +53,10 @@ fun Application.abetal(
         meterBinders += LogbackMetrics()
     }
     install(ContentNegotiation) {
-        jackson {
-            registerHelvedModules()
-        }
+        json(Json { 
+            ignoreUnknownKeys = true 
+            encodeDefaults = true
+        })
     }
 
     monitor.subscribe(ApplicationStopping) {

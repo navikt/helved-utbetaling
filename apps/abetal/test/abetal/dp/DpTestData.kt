@@ -5,7 +5,8 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import models.*
 import abetal.*
-import libs.jackson.objectMapper
+import kotlinx.serialization.encodeToString
+import libs.kafka.JsonSerde
 
 fun MutableList<DetaljerLinje>.linje(
     behandlingId: BehandlingId,
@@ -159,4 +160,4 @@ val dagpengerMeldeperiodeDager = listOf(
     )
 )
 
-internal fun DpUtbetaling.asBytes() = objectMapper.writeValueAsBytes(this)
+internal fun DpUtbetaling.asBytes() = JsonSerde.json.encodeToString(this).toByteArray()
