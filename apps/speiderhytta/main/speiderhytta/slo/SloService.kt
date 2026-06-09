@@ -1,9 +1,14 @@
+@file:UseSerializers(InstantSerializer::class)
+
 package speiderhytta.slo
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
+import speiderhytta.InstantSerializer
 import speiderhytta.Metrics
 import java.time.Instant
 
@@ -77,6 +82,7 @@ class SloService(
     }
 }
 
+@Serializable
 data class SloStatus(
     val app: String,
     val name: String,

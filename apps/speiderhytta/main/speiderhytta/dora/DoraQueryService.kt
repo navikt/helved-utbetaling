@@ -1,5 +1,10 @@
+@file:UseSerializers(InstantSerializer::class)
+
 package speiderhytta.dora
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import speiderhytta.InstantSerializer
 import java.time.Duration
 import java.time.Instant
 
@@ -10,6 +15,7 @@ import java.time.Instant
  *
  * Lead time and MTTR are reported in seconds; helved-peisen formats them.
  */
+@Serializable
 data class DoraSummary(
     val app: String,
     val window: Window,
@@ -21,6 +27,7 @@ data class DoraSummary(
     val deploymentCount: Int,
     val incidentCount: Int,
 ) {
+    @Serializable
     data class Window(val from: Instant, val to: Instant)
 }
 

@@ -10,6 +10,7 @@ import io.ktor.client.request.post
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.Serializable
 import libs.utils.appLog
 import speiderhytta.GithubConfig
 import java.security.KeyFactory
@@ -88,6 +89,7 @@ class GithubApp(
     private data class InstallationToken(val token: String, val expiresAt: Instant)
 
     @Suppress("PropertyName", "ConstructorParameterNaming")
+    @Serializable
     private data class InstallationTokenResponse(
         val token: String,
         val expires_at: String,
