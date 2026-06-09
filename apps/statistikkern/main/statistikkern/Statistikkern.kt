@@ -1,6 +1,6 @@
 package statistikkern
 
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.install
@@ -13,12 +13,12 @@ import io.ktor.server.routing.routing
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import libs.jackson.registerHelvedModules
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
@@ -57,9 +57,7 @@ fun Application.statistikkern(
     }
 
     install(ContentNegotiation) {
-        jackson {
-            registerHelvedModules()
-        }
+        json(Json { ignoreUnknownKeys = true })
     }
 
     val utbetalingConsumer = factory.createConsumer(config.kafka, Topics.utbetalinger)
