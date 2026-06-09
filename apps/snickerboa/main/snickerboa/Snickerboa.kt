@@ -1,7 +1,7 @@
 package snickerboa
 
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.install
@@ -22,7 +22,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import libs.jackson.registerHelvedModules
+import kotlinx.serialization.json.Json
 import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
@@ -61,9 +61,7 @@ fun Application.snickerboa(
     }
 
     install(ContentNegotiation) {
-        jackson {
-            registerHelvedModules()
-        }
+        json(Json { ignoreUnknownKeys = true })
     }
 
     install(StatusPages) {
