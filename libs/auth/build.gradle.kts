@@ -1,3 +1,7 @@
+plugins {
+    kotlin("plugin.serialization")
+}
+
 val ktorVersion = "3.4.2"
 
 dependencies {
