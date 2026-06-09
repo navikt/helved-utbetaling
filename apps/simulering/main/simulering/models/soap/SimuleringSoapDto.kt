@@ -10,7 +10,6 @@ import nl.adaptivity.xmlutil.serialization.XmlSerialName
 import nl.adaptivity.xmlutil.serialization.XmlElement
 import simulering.models.rest.*
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 /**
  * Enhet kan være enten [tknr] eller [orgnr]+[avd]

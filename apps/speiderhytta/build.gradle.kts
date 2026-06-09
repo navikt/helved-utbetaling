@@ -29,12 +29,6 @@ dependencies {
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
-    // YAML parsing for slo.yml
-    // TODO: Parse YAML selv eller bruke Snakeyaml?
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.21.2")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.21.2")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
-
     // JWT signing for GitHub App auth (RS256)
     implementation("com.auth0:java-jwt:4.5.0")
 
