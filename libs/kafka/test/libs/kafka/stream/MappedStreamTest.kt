@@ -1,13 +1,11 @@
 package libs.kafka.stream
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import libs.kafka.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import org.apache.kafka.streams.state.ValueAndTimestamp
+import kotlinx.serialization.Serializable
 
 internal class MappedStreamTest {
     @AfterEach
@@ -261,7 +259,7 @@ internal class MappedStreamTest {
             consume(Topics.E)
                 .map { it -> ChangedDto(9, it.data) }
                 .leftJoin(json(), table, "changed-leftjoin-B")
-                .map { l, r -> jacksonObjectMapper().writeValueAsString(l.copy(data = r!!)) }
+                .map { l, r -> JsonSerde.json.encodeToString(l.copy(data = r!!)) }
                 .produce(Topics.C)
         }
 
@@ -271,12 +269,12 @@ internal class MappedStreamTest {
         val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
 
         assertEquals(1, result.size)
-        assertEquals(ChangedDto(9, "heyheyho"), jacksonObjectMapper().readValue<ChangedDto<String>>(result["1"]!!))
+        assertEquals(ChangedDto(9, "heyheyho"), JsonSerde.json.decodeFromString<ChangedDto<String>>(result["1"]!!))
     }
 
     @Test
     fun `materialize stream`() {
-        val store = Store("yey", Serdes<KeyDto, JsonDto>(JsonSerde.jackson(), JsonSerde.jackson()))
+        val store = Store("yey", Serdes<KeyDto, JsonDto>(JsonSerde.kotlinx(), JsonSerde.kotlinx()))
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .map { it -> JsonDto(9, it) }
@@ -293,8 +291,10 @@ internal class MappedStreamTest {
     }
 }
 
+@Serializable
 data class KeyDto(val id: String)
 
+@Serializable
 data class ChangedDto<T>(
     val id: Int,
     val data: T,
