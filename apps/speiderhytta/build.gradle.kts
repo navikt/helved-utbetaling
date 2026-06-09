@@ -1,5 +1,6 @@
 plugins {
     id("io.ktor.plugin")
+    kotlin("plugin.serialization")
 }
 
 application {
@@ -8,7 +9,6 @@ application {
 
 val ktorVersion = "3.4.2"
 val nettyVersion = "4.2.13.Final"
-val jackson3Version = "3.1.1"
 
 dependencies {
     implementation(project(":models"))
@@ -20,13 +20,6 @@ dependencies {
     // Keep Ktor on 3.4.2, but override the vulnerable transitive Netty line.
     implementation(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
 
-    constraints {
-        implementation("tools.jackson.core:jackson-core:$jackson3Version")
-        implementation("tools.jackson.core:jackson-databind:$jackson3Version")
-        testImplementation("tools.jackson.core:jackson-core:$jackson3Version")
-        testImplementation("tools.jackson.core:jackson-databind:$jackson3Version")
-    }
-
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
@@ -37,6 +30,7 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
     // YAML parsing for slo.yml
+    // TODO: Parse YAML selv eller bruke Snakeyaml?
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.21.2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.21.2")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")

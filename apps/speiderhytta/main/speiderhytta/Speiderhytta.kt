@@ -1,7 +1,7 @@
 package speiderhytta
 
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.engine.EngineConnectorBuilder
@@ -24,7 +24,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.http.HttpClientFactory
-import libs.jackson.registerHelvedModules
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.jdbc.context
@@ -69,9 +68,7 @@ fun Application.speiderhytta(config: Config = Config()) {
         meterBinders += LogbackMetrics()
     }
     install(ContentNegotiation) {
-        jackson {
-            registerHelvedModules()
-        }
+        json(speiderhyttaJson)
     }
 
     val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()
