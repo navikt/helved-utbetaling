@@ -1,6 +1,6 @@
 package libs.auth
 
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -8,16 +8,16 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.http.*
 import io.ktor.server.routing.*
-import libs.jackson.registerHelvedModules
 import io.ktor.server.auth.jwt.*
 import kotlinx.coroutines.runBlocking
 import io.ktor.server.auth.*
+import kotlinx.serialization.json.Json
 import java.net.URI
 
 fun Application.module(config: AzureConfig) {
 
     install(ContentNegotiation) {
-        jackson { registerHelvedModules() }
+        json(Json { ignoreUnknownKeys = true })
     }
 
     install(Authentication) {
@@ -46,14 +46,14 @@ fun Application.module(config: AzureConfig) {
 class AzureFake: AutoCloseable {
     companion object {
         fun azure(app: Application) {
-            app.install(ContentNegotiation) { jackson { registerHelvedModules() } }
+            app.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
             app.routing {
                 get("/jwks") {
-                    call.respondText(libs.auth.TEST_JWKS)
+                    call.respondText(TEST_JWKS)
                 }
 
                 post("/token") {
-                    call.respond(libs.auth.AzureToken(3600, "token"))
+                    call.respond(AzureToken(3600, "token"))
                 }
             }
         }
@@ -70,7 +70,7 @@ class AzureFake: AutoCloseable {
         )
     }
 
-    private val jwksGenerator = libs.auth.JwkGenerator(config.issuer, config.clientId)
+    private val jwksGenerator = JwkGenerator(config.issuer, config.clientId)
 
     fun generateToken() = jwksGenerator.generate()
 

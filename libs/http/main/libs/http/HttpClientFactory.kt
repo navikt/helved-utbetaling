@@ -1,13 +1,12 @@
 package libs.http
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
-import io.ktor.serialization.jackson.*
-import libs.jackson.registerHelvedModules
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.json.Json
 import libs.utils.logger
 import libs.utils.secureLog
 
@@ -19,9 +18,7 @@ object HttpClientFactory {
         retries: Int? = 3,
         requestTimeoutMs: Long? = 60_000,
         connectionTimeoutMs: Long? = 30_000,
-        json: (ObjectMapper.() -> Unit)? = {
-            registerHelvedModules()
-        },
+        json: Json? = Json { ignoreUnknownKeys = true },
     ) =
         HttpClient(CIO) {
             install(Logging) {
@@ -29,11 +26,9 @@ object HttpClientFactory {
                 level = logLevel
             }
 
-            json?.let { configure ->
+            json?.let {
                 install(ContentNegotiation) {
-                    jackson {
-                        configure()
-                    }
+                    json(it)
                 }
             }
 

@@ -1,14 +1,18 @@
 package libs.auth
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import libs.cache.Token
 import java.time.Instant
 
 private const val LEEWAY_SEC = 60
 
+@Serializable
 data class AzureToken(
     val expires_in: Long,
     val access_token: String
 ) : Token {
+    @Transient
     private val expiry: Instant = Instant.now().plusSeconds(expires_in - LEEWAY_SEC)
 
     override fun isExpired(): Boolean = Instant.now().isAfter(expiry)
