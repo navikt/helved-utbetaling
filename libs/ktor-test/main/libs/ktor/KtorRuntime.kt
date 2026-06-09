@@ -4,12 +4,12 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import kotlinx.coroutines.runBlocking
-import libs.jackson.registerHelvedModules
+import kotlinx.serialization.json.Json
 import libs.utils.logger
 
 private val testLog = logger("test")
@@ -37,9 +37,7 @@ open class KtorRuntime<Config: Any>(
     val httpClient by lazy {
         HttpClient(CIO) {
             install(ContentNegotiation) {
-                jackson {
-                    registerHelvedModules()
-                }
+                json(Json { ignoreUnknownKeys = true })
             }
             defaultRequest {
                 url("http://localhost:${ktor.engine.port}")
