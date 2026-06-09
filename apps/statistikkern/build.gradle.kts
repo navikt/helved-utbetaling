@@ -1,5 +1,6 @@
 plugins {
     id("io.ktor.plugin")
+    kotlin("plugin.serialization")
 }
 
 application {
@@ -24,9 +25,9 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:${ktorVersion}")
     implementation("io.ktor:ktor-server-netty:${ktorVersion}")
     implementation("io.ktor:ktor-server-metrics-micrometer:${ktorVersion}")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     implementation("com.google.cloud:google-cloud-bigquery:2.66.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
-    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("org.apache.kafka:kafka-clients:4.3.0")
 
     testImplementation(kotlin("test"))
