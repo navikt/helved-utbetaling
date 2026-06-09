@@ -2,14 +2,14 @@ package libs.auth
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.get
 import io.ktor.server.testing.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import io.ktor.client.request.bearerAuth
-import libs.jackson.registerHelvedModules
+import kotlinx.serialization.json.Json
 
 class TokenValidatorTest {
 
@@ -18,7 +18,7 @@ class TokenValidatorTest {
 
     private val client = ktor.createClient {
         install(ContentNegotiation) {
-            jackson { registerHelvedModules() }
+            json(Json { ignoreUnknownKeys = true })
         }
     }
 
