@@ -1,6 +1,11 @@
+@file:UseSerializers(InstantSerializer::class)
+
 package speiderhytta.dora
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import libs.jdbc.Dao
+import speiderhytta.InstantSerializer
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
@@ -14,6 +19,7 @@ import java.time.Instant
  * contribute to deploy frequency and lead-time percentiles; failures count
  * towards CFR; cancelled rows are excluded from the CFR denominator entirely.
  */
+@Serializable
 data class Deployment(
     val id: Long? = null,
     val app: String,
