@@ -1,9 +1,11 @@
 package libs.kafka
 
 import libs.utils.logger
+import kotlinx.serialization.Serializable
 
 val kafkaLog = logger("kafka")
 
+@Serializable
 data class StreamsPair<L, R>(
     val left: L,
     val right: R,
