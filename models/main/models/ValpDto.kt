@@ -1,11 +1,15 @@
+@file:UseSerializers(LocalDateSerializer::class, UUIDSerializer::class, InstantSerializer::class)
+
 package models
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import models.ValpUtbetaling.Tiltakskode
 import models.ValpUtbetaling.Tilskuddstype
 import java.time.*
 import java.util.UUID
 
-
+@Serializable
 data class ValpUtbetaling(
     val id: UUID,
     val sakId: String,
@@ -20,6 +24,7 @@ data class ValpUtbetaling(
     val besluttetTidspunkt: Instant,
     val dryrun: Boolean,
 ) {
+    @Serializable
     data class Periode(
         val fom: LocalDate,
         val tom: LocalDate,

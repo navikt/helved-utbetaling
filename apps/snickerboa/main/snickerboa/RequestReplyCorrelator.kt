@@ -9,13 +9,16 @@ import kotlinx.coroutines.withTimeout
 import models.ApiError
 import models.DocumentedErrors
 import models.Simulering
-import models.Status
 import models.StatusReply
 import kotlin.collections.set
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-data class UtbetalingResponse(val statusCode: HttpStatusCode, val body: Any)
+sealed interface UtbetalingResponse {
+    val statusCode: HttpStatusCode
+    data class Status(override val statusCode: HttpStatusCode, val body: StatusReply) : UtbetalingResponse
+    data class Simulering(override val statusCode: HttpStatusCode, val body: models.Simulering) : UtbetalingResponse
+}
 
 class RequestReplyCorrelator(
     val producers: UtbetalingProducers,
@@ -51,11 +54,11 @@ class RequestReplyCorrelator(
         }
 
         val statusCode = when (reply.status) {
-            Status.OK, Status.MOTTATT, Status.HOS_OPPDRAG -> HttpStatusCode.OK
-            Status.FEILET -> HttpStatusCode.fromValue(reply.error?.statusCode ?: 500)
+            models.Status.OK, models.Status.MOTTATT, models.Status.HOS_OPPDRAG -> HttpStatusCode.OK
+            models.Status.FEILET -> HttpStatusCode.fromValue(reply.error?.statusCode ?: 500)
         }
 
-        return UtbetalingResponse(statusCode, reply)
+        return UtbetalingResponse.Status(statusCode, reply)
     }
 
     // TODO: Skal vi lese simulerings topicet direkte?
@@ -68,7 +71,7 @@ class RequestReplyCorrelator(
         try {
             produce(txId)
             val simulering = withTimeout(timeout) { deferred.await() }
-            return UtbetalingResponse(HttpStatusCode.OK, simulering)
+            return UtbetalingResponse.Simulering(HttpStatusCode.OK, simulering)
         } catch (_: TimeoutCancellationException) {
             throw ApiError(408, "Fikk ingen respons på simulering innen ${timeout.inWholeSeconds} sekunder", DocumentedErrors.BASE)
         } finally {

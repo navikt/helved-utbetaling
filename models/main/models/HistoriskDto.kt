@@ -1,9 +1,14 @@
+@file:UseSerializers(LocalDateSerializer::class, LocalDateTimeSerializer::class, UUIDSerializer::class)
+
 package models
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
+@Serializable
 data class HistoriskUtbetaling(
     val dryrun: Boolean = false,
     val id: UUID,
@@ -51,6 +56,7 @@ data class HistoriskUtbetaling(
     }
 }
 
+@Serializable
 data class HistoriskPeriode(
     val fom: LocalDate,
     val tom: LocalDate,

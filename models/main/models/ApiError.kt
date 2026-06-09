@@ -1,5 +1,6 @@
 package models
 
+import kotlinx.serialization.Serializable
 import models.kontrakter.GyldigBehandlingId
 import models.kontrakter.GyldigSakId
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -96,11 +97,13 @@ object DocumentedErrors {
     }
 }
 
+@Serializable
 enum class System {
     HELVED,
     OSUR
 }
 
+@Serializable
 data class ApiError(
     val statusCode: Int,
     val msg: String,

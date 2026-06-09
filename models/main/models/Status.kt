@@ -1,5 +1,9 @@
+@file:UseSerializers(LocalDateSerializer::class)
+
 package models
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import java.time.LocalDate
 import libs.utils.appLog
 import libs.utils.env
@@ -8,6 +12,7 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 
+@Serializable
 data class StatusReply(
     val status: Status,
     val detaljer: Detaljer? = null,
@@ -33,6 +38,7 @@ data class StatusReply(
     }
 }
 
+@Serializable
 enum class Status {
     OK,
     FEILET,
@@ -40,11 +46,13 @@ enum class Status {
     HOS_OPPDRAG,
 }
 
+@Serializable
 data class Detaljer(
     val ytelse: Fagsystem,
     val linjer: List<DetaljerLinje>,
 )
 
+@Serializable
 data class DetaljerLinje(
     val behandlingId: String,
     val fom: LocalDate,
