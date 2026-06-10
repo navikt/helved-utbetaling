@@ -1,11 +1,16 @@
+@file:UseSerializers(models.kotlinx.LocalDateSerializer::class, models.kotlinx.LocalDateTimeSerializer::class)
+
 package utsjekk.utbetaling
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import models.DocumentedErrors
 import models.badRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+@Serializable
 data class UtbetalingApi(
     val sakId: String,
     val behandlingId: String,
@@ -50,6 +55,7 @@ data class UtbetalingApi(
     }
 }
 
+@Serializable
 data class FeilregistrerAvventRequest(
     val stønad: Stønadstype,
     val sakId: String,
@@ -58,6 +64,7 @@ data class FeilregistrerAvventRequest(
     val avvent: Avvent,
 )
 
+@Serializable
 enum class PeriodeType {
     /** man - fre */
     UKEDAG,
@@ -81,6 +88,7 @@ enum class PeriodeType {
     }
 }
 
+@Serializable
 data class UtbetalingsperiodeApi(
     val fom: LocalDate,
     val tom: LocalDate,

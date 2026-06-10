@@ -1,6 +1,6 @@
 package fakes
 
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -8,7 +8,6 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import libs.auth.*
-import libs.jackson.registerHelvedModules
 import libs.ktor.port
 import java.net.URI
 
@@ -43,7 +42,7 @@ class AzureFake : AutoCloseable {
 
 private fun Application.azure() {
     install(ContentNegotiation) {
-        jackson { registerHelvedModules() }
+        json(models.kotlinx.KotlinxJson)
     }
 
     routing {

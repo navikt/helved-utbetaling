@@ -1,5 +1,14 @@
+@file:UseSerializers(models.kotlinx.LocalDateSerializer::class, models.kotlinx.LocalDateTimeSerializer::class, models.kotlinx.UUIDSerializer::class)
 package utsjekk.simulering
 
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import models.kontrakter.Fagsystem
 import models.kontrakter.Personident
 import utsjekk.iverksetting.*
@@ -8,7 +17,14 @@ import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.math.abs
 
+object BigDecimalSerializer : KSerializer<BigDecimal> {
+    override val descriptor = PrimitiveSerialDescriptor("BigDecimal", PrimitiveKind.DOUBLE)
+    override fun serialize(encoder: Encoder, value: BigDecimal) = encoder.encodeDouble(value.toDouble())
+    override fun deserialize(decoder: Decoder): BigDecimal = decoder.decodeDouble().toBigDecimal()
+}
+
 object domain {
+    @Serializable
     data class Simulering(
         val behandlingsinformasjon: Behandlingsinformasjon,
         val nyTilkjentYtelse: TilkjentYtelse,
@@ -38,6 +54,7 @@ object domain {
         }
     }
 
+    @Serializable
     data class SimuleringDetaljer(
         val gjelderId: String,
         val datoBeregnet: LocalDate,
@@ -74,17 +91,20 @@ object domain {
         }
     }
 
+    @Serializable
     data class ForrigeIverksetting(
         val behandlingId: BehandlingId,
         val iverksettingId: IverksettingId?,
     )
 
+    @Serializable
     data class Periode(
         val fom: LocalDate,
         val tom: LocalDate,
         val posteringer: List<domain.Postering>,
     )
 
+    @Serializable
     data class Postering(
         val fagområde: Fagområde,
         val sakId: SakId,
@@ -95,6 +115,7 @@ object domain {
         val klassekode: String,
     )
 
+    @Serializable
     enum class PosteringType {
         YTELSE,
         FEILUTBETALING,
@@ -116,6 +137,7 @@ object domain {
         }
     }
 
+    @Serializable
     enum class Fagområde {
         AAP,
         TILLEGGSSTØNADER,
@@ -152,6 +174,7 @@ object domain {
 
 
 object client {
+    @Serializable
     data class SimuleringResponse(
         val gjelderId: String,
         val datoBeregnet: LocalDate,
@@ -159,6 +182,7 @@ object client {
         val perioder: List<SimulertPeriode>,
     )
 
+    @Serializable
     data class SimulertPeriode(
         val fom: LocalDate,
         val tom: LocalDate,
@@ -166,6 +190,7 @@ object client {
     )
 
     // Dette er det samme som et stoppnivå i SOAP
+    @Serializable
     data class Utbetaling(
         val fagområde: Fagområde,
         val fagSystemId: String,
@@ -176,6 +201,7 @@ object client {
     ) 
 
     // Tilsvarer én rad i regnskapet
+    @Serializable
     data class PosteringDto(
         val type: PosteringType,
         val faktiskFom: LocalDate,
@@ -188,6 +214,7 @@ object client {
         val refunderesOrgNr: String?,
     )
 
+    @Serializable
     enum class PosteringType { 
         YTEL,
         FEIL,
@@ -197,6 +224,7 @@ object client {
         MOTP; 
     }
 
+    @Serializable
     enum class Satstype { 
         DAG,
         DAG7,
@@ -213,6 +241,7 @@ object client {
         }
     }
 
+    @Serializable
     enum class Fagområde { 
         TILLST,
         TSTARENA,
@@ -260,9 +289,11 @@ object client {
         }
     }
 
+    @Serializable
     data class SimuleringRequest(
         val fagområde: Fagområde,
         val sakId: String,
+        @Serializable(with = PersonidentSerializer::class)
         val personident: Personident,
         val erFørsteUtbetalingPåSak: Boolean,
         val saksbehandler: String,
@@ -280,6 +311,7 @@ object client {
         }
     }
 
+    @Serializable
     data class Utbetalingsperiode(
         val periodeId: String,
         val forrigePeriodeId: String?,
@@ -291,6 +323,7 @@ object client {
         val satstype: Satstype,
         val opphør: Opphør?,
         val utbetalesTil: String,
+        @Serializable(with = BigDecimalSerializer::class)
         val fastsattDagsats: BigDecimal?,
     ) {
         companion object {
@@ -310,19 +343,23 @@ object client {
         }
     }
 
+    @Serializable
     data class Opphør(val fom: LocalDate)
 }
 
 object api {
+    @Serializable
     data class SimuleringRequest(
         val sakId: String,
         val behandlingId: String,
+        @Serializable(with = PersonidentSerializer::class)
         val personident: Personident,
         val saksbehandlerId: String,
         val utbetalinger: List<UtbetalingV2Dto>,
         val forrigeIverksetting: ForrigeIverksettingV2Dto? = null,
     )
 
+    @Serializable
     data class SimuleringRespons(
         val oppsummeringer: List<OppsummeringForPeriode>,
         val detaljer: domain.SimuleringDetaljer,
@@ -350,6 +387,7 @@ object api {
         }
     }
 
+    @Serializable
     data class OppsummeringForPeriode(
         val fom: LocalDate,
         val tom: LocalDate,
