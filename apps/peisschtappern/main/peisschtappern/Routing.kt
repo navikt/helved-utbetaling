@@ -6,6 +6,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.*
+import kotlinx.serialization.Serializable
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.Streams
@@ -372,6 +373,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
     }
 }
 
+@Serializable
 data class KvitteringRequest(
     val key: String,
     val offset: String,
@@ -382,6 +384,7 @@ data class KvitteringRequest(
     val reason: String,
 )
 
+@Serializable
 data class MessageRequest(
     val topic: String,
     val partition: String,
@@ -389,8 +392,10 @@ data class MessageRequest(
     val reason: String? = null,
 )
 
+@Serializable
 data class TombstoneRequest(val key: String, val reason: String)
 
+@Serializable
 data class OkStatusRequest(val key: String, val reason: String, val fagsystem: String)
 
 sealed class Channel(
@@ -428,4 +433,5 @@ sealed class Channel(
     }
 }
 
+@Serializable
 data class Page(val items: List<Daos>, val total: Int)
