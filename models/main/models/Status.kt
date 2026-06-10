@@ -1,4 +1,4 @@
-@file:UseSerializers(LocalDateSerializer::class)
+@file:UseSerializers(models.kotlinx.LocalDateSerializer::class)
 
 package models
 

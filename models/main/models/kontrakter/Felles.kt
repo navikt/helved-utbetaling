@@ -1,3 +1,5 @@
+@file:UseSerializers(models.kotlinx.LocalDateSerializer::class)
+
 package models.kontrakter
 
 import kotlinx.serialization.KSerializer
@@ -13,16 +15,13 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
-import models.LocalDateSerializer
-import models.LocalDateTimeSerializer
-import models.UUIDSerializer
+import kotlinx.serialization.UseSerializers
 import java.lang.IllegalArgumentException
 import java.time.LocalDate
 
 @Serializable
 data class BrukersNavKontor(
     val enhet: String,
-    @Serializable(with = LocalDateSerializer::class)
     val gjelderFom: LocalDate? = null,
 )
 
@@ -213,15 +212,3 @@ enum class StønadTypeAAP: StønadType {
     override fun tilFagsystem(): Fagsystem = Fagsystem.AAP
 }
 
-val jsonModule = SerializersModule {
-    contextual(IdentSerializer)
-    contextual(StønadTypeSerializer)
-    contextual(UUIDSerializer)
-    contextual(LocalDateSerializer)
-    contextual(LocalDateTimeSerializer)
-}
-
-val json = Json {
-    ignoreUnknownKeys = true
-    serializersModule = jsonModule
-}

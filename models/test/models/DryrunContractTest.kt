@@ -5,7 +5,9 @@ import io.swagger.v3.parser.OpenAPIV3Parser
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import models.kontrakter.json as contractJson
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
+import kotlinx.serialization.json.Json
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -14,6 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
+import models.kotlinx.KotlinxJson
 
 /**
  * Contract tests that verify the OpenAPI spec (openapi-dryrun.yml) matches
@@ -338,7 +341,7 @@ class DryrunContractTest {
             ),
             vedtakstidspunktet = LocalDateTime.of(2025, 1, 1, 12, 0),
         )
-        val json = contractJson.encodeToJsonElement(AapUtbetaling.serializer(), model).jsonObject
+        val json = KotlinxJson.encodeToJsonElement(AapUtbetaling.serializer(), model).jsonObject
 
         assertJsonFieldsMatchSchema(json, "AapUtbetaling")
     }
@@ -360,7 +363,7 @@ class DryrunContractTest {
             ),
             vedtakstidspunktet = LocalDateTime.of(2025, 1, 1, 12, 0),
         )
-        val json = contractJson.encodeToJsonElement(DpUtbetaling.serializer(), model).jsonObject
+        val json = KotlinxJson.encodeToJsonElement(DpUtbetaling.serializer(), model).jsonObject
 
         assertJsonFieldsMatchSchema(json, "DpUtbetaling")
     }
@@ -387,7 +390,7 @@ class DryrunContractTest {
                 )
             ),
         )
-        val json = contractJson.encodeToJsonElement(TsDto.serializer(), model).jsonObject
+        val json = KotlinxJson.encodeToJsonElement(TsDto.serializer(), model).jsonObject
 
         assertJsonFieldsMatchSchema(json, "TsDto")
     }
@@ -409,7 +412,7 @@ class DryrunContractTest {
                 )
             ),
         )
-        val json = contractJson.encodeToJsonElement(TpUtbetaling.serializer(), model).jsonObject
+        val json = KotlinxJson.encodeToJsonElement(TpUtbetaling.serializer(), model).jsonObject
 
         assertJsonFieldsMatchSchema(json, "TpUtbetaling")
     }
@@ -434,7 +437,7 @@ class DryrunContractTest {
                 perioder = emptyList(),
             ),
         )
-        val json = contractJson.encodeToJsonElement(Simulering.serializer(), model).jsonObject
+        val json = KotlinxJson.encodeToJsonElement(Simulering.serializer(), model).jsonObject
 
         assertEquals("v1", json["@type"]?.jsonPrimitive?.content, "v1.Simulering should serialize with @type=v1")
         assertTrue("oppsummeringer" in json, "Missing 'oppsummeringer' field")
@@ -444,7 +447,7 @@ class DryrunContractTest {
     @Test
     fun `v2 Simulering serializes with correct discriminator`() {
         val model: Simulering = v2.Simulering(perioder = emptyList())
-        val json = contractJson.encodeToJsonElement(Simulering.serializer(), model).jsonObject
+        val json = KotlinxJson.encodeToJsonElement(Simulering.serializer(), model).jsonObject
 
         assertEquals("v2", json["@type"]?.jsonPrimitive?.content, "v2.Simulering should serialize with @type=v2")
         assertTrue("perioder" in json, "Missing 'perioder' field")
@@ -453,7 +456,7 @@ class DryrunContractTest {
     @Test
     fun `Info serializes with correct discriminator`() {
         val model: Simulering = Info.OkUtenEndring(Fagsystem.AAP)
-        val json = contractJson.encodeToJsonElement(Simulering.serializer(), model).jsonObject
+        val json = KotlinxJson.encodeToJsonElement(Simulering.serializer(), model).jsonObject
 
         assertEquals("info", json["@type"]?.jsonPrimitive?.content, "Info should serialize with @type=info")
         assertTrue("status" in json, "Missing 'status' field")
@@ -476,14 +479,14 @@ class DryrunContractTest {
               }
             }
         """.trimIndent()
-        val result = contractJson.decodeFromString(Simulering.serializer(), json)
+        val result = KotlinxJson.decodeFromString(Simulering.serializer(), json)
         assertTrue(result is v1.Simulering, "Expected v1.Simulering, got ${result::class}")
     }
 
     @Test
     fun `v2 Simulering deserializes from JSON with discriminator`() {
         val json = """{"@type": "v2", "perioder": []}"""
-        val result = contractJson.decodeFromString(Simulering.serializer(), json)
+        val result = KotlinxJson.decodeFromString(Simulering.serializer(), json)
         assertTrue(result is v2.Simulering, "Expected v2.Simulering, got ${result::class}")
     }
 
@@ -497,7 +500,7 @@ class DryrunContractTest {
               "message": "test"
             }
         """.trimIndent()
-        val result = contractJson.decodeFromString(Simulering.serializer(), json)
+        val result = KotlinxJson.decodeFromString(Simulering.serializer(), json)
         assertTrue(result is Info, "Expected Info, got ${result::class}")
     }
 

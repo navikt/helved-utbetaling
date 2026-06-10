@@ -68,7 +68,7 @@ fun Application.speiderhytta(config: Config = Config()) {
         meterBinders += LogbackMetrics()
     }
     install(ContentNegotiation) {
-        json(speiderhyttaJson)
+        json(models.kotlinx.KotlinxJson)
     }
 
     val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()

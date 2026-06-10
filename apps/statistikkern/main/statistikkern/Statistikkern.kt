@@ -18,7 +18,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
@@ -57,7 +56,7 @@ fun Application.statistikkern(
     }
 
     install(ContentNegotiation) {
-        json(Json { ignoreUnknownKeys = true })
+        json(models.kotlinx.KotlinxJson)
     }
 
     val utbetalingConsumer = factory.createConsumer(config.kafka, Topics.utbetalinger)

@@ -11,7 +11,6 @@ import io.ktor.http.HttpHeaders
 import libs.http.HttpClientFactory
 import libs.utils.appLog
 import speiderhytta.GithubConfig
-import speiderhytta.speiderhyttaJson
 import java.time.Instant
 
 /**
@@ -28,7 +27,7 @@ import java.time.Instant
  */
 class GithubClient(
     private val config: GithubConfig,
-    private val client: HttpClient = HttpClientFactory.new(LogLevel.INFO, json = speiderhyttaJson),
+    private val client: HttpClient = HttpClientFactory.new(LogLevel.INFO),
     private val app: GithubApp = GithubApp(config, client),
 ) {
     /**

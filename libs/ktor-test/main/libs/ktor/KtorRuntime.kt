@@ -37,7 +37,10 @@ open class KtorRuntime<Config: Any>(
     val httpClient by lazy {
         HttpClient(CIO) {
             install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
+                json(Json { 
+                    ignoreUnknownKeys = true 
+                    encodeDefaults = true
+                })
             }
             defaultRequest {
                 url("http://localhost:${ktor.engine.port}")

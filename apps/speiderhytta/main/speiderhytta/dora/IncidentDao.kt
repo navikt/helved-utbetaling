@@ -1,11 +1,10 @@
-@file:UseSerializers(InstantSerializer::class)
+@file:UseSerializers(models.kotlinx.InstantSerializer::class)
 
 package speiderhytta.dora
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import libs.jdbc.Dao
-import speiderhytta.InstantSerializer
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant

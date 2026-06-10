@@ -75,11 +75,6 @@ class HttpFakes: AutoCloseable {
     }
 }
 
-private val wsJson = Json {
-    ignoreUnknownKeys = true
-    encodeDefaults = true
-}
-
 private fun Application.fakes() {
     class XmlDeserializer : ContentConverter {
         override suspend fun deserialize(charset: Charset, typeInfo: TypeInfo, content: ByteReadChannel) = null
@@ -88,7 +83,7 @@ private fun Application.fakes() {
 
 
     install(ContentNegotiation) {
-        json(wsJson)
+        json(models.kotlinx.KotlinxJson)
         register(ContentType.Application.Xml, XmlDeserializer())
     }
 
