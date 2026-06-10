@@ -1,11 +1,10 @@
-@file:UseSerializers(InstantSerializer::class)
+@file:UseSerializers(models.kotlinx.InstantSerializer::class)
 
 package speiderhytta.github
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import speiderhytta.InstantSerializer
 import java.time.Instant
 
 /**

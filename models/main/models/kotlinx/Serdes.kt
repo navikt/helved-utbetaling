@@ -1,5 +1,6 @@
-package models
+package models.kotlinx
 
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -10,6 +11,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
+val KotlinxJson = Json { 
+    ignoreUnknownKeys = true
+    encodeDefaults = true
+}
 
 object UUIDSerializer : KSerializer<UUID> {
     override val descriptor = PrimitiveSerialDescriptor("UUID", PrimitiveKind.STRING)

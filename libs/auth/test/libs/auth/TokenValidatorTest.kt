@@ -11,14 +11,14 @@ import kotlinx.coroutines.runBlocking
 import io.ktor.client.request.bearerAuth
 import kotlinx.serialization.json.Json
 
-class TokenValidatorTest {
+internal class TokenValidatorTest {
 
     private val azure = AzureFake()
     private val ktor = TestApplication { application { module(azure.config) } }.apply { runBlocking { start() }}
 
     private val client = ktor.createClient {
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+            json(kotlinxJsonConfig)
         }
     }
 

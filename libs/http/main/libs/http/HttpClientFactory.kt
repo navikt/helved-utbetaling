@@ -18,7 +18,10 @@ object HttpClientFactory {
         retries: Int? = 3,
         requestTimeoutMs: Long? = 60_000,
         connectionTimeoutMs: Long? = 30_000,
-        json: Json? = Json { ignoreUnknownKeys = true },
+        json: Json = Json {
+            ignoreUnknownKeys = true 
+            encodeDefaults = true
+        },
     ) =
         HttpClient(CIO) {
             install(Logging) {
@@ -26,10 +29,8 @@ object HttpClientFactory {
                 level = logLevel
             }
 
-            json?.let {
-                install(ContentNegotiation) {
-                    json(it)
-                }
+            install(ContentNegotiation) {
+                json(json)
             }
 
             retries?.let {

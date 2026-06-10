@@ -8,7 +8,6 @@ application {
 }
 
 val ktorVersion = "3.4.2"
-val libVersion = "3.1.250"
 
 dependencies {
     implementation(project(":models"))
@@ -19,7 +18,7 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":libs:ws"))
 
-    implementation("no.nav.helved:xml:$libVersion")
+    implementation("no.nav.helved:xml:3.1.250")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
