@@ -1,4 +1,4 @@
-@file:UseSerializers(InstantSerializer::class)
+@file:UseSerializers(models.kotlinx.InstantSerializer::class)
 
 package speiderhytta.slo
 
@@ -8,7 +8,6 @@ import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
-import speiderhytta.InstantSerializer
 import speiderhytta.Metrics
 import java.time.Instant
 

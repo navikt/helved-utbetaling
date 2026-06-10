@@ -4,6 +4,9 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
+import models.kotlinx.LocalDateSerializer
+import models.kotlinx.LocalDateTimeSerializer
+import models.kotlinx.UUIDSerializer
 import no.nav.system.os.entiteter.beregningskjema.BeregningStoppnivaa
 import no.nav.system.os.entiteter.beregningskjema.BeregningStoppnivaaDetaljer
 import no.nav.system.os.entiteter.beregningskjema.BeregningsPeriode

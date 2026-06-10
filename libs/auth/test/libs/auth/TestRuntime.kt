@@ -14,10 +14,15 @@ import io.ktor.server.auth.*
 import kotlinx.serialization.json.Json
 import java.net.URI
 
+internal val kotlinxJsonConfig = Json { 
+    ignoreUnknownKeys = true 
+    encodeDefaults = true
+}
+
 fun Application.module(config: AzureConfig) {
 
     install(ContentNegotiation) {
-        json(Json { ignoreUnknownKeys = true })
+        json(kotlinxJsonConfig)
     }
 
     install(Authentication) {
@@ -46,7 +51,9 @@ fun Application.module(config: AzureConfig) {
 class AzureFake: AutoCloseable {
     companion object {
         fun azure(app: Application) {
-            app.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+            app.install(ContentNegotiation) { 
+                json(kotlinxJsonConfig)
+            }
             app.routing {
                 get("/jwks") {
                     call.respondText(TEST_JWKS)
