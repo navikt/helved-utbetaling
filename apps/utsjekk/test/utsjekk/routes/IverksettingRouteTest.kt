@@ -19,12 +19,12 @@ import models.Status
 import models.StatusReply
 import models.kontrakter.Fagsystem
 import models.kontrakter.Satstype
-import libs.jackson.objectMapper
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.*
 import java.time.LocalDate
+import io.ktor.http.content.TextContent
 
 class IverksettingRouteTest {
 
@@ -152,12 +152,12 @@ class IverksettingRouteTest {
         val res = httpClient.post("/api/iverksetting/v2") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(objectMapper.readValue<JsonNode>(payload))
+            setBody(TextContent(payload, ContentType.Application.Json))
         }
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
         assertEquals(
-            """{"statusCode":400,"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","doc":"${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling","system":"HELVED","suppressed":[]}""",
+            """{"statusCode":400,"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","doc":"${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling","system":"HELVED"}""",
             res.bodyAsText()
         )
     }

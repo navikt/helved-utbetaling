@@ -1,7 +1,7 @@
 package utsjekk
 
 import io.ktor.http.*
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -22,7 +22,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
-import libs.jackson.registerHelvedModules
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.jdbc.context
@@ -52,7 +51,8 @@ import java.util.*
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
+        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(
@@ -81,9 +81,7 @@ fun Application.utsjekk(
     }
 
     install(ContentNegotiation) {
-        jackson {
-            registerHelvedModules()
-        }
+        json(models.kotlinx.KotlinxJson)
     }
     install(Authentication) {
         jwt(TokenProvider.AZURE) {
@@ -147,7 +145,6 @@ ${call.bodyAsText()}""".trimIndent()
     val simuleringRoutes = SimuleringRoutes(
         config,
         kafka,
-
         iverksettingService,
         utbetalingService,
         jdbcCtx,

@@ -1,5 +1,9 @@
+@file:UseSerializers(models.kotlinx.LocalDateSerializer::class, models.kotlinx.LocalDateTimeSerializer::class)
+
 package utsjekk.iverksetting
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonGenerator
@@ -20,16 +24,22 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.random.Random
+import kotlinx.serialization.Transient
+import kotlinx.serialization.Contextual
 
 @JvmInline
+@Serializable
 value class SakId(val id: String)
 
 @JvmInline
+@Serializable
 value class BehandlingId(val id: String)
 
 @JvmInline
+@Serializable
 value class IverksettingId(val id: String)
 
+@Serializable
 data class Iverksetting(
     val behandling: Behandlingsdetaljer,
     val fagsak: Fagsakdetaljer,
@@ -51,6 +61,7 @@ data class Iverksetting(
     }
 }
 
+@Serializable
 data class UtbetalingId(
     val fagsystem: Fagsystem,
     val sakId: SakId,
@@ -61,11 +72,13 @@ data class UtbetalingId(
 /**
  * @param andeler er alle andeler med nye periodeId/forrigePeriodeId for å kunne oppdatere lagrede andeler
  */
+@Serializable
 data class BeregnetUtbetalingsoppdrag(
     val utbetalingsoppdrag: Utbetalingsoppdrag,
     val andeler: List<AndelMedPeriodeId>,
 )
 
+@Serializable
 data class AndelMedPeriodeId(
     val id: String,
     val periodeId: Long,
@@ -79,6 +92,7 @@ data class AndelMedPeriodeId(
             )
 }
 
+@Serializable
 data class Behandlingsinformasjon(
     val saksbehandlerId: String,
     val beslutterId: String,
@@ -91,6 +105,7 @@ data class Behandlingsinformasjon(
     val iverksettingId: IverksettingId?,
 )
 
+@Serializable
 data class ResultatForKjede(
     val beståendeAndeler: List<AndelData>,
     val nyeAndeler: List<AndelData>,
@@ -98,15 +113,18 @@ data class ResultatForKjede(
     val sistePeriodeId: Long,
 )
 
+@Serializable
 data class Fagsakdetaljer(
     val fagsakId: SakId,
     val fagsystem: Fagsystem,
 )
 
+@Serializable
 data class Søker(
     val personident: String,
 )
 
+@Serializable
 data class Vedtaksdetaljer(
     val vedtakstidspunkt: LocalDateTime,
     val saksbehandlerId: String,
@@ -124,6 +142,7 @@ data class Vedtaksdetaljer(
     }
 }
 
+@Serializable
 data class Behandlingsdetaljer(
     val forrigeBehandlingId: BehandlingId? = null,
     val forrigeIverksettingId: IverksettingId? = null,
@@ -145,6 +164,7 @@ val Iverksetting.personident get() = this.søker.personident
 val Iverksetting.behandlingId get() = this.behandling.behandlingId
 val Iverksetting.iverksettingId get() = this.behandling.iverksettingId
 
+@Serializable
 data class TilkjentYtelse(
     val id: String = RandomOSURId.generate(),
     val utbetalingsoppdrag: Utbetalingsoppdrag? = null,
@@ -176,6 +196,7 @@ data class TilkjentYtelse(
     fun toJson(): String = objectMapper.writeValueAsString(this)
 }
 
+@Serializable
 data class OppdragResultat(
     val oppdragStatus: OppdragStatus,
     val oppdragStatusOppdatert: LocalDateTime = LocalDateTime.now(),
@@ -197,7 +218,10 @@ data class OppdragResultat(
     JsonSubTypes.Type(StønadsdataTiltakspenger::class, name = "tiltakspenger"),
     JsonSubTypes.Type(StønadsdataTilleggsstønader::class, name = "tilleggsstønader"),
 )
-sealed class Stønadsdata(open val stønadstype: StønadType) {
+@Serializable
+sealed class Stønadsdata {
+    abstract val stønadstype: StønadType
+
     companion object {
         fun from(dto: StønadsdataDto): Stønadsdata {
             return when (dto) {
@@ -236,12 +260,13 @@ sealed class Stønadsdata(open val stønadstype: StønadType) {
     abstract fun tilKjedenøkkel(): Kjedenøkkel
 }
 
+@Serializable
 data class StønadsdataDagpenger(
     override val stønadstype: StønadTypeDagpenger,
     val ferietillegg: Ferietillegg? = null,
     val meldekortId: String,
     val fastsattDagsats: UInt,
-) : Stønadsdata(stønadstype) {
+) : Stønadsdata() {
     fun tilKlassifiseringDagpenger(): String =
         when (this.stønadstype) {
             StønadTypeDagpenger.DAGPENGER_ARBEIDSSØKER_ORDINÆR ->
@@ -277,12 +302,13 @@ data class StønadsdataDagpenger(
         KjedenøkkelMeldeplikt(klassifiseringskode = this.tilKlassifiseringDagpenger(), meldekortId = this.meldekortId)
 }
 
+@Serializable
 data class StønadsdataTiltakspenger(
     override val stønadstype: StønadTypeTiltakspenger,
     val barnetillegg: Boolean = false,
     val brukersNavKontor: BrukersNavKontor,
     val meldekortId: String,
-) : Stønadsdata(stønadstype) {
+) : Stønadsdata() {
     fun tilKlassifiseringTiltakspenger(): String =
         if (barnetillegg) {
             when (this.stønadstype) {
@@ -345,10 +371,11 @@ data class StønadsdataTiltakspenger(
         )
 }
 
+@Serializable
 data class StønadsdataTilleggsstønader(
     override val stønadstype: StønadTypeTilleggsstønader,
     val brukersNavKontor: BrukersNavKontor? = null,
-) : Stønadsdata(stønadstype) {
+) : Stønadsdata() {
     fun tilKlassifiseringTilleggsstønader() =
         when (stønadstype) {
             StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER -> "TSTBASISP2-OP"
@@ -366,10 +393,11 @@ data class StønadsdataTilleggsstønader(
         KjedenøkkelStandard(klassifiseringskode = this.tilKlassifiseringTilleggsstønader())
 }
 
+@Serializable
 data class StønadsdataAAP(
     override val stønadstype: StønadTypeAAP,
     val fastsattDagsats: UInt? = null,
-) : Stønadsdata(stønadstype) {
+) : Stønadsdata() {
     fun tilKlassifiseringAAP() =
         when (stønadstype) {
             StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING -> "AAPOR"
@@ -379,6 +407,7 @@ data class StønadsdataAAP(
         KjedenøkkelStandard(klassifiseringskode = this.tilKlassifiseringAAP())
 }
 
+@Serializable
 data class AndelTilkjentYtelse(
     val beløp: Int,
     val satstype: Satstype = Satstype.DAGLIG,
@@ -387,6 +416,7 @@ data class AndelTilkjentYtelse(
     val periodeId: Long? = null,
     val forrigePeriodeId: Long? = null,
 ) {
+    @Transient
     var id: UUID = UUID.randomUUID()
 
     companion object {
@@ -399,6 +429,7 @@ data class AndelTilkjentYtelse(
     }
 }
 
+@Serializable
 data class Periode(val fom: LocalDate, val tom: LocalDate) : Comparable<Periode> {
     init {
         if (tom < fom) badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE)
@@ -434,6 +465,7 @@ object RandomOSURId {
 /**
  * ID her burde ikke brukes til noe spesielt. EF har ikke et ID på andeler som sendes til utbetalingsgeneratorn
  */
+@Serializable
 data class AndelData(
     val id: String,
     val fom: LocalDate,
@@ -452,18 +484,22 @@ internal fun List<AndelData>.uten0beløp(): List<AndelData> = this.filter { it.b
     JsonSubTypes.Type(KjedenøkkelMeldeplikt::class, name = "meldeplikt"),
     JsonSubTypes.Type(KjedenøkkelStandard::class, name = "standard"),
 )
-sealed class Kjedenøkkel(
-    open val klassifiseringskode: String,
-)
 
+@Serializable
+sealed class Kjedenøkkel{
+    abstract val klassifiseringskode: String
+}
+
+@Serializable
 data class KjedenøkkelMeldeplikt(
     override val klassifiseringskode: String,
     val meldekortId: String,
-) : Kjedenøkkel(klassifiseringskode)
+) : Kjedenøkkel()
 
+@Serializable
 data class KjedenøkkelStandard(
     override val klassifiseringskode: String,
-) : Kjedenøkkel(klassifiseringskode)
+) : Kjedenøkkel()
 
 class KjedenøkkelKeySerializer : JsonSerializer<Kjedenøkkel>() {
     override fun serialize(
@@ -486,6 +522,7 @@ class KjedenøkkelKeyDeserializer : KeyDeserializer() {
     ): Kjedenøkkel? = key?.let { objectMapper.readValue(key, Kjedenøkkel::class.java) }
 }
 
+@Serializable
 enum class OppdragStatus {
     LAGT_PÅ_KØ,
     KVITTERT_OK,
@@ -496,6 +533,7 @@ enum class OppdragStatus {
     OK_UTEN_UTBETALING,
 }
 
+@Serializable
 data class Utbetalingsoppdrag(
     val erFørsteUtbetalingPåSak: Boolean,
     val fagsystem: Fagsystem,
@@ -509,6 +547,7 @@ data class Utbetalingsoppdrag(
     val brukersNavKontor: String? = null,
 )
 
+@Serializable
 data class Utbetalingsperiode(
     val erEndringPåEksisterendePeriode: Boolean,
     val opphør: Opphør? = null,
@@ -518,12 +557,16 @@ data class Utbetalingsperiode(
     val klassifisering: String,
     val fom: LocalDate,
     val tom: LocalDate,
+    @Serializable(with = utsjekk.simulering.BigDecimalSerializer::class) 
     val sats: BigDecimal,
     val satstype: Satstype,
     val utbetalesTil: String,
     val behandlingId: String,
     val utbetalingsgrad: Int? = null,
+    @Serializable(with = utsjekk.simulering.BigDecimalSerializer::class) 
     val fastsattDagsats: BigDecimal? = null,
 )
 
+@Serializable
 data class Opphør(val fom: LocalDate)
+

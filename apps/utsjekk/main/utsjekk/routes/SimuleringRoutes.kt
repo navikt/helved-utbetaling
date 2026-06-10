@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.encodeToString
 import libs.kafka.Streams
 import libs.jdbc.concurrency.CoroutineDatasource
 import models.*
@@ -158,14 +159,7 @@ class SimuleringRoutes(
         }
 
         when (result) {
-            is models.v1.Simulering -> call.respond(result)
-            is models.v2.Simulering -> call.respond(result)
-            is models.Info -> {
-                when (result.status) {
-                    Info.Status.OK_UTEN_ENDRING -> call.respond(HttpStatusCode.Found, result)
-                }
-            }
-            // is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+            is Simulering -> call.respondSimulering(result)
             null -> call.respond(HttpStatusCode.RequestTimeout)
             else -> call.respond(HttpStatusCode.InternalServerError)
         }
@@ -186,14 +180,7 @@ class SimuleringRoutes(
         }
 
         when (result) {
-            is models.v1.Simulering -> call.respond(result)
-            is models.v2.Simulering -> call.respond(result)
-            is models.Info -> {
-                when (result.status) {
-                    Info.Status.OK_UTEN_ENDRING -> call.respond(HttpStatusCode.Found, result)
-                }
-            }
-            // is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+            is Simulering -> call.respondSimulering(result)
             null -> call.respond(HttpStatusCode.RequestTimeout)
             else -> call.respond(HttpStatusCode.InternalServerError)
         }
@@ -214,14 +201,7 @@ class SimuleringRoutes(
         }
 
         when (result) {
-            is models.v1.Simulering -> call.respond(result)
-            is models.v2.Simulering -> call.respond(result)
-            is models.Info -> {
-                when (result.status) {
-                    Info.Status.OK_UTEN_ENDRING -> call.respond(HttpStatusCode.Found, result)
-                }
-            }
-            // is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+            is Simulering -> call.respondSimulering(result)
             null -> call.respond(HttpStatusCode.RequestTimeout)
             else -> call.respond(HttpStatusCode.InternalServerError)
         }
@@ -242,19 +222,21 @@ class SimuleringRoutes(
         }
 
         when (result) {
-            is models.v1.Simulering -> call.respond(result)
-            is models.v2.Simulering -> call.respond(result)
-            is models.Info -> {
-                when (result.status) {
-                    Info.Status.OK_UTEN_ENDRING -> call.respond(HttpStatusCode.Found, result)
-                }
-            }
-            // is StatusReply -> call.respond(HttpStatusCode.BadRequest, result)
+            is Simulering -> call.respondSimulering(result)
             null -> call.respond(HttpStatusCode.RequestTimeout)
             else -> call.respond(HttpStatusCode.InternalServerError)
         }
     }
 
+}
+
+private suspend fun RoutingCall.respondSimulering(simulering: Simulering) {
+    val json = models.kotlinx.KotlinxJson.encodeToString(Simulering.serializer(), simulering)
+    val status = when (simulering) {
+        is Info -> HttpStatusCode.Found
+        else -> HttpStatusCode.OK
+    }
+    respondText(json, ContentType.Application.Json, status)
 }
 
 private fun RoutingCall.transactionId(): String =
