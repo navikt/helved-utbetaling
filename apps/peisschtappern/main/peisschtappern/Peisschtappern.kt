@@ -2,7 +2,7 @@ package peisschtappern
 
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
@@ -19,7 +19,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import libs.auth.TokenProvider
 import libs.auth.configure
-import libs.jackson.registerHelvedModules
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.jdbc.Jdbc
@@ -68,9 +67,7 @@ fun Application.peisschtappern(
     }
 
     install(ContentNegotiation) {
-        jackson {
-            registerHelvedModules()
-        }
+        json(models.kotlinx.KotlinxJson)
     }
 
     install(MicrometerMetrics) {

@@ -1,5 +1,6 @@
 plugins {
     id("io.ktor.plugin")
+    kotlin("plugin.serialization")
 }
 
 application {
@@ -27,9 +28,8 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
