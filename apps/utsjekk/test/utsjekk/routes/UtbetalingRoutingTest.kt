@@ -9,7 +9,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
 import models.*
-import libs.jackson.objectMapper
+import models.kotlinx.KotlinxJson
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -1353,7 +1353,7 @@ class UtbetalingRoutingTest {
 
     @Test
     fun `sorterer perioder på fom`() = runTest(TestRuntime.context) {
-        val utbetaling = objectMapper.readValue("""
+        val utbetaling = KotlinxJson.decodeFromString<UtbetalingApi>("""
             {
               "sakId": "AS2511250136",
               "behandlingId": "1",
@@ -1437,8 +1437,7 @@ class UtbetalingRoutingTest {
               ],
               "avvent": null
             }
-        """.trimIndent(),
-            UtbetalingApi::class.java
+        """.trimIndent()
         )
 
         httpClient.post("/utbetalinger/${UUID.randomUUID()}") {
