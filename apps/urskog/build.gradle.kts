@@ -18,7 +18,7 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":libs:ws"))
 
-    implementation("no.nav.helved:xml:3.1.250")
+    implementation("no.nav.helved:xml:3.1.252")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
