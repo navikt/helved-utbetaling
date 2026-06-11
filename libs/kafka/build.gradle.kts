@@ -2,12 +2,10 @@ plugins {
     kotlin("plugin.serialization")
 }
 
-val libVersion = "3.1.250"
-
 dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":libs:tracing"))
-    implementation("no.nav.helved:xml:$libVersion")
+    implementation("no.nav.helved:xml:3.1.252")
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
     api("org.apache.kafka:kafka-streams:4.3.0")

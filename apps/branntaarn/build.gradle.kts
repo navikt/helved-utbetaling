@@ -13,7 +13,7 @@ dependencies {
     implementation(project(":models"))
     implementation(project(":libs:auth"))
     implementation(project(":libs:utils"))
-    implementation("no.nav.helved:xml:$libVersion")
+    implementation("no.nav.helved:xml:3.1.252")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")

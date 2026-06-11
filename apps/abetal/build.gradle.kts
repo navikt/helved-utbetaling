@@ -8,14 +8,13 @@ application {
 }
 
 val ktorVersion = "3.4.2"
-val libVersion = "3.1.250"
 
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:utils"))
 
-    implementation("no.nav.helved:xml:$libVersion")
+    implementation("no.nav.helved:xml:3.1.252")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
