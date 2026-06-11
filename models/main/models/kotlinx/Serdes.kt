@@ -14,6 +14,7 @@ import java.util.UUID
 val KotlinxJson = Json { 
     ignoreUnknownKeys = true
     encodeDefaults = true
+    allowStructuredMapKeys = true
 }
 
 object UUIDSerializer : KSerializer<UUID> {

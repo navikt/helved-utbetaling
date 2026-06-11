@@ -2,30 +2,22 @@
 
 package utsjekk.iverksetting
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.UseSerializers
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.KeyDeserializer
-import com.fasterxml.jackson.databind.SerializerProvider
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import com.fasterxml.jackson.module.kotlin.readValue
-import libs.jackson.objectMapper
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.json.*
 import libs.utils.appLog
 import models.DocumentedErrors
 import models.badRequest
 import models.kontrakter.*
+import models.kotlinx.KotlinxJson
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.random.Random
-import kotlinx.serialization.Transient
-import kotlinx.serialization.Contextual
 
 @JvmInline
 @Serializable
@@ -170,8 +162,7 @@ data class TilkjentYtelse(
     val utbetalingsoppdrag: Utbetalingsoppdrag? = null,
     val andelerTilkjentYtelse: List<AndelTilkjentYtelse>,
     val sisteAndelIKjede: AndelTilkjentYtelse? = null,
-    @param:JsonSerialize(keyUsing = KjedenøkkelKeySerializer::class)
-    @param:JsonDeserialize(keyUsing = KjedenøkkelKeyDeserializer::class)
+    @Serializable(with = KjedenøkkelMapSerializer::class)
     val sisteAndelPerKjede: Map<Kjedenøkkel, AndelTilkjentYtelse> =
         sisteAndelIKjede?.let {
             mapOf(it.stønadsdata.tilKjedenøkkel() to it)
@@ -189,11 +180,23 @@ data class TilkjentYtelse(
 
         fun from(json: String): TilkjentYtelse {
             appLog.debug("trying to deserialize TilkjentYtelse: $json")
-            return objectMapper.readValue(json)
+            return KotlinxJson.decodeFromString(json)
         }
     }
 
-    fun toJson(): String = objectMapper.writeValueAsString(this)
+    fun toJson(): String = KotlinxJson.encodeToString(this)
+}
+
+object KjedenøkkelMapSerializer : JsonTransformingSerializer<Map<Kjedenøkkel, AndelTilkjentYtelse>>(
+    MapSerializer(Kjedenøkkel.serializer(), AndelTilkjentYtelse.serializer())
+) {
+    override fun transformDeserialize(element: JsonElement): JsonElement =
+        when (element) {
+            is JsonObject -> JsonArray(element.entries.flatMap { (key, value) -> 
+                listOf(Json.parseToJsonElement(key), value)} 
+            )
+            else -> element
+        }
 }
 
 @Serializable
@@ -204,21 +207,16 @@ data class OppdragResultat(
     companion object {
         fun from(json: String): OppdragResultat {
             appLog.debug("trying to deserialize OppdragResultat: $json")
-            return objectMapper.readValue(json)
+            return KotlinxJson.decodeFromString(json)
         }
     }
 
-    fun toJson(): String = objectMapper.writeValueAsString(this)
+    fun toJson(): String = KotlinxJson.encodeToString(this)
 }
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
-@JsonSubTypes(
-    JsonSubTypes.Type(StønadsdataAAP::class, name = "aap"),
-    JsonSubTypes.Type(StønadsdataDagpenger::class, name = "dagpenger"),
-    JsonSubTypes.Type(StønadsdataTiltakspenger::class, name = "tiltakspenger"),
-    JsonSubTypes.Type(StønadsdataTilleggsstønader::class, name = "tilleggsstønader"),
-)
 @Serializable
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+@JsonClassDiscriminator("@type") // jackson backward compatibility
 sealed class Stønadsdata {
     abstract val stønadstype: StønadType
 
@@ -261,6 +259,7 @@ sealed class Stønadsdata {
 }
 
 @Serializable
+@SerialName("dagpenger")
 data class StønadsdataDagpenger(
     override val stønadstype: StønadTypeDagpenger,
     val ferietillegg: Ferietillegg? = null,
@@ -303,6 +302,7 @@ data class StønadsdataDagpenger(
 }
 
 @Serializable
+@SerialName("tiltakspenger")
 data class StønadsdataTiltakspenger(
     override val stønadstype: StønadTypeTiltakspenger,
     val barnetillegg: Boolean = false,
@@ -372,6 +372,7 @@ data class StønadsdataTiltakspenger(
 }
 
 @Serializable
+@SerialName("tilleggsstønader")
 data class StønadsdataTilleggsstønader(
     override val stønadstype: StønadTypeTilleggsstønader,
     val brukersNavKontor: BrukersNavKontor? = null,
@@ -394,6 +395,7 @@ data class StønadsdataTilleggsstønader(
 }
 
 @Serializable
+@SerialName("aap")
 data class StønadsdataAAP(
     override val stønadstype: StønadTypeAAP,
     val fastsattDagsats: UInt? = null,
@@ -479,48 +481,26 @@ data class AndelData(
 
 internal fun List<AndelData>.uten0beløp(): List<AndelData> = this.filter { it.beløp != 0 }
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
-@JsonSubTypes(
-    JsonSubTypes.Type(KjedenøkkelMeldeplikt::class, name = "meldeplikt"),
-    JsonSubTypes.Type(KjedenøkkelStandard::class, name = "standard"),
-)
-
 @Serializable
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+@JsonClassDiscriminator("@type")
 sealed class Kjedenøkkel{
     abstract val klassifiseringskode: String
 }
 
+
 @Serializable
+@SerialName("meldeplikt")
 data class KjedenøkkelMeldeplikt(
     override val klassifiseringskode: String,
     val meldekortId: String,
 ) : Kjedenøkkel()
 
 @Serializable
+@SerialName("standard")
 data class KjedenøkkelStandard(
     override val klassifiseringskode: String,
 ) : Kjedenøkkel()
-
-class KjedenøkkelKeySerializer : JsonSerializer<Kjedenøkkel>() {
-    override fun serialize(
-        value: Kjedenøkkel?,
-        gen: JsonGenerator?,
-        serializers: SerializerProvider?,
-    ) {
-        gen?.let { jGen ->
-            value?.let { kjedenøkkel ->
-                jGen.writeFieldName(objectMapper.writeValueAsString(kjedenøkkel))
-            } ?: jGen.writeNull()
-        }
-    }
-}
-
-class KjedenøkkelKeyDeserializer : KeyDeserializer() {
-    override fun deserializeKey(
-        key: String?,
-        ctx: DeserializationContext?,
-    ): Kjedenøkkel? = key?.let { objectMapper.readValue(key, Kjedenøkkel::class.java) }
-}
 
 @Serializable
 enum class OppdragStatus {

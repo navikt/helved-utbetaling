@@ -2,8 +2,6 @@ package utsjekk.routes
 
 import TestData
 import TestRuntime
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.module.kotlin.readValue
 import httpClient
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -121,7 +119,7 @@ class IverksettingRouteTest {
 
 
     @Test
-    fun `returnerer beskrivende feilmelding når jackson ikke greier å deserialisere request`() = runTest {
+    fun `returnerer beskrivende feilmelding når kotlinx ikke greier å deserialisere request`() = runTest {
         @Language("JSON") val payload = """
                 {
                   "behandlingId": "1",
