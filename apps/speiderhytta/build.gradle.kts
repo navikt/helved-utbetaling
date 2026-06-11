@@ -29,9 +29,6 @@ dependencies {
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
-    // JWT signing for GitHub App auth (RS256)
-    implementation("com.auth0:java-jwt:4.5.0")
-
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
 
