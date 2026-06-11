@@ -2,7 +2,7 @@ package utsjekk.utbetaling
 
 import libs.jdbc.*
 import libs.utils.*
-import libs.jackson.objectMapper
+import models.kotlinx.KotlinxJson
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
@@ -29,7 +29,7 @@ data class UtbetalingDao(
         override val table = "utbetaling"
 
         override fun from(rs: ResultSet) = UtbetalingDao(
-            data = objectMapper.readValue(rs.getString("data"), Utbetaling::class.java),
+            data = KotlinxJson.decodeFromString(rs.getString("data")),
             stønad = rs.getString("stønad").let(Stønadstype::valueOf),
             status = rs.getString("status").let(Status::valueOf),
             created_at = rs.getTimestamp("created_at").toLocalDateTime(),
@@ -99,7 +99,7 @@ data class UtbetalingDao(
                 stmt.setString(6, data.stønad.name)
                 stmt.setTimestamp(7, Timestamp.valueOf(created_at))
                 stmt.setTimestamp(8, Timestamp.valueOf(updated_at))
-                stmt.setString(9, objectMapper.writeValueAsString(data))
+                stmt.setString(9, KotlinxJson.encodeToString(data))
                 stmt.setString(10, status.name)
             }
         }.map { Unit }

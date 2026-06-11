@@ -1,7 +1,6 @@
 package utsjekk.iverksetting
 
-import com.fasterxml.jackson.module.kotlin.readValue
-import libs.jackson.objectMapper
+import models.kotlinx.KotlinxJson
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
@@ -11,7 +10,7 @@ class IverksettingDeserialiseringTest {
     @Test
     fun `deserialiser JSON til Iverksett, forvent ingen unntak`() {
         val json = readResource("json/IverksettEksempel.json")
-        val iverksetting = objectMapper.readValue<Iverksetting>(json)
+        val iverksetting = KotlinxJson.decodeFromString<Iverksetting>(json)
         assertNotNull(iverksetting)
     }
 

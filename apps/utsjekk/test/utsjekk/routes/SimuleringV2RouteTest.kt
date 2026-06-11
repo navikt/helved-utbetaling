@@ -14,7 +14,7 @@ import libs.jdbc.concurrency.transaction
 import models.kontrakter.Fagsystem
 import models.kontrakter.StønadTypeDagpenger
 import models.kontrakter.StønadTypeTiltakspenger
-import libs.jackson.objectMapper
+import models.kotlinx.KotlinxJson
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -52,7 +52,7 @@ class SimuleringRouteTest {
                 httpClient.post("/api/simulering/v2") {
                     contentType(ContentType.Application.Json)
                     bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILLEGGSSTØNADER))
-                    setBody(objectMapper.writeValueAsString(jsonUtenBehandlingId))
+                    setBody(KotlinxJson.encodeToString(jsonUtenBehandlingId))
                 }
 
             assertEquals(HttpStatusCode.BadRequest, res.status)

@@ -1,8 +1,7 @@
 package utsjekk.utbetaling.simulering
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import libs.utils.Resource
-import libs.jackson.objectMapper
+import models.kotlinx.KotlinxJson
 import org.junit.jupiter.api.Test
 import utsjekk.simulering.SimuleringApi
 import utsjekk.simulering.client
@@ -13,7 +12,7 @@ class SimuleringMapperTest {
     @Test
     fun `mapper til simulering`() {
         val json = Resource.read("/json/simulering_forskjellige_klassekoder.json")
-        val response = objectMapper.readValue<client.SimuleringResponse>(json)
+        val response = KotlinxJson.decodeFromString<client.SimuleringResponse>(json)
         val mapped = SimuleringApi.from(response)
 
         assertEquals(8, mapped.perioder.size)
@@ -22,7 +21,7 @@ class SimuleringMapperTest {
     @Test
     fun `beregner nytt beløp`() {
         val json = Resource.read("/json/simulering_forskjellige_klassekoder.json")
-        val response = objectMapper.readValue<client.SimuleringResponse>(json)
+        val response = KotlinxJson.decodeFromString<client.SimuleringResponse>(json)
         val mapped = SimuleringApi.from(response)
 
         assertEquals(2190, mapped.perioder[0].utbetalinger[0].nyttBeløp)
@@ -39,7 +38,7 @@ class SimuleringMapperTest {
     @Test
     fun `beregner tidligere utbetalt`() {
         val json = Resource.read("/json/simulering_forskjellige_klassekoder.json")
-        val response = objectMapper.readValue<client.SimuleringResponse>(json)
+        val response = KotlinxJson.decodeFromString<client.SimuleringResponse>(json)
         val mapped = SimuleringApi.from(response)
 
         assertEquals(  0, mapped.perioder[0].utbetalinger[0].tidligereUtbetalt)
