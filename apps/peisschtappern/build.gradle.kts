@@ -8,7 +8,6 @@ application {
 }
 
 val ktorVersion = "3.4.2"
-val libVersion = "3.1.250"
 
 dependencies {
     implementation(project(":libs:auth"))
@@ -17,7 +16,7 @@ dependencies {
     implementation(project(":libs:tracing"))
     implementation(project(":libs:utils"))
     implementation(project(":models"))
-    implementation("no.nav.helved:xml:$libVersion")
+    implementation("no.nav.helved:xml:3.1.252")
 
     implementation("org.apache.kafka:kafka-clients:4.3.0")
 
