@@ -4,6 +4,7 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlinx.serialization.json.Json
 import libs.http.HttpClientFactory
 import libs.utils.Resource
 import libs.utils.logger
@@ -25,7 +26,7 @@ data class SoapConfig(
 class SoapClient(
     private val config: SoapConfig,
     private val sts: Sts,
-    private val http: HttpClient = HttpClientFactory.new(),
+    private val http: HttpClient = sts.http,
     private val proxyAuth: ProxyAuthProvider? = null,
 ) : Soap {
     override suspend fun call(

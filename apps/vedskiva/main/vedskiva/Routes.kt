@@ -1,3 +1,5 @@
+@file:UseSerializers(models.kotlinx.LocalDateSerializer::class, models.kotlinx.LocalDateTimeSerializer::class, AvstemmingsdataSerializer::class)
+
 package vedskiva
 
 import io.ktor.http.*
@@ -6,6 +8,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
@@ -15,15 +19,22 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
+@Serializable
 data class AvstemmingRequest(
     val today: LocalDate,
     val fom: LocalDateTime,
     val tom: LocalDateTime,
 )
+
+@Serializable
+data class DateBody(
+    val date: LocalDate,
+)
+
 fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
     route("/api") {
         post("/next_range") {
-            val today = call.receive<LocalDate>()
+            val today = call.receive<DateBody>().date
             withContext(jdbcCtx + Dispatchers.IO) {
                 val last: Scheduled? = transaction { Scheduled.lastOrNull() }
                 val avstemFom = (last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()).atStartOfDay()
@@ -129,5 +140,4 @@ fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
         }
     }
 }
-
 

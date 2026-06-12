@@ -16,6 +16,7 @@ import java.time.LocalDateTime
 import java.util.*
 
 interface Sts {
+    val http: HttpClient
     suspend fun samlToken(): SamlToken
 }
 
@@ -27,11 +28,10 @@ data class StsConfig(
 
 typealias ProxyAuthProvider = suspend () -> String
 
-private val simpleHttpClient: HttpClient = HttpClientFactory.new(LogLevel.ALL, null, null, null)
-
 class StsClient(
     private val config: StsConfig,
-    private val http: HttpClient = simpleHttpClient,
+    private val json: Json,
+    override val http: HttpClient = HttpClientFactory.new(json, LogLevel.ALL),
     private val cache: TokenCache<SamlToken> = TokenCache(),
     private val proxyAuth: ProxyAuthProvider? = null,
 ) : Sts {

@@ -6,6 +6,7 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.modules.SerializersModule
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -15,6 +16,12 @@ val KotlinxJson = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
     allowStructuredMapKeys = true
+    serializersModule = SerializersModule { 
+        contextual(LocalDate::class, LocalDateSerializer)
+        contextual(LocalDateTime::class, LocalDateTimeSerializer)
+        contextual(UUID::class, UUIDSerializer)
+        contextual(Instant::class, InstantSerializer)
+    }
 }
 
 object UUIDSerializer : KSerializer<UUID> {

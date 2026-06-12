@@ -23,8 +23,6 @@ dependencies {
     implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
-    implementation("net.logstash.logback:logstash-logback-encoder:9.0")
-
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")

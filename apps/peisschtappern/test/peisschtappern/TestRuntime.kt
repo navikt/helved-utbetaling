@@ -57,6 +57,7 @@ object TestRuntime {
     val ktor: KtorRuntime<Config> by lazy {
         KtorRuntime<Config>(
             appName = "peisschtappern",
+            jsonConfig = models.kotlinx.KotlinxJson,
             module = {
                 peisschtappern(config, kafkaMock)
             },
