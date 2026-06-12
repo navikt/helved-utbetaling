@@ -4,7 +4,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
@@ -20,8 +19,9 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import libs.auth.jwt
+import libs.auth.JwtPrincipal
 import libs.auth.TokenProvider
-import libs.auth.configure
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.jdbc.context
@@ -84,9 +84,7 @@ fun Application.utsjekk(
         json(models.kotlinx.KotlinxJson)
     }
     install(Authentication) {
-        jwt(TokenProvider.AZURE) {
-            configure(config.azure)
-        }
+        jwt(TokenProvider.AZURE, config.azure)
     }
     install(StatusPages) {
         exception<Throwable> { call, cause ->
@@ -174,15 +172,16 @@ ${call.bodyAsText()}""".trimIndent()
 }
 
 fun ApplicationCall.client(): Client =
-    principal<JWTPrincipal>()
-        ?.getClaim("azp_name", String::class)
+    principal<JwtPrincipal>()
+        ?.claims
+        ?.claim("azp_name")
         ?.split(":")
         ?.last()
         ?.let(::Client)
         ?: forbidden("missing JWT claim")
 
 fun ApplicationCall.hasClaim(claim: String): Boolean =
-    principal<JWTPrincipal>()?.getClaim(claim, String::class) != null
+    principal<JwtPrincipal>()?.claims?.claim(claim) != null
 
 sealed class TokenType(open val jwt: String) {
     data class Obo(override val jwt: String) : TokenType(jwt)
