@@ -8,7 +8,6 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.http.*
 import io.ktor.server.routing.*
-import io.ktor.server.auth.jwt.*
 import kotlinx.coroutines.runBlocking
 import io.ktor.server.auth.*
 import kotlinx.serialization.json.Json
@@ -26,9 +25,7 @@ fun Application.module(config: AzureConfig) {
     }
 
     install(Authentication) {
-        jwt(TokenProvider.AZURE) {
-            configure(config)
-        }
+        jwt(TokenProvider.AZURE, config)
     }
 
     routing {

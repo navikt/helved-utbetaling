@@ -9,10 +9,8 @@ dependencies {
     api(project(":libs:http"))
     api(project(":libs:utils"))
 
-    api("io.ktor:ktor-client-auth:$ktorVersion")
-    api("io.ktor:ktor-server-auth:$ktorVersion")
-    api("io.ktor:ktor-server-auth-jwt:$ktorVersion")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+    api("io.ktor:ktor-server-auth:$ktorVersion")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:auth-test"))

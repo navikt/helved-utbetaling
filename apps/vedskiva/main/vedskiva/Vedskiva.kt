@@ -10,7 +10,6 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
@@ -24,8 +23,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
+import libs.auth.jwt
 import libs.auth.TokenProvider
-import libs.auth.configure
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.jdbc.context
@@ -71,9 +70,7 @@ fun Application.vedskiva(
     }
 
     install(Authentication) {
-        jwt(TokenProvider.AZURE) {
-            configure(config.azure)
-        }
+        jwt(TokenProvider.AZURE, config.azure)
     }
 
     val jdbcCtx = Jdbc.initialize(config.jdbc).context()

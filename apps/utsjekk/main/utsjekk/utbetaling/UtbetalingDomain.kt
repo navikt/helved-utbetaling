@@ -1,7 +1,6 @@
 @file:UseSerializers(models.kotlinx.LocalDateSerializer::class, models.kotlinx.LocalDateTimeSerializer::class, models.kotlinx.UUIDSerializer::class)
 package utsjekk.utbetaling
 
-import com.fasterxml.jackson.annotation.JsonCreator
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
@@ -247,7 +246,6 @@ sealed interface Stønadstype {
     val klassekode: String
 
     companion object {
-        @JsonCreator
         @JvmStatic
         fun valueOf(str: String): Stønadstype =
             runCatching { StønadTypeDagpenger.valueOf(str) }
