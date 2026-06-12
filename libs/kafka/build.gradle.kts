@@ -12,7 +12,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.22")
-    implementation("net.logstash.logback:logstash-logback-encoder:9.0")
 
     testImplementation(kotlin("test"))
     testImplementation("org.apache.kafka:kafka-streams-test-utils:4.3.0")

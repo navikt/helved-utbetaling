@@ -27,7 +27,7 @@ import java.time.Instant
  */
 class GithubClient(
     private val config: GithubConfig,
-    private val client: HttpClient = HttpClientFactory.new(LogLevel.INFO),
+    private val client: HttpClient = HttpClientFactory.new(models.kotlinx.KotlinxJson, LogLevel.INFO),
     private val app: GithubApp = GithubApp(config, client),
 ) {
     /**

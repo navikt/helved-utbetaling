@@ -1,7 +1,13 @@
 package vedskiva
 
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import io.ktor.http.*
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -14,9 +20,10 @@ import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import libs.jackson.registerHelvedModules
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
 import libs.auth.TokenProvider
 import libs.auth.configure
 import libs.jdbc.Jdbc
@@ -27,6 +34,7 @@ import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.utils.appLog
 import libs.utils.secureLog
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -59,9 +67,7 @@ fun Application.vedskiva(
     }
 
     install(ContentNegotiation) {
-        jackson {
-            registerHelvedModules()
-        }
+        json(VedskivaKotlinx)
     }
 
     install(Authentication) {
@@ -93,5 +99,19 @@ fun Application.vedskiva(
             get("/metric") { call.respond(metrics.scrape()) }
             get("/health") { call.respond(HttpStatusCode.OK) }
         }
+    }
+}
+
+object AvstemmingsdataSerializer : KSerializer<Avstemmingsdata> {
+    private val xmlMapper = libs.xml.XMLMapper<Avstemmingsdata>()
+    override val descriptor = PrimitiveSerialDescriptor("Avstemmingsdata", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: Avstemmingsdata) = encoder.encodeString(xmlMapper.writeValueAsString(value))
+    override fun deserialize(decoder: Decoder): Avstemmingsdata = xmlMapper.readValue(decoder.decodeString().toByteArray())!!
+}
+
+val VedskivaKotlinx = Json(models.kotlinx.KotlinxJson) {
+    serializersModule = SerializersModule {
+        include(models.kotlinx.KotlinxJson.serializersModule)
+        contextual(Avstemmingsdata::class, AvstemmingsdataSerializer)
     }
 }

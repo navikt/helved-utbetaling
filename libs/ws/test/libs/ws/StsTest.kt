@@ -14,6 +14,7 @@ import kotlin.test.assertNotEquals
 class StsTest {
     companion object {
         private val proxy = ProxyFake()
+        private val json = models.kotlinx.KotlinxJson
 
         @AfterAll
         @JvmStatic
@@ -25,7 +26,7 @@ class StsTest {
 
     @Test
     fun `token is base64 decoded`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
 
         val encoded = "very secure".let { Base64.getEncoder().encodeToString(it.toByteArray()) }
         proxy.sts.response = GandalfToken(access_token = encoded)
@@ -41,7 +42,7 @@ class StsTest {
 
     @Test
     fun `expiry is 3600s`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
 
         proxy.sts.response = GandalfToken(expires_in = 3600)
 
@@ -55,7 +56,7 @@ class StsTest {
 
     @Test
     fun `issued token type is saml2`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
 
         proxy.sts.response = GandalfToken(issued_token_type = "urn:ietf:params:oauth:token-type:saml2")
 
@@ -68,7 +69,7 @@ class StsTest {
 
     @Test
     fun `throws StsException when wrong issued token type`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
 
         proxy.sts.response = GandalfToken(issued_token_type = "funky:type")
         assertThrows<StsException> {
@@ -80,7 +81,7 @@ class StsTest {
 
     @Test
     fun `can cache tokens`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
 
         val encoded = "other".let { Base64.getEncoder().encodeToString(it.toByteArray()) }
 
@@ -94,7 +95,7 @@ class StsTest {
 
     @Test
     fun `can invalidate expired tokens`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
 
         proxy.sts.response = GandalfToken(expires_in = 1)
 
@@ -109,7 +110,7 @@ class StsTest {
 
     @Test
     fun `can use proxy-auth`() {
-        val sts = StsClient(proxy.config.sts, proxyAuth = suspend {
+        val sts = StsClient(proxy.config.sts, json, proxyAuth = suspend {
             "token for proxy"
         })
 
