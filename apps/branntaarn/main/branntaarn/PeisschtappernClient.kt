@@ -11,6 +11,7 @@ import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import kotlinx.coroutines.runBlocking
 import io.ktor.http.contentType
+import kotlinx.serialization.json.Json
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
@@ -20,8 +21,9 @@ import libs.utils.appLog
 
 class PeisschtappernClient(
     private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
-    private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
+    private val json: Json = models.kotlinx.KotlinxJson,
+    private val client: HttpClient = HttpClientFactory.new(json, LogLevel.ALL),
+    private val azure: AzureTokenProvider = AzureTokenProvider(json, config.azure)
 ) {
 
     fun branner(): List<Brann> {

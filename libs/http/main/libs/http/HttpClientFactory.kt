@@ -14,14 +14,11 @@ val httpLog = logger("http")
 
 object HttpClientFactory {
     fun new(
+        json: Json,
         logLevel: LogLevel = LogLevel.INFO,
         retries: Int? = 3,
         requestTimeoutMs: Long? = 60_000,
         connectionTimeoutMs: Long? = 30_000,
-        json: Json = Json {
-            ignoreUnknownKeys = true 
-            encodeDefaults = true
-        },
     ) =
         HttpClient(CIO) {
             install(Logging) {

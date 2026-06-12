@@ -77,8 +77,7 @@ fun Application.speiderhytta(config: Config = Config()) {
     }
 
     val metrics = Metrics(meters)
-    val httpClient = HttpClientFactory.new()
-    val githubApp = GithubApp(config.github, httpClient)
+    val githubApp = GithubApp(config.github, HttpClientFactory.new(models.kotlinx.KotlinxJson))
     val github = GithubClient(config.github, app = githubApp)
     val deployService = DeployService(github.asDeployFetcher(), metrics, codeRepos = config.github.codeRepos, jdbcCtx = jdbcCtx)
     val incidentService = IncidentService(github.asFetcher(), metrics, jdbcCtx)

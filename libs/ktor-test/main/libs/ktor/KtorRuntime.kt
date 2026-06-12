@@ -16,6 +16,7 @@ private val testLog = logger("test")
 
 open class KtorRuntime<Config: Any>(
     val appName: String,
+    val jsonConfig: Json,
     val module: Application.() -> Unit,
     val onClose: () -> Unit = {}, 
 ) {
@@ -37,10 +38,7 @@ open class KtorRuntime<Config: Any>(
     val httpClient by lazy {
         HttpClient(CIO) {
             install(ContentNegotiation) {
-                json(Json { 
-                    ignoreUnknownKeys = true 
-                    encodeDefaults = true
-                })
+                json(jsonConfig)
             }
             defaultRequest {
                 url("http://localhost:${ktor.engine.port}")

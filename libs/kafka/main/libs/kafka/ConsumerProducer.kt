@@ -13,7 +13,6 @@ import java.util.*
 import libs.utils.*
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
-import net.logstash.logback.argument.StructuredArguments.kv
 import org.apache.kafka.common.utils.Utils
 
 fun partition(key: String, numberOfPartitions: Int = 3): Int {
@@ -78,7 +77,12 @@ open class KafkaProducer<K: Any, V>(
         producer.send(record) { md, err ->
             when (err) {
                 null -> {
-                    kafkaLog.trace("produce ${topic.name}", kv("key", record.key()), kv("topic", topic.name), kv("partition", md.partition()), kv("offset", md.offset())) 
+                    kafkaLog.atTrace()
+                        .addKeyValue("key", record.key())
+                        .addKeyValue("topic", topic.name)
+                        .addKeyValue("partition", md.partition())
+                        .addKeyValue("offset", md.offset())
+                        .log("produce ${topic.name}")
                     res = SendResult(true, md.offset(), md.partition(), md.topic())
                 }
                 else -> {

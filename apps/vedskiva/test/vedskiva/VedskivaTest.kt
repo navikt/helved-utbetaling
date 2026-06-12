@@ -167,7 +167,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -209,7 +209,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         val res = TestRuntime.ktor.httpClient.post ("/api/avstem/dryrun") {
@@ -257,7 +257,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.of(2025, 5, 6))
+            setBody(DateBody(LocalDate.of(2025, 5, 6)))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -313,7 +313,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -355,7 +355,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -397,7 +397,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -439,7 +439,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -492,7 +492,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -520,7 +520,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -571,7 +571,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -613,7 +613,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -708,7 +708,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -803,7 +803,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -854,7 +854,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -897,7 +897,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -925,7 +925,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -952,7 +952,7 @@ class VedskivaTest {
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         TestRuntime.ktor.httpClient.post ("/api/avstem") {
@@ -996,7 +996,7 @@ class VedskivaTest {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
-            setBody(LocalDate.now())
+            setBody(DateBody(LocalDate.now()))
         }.body<AvstemmingRequest>()
 
         val res = TestRuntime.ktor.httpClient.post ("/api/avstem") {

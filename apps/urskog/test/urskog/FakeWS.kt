@@ -1,5 +1,6 @@
 package urskog
 
+import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import io.ktor.http.*
 import io.ktor.serialization.*
@@ -17,6 +18,7 @@ import io.ktor.utils.io.*
 import libs.auth.AzureConfig
 import libs.auth.AzureToken
 import libs.auth.TEST_JWKS
+import libs.http.HttpClientFactory
 import libs.ktor.port
 import libs.utils.Resource
 import libs.ws.*
@@ -28,6 +30,8 @@ import java.util.*
 class FakeWS: Sts, Soap {
     var respondWith: String = Resource.read("/simuler-ok.xml")
     val received = mutableListOf<String>()
+
+    override val http: HttpClient = HttpClientFactory.new(models.kotlinx.KotlinxJson)
 
     override suspend fun samlToken(): SamlToken {
         return SamlToken("token", LocalDateTime.now())

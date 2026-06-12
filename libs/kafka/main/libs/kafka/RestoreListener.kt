@@ -1,6 +1,5 @@
 package libs.kafka
 
-import net.logstash.logback.argument.StructuredArguments
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.streams.processor.StateRestoreListener
 import org.slf4j.LoggerFactory
@@ -40,12 +39,11 @@ internal class RestoreListener : StateRestoreListener {
         val duration = (System.currentTimeMillis() - startMs).toDuration(DurationUnit.MILLISECONDS)
 
         if (totalRestored > 0) {
-            log.info(
-                "recover $totalRestored records on ${partition.topic()}:${partition.partition()} ($duration)",
-                StructuredArguments.kv("partition", partition.partition()),
-                StructuredArguments.kv("topic", partition.topic()),
-                StructuredArguments.kv("store", storeName),
-            )
+            log.atInfo()
+                .addKeyValue("partition", partition.partition())
+                .addKeyValue("topic", partition.topic())
+                .addKeyValue("store", storeName)
+                .log("recover $totalRestored records on ${partition.topic()}:${partition.partition()} ($duration)")
         }
     }
 
