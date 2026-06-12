@@ -1,12 +1,10 @@
 package peisschtappern
 
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.*
@@ -17,8 +15,9 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import libs.auth.jwt
+import libs.auth.JwtPrincipal
 import libs.auth.TokenProvider
-import libs.auth.configure
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.jdbc.Jdbc
@@ -61,9 +60,7 @@ fun Application.peisschtappern(
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(Authentication) {
-        jwt(TokenProvider.AZURE) {
-            configure(config.azure)
-        }
+        jwt(TokenProvider.AZURE, config.azure)
     }
 
     install(ContentNegotiation) {
@@ -136,15 +133,11 @@ data class Audit(
 }
 
 fun ApplicationCall.claim(claim: String): String? { 
-    val principal = principal<JWTPrincipal>() ?: return null
-    val claimValue = principal.payload.getClaim(claim)
-    if (claimValue.isNull) {
-        val claims = principal.payload.claims.keys.joinToString(", ")
+    val principal = principal<JwtPrincipal>() ?: return null
+    val claimValue = principal.claims.claim(claim)
+    if (claimValue == null) {
+        val claims = principal.claims.map.keys.joinToString(", ")
         secureLog.info("could not find claim '$claim'. Available: [$claims]")
     }
-    return when {
-        claimValue.isNull -> null
-        claimValue.asString() != null -> claimValue.toString()
-        else -> claimValue.toString().replace("\"", "")
-    }
+    return claimValue // TODO: må vi sjekke om claim er wrappet i quotes og fjerne quotsa?
 }
