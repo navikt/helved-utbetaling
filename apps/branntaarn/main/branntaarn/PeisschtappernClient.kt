@@ -11,6 +11,7 @@ import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import kotlinx.coroutines.runBlocking
 import io.ktor.http.contentType
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.time.Duration
 import java.time.Instant
@@ -71,6 +72,7 @@ class PeisschtappernClient(
     }
 }
 
+@Serializable
 data class Brann(
     val key: String,
     val timeout: LocalDateTime,
@@ -78,6 +80,7 @@ data class Brann(
     val fagsystem: String,
 )
 
+@Serializable
 data class PendingMismatch(
     val uid: String,
     val sakId: String?,

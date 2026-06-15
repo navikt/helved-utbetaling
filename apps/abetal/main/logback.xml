@@ -9,7 +9,7 @@
         <appender-ref ref="json" />
     </appender>
 
-    <appender name="secureLog" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+    <appender name="secureLog" class="libs.utils.LogTcpAppender">
         <destination>team-logs.nais-system:5170</destination>
         <encoder class="ch.qos.logback.classic.encoder.JsonEncoder">
             <withKeyValuePair><key>google_cloud_project</key><value>${GOOGLE_CLOUD_PROJECT}</value></withKeyValuePair>
@@ -19,7 +19,7 @@
         </encoder>
     </appender>
 
-    <appender name="auditLog" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+    <appender name="auditLog" class="libs.utils.LogTcpAppender">
         <destination>team-logs.nais-system:5170</destination>
         <encoder class="ch.qos.logback.classic.encoder.JsonEncoder">
             <withKeyValuePair><key>google_cloud_project</key><value>${GOOGLE_CLOUD_PROJECT}</value></withKeyValuePair>
