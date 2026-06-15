@@ -1,3 +1,5 @@
+@file:UseSerializers(models.kotlinx.LocalDateTimeSerializer::class)
+
 package branntaarn
 
 import io.ktor.client.HttpClient
@@ -12,6 +14,7 @@ import io.ktor.http.ContentType
 import kotlinx.coroutines.runBlocking
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
 import java.time.Duration
 import java.time.Instant
