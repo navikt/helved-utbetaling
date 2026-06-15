@@ -63,7 +63,11 @@ object ByteArraySerde: StreamSerde<ByteArray> {
 }
 
 object JsonSerde {
-    val json = Json { ignoreUnknownKeys = true }
+    val json = Json { 
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        allowStructuredMapKeys = true
+    }
 
     inline fun <reified V : Any> kotlinx(): StreamSerde<V> = object : StreamSerde<V> {
         override fun serializer(): Serializer<V> = KotlinxSerializer(serializer<V>())
