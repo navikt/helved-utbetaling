@@ -1,6 +1,9 @@
 package abetal.dp
 
 import abetal.*
+import libs.kafka.KotlinxSerializer
+import kotlinx.serialization.serializer
+import libs.kafka.KotlinxDeserializer
 import libs.kafka.JsonSerde
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -15,6 +18,16 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 internal class DpTest : ConsumerTestBase() {
+
+    @Test
+    fun `can serialize and deserialize`() {
+        val original = Dp.utbetaling("123", "123") {
+            meldekort("blablabla", 1.jun, 1.jun, 0u, 0u, Utbetalingstype.DagpengerFerietillegg)
+        }
+        val bytes = KotlinxSerializer(serializer<DpUtbetaling>()).serialize("topic", original)
+        val decoded = KotlinxDeserializer(serializer<DpUtbetaling>()).deserialize("topic", bytes)
+        assertEquals(original, decoded)
+    }
 
     @Test
     fun `simulation - dry run dp utbetaling`() {

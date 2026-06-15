@@ -1,6 +1,9 @@
 package abetal.aap
 
 import abetal.*
+import libs.kafka.KotlinxSerializer
+import kotlinx.serialization.serializer
+import libs.kafka.KotlinxDeserializer
 import models.*
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
@@ -12,6 +15,16 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class AapTest : ConsumerTestBase() {
+
+    @Test
+    fun `can serialize and deserialize`() {
+        val original = Aap.utbetaling("123", "123") {
+            meldekort(UUID.randomUUID(), 1.jun, 1.jun, 100u, 100u)
+        }
+        val bytes = KotlinxSerializer(serializer<AapUtbetaling>()).serialize("topic", original)
+        val decoded = KotlinxDeserializer(serializer<AapUtbetaling>()).deserialize("topic", bytes)
+        assertEquals(original, decoded)
+    }
 
     @Test
     fun `create - two meldekort create two utbetalinger with single oppdrag`() {

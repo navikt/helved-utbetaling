@@ -1,6 +1,9 @@
 package abetal.tp
 
 import abetal.*
+import libs.kafka.KotlinxSerializer
+import kotlinx.serialization.serializer
+import libs.kafka.KotlinxDeserializer
 import libs.kafka.JsonSerde
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -12,6 +15,16 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class TpTest : ConsumerTestBase() {
+
+    @Test
+    fun `can serialize and deserialize`() {
+        val original = Tp.utbetaling("123", "123") {
+            Tp.periode("123", 7.jun21, 18.jun21, 553u, stønad = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, barnetillegg = true)
+        }
+        val bytes = KotlinxSerializer(serializer<TpUtbetaling>()).serialize("topic", original)
+        val decoded = KotlinxDeserializer(serializer<TpUtbetaling>()).deserialize("topic", bytes)
+        assertEquals(original, decoded)
+    }
 
     @Test
     fun `simulation - dry run tp utbetaling`() {
