@@ -32,16 +32,16 @@ object Serde {
 fun string() = Serdes(StringSerde, StringSerde)
 fun bytes() = Serdes(StringSerde, ByteArraySerde)
 inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.kotlinx<V>())
-inline fun <reified V: Any> jsonList() = Serdes(StringSerde, JsonSerde.jacksonList<V>())
+inline fun <reified V: Any> jsonList() = Serdes(StringSerde, JsonSerde.list<V>())
 inline fun <reified V: Any> jsonListStreamsPair() = Serdes(StringSerde, JsonSerde.listStreamsPair<V, V?>())
 inline fun <reified V: Any> jsonStreamsPair() = Serdes(StringSerde, JsonSerde.streamsPair<V, V?>())
 inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.xml<V>())
 inline fun <reified V: Any> jaxb() = Serdes(StringSerde, XmlSerde.jaxb<V>())
 inline fun <reified K: Any> jsonString() = Serdes(JsonSerde.kotlinx<K>(), StringSerde)
 inline fun <reified K : Any, reified V : Any> jsonjson() = Serdes(JsonSerde.kotlinx<K>(), JsonSerde.kotlinx<V>())
-inline fun <reified K : Any, reified V : Any> jsonjsonList() = Serdes(JsonSerde.kotlinx<K>(), JsonSerde.jacksonList<V>())
-inline fun <reified K : Any, reified V : Any> jsonjsonSet() = Serdes(JsonSerde.kotlinx<K>(), JsonSerde.jacksonSet<V>())
-inline fun <reified V : Any> windowedjsonList() = Serdes(WindowedStringSerde, JsonSerde.jacksonList<V>())
+inline fun <reified K : Any, reified V : Any> jsonjsonList() = Serdes(JsonSerde.kotlinx<K>(), JsonSerde.list<V>())
+inline fun <reified K : Any, reified V : Any> jsonjsonSet() = Serdes(JsonSerde.kotlinx<K>(), JsonSerde.set<V>())
+inline fun <reified V : Any> windowedjsonList() = Serdes(WindowedStringSerde, JsonSerde.list<V>())
 
 
 object WindowedStringSerde: StreamSerde<Windowed<String>> {
@@ -69,11 +69,11 @@ object JsonSerde {
         override fun serializer(): Serializer<V> = KotlinxSerializer(serializer<V>())
         override fun deserializer(): Deserializer<V> = KotlinxDeserializer(serializer<V>())
     }
-    inline fun <reified V: Any> jacksonList(): StreamSerde<List<V>> = object: StreamSerde<List<V>> {
+    inline fun <reified V: Any> list(): StreamSerde<List<V>> = object: StreamSerde<List<V>> {
         override fun serializer(): Serializer<List<V>> = KotlinxSerializer(ListSerializer(serializer<V>()))
         override fun deserializer(): Deserializer<List<V>> = KotlinxDeserializer(ListSerializer(serializer<V>()))
     }
-    inline fun <reified V: Any> jacksonSet(): StreamSerde<Set<V>> = object: StreamSerde<Set<V>> {
+    inline fun <reified V: Any> set(): StreamSerde<Set<V>> = object: StreamSerde<Set<V>> {
         override fun serializer(): Serializer<Set<V>> = KotlinxSerializer(SetSerializer(serializer<V>()))
         override fun deserializer(): Deserializer<Set<V>> = KotlinxDeserializer(SetSerializer(serializer<V>()))
     }
