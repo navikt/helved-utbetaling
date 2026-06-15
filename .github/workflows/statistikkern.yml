@@ -2,6 +2,12 @@ name: statistikkern
 
 on:
   workflow_dispatch:
+    inputs:
+      env:
+        type: choice
+        description: Deploy to env
+        default: all
+        options: [ all, dev ]
   push:
     branches: [ main ]
     paths:
@@ -107,7 +113,9 @@ jobs:
           key: deps-attested-${{ github.workflow }}-${{ steps.deps_hash.outputs.sha }}
 
   deploy-prod:
-    if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: |
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.env == 'all')
+          && (github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [test, package]
