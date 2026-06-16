@@ -126,7 +126,7 @@ data class Daos(
             return query(sql) { stmt ->
                 stmt.setInt(1, partition)
                 stmt.setLong(2, offset)
-                stmt.setLong(2, systemTime)
+                stmt.setLong(3, systemTime)
             }.singleOrNull()
         }
 
