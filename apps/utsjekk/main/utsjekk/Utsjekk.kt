@@ -112,9 +112,9 @@ fun Application.utsjekk(
     install(CallLog) {
         exclude { call -> call.request.path().startsWith("/actuator") }
         log { call ->
-            appLog.info("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}")
+            appLog.debug("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}")
             if (call.response.status()?.isSuccess() == false) {
-                secureLog.info(
+                secureLog.debug(
                     """${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}
 ${call.bodyAsText()}""".trimIndent()
                 )
