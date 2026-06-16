@@ -168,6 +168,18 @@ fun TsUtbetaling.fagsystem(): Fagsystem {
             StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_OPPFØLGING -> Fagsystem.TILLSTDR
             StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_NAV -> Fagsystem.TILLSTDR
             StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_OPPLÆRING -> Fagsystem.TILLSTDR
+
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_ARBEIDSFORBEREDENDE -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_ARBEIDSTRENING -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_AVKLARING -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_ENKELTPLASS_AMO -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_ENKELTPLASS_FAG_YRKE_HOYERE_UTD -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_GRUPPE_AMO -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_GRUPPE_FAG_YRKE_HOYERE_UTD -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_HØYERE_UTDANNING -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_JOBBKLUBB -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_OPPFØLGING -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_UTVIDET_OPPFØLGING_I_OPPLÆRING -> Fagsystem.TILLSTRS
         }
     }
 }
