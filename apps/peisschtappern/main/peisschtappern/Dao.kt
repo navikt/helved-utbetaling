@@ -117,6 +117,19 @@ data class Daos(
             }.singleOrNull()
         }
 
+        suspend fun findSingle(partition: Int, offset: Long, table: Table, systemTime: Long): Daos? {
+            val sql = """
+                SELECT * FROM ${table.name} 
+                WHERE record_partition = ? AND record_offset = ? AND system_time_ms = ? 
+            """.trimIndent()
+
+            return query(sql) { stmt ->
+                stmt.setInt(1, partition)
+                stmt.setLong(2, offset)
+                stmt.setLong(2, systemTime)
+            }.singleOrNull()
+        }
+
         suspend fun pagedMessages(
             channels: List<Channel>,
             page: Int,
