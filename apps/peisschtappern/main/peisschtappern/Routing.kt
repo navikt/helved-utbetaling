@@ -101,6 +101,33 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             call.respond(HttpStatusCode.NotFound)
         }
 
+        get("/messages/{topic}/{partition}/{offset}/{system_time}") {
+            val channel = checkNotNull(Channel.findOrNull(call.parameters["topic"]!!)) {
+                "Unknown topic ${call.parameters["topic"]}"
+            }
+            val partition = checkNotNull(call.parameters["partition"]?.toIntOrNull()) {
+                "Missing or invalid partition parameter"
+            }
+            val offset = checkNotNull(call.parameters["offset"]?.toLongOrNull()) {
+                "Missing or invalid offset parameter"
+            }
+            val systemTime = checkNotNull(call.parameters["system_time"]?.toLongOrNull()) {
+                "Missing or invalid system_time parameter"
+            }
+
+            val dao = withContext(jdbcCtx + Dispatchers.IO) {
+                transaction {
+                    Daos.findSingle(partition, offset, channel.table, systemTime)
+                }
+            }
+
+            if (dao != null) {
+                call.respond(dao)
+            }
+
+            call.respond(HttpStatusCode.NotFound)
+        }
+
         get("/saker/{sakId}/{fagsystem}") {
             val sakId = call.parameters["sakId"]!!
             val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { kode ->
