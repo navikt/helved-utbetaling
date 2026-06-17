@@ -37,7 +37,11 @@ class VedskivaClient(
             accept(ContentType.Application.Json)
             setBody(DateBody(LocalDate.now()))
         }
-        require(next.status == HttpStatusCode.OK)
+        if (next.status != HttpStatusCode.OK) {
+            appLog.error("vedskiva /api/next_range responded ${next.status}")
+            secureLog.error("vedskiva /api/next_range responded ${next.status}: ${next.bodyAsText()}")
+            error("vedskiva /api/next_range responded ${next.status}")
+        }
         return next.body<AvstemmingRequest>()
     }
 
