@@ -1,4 +1,78 @@
 name: deploy-all-dev
 
-:
+on:
+  workflow_dispatch:
 
+concurrency:
+  group: deploy-all-dev-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+      checks: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: abetal
+            dockerfile: apps/abetal/Dockerfile
+          - app: branntaarn
+            dockerfile: apps/branntaarn/Dockerfile
+          - app: peisschtappern
+            dockerfile: Dockerfile
+          - app: simulering
+            dockerfile: apps/simulering/Dockerfile
+          - app: smokesignal
+            dockerfile: Dockerfile
+          - app: snickerboa
+            dockerfile: Dockerfile
+          - app: urskog
+            dockerfile: apps/urskog/Dockerfile
+          - app: utsjekk
+            dockerfile: apps/utsjekk/Dockerfile
+          - app: vedskiva
+            dockerfile: Dockerfile
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-java@v5.2.0
+        with:
+          java-version: 25
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+
+      - run: ./gradlew apps:${{ matrix.app }}:test --continue --parallel
+
+      - run: ./gradlew apps:${{ matrix.app }}:buildFatJar --parallel
+
+      - uses: nais/docker-build-push@v0
+        id: build
+        with:
+          team: helved
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+          image_suffix: ${{ matrix.app }}
+          tag: ${{ github.sha }}
+          dockerfile: ${{ matrix.dockerfile }}
+          salsa: false
+          cache_to: ""
+
+      - uses: nais/login@v0
+        id: login
+        with:
+          team: helved
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+
+      - uses: nais/deploy/actions/deploy@v2
+        env:
+          PRINT_PAYLOAD: true
+          CLUSTER: dev-gcp
+          RESOURCE: apps/${{ matrix.app }}/dev.yml,apps/${{ matrix.app }}/alert.yml
+          VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ matrix.app }}:${{ github.sha }}
