@@ -19,6 +19,9 @@ import javax.jms.TextMessage
 import javax.jms.ExceptionListener
 import javax.jms.JMSException
 import javax.jms.JMSConsumer
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 val mqLog = logger("mq")
 
@@ -115,29 +118,29 @@ open class DefaultMQConsumer(
     }
 
     override fun onException(exception: JMSException) {
-        mqLog.error("Connection exception occured. Reconnecting ${queue.baseQueueName}...", exception)
+        mqLog.error("MQ ${queue.baseQueueName} failed, reconnecting...", exception)
         reconnect()
     }
 
-    private var lastReconnect = LocalDateTime.now()
-
     @Synchronized
     fun reconnect() {
-        while(lastReconnect.plusMinutes(1).isAfter(LocalDateTime.now())) {
-            Thread.sleep(1000)
-        }
-        try {
-            runCatching {
-                close() // we dont care if this fails (maybe already closed)
+        var attempt = 0
+        val maxBackoff = 5.minutes
+        while (true) {
+            attempt++
+            val backoff = minOf((10*attempt).seconds, maxBackoff)
+            mqLog.info("Reconnect attempt $attempt for ${queue.baseQueueName}, backoff $backoff")
+            Thread.sleep(backoff.inWholeMilliseconds)
+            try {
+                runCatching { close() }
+                context = createContext()
+                consumer = createConsumer()
+                start()
+                mqLog.info("Sucessfully reconnected MQ ${queue.baseQueueName} after $attempt attempts")
+                return
+            } catch (e: Exception) {
+                mqLog.error("MQ reconnect ${queue.baseQueueName} failed, reconnecting...", e)
             }
-            context = createContext()
-            consumer = createConsumer()
-            start()
-            mqLog.info("Sucessfully reconnected consumer ${queue.baseQueueName}")
-        } catch (e: Exception) {
-            mqLog.error("Failed to reconnect, require manual restart of urskog", e)
-        } finally {
-            lastReconnect = LocalDateTime.now()
         }
     }
 
