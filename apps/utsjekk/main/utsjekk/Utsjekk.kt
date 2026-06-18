@@ -81,7 +81,7 @@ fun Application.utsjekk(
     }
 
     install(ContentNegotiation) {
-        json(models.kotlinx.KotlinxJson)
+        json(libs.kotlinx.KotlinxJson)
     }
     install(Authentication) {
         jwt(TokenProvider.AZURE, config.azure)

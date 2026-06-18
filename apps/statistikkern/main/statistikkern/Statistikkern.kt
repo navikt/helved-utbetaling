@@ -56,7 +56,7 @@ fun Application.statistikkern(
     }
 
     install(ContentNegotiation) {
-        json(models.kotlinx.KotlinxJson)
+        json(libs.kotlinx.KotlinxJson)
     }
 
     val utbetalingConsumer = factory.createConsumer(config.kafka, Topics.utbetalinger)

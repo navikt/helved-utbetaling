@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":models"))
     implementation(project(":libs:http"))
     implementation(project(":libs:jdbc"))
+    implementation(project(":libs:kotlinx"))
     implementation(project(":libs:ktor"))
     implementation(project(":libs:utils"))
 

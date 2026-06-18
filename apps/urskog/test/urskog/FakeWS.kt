@@ -31,7 +31,7 @@ class FakeWS: Sts, Soap {
     var respondWith: String = Resource.read("/simuler-ok.xml")
     val received = mutableListOf<String>()
 
-    override val http: HttpClient = HttpClientFactory.new(models.kotlinx.KotlinxJson)
+    override val http: HttpClient = HttpClientFactory.new(libs.kotlinx.KotlinxJson)
 
     override suspend fun samlToken(): SamlToken {
         return SamlToken("token", LocalDateTime.now())
@@ -87,7 +87,7 @@ private fun Application.fakes() {
 
 
     install(ContentNegotiation) {
-        json(models.kotlinx.KotlinxJson)
+        json(libs.kotlinx.KotlinxJson)
         register(ContentType.Application.Xml, XmlDeserializer())
     }
 

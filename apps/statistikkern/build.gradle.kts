@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":models"))
     implementation(project(":libs:utils"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:kotlinx"))
 
     implementation("no.nav.helved:xml:3.1.252")
 

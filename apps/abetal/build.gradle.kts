@@ -12,6 +12,7 @@ val ktorVersion = "3.4.2"
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:kotlinx"))
     implementation(project(":libs:utils"))
 
     implementation("no.nav.helved:xml:3.1.252")

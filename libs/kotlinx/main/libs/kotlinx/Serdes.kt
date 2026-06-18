@@ -1,4 +1,4 @@
-package models.kotlinx
+package libs.kotlinx
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -16,7 +16,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-// TODO: move this to kafka/serde or a common serde lib?
 val KotlinxJson = Json { 
     ignoreUnknownKeys = true
     encodeDefaults = true

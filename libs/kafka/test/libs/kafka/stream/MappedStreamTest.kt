@@ -259,7 +259,7 @@ internal class MappedStreamTest {
             consume(Topics.E)
                 .map { it -> ChangedDto(9, it.data) }
                 .leftJoin(json(), table, "changed-leftjoin-B")
-                .map { l, r -> JsonSerde.json.encodeToString(l.copy(data = r!!)) }
+                .map { l, r -> libs.kotlinx.KotlinxJson.encodeToString(l.copy(data = r!!)) }
                 .produce(Topics.C)
         }
 
@@ -269,7 +269,7 @@ internal class MappedStreamTest {
         val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
 
         assertEquals(1, result.size)
-        assertEquals(ChangedDto(9, "heyheyho"), JsonSerde.json.decodeFromString<ChangedDto<String>>(result["1"]!!))
+        assertEquals(ChangedDto(9, "heyheyho"), libs.kotlinx.KotlinxJson.decodeFromString<ChangedDto<String>>(result["1"]!!))
     }
 
     @Test

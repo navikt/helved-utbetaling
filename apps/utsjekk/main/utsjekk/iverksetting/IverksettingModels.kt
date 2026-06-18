@@ -1,4 +1,4 @@
-@file:UseSerializers(models.kotlinx.LocalDateSerializer::class, models.kotlinx.LocalDateTimeSerializer::class)
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class)
 
 package utsjekk.iverksetting
 
@@ -8,11 +8,11 @@ import kotlinx.serialization.Transient
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.json.*
+import libs.kotlinx.KotlinxJson
 import libs.utils.appLog
 import models.DocumentedErrors
 import models.badRequest
 import models.kontrakter.*
-import models.kotlinx.KotlinxJson
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime

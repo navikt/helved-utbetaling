@@ -9,7 +9,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
 import models.*
-import models.kotlinx.KotlinxJson
+import libs.kotlinx.KotlinxJson
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

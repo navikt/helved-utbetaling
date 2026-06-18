@@ -59,4 +59,4 @@ object Historisk {
     }
 }
 
-internal fun HistoriskUtbetaling.asBytes() = JsonSerde.json.encodeToString(this).toByteArray()
+internal fun HistoriskUtbetaling.asBytes() = libs.kotlinx.KotlinxJson.encodeToString(this).toByteArray()

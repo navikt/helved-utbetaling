@@ -68,7 +68,7 @@ fun Application.speiderhytta(config: Config = Config()) {
         meterBinders += LogbackMetrics()
     }
     install(ContentNegotiation) {
-        json(models.kotlinx.KotlinxJson)
+        json(libs.kotlinx.KotlinxJson)
     }
 
     val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()
@@ -77,7 +77,7 @@ fun Application.speiderhytta(config: Config = Config()) {
     }
 
     val metrics = Metrics(meters)
-    val githubApp = GithubApp(config.github, HttpClientFactory.new(models.kotlinx.KotlinxJson))
+    val githubApp = GithubApp(config.github, HttpClientFactory.new(libs.kotlinx.KotlinxJson))
     val github = GithubClient(config.github, app = githubApp)
     val deployService = DeployService(github.asDeployFetcher(), metrics, codeRepos = config.github.codeRepos, jdbcCtx = jdbcCtx)
     val incidentService = IncidentService(github.asFetcher(), metrics, jdbcCtx)

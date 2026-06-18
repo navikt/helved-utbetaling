@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":libs:auth"))
     implementation(project(":libs:jdbc"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:kotlinx"))
     implementation(project(":libs:tracing"))
     implementation(project(":libs:utils"))
     implementation(project(":models"))

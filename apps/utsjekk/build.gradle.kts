@@ -12,6 +12,7 @@ val ktorVersion = "3.4.2"
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:kotlinx"))
     implementation(project(":libs:ktor"))
     implementation(project(":libs:auth"))
     implementation(project(":libs:jdbc"))
@@ -28,7 +29,6 @@ dependencies {
     implementation("io.ktor:ktor-server-double-receive:${ktorVersion}")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))

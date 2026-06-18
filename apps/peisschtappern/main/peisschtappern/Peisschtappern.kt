@@ -64,7 +64,7 @@ fun Application.peisschtappern(
     }
 
     install(ContentNegotiation) {
-        json(models.kotlinx.KotlinxJson)
+        json(libs.kotlinx.KotlinxJson)
     }
 
     install(MicrometerMetrics) {

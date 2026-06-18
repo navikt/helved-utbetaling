@@ -21,7 +21,7 @@ import utsjekk.utbetaling.UtbetalingsoppdragDto
 class SimuleringClient(
     private val config: Config,
     private val jdbcCtx: CoroutineDatasource,
-    private val json: Json = models.kotlinx.KotlinxJson,
+    private val json: Json = libs.kotlinx.KotlinxJson,
     private val client: HttpClient = HttpClientFactory.new(
         json = json,
         logLevel = LogLevel.ALL, 

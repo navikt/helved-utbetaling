@@ -14,7 +14,7 @@ import kotlin.test.assertNotEquals
 class StsTest {
     companion object {
         private val proxy = ProxyFake()
-        private val json = models.kotlinx.KotlinxJson
+        private val json = libs.kotlinx.KotlinxJson
 
         @AfterAll
         @JvmStatic

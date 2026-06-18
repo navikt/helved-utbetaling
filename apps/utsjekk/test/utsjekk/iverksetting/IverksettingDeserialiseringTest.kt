@@ -1,6 +1,6 @@
 package utsjekk.iverksetting
 
-import models.kotlinx.KotlinxJson
+import libs.kotlinx.KotlinxJson
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets

@@ -12,7 +12,6 @@ import org.apache.kafka.streams.kstream.Windowed
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.SetSerializer
-import kotlinx.serialization.json.Json
 
 data class Serdes<K: Any, V>(
     val key: StreamSerde<K>, 
@@ -63,12 +62,6 @@ object ByteArraySerde: StreamSerde<ByteArray> {
 }
 
 object JsonSerde {
-    val json = Json { 
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-        allowStructuredMapKeys = true
-    }
-
     inline fun <reified V : Any> kotlinx(): StreamSerde<V> = object : StreamSerde<V> {
         override fun serializer(): Serializer<V> = KotlinxSerializer(serializer<V>())
         override fun deserializer(): Deserializer<V> = KotlinxDeserializer(serializer<V>())
@@ -101,7 +94,7 @@ object JsonSerde {
 class KotlinxSerializer<T>(private val kSerializer: KSerializer<T>) : Serializer<T> {
     override fun serialize(_topic: String, data: T?): ByteArray? {
         return data?.let {
-            JsonSerde.json.encodeToString(kSerializer, data).toByteArray()
+            libs.kotlinx.KotlinxJson.encodeToString(kSerializer, data).toByteArray()
         }
     }
 }
@@ -111,7 +104,7 @@ class KotlinxDeserializer<T>(private val kSerializer: KSerializer<T>) : Deserial
         if (data == null) return null
         val rawJson = String(data, Charsets.UTF_8)
         try {
-            return JsonSerde.json.decodeFromString(kSerializer, rawJson)
+            return libs.kotlinx.KotlinxJson.decodeFromString(kSerializer, rawJson)
         } catch (e: Exception) {
             secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
             throw e

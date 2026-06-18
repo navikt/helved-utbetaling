@@ -4,9 +4,9 @@ dependencies {
     api(project(":models"))
     api(project(":libs:cache"))
     api(project(":libs:http"))
+    api(project(":libs:kotlinx"))
     api(project(":libs:utils"))
 
-    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     implementation("io.github.pdvrieze.xmlutil:serialization-jvm:1.0.0-rc2")
 
     testImplementation(kotlin("test"))
