@@ -2,7 +2,7 @@ package utsjekk.iverksetting
 
 import libs.jdbc.Dao
 import models.kontrakter.Fagsystem
-import models.kotlinx.KotlinxJson
+import libs.kotlinx.KotlinxJson
 import utsjekk.utbetaling.UtbetalingId
 import java.sql.ResultSet
 

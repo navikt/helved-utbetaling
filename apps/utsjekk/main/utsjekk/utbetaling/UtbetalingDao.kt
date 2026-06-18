@@ -2,7 +2,7 @@ package utsjekk.utbetaling
 
 import libs.jdbc.*
 import libs.utils.*
-import models.kotlinx.KotlinxJson
+import libs.kotlinx.KotlinxJson
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime

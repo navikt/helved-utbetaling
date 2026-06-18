@@ -1,12 +1,12 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class, libs.kotlinx.UUIDSerializer::class)
+
 package models
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.JsonClassDiscriminator
-import models.kotlinx.LocalDateSerializer
-import models.kotlinx.LocalDateTimeSerializer
-import models.kotlinx.UUIDSerializer
 import no.nav.system.os.entiteter.beregningskjema.BeregningStoppnivaa
 import no.nav.system.os.entiteter.beregningskjema.BeregningStoppnivaaDetaljer
 import no.nav.system.os.entiteter.beregningskjema.BeregningsPeriode
@@ -29,9 +29,7 @@ object v1 {
 
     @Serializable
     data class OppsummeringForPeriode(
-        @Serializable(with = LocalDateSerializer::class)
         val fom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val tom: LocalDate,
         val tidligereUtbetalt: Int,
         val nyUtbetaling: Int,
@@ -42,7 +40,6 @@ object v1 {
     @Serializable
     data class SimuleringDetaljer(
         val gjelderId: String,
-        @Serializable(with = LocalDateSerializer::class)
         val datoBeregnet: LocalDate,
         val totalBeløp: Int,
         val perioder: List<Periode>,
@@ -50,9 +47,7 @@ object v1 {
 
     @Serializable
     data class Periode(
-        @Serializable(with = LocalDateSerializer::class)
         val fom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val tom: LocalDate,
         val posteringer: List<Postering>,
     )
@@ -61,9 +56,7 @@ object v1 {
     data class Postering(
         val fagområde: Fagområde,
         val sakId: SakId,
-        @Serializable(with = LocalDateSerializer::class)
         val fom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val tom: LocalDate,
         val beløp: Int,
         val type: PosteringType,
@@ -130,9 +123,7 @@ object v2 {
 
     @Serializable
     data class Simuleringsperiode(
-        @Serializable(with = LocalDateSerializer::class)
         val fom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val tom: LocalDate,
         val utbetalinger: List<SimulertUtbetaling>,
     ) {
@@ -170,9 +161,7 @@ object v2 {
 
     @Serializable
     data class Postering(
-        @Serializable(with = LocalDateSerializer::class)
         val fom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val tom: LocalDate,
         val beløp: Int,
         val type: Type,

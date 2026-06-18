@@ -1,4 +1,4 @@
-@file:UseSerializers(models.kotlinx.LocalDateSerializer::class, models.kotlinx.LocalDateTimeSerializer::class)
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class)
 
 package vedskiva
 
@@ -20,7 +20,7 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class PeisschtappernClient(
     private val config: Config,
-    private val json: Json = models.kotlinx.KotlinxJson,
+    private val json: Json = libs.kotlinx.KotlinxJson,
     private val client: HttpClient = HttpClientFactory.new(json),
     private val azure: AzureTokenProvider = AzureTokenProvider(json, config.azure)
 ) {

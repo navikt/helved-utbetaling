@@ -106,9 +106,9 @@ object AvstemmingsdataSerializer : KSerializer<Avstemmingsdata> {
     override fun deserialize(decoder: Decoder): Avstemmingsdata = xmlMapper.readValue(decoder.decodeString().toByteArray())!!
 }
 
-val VedskivaKotlinx = Json(models.kotlinx.KotlinxJson) {
+val VedskivaKotlinx = Json(libs.kotlinx.KotlinxJson) {
     serializersModule = SerializersModule {
-        include(models.kotlinx.KotlinxJson.serializersModule)
+        include(libs.kotlinx.KotlinxJson.serializersModule)
         contextual(Avstemmingsdata::class, AvstemmingsdataSerializer)
     }
 }

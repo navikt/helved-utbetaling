@@ -29,7 +29,7 @@ object TestRuntime {
     val topics = TestTopics(kafka)
     val ktor = KtorRuntime<Config>(
         appName = "snickerboa",
-        jsonConfig = models.kotlinx.KotlinxJson,
+        jsonConfig = libs.kotlinx.KotlinxJson,
         module = {
             snickerboa(config, kafka, factory = kafka)
         }

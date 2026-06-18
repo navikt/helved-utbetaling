@@ -44,7 +44,7 @@ private var simuleringResponseCode: HttpStatusCode = HttpStatusCode.OK
 
 private fun Application.simulering() {
     install(ContentNegotiation) {
-        json(models.kotlinx.KotlinxJson)
+        json(libs.kotlinx.KotlinxJson)
     }
 
     routing {

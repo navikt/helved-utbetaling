@@ -40,7 +40,7 @@ class AzureFake : AutoCloseable {
 
 private fun Application.azure() {
     install(ContentNegotiation) {
-        json(models.kotlinx.KotlinxJson)
+        json(libs.kotlinx.KotlinxJson)
     }
     routing {
         get("/jwks") {

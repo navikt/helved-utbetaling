@@ -1,4 +1,4 @@
-@file:UseSerializers(models.kotlinx.LocalDateSerializer::class)
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class)
 
 package simulering.models.rest
 

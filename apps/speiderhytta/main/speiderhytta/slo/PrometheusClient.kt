@@ -22,7 +22,7 @@ import speiderhytta.PrometheusConfig
  */
 class PrometheusClient(
     private val config: PrometheusConfig,
-    private val client: HttpClient = HttpClientFactory.new(models.kotlinx.KotlinxJson, LogLevel.INFO),
+    private val client: HttpClient = HttpClientFactory.new(libs.kotlinx.KotlinxJson, LogLevel.INFO),
 ) {
 
     suspend fun instant(query: String): Double? {

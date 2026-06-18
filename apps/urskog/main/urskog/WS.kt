@@ -17,7 +17,7 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
 class SimuleringService(private val config: Config) {
-    private val json = models.kotlinx.KotlinxJson
+    private val json = libs.kotlinx.KotlinxJson
     private val http = HttpClientFactory.new(
         json = json,
         logLevel = LogLevel.ALL, 

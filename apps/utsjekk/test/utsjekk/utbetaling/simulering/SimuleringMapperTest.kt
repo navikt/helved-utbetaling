@@ -1,7 +1,7 @@
 package utsjekk.utbetaling.simulering
 
 import libs.utils.Resource
-import models.kotlinx.KotlinxJson
+import libs.kotlinx.KotlinxJson
 import org.junit.jupiter.api.Test
 import utsjekk.simulering.SimuleringApi
 import utsjekk.simulering.client

@@ -54,4 +54,4 @@ object Valp {
     }
 }
 
-internal fun ValpUtbetaling.asBytes() = JsonSerde.json.encodeToString(this).toByteArray()
+internal fun ValpUtbetaling.asBytes() = libs.kotlinx.KotlinxJson.encodeToString(this).toByteArray()

@@ -15,8 +15,9 @@ dependencies {
     implementation(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
 
     implementation(project(":models"))
-    implementation(project(":libs:utils"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:kotlinx"))
+    implementation(project(":libs:utils"))
 
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
 

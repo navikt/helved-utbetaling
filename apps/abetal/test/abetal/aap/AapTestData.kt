@@ -66,4 +66,4 @@ object Aap {
     }
 }
 
-internal fun AapUtbetaling.asBytes() = JsonSerde.json.encodeToString(this).toByteArray()
+internal fun AapUtbetaling.asBytes() = libs.kotlinx.KotlinxJson.encodeToString(this).toByteArray()

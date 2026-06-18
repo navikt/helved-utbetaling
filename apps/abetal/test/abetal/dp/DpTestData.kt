@@ -160,4 +160,4 @@ val dagpengerMeldeperiodeDager = listOf(
     )
 )
 
-internal fun DpUtbetaling.asBytes() = JsonSerde.json.encodeToString(this).toByteArray()
+internal fun DpUtbetaling.asBytes() = libs.kotlinx.KotlinxJson.encodeToString(this).toByteArray()

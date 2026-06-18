@@ -33,14 +33,10 @@ object PersonidentSerializer : KSerializer<Personident> {
     }
 }
 
-val jsonModule = SerializersModule {
-    contextual(PersonidentSerializer)
-    contextual(models.kotlinx.UUIDSerializer)
-    contextual(models.kotlinx.LocalDateSerializer)
-    contextual(models.kotlinx.LocalDateTimeSerializer)
-}
-
 object KotlinxJson : ConfigurableKotlinxSerialization({
     ignoreUnknownKeys = true
-    serializersModule = jsonModule
+    serializersModule = SerializersModule {
+        include(libs.kotlinx.KotlinxJson.serializersModule)
+        contextual(PersonidentSerializer)
+    }
 })

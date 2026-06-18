@@ -60,7 +60,7 @@ fun Application.snickerboa(
     }
 
     install(ContentNegotiation) {
-        json(models.kotlinx.KotlinxJson)
+        json(libs.kotlinx.KotlinxJson)
     }
 
     install(StatusPages) {

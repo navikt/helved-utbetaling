@@ -70,4 +70,4 @@ object Ts {
     }
 }
 
-internal fun TsDto.asBytes() = JsonSerde.json.encodeToString(this).toByteArray()
+internal fun TsDto.asBytes() = libs.kotlinx.KotlinxJson.encodeToString(this).toByteArray()

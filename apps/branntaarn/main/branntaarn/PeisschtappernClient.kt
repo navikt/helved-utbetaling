@@ -1,4 +1,4 @@
-@file:UseSerializers(models.kotlinx.LocalDateTimeSerializer::class)
+@file:UseSerializers(libs.kotlinx.LocalDateTimeSerializer::class)
 
 package branntaarn
 
@@ -25,7 +25,7 @@ import libs.utils.appLog
 
 class PeisschtappernClient(
     private val config: Config,
-    private val json: Json = models.kotlinx.KotlinxJson,
+    private val json: Json = libs.kotlinx.KotlinxJson,
     private val client: HttpClient = HttpClientFactory.new(json, LogLevel.ALL),
     private val azure: AzureTokenProvider = AzureTokenProvider(json, config.azure)
 ) {

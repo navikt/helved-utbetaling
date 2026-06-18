@@ -1,4 +1,4 @@
-@file:UseSerializers(models.kotlinx.UUIDSerializer::class)
+@file:UseSerializers(libs.kotlinx.UUIDSerializer::class)
 package utsjekk.iverksetting
 
 import kotlinx.serialization.Serializable

@@ -12,7 +12,7 @@ import libs.http.HttpClientFactory
 
 class SlackClient(
     private val config: Config,
-    private val json: Json = models.kotlinx.KotlinxJson,
+    private val json: Json = libs.kotlinx.KotlinxJson,
     private val client: HttpClient = HttpClientFactory.new(json, LogLevel.ALL),
 ) {
     fun postAggregated(grouped: Map<String, List<Brann>>) {

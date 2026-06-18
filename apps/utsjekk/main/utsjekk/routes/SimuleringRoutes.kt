@@ -231,7 +231,7 @@ class SimuleringRoutes(
 }
 
 private suspend fun RoutingCall.respondSimulering(simulering: Simulering) {
-    val json = models.kotlinx.KotlinxJson.encodeToString(Simulering.serializer(), simulering)
+    val json = libs.kotlinx.KotlinxJson.encodeToString(Simulering.serializer(), simulering)
     val status = when (simulering) {
         is Info -> HttpStatusCode.Found
         else -> HttpStatusCode.OK

@@ -76,7 +76,7 @@ object TestRuntime {
     val ktor: KtorRuntime<Config> by lazy {
         KtorRuntime<Config>(
             appName = "utsjekk",
-            jsonConfig = models.kotlinx.KotlinxJson,
+            jsonConfig = libs.kotlinx.KotlinxJson,
             module = {
                 utsjekk(
                     config,

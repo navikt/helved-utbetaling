@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
-import models.kotlinx.KotlinxJson
+import libs.kotlinx.KotlinxJson
 
 /**
  * Contract tests that verify the OpenAPI spec (openapi-dryrun.yml) matches

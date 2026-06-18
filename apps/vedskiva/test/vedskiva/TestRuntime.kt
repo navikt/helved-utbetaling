@@ -82,7 +82,7 @@ object TestRuntime {
 class AzureFake {
     private val server = KtorRuntime<Nothing>(
         "vedskiva.azure", 
-        jsonConfig = models.kotlinx.KotlinxJson,
+        jsonConfig = libs.kotlinx.KotlinxJson,
         AzureFake::azure
     )
 
@@ -91,7 +91,7 @@ class AzureFake {
     companion object {
         fun azure(app: Application) {
             app.install(ContentNegotiation) { 
-                json(models.kotlinx.KotlinxJson)
+                json(libs.kotlinx.KotlinxJson)
             }
             app.routing {
                 get("/jwks") {
@@ -120,7 +120,7 @@ class AzureFake {
 class PeisschtappernFake {
     private val server = KtorRuntime<Nothing>(
         "vedskiva.peisschtappern", 
-        jsonConfig = models.kotlinx.KotlinxJson,
+        jsonConfig = libs.kotlinx.KotlinxJson,
         PeisschtappernFake::server
     )
 
@@ -128,7 +128,7 @@ class PeisschtappernFake {
         val response = mutableListOf<Dao>()
         fun server(app: Application) {
             app.install(ContentNegotiation) { 
-                json(models.kotlinx.KotlinxJson)
+                json(libs.kotlinx.KotlinxJson)
             }
             app.routing {
                 get("/api/messages") {

@@ -1,10 +1,11 @@
 package abetal.tp
 
 import abetal.*
-import libs.kafka.KotlinxSerializer
 import kotlinx.serialization.serializer
+import libs.kafka.KotlinxSerializer
 import libs.kafka.KotlinxDeserializer
 import libs.kafka.JsonSerde
+import libs.kotlinx.KotlinxJson
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
@@ -28,7 +29,7 @@ internal class TpTest : ConsumerTestBase() {
 
     @Test
     fun `simulation - dry run tp utbetaling`() {
-        val utbet = JsonSerde.json.decodeFromString<TpUtbetaling>(
+        val utbet = KotlinxJson.decodeFromString<TpUtbetaling>(
             """
             {
               "dryrun": false,
@@ -87,7 +88,7 @@ internal class TpTest : ConsumerTestBase() {
         }
         TestRuntime.topics.utbetalinger.assertThat().has(uid)
 
-        val dryrun = JsonSerde.json.decodeFromString<TpUtbetaling>(
+        val dryrun = KotlinxJson.decodeFromString<TpUtbetaling>(
             """
             {
               "dryrun": true,
@@ -818,7 +819,7 @@ internal class TpTest : ConsumerTestBase() {
             }
             """.trimIndent()
 
-        val utbet = JsonSerde.json.decodeFromString<TpUtbetaling>(json)
+        val utbet = KotlinxJson.decodeFromString<TpUtbetaling>(json)
         val transactionId = UUID.randomUUID().toString()
         val uid = tpUId("HV2511260231", "20250630-20250711", StønadTypeTiltakspenger.GRUPPE_AMO)
 

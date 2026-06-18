@@ -5,7 +5,7 @@ import kotlin.test.assertNull
 import kotlin.test.Test
 import models.kontrakter.BrukersNavKontor
 import models.kontrakter.Ident
-import models.kotlinx.KotlinxJson
+import libs.kotlinx.KotlinxJson
 import java.time.LocalDateTime
 
 class WireCompatibilityTest {

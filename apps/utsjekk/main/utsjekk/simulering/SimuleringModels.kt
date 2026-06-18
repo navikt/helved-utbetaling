@@ -1,4 +1,4 @@
-@file:UseSerializers(models.kotlinx.LocalDateSerializer::class, models.kotlinx.LocalDateTimeSerializer::class, models.kotlinx.UUIDSerializer::class)
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class, libs.kotlinx.UUIDSerializer::class)
 package utsjekk.simulering
 
 import kotlinx.serialization.Contextual

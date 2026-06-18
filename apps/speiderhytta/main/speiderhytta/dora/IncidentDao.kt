@@ -1,4 +1,4 @@
-@file:UseSerializers(models.kotlinx.InstantSerializer::class)
+@file:UseSerializers(libs.kotlinx.InstantSerializer::class)
 
 package speiderhytta.dora
 

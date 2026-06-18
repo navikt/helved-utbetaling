@@ -4,7 +4,7 @@ import TestData.domain.simuleringDetaljer
 import TestData.dto.api.oppsummeringForPeriode
 import TestData.dto.api.simuleringResponse
 import models.kontrakter.Fagsystem
-import models.kotlinx.KotlinxJson
+import libs.kotlinx.KotlinxJson
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Disabled
