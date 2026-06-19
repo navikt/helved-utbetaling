@@ -6,7 +6,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.*
-import kotlinx.serialization.Serializable
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.Streams
@@ -206,25 +205,20 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
 
         post("/resend") {
             val request = call.receive<MessageRequest>()
-            requireNotNull(request.reason) {
-                "Må oppgi grunn for resending av melding"
+            if (request.reason == null) {
+                badRequest("Må oppgi grunn for resending av melding")
             }
-            val channel = requireNotNull(Channel.findOrNull(request.topic)) {
-                "Fant ikke topic med navn ${request.topic}"
-            }
+            val channel = Channel.findOrNull(request.topic) ?: badRequest("Fant ikke topic med navn ${request.topic}")
 
             withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
-                    val message = requireNotNull(
-                        Daos.findSingle(
-                            request.partition.toInt(),
-                            request.offset.toLong(),
-                            channel.table
-                        )
-                    ) {
-                        "Fant ikke melding på topic ${request.topic} med partition ${request.partition} og offset ${request.offset}"
-                    }
-                    val value = requireNotNull(message.value) { "Melding mangler value" }
+                    val message = Daos.findSingle(
+                        request.partition.toInt(),
+                        request.offset.toLong(),
+                        channel.table
+                    ) ?: badRequest("Fant ikke melding på topic ${request.topic} med partition ${request.partition} og offset ${request.offset}")
+
+                    val value = message.value ?: badRequest("Melding mangler value")
 
                     val success = when (channel) {
                         is Channel.Oppdrag -> manuellEndringService.sendOppdragManuelt(
@@ -266,13 +260,10 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         get("/avstemminger") {
             val fom = call.queryParameters["fom"]
                 ?.runCatching { Instant.parse(this).toEpochMilli() }
-                ?.getOrNull()
+                ?.getOrNull() ?: badRequest("Missing required parameter: fom")
             val tom = call.queryParameters["tom"]
                 ?.runCatching { Instant.parse(this).toEpochMilli() }
-                ?.getOrNull()
-
-            requireNotNull(fom) { "Missing required parameter: fom" }
-            requireNotNull(tom) { "Missing required parameter: tom" }
+                ?.getOrNull() ?: badRequest("Missing required parameter: tom")
 
             val avstemminger = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
@@ -290,9 +281,8 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         try {
             withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
-                    val oppdrag =
-                        Daos.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.Oppdrag.table)
-                    requireNotNull(oppdrag?.value) { "Kan ikke lage kvittering for melding uten oppdrag" } // Burde i teorien ikke kunne oppstå
+                    val oppdrag = Daos.findSingle(request.partition.toInt(), request.offset.toLong(), Channel.Oppdrag.table)
+                    if (oppdrag?.value == null) badRequest("Kan ikke lage kvittering for melding uten oppdrag")
                     manuellEndringService.addKvitteringManuelt(
                         oppdragXml = oppdrag.value,
                         messageKey = oppdrag.key,
@@ -321,14 +311,13 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         try {
             withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
-                    val utbetaling = requireNotNull(
-                        Daos.findSingle(
-                            request.partition.toInt(),
-                            request.offset.toLong(),
-                            Channel.PendingUtbetalinger.table
-                        )
-                    ) {
-                        "Kan ikke flytte pending utbetaling. Fant ikke utbetaling i topic ${request.topic} med partition ${request.partition} og offset ${request.offset}"
+                    val utbetaling = Daos.findSingle(
+                        request.partition.toInt(),
+                        request.offset.toLong(),
+                        Channel.PendingUtbetalinger.table
+                    )
+                    if (utbetaling == null) {
+                        badRequest( "Kan ikke flytte pending utbetaling. Fant ikke utbetaling i topic ${request.topic} med partition ${request.partition} og offset ${request.offset}")
                     }
                     manuellEndringService.flyttPendingTilUtbetalinger(
                         key = utbetaling.key,
@@ -373,7 +362,6 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
     }
 }
 
-@Serializable
 data class KvitteringRequest(
     val key: String,
     val offset: String,
@@ -384,7 +372,6 @@ data class KvitteringRequest(
     val reason: String,
 )
 
-@Serializable
 data class MessageRequest(
     val topic: String,
     val partition: String,
@@ -392,10 +379,8 @@ data class MessageRequest(
     val reason: String? = null,
 )
 
-@Serializable
 data class TombstoneRequest(val key: String, val reason: String)
 
-@Serializable
 data class OkStatusRequest(val key: String, val reason: String, val fagsystem: String)
 
 sealed class Channel(
@@ -433,5 +418,4 @@ sealed class Channel(
     }
 }
 
-@Serializable
 data class Page(val items: List<Daos>, val total: Int)

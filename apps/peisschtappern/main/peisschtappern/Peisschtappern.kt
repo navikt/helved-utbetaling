@@ -1,37 +1,36 @@
 package peisschtappern
 
-import io.ktor.server.auth.*
-import io.ktor.serialization.kotlinx.json.json
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import io.ktor.http.*
+import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
-import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.auth.jwt
-import libs.auth.JwtPrincipal
 import libs.auth.TokenProvider
-import libs.kafka.KafkaStreams
-import libs.kafka.Streams
+import libs.auth.configure
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
-import libs.jdbc.context
 import libs.jdbc.concurrency.CoroutineDatasource
-import libs.kafka.Topic
-import libs.kafka.json
-import libs.kafka.xml
-import libs.utils.*
-import models.DpUtbetaling
-import models.StatusReply
-import models.TsDto
-import models.Utbetaling
+import libs.jdbc.context
+import libs.kafka.*
+import libs.utils.appLog
+import libs.utils.secureLog
+import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 fun main() {
@@ -60,16 +59,43 @@ fun Application.peisschtappern(
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(Authentication) {
-        jwt(TokenProvider.AZURE, config.azure)
+        jwt(TokenProvider.AZURE) {
+            configure(config.azure)
+        }
     }
 
     install(ContentNegotiation) {
-        json(libs.kotlinx.KotlinxJson)
+        jackson {
+            registerModule(JavaTimeModule())
+            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+        }
     }
 
     install(MicrometerMetrics) {
         registry = prometheus
         meterBinders += LogbackMetrics()
+    }
+
+    install(StatusPages) {
+        exception<Throwable> { call, cause ->
+            when (cause) {
+                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
+                is BadRequestException -> {
+                    val msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
+                    appLog.debug(msg)
+                    secureLog.debug(msg, cause)
+                    val res = ApiError(statusCode = 400, msg = msg)
+                    call.respond(HttpStatusCode.BadRequest, res)
+                }
+                else -> {
+                    val msg = "Ukjent feil, helved er varslet."
+                    appLog.error(msg, cause)
+                    val res = ApiError(statusCode = 500, msg = msg)
+                    call.respond(HttpStatusCode.InternalServerError, res)
+                }
+            }
+        }
     }
 
     val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()
@@ -133,11 +159,15 @@ data class Audit(
 }
 
 fun ApplicationCall.claim(claim: String): String? { 
-    val principal = principal<JwtPrincipal>() ?: return null
-    val claimValue = principal.claims.claim(claim)
-    if (claimValue == null) {
-        val claims = principal.claims.map.keys.joinToString(", ")
+    val principal = principal<JWTPrincipal>() ?: return null
+    val claimValue = principal.payload.getClaim(claim)
+    if (claimValue.isNull) {
+        val claims = principal.payload.claims.keys.joinToString(", ")
         secureLog.info("could not find claim '$claim'. Available: [$claims]")
     }
-    return claimValue // TODO: må vi sjekke om claim er wrappet i quotes og fjerne quotsa?
+    return when {
+        claimValue.isNull -> null
+        claimValue.asString() != null -> claimValue.toString()
+        else -> claimValue.toString().replace("\"", "")
+    }
 }
