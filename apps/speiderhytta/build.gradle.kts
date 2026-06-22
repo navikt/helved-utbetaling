@@ -6,7 +6,7 @@ application {
     mainClass.set("speiderhytta.SpeiderhyttaKt")
 }
 
-val ktorVersion = "3.4.2"
+val ktorVersion = "3.4.3"
 val nettyVersion = "4.2.13.Final"
 val jackson3Version = "3.1.1"
 
