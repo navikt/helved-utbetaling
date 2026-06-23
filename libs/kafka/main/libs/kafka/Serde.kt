@@ -107,7 +107,7 @@ class KotlinxDeserializer<T>(private val kSerializer: KSerializer<T>) : Deserial
             return libs.kotlinx.KotlinxJson.decodeFromString(kSerializer, rawJson)
         } catch (e: Exception) {
             secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
-            throw e
+            throw DeserializationException(topic, e)
         }
     }
 }
@@ -142,7 +142,14 @@ class XmlDeserializer<T : Any>(private val mapper: XMLMapper<T>) : Deserializer<
         } catch (e: Exception) {
             val rawXml = String(data, Charsets.UTF_8)
             secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawXml")
-            throw e
+            throw DeserializationException(topic, e)
         }
     }
+}
+
+class DeserializationException(
+    topic: String,
+    cause: Exception
+): RuntimeException("Deserialization failed on topic $topic (details in team logs)", cause) {
+    override fun toString(): String = message!!
 }
