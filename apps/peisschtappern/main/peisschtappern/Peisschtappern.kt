@@ -1,11 +1,8 @@
 package peisschtappern
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.*
-import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
@@ -64,11 +61,7 @@ fun Application.peisschtappern(
     }
 
     install(ContentNegotiation) {
-        jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
+        json(libs.kotlinx.KotlinxJson)
     }
 
     install(MicrometerMetrics) {
