@@ -111,10 +111,11 @@ fun Topology.oppdrag(mq: OppdragMQProducer, meters: MeterRegistry, jdbcCtx: Coro
                 }
                 .default {
                     this
-                        .map { decision -> (decision as KvitteringDecision.Retry).let { it.oppdrag to it.retries } }
-                        .includeHeader("retries") { (_, retries) -> (retries + 1).toString() }
+                        .map { decision -> (decision as KvitteringDecision.Retry) }
+                        .includeHeader("retries") { retry -> (retry.retries + 1).toString() }
                         .includeHeader("maxRetries") { _ -> kvitteringDefaultMaxRetries.toString() }
-                        .map { (oppdrag, _) -> oppdrag }
+                        .includeHeader(BARRIER_STARTED_AT) { retry -> (retry.barrierStartedAt ?: "").toString() }
+                        .map { retry -> retry.oppdrag }
                         .produce(Topics.retryKvittering)
                 }
         }
@@ -273,10 +274,12 @@ fun Topology.simulering(simuleringService: SimuleringService) {
 private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 
 private const val kvitteringDefaultMaxRetries: Int = 1000
+private const val BARRIER_STARTED_AT = "barrierStartedAt"
+private const val BARRIER_MAX_WAIT_MS: Long = 10 * 60 * 1000L // 10 minutes
 
 private sealed interface KvitteringDecision {
     data class Terminal(val reply: StatusReply) : KvitteringDecision
-    data class Retry(val oppdrag: Oppdrag, val retries: Int) : KvitteringDecision
+    data class Retry(val oppdrag: Oppdrag, val retries: Int, val barrierStartedAt: Long? = null) : KvitteringDecision
 }
 
 /**
@@ -352,6 +355,23 @@ private fun kvitteringReadyOrRetry(
             val sakerReady = locked.sakerAck
             if (pendingReady && sakerReady) {
                 KvitteringDecision.Terminal(statusReply(oppdrag))
+            } else if (pendingReady && !sakerReady) {
+                // Time-based budget: utbetalingToSak sub-topology may be on the same
+                // StreamThread partition as the retry loop. Count-based retries exhaust
+                // in ~2.5 min which isn't always enough. Use wall-clock budget instead.
+                val maxWaitMs = meta.headers["barrierMaxWaitMs"]?.toLongOrNull()
+                    ?: BARRIER_MAX_WAIT_MS
+                val now = java.lang.System.currentTimeMillis()
+                val startedAt = meta.headers[BARRIER_STARTED_AT]?.toLongOrNull() ?: now
+                val elapsed = now - startedAt
+                if (elapsed >= maxWaitMs) {
+                    val tag = "Oppdrag ble lagret OK hos OS, men helved-aggregat tok ikke igjen (pendingReady=$pendingReady, sakerReady=$sakerReady, elapsed=${elapsed / 1000}s). Status er satt til FEILET grunnet intern helved-inkonsistens og må fikses manuelt i helved. Konsument og OS trenger IKKE gjøre noe.${beskrMelding(oppdrag)}"
+                    libs.utils.appLog.error("Kvittering for hash:$hashKey ga opp etter ${elapsed / 1000}s. $tag")
+                    KvitteringDecision.Terminal(StatusReply.err(oppdrag, ApiError(500, tag)))
+                } else {
+                    kafkaLog.info("kvittering for hash:$hashKey ikke klar (pendingReady=$pendingReady, sakerAck=false), ruter til retry-kvittering (elapsed=${elapsed / 1000}s)")
+                    KvitteringDecision.Retry(oppdrag, retries, barrierStartedAt = startedAt)
+                }
             } else if (retries >= maxRetries) {
                 val tag = "Oppdrag ble lagret OK hos OS, men helved-aggregat tok ikke igjen (pendingReady=$pendingReady, sakerReady=$sakerReady). Status er satt til FEILET grunnet intern helved-inkonsistens og må fikses manuelt i helved. Konsument og OS trenger IKKE gjøre noe.${beskrMelding(oppdrag)}"
                 libs.utils.appLog.error("Kvittering for hash:$hashKey ga opp etter $retries/$maxRetries forsøk. $tag")
