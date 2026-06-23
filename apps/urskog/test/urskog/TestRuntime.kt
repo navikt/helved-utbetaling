@@ -68,6 +68,7 @@ object TestRuntime {
     val ktor: KtorRuntime<Config> by lazy {
         KtorRuntime<Config>(
             appName = "urskog",
+            jsonConfig = libs.kotlinx.KotlinxJson,
             module = {
                 urskog(config, kafkaMock, mq)
             },

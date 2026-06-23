@@ -4,7 +4,6 @@ import libs.kafka.*
 import libs.kafka.Mock
 import libs.kafka.Tables
 import libs.kafka.Topics
-import net.logstash.logback.argument.StructuredArguments
 import libs.kafka.processor.Processor
 import libs.kafka.processor.EnrichMetadataProcessor
 import libs.kafka.produce

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.assertThrows
 class SoapTest {
     companion object {
         private val proxy = ProxyFake()
+        private val json = libs.kotlinx.KotlinxJson
 
         @AfterAll
         @JvmStatic
@@ -26,7 +27,7 @@ class SoapTest {
 
     @Test
     fun `soap fake response can be configured`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
         val soap = SoapClient(proxy.config, sts)
 
         proxy.soap.response = "sweet"
@@ -40,7 +41,7 @@ class SoapTest {
 
     @Test
     fun `can use proxy-auth`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
         val soap = SoapClient(proxy.config, sts, proxyAuth = suspend {
             "token for proxy"
         })
@@ -58,7 +59,7 @@ class SoapTest {
 
     @Test
     fun `aksepterer 200`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
         val soap = SoapClient(proxy.config, sts)
 
         proxy.soap.responseStatus = HttpStatusCode.OK
@@ -72,7 +73,7 @@ class SoapTest {
 
     @Test
     fun `aksepterer 500`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
         val soap = SoapClient(proxy.config, sts, http = HttpClient(CIO))
 
         proxy.soap.responseStatus = HttpStatusCode.InternalServerError
@@ -86,7 +87,7 @@ class SoapTest {
 
     @Test
     fun `kaster feil ved ukjent http statuskode`() {
-        val sts = StsClient(proxy.config.sts)
+        val sts = StsClient(proxy.config.sts, json)
         val soap = SoapClient(proxy.config, sts)
 
         proxy.soap.responseStatus = HttpStatusCode(418, "I'm a teapot")

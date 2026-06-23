@@ -1,5 +1,8 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class)
+
 package simulering.models.soap
 
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -10,7 +13,6 @@ import nl.adaptivity.xmlutil.serialization.XmlSerialName
 import nl.adaptivity.xmlutil.serialization.XmlElement
 import simulering.models.rest.*
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 /**
  * Enhet kan være enten [tknr] eller [orgnr]+[avd]
@@ -18,12 +20,6 @@ import java.time.format.DateTimeFormatter
  */
 typealias FnrOrgnr = String // 9-11 tegn
 typealias Klasse = String // 0-20
-
-object LocalDateSerializer : KSerializer<LocalDate> {
-    override val descriptor = PrimitiveSerialDescriptor("LocalDate", PrimitiveKind.STRING)
-    override fun serialize(encoder: Encoder, value: LocalDate) = encoder.encodeString(value.toString())
-    override fun deserialize(decoder: Decoder): LocalDate = LocalDate.parse(decoder.decodeString().trim())
-}
 
 object NullableSatsTypeSerializer : KSerializer<soap.SatsType?> {
     override val descriptor = PrimitiveSerialDescriptor("SatsType", PrimitiveKind.STRING)
@@ -56,7 +52,6 @@ object soap {
     @Serializable
     data class Beregning(
         val gjelderId: FnrOrgnr,
-        @Serializable(with = LocalDateSerializer::class)
         val datoBeregnet: LocalDate,
         val belop: Double,
         val beregningsPeriode: List<Periode>,
@@ -82,9 +77,7 @@ object soap {
     @Serializable
     @XmlSerialName("beregningsPeriode", "", "")
     data class Periode(
-        @Serializable(with = LocalDateSerializer::class)
         val periodeFom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val periodeTom: LocalDate,
         val beregningStoppnivaa: List<Stoppnivå>,
     ) {
@@ -102,7 +95,6 @@ object soap {
         val kodeFagomraade: String,
         val fagsystemId: String,
         val utbetalesTilId: FnrOrgnr,
-        @Serializable(with = LocalDateSerializer::class)
         val forfall: LocalDate,
         val feilkonto: Boolean,
         val beregningStoppnivaaDetaljer: List<Detalj>,
@@ -121,9 +113,7 @@ object soap {
     @Serializable
     @XmlSerialName("beregningStoppnivaaDetaljer", "", "")
     data class Detalj(
-        @Serializable(with = LocalDateSerializer::class)
         val faktiskFom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val faktiskTom: LocalDate,
         val belop: Double,
         val trekkVedtakId: Long,
@@ -223,7 +213,6 @@ object soap {
         val fagsystemId: String,
         val utbetFrekvens: String,
         val oppdragGjelderId: String,
-        @Serializable(with = LocalDateSerializer::class)
         val datoOppdragGjelderFom: LocalDate?,
         val saksbehId: String,
         @XmlSerialName("ns2:enhet", "", "")
@@ -236,7 +225,6 @@ object soap {
     data class Enhet(
         val typeEnhet: String,
         val enhet: String,
-        @Serializable(with = LocalDateSerializer::class)
         val datoEnhetFom: LocalDate?,
     )
 
@@ -244,9 +232,7 @@ object soap {
     @XmlSerialName("refusjonsInfo", "", "")
     data class RefusjonsInfo(
         val refunderesId: String,
-        @Serializable(with = LocalDateSerializer::class)
         val datoFom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val maksDato: LocalDate?,
     )
 
@@ -255,15 +241,11 @@ object soap {
     data class Oppdragslinje(
         val kodeEndringLinje: String,
         val kodeStatusLinje: KodeStatusLinje? = null,
-        @Serializable(with = LocalDateSerializer::class)
         val datoStatusFom: LocalDate? = null,
         val delytelseId: String,
         val kodeKlassifik: String,
-        @Serializable(with = LocalDateSerializer::class)
         val datoKlassifikFom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val datoVedtakFom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val datoVedtakTom: LocalDate,
         val sats: Int,
         val fradragTillegg: FradragTillegg,

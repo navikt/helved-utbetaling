@@ -1,5 +1,6 @@
 package libs.auth
 
+import kotlinx.serialization.json.Json
 import libs.cache.TokenCache
 import libs.http.HttpClientFactory
 import libs.utils.env
@@ -14,9 +15,10 @@ data class AzureConfig(
 ) : TokenConfig(clientId, jwks, issuer)
 
 class AzureTokenProvider(
+    private val json: Json,
     private val config: AzureConfig = AzureConfig(),
     private val client: TokenClient = TokenClient(
-        http = HttpClientFactory.new(),
+        http = HttpClientFactory.new(json),
         name = TokenProvider.AZURE,
         cache = TokenCache(),
     )

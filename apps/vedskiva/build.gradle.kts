@@ -1,5 +1,6 @@
 plugins {
     id("io.ktor.plugin")
+    kotlin("plugin.serialization")
 }
 
 application {
@@ -7,16 +8,16 @@ application {
 }
 
 val ktorVersion = "3.4.2"
-val libVersion = "3.1.250"
 
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:auth"))
     implementation(project(":libs:jdbc"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:kotlinx"))
     implementation(project(":libs:ktor"))
     implementation(project(":libs:utils"))
-    implementation("no.nav.helved:xml:$libVersion")
+    implementation("no.nav.helved:xml:3.1.252")
 
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
@@ -26,8 +27,6 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
     implementation("org.apache.kafka:kafka-clients:4.3.0")
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
-    implementation("net.logstash.logback:logstash-logback-encoder:9.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))

@@ -1,5 +1,6 @@
 plugins {
     id("io.ktor.plugin")
+    kotlin("plugin.serialization")
 }
 
 application {
@@ -13,6 +14,7 @@ dependencies {
     implementation(project(":libs:auth"))
     implementation(project(":libs:jdbc"))
     implementation(project(":libs:kafka"))
+    implementation(project(":libs:kotlinx"))
     implementation(project(":libs:tracing"))
     implementation(project(":libs:utils"))
     implementation(project(":models"))
@@ -30,7 +32,6 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))

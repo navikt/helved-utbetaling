@@ -2,18 +2,16 @@ package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import libs.kafka.processor.Processor
-import libs.kafka.processor.EnrichMetadataProcessor
-import libs.kafka.processor.StateProcessor
 import org.apache.kafka.streams.TestInputTopic
 import org.apache.kafka.streams.TestOutputTopic
 import org.apache.kafka.streams.TopologyTestDriver
-import org.apache.kafka.streams.state.TimestampedKeyValueStore
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 import kotlin.time.toJavaDuration
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class JsonDto(
     val id: Int,
     val data: String,
@@ -24,7 +22,7 @@ internal object Topics {
     val B = Topic("B", Serdes(StringSerde, StringSerde))
     val C = Topic("C", Serdes(StringSerde, StringSerde))
     val D = Topic("D", Serdes(StringSerde, StringSerde))
-    val E = Topic("E", Serdes(StringSerde, JsonSerde.jackson<JsonDto>()))
+    val E = Topic("E", Serdes(StringSerde, JsonSerde.kotlinx<JsonDto>()))
 }
 
 internal object Tables {
@@ -101,16 +99,3 @@ internal fun <K : Any, V> TestInputTopic<K, V>.produce(key: K, value: V): TestIn
 internal fun <K : Any, V> TestInputTopic<K, V>.produceTombstone(key: K): TestInputTopic<K, V> =
     pipeInput(key, null).let { this }
 
-// class CustomProcessorWithTable(table: KTable<String, String>) :
-//     StateProcessor<String, String, String, String>(Named("custom-join"), table.table.stateStoreName) {
-//     override fun process(
-//         metadata: ProcessorMetadata,
-//         store: TimestampedKeyValueStore<String, String>,
-//         keyValue: KeyValue<String, String>
-//     ): String = "${keyValue.value}${store[keyValue.key].value()}"
-// }
-
-// open class CustomProcessor : Processor<String, String, String>() {
-//     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): String =
-//         "${keyValue.value}.v2"
-// }

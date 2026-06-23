@@ -85,24 +85,31 @@ Versions declared inline (no version catalog).
 
 ## Loki Logs
 
-Query production logs via `logcli`:
+Query logs via `logcli`:
 
 ```sh
-logcli query '{service_name="<app>"}' --addr=https://loki.prod.nav.cloud.nais.io --org-id=helved --limit=50
+logcli query '{service_name="<app>", k8s_cluster_name="prod"}' --addr=https://loki.nav.cloud.nais.io --org-id=tenant --bearer-token="$(gcloud auth print-access-token)" --limit=50
 ```
 
 Services: `speiderhytta`, `peisschtappern`, `abetal`, `utsjekk`, `urskog`, `branntaarn`, `helved-peisen`, `logs`, `smokesignal`, `statistikkern`, `simulering`, `vedskiva`, `ws-proxy`
 
+Available labels: `service_name`, `service_namespace`, `k8s_cluster_name`, `k8s_pod_name`, `k8s_node_name`, `k8s_container_name`, `detected_level`, `deployment_environment`
+
+Clusters: `prod`, `dev`, `prod-fss`, `dev-fss`
+
 Useful patterns:
 ```sh
 # Filter by text
-logcli query '{service_name="utsjekk"} |= "ERROR"' --addr=https://loki.prod.nav.cloud.nais.io --org-id=helved --limit=20
+logcli query '{service_name="utsjekk", k8s_cluster_name="prod"} |= "ERROR"' --addr=https://loki.nav.cloud.nais.io --org-id=tenant --bearer-token="$(gcloud auth print-access-token)" --limit=20
 
 # Time range (RFC3339 or relative)
-logcli query '{service_name="utsjekk"}' --addr=https://loki.prod.nav.cloud.nais.io --org-id=helved --from="2h ago" --limit=50
+logcli query '{service_name="utsjekk", k8s_cluster_name="prod"}' --addr=https://loki.nav.cloud.nais.io --org-id=tenant --bearer-token="$(gcloud auth print-access-token)" --from="2h ago" --limit=50
 
 # JSON field extraction
-logcli query '{service_name="utsjekk"} | json | level="ERROR"' --addr=https://loki.prod.nav.cloud.nais.io --org-id=helved --limit=20
+logcli query '{service_name="utsjekk", k8s_cluster_name="prod"} | json | level="ERROR"' --addr=https://loki.nav.cloud.nais.io --org-id=tenant --bearer-token="$(gcloud auth print-access-token)" --limit=20
+
+# Dev cluster
+logcli query '{service_name="utsjekk", k8s_cluster_name="dev"}' --addr=https://loki.nav.cloud.nais.io --org-id=tenant --bearer-token="$(gcloud auth print-access-token)" --limit=20
 ```
 
 Logs are JSON-structured (logstash-encoder). Key fields: `message`, `level`, `logger_name`, `stack_trace`.

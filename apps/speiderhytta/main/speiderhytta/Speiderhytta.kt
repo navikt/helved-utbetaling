@@ -1,10 +1,7 @@
 package speiderhytta
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.engine.EngineConnectorBuilder
@@ -71,11 +68,7 @@ fun Application.speiderhytta(config: Config = Config()) {
         meterBinders += LogbackMetrics()
     }
     install(ContentNegotiation) {
-        jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
+        json(libs.kotlinx.KotlinxJson)
     }
 
     val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()
@@ -84,8 +77,7 @@ fun Application.speiderhytta(config: Config = Config()) {
     }
 
     val metrics = Metrics(meters)
-    val httpClient = HttpClientFactory.new()
-    val githubApp = GithubApp(config.github, httpClient)
+    val githubApp = GithubApp(config.github, HttpClientFactory.new(libs.kotlinx.KotlinxJson))
     val github = GithubClient(config.github, app = githubApp)
     val deployService = DeployService(github.asDeployFetcher(), metrics, codeRepos = config.github.codeRepos, jdbcCtx = jdbcCtx)
     val incidentService = IncidentService(github.asFetcher(), metrics, jdbcCtx)

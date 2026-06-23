@@ -1,5 +1,9 @@
+@file:UseSerializers(libs.kotlinx.InstantSerializer::class)
+
 package speiderhytta.slo
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import libs.jdbc.Dao
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -9,6 +13,7 @@ import java.time.Instant
  * Periodically captured SLO state. helved-peisen reads this for trend charts;
  * the live "right now" view is computed directly from Prometheus instead.
  */
+@Serializable
 data class SloSnapshot(
     val id: Long? = null,
     val app: String,

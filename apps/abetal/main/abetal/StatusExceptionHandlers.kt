@@ -1,6 +1,7 @@
 package abetal
 
-import libs.kafka.JacksonSerializer
+import libs.kafka.KotlinxSerializer
+import kotlinx.serialization.serializer
 import libs.kafka.kafkaLog
 import models.ApiError
 import models.Fagsystem
@@ -54,7 +55,7 @@ private fun statusRecord(
     val record = ProducerRecord(
         Topics.status.name,
         StringSerializer().serialize(Topics.status.name, key),
-        JacksonSerializer<StatusReply>().serialize(Topics.status.name, StatusReply.err(error))
+        KotlinxSerializer(serializer<StatusReply>()).serialize(Topics.status.name, StatusReply.err(error))
     )
     record.headers().add(FS_KEY, fagsystem.name.toByteArray(Charsets.UTF_8))
     return record

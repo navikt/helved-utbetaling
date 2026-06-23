@@ -2,7 +2,8 @@ package peisschtappern
 
 import libs.kafka.JsonSerde
 import libs.kafka.KafkaProducer
-import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.serialization.decodeFromString
+import libs.kotlinx.KotlinxJson
 import libs.xml.XMLMapper
 import libs.utils.auditLog
 import models.DpUtbetaling
@@ -70,7 +71,7 @@ class ManuellEndringService(
         value: String,
         audit: Audit,
     ): Utbetaling {
-        val utbetaling = JsonSerde.jackson.readValue<Utbetaling>(value)
+        val utbetaling = KotlinxJson.decodeFromString<Utbetaling>(value)
         val result = utbetalingerProducer.send(key, utbetaling)
         if(result.isSuccess) {
             auditLog.info("$audit -> flytt pending til utbetalinger manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
@@ -92,7 +93,7 @@ class ManuellEndringService(
         value: String,
         audit: Audit,
     ): Boolean {
-        val dp = JsonSerde.jackson.readValue<DpUtbetaling>(value)
+        val dp = KotlinxJson.decodeFromString<DpUtbetaling>(value)
         val result =  dpProducer.send(key, dp)
         if(result.isSuccess) {
             auditLog.info("$audit -> rekjør dagpenger manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
@@ -105,7 +106,7 @@ class ManuellEndringService(
         value: String,
         audit: Audit,
     ): Boolean {
-        val ts = JsonSerde.jackson.readValue<TsDto>(value)
+        val ts = KotlinxJson.decodeFromString<TsDto>(value)
         val result = tsProducer.send(key, ts)
         if(result.isSuccess) {
             auditLog.info("$audit -> rekjør tilleggsstønader manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")

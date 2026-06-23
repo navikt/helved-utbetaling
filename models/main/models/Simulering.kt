@@ -1,7 +1,12 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class, libs.kotlinx.UUIDSerializer::class)
+
 package models
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.json.JsonClassDiscriminator
 import no.nav.system.os.entiteter.beregningskjema.BeregningStoppnivaa
 import no.nav.system.os.entiteter.beregningskjema.BeregningStoppnivaaDetaljer
 import no.nav.system.os.entiteter.beregningskjema.BeregningsPeriode
@@ -9,20 +14,20 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import java.time.LocalDate
 import kotlin.math.abs
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
-@JsonSubTypes(
-    JsonSubTypes.Type(models.v1.Simulering::class, name = "v1"),
-    JsonSubTypes.Type(models.v2.Simulering::class, name = "v2"),
-    JsonSubTypes.Type(Info::class, name = "info"),
-)
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+@JsonClassDiscriminator("@type")
 sealed interface Simulering
 
 object v1 {
+    @Serializable
+    @SerialName("v1")
     data class Simulering(
         val oppsummeringer: List<OppsummeringForPeriode>,
         val detaljer: SimuleringDetaljer,
     ): models.Simulering
 
+    @Serializable
     data class OppsummeringForPeriode(
         val fom: LocalDate,
         val tom: LocalDate,
@@ -31,17 +36,23 @@ object v1 {
         val totalEtterbetaling: Int,
         val totalFeilutbetaling: Int,
     )
+
+    @Serializable
     data class SimuleringDetaljer(
         val gjelderId: String,
         val datoBeregnet: LocalDate,
         val totalBeløp: Int,
         val perioder: List<Periode>,
-    ) 
+    )
+
+    @Serializable
     data class Periode(
         val fom: LocalDate,
         val tom: LocalDate,
         val posteringer: List<Postering>,
     )
+
+    @Serializable
     data class Postering(
         val fagområde: Fagområde,
         val sakId: SakId,
@@ -52,6 +63,7 @@ object v1 {
         val klassekode: String,
     )
 
+    @Serializable
     enum class PosteringType(val typeKlasse: String) {
         YTELSE("YTEL"),
         FEILUTBETALING("FEIL"),
@@ -66,6 +78,7 @@ object v1 {
         }
     }
 
+    @Serializable
     enum class Fagområde(val fagsystem: Fagsystem) { 
         TILLSTPB(Fagsystem.TILLEGGSSTØNADER),
         TILLSTLM(Fagsystem.TILLEGGSSTØNADER), 
@@ -91,6 +104,8 @@ object v1 {
 }
 
 object v2 {
+    @Serializable
+    @SerialName("v2")
     data class Simulering(
         val perioder: List<Simuleringsperiode>,
     ): models.Simulering {
@@ -106,6 +121,7 @@ object v2 {
         }
     }
 
+    @Serializable
     data class Simuleringsperiode(
         val fom: LocalDate,
         val tom: LocalDate,
@@ -120,6 +136,7 @@ object v2 {
         }
     }
 
+    @Serializable
     data class SimulertUtbetaling(
         val fagsystem: Fagsystem,
         val sakId: String,
@@ -142,6 +159,7 @@ object v2 {
         }
     }
 
+    @Serializable
     data class Postering(
         val fom: LocalDate,
         val tom: LocalDate,
@@ -160,6 +178,7 @@ object v2 {
         }
     }
 
+    @Serializable
     enum class Type(val typeKlasse: String) {
         YTEL("YTEL"),
         FEIL("FEIL"),
@@ -208,11 +227,14 @@ private val List<BeregningStoppnivaaDetaljer>.justeringer: List<BeregningStoppni
 
 private fun List<BeregningStoppnivaaDetaljer>.sum(): Int = sumOf { it.belop.toInt() }
 
+@Serializable
+@SerialName("info")
 data class Info (
     val status: Status,
     val fagsystem: Fagsystem,
     val message: String,
 ): Simulering {
+    @Serializable
     enum class Status {
         OK_UTEN_ENDRING,
     }
@@ -231,4 +253,3 @@ data class Info (
         }
     }
 }
-

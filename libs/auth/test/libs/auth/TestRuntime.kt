@@ -1,6 +1,6 @@
 package libs.auth
 
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -8,23 +8,24 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.http.*
 import io.ktor.server.routing.*
-import io.ktor.server.engine.*
-import libs.auth.*
-import io.ktor.server.auth.jwt.*
 import kotlinx.coroutines.runBlocking
 import io.ktor.server.auth.*
+import kotlinx.serialization.json.Json
 import java.net.URI
+
+internal val kotlinxJsonConfig = Json { 
+    ignoreUnknownKeys = true 
+    encodeDefaults = true
+}
 
 fun Application.module(config: AzureConfig) {
 
     install(ContentNegotiation) {
-        jackson {}
+        json(kotlinxJsonConfig)
     }
 
     install(Authentication) {
-        jwt(TokenProvider.AZURE) {
-            configure(config)
-        }
+        jwt(TokenProvider.AZURE, config)
     }
 
     routing {
@@ -47,14 +48,16 @@ fun Application.module(config: AzureConfig) {
 class AzureFake: AutoCloseable {
     companion object {
         fun azure(app: Application) {
-            app.install(ContentNegotiation) { jackson() }
+            app.install(ContentNegotiation) { 
+                json(kotlinxJsonConfig)
+            }
             app.routing {
                 get("/jwks") {
-                    call.respondText(libs.auth.TEST_JWKS)
+                    call.respondText(TEST_JWKS)
                 }
 
                 post("/token") {
-                    call.respond(libs.auth.AzureToken(3600, "token"))
+                    call.respond(AzureToken(3600, "token"))
                 }
             }
         }
@@ -71,7 +74,7 @@ class AzureFake: AutoCloseable {
         )
     }
 
-    private val jwksGenerator = libs.auth.JwkGenerator(config.issuer, config.clientId)
+    private val jwksGenerator = JwkGenerator(config.issuer, config.clientId)
 
     fun generateToken() = jwksGenerator.generate()
 
@@ -82,4 +85,3 @@ private val NettyApplicationEngine.port: Int
     get() = runBlocking {
         resolvedConnectors().first { it.type == ConnectorType.HTTP }.port
     }
-

@@ -2,6 +2,9 @@ package abetal.ts
 
 import abetal.*
 import models.*
+import libs.kafka.KotlinxSerializer
+import kotlinx.serialization.serializer
+import libs.kafka.KotlinxDeserializer
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
 import java.util.*
@@ -12,6 +15,18 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class TsTest : ConsumerTestBase() {
+
+    @Test
+    fun `can serialize and deserialize`() {
+        val original = Ts.dto("123", "123") {
+            Ts.utbetaling(UtbetalingId(UUID.randomUUID()), brukFagområdeTillst = true) {
+                periode(7.jun, 18.jun, 1077u)
+            }
+        }
+        val bytes = KotlinxSerializer(serializer<TsDto>()).serialize("topic", original)
+        val decoded = KotlinxDeserializer(serializer<TsDto>()).deserialize("topic", bytes)
+        assertEquals(original, decoded)
+    }
 
     @Test
     fun `migration - continuing after migrated opphør`() {

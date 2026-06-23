@@ -1,7 +1,22 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class, libs.kotlinx.UUIDSerializer::class)
 package utsjekk.iverksetting
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.databind.JsonNode
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonContentPolymorphicSerializer
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import models.DocumentedErrors
 import models.badRequest
 import models.kontrakter.*
@@ -9,6 +24,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 
+@Serializable
 enum class IverksettStatus {
     SENDT_TIL_OPPDRAG,
     FEILET_MOT_OPPDRAG,
@@ -17,10 +33,12 @@ enum class IverksettStatus {
     OK_UTEN_UTBETALING,
 }
 
+@Serializable
 data class IverksettV2Dto(
     val sakId: String,
     val behandlingId: String,
     val iverksettingId: String? = null,
+    @Serializable(with = PersonidentSerializer::class)
     val personident: Personident,
     val vedtak: VedtaksdetaljerV2Dto =
         VedtaksdetaljerV2Dto(
@@ -41,6 +59,7 @@ data class IverksettV2Dto(
     }
 }
 
+@Serializable
 data class VedtaksdetaljerV2Dto(
     val vedtakstidspunkt: LocalDateTime,
     val saksbehandlerId: String,
@@ -48,6 +67,7 @@ data class VedtaksdetaljerV2Dto(
     val utbetalinger: List<UtbetalingV2Dto> = emptyList(),
 )
 
+@Serializable
 data class UtbetalingV2Dto(
     val beløp: UInt,
     val satstype: Satstype,
@@ -56,11 +76,13 @@ data class UtbetalingV2Dto(
     val stønadsdata: StønadsdataDto,
 )
 
+@Serializable
 data class ForrigeIverksettingV2Dto(
     val behandlingId: String,
     val iverksettingId: String? = null,
 )
 
+@Serializable
 data class StatusEndretMelding(
     val sakId: String,
     val behandlingId: String,
@@ -69,101 +91,58 @@ data class StatusEndretMelding(
     val status: IverksettStatus,
 )
 
+@Serializable
 enum class Ferietillegg {
     ORDINÆR,
     AVDØD,
 }
 
-sealed class StønadsdataDto(open val stønadstype: StønadType) {
-    companion object {
-        @JsonCreator
-        @JvmStatic
-        fun deserialize(json: JsonNode) =
-            listOf(
-                StønadsdataAAPDto::deserialiser,
-                StønadsdataDagpengerDto::deserialiser,
-                StønadsdataTiltakspengerV2Dto::deserialiser,
-                StønadsdataTilleggsstønaderDto::deserialiser
-            )
-                .map { it(json) }
-                .firstOrNull { it != null } ?: error("Klarte ikke deserialisere stønadsdata")
+@Serializable(with = StønadsdataDtoSerializer::class)
+sealed class StønadsdataDto {
+    abstract val stønadstype: StønadType
+}
+
+object StønadsdataDtoSerializer: JsonContentPolymorphicSerializer<StønadsdataDto>(StønadsdataDto::class) {
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<StønadsdataDto> {
+        val stønadstype = element.jsonObject["stønadstype"]?.jsonPrimitive?.contentOrNull ?: error("Mangler stønadstype")
+        return when {
+            StønadTypeDagpenger.entries.any { it.name == stønadstype } -> StønadsdataDagpengerDto.serializer()
+            StønadTypeTiltakspenger.entries.any { it.name == stønadstype } -> StønadsdataTiltakspengerV2Dto.serializer()
+            StønadTypeTilleggsstønader.entries.any { it.name == stønadstype } -> StønadsdataTilleggsstønaderDto.serializer()
+            StønadTypeAAP.entries.any { it.name == stønadstype } -> StønadsdataAAPDto.serializer()
+            else -> error("Ukjent stønadstype: $stønadstype")
+        }
     }
 }
 
+@Serializable
 data class StønadsdataDagpengerDto(
     override val stønadstype: StønadTypeDagpenger,
     val ferietillegg: Ferietillegg? = null,
     val meldekortId: String,
     val fastsattDagsats: UInt,
-) :
-    StønadsdataDto(stønadstype) {
-    companion object {
-        fun deserialiser(json: JsonNode) = try {
-            StønadsdataDagpengerDto(
-                stønadstype = StønadTypeDagpenger.valueOf(json["stønadstype"].asText()),
-                meldekortId = json["meldekortId"].asText(),
-                fastsattDagsats = json["fastsattDagsats"].asInt().toUInt(),
-                ferietillegg = json["ferietillegg"]?.asText()
-                    .takeIf { it != null && it != "null" }
-                    ?.let { Ferietillegg.valueOf(it) }
-            )
-        } catch (_: Exception) {
-            null
-        }
-    }
-}
+) : StønadsdataDto()
 
+
+@Serializable
 data class StønadsdataTiltakspengerV2Dto(
     override val stønadstype: StønadTypeTiltakspenger,
     val barnetillegg: Boolean = false,
     val brukersNavKontor: String,
     val meldekortId: String,
-) : StønadsdataDto(stønadstype) {
-    companion object {
-        fun deserialiser(json: JsonNode) = try {
-            StønadsdataTiltakspengerV2Dto(
-                stønadstype = StønadTypeTiltakspenger.valueOf(json["stønadstype"].asText()),
-                barnetillegg = json["barnetillegg"]?.asBoolean() ?: false,
-                brukersNavKontor = json["brukersNavKontor"].asText(),
-                meldekortId = json["meldekortId"].asText(),
-            )
-        } catch (_: Exception) {
-            null
-        }
-    }
-}
+) : StønadsdataDto()
 
+@Serializable
 data class StønadsdataTilleggsstønaderDto(
     override val stønadstype: StønadTypeTilleggsstønader,
     val brukersNavKontor: String? = null,
-) : StønadsdataDto(stønadstype) {
-    companion object {
-        fun deserialiser(json: JsonNode) = try {
-            StønadsdataTilleggsstønaderDto(
-                stønadstype = StønadTypeTilleggsstønader.valueOf(json["stønadstype"].asText()),
-                brukersNavKontor = json["brukersNavKontor"]?.asText().takeIf { it != null && it != "null" },
-            )
-        } catch (_: Exception) {
-            null
-        }
-    }
-}
+) : StønadsdataDto()
 
+@Serializable
 data class StønadsdataAAPDto(
     override val stønadstype: StønadTypeAAP,
     val fastsattDagsats: UInt? = null,
-) : StønadsdataDto (stønadstype) {
-    companion object {
-        fun deserialiser(json: JsonNode) = try {
-            StønadsdataAAPDto(
-                stønadstype = StønadTypeAAP.valueOf(json["stønadstype"].asText()),
-                fastsattDagsats = json["fastsattDagsats"]?.asText().takeIf { it != null && it != "null" }?.toUInt(),
-            )
-        } catch (_: Exception) {
-            null
-        }
-    }
-}
+) : StønadsdataDto ()
 
 fun sakIdTilfredsstillerLengdebegrensning(iverksettDto: IverksettV2Dto) {
     if (iverksettDto.sakId.length !in 1..GyldigSakId.MAKSLENGDE) {
@@ -257,5 +236,23 @@ fun ingenUtbetalingsperioderHarStønadstypeEØSOgFerietilleggTilAvdød(iverksett
 
     if (ugyldigKombinasjon) {
         badRequest("Ferietillegg til avdød er ikke tillatt for stønadstypen ${StønadTypeDagpenger.DAGPENGER_EØS}")
+    }
+}
+
+object PersonidentSerializer : KSerializer<Personident> {
+    override val descriptor = PrimitiveSerialDescriptor("Personident", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: Personident) = encoder.encodeString(value.verdi)
+    override fun deserialize(decoder: Decoder): Personident {
+        val jsonDecoder = decoder as? JsonDecoder
+        if (jsonDecoder != null) {
+            val element = jsonDecoder.decodeJsonElement()
+            val verdi = when (element) {
+                is JsonPrimitive -> element.content
+                is JsonObject -> element["verdi"]!!.jsonPrimitive.content
+                else -> error("Unexpected JSON for Personident: $element")
+            }
+            return Personident(verdi)
+        }
+        return Personident(decoder.decodeString())
     }
 }

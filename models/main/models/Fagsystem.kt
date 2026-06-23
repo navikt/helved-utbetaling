@@ -1,5 +1,8 @@
 package models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class Fagsystem(val fagområde: String) {
     DAGPENGER("DP"),
     TILTAKSPENGER("TILTPENG"),
@@ -59,4 +62,3 @@ enum class Fagsystem(val fagområde: String) {
     fun toName(): String =
         if (isTilleggsstønader()) TILLEGGSSTØNADER.name else this.name
 }
-

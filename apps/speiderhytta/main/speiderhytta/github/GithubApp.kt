@@ -1,7 +1,5 @@
 package speiderhytta.github
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
@@ -10,9 +8,12 @@ import io.ktor.client.request.post
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.Serializable
 import libs.utils.appLog
 import speiderhytta.GithubConfig
 import java.security.KeyFactory
+import java.security.PrivateKey
+import java.security.Signature
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.time.Instant
@@ -65,11 +66,15 @@ class GithubApp(
 
     private fun signJwt(): String {
         val now = Instant.now()
-        return JWT.create()
-            .withIssuer(config.appId)
-            .withIssuedAt(Date.from(now.minusSeconds(30)))
-            .withExpiresAt(Date.from(now.plusSeconds(540)))
-            .sign(Algorithm.RSA256(null, privateKey))
+        val header = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("""{"alg":"RS256","typ":"JWT"}""".toByteArray())
+        val payload = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("""{"iat":${now.epochSecond - 50},"exp":${now.epochSecond + 590},"iss":"${config.appId}"}""".toByteArray())
+        val sig = Signature.getInstance("SHA256withRSA").apply {
+            initSign(privateKey)
+            update("$header.$payload".toByteArray())
+        }.sign().let { Base64.getUrlEncoder().withoutPadding().encodeToString(it) }
+        return "$header.$payload.$sig"
     }
 
     private fun parsePrivateKey(pem: String): RSAPrivateKey {
@@ -88,8 +93,10 @@ class GithubApp(
     private data class InstallationToken(val token: String, val expiresAt: Instant)
 
     @Suppress("PropertyName", "ConstructorParameterNaming")
+    @Serializable
     private data class InstallationTokenResponse(
         val token: String,
         val expires_at: String,
     )
 }
+

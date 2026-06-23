@@ -1,5 +1,6 @@
 plugins {
     id("io.ktor.plugin")
+    kotlin("plugin.serialization")
 }
 
 application {
@@ -8,24 +9,17 @@ application {
 
 val ktorVersion = "3.4.2"
 val nettyVersion = "4.2.13.Final"
-val jackson3Version = "3.1.1"
 
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:http"))
     implementation(project(":libs:jdbc"))
+    implementation(project(":libs:kotlinx"))
     implementation(project(":libs:ktor"))
     implementation(project(":libs:utils"))
 
     // Keep Ktor on 3.4.2, but override the vulnerable transitive Netty line.
     implementation(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
-
-    constraints {
-        implementation("tools.jackson.core:jackson-core:$jackson3Version")
-        implementation("tools.jackson.core:jackson-databind:$jackson3Version")
-        testImplementation("tools.jackson.core:jackson-core:$jackson3Version")
-        testImplementation("tools.jackson.core:jackson-databind:$jackson3Version")
-    }
 
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
@@ -36,16 +30,7 @@ dependencies {
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
-    // YAML parsing for slo.yml
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.21.2")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.21.2")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
-
-    // JWT signing for GitHub App auth (RS256)
-    implementation("com.auth0:java-jwt:4.5.0")
-
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
-    implementation("net.logstash.logback:logstash-logback-encoder:9.0")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:jdbc-test"))

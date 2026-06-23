@@ -2,7 +2,7 @@ package utsjekk.iverksetting
 
 import libs.jdbc.Dao
 import models.kontrakter.Fagsystem
-import models.kontrakter.objectMapper
+import libs.kotlinx.KotlinxJson
 import utsjekk.utbetaling.UtbetalingId
 import java.sql.ResultSet
 
@@ -80,11 +80,11 @@ data class IverksettingResultatDao(
             stmt.setString(4, iverksettingId?.id)
 
             tilkjentYtelseForUtbetaling?.let { 
-                stmt.setString(5, objectMapper.writeValueAsString(it)) 
+                stmt.setString(5, KotlinxJson.encodeToString(it)) 
             } ?: stmt.setNull(5, java.sql.Types.OTHER)
 
             oppdragResultat?.let { 
-                stmt.setString(6, objectMapper.writeValueAsString(it))
+                stmt.setString(6, KotlinxJson.encodeToString(it))
             } ?: stmt.setNull(6, java.sql.Types.OTHER)
 
             stmt.setObject(7, uid.id)
@@ -100,11 +100,11 @@ data class IverksettingResultatDao(
 
         return update(sql) { stmt ->
             tilkjentYtelseForUtbetaling?.let { 
-                stmt.setString(1, objectMapper.writeValueAsString(it)) 
+                stmt.setString(1, KotlinxJson.encodeToString(it)) 
             } ?: stmt.setNull(1, java.sql.Types.OTHER)
 
             oppdragResultat?.let { 
-                stmt.setString(2, objectMapper.writeValueAsString(it))
+                stmt.setString(2, KotlinxJson.encodeToString(it))
             } ?: stmt.setNull(2, java.sql.Types.OTHER)
 
             stmt.setObject(3, uid.id)
@@ -122,11 +122,11 @@ data class IverksettingResultatDao(
 
             return update(sql) { stmt -> 
                 tilkjentYtelseForUtbetaling?.let { 
-                    stmt.setString(1, objectMapper.writeValueAsString(it)) 
+                    stmt.setString(1, KotlinxJson.encodeToString(it)) 
                 } ?: stmt.setNull(1, java.sql.Types.OTHER)
 
                 oppdragResultat?.let { 
-                    stmt.setString(2, objectMapper.writeValueAsString(it))
+                    stmt.setString(2, KotlinxJson.encodeToString(it))
                 } ?: stmt.setNull(2, java.sql.Types.OTHER)
 
                 stmt.setString(3, behandlingId.id)
@@ -145,11 +145,11 @@ data class IverksettingResultatDao(
 
             return update(sql) { stmt ->
                 tilkjentYtelseForUtbetaling?.let { 
-                    stmt.setString(1, objectMapper.writeValueAsString(it)) 
+                    stmt.setString(1, KotlinxJson.encodeToString(it)) 
                 } ?: stmt.setNull(1, java.sql.Types.OTHER)
 
                 oppdragResultat?.let { 
-                    stmt.setString(2, objectMapper.writeValueAsString(it))
+                    stmt.setString(2, KotlinxJson.encodeToString(it))
                 } ?: stmt.setNull(2, java.sql.Types.OTHER)
 
                 stmt.setString(3, behandlingId.id)

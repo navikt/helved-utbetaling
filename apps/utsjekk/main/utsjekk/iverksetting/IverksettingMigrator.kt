@@ -1,5 +1,8 @@
+@file:UseSerializers(libs.kotlinx.UUIDSerializer::class)
 package utsjekk.iverksetting
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
@@ -10,9 +13,9 @@ import models.*
 import models.BehandlingId
 import models.UtbetalingId
 import models.Utbetalingsperiode
-import utsjekk.partition
 import java.util.UUID
 
+@Serializable
 data class MigrationRequest(
     val sakId: String,
     val behandlingId: String,

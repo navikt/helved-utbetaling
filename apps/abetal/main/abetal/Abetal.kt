@@ -1,10 +1,8 @@
 package abetal
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
@@ -55,11 +53,10 @@ fun Application.abetal(
         meterBinders += LogbackMetrics()
     }
     install(ContentNegotiation) {
-        jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
+        json(Json { 
+            ignoreUnknownKeys = true 
+            encodeDefaults = true
+        })
     }
 
     monitor.subscribe(ApplicationStopping) {

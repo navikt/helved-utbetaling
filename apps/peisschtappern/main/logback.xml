@@ -2,29 +2,31 @@
 <configuration>
 
     <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <includeMdcKeyName>trace_id</includeMdcKeyName>
-            <includeMdcKeyName>span_id</includeMdcKeyName>
-        </encoder>
+        <encoder class="ch.qos.logback.classic.encoder.JsonEncoder"/>
     </appender>
 
     <appender name="otel" class="io.opentelemetry.instrumentation.logback.v1_0.OpenTelemetryAppender">
         <appender-ref ref="json" />
     </appender>
 
-    <appender name="secureLog" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+    <appender name="secureLog" class="libs.utils.LogTcpAppender">
         <destination>team-logs.nais-system:5170</destination>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${HOSTNAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
-            <includeContext>false</includeContext>
+        <encoder class="ch.qos.logback.classic.encoder.JsonEncoder">
+            <withKeyValuePair><key>google_cloud_project</key><value>${GOOGLE_CLOUD_PROJECT}</value></withKeyValuePair>
+            <withKeyValuePair><key>nais_namespace_name</key><value>${NAIS_NAMESPACE}</value></withKeyValuePair>
+            <withKeyValuePair><key>nais_pod_name</key><value>${HOSTNAME}</value></withKeyValuePair>
+            <withKeyValuePair><key>nais_container_name</key><value>${NAIS_APP_NAME}</value></withKeyValuePair>
         </encoder>
     </appender>
 
-    <appender name="auditLog" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+    <appender name="auditLog" class="libs.utils.LogTcpAppender">
         <destination>team-logs.nais-system:5170</destination>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${HOSTNAME}","nais_container_name":"${NAIS_APP_NAME}","team_audit":"helved"}</customFields>
-            <includeContext>false</includeContext>
+        <encoder class="ch.qos.logback.classic.encoder.JsonEncoder">
+            <withKeyValuePair><key>google_cloud_project</key><value>${GOOGLE_CLOUD_PROJECT}</value></withKeyValuePair>
+            <withKeyValuePair><key>nais_namespace_name</key><value>${NAIS_NAMESPACE}</value></withKeyValuePair>
+            <withKeyValuePair><key>nais_pod_name</key><value>${HOSTNAME}</value></withKeyValuePair>
+            <withKeyValuePair><key>nais_container_name</key><value>${NAIS_APP_NAME}</value></withKeyValuePair>
+            <withKeyValuePair><key>team_audit</key><value>helved</value></withKeyValuePair>
         </encoder>
     </appender>
 

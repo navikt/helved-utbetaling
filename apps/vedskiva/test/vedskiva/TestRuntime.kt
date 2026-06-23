@@ -1,10 +1,7 @@
 package vedskiva
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.*
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
@@ -60,6 +57,7 @@ object TestRuntime {
     val ktor: KtorRuntime<Config> by lazy {
         KtorRuntime<Config>(
             appName = "vedskiva",
+            jsonConfig = VedskivaKotlinx,
             module = {
                 vedskiva(
                     config,
@@ -82,13 +80,19 @@ object TestRuntime {
 }
 
 class AzureFake {
-    private val server = KtorRuntime<Nothing>("vedskiva.azure", AzureFake::azure)
+    private val server = KtorRuntime<Nothing>(
+        "vedskiva.azure", 
+        jsonConfig = libs.kotlinx.KotlinxJson,
+        AzureFake::azure
+    )
 
     fun generateToken() = jwksGenerator.generate()
 
     companion object {
         fun azure(app: Application) {
-            app.install(ContentNegotiation) { jackson() }
+            app.install(ContentNegotiation) { 
+                json(libs.kotlinx.KotlinxJson)
+            }
             app.routing {
                 get("/jwks") {
                     call.respondText(libs.auth.TEST_JWKS)
@@ -114,22 +118,22 @@ class AzureFake {
 }
 
 class PeisschtappernFake {
-    private val server = KtorRuntime<Nothing>("vedskiva.peisschtappern", PeisschtappernFake::server)
+    private val server = KtorRuntime<Nothing>(
+        "vedskiva.peisschtappern", 
+        jsonConfig = libs.kotlinx.KotlinxJson,
+        PeisschtappernFake::server
+    )
 
     companion object {
         val response = mutableListOf<Dao>()
         fun server(app: Application) {
             app.install(ContentNegotiation) { 
-                jackson {
-                    registerModule(JavaTimeModule())
-                    disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                }
+                json(libs.kotlinx.KotlinxJson)
             }
             app.routing {
                 get("/api/messages") {
                     if (response.isNotEmpty()) {
-                        call.respond(mapOf("items" to response, "total" to response.size))
+                        call.respond(Page(response, response.size))
                     } else {
                         call.respondText(libs.utils.Resource.read("/may_5th.json"), ContentType.Application.Json)
                     }
@@ -181,4 +185,3 @@ class KafkaFactoryFake: KafkaFactory {
         return producers[topic.name]!! as KafkaProducerFake<K, V>
     }
 }
-

@@ -1,9 +1,9 @@
 package peisschtappern
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.*
 
+@Serializable
 data class PendingMismatch(
     val uid: String,
     val sakId: String?,
@@ -22,7 +22,7 @@ private data class UtbetalingEntry(
     val perioder: List<Periode>,
 )
 
-private fun parsePeriode(json: JsonNode): Periode? {
+private fun parsePeriode(json: JsonObject): Periode? {
     val fom = json.textOrNull("fom") ?: return null
     val tom = json.textOrNull("tom") ?: return null
     val beløp = json.longOrNull("beløp") ?: return null
@@ -32,10 +32,10 @@ private fun parsePeriode(json: JsonNode): Periode? {
 private fun parseEntry(dao: Daos): UtbetalingEntry? {
     val value = dao.value?.takeIf { it.isNotBlank() } ?: return null
     return try {
-        val json = objectMapper.readTree(value)
+        val json = Json.parseToJsonElement(value).jsonObject
         val uid = json.textOrNull("uid") ?: return null
-        val perioder = json.get("perioder")
-            ?.mapNotNull(::parsePeriode)
+        val perioder = (json["perioder"] as? JsonArray)
+            ?.mapNotNull { parsePeriode(it.jsonObject) }
             ?.sortedWith(compareBy({ it.fom }, { it.tom }, { it.beløp }))
             ?: emptyList()
         UtbetalingEntry(dao, uid, perioder)
@@ -59,19 +59,16 @@ fun detectMismatches(utbetalinger: List<Daos>, pendingUtbetalinger: List<Daos>):
     }
 }
 
-private val objectMapper = ObjectMapper()
-    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+private fun JsonObject.textOrNull(field: String): String? =
+    get(field)?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotEmpty() }
 
-private fun JsonNode.textOrNull(field: String): String? =
-    get(field)?.takeIf { !it.isNull }?.asText()?.takeIf { it.isNotEmpty() }
-
-private fun JsonNode.longOrNull(field: String): Long? =
-    get(field)?.takeIf { !it.isNull }?.asLong()
+private fun JsonObject.longOrNull(field: String): Long? =
+    get(field)?.jsonPrimitive?.longOrNull
 
 internal fun parseUid(value: String?): String? {
     if (value.isNullOrBlank()) return null
     return try {
-        objectMapper.readTree(value).textOrNull("uid")
+        Json.parseToJsonElement(value).jsonObject.textOrNull("uid")
     } catch (_: Exception) {
         null
     }

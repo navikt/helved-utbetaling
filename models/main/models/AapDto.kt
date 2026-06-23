@@ -1,11 +1,16 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class, libs.kotlinx.UUIDSerializer::class)
+
 package models
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.collections.filter
 
+@Serializable
 data class AapUtbetaling(
     val dryrun: Boolean = false,
     val sakId: String,
@@ -18,6 +23,7 @@ data class AapUtbetaling(
     val avvent: Avvent? = null,
 )
 
+@Serializable
 data class AapUtbetalingsdag(
     val id: UUID,
     val fom: LocalDate,

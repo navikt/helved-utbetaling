@@ -42,6 +42,7 @@ object TestRuntime {
     init {
         KtorRuntime<Config>(
             appName = "statistikkern",
+            jsonConfig = libs.kotlinx.KotlinxJson,
             module = {
                 statistikkern(config, kafka, bq, kafka)
             }

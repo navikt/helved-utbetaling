@@ -1,12 +1,13 @@
 package models
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.parser.OpenAPIV3Parser
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
+import kotlinx.serialization.json.Json
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -15,6 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
+import libs.kotlinx.KotlinxJson
 
 /**
  * Contract tests that verify the OpenAPI spec (openapi-dryrun.yml) matches
@@ -24,13 +26,6 @@ import kotlin.test.fail
  * needs updating (not the models).
  */
 class DryrunContractTest {
-
-    private val jackson = jacksonObjectMapper().apply {
-        registerModule(JavaTimeModule())
-        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-    }
-
     private val spec by lazy {
         val specPath = java.lang.System.getProperty("user.dir") + "/../dokumentasjon/openapi-dryrun.yml"
         val result = OpenAPIV3Parser().readLocation(specPath, null, null)
@@ -305,11 +300,7 @@ class DryrunContractTest {
     // ──────────────────────────────────────────────
 
     @Test
-    fun `Simulering discriminator values match JsonSubTypes annotations`() {
-        // From @JsonSubTypes on Simulering sealed interface:
-        // v1 -> models.v1.Simulering
-        // v2 -> models.v2.Simulering
-        // info -> Info
+    fun `Simulering discriminator values match OpenAPI spec`() {
         val expectedDiscriminatorValues = setOf("v1", "v2", "info")
 
         // Verify SimuleringV1 schema has @type = "v1"
@@ -350,7 +341,7 @@ class DryrunContractTest {
             ),
             vedtakstidspunktet = LocalDateTime.of(2025, 1, 1, 12, 0),
         )
-        val json = jackson.readTree(jackson.writeValueAsString(model))
+        val json = KotlinxJson.encodeToJsonElement(AapUtbetaling.serializer(), model).jsonObject
 
         assertJsonFieldsMatchSchema(json, "AapUtbetaling")
     }
@@ -372,7 +363,7 @@ class DryrunContractTest {
             ),
             vedtakstidspunktet = LocalDateTime.of(2025, 1, 1, 12, 0),
         )
-        val json = jackson.readTree(jackson.writeValueAsString(model))
+        val json = KotlinxJson.encodeToJsonElement(DpUtbetaling.serializer(), model).jsonObject
 
         assertJsonFieldsMatchSchema(json, "DpUtbetaling")
     }
@@ -399,7 +390,7 @@ class DryrunContractTest {
                 )
             ),
         )
-        val json = jackson.readTree(jackson.writeValueAsString(model))
+        val json = KotlinxJson.encodeToJsonElement(TsDto.serializer(), model).jsonObject
 
         assertJsonFieldsMatchSchema(json, "TsDto")
     }
@@ -421,7 +412,7 @@ class DryrunContractTest {
                 )
             ),
         )
-        val json = jackson.readTree(jackson.writeValueAsString(model))
+        val json = KotlinxJson.encodeToJsonElement(TpUtbetaling.serializer(), model).jsonObject
 
         assertJsonFieldsMatchSchema(json, "TpUtbetaling")
     }
@@ -446,32 +437,32 @@ class DryrunContractTest {
                 perioder = emptyList(),
             ),
         )
-        val json = jackson.readTree(jackson.writeValueAsString(model))
+        val json = KotlinxJson.encodeToJsonElement(Simulering.serializer(), model).jsonObject
 
-        assertEquals("v1", json["@type"].asText(), "v1.Simulering should serialize with @type=v1")
-        assertTrue(json.has("oppsummeringer"), "Missing 'oppsummeringer' field")
-        assertTrue(json.has("detaljer"), "Missing 'detaljer' field")
+        assertEquals("v1", json["@type"]?.jsonPrimitive?.content, "v1.Simulering should serialize with @type=v1")
+        assertTrue("oppsummeringer" in json, "Missing 'oppsummeringer' field")
+        assertTrue("detaljer" in json, "Missing 'detaljer' field")
     }
 
     @Test
     fun `v2 Simulering serializes with correct discriminator`() {
         val model: Simulering = v2.Simulering(perioder = emptyList())
-        val json = jackson.readTree(jackson.writeValueAsString(model))
+        val json = KotlinxJson.encodeToJsonElement(Simulering.serializer(), model).jsonObject
 
-        assertEquals("v2", json["@type"].asText(), "v2.Simulering should serialize with @type=v2")
-        assertTrue(json.has("perioder"), "Missing 'perioder' field")
+        assertEquals("v2", json["@type"]?.jsonPrimitive?.content, "v2.Simulering should serialize with @type=v2")
+        assertTrue("perioder" in json, "Missing 'perioder' field")
     }
 
     @Test
     fun `Info serializes with correct discriminator`() {
         val model: Simulering = Info.OkUtenEndring(Fagsystem.AAP)
-        val json = jackson.readTree(jackson.writeValueAsString(model))
+        val json = KotlinxJson.encodeToJsonElement(Simulering.serializer(), model).jsonObject
 
-        assertEquals("info", json["@type"].asText(), "Info should serialize with @type=info")
-        assertTrue(json.has("status"), "Missing 'status' field")
-        assertTrue(json.has("fagsystem"), "Missing 'fagsystem' field")
-        assertTrue(json.has("message"), "Missing 'message' field")
-        assertEquals("OK_UTEN_ENDRING", json["status"].asText())
+        assertEquals("info", json["@type"]?.jsonPrimitive?.content, "Info should serialize with @type=info")
+        assertTrue("status" in json, "Missing 'status' field")
+        assertTrue("fagsystem" in json, "Missing 'fagsystem' field")
+        assertTrue("message" in json, "Missing 'message' field")
+        assertEquals("OK_UTEN_ENDRING", json.getValue("status").jsonPrimitive.content)
     }
 
     @Test
@@ -488,14 +479,14 @@ class DryrunContractTest {
               }
             }
         """.trimIndent()
-        val result = jackson.readValue(json, Simulering::class.java)
+        val result = KotlinxJson.decodeFromString(Simulering.serializer(), json)
         assertTrue(result is v1.Simulering, "Expected v1.Simulering, got ${result::class}")
     }
 
     @Test
     fun `v2 Simulering deserializes from JSON with discriminator`() {
         val json = """{"@type": "v2", "perioder": []}"""
-        val result = jackson.readValue(json, Simulering::class.java)
+        val result = KotlinxJson.decodeFromString(Simulering.serializer(), json)
         assertTrue(result is v2.Simulering, "Expected v2.Simulering, got ${result::class}")
     }
 
@@ -509,7 +500,7 @@ class DryrunContractTest {
               "message": "test"
             }
         """.trimIndent()
-        val result = jackson.readValue(json, Simulering::class.java)
+        val result = KotlinxJson.decodeFromString(Simulering.serializer(), json)
         assertTrue(result is Info, "Expected Info, got ${result::class}")
     }
 
@@ -537,9 +528,9 @@ class DryrunContractTest {
         }
     }
 
-    private fun assertJsonFieldsMatchSchema(json: JsonNode, schemaName: String) {
+    private fun assertJsonFieldsMatchSchema(json: JsonObject, schemaName: String) {
         val specProps = schemaProperties(schemaName)
-        val jsonFields = json.fieldNames().asSequence().toSet()
+        val jsonFields = json.keys
 
         // Every JSON field should exist in the spec
         val extraInJson = jsonFields - specProps.keys
