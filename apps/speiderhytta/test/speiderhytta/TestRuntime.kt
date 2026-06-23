@@ -48,6 +48,7 @@ object TestRuntime {
     val ktor: KtorRuntime<Config> by lazy {
         KtorRuntime<Config>(
             appName = "speiderhytta",
+            jsonConfig = libs.kotlinx.KotlinxJson,
             module = { speiderhytta(config) },
             onClose = {
                 reset()

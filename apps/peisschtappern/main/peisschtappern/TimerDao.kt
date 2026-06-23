@@ -1,5 +1,8 @@
+@file:UseSerializers(libs.kotlinx.LocalDateTimeSerializer::class)
 package peisschtappern
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import libs.jdbc.Dao
 import libs.utils.logger
 import libs.utils.secureLog
@@ -9,6 +12,7 @@ import java.time.LocalDateTime
 
 private val timeDaoLog = logger("dao")
 
+@Serializable
 data class TimerDao(
     val key: String,
     val timeout: LocalDateTime,

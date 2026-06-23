@@ -1,8 +1,8 @@
 package utsjekk.iverksetting
 
 import libs.jdbc.Dao
+import libs.kotlinx.KotlinxJson
 import models.kontrakter.Fagsystem
-import models.kontrakter.objectMapper
 import utsjekk.utbetaling.UtbetalingId
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -12,15 +12,13 @@ import java.util.*
 data class IverksettingDao(
     val data: Iverksetting,
     val mottattTidspunkt: LocalDateTime,
-    // val utbetalingId: UtbetalingId? = null,
 ) {
     companion object: Dao<IverksettingDao> {
         override val table = "iverksetting"
 
         override fun from(rs: ResultSet) = IverksettingDao(
-            data = objectMapper.readValue(rs.getString("data"), Iverksetting::class.java),
+            data = KotlinxJson.decodeFromString(rs.getString("data")),
             mottattTidspunkt = rs.getTimestamp("mottatt_tidspunkt").toLocalDateTime(),
-            // utbetalingId = rs.getString("utbetaling_id")?.let { UtbetalingId(UUID.fromString(it)) }
         )
 
         suspend fun uid(where: Where.() -> Unit = { Where() }) : UtbetalingId? {
@@ -95,7 +93,7 @@ data class IverksettingDao(
 
         return update(sql) { stmt ->
             stmt.setObject(1, data.behandlingId.id)
-            stmt.setString(2, objectMapper.writeValueAsString(data))
+            stmt.setString(2, KotlinxJson.encodeToString(data))
             stmt.setTimestamp(3, Timestamp.valueOf(mottattTidspunkt))
             stmt.setObject(4, uid.id)
         }

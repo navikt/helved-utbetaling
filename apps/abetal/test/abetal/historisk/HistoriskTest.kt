@@ -2,6 +2,9 @@ package abetal.historisk
 
 import abetal.*
 import models.*
+import libs.kafka.KotlinxSerializer
+import kotlinx.serialization.serializer
+import libs.kafka.KotlinxDeserializer
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -11,6 +14,17 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 internal class HistoriskTest : ConsumerTestBase() {
+
+    @Test
+    fun `can serialize and deserialize`() {
+        
+        val original = Historisk.utbetaling(UtbetalingId(UUID.randomUUID()), "123", "123") {
+            Historisk.periode(7.jun, 18.jun, 100u)
+        }
+        val bytes = KotlinxSerializer(serializer<HistoriskUtbetaling>()).serialize("topic", original)
+        val decoded = KotlinxDeserializer(serializer<HistoriskUtbetaling>()).deserialize("topic", bytes)
+        assertEquals(original, decoded)
+    }
 
     @Test
     fun `create - utbetaling on internal topic`() {

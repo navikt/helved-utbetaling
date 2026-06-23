@@ -1,12 +1,5 @@
 package libs.kafka
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JavaType
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import libs.utils.secureLog
 import kotlin.reflect.KClass
 import libs.xml.*
@@ -16,6 +9,9 @@ import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.streams.kstream.WindowedSerdes
 import org.apache.kafka.streams.kstream.Windowed
+import kotlinx.serialization.*
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.SetSerializer
 
 data class Serdes<K: Any, V>(
     val key: StreamSerde<K>, 
@@ -26,7 +22,7 @@ interface StreamSerde<T> : Serde<T>
 
 object Serde {
     inline fun <reified V: Any> xml() = XmlSerde.xml<V>()
-    inline fun <reified V: Any> json() = JsonSerde.jackson<V>()
+    inline fun <reified V: Any> json() = JsonSerde.kotlinx<V>()
     inline fun <reified V: Any> listStreamsPair() = JsonSerde.listStreamsPair<V, V?>()
     inline fun <reified V: Any> streamsPair() = JsonSerde.streamsPair<V, V?>()
     fun string() = StringSerde
@@ -34,17 +30,17 @@ object Serde {
 
 fun string() = Serdes(StringSerde, StringSerde)
 fun bytes() = Serdes(StringSerde, ByteArraySerde)
-inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.jackson<V>())
-inline fun <reified V: Any> jsonList() = Serdes(StringSerde, JsonSerde.jacksonList<V>())
+inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.kotlinx<V>())
+inline fun <reified V: Any> jsonList() = Serdes(StringSerde, JsonSerde.list<V>())
 inline fun <reified V: Any> jsonListStreamsPair() = Serdes(StringSerde, JsonSerde.listStreamsPair<V, V?>())
 inline fun <reified V: Any> jsonStreamsPair() = Serdes(StringSerde, JsonSerde.streamsPair<V, V?>())
 inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.xml<V>())
 inline fun <reified V: Any> jaxb() = Serdes(StringSerde, XmlSerde.jaxb<V>())
-inline fun <reified K: Any> jsonString() = Serdes(JsonSerde.jackson<K>(), StringSerde)
-inline fun <reified K : Any, reified V : Any> jsonjson() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jackson<V>())
-inline fun <reified K : Any, reified V : Any> jsonjsonList() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jacksonList<V>())
-inline fun <reified K : Any, reified V : Any> jsonjsonSet() = Serdes(JsonSerde.jackson<K>(), JsonSerde.jacksonSet<V>())
-inline fun <reified V : Any> windowedjsonList() = Serdes(WindowedStringSerde, JsonSerde.jacksonList<V>())
+inline fun <reified K: Any> jsonString() = Serdes(JsonSerde.kotlinx<K>(), StringSerde)
+inline fun <reified K : Any, reified V : Any> jsonjson() = Serdes(JsonSerde.kotlinx<K>(), JsonSerde.kotlinx<V>())
+inline fun <reified K : Any, reified V : Any> jsonjsonList() = Serdes(JsonSerde.kotlinx<K>(), JsonSerde.list<V>())
+inline fun <reified K : Any, reified V : Any> jsonjsonSet() = Serdes(JsonSerde.kotlinx<K>(), JsonSerde.set<V>())
+inline fun <reified V : Any> windowedjsonList() = Serdes(WindowedStringSerde, JsonSerde.list<V>())
 
 
 object WindowedStringSerde: StreamSerde<Windowed<String>> {
@@ -66,113 +62,52 @@ object ByteArraySerde: StreamSerde<ByteArray> {
 }
 
 object JsonSerde {
-    inline fun <reified V : Any> jackson(): StreamSerde<V> = object : StreamSerde<V> {
-        override fun serializer(): Serializer<V> = JacksonSerializer()
-        override fun deserializer(): Deserializer<V> = JacksonDeserializer(V::class)
+    inline fun <reified V : Any> kotlinx(): StreamSerde<V> = object : StreamSerde<V> {
+        override fun serializer(): Serializer<V> = KotlinxSerializer(serializer<V>())
+        override fun deserializer(): Deserializer<V> = KotlinxDeserializer(serializer<V>())
     }
-    inline fun <reified V: Any> jacksonList(): StreamSerde<List<V>> = object: StreamSerde<List<V>> {
-        override fun serializer(): Serializer<List<V>> = JacksonSerializer()
-        override fun deserializer(): Deserializer<List<V>> = JacksonListDeserializer(V::class)
+    inline fun <reified V: Any> list(): StreamSerde<List<V>> = object: StreamSerde<List<V>> {
+        override fun serializer(): Serializer<List<V>> = KotlinxSerializer(ListSerializer(serializer<V>()))
+        override fun deserializer(): Deserializer<List<V>> = KotlinxDeserializer(ListSerializer(serializer<V>()))
     }
-    inline fun <reified V: Any> jacksonSet(): StreamSerde<Set<V>> = object: StreamSerde<Set<V>> {
-        override fun serializer(): Serializer<Set<V>> = JacksonSerializer()
-        override fun deserializer(): Deserializer<Set<V>> = JacksonSetDeserializer(V::class)
+    inline fun <reified V: Any> set(): StreamSerde<Set<V>> = object: StreamSerde<Set<V>> {
+        override fun serializer(): Serializer<Set<V>> = KotlinxSerializer(SetSerializer(serializer<V>()))
+        override fun deserializer(): Deserializer<Set<V>> = KotlinxDeserializer(SetSerializer(serializer<V>()))
     }
     inline fun <reified L: Any, reified R> listStreamsPair(): StreamSerde<List<StreamsPair<L, R>>> {
-        val typeRef = object: TypeReference<List<StreamsPair<L, R>>>() {}
+        val ser = ListSerializer(StreamsPair.serializer(serializer<L>(), serializer<R>()))
         return object: StreamSerde<List<StreamsPair<L, R>>> {
-            override fun serializer(): Serializer<List<StreamsPair<L, R>>> = JacksonSerializer()
-            override fun deserializer(): Deserializer<List<StreamsPair<L, R>>> = JacksonListTypeRefDeserializer(typeRef)
+            override fun serializer(): Serializer<List<StreamsPair<L, R>>> = KotlinxSerializer(ser)
+            override fun deserializer(): Deserializer<List<StreamsPair<L, R>>> = KotlinxDeserializer(ser)
         }
     }
 
     inline fun <reified L: Any, reified R> streamsPair(): StreamSerde<StreamsPair<L, R>> {
-        val typeRef = object: TypeReference<StreamsPair<L, R>>() {}
+        val ser = StreamsPair.serializer(serializer<L>(), serializer<R>())
         return object: StreamSerde<StreamsPair<L, R>> {
-            override fun serializer(): Serializer<StreamsPair<L, R>> = JacksonSerializer()
-            override fun deserializer(): Deserializer<StreamsPair<L, R>> = JacksonTypeRefDeserializer(typeRef)
+            override fun serializer(): Serializer<StreamsPair<L, R>> = KotlinxSerializer(ser)
+            override fun deserializer(): Deserializer<StreamsPair<L, R>> = KotlinxDeserializer(ser)
         }
-    }
-
-    inline fun <reified T: Any> jacksonListGenericTypeRef(): StreamSerde<List<T>> {
-        val typeRef = object: TypeReference<List<T>>() {}
-        return object: StreamSerde<List<T>> {
-            override fun serializer(): Serializer<List<T>> = JacksonSerializer()
-            override fun deserializer(): Deserializer<List<T>> = JacksonListTypeRefDeserializer(typeRef)
-        }
-    }
-    val jackson: ObjectMapper = jacksonObjectMapper().apply {
-        registerModule(JavaTimeModule())
-        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
     }
 }
 
-class JacksonSerializer<T : Any> : Serializer<T> {
-    override fun serialize(topic: String, data: T?): ByteArray? {
+class KotlinxSerializer<T>(private val kSerializer: KSerializer<T>) : Serializer<T> {
+    override fun serialize(_topic: String, data: T?): ByteArray? {
         return data?.let {
-            JsonSerde.jackson.writeValueAsBytes(data)
+            libs.kotlinx.KotlinxJson.encodeToString(kSerializer, data).toByteArray()
         }
     }
 }
 
-class JacksonDeserializer<T : Any>(private val kclass: KClass<T>) : Deserializer<T> {
+class KotlinxDeserializer<T>(private val kSerializer: KSerializer<T>) : Deserializer<T> {
     override fun deserialize(topic: String, data: ByteArray?): T? {
         if (data == null) return null
+        val rawJson = String(data, Charsets.UTF_8)
         try {
-            return JsonSerde.jackson.readValue(data, kclass.java)
+            return libs.kotlinx.KotlinxJson.decodeFromString(kSerializer, rawJson)
         } catch (e: Exception) {
-            val rawJson = String(data, Charsets.UTF_8)
             secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
-            throw e
-        }
-    }
-}
-
-class JacksonListDeserializer<T: Any>(private val klass: KClass<T>): Deserializer<List<T>> {
-    private val type: JavaType = JsonSerde.jackson.typeFactory.constructCollectionType(List::class.java, klass.java)
-    override fun deserialize(topic: String, data: ByteArray?): List<T>? {
-        if (data == null) return null
-        try {
-            return JsonSerde.jackson.readValue(data, type)
-        } catch (e: Exception) {
-            val rawJson = String(data, Charsets.UTF_8)
-            secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
-            throw e
-        }
-    }
-}
-
-class JacksonListTypeRefDeserializer<T: Any>(private val typeRef: TypeReference<List<T>>): Deserializer<List<T>> {
-    override fun deserialize(topic: String, data: ByteArray?): List<T>? {
-        if (data == null) return null
-        try {
-            return JsonSerde.jackson.readValue(data, typeRef)
-        } catch (e: Exception) {
-            val rawJson = String(data, Charsets.UTF_8)
-            secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
-            throw e
-        }
-    }
-}
-
-class JacksonTypeRefDeserializer<T: Any>(private val typeRef: TypeReference<T>): Deserializer<T> {
-    override fun deserialize(topic: String, data: ByteArray?): T? {
-        if (data == null) return null
-        return JsonSerde.jackson.readValue(data, typeRef)
-    }
-}
-
-class JacksonSetDeserializer<T: Any>(private val klass: KClass<T>): Deserializer<Set<T>> {
-    private val type: JavaType = JsonSerde.jackson.typeFactory.constructCollectionType(Set::class.java, klass.java)
-    override fun deserialize(topic: String, data: ByteArray?): Set<T>? {
-        if (data == null) return null
-        try {
-            return JsonSerde.jackson.readValue(data, type)
-        } catch (e: Exception) {
-            val rawJson = String(data, Charsets.UTF_8)
-            secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
-            throw e
+            throw DeserializationException(topic, e)
         }
     }
 }
@@ -207,7 +142,14 @@ class XmlDeserializer<T : Any>(private val mapper: XMLMapper<T>) : Deserializer<
         } catch (e: Exception) {
             val rawXml = String(data, Charsets.UTF_8)
             secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawXml")
-            throw e
+            throw DeserializationException(topic, e)
         }
     }
+}
+
+class DeserializationException(
+    topic: String,
+    cause: Exception
+): RuntimeException("Deserialization failed on topic $topic (details in team logs)", cause) {
+    override fun toString(): String = message!!
 }

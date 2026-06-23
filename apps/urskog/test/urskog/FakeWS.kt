@@ -1,11 +1,11 @@
 package urskog
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import io.ktor.client.HttpClient
+import kotlinx.serialization.Serializable
 import io.ktor.http.*
 import io.ktor.serialization.*
-import io.ktor.serialization.jackson.*
+import kotlinx.serialization.json.Json
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -18,6 +18,7 @@ import io.ktor.utils.io.*
 import libs.auth.AzureConfig
 import libs.auth.AzureToken
 import libs.auth.TEST_JWKS
+import libs.http.HttpClientFactory
 import libs.ktor.port
 import libs.utils.Resource
 import libs.ws.*
@@ -29,6 +30,8 @@ import java.util.*
 class FakeWS: Sts, Soap {
     var respondWith: String = Resource.read("/simuler-ok.xml")
     val received = mutableListOf<String>()
+
+    override val http: HttpClient = HttpClientFactory.new(libs.kotlinx.KotlinxJson)
 
     override suspend fun samlToken(): SamlToken {
         return SamlToken("token", LocalDateTime.now())
@@ -82,19 +85,9 @@ private fun Application.fakes() {
         override suspend fun serialize(contentType: ContentType, charset: Charset, typeInfo: TypeInfo, value: Any?) = null
     }
 
-    data class GandalfOIDCSamlToken(
-        val access_token: String = "aGVtbWVsaWcuZ2FuZGFsZi50b2tlbgo=",
-        val issued_token_type: String = "urn:ietf:params:oauth:token-type:saml2",
-        val token_type: String = "Bearer",
-        val expires_in: Long = 3600,
-    )
 
     install(ContentNegotiation) {
-        jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
+        json(libs.kotlinx.KotlinxJson)
         register(ContentType.Application.Xml, XmlDeserializer())
     }
 
@@ -115,3 +108,11 @@ private fun Application.fakes() {
         }
     }
 }
+
+@Serializable
+private data class GandalfOIDCSamlToken(
+    val access_token: String = "aGVtbWVsaWcuZ2FuZGFsZi50b2tlbgo=",
+    val issued_token_type: String = "urn:ietf:params:oauth:token-type:saml2",
+    val token_type: String = "Bearer",
+    val expires_in: Long = 3600,
+)

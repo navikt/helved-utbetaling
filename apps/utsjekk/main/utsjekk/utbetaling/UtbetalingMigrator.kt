@@ -1,6 +1,10 @@
+@file:UseSerializers(libs.kotlinx.UUIDSerializer::class)
+
 package utsjekk.utbetaling
 
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.KafkaProducer
@@ -16,18 +20,21 @@ import java.util.*
 /**
  * @param id er den nye IDen som skal refereres til på Kafka
  */
+@Serializable
 data class MigrationRequest(val id: UUID)
 
 /**
  * @param uid er utbetalingsId fra REST-endepunktet
  * @param id er den nye IDen som skal refereres til på Kafka
  */
+@Serializable
 data class MigrationBatchItem(val uid: UUID, val id: UUID)
 
 /**
  * One shot migrering av fler utbetalingsIDer (f.eks alle for samme sak)
  * @param items er en liste med utbetalingsIDer
  */
+@Serializable
 data class MigrationBatchRequest(val items: List<MigrationBatchItem>)
 
 class UtbetalingMigrator(

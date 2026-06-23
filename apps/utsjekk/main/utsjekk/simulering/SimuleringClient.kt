@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.jdbc.concurrency.CoroutineDatasource
@@ -20,13 +21,15 @@ import utsjekk.utbetaling.UtbetalingsoppdragDto
 class SimuleringClient(
     private val config: Config,
     private val jdbcCtx: CoroutineDatasource,
+    private val json: Json = libs.kotlinx.KotlinxJson,
     private val client: HttpClient = HttpClientFactory.new(
+        json = json,
         logLevel = LogLevel.ALL, 
         retries = null, 
         requestTimeoutMs = 120_000, 
         connectionTimeoutMs = 5000,
     ),
-    private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
+    private val azure: AzureTokenProvider = AzureTokenProvider(json, config.azure)
 ) {
     suspend fun hentSimuleringsresultatMedOppsummering(
         simulering: domain.Simulering,

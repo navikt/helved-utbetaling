@@ -98,7 +98,6 @@ class SimuleringTest {
 
                 assertEquals(expected, it)
             }
-        // libs.utils.appLog.info(libs.kafka.JsonSerde.jackson.writeValueAsString(response))
     }
 
     @Test
@@ -171,7 +170,6 @@ class SimuleringTest {
 
                 assertEquals(expected, it)
             }
-        // libs.utils.appLog.info(libs.kafka.JsonSerde.jackson.writeValueAsString(response))
     }
 
     @Test
@@ -591,7 +589,6 @@ class SimuleringTest {
                     )
                 )
                 assertEquals(expected, it)
-                // libs.utils.appLog.info(libs.kafka.JsonSerde.jackson.writeValueAsString(it))
             }
     }
 

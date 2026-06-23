@@ -1,13 +1,9 @@
 package peisschtappern
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.*
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
@@ -21,8 +17,10 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import libs.auth.Jwt
+import libs.auth.JwtPrincipal
 import libs.auth.TokenProvider
-import libs.auth.configure
+import libs.auth.jwt
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.jdbc.concurrency.CoroutineDatasource
@@ -59,17 +57,11 @@ fun Application.peisschtappern(
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(Authentication) {
-        jwt(TokenProvider.AZURE) {
-            configure(config.azure)
-        }
+        jwt(TokenProvider.AZURE, config.azure)
     }
 
     install(ContentNegotiation) {
-        jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
+        json(libs.kotlinx.KotlinxJson)
     }
 
     install(MicrometerMetrics) {
@@ -141,10 +133,11 @@ data class Audit(
 ) {
     companion object {
         fun from(call: ApplicationCall, reason: String? = null): Audit {
+            val claims = call.principal<JwtPrincipal>()?.claims ?: Jwt.Claims(emptyMap())
             return Audit(
-                name = call.claim("name") ?: "test",
-                ident = call.claim("NAVident") ?: "test",
-                email = call.claim("preferred_username") ?: "test",
+                name = claims.claim("name") ?: "test",
+                ident = claims.claim("NAVident") ?: "test",
+                email = claims.claim("preferred_username") ?: "test",
                 reason = reason
             )
         }
@@ -158,16 +151,3 @@ data class Audit(
         }
 }
 
-fun ApplicationCall.claim(claim: String): String? { 
-    val principal = principal<JWTPrincipal>() ?: return null
-    val claimValue = principal.payload.getClaim(claim)
-    if (claimValue.isNull) {
-        val claims = principal.payload.claims.keys.joinToString(", ")
-        secureLog.info("could not find claim '$claim'. Available: [$claims]")
-    }
-    return when {
-        claimValue.isNull -> null
-        claimValue.asString() != null -> claimValue.toString()
-        else -> claimValue.toString().replace("\"", "")
-    }
-}

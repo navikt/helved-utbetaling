@@ -1,6 +1,9 @@
 package abetal.valp
 
 import abetal.*
+import libs.kafka.KotlinxSerializer
+import kotlinx.serialization.serializer
+import libs.kafka.KotlinxDeserializer
 import models.*
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
@@ -12,6 +15,22 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 internal class ValpTest : ConsumerTestBase() {
+
+    @Test
+    fun `can serialize and deserialize`() {
+        val original = Valp.utbetaling(
+            uid = UtbetalingId(UUID.randomUUID()),
+            sakId = "123",
+            behandlingId = "123",
+            besluttetTidspunkt = 14.jun.atStartOfDay().toInstant(ZoneOffset.UTC),
+            belop = 0u,
+        ) {
+            ValpUtbetaling.Periode(3.jun, 7.jun)
+        }
+        val bytes = KotlinxSerializer(serializer<ValpUtbetaling>()).serialize("topic", original)
+        val decoded = KotlinxDeserializer(serializer<ValpUtbetaling>()).deserialize("topic", bytes)
+        assertEquals(original, decoded)
+    }
 
     @Test
     fun `create - utbetaling on internal topic`() {

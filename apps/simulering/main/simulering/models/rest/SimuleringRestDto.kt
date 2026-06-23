@@ -1,8 +1,10 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class)
+
 package simulering.models.rest
 
 import kotlinx.serialization.Serializable
 import models.kontrakter.Personident
-import simulering.LocalDateSerializer
+import kotlinx.serialization.UseSerializers
 import simulering.PersonidentSerializer
 import java.time.LocalDate
 
@@ -25,9 +27,7 @@ object rest {
         val forrigePeriodeId: String?,
         val erEndringPåEksisterendePeriode: Boolean,
         val klassekode: String,
-        @Serializable(with = LocalDateSerializer::class)
         val fom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val tom: LocalDate,
         val sats: Int,
         val satstype: SatsType,
@@ -37,7 +37,6 @@ object rest {
 
     @Serializable
     data class Opphør(
-        @Serializable(with = LocalDateSerializer::class)
         val fom: LocalDate,
     )
 
@@ -52,7 +51,6 @@ object rest {
     @Serializable
     data class SimuleringResponse(
         val gjelderId: String,
-        @Serializable(with = LocalDateSerializer::class)
         val datoBeregnet: LocalDate,
         val totalBelop: Int,
         val perioder: List<SimulertPeriode>,
@@ -60,9 +58,7 @@ object rest {
 
     @Serializable
     data class SimulertPeriode(
-        @Serializable(with = LocalDateSerializer::class)
         val fom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val tom: LocalDate,
         val utbetalinger: List<Utbetaling>,
     )
@@ -72,7 +68,6 @@ object rest {
         val fagområde: String,
         val fagSystemId: String,
         val utbetalesTilId: String,
-        @Serializable(with = LocalDateSerializer::class)
         val forfall: LocalDate,
         val feilkonto: Boolean,
         val detaljer: List<Postering>,
@@ -82,9 +77,7 @@ object rest {
     @Serializable
     data class Postering(
         val type: String,
-        @Serializable(with = LocalDateSerializer::class)
         val faktiskFom: LocalDate,
-        @Serializable(with = LocalDateSerializer::class)
         val faktiskTom: LocalDate,
         val belop: Int,
         val sats: Double,

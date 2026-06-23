@@ -7,11 +7,13 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import libs.http.HttpClientFactory
 
 class SlackClient(
     private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(LogLevel.ALL),
+    private val json: Json = libs.kotlinx.KotlinxJson,
+    private val client: HttpClient = HttpClientFactory.new(json, LogLevel.ALL),
 ) {
     fun postAggregated(grouped: Map<String, List<Brann>>) {
         runBlocking {

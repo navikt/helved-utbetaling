@@ -1,10 +1,7 @@
 package snickerboa
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.install
@@ -63,11 +60,7 @@ fun Application.snickerboa(
     }
 
     install(ContentNegotiation) {
-        jackson {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
+        json(libs.kotlinx.KotlinxJson)
     }
 
     install(StatusPages) {
@@ -126,5 +119,4 @@ fun Job.cancelJob() {
         this@cancelJob.cancelAndJoin()
     }
 }
-
 

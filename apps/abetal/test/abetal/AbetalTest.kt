@@ -1,8 +1,12 @@
 package abetal
 
 import abetal.dp.*
+import kotlinx.serialization.serializer
+import libs.kafka.JsonSerde
+import libs.kafka.XmlSerde
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.time.*
@@ -11,6 +15,54 @@ import java.util.UUID
 import kotlin.test.*
 
 internal class AbetalTest {
+
+    @Test
+    fun `can serialize and deserialize utbetaling`() {
+        val original = utbetaling(
+            action = Action.CREATE,
+            uid = UtbetalingId(UUID.randomUUID()),
+            originalKey = "123",
+            sakId = SakId("123"),
+            behandlingId = BehandlingId("123"),
+            fagsystem = Fagsystem.AAP,
+            lastPeriodeId = PeriodeId(),
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            vedtakstidspunkt = LocalDateTime.now(),
+            beslutterId = Navident("kelvin"),
+            saksbehandlerId = Navident("kelvin"),
+            personident = Personident("12345678910")
+        ) {
+            periode(1.jun, 1.jun, 10u, 10u)
+        }
+        val bytes = JsonSerde.kotlinx<Utbetaling>().serializer().serialize("topic", original)
+        val decoded = JsonSerde.kotlinx<Utbetaling>().deserializer().deserialize("topic", bytes)
+        assertEquals(original, decoded)
+    }
+
+    @Test
+    fun `can serialize and deserialize saker`() {
+        val originalKey = SakKey(SakId("123"), Fagsystem.AAP)
+        val originalValue = setOf(UtbetalingId(UUID.randomUUID()))
+        val bytesKey = JsonSerde.kotlinx<SakKey>().serializer().serialize("topic", originalKey)
+        val decodedKey = JsonSerde.kotlinx<SakKey>().deserializer().deserialize("topic", bytesKey)
+        assertEquals(originalKey, decodedKey)
+        val bytesValue = JsonSerde.kotlinx<Set<UtbetalingId>>().serializer().serialize("topic", originalValue)
+        val decodedValue = JsonSerde.kotlinx<Set<UtbetalingId>>().deserializer().deserialize("topic", bytesValue)
+        assertEquals(originalValue, decodedValue)
+    }
+
+    @Test
+    fun `can serialize and deserialize oppdrag`() {
+        val original = OppdragService.opprett(utbetaling(Action.CREATE, UtbetalingId(UUID.randomUUID())) {
+            periode(1.jan, 3.jan, 123u)
+        }).apply {
+            mmel = Mmel().apply { alvorlighetsgrad = "00" }
+        }
+        val bytes = XmlSerde.jaxb<Oppdrag>().serializer().serialize("topic", original)
+        val decoded = XmlSerde.jaxb<Oppdrag>().deserializer().deserialize("topic", bytes)
+        val rebytes = XmlSerde.jaxb<Oppdrag>().serializer().serialize("topic", decoded)
+        assertEquals(String(bytes), String(rebytes))
+    }
 
     @AfterEach
     fun `assert empty topic`() {

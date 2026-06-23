@@ -1,6 +1,13 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class, libs.kotlinx.UUIDSerializer::class)
 package utsjekk.utbetaling
 
-import com.fasterxml.jackson.annotation.JsonCreator
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import java.nio.ByteBuffer
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -15,34 +22,42 @@ import java.time.DayOfWeek
 import java.time.MonthDay
 
 @JvmInline
+@Serializable
 value class SakId(val id: String)
 
 @JvmInline
+@Serializable
 value class BehandlingId(val id: String)
 
 @JvmInline
+@Serializable
 value class NavEnhet(val enhet: String)
 
 @JvmInline
+@Serializable
 value class Personident(val ident: String) {
     companion object
 }
 
 @JvmInline
+@Serializable
 value class Navident(val ident: String) {
     companion object
 }
 
 @JvmInline
+@Serializable
 value class UtbetalingId(val id: UUID) {
     companion object
 }
 
+@Serializable
 enum class Årsak(val kode: String) {
     AVVENT_AVREGNING("AVAV"),
     AVVENT_REFUSJONSKRAV("AVRK"),
 }
 
+@Serializable
 data class Avvent(
     val fom: LocalDate,
     val tom: LocalDate,
@@ -51,6 +66,7 @@ data class Avvent(
     val feilregistrering: Boolean = false,
 )
 
+@Serializable
 data class Utbetaling(
     val sakId: SakId,
     val behandlingId: BehandlingId,
@@ -132,6 +148,7 @@ data class Utbetaling(
 }
 
 @JvmInline
+@Serializable
 value class PeriodeId(private val id: UUID) {
     constructor() : this(UUID.randomUUID())
 
@@ -172,6 +189,7 @@ value class PeriodeId(private val id: UUID) {
     }
 }
 
+@Serializable
 data class Utbetalingsperiode(
     val fom: LocalDate,
     val tom: LocalDate,
@@ -196,6 +214,7 @@ fun List<Utbetalingsperiode>.betalendeEnhet(): NavEnhet? {
     return sortedBy { it.tom }.find { it.betalendeEnhet != null }?.betalendeEnhet
 }
 
+@Serializable
 enum class Satstype(val kode: String) {
     DAG("DAG7"),
     VIRKEDAG("DAG"), // TODO: rename, skal disse hete det samme som PeriodeType?
@@ -212,6 +231,7 @@ enum class Satstype(val kode: String) {
     }
 }
 
+@Serializable
 enum class Status {
     SENDT_TIL_OPPDRAG,
     FEILET_MOT_OPPDRAG,
@@ -220,12 +240,12 @@ enum class Status {
     OK_UTEN_UTBETALING,
 }
 
+@Serializable(with = StønadstypeSerializer::class)
 sealed interface Stønadstype {
     val name: String
     val klassekode: String
 
     companion object {
-        @JsonCreator
         @JvmStatic
         fun valueOf(str: String): Stønadstype =
             runCatching { StønadTypeDagpenger.valueOf(str) }
@@ -249,6 +269,12 @@ sealed interface Stønadstype {
             is StønadTypeAAP -> "AAP"
             is StønadTypeHistorisk -> "HISTORISK"
         }
+}
+
+object StønadstypeSerializer : KSerializer<Stønadstype> {
+    override val descriptor = PrimitiveSerialDescriptor("Stønadstype", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: Stønadstype) = encoder.encodeString(value.name)
+    override fun deserialize(decoder: Decoder): Stønadstype = Stønadstype.valueOf(decoder.decodeString())
 }
 
 enum class StønadTypeDagpenger(override val klassekode: String) : Stønadstype {

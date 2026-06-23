@@ -1,11 +1,11 @@
 package speiderhytta.slo
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.PropertyNamingStrategies
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import libs.utils.YamlNode
 import libs.utils.appLog
+import libs.utils.mapping
+import libs.utils.parseYaml
+import libs.utils.sequence
+import libs.utils.string
 import java.io.File
 
 /**
@@ -21,8 +21,7 @@ import java.io.File
  *       error_query: "..."
  *       total_query: "..."
  *
- * Unknown YAML keys (e.g. Sloth's `alerting`, `labels`) are ignored by the
- * mapper configured below.
+ * Unknown YAML keys (e.g. Sloth's `alerting`, `labels`) are ignored.
  */
 data class SloDefinition(
     val service: String = "",
@@ -40,15 +39,6 @@ data class SloDefinition(
 }
 
 /**
- * Sloth's top-level wrapper: { version, service, slos: [...] }.
- * We accept either format — bare list or wrapped — for flexibility.
- */
-private data class SlothFile(
-    val service: String? = null,
-    val slos: List<SloDefinition> = emptyList(),
-)
-
-/**
  * Reads SLO YAML files from disk on startup. Path layout:
  *   /var/run/slos/utsjekk.yml
  *   /var/run/slos/abetal.yml
@@ -57,14 +47,6 @@ private data class SlothFile(
  * `apps/<app>/slo.yml` (so the source of truth lives next to the app).
  */
 class SloDefinitionLoader(private val dir: File) {
-
-    private val mapper: ObjectMapper = ObjectMapper(YAMLFactory())
-        .registerKotlinModule()
-        .findAndRegisterModules()
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        // Sloth's YAML spec uses snake_case (error_query, total_query, time_window, ...).
-        // Our Kotlin data classes are camelCase, so let Jackson translate.
-        .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
 
     fun load(): List<SloDefinition> {
         if (!dir.isDirectory) {
@@ -77,18 +59,26 @@ class SloDefinitionLoader(private val dir: File) {
     }
 
     private fun parseFile(file: File): List<SloDefinition> = try {
-        val wrapper = mapper.readValue(file, SlothFile::class.java)
-        if (wrapper.slos.isNotEmpty()) {
-            wrapper.slos.map { def -> def.maybeFillService(wrapper.service) }
-        } else {
-            // bare list fallback
-            mapper.readerForListOf(SloDefinition::class.java).readValue<List<SloDefinition>>(file)
+        val root = parseYaml(file.readText()) as? YamlNode.Mapping ?: return emptyList()
+        val service = root.string("service")
+        root.sequence("slos").map { node ->
+            val m = node as YamlNode.Mapping
+            val events = m.mapping("sli")!!.mapping("events")!!
+            SloDefinition(
+                service = m.string("service")?.takeIf { it.isNotBlank() } ?: service ?: "",
+                name = m.string("name")!!,
+                objective = m.string("objective")!!.toDouble(),
+                description = m.string("description")?.trim(),
+                sli = SloDefinition.Sli(
+                    SloDefinition.Sli.Events(
+                        errorQuery = events.string("error_query")!!,
+                        totalQuery = events.string("total_query")!!,
+                    )
+                ),
+            )
         }
     } catch (t: Throwable) {
         appLog.warn("failed to parse SLO file {}", file, t)
         emptyList()
     }
-
-    private fun SloDefinition.maybeFillService(parent: String?): SloDefinition =
-        if (service.isBlank() && !parent.isNullOrBlank()) copy(service = parent) else this
 }

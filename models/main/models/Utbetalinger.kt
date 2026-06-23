@@ -1,6 +1,18 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class, libs.kotlinx.UUIDSerializer::class)
+
 package models
 
-import com.fasterxml.jackson.annotation.JsonCreator
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import libs.utils.appLog
 import libs.utils.secureLog
 import java.nio.ByteBuffer
@@ -11,37 +23,63 @@ import java.util.Base64
 import java.util.UUID
 
 @JvmInline
+@Serializable
 value class SakId(val id: String) {
     override fun toString(): String = id
 }
 
+@Serializable
 data class SakKey(val sakId: SakId, val fagsystem: Fagsystem)
 
 @JvmInline
+@Serializable
 value class BehandlingId(val id: String) {
     override fun toString(): String = id
 }
 
 @JvmInline
+@Serializable
 value class NavEnhet(val enhet: String) {
     override fun toString(): String = enhet
 }
 
 @JvmInline
+@Serializable
 value class Personident(val ident: String) {
     override fun toString(): String = ident
 }
 
+object PersonidentSerializer : KSerializer<Personident> {
+    override val descriptor = PrimitiveSerialDescriptor("Personident", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: Personident) = encoder.encodeString(value.ident)
+    override fun deserialize(decoder: Decoder): Personident {
+        val jsonDecoder = decoder as? JsonDecoder
+        if (jsonDecoder != null) {
+            val element = jsonDecoder.decodeJsonElement()
+            val ident = when (element) {
+                is JsonPrimitive -> element.content
+                is JsonObject -> element["ident"]!!.jsonPrimitive.content
+                else -> error("Unexpected JSON for Personident: $element")
+            }
+            return Personident(ident)
+        }
+        return Personident(decoder.decodeString())
+    }
+}
+
 @JvmInline
+@Serializable
 value class Navident(val ident: String) {
     override fun toString(): String = ident
 }
 
 @JvmInline
+@Serializable
 value class UtbetalingId(val id: UUID) {
     override fun toString(): String = id.toString()
 }
 
+@Serializable
 data class Utbetaling(
     val dryrun: Boolean,
     val originalKey: String,
@@ -105,11 +143,13 @@ data class Utbetaling(
     }
 }
 
+@Serializable
 enum class Årsak(val kode: String) {
     AVVENT_AVREGNING("AVAV"),
     AVVENT_REFUSJONSKRAV("AVRK"),
 }
 
+@Serializable
 data class Avvent(
     val fom: LocalDate,
     val tom: LocalDate,
@@ -197,6 +237,7 @@ fun Utbetaling.failOnTooLongBehandlingId() {
 }
 
 @JvmInline
+@Serializable
 value class PeriodeId(private val id: String) {
     constructor() : this(UUID.randomUUID().toString())
 
@@ -243,6 +284,7 @@ value class PeriodeId(private val id: String) {
     }
 }
 
+@Serializable
 data class Utbetalingsperiode(
     val fom: LocalDate,
     val tom: LocalDate,
@@ -255,6 +297,7 @@ fun List<Utbetalingsperiode>.betalendeEnhet(): NavEnhet? {
     return sortedBy { it.tom }.find { it.betalendeEnhet != null }?.betalendeEnhet
 }
 
+@Serializable
 enum class Periodetype(val satstype: String) {
     DAG("DAG7"),
     UKEDAG("DAG"),
@@ -262,6 +305,7 @@ enum class Periodetype(val satstype: String) {
     EN_GANG("ENG");
 }
 
+@Serializable
 enum class Frekvens(val utbetFrekvens: String) {
     DAG("DAG"),
     UKE("UKE"),
@@ -271,12 +315,22 @@ enum class Frekvens(val utbetFrekvens: String) {
 
 }
 
+object StønadstypeSerializer : KSerializer<Stønadstype> {
+    override val descriptor = PrimitiveSerialDescriptor("Stønadstype", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: Stønadstype) {
+        encoder.encodeString(value.name)
+    }
+
+    override fun deserialize(decoder: Decoder): Stønadstype = Stønadstype.valueOf(decoder.decodeString())
+}
+
+@Serializable(with = StønadstypeSerializer::class)
 sealed interface Stønadstype {
     val name: String
     val klassekode: String
 
     companion object {
-        @JsonCreator
         @JvmStatic
         fun valueOf(str: String): Stønadstype =
             runCatching { StønadTypeDagpenger.valueOf(str) }
@@ -293,6 +347,7 @@ sealed interface Stønadstype {
     }
 }
 
+@Serializable
 enum class StønadTypeDagpenger(override val klassekode: String) : Stønadstype {
     DAGPENGER("DAGPENGER"),
     DAGPENGERFERIE("DAGPENGERFERIE"),
@@ -311,6 +366,7 @@ enum class StønadTypeDagpenger(override val klassekode: String) : Stønadstype 
     EØS_FERIETILLEGG_AVDØD(""),                        // bakoverkomaptibel enn så lenge
 }
 
+@Serializable
 enum class StønadTypeTiltakspenger(override val klassekode: String) : Stønadstype {
     ARBEIDSFORBEREDENDE_TRENING("TPTPAFT"),
     ARBEIDSRETTET_REHABILITERING("TPTPARREHABAGDAG"),
@@ -393,6 +449,7 @@ fun StønadTypeTiltakspenger.medBarnetillegg(barnetillegg: Boolean): StønadType
         this
     }
 
+@Serializable
 enum class StønadTypeTilleggsstønader(override val klassekode: String) : Stønadstype {
     TILSYN_BARN_ENSLIG_FORSØRGER("TSTBASISP2-OP"),
     TILSYN_BARN_AAP("TSTBASISP4-OP"),
@@ -455,10 +512,12 @@ enum class StønadTypeTilleggsstønader(override val klassekode: String) : Støn
     REISE_TIL_SAMLING_TILTAK_UTVIDET_OPPFØLGING_I_OPPLÆRING("TSROSUAOPPF-OP"),
 }
 
+@Serializable
 enum class StønadTypeAAP(override val klassekode: String) : Stønadstype {
     AAP_UNDER_ARBEIDSAVKLARING("AAPOR"),
 }
 
+@Serializable
 enum class StønadTypeHistorisk(override val klassekode: String) : Stønadstype {
     TILSKUDD_SMÅHJELPEMIDLER("HJRIM"), // bakoverkomaptibel enn så lenge
 
@@ -520,6 +579,7 @@ enum class StønadTypeHistorisk(override val klassekode: String) : Stønadstype 
     REPARASJON_BEHANDLINGSBRILLE("HTBDRB"),
 }
 
+@Serializable
 enum class StønadTypeValp(override val klassekode: String) : Stønadstype {
     ENKELTPLASS_ARBEIDSMARKEDSOPPLAERING_EKSAMENSGEBYR("TTOENKPAMOEKSGEB"),
     ENKELTPLASS_ARBEIDSMARKEDSOPPLAERING_INTEGRERT_BOTILBUD("TTOENKPAMOINTBT"),

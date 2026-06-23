@@ -1,6 +1,6 @@
 package models
 
-import com.fasterxml.jackson.annotation.JsonIgnore
+import kotlinx.serialization.Serializable
 import models.kontrakter.GyldigBehandlingId
 import models.kontrakter.GyldigSakId
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -97,29 +97,19 @@ object DocumentedErrors {
     }
 }
 
+@Serializable
 enum class System {
     HELVED,
     OSUR
 }
 
+@Serializable
 data class ApiError(
     val statusCode: Int,
     val msg: String,
     val doc: String? = DocumentedErrors.BASE,
     val system: System? = System.HELVED,
-) : RuntimeException(msg) {
-    @JsonIgnore
-    override fun getStackTrace(): Array<StackTraceElement> = super.getStackTrace()
-
-    @JsonIgnore
-    override val cause: Throwable? = super.cause
-
-    @JsonIgnore
-    override fun getLocalizedMessage(): String = super.getLocalizedMessage()
-
-    @JsonIgnore
-    override val message: String? = super.message
-}
+) : RuntimeException(msg)
 
 fun badRequest(msg: String, doc: String? = null): Nothing = throw ApiError(400, msg, doc ?: DocumentedErrors.BASE)
 fun badRequest(error: DocumentedErrors.Async): Nothing = throw ApiError(400, error.msg, error.doc)

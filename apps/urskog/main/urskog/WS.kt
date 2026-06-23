@@ -17,14 +17,16 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
 class SimuleringService(private val config: Config) {
+    private val json = libs.kotlinx.KotlinxJson
     private val http = HttpClientFactory.new(
+        json = json,
         logLevel = LogLevel.ALL, 
         retries = null, 
         requestTimeoutMs = 120_000, 
         connectionTimeoutMs = 5000,
     )
-    private val azure = AzureTokenProvider(config.azure)
-    private val sts = StsClient(config.simulering.sts, http, proxyAuth = ::getAzureToken)
+    private val azure = AzureTokenProvider(json, config.azure)
+    private val sts = StsClient(config.simulering.sts, json, http, proxyAuth = ::getAzureToken)
     private val soap = SoapClient(config.simulering, sts, http, proxyAuth = ::getAzureToken)
     private val requestMapper: XMLMapper<SimulerBeregningRequest> = XMLMapper(false)
     private val responseMapper: XMLMapper<SimulerBeregningResponse> = XMLMapper(false)

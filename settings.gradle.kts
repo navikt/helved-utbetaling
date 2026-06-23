@@ -31,6 +31,7 @@ include(
     "libs:jdbc-test",
     "libs:kafka",
     "libs:kafka-test",
+    "libs:kotlinx",
     "libs:ktor",
     "libs:ktor-test",
     "libs:mq",

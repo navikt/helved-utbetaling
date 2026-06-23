@@ -1,9 +1,14 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class)
+
 package models
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import libs.utils.appLog
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+@Serializable
 data class DpUtbetaling(
     val dryrun: Boolean = false,
 
@@ -16,6 +21,7 @@ data class DpUtbetaling(
     val beslutter: String? = null,
 )
 
+@Serializable
 enum class Utbetalingstype {
     DagpengerFerietillegg,
     Dagpenger,
@@ -28,6 +34,7 @@ fun DpUtbetalingsdag.stønadstype(): StønadTypeDagpenger {
     }
 }
 
+@Serializable
 data class DpUtbetalingsdag(
     val meldeperiode: String,
     val dato: LocalDate,
@@ -158,5 +165,4 @@ object DpDto {
         )
     }
 }
-
 

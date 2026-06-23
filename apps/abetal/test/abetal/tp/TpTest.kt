@@ -1,8 +1,11 @@
 package abetal.tp
 
 import abetal.*
-import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.serialization.serializer
+import libs.kafka.KotlinxSerializer
+import libs.kafka.KotlinxDeserializer
 import libs.kafka.JsonSerde
+import libs.kotlinx.KotlinxJson
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
@@ -15,8 +18,18 @@ import kotlin.test.assertTrue
 internal class TpTest : ConsumerTestBase() {
 
     @Test
+    fun `can serialize and deserialize`() {
+        val original = Tp.utbetaling("123", "123") {
+            Tp.periode("123", 7.jun21, 18.jun21, 553u, stønad = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, barnetillegg = true)
+        }
+        val bytes = KotlinxSerializer(serializer<TpUtbetaling>()).serialize("topic", original)
+        val decoded = KotlinxDeserializer(serializer<TpUtbetaling>()).deserialize("topic", bytes)
+        assertEquals(original, decoded)
+    }
+
+    @Test
     fun `simulation - dry run tp utbetaling`() {
-        val utbet = JsonSerde.jackson.readValue<TpUtbetaling>(
+        val utbet = KotlinxJson.decodeFromString<TpUtbetaling>(
             """
             {
               "dryrun": false,
@@ -75,7 +88,7 @@ internal class TpTest : ConsumerTestBase() {
         }
         TestRuntime.topics.utbetalinger.assertThat().has(uid)
 
-        val dryrun = JsonSerde.jackson.readValue<TpUtbetaling>(
+        val dryrun = KotlinxJson.decodeFromString<TpUtbetaling>(
             """
             {
               "dryrun": true,
@@ -806,7 +819,7 @@ internal class TpTest : ConsumerTestBase() {
             }
             """.trimIndent()
 
-        val utbet = JsonSerde.jackson.readValue<TpUtbetaling>(json)
+        val utbet = KotlinxJson.decodeFromString<TpUtbetaling>(json)
         val transactionId = UUID.randomUUID().toString()
         val uid = tpUId("HV2511260231", "20250630-20250711", StønadTypeTiltakspenger.GRUPPE_AMO)
 

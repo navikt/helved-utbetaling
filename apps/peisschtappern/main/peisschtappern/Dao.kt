@@ -1,6 +1,7 @@
 package peisschtappern
 
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.serialization.Serializable
 import libs.jdbc.Dao
 import libs.jdbc.concurrency.connection
 import libs.jdbc.map
@@ -37,6 +38,7 @@ enum class Table {
     valpIntern,
 }
 
+@Serializable
 data class Header(
     val key: String,
     val value: String?,
@@ -50,6 +52,7 @@ data class Header(
     }
 }
 
+@Serializable
 data class Daos(
     val version: String,
     val topic_name: String,

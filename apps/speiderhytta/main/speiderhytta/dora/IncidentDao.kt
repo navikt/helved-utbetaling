@@ -1,10 +1,15 @@
+@file:UseSerializers(libs.kotlinx.InstantSerializer::class)
+
 package speiderhytta.dora
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import libs.jdbc.Dao
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
 
+@Serializable
 data class Incident(
     val id: Long? = null,
     val githubIssue: Long,

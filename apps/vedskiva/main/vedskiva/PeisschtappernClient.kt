@@ -1,3 +1,5 @@
+@file:UseSerializers(libs.kotlinx.LocalDateSerializer::class, libs.kotlinx.LocalDateTimeSerializer::class)
+
 package vedskiva
 
 import io.ktor.client.HttpClient
@@ -7,6 +9,9 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import libs.auth.AzureTokenProvider
@@ -15,8 +20,9 @@ import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class PeisschtappernClient(
     private val config: Config,
-    private val client: HttpClient = HttpClientFactory.new(),
-    private val azure: AzureTokenProvider = AzureTokenProvider(config.azure)
+    private val json: Json = libs.kotlinx.KotlinxJson,
+    private val client: HttpClient = HttpClientFactory.new(json),
+    private val azure: AzureTokenProvider = AzureTokenProvider(json, config.azure)
 ) {
 
     suspend fun oppdrag(fom: LocalDateTime, tom: LocalDateTime): List<Dao> {
@@ -32,14 +38,17 @@ class PeisschtappernClient(
         return response.body<Page>().items
     }
 
-    private data class Page(val items: List<Dao>, val total: Int)
 
 }
+
+@Serializable
+data class Page(val items: List<Dao>, val total: Int)
 
 private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
 private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 
+@Serializable
 data class Dao(
     val version: String,
     val topic_name: String,

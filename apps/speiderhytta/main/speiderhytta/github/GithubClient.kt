@@ -1,9 +1,5 @@
 package speiderhytta.github
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.PropertyNamingStrategies
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.logging.LogLevel
@@ -26,11 +22,12 @@ import java.time.Instant
  * can serve both `helved-utbetaling` and `helved-peisen` (and any future
  * code repo) without per-repo client instances.
  *
- * Uses snake_case → camelCase property mapping so model fields stay idiomatic Kotlin.
+ * Uses [speiderhyttaJson] for deserialization; snake_case fields are mapped
+ * via explicit @SerialName annotations on the model classes.
  */
 class GithubClient(
     private val config: GithubConfig,
-    private val client: HttpClient = HttpClientFactory.new(LogLevel.INFO, json = jacksonConfig),
+    private val client: HttpClient = HttpClientFactory.new(libs.kotlinx.KotlinxJson, LogLevel.INFO),
     private val app: GithubApp = GithubApp(config, client),
 ) {
     /**
@@ -126,11 +123,5 @@ class GithubClient(
 
     companion object {
         private val DEPLOY_EVENTS = setOf("push", "workflow_dispatch", "workflow_run")
-
-        private val jacksonConfig: ObjectMapper.() -> Unit = {
-            registerModule(JavaTimeModule())
-            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            propertyNamingStrategy = PropertyNamingStrategies.SNAKE_CASE
-        }
     }
 }

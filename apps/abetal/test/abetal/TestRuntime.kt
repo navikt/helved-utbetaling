@@ -45,6 +45,7 @@ object TestRuntime {
     init {
         KtorRuntime<Config>(
             appName = "abetal",
+            jsonConfig = libs.kotlinx.KotlinxJson,
             module = {
                 abetal(
                     config = config,

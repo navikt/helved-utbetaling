@@ -5,7 +5,6 @@ import libs.kafka.Table
 import libs.kafka.Topic
 import libs.kafka.kafkaLog
 import libs.utils.secureLog
-import net.logstash.logback.argument.StructuredArguments.kv
 import org.apache.kafka.common.header.internals.RecordHeader
 import org.apache.kafka.streams.processor.api.Processor
 import org.apache.kafka.streams.processor.api.ProcessorContext
@@ -22,20 +21,21 @@ internal class LogConsumeTopicProcessor<K: Any, V>(
 
     override fun process(record: Record<K, V>) {
         val metadata = context.recordMetadata()!!.get()
-        kafkaLog.trace(
-            "consume ${record.key()} on ${metadata.topic() ?: ""}",
-            kv("key", record.key()),
-            kv("topic", metadata.topic() ?: ""),
-            kv("partition", metadata.partition()),
-            kv("offset", metadata.offset()),
-        )
-        secureLog.trace(
-            "consume ${record.key()} on ${metadata.topic() ?: ""} with ${record.value()}",
-            kv("key", record.key()),
-            kv("topic", metadata.topic() ?: ""),
-            kv("partition", metadata.partition()),
-            kv("offset", metadata.offset()),
-        )
+
+        kafkaLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("topic", metadata.topic() ?: "")
+            .addKeyValue("partition", metadata.partition())
+            .addKeyValue("offset", metadata.offset())
+            .log("consume ${record.key()} on ${metadata.topic() ?: ""}")
+
+        secureLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("topic", metadata.topic() ?: "")
+            .addKeyValue("partition", metadata.partition())
+            .addKeyValue("offset", metadata.offset())
+            .log("consume ${record.key()} on ${metadata.topic() ?: ""} with ${record.value()}")
+
         context.forward(record)
     }
 }
@@ -52,18 +52,19 @@ internal class LogProduceStateStoreProcessor<K: Any, V>(
 
     override fun process(record: Record<K, V>) {
         val metadata = context.recordMetadata()!!.get()
-        kafkaLog.trace(
-            "materialize ${record.key()} on $name",
-            kv("key", record.key()),
-            kv("store", name),
-            kv("partition", metadata.partition()),
-        )
-        secureLog.trace(
-            "materialize ${record.key()} on $name with ${record.value()}",
-            kv("key", record.key()),
-            kv("store", name),
-            kv("partition", metadata.partition()),
-        )
+
+        kafkaLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("store", name)
+            .addKeyValue("partition", metadata.partition())
+            .log("materialize ${record.key()} on $name")
+
+        secureLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("store", name)
+            .addKeyValue("partition", metadata.partition())
+            .log("materialize ${record.key()} on $name with ${record.value()}")
+
         context.forward(record)
     }
 }
@@ -79,20 +80,21 @@ internal class LogProduceTableProcessor<K: Any, V>(
 
     override fun process(record: Record<K, V>) {
         val metadata = context.recordMetadata()!!.get()
-        kafkaLog.trace(
-            "materialize ${record.key()} on ${table.sourceTopicName}",
-            kv("key", record.key()),
-            kv("table", table.sourceTopicName),
-            kv("store", table.stateStoreName),
-            kv("partition", metadata.partition()),
-        )
-        secureLog.trace(
-            "materialize ${record.key()} on ${table.sourceTopicName} with ${record.value()}",
-            kv("key", record.key()),
-            kv("table", table.sourceTopicName),
-            kv("store", table.stateStoreName),
-            kv("partition", metadata.partition()),
-        )
+
+        kafkaLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("table", table.sourceTopicName)
+            .addKeyValue("store", table.stateStoreName)
+            .addKeyValue("partition", metadata.partition())
+            .log("materialize ${record.key()} on ${table.sourceTopicName}")
+        
+        secureLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("table", table.sourceTopicName)
+            .addKeyValue("store", table.stateStoreName)
+            .addKeyValue("partition", metadata.partition())
+            .log("materialize ${record.key()} on ${table.sourceTopicName} with ${record.value()}")
+
         context.forward(record)
     }
 }
@@ -109,20 +111,21 @@ internal class LogProduceTopicProcessor<K: Any, V> internal constructor(
 
     override fun process(record: Record<K, V>) {
         val metadata = context.recordMetadata()!!.get()
-        kafkaLog.trace(
-            "produce ${record.key()} on ${topic.name}",
-            kv("key", record.key()),
-            kv("source_topic", metadata.topic() ?: ""),
-            kv("topic", topic.name),
-            kv("partition", metadata.partition()),
-        )
-        secureLog.trace(
-            "produce ${record.key()} on ${topic.name} with ${record.value()}",
-            kv("key", record.key()),
-            kv("source_topic", metadata.topic() ?: ""),
-            kv("topic", topic.name),
-            kv("partition", metadata.partition()),
-        )
+
+        kafkaLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("source_topic", metadata.topic() ?: "")
+            .addKeyValue("topic", topic.name)
+            .addKeyValue("partition", metadata.partition())
+            .log("produce ${record.key()} on ${topic.name}")
+
+        secureLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("source_topic", metadata.topic() ?: "")
+            .addKeyValue("topic", topic.name)
+            .addKeyValue("partition", metadata.partition())
+            .log("produce ${record.key()} on ${topic.name} with ${record.value()}")
+
         context.forward(record)
     }
 }
@@ -143,15 +146,19 @@ internal class LogAndAuditProduceTopicProcessor<K: Any, V> internal constructor(
     override fun process(record: Record<K, V>) {
         val metadata = context.recordMetadata().orElse(null)
 
-        val openMsg = "produce ${record.key()} on ${topic.name}"
-        val secureMsg = "produce ${record.key()} on ${topic.name} with ${record.value()}"
-        val kvKey = kv("key", record.key())
-        val kvSrcTopic = kv("source_topic", metadata?.topic() ?: "")
-        val kvTopic = kv("topic", topic.name)
-        val kvPartition = kv("partition", metadata?.partition() ?: "")
+        kafkaLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("source_topic", metadata?.topic() ?: "")
+            .addKeyValue("topic", topic.name)
+            .addKeyValue("partition", metadata?.partition() ?: "")
+            .log("produce ${record.key()} on ${topic.name}")
 
-        kafkaLog.trace (openMsg, kvKey, kvSrcTopic, kvTopic, kvPartition)
-        secureLog.trace(secureMsg, kvKey, kvSrcTopic, kvTopic, kvPartition)
+        secureLog.atTrace()
+            .addKeyValue("key", record.key())
+            .addKeyValue("source_topic", metadata?.topic() ?: "")
+            .addKeyValue("topic", topic.name)
+            .addKeyValue("partition", metadata?.partition() ?: "")
+            .log("produce ${record.key()} on ${topic.name} with ${record.value()}")
 
         fun replaceHeader(key: String, time: Long) {
             record.headers().remove(key)
