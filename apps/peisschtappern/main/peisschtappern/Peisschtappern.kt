@@ -1,8 +1,8 @@
 package peisschtappern
 
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
@@ -17,9 +17,9 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import libs.auth.Jwt
 import libs.auth.JwtPrincipal
 import libs.auth.TokenProvider
-import libs.auth.Jwt
 import libs.auth.jwt
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
