@@ -8,6 +8,10 @@ import libs.mq.MQConfig
 import libs.utils.env
 import libs.ws.SoapConfig
 import libs.ws.StsConfig
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.streams.StreamsConfig.consumerPrefix
+import org.apache.kafka.streams.StreamsConfig.producerPrefix
 import java.io.File
 import java.net.URI
 import java.net.URL
@@ -32,13 +36,11 @@ data class Config(
             // (InvalidProducerEpochException / ProducerFencedException). Se WS.kt for SOAP-timeout.
             // Vi prefikser med consumerPrefix slik at kun main streams consumer påvirkes
             // (restore consumer og global consumer beholder defaults).
-            this[org.apache.kafka.streams.StreamsConfig.consumerPrefix(
-                org.apache.kafka.clients.consumer.ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG
-            )] = 600_000 // 10 min, gir rom for 2 min SOAP + GC + DB + buffer
+            // 10 min, gir rom for 2 min SOAP + GC + DB + buffer
+            this[consumerPrefix(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG)] = 600_000
 
-            this[org.apache.kafka.streams.StreamsConfig.consumerPrefix(
-                org.apache.kafka.clients.consumer.ConsumerConfig.MAX_POLL_RECORDS_CONFIG
-            )] = 1 // én simulering per poll-syklus, så worst-case interval er bundet til ~2 min
+            // én simulering per poll-syklus, så worst-case interval er bundet til ~2 min
+            this[consumerPrefix(ConsumerConfig.MAX_POLL_RECORDS_CONFIG)] = 1 
 
             // EOS_v2 åpner én Kafka-transaksjon per poll-syklus. Broker default
             // transaction.timeout.ms = 60_000, mens SOAP-kall i simulering-topologien
@@ -48,9 +50,7 @@ data class Config(
             // TaskMigratedException -> rebalance-loop.
             // Vi setter 3 min = 2 min SOAP + buffer for commit/ack/GC.
             // NB: må være <= broker transaction.max.timeout.ms (Aiven default 900_000).
-            this[org.apache.kafka.streams.StreamsConfig.producerPrefix(
-                org.apache.kafka.clients.producer.ProducerConfig.TRANSACTION_TIMEOUT_CONFIG
-            )] = 180_000
+            this[producerPrefix(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG)] = 180_000
         }
     ),
     val oppdrag: OppdragConfig = OppdragConfig(),

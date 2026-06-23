@@ -94,7 +94,7 @@ class StatusBarrierTest {
         oppdrag.mmel = TestData.ok()
         // I produksjon setter urskog MQ-consumer alltid "uids"-header på kvittering -- abetal-origin
         // har ikke-tom uids, utsjekk-origin har tom uids. Test simulerer abetal-flyten.
-        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString())) { oppdrag }
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString(), "barrierMaxWaitMs" to "0")) { oppdrag }
 
         val statusAfterKvittering = TestRuntime.topics.status.assertThat()
             .has(transaction, size = 1)
@@ -305,7 +305,7 @@ class StatusBarrierTest {
         oppdrag.mmel = TestData.ok()
         // I produksjon setter urskog MQ-consumer alltid "uids"-header på kvittering -- abetal-origin
         // har ikke-tom uids, utsjekk-origin har tom uids. Test simulerer abetal-flyten.
-        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString())) { oppdrag }
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid.toString(), "barrierMaxWaitMs" to "0")) { oppdrag }
 
         val statusAfterKvittering = TestRuntime.topics.status.assertThat()
             .has(transaction, size = 1)
