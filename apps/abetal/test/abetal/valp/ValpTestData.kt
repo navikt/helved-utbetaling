@@ -28,6 +28,7 @@ object Valp {
         saksbehandler: String = "teamvalp",
         tilskuddstype: ValpUtbetaling.Tilskuddstype = ValpUtbetaling.Tilskuddstype.STUDIEREISE,
         tiltakskode: ValpUtbetaling.Tiltakskode = ValpUtbetaling.Tiltakskode.HOYERE_UTDANNING,
+        kostnadssted: String? = null,
         periode: () -> ValpUtbetaling.Periode,
     ): ValpUtbetaling = ValpUtbetaling(
         dryrun = dryrun, id = uid.id,
@@ -39,6 +40,7 @@ object Valp {
         saksbehandler = saksbehandler,
         tilskuddstype = tilskuddstype,
         tiltakskode = tiltakskode,
+        kostnadssted = kostnadssted,
         periode = periode()
     )
 
