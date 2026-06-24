@@ -673,5 +673,40 @@ internal class ValpTest : ConsumerTestBase() {
         assertEquals(Status.FEILET, status.status)
         assertNotNull(status.error)
     }
+    
+    @Test
+    fun `kan sette betalendeEnhet`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        TestRuntime.topics.valpIntern.produce(transactionId) {
+            Valp.utbetaling(uid, sid.id, bid.id, belop = 1077u, kostnadssted = "1234") {
+                ValpUtbetaling.Periode(
+                    fom = LocalDate.of(2021, 6, 7),
+                    tom = LocalDate.of(2021, 6, 18),
+                )
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId)
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .get(transactionId)
+
+        assertEquals("BOS", oppdrag.oppdrag110.oppdragsEnhet120s[0].typeEnhet)
+        assertEquals("1234", oppdrag.oppdrag110.oppdragsEnhet120s[0].enhet)
+        assertEquals("BEH", oppdrag.oppdrag110.oppdragsEnhet120s[1].typeEnhet)
+        assertEquals("8020", oppdrag.oppdrag110.oppdragsEnhet120s[1].enhet)
+        kvitterOk(transactionId, oppdrag, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+    }
 
 }

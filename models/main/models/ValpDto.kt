@@ -11,6 +11,7 @@ import java.util.UUID
 
 @Serializable
 data class ValpUtbetaling(
+    val kostnadssted: String? = null,
     val id: UUID,
     val sakId: String,
     val behandlingId: String,
@@ -22,7 +23,7 @@ data class ValpUtbetaling(
     val saksbehandler: String,
     val beslutter: String? = null,
     val besluttetTidspunkt: Instant,
-    val dryrun: Boolean,
+    val dryrun: Boolean = false,
 ) {
     @Serializable
     data class Periode(
@@ -84,7 +85,18 @@ data class ValpUtbetaling(
             saksbehandlerId = Navident(dto.saksbehandler),
             periodetype = Periodetype.EN_GANG,
             avvent = null,
-            perioder = listOf(Utbetalingsperiode(dto.periode.fom, dto.periode.tom, dto.belop))
+            perioder = listOf(periode(dto.periode, dto.belop, dto.kostnadssted)),
+        )
+
+        private fun periode(
+            periode: ValpUtbetaling.Periode,
+            beløp: UInt,
+            kostnadssted: String?,
+        ) = Utbetalingsperiode(
+            fom = periode.fom,
+            tom = periode.tom,
+            beløp = beløp,
+            betalendeEnhet = kostnadssted?.let(::NavEnhet),
         )
 
         private fun delete(
@@ -108,7 +120,7 @@ data class ValpUtbetaling(
             saksbehandlerId = Navident(dto.saksbehandler),
             periodetype = Periodetype.EN_GANG,
             avvent = null,
-            perioder = listOf(Utbetalingsperiode(dto.periode.fom, dto.periode.tom, 1u)),
+            perioder = listOf(periode(dto.periode, 1u, dto.kostnadssted))
         )
     }
 }
