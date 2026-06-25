@@ -7,7 +7,7 @@ Status: Utkast
 
 ## 6.1 Jobbmonitorering
 
-I kontekst av jobbmonitorering kan vi se på løsningen som to tjenester som løser ulike behov:
+I kontekst av jobbmonitorering kan vi dele løsningen i to hovedbolker:
 
 1. Funksjonalitet for håndtering av utbetalinger
 2. Funksjonalitet for grensesnittavstemming mot Oppdragssystemet (OS)
