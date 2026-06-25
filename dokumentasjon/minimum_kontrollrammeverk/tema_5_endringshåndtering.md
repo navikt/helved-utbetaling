@@ -9,21 +9,19 @@ Status: Utkast
 
 Vi (Team hel ved) følger som regel dette mønsteret:
 
-- Endringer gjøres via par- eller mobprogrammering uten bruk av pull requests. Dette fungerer som løpende godkjenning av endringer. Når kode sjekkes inn i git legger vi på `Co-authored-by` for å dokumentere hvem som har vært involvert i utviklingen av endringen.
-- For sporbarhet refererer vi til oppgave-id i hver commit. 
+- Endringer gjøres via par- eller mobprogrammering uten bruk av pull requests. Dette fungerer som løpende godkjenning av endringer. Når kode sjekkes inn i git legger vi på `Co-authored-by` for å dokumentere hvem som har deltatt utviklingen.
+- Vi etterstreber små endringer om gangen, fordi det gjør det enklere å både avdekke og rette feil. Alle DORA-metrikkene måles automatisk og visualiseres i et eget dashboard.
+- For sporbarhet refererer vi til oppgave-id i hver commit. Commits, tester og deployer knyttes automatisk til oppgavene i Kanban-boardet gjennom et eget verktøy. 
 - Alle kodeendringer skal være dekket av automatiserte tester.
 - Automatiske bygg- og testjobber må kjøre grønt for at koden skal deployes.
 - Vi bruker GitHub som sentral plattform for kildekode, endringshistorikk og utrulling. Bygg, testing og deploy gjennomføres ved hjelp av GitHub Actions.
-- Vi deplyer til dev og prod samtidig (fordi forskjeller mellom miljøene gjør endringshåndtering vanskeligere). 
+- Vi deplyer til dev og prod samtidig. Dette reduserer forskjeller mellom miljøene og gjør endringshåndteringen enklere.
 
-Unntak:
+Avvik fra normal arbeidsflyt:
 
-- At testene kjører grønt kan være godkjenning nok til å også deploye en endring uten at andre har sett på det først. Det særlig gjeldene i ferier og ved produksjonsfeil som oppstår utenfor normal arbeidstid
-- Endringer som gjøres solo kan også inkluderes og godkjennes via pull request, eller ved at man før push til main tar en gjennomgang av endringen sammen med andre i teamet
-- Ved større endringer, eller endringer som er av en slik art at vi ikke får testet de fullt ut lokalt, skrur vi av deploy til prod for å verifisere i dev først. Det kan for eksempel være relevant ved endringer av topologi og infrastruktur.
-
-
-
+- At testene kjører grønt kan være tilstrekkelig grunnlag for å deploye en endring uten at andre har sett på den først. Dette gjelder særlig i ferieperioder og ved produksjonsfeil som oppstår utenfor normal arbeidstid.
+- Endringer som utvikles av én person kan godkjennes gjennom en pull request, eller ved at endringen gjennomgås sammen med andre i teamet før den pushes til `main`.
+- Ved større endringer, eller ved endringer som ikke kan testes fullt ut lokalt, deaktiverer vi automatisk deploy til produksjon for å kunne verifisere endringen i utviklingsmiljøet først. Dette kan for eksempel være aktuelt ved endringer i topologi eller infrastruktur.
 
 ## 5.2 Klassifisering av endringer​
 
@@ -32,10 +30,13 @@ Vi bruker ikke klassifisering av endringer. Alle endringer går derfor som norma
 
 ## 5.3 Testing og godkjenning av endringer​
 
+Vår tolkning av hensikten med dette kravet er at man vil unngå ikke‑autoriserte eller uhensiktsmessige endringer.
+
 For å kunne deploye kode må man ha tilgang til teamets område (`helved`) på Nais-plattformen. Det forekommer derfor ikke uautoriserte endringer annet en hva som kommer fra Dependabot.
 
-For Dependabot er det påskrudd en cooldown-periode på én uke, som betyr at endringer må modnes én uke før Dependabot tar dem inn. Merge av pull requests fra Dependabot trigger ikke automatisk deploy. Deploy kan kun trigges av medlemmer av Team hel ved.
+For Dependabot er det påskrudd en cooldown-periode på én uke, som betyr at endringer må modnes én uke før de tas inn. Merge av pull requests fra Dependabot trigger ikke automatisk deploy. Deploy kan kun trigges av medlemmer av Team hel ved.
 
+Se også _5.1 Regelsett for endringshåndtering_, ovenfor, hvor arbeidsflyten er forklart.
 
 ## 5.4 Produksjonssetting - Manuell​
 
