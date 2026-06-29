@@ -15,7 +15,7 @@ dependencies {
     implementation(project(":libs:kotlinx"))
     implementation(project(":libs:utils"))
 
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
 
     testImplementation(kotlin("test"))
 }
