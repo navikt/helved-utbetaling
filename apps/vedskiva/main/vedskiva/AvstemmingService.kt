@@ -27,7 +27,7 @@ class AvstemmingService(
             .groupBy { it.kodeFagomraade }
             .map { (kodeFagomraade, daos) ->
                 val fagsystem = Fagsystem.fromFagområde(kodeFagomraade)
-                appLog.debug("oppretter oppdragsdata for $fagsystem")
+                appLog.debug("oppretter oppdragsdata for {}", fagsystem)
 
                 val avstemmingId = AvstemmingFactory.genererId()
                 val oppdragsdatas = daos.map { dao ->
