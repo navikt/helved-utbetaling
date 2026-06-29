@@ -127,7 +127,8 @@ fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
                 }
             }
 
-            query("/dryrun") { req: AvstemmingRequest ->
+            query("/dryrun") {
+                val req = call.receive<AvstemmingRequest>()
                 withContext(jdbcCtx + Dispatchers.IO) {
                     val avstemminger = service.generate2(req.fom, req.tom)
                     call.respond(avstemminger)
