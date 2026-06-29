@@ -27,6 +27,10 @@
         <appender-ref ref="json"/>
     </root>
 
+    <!-- disable noisy logs on deploy -->
+    <logger name="org.apache.kafka.streams.processor.internals.DefaultStateUpdater" level="WARN"/>
+    <logger name="org.apache.kafka.streams.processor.internals.TaskManager" level="WARN"/>
+
     <logger name="app"       level="INFO" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="auth"      level="INFO" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="http"      level="INFO" additivity="false"><appender-ref ref="json"/></logger>
