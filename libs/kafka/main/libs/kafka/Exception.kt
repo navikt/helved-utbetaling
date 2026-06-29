@@ -97,13 +97,20 @@ class ProcessNextHandler : ProcessingExceptionHandler {
  *  3. shutdown all streams instances (with the same application-id
  */
 class UncaughtHandler: StreamsUncaughtExceptionHandler {
-    override fun handle(exception: Throwable): StreamHandler = logAndShutdownClient(exception)
-
-    private fun logAndShutdownClient(err: Throwable): StreamHandler {
+    override fun handle(exception: Throwable): StreamHandler {
+        if (exception.isStandbyRace()) {
+            kafkaLog.warn("Kjent race i state-updater (standby transition), erstatter tråd")
+            secureLog.warn("Kjent race i state-updater (standby transition), erstatter tråd", exception)
+            return StreamHandler.REPLACE_THREAD
+        }
         kafkaLog.error("Uventet feil, logger og avslutter client")
-        secureLog.error("Uventet feil, logger og avslutter client", err)
+        secureLog.error("Uventet feil, logger og avslutter client", exception)
         return StreamHandler.SHUTDOWN_CLIENT
     }
+
+    private fun Throwable.isStandbyRace(): Boolean =
+        cause is IllegalStateException &&
+            cause?.message?.contains("STANDBY_UPDATING") == true
 }
 
 /**
