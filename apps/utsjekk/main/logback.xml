@@ -11,22 +11,15 @@
 
     <appender name="secureLog" class="libs.utils.LogTcpAppender">
         <destination>team-logs.nais-system:5170</destination>
-        <encoder class="ch.qos.logback.classic.encoder.JsonEncoder">
-            <withKeyValuePair><key>google_cloud_project</key><value>${GOOGLE_CLOUD_PROJECT}</value></withKeyValuePair>
-            <withKeyValuePair><key>nais_namespace_name</key><value>${NAIS_NAMESPACE}</value></withKeyValuePair>
-            <withKeyValuePair><key>nais_pod_name</key><value>${HOSTNAME}</value></withKeyValuePair>
-            <withKeyValuePair><key>nais_container_name</key><value>${NAIS_APP_NAME}</value></withKeyValuePair>
+        <encoder class="libs.utils.LogTcpEncoder">
+            <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${HOSTNAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
         </encoder>
     </appender>
 
     <appender name="auditLog" class="libs.utils.LogTcpAppender">
         <destination>team-logs.nais-system:5170</destination>
-        <encoder class="ch.qos.logback.classic.encoder.JsonEncoder">
-            <withKeyValuePair><key>google_cloud_project</key><value>${GOOGLE_CLOUD_PROJECT}</value></withKeyValuePair>
-            <withKeyValuePair><key>nais_namespace_name</key><value>${NAIS_NAMESPACE}</value></withKeyValuePair>
-            <withKeyValuePair><key>nais_pod_name</key><value>${HOSTNAME}</value></withKeyValuePair>
-            <withKeyValuePair><key>nais_container_name</key><value>${NAIS_APP_NAME}</value></withKeyValuePair>
-            <withKeyValuePair><key>team_audit</key><value>helved</value></withKeyValuePair>
+        <encoder class="libs.utils.LogTcpEncoder">
+            <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${HOSTNAME}","nais_container_name":"${NAIS_APP_NAME}","team_audit":"helved"}</customFields>
         </encoder>
     </appender>
 
