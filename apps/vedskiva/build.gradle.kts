@@ -26,7 +26,7 @@ dependencies {
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
     implementation("org.apache.kafka:kafka-clients:4.3.0")
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
