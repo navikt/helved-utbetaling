@@ -7,7 +7,7 @@ application {
     mainClass.set("branntaarn.BranntaarnKt")
 }
 
-val ktorVersion = "3.4.2"
+val ktorVersion = "3.5.1"
 
 dependencies {
     implementation(project(":models"))

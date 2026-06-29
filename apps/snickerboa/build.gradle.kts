@@ -6,14 +6,9 @@ application {
     mainClass.set("snickerboa.SnickerboaKt")
 }
 
-val ktorVersion = "3.4.2"
-val libVersion = "3.1.232"
-val nettyVersion = "4.2.13.Final"
+val ktorVersion = "3.5.1"
 
 dependencies {
-    // Keep Ktor on 3.4.2, but override the vulnerable transitive Netty line.
-    implementation(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
-
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
