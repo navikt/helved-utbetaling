@@ -7,8 +7,7 @@ application {
     mainClass.set("speiderhytta.SpeiderhyttaKt")
 }
 
-val ktorVersion = "3.4.2"
-val nettyVersion = "4.2.13.Final"
+val ktorVersion = "3.5.1"
 
 dependencies {
     implementation(project(":models"))
@@ -17,9 +16,6 @@ dependencies {
     implementation(project(":libs:kotlinx"))
     implementation(project(":libs:ktor"))
     implementation(project(":libs:utils"))
-
-    // Keep Ktor on 3.4.2, but override the vulnerable transitive Netty line.
-    implementation(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
 
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
