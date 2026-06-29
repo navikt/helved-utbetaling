@@ -16,7 +16,7 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:3.1.252")
 
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.24.0-alpha")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:ktor-test"))
