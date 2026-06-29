@@ -92,7 +92,8 @@ fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
         }
 
         route("/avstem2") {
-            query { req: AvstemmingRequest ->
+            post {
+                val req = call.receive<AvstemmingRequest>()
                 appLog.info("starter avstemming for ${req.today}, mellom [${req.fom} - ${req.tom}]")
 
                 withContext(jdbcCtx + Dispatchers.IO) {
@@ -127,7 +128,7 @@ fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
                 }
             }
 
-            query("/dryrun") {
+            post("/dryrun") {
                 val req = call.receive<AvstemmingRequest>()
                 withContext(jdbcCtx + Dispatchers.IO) {
                     val avstemminger = service.generate2(req.fom, req.tom)

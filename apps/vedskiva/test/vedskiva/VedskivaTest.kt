@@ -63,7 +63,7 @@ class VedskivaTest {
             tom = LocalDate.of(2026, 2, 18).atStartOfDay().minusMinutes(1),
         )
 
-        val res = TestRuntime.ktor.httpClient.query ("/api/avstem2/dryrun") {
+        val res = TestRuntime.ktor.httpClient.post ("/api/avstem2/dryrun") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
             setBody(req)
