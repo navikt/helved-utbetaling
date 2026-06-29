@@ -3,7 +3,6 @@ package vedskiva
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.transaction
@@ -49,13 +48,12 @@ class VedskivaTest {
             Rule("tidspktMelding") { LocalDateTime.parse(it, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) },
             Rule("createdAt") { LocalDateTime.parse(it, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")) },
         )
-        runBlocking {
-            withContext(TestRuntime.context) {
-                transaction {
-                    CsvReader
-                        .parse<OppdragDao>(csv, rules)
-                        .forEach { dao -> dao.insert() }
-                }
+
+        withContext(TestRuntime.context) {
+            transaction {
+                CsvReader
+                    .parse<OppdragDao>(csv, rules)
+                    .forEach { dao -> dao.insert() }
             }
         }
 
@@ -65,7 +63,7 @@ class VedskivaTest {
             tom = LocalDate.of(2026, 2, 18).atStartOfDay().minusMinutes(1),
         )
 
-        val res = TestRuntime.ktor.httpClient.post ("/api/avstem2/dryrun") {
+        val res = TestRuntime.ktor.httpClient.query ("/api/avstem2/dryrun") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
             setBody(req)
@@ -242,15 +240,13 @@ class VedskivaTest {
     @Disabled("Tror denne ikke lenger er nødvendig siden nokkelAvstemming i oppdrag-115 er satt til feil dato i testdataen")
     @Test
     fun `test with dev data from may 5th`() = runTest(TestRuntime.context) {
-        runBlocking {
-            withContext(TestRuntime.context) {
-                transaction {
-                    Scheduled(
-                        created_at = LocalDate.of(2025, 5, 5),
-                        avstemt_fom = LocalDate.of(2025, 5, 4),
-                        avstemt_tom = LocalDate.of(2025, 5, 4)
-                    ).insert()
-                }
+        withContext(TestRuntime.context) {
+            transaction {
+                Scheduled(
+                    created_at = LocalDate.of(2025, 5, 5),
+                    avstemt_fom = LocalDate.of(2025, 5, 4),
+                    avstemt_tom = LocalDate.of(2025, 5, 4)
+                ).insert()
             }
         }
 
@@ -984,11 +980,9 @@ class VedskivaTest {
             )
         )
 
-        runBlocking {
-            withContext(TestRuntime.context) {
-                transaction {
-                    Scheduled(LocalDate.now(), LocalDate.now(), LocalDate.now()).insert()
-                }
+        withContext(TestRuntime.context) {
+            transaction {
+                Scheduled(LocalDate.now(), LocalDate.now(), LocalDate.now()).insert()
             }
         }
 
