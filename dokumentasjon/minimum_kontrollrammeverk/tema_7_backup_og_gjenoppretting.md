@@ -9,6 +9,21 @@ Status: Utkast
 
 Se [K267.1, Applikasjoner skal ha et forsvarlig sikkerhetsnivå](https://etterlevelse.ansatt.nav.no/dokumentasjon/85240a1e-2b08-4298-b7a3-bbb520472dac/INFOSIKKERHET/krav/267/1) (Suksesskriterium 6: Vi har backup av data og kode) og [ansvarsavklaring i ROS](https://apps.powerapps.com/play/f8517640-ea01-46e2-9c09-be6b05013566?app=567&ID=1674) for detaljer om hvordan og når det tas backup.
 
+### Tertialvis kontroll
+_Ansvarlig skal hvert tertial verifisere at backup er konfigurert og gjennomført i tråd med systemets krav til tilgjengelighet av data_. Se [Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%207%20oppstartsm%C3%B8te.pptx?d=wd0872c01fa564fee985804c910a65f3d&csf=1&web=1&e=2L01UL) for detaljer.
+
+Logg over gjennomførte kontroller:
+| Tidspunkt | Kontrollert og godkjent av |
+| -------- | -------- | 
+| 2026-xx-xx    | x     |
+
 
 # 7.2 Gjenoppretting
 
+### Årlig Kontroll
+_Ansvarlig skal årlig teste at det er mulig å gjenopprette data fra sikkerhetskopi, i tråd med systemets krav til tilgjengelighet_. Se [Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%207%20oppstartsm%C3%B8te.pptx?d=wd0872c01fa564fee985804c910a65f3d&csf=1&web=1&e=2L01UL) for detaljer.
+
+Logg over gjennomførte kontroller:
+| Tidspunkt | Kontrollert og godkjent av |
+| -------- | -------- | 
+| 2026-xx-xx    | x     |

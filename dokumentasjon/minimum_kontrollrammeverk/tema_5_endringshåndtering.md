@@ -23,6 +23,15 @@ Avvik fra normal arbeidsflyt:
 - Endringer som utvikles av én person kan godkjennes gjennom en pull request, eller ved at endringen gjennomgås sammen med andre i teamet før den pushes til `main`.
 - Ved større endringer, eller ved endringer som ikke kan testes fullt ut lokalt, deaktiverer vi automatisk deploy til produksjon for å kunne verifisere endringen i utviklingsmiljøet først. Dette kan for eksempel være aktuelt ved endringer i topologi eller infrastruktur.
 
+### Årlig kontroll
+_Ansvarlig skal årlig, eller ved vesentlige endringer, godkjenne regelsett for endringshåndtering_. Se [Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%205%20oppstartsm%C3%B8te.pptx?d=w61f4ed122ca54013b15559c9486b2af3&csf=1&web=1&e=khxD82) for detaljer.
+
+Logg over gjennomførte kontroller:
+
+| Tidspunkt | Kontrollert og godkjent av |
+| -------- | -------- | 
+| 2026-xx-xx    | x     |
+
 ## 5.2 Klassifisering av endringer​
 
 Vi bruker ikke klassifisering av endringer. Alle endringer går derfor som normale endringer.
@@ -45,3 +54,12 @@ Ikke relevant. Vi gjør ikke manuell prodsetting.
 ## 5.5 Produksjonssetting - Automatisk​
 
 All produksjonssetting skjer automatisert gjennom GitHub Actions, med tester og andre kontroller som sikrer kvalitet og sporbarhet.
+
+### Årlig kontroll
+_Dersom produksjonssetting er helt eller delvis automatisert skal Ansvarlig årlig, eller ved vesentlige endringer i konfigurasjon, gjennomgå og godkjenne oppsettet for produksjonssetting_. Se [Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%205%20oppstartsm%C3%B8te.pptx?d=w61f4ed122ca54013b15559c9486b2af3&csf=1&web=1&e=khxD82) for detaljer.
+
+Logg over gjennomførte kontroller:
+
+| Tidspunkt | Kontrollert og godkjent av |
+| -------- | -------- | 
+| 2026-xx-xx    | x     |

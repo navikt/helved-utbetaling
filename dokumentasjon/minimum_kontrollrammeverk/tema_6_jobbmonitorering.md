@@ -22,3 +22,11 @@ Grensesnittavstemming mot OS er en planlagt jobb, som kjører kl 07:00 hver uked
 Se også:
 - [K120.1 Toveis sporing](https://etterlevelse.ansatt.nav.no/dokumentasjon/85240a1e-2b08-4298-b7a3-bbb520472dac/OKONOMI/krav/120/1)
 - [Risiko 28442 (feilutbetaling) i ROS](https://apps.powerapps.com/play/f8517640-ea01-46e2-9c09-be6b05013566?app=567&ID=1674)
+
+### Tertialvis kontroll
+_Ansvarlig skal hvert tertial gjennomgå dataflyten i systemet for å identifisere hvilke jobber/grensesnitt som overfører kritisk data_. Se [Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%206%20oppstartsm%C3%B8te.pptx?d=w322b3c9a9f884e7aa1698e2d9d8d395d&csf=1&web=1&e=A0Imrs) for detaljer.
+
+Logg over gjennomførte kontroller:
+| Tidspunkt | Kontrollert og godkjent av |
+| -------- | -------- | 
+| 2026-xx-xx    | x     |
