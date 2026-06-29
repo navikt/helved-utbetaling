@@ -92,13 +92,11 @@ fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
         }
 
         route("/avstem2") {
-            post {
-                val req = call.receive<AvstemmingRequest>()
+            query { req: AvstemmingRequest ->
                 appLog.info("starter avstemming for ${req.today}, mellom [${req.fom} - ${req.tom}]")
 
                 withContext(jdbcCtx + Dispatchers.IO) {
                     if (req.today.erHelligdag()) {
-                        appLog.info("Today is a holiday or weekend, no avstemming")
                         call.respond(HttpStatusCode.Locked, "Today is a holiday or weekend, no avstemming")
                         return@withContext
                     }
@@ -106,7 +104,6 @@ fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
                     val last: Scheduled? = transaction { Scheduled.lastOrNull() }
 
                     if (req.today == last?.created_at) {
-                        appLog.info("Already avstemt today (${req.today})")
                         call.respond(HttpStatusCode.Conflict, "Already avstemt today (${req.today})")
                         return@withContext
                     }
@@ -114,9 +111,9 @@ fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
                     val avstemminger = service.generate2(req.fom, req.tom)
 
                     avstemminger.forEach { (fagområde, messages) ->
-                        messages.forEach { message -> 
+                        messages.forEach { message ->
                             // FIXME: hvis forrige iter i forEach gikk bra, men neste feiler. Så har vi allerede sendt ut disse
-                            // Hvordan kan vi gjøre alle forEach (fagområde, daos) atomisk? 
+                            // Hvordan kan vi gjøre alle forEach (fagområde, daos) atomisk?
                             service.producer.send(UUID.randomUUID().toString(), message, 0)
                         }
                         appLog.info("Avstemming for $fagområde completed with avstemmingId: ${messages.first().aksjon.avleverendeAvstemmingId}")
@@ -130,8 +127,7 @@ fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
                 }
             }
 
-            post("/dryrun") {
-                val req = call.receive<AvstemmingRequest>()
+            query("/dryrun") { req: AvstemmingRequest ->
                 withContext(jdbcCtx + Dispatchers.IO) {
                     val avstemminger = service.generate2(req.fom, req.tom)
                     call.respond(avstemminger)
