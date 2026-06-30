@@ -476,9 +476,12 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
  * Vi sammenligner behandlingId (henvisning i oppdragslinjene) mot pending sin behandlingId.
  */
 private fun pendingMatchesOppdrag(pending: Utbetaling, oppdrag: Oppdrag): Boolean {
-    val oppdragBehandlingId = oppdrag.oppdrag110.oppdragsLinje150s.lastOrNull()?.henvisning?.trimEnd()
-        ?: return true // ingen linjer å validere mot, anta match
-    return pending.behandlingId.id == oppdragBehandlingId
+    val linjer = oppdrag.oppdrag110.oppdragsLinje150s
+    if (linjer.isEmpty()) return true // ingen linjer å validere mot, anta match
+    val sameBehandlingId = pending.behandlingId.id == linjer.last().henvisning.trimEnd()
+    // Oppdrag bestående av fler utbetalinger kan ikke bare se på siste oppdragslinje
+    val hasDelytelseId = linjer.any { it.delytelseId.trimEnd() == pending.lastPeriodeId.toString() }
+    return sameBehandlingId && hasDelytelseId
 }
 
 typealias DryrunAggregate = Pair<Boolean, List<SimulerBeregningRequest>>
