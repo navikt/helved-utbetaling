@@ -84,8 +84,15 @@ class LogTcpEncoder : EncoderBase<ILoggingEvent>() {
             sb.sep().quoted("stack_trace", stackTrace.escape())
         }
 
+        val traceFieldMapping = mapOf(
+            "mdc_trace_id" to "trace_id",
+            "mdc_span_id" to "span_id",
+            "mdc_trace_flags" to "trace_flags",
+        )
+
         for ((key, value) in event.mdcPropertyMap) {
-            sb.sep().quoted(key, value.escape())
+            val outputKey = traceFieldMapping[key] ?: key
+            sb.sep().quoted(outputKey, value.escape())
         }
 
         customFields?.let { fields ->
