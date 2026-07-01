@@ -24,9 +24,9 @@ class SimuleringClient(
     private val json: Json = libs.kotlinx.KotlinxJson,
     private val client: HttpClient = HttpClientFactory.new(
         json = json,
-        logLevel = LogLevel.ALL, 
-        retries = null, 
-        requestTimeoutMs = 120_000, 
+        logLevel = LogLevel.ALL,
+        retries = 3,
+        requestTimeoutMs = 120_000,
         connectionTimeoutMs = 5000,
     ),
     private val azure: AzureTokenProvider = AzureTokenProvider(json, config.azure)

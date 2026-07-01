@@ -33,6 +33,7 @@ object HttpClientFactory {
             retries?.let {
                 install(HttpRequestRetry) {
                     retryOnServerErrors(retries)
+                    retryOnException(maxRetries = retries, retryOnTimeout = true)
                     exponentialDelay()
                 }
             }
