@@ -13,6 +13,7 @@ on:
     paths:
       - 'apps/smokesignal/**'
       - 'libs/kafka/**'
+      - 'libs/utils/**'
       - '.github/workflows/smokesignal.yml'
       - 'build.gradle.kts'
       - 'Dockerfile'

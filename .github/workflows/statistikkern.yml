@@ -13,6 +13,7 @@ on:
     paths:
       - 'apps/statistikkern/**'
       - 'libs/kafka/**'
+      - 'libs/utils/**'
       - '.github/workflows/statistikkern.yml'
       - 'build.gradle.kts'
       - 'Dockerfile'

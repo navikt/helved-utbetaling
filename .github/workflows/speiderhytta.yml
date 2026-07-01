@@ -13,6 +13,7 @@ on:
     paths:
       - 'apps/speiderhytta/**'
       - 'apps/*/slo.yml'
+      - 'libs/utils/**'
       - '.github/workflows/speiderhytta.yml'
       - 'build.gradle.kts'
       - 'Dockerfile'

@@ -12,6 +12,7 @@ on:
     branches: [ main ]
     paths:
       - 'apps/branntaarn/**'
+      - 'libs/utils/**'
       - '.github/workflows/branntaarn.yml'
       - 'build.gradle.kts'
       - 'apps/branntaarn/Dockerfile'

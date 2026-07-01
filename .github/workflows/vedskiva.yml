@@ -13,6 +13,7 @@ on:
     paths:
       - 'apps/vedskiva/**'
       - 'libs/kafka/**'
+      - 'libs/utils/**'
       - '.github/workflows/vedskiva.yml'
       - 'build.gradle.kts'
       - 'Dockerfile'
