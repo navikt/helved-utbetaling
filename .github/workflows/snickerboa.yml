@@ -7,6 +7,7 @@ on:
     paths:
       - 'apps/snickerboa/**'
       - 'libs/kafka/**'
+      - 'libs/utils/**'
       - '.github/workflows/snickerboa.yml'
       - 'build.gradle.kts'
       - 'Dockerfile'

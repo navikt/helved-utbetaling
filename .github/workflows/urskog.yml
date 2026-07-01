@@ -14,6 +14,7 @@ on:
       - 'apps/urskog/**'
       - 'libs/kafka/**'
       - 'libs/mq/**'
+      - 'libs/utils/**'
       - '.github/workflows/urskog.yml'
       - 'build.gradle.kts'
       - 'models/**'

@@ -13,6 +13,7 @@ on:
     paths:
       - 'apps/utsjekk/**'
       - 'libs/kafka/**'
+      - 'libs/utils/**'
       - '.github/workflows/utsjekk.yml'
       - 'build.gradle.kts'
       - 'Dockerfile'

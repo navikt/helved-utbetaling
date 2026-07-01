@@ -12,6 +12,7 @@ on:
     branches: [ main ]
     paths:
       - 'apps/simulering/**'
+      - 'libs/utils/**'
       - '.github/workflows/simulering.yml'
       - 'build.gradle.kts'
 
