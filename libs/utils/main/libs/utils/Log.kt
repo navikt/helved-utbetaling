@@ -81,7 +81,7 @@ class LogJsonEncoder : EncoderBase<ILoggingEvent>() {
     override fun encode(event: ILoggingEvent): ByteArray {
         val sb = StringBuilder(512)
         sb.append('{')
-        sb.sep().quoted("message", event.formattedMessage.escape())
+        sb.quoted("message", event.formattedMessage.escape())
         sb.sep().quoted("logger_name", event.loggerName)
         sb.sep().quoted("thread_name", event.threadName)
         sb.sep().quoted("level", event.level.toString())
