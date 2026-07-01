@@ -18,14 +18,11 @@ dependencies {
     implementation(project(":libs:mq"))
     implementation(project(":libs:utils"))
     implementation(project(":libs:ws"))
-
     implementation("no.nav.helved:xml:3.1.252")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
-
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
     testImplementation(kotlin("test")) 

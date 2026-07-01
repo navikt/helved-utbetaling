@@ -13,12 +13,9 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
-
     implementation("no.nav.helved:xml:3.1.252")
 
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.0")
-
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:${ktorVersion}")
     implementation("io.ktor:ktor-server-netty:${ktorVersion}")

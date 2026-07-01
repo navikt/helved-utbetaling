@@ -21,9 +21,6 @@ dependencies {
     implementation("no.nav.helved:xml:$libVersion")
 
     implementation("org.apache.kafka:kafka-clients:4.3.0")
-
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
-
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")

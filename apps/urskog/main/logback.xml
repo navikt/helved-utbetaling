@@ -2,23 +2,19 @@
 <configuration>
 
     <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.JsonEncoder"/>
-    </appender>
-
-    <appender name="otel" class="io.opentelemetry.instrumentation.logback.v1_0.OpenTelemetryAppender">
-        <appender-ref ref="json"/>
+        <encoder class="libs.utils.LogJsonEncoder"/>
     </appender>
 
     <appender name="secureLog" class="libs.utils.LogTcpAppender">
         <destination>team-logs.nais-system:5170</destination>
-        <encoder class="libs.utils.LogTcpEncoder">
+        <encoder class="libs.utils.LogJsonEncoder">
             <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${HOSTNAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
         </encoder>
     </appender>
 
     <appender name="auditLog" class="libs.utils.LogTcpAppender">
         <destination>team-logs.nais-system:5170</destination>
-        <encoder class="libs.utils.LogTcpEncoder">
+        <encoder class="libs.utils.LogJsonEncoder">
             <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${HOSTNAME}","nais_container_name":"${NAIS_APP_NAME}","team_audit":"helved"}</customFields>
         </encoder>
     </appender>
