@@ -22,10 +22,7 @@ dependencies {
     implementation("org.http4k:http4k-core:$http4kVersion")
     implementation("org.http4k:http4k-format-kotlinx-serialization:$http4kVersion")
     implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
-
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
-
     implementation("io.github.pdvrieze.xmlutil:serialization-jvm:1.0.0-rc2")
 
     testImplementation(kotlin("test"))

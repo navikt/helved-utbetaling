@@ -23,10 +23,7 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
-
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
-
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:jdbc-test"))

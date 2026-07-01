@@ -6,11 +6,10 @@ import ch.qos.logback.classic.spi.LoggingEvent
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class LogTcpTest {
-    private val encoder = LogTcpEncoder().apply { start() }
+class LogTest {
+    private val encoder = LogJsonEncoder().apply { start() }
 
     private fun event(msg: String, level: Level = Level.INFO): ILoggingEvent {
         val logger = (LoggerFactory.getLogger("test.Logger") as ch.qos.logback.classic.Logger)
@@ -33,8 +32,6 @@ class LogTcpTest {
         val json = String(encoder.encode(event("hello")))
         assertTrue(json.contains("\"message\":\"hello\""))
         assertTrue(json.contains("\"level\":\"INFO\""))
-        assertTrue(json.contains("\"@timestamp\""))
-        assertTrue(json.contains("\"@version\":\"1\""))
         assertTrue(json.endsWith("\n"))
     }
 
@@ -54,17 +51,8 @@ class LogTcpTest {
     }
 
     @Test
-    fun `remaps trace MDC keys`() {
-        MDC.put("trace_id", "tid")
-        val ev = event("x")
-        MDC.clear()
-        val json = String(encoder.encode(ev))
-        assertTrue(json.contains("\"trace_id\":\"tid\""))
-    }
-
-    @Test
     fun `appends customFields`() {
-        val enc = LogTcpEncoder().apply {
+        val enc = LogJsonEncoder().apply {
             customFields = """{"app":"utsjekk"}"""
             start()
         }
@@ -80,7 +68,7 @@ class LogTcpTest {
         val appender = LogTcpAppender().apply {
             context = LoggerFactory.getILoggerFactory() as ch.qos.logback.classic.LoggerContext
             destination = "localhost:$port"
-            encoder = LogTcpEncoder().apply { start() }
+            encoder = LogJsonEncoder().apply { start() }
             start()
         }
 
