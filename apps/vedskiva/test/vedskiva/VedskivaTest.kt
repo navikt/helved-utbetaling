@@ -10,6 +10,7 @@ import libs.kafka.KafkaProducerFake
 import libs.utils.CsvReader
 import libs.utils.Resource
 import libs.utils.Rule
+import libs.utils.sha256
 import models.forrigeVirkedag
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
@@ -63,7 +64,7 @@ class VedskivaTest {
             tom = LocalDate.of(2026, 2, 18).atStartOfDay().minusMinutes(1),
         )
 
-        val res = TestRuntime.ktor.httpClient.post ("/api/avstem2/dryrun") {
+        val res = TestRuntime.ktor.httpClient.post ("/api/avstem/dryrun") {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken())
             setBody(req)
@@ -152,7 +153,7 @@ class VedskivaTest {
 
     @Test
     fun `can avstemme 00 (OK)`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 0,
@@ -194,7 +195,7 @@ class VedskivaTest {
 
     @Test
     fun `can dryrun avstemming`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 0,
@@ -296,7 +297,7 @@ class VedskivaTest {
 
     @Test
     fun `can avstemme 04 (Varsel)`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("04"),
                 partition = 0,
@@ -338,7 +339,7 @@ class VedskivaTest {
 
     @Test
     fun `can avstemme 08 (Funksjonell Feil)`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("08", "funksjonell", "feil"),
                 partition = 0,
@@ -380,7 +381,7 @@ class VedskivaTest {
 
     @Test
     fun `can avstemme 12 (Teknisk Feil)`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("12", "teknisk", "feil"),
                 partition = 0,
@@ -422,7 +423,7 @@ class VedskivaTest {
 
     @Test
     fun `can avstemme    (no kvittering)`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = null,
                 partition = 0,
@@ -464,7 +465,7 @@ class VedskivaTest {
 
     @Test
     fun `can skip without avstemminger for today`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 1,
@@ -475,7 +476,7 @@ class VedskivaTest {
             )
         )
 
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 0,
@@ -509,9 +510,7 @@ class VedskivaTest {
             key = "abc",
             beløper = listOf(100),
         )
-        PeisschtappernFake.response.add(dao)
-        PeisschtappernFake.response.add(dao)
-        PeisschtappernFake.response.add(dao.copy(offset = 1))
+        seedOppdrag(dao, dao, dao.copy(offset = 1))
 
         val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
             contentType(ContentType.Application.Json)
@@ -545,7 +544,7 @@ class VedskivaTest {
 
     @Test
     fun `can accumulate oppdrag with same key`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 0,
@@ -554,7 +553,7 @@ class VedskivaTest {
                 beløper = listOf(333),
             )
         )
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 0,
@@ -596,7 +595,7 @@ class VedskivaTest {
 
     @Test
     fun `can summarize total beløp per oppdrag`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 0,
@@ -638,7 +637,7 @@ class VedskivaTest {
 
     @Test
     fun `can accumulate opphør (UPDATE)`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             Dao(
                 version = "v1",
                 topic_name = "helved.oppdrag.v1",
@@ -669,7 +668,7 @@ class VedskivaTest {
                 system_time_ms = Instant.now().toEpochMilli(),
             )
         )
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             Dao(
                 version = "v1",
                 topic_name = "helved.oppdrag.v1",
@@ -733,7 +732,7 @@ class VedskivaTest {
 
     @Test
     fun `can accumulate opphør (DELETE)`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             Dao(
                 version = "v1",
                 topic_name = "helved.oppdrag.v1",
@@ -764,7 +763,7 @@ class VedskivaTest {
                 system_time_ms = Instant.now().toEpochMilli(),
             )
         )
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             Dao(
                 version = "v1",
                 topic_name = "helved.oppdrag.v1",
@@ -828,22 +827,34 @@ class VedskivaTest {
 
     @Test
     fun `will take precedence on kvitterte oppdrag`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        val oppdragslinjer = listOf(
+            oppdragslinje(
+                delytelsesId = "1",
+                sats = 333,
+                datoVedtakFom = LocalDate.of(2025, 11, 3),
+                datoVedtakTom = LocalDate.of(2025, 11, 7),
+                typeSats = "DAG",
+                henvisning = "same-behandling",
+            )
+        )
+        seedOppdrag(
             dao(
                 kvittering = null,
                 partition = 0,
                 offset = 1,
                 key = "to be kvittert",
                 beløper = listOf(333),
+                oppdragslinjer = oppdragslinjer,
             )
         )
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 0,
                 offset = 2,
                 key = "to be kvittert",
                 beløper = listOf(333),
+                oppdragslinjer = oppdragslinjer,
             )
         )
 
@@ -879,7 +890,7 @@ class VedskivaTest {
 
     @Test
     fun `will skip future avstemminger`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 2,
@@ -907,7 +918,7 @@ class VedskivaTest {
 
     @Test
     fun `will skip previous avstemminger`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 1,
@@ -935,7 +946,7 @@ class VedskivaTest {
 
     @Test
     fun `will save scheduled`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 0,
@@ -970,7 +981,7 @@ class VedskivaTest {
 
     @Test
     fun `has idempotent scheduler`() = runTest(TestRuntime.context) {
-        PeisschtappernFake.response.add(
+        seedOppdrag(
             dao(
                 kvittering = mmel("00"),
                 partition = 0,
@@ -1006,11 +1017,49 @@ class VedskivaTest {
 
 private val xmlMapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 private val objectFactory = ObjectFactory()
+private val avstemmingFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
 private fun LocalDateTime.format() =
-    truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
+    truncatedTo(ChronoUnit.HOURS).format(avstemmingFormatter)
 
 private fun LocalDate.toXMLDate(): XMLGregorianCalendar =
     DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(atStartOfDay(ZoneId.systemDefault())))
+
+private suspend fun seedOppdrag(vararg daos: Dao) {
+    transaction {
+        daos.mapNotNull { it.toOppdragDao() }
+            .forEach { it.insert() }
+    }
+}
+
+private fun Dao.toOppdragDao(): OppdragDao? {
+    val oppdrag = oppdrag ?: return null
+    val avstemming = oppdrag.oppdrag110.avstemming115 ?: return null
+    val hashKey = xmlMapper
+        .copy(oppdrag)
+        .apply { mmel = null }
+        .let { xmlMapper.writeValueAsString(it).sha256() }
+
+    return OppdragDao(
+        nokkelAvstemming = LocalDateTime.parse(
+            avstemming.nokkelAvstemming.trimEnd(),
+            avstemmingFormatter,
+        ),
+        hashKey = hashKey,
+        kodeFagomraade = oppdrag.oppdrag110.kodeFagomraade.trimEnd(),
+        personident = oppdrag.oppdrag110.oppdragGjelderId.trimEnd(),
+        fagsystemId = oppdrag.oppdrag110.fagsystemId.trimEnd(),
+        lastDelytelseId = oppdrag.oppdrag110.oppdragsLinje150s.last().delytelseId.trimEnd(),
+        tidspktMelding = LocalDateTime.parse(
+            avstemming.tidspktMelding.trimEnd(),
+            avstemmingFormatter,
+        ),
+        sats = oppdrag.oppdrag110.oppdragsLinje150s.sumOf { it.sats.toLong() },
+        createdAt = LocalDateTime.now(),
+        alvorlighetsgrad = oppdrag.mmel?.alvorlighetsgrad,
+        kodeMelding = oppdrag.mmel?.kodeMelding,
+        beskrMelding = oppdrag.mmel?.beskrMelding,
+    )
+}
 
 private fun dao(
     kvittering: Mmel? = mmel(),
@@ -1019,18 +1068,27 @@ private fun dao(
     key: String = UUID.randomUUID().toString(),
     beløper: List<Int>? = null,
     avstemmingdag: LocalDate = LocalDate.now().minusDays(1),
+    oppdragslinjer: List<OppdragsLinje150>? = null,
 ): Dao = Dao(
     version = "v1",
     topic_name = "helved.oppdrag.v1",
     key = key,
     value = beløper?.let {
-        xmlMapper.writeValueAsString(
+        val oppdrag = if (oppdragslinjer == null) {
             oppdrag(
                 mmel = kvittering,
                 satser = it,
                 avstemmingstidspunkt = avstemmingdag.atStartOfDay(),
             )
-        )
+        } else {
+            oppdrag(
+                mmel = kvittering,
+                satser = it,
+                avstemmingstidspunkt = avstemmingdag.atStartOfDay(),
+                oppdragslinjer = oppdragslinjer,
+            )
+        }
+        xmlMapper.writeValueAsString(oppdrag)
     },
     partition = partition,
     offset = offset.toLong(),
