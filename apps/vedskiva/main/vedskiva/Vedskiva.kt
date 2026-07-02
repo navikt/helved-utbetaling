@@ -22,7 +22,6 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.contextual
 import libs.auth.jwt
 import libs.auth.TokenProvider
 import libs.jdbc.Jdbc
@@ -81,7 +80,7 @@ fun Application.vedskiva(
     }
 
     val producer = kafka.createProducer(config.kafka, Topics.avstemming) 
-    val service = AvstemmingService(config, producer)
+    val service = AvstemmingService(producer)
 
     streams.connect(
         config = config.kafka,
