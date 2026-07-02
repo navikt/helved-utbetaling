@@ -158,5 +158,5 @@ jobs:
         env:
           PRINT_PAYLOAD: true
           CLUSTER: prod-gcp
-          RESOURCE: apps/${{ github.workflow }}/prod.yml,apps/${{ github.workflow }}/alert.yml
+          RESOURCE: apps/${{ github.workflow }}/prod.yml,apps/${{ github.workflow }}/alert.yml,.nais/vulnerability-alertmanager.yml
           VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
