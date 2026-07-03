@@ -219,7 +219,7 @@ fun Utbetaling.failOnTooManyPeriods() {
     if (periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG)) {
         val min = perioder.minBy { it.fom }.fom
         val max = perioder.maxBy { it.tom }.tom
-        val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max) + 1 > 1000
+        val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max) + 1 > 1100
         if (tooManyPeriods) badRequest(DocumentedErrors.Async.Utbetaling.FOR_LANG_UTBETALING)
     }
 }

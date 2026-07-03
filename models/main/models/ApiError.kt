@@ -51,7 +51,7 @@ object DocumentedErrors {
                 "$URL/kom_i_gang/opprett_utbetaling#fremtidig-utbetaling"
             ),
             FOR_LANG_UTBETALING(
-                "Utbetalinger kan ikke strekke seg over 1000 dager",
+                "Utbetalinger kan ikke strekke seg over 1100 dager",
                 "$URL/kom_i_gang/opprett_utbetaling#for-lang-utbetaling"
             ),
             IMMUTABLE_FIELD_SAK_ID(
