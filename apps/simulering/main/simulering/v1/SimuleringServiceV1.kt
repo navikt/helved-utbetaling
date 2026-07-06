@@ -1,17 +1,22 @@
 @file:UseSerializers(libs.kotlinx.LocalDateSerializer::class)
 
-package simulering.models.soap
+package simulering.v1
 
-import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import nl.adaptivity.xmlutil.serialization.XmlSerialName
+import libs.utils.secureLog
+import models.badGateway
 import nl.adaptivity.xmlutil.serialization.XmlElement
-import simulering.models.rest.*
+import nl.adaptivity.xmlutil.serialization.XmlSerialName
+import simulering.Soap
+import simulering.SoapException
+import simulering.Sts
+import simulering.wsLog
 import java.time.LocalDate
 
 /**
@@ -20,6 +25,68 @@ import java.time.LocalDate
  */
 typealias FnrOrgnr = String // 9-11 tegn
 typealias Klasse = String // 0-20
+
+class SimuleringServiceV1(
+    private val ws: Soap,
+    private val sts: Sts,
+) {
+
+    fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse = withAuthRetry {
+        val req = soap.SimulerBeregningRequest.from(request)
+        val xmlStr = simulering.xml.encodeToString(soap.SimulerBeregningRequest.serializer(), req)
+        val response = ws.call(simulering.SimulerAction.BEREGNING, xmlStr)
+        (json(response) ?: soap.Beregning.empty(req)).intoDto()
+    }
+
+    private fun <T> withAuthRetry(block: () -> T): T {
+        return try {
+            block()
+        } catch (e: SoapException) {
+            if (e.message?.contains("FailedAuthentication") == true) {
+                wsLog.warn("STS-token feilet med FailedAuthentication, invaliderer cache og prøver på nytt")
+                sts.invalidate()
+                block()
+            } else {
+                throw e
+            }
+        }
+    }
+
+    fun json(xmlStr: String): soap.Beregning? = when (classify(xmlStr)) {
+        EnvelopeKind.FAULT -> simulering.fault(xmlStr)
+        EnvelopeKind.RESPONSE -> try {
+            wsLog.debug("Forsøker å deserialisere simulerBeregningResponse")
+            simulerBeregningResponse(xmlStr)
+        } catch (e: Throwable) {
+            wsLog.error("Feilet deserialisering av simulerBeregningResponse")
+            secureLog.error("Feilet deserialisering av simulerBeregningResponse: $xmlStr", e)
+            badGateway("Ugyldig respons fra Oppdragssystemet")
+        }
+        EnvelopeKind.UNKNOWN -> {
+            wsLog.error("Ukjent SOAP-svar fra Oppdragssystemet")
+            secureLog.error("Ukjent SOAP-svar fra Oppdragssystemet: $xmlStr")
+            badGateway("Ukjent svar fra Oppdragssystemet")
+        }
+    }
+
+    private enum class EnvelopeKind { RESPONSE, FAULT, UNKNOWN }
+
+    private fun classify(xmlStr: String): EnvelopeKind = when {
+        "<faultcode" in xmlStr || ":Fault " in xmlStr || ":Fault>" in xmlStr -> EnvelopeKind.FAULT
+        "simulerBeregningResponse" in xmlStr -> EnvelopeKind.RESPONSE
+        else -> EnvelopeKind.UNKNOWN
+    }
+
+    private fun simulerBeregningResponse(xmlStr: String): soap.Beregning? {
+        val responseBody = simulering.extractElement(xmlStr, "simulerBeregningResponse") ?: return null
+        val responseElement = simulering.extractElement(responseBody, "response") ?: return null
+        val simuleringElement = simulering.extractElement(responseElement, "simulering") ?: return null
+        // Strip all xmlns declarations and namespace prefixes for clean parsing
+        val cleanXml = "<simulering>${simulering.stripNamespaces(simuleringElement)}</simulering>"
+        return simulering.xmlDeserializer.decodeFromString(soap.Beregning.serializer(), cleanXml)
+    }
+
+}
 
 object NullableSatsTypeSerializer : KSerializer<soap.SatsType?> {
     override val descriptor = PrimitiveSerialDescriptor("SatsType", PrimitiveKind.STRING)

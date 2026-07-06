@@ -1,22 +1,31 @@
 package simulering
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import libs.utils.appLog
-import libs.utils.secureLog
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import libs.kafka.KafkaStreams
+import libs.kafka.Streams
+import libs.kafka.topology
+import libs.utils.appLog
+import libs.utils.secureLog
+import models.ApiError
+import models.Fagsystem
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import org.http4k.client.JavaHttpClient
+import org.http4k.core.*
+import org.http4k.filter.MicrometerMetrics
 import org.http4k.filter.ServerFilters
 import org.http4k.routing.routes
 import org.http4k.server.ServerConfig
 import org.http4k.server.SunHttpLoom
 import org.http4k.server.asServer
-import org.http4k.core.*
-import org.http4k.filter.MicrometerMetrics
-import models.ApiError
+import simulering.v1.SimuleringServiceV1
 import java.time.Duration
+import kotlin.concurrent.thread
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -24,32 +33,52 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    val config = Config()
-    val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-    val app = simulering(config, prometheus)
+    val app = simulering()
     app.asServer(SunHttpLoom(8080, ServerConfig.StopMode.Graceful(Duration.ofSeconds(50)))).start().block()
 }
 
-fun simulering(config: Config, prometheus: PrometheusMeterRegistry): HttpHandler {
+fun simulering(
+    config: Config = Config(),
+    prometheus: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
+    kafka: Streams = KafkaStreams(),
+): HttpHandler {
     val http = JavaHttpClient()
     val azure = AzureTokenProvider(config.azure, http)
     val proxyAuth: () -> String = { "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}" }
     val sts = StsClient(config.simulering.sts, http, proxyAuth = proxyAuth)
     val soap = SoapClient(config.simulering, sts, SecureLogFilter.then(http), proxyAuth = proxyAuth)
     val service = SimuleringService(soap, sts)
+    val serviceV1 = SimuleringServiceV1(soap, sts)
+
+    val channel = Channel<Pair<String, SimulerBeregningRequest>>(Channel.UNLIMITED)
+
+    val dryrunProducers = mapOf(
+        Fagsystem.AAP to kafka.createProducer(config.kafka, Topics.dryrunAap),
+        Fagsystem.DAGPENGER to kafka.createProducer(config.kafka, Topics.dryrunDp),
+        Fagsystem.TILLEGGSSTØNADER to kafka.createProducer(config.kafka, Topics.dryrunTs),
+        Fagsystem.TILTAKSPENGER to kafka.createProducer(config.kafka, Topics.dryrunTp),
+    )
+
+    kafka.connect(
+        config = config.kafka,
+        registry = prometheus,
+        topology = topology {
+            simuleringer(channel)
+        }
+    )
+
+    val worker = SimuleringWorker(channel, service, dryrunProducers)
+    thread(isDaemon = true, name = "simulering-worker") {
+        runBlocking(Dispatchers.IO) { worker.run() }
+    }
 
     return errorFilter
         .then(ServerFilters.MicrometerMetrics.RequestTimer(prometheus))
         .then(ServerFilters.MicrometerMetrics.RequestCounter(prometheus))
         .then(routes(
             actuatorRoutes(prometheus),
-            simuleringRoutes(service),
+            simuleringRoutes(serviceV1),
         ))
-}
-
-fun simulering(config: Config): HttpHandler {
-    val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-    return simulering(config, prometheus)
 }
 
 @Serializable

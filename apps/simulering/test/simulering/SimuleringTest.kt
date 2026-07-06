@@ -8,8 +8,9 @@ import org.http4k.lens.BiDiBodyLens
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import simulering.models.rest.rest
-import simulering.models.soap.soap
+import simulering.v1.rest
+import simulering.v1.soap
+import simulering.v1.SimuleringServiceV1
 import nl.adaptivity.xmlutil.serialization.XML
 import simulering.xml
 import java.time.LocalDate
@@ -25,7 +26,7 @@ class SimuleringTest {
     @Test
     fun `svarer med 200 OK og simuleringsresultat`() {
         TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config)
+            val app = simulering(config = runtime.config, kafka = runtime.kafka)
 
             val response = app(
                 Request(Method.POST, "/simuler/legacy")
@@ -43,7 +44,7 @@ class SimuleringTest {
     @Test
     fun `aksepterer personident som objekt med verdi-felt`() {
         TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config)
+            val app = simulering(config = runtime.config, kafka = runtime.kafka)
 
             val json = """{"fagområde":"TILLST","sakId":"200000233","personident":{"verdi":"22479409483"},"erFørsteUtbetalingPåSak":true,"saksbehandler":"Z994230","utbetalingsperioder":[{"periodeId":"0","forrigePeriodeId":null,"erEndringPåEksisterendePeriode":false,"klassekode":"TSTBASISP4-OP","fom":"2024-05-01","tom":"2024-05-01","sats":700,"satstype":"DAG","opphør":null,"utbetalesTil":"22479409483"}]}"""
 
@@ -74,7 +75,7 @@ class SimuleringTest {
     @Test
     fun `can resolve simulering response`() {
         val actual = TestRuntime().use { runtime ->
-            val simulering = SimuleringService(runtime, runtime)
+            val simulering = SimuleringServiceV1(runtime, runtime)
             simulering.json(Resource.read("/sim-res.xml"))
         }
 
@@ -86,7 +87,7 @@ class SimuleringTest {
     @Test
     fun `can resolve empty simulering response`() {
         val actual = TestRuntime().use { runtime ->
-            val simulering = SimuleringService(runtime, runtime)
+            val simulering = SimuleringServiceV1(runtime, runtime)
             simulering.json(Resource.read("/simuler-tom.xml"))
         }
 
@@ -97,7 +98,7 @@ class SimuleringTest {
     fun `kan deserialisere trekkpostering`() {
         assertDoesNotThrow {
             TestRuntime().use { runtime ->
-                val simulering = SimuleringService(runtime, runtime)
+                val simulering = SimuleringServiceV1(runtime, runtime)
                 simulering.json(Resource.read("/sim-trekk.xml"))
             }
         }
@@ -107,7 +108,7 @@ class SimuleringTest {
     fun `kan deserialisere motposteringer`() {
         assertDoesNotThrow {
             TestRuntime().use { runtime ->
-                val simulering = SimuleringService(runtime, runtime)
+                val simulering = SimuleringServiceV1(runtime, runtime)
                 simulering.json(Resource.read("/simuler-endring-response.xml"))
             }
         }
@@ -162,7 +163,7 @@ class SimuleringTest {
 
         val actual = assertThrows<ApiError> {
             TestRuntime().use { runtime ->
-                val simulering = SimuleringService(runtime, runtime)
+                val simulering = SimuleringServiceV1(runtime, runtime)
                 simulering.json(fault)
             }
         }
@@ -176,7 +177,7 @@ class SimuleringTest {
 
         val actual = assertThrows<ApiError> {
             TestRuntime().use { runtime ->
-                val simulering = SimuleringService(runtime, runtime)
+                val simulering = SimuleringServiceV1(runtime, runtime)
                 simulering.json(fault)
             }
         }
@@ -190,7 +191,7 @@ class SimuleringTest {
 
         assertThrows<SoapException> {
             TestRuntime().use { runtime ->
-                val simulering = SimuleringService(runtime, runtime)
+                val simulering = SimuleringServiceV1(runtime, runtime)
                 simulering.json(fault)
             }
         }
