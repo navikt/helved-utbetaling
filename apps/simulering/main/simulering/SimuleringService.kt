@@ -2,22 +2,19 @@ package simulering
 
 import kotlinx.serialization.Serializable
 import libs.utils.secureLog
-import models.badGateway
+import libs.xml.XMLMapper
 import models.badRequest
 import models.conflict
 import models.forbidden
 import models.notFound
 import nl.adaptivity.xmlutil.ExperimentalXmlUtilApi
-import nl.adaptivity.xmlutil.serialization.XML
 import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
 import nl.adaptivity.xmlutil.serialization.OutputKind
-import simulering.models.rest.rest
-import simulering.models.soap.soap
-import simulering.models.soap.soap.Beregning
-import simulering.models.soap.soap.SimulerBeregningRequest
+import nl.adaptivity.xmlutil.serialization.XML
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
-private object SimulerAction {
+object SimulerAction {
     private const val HOST = "http://nav.no"
     private const val PATH = "system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"
     private const val SERVICE = "simulerFpService"
@@ -69,19 +66,16 @@ data class Fault(
 )
 
 class SimuleringService(private val soap: Soap, private val sts: Sts) {
+    private val requestMapper: XMLMapper<no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest> = XMLMapper(false)
+    private val responseMapper: XMLMapper<SimulerBeregningResponse> = XMLMapper(false)
 
-    fun simuler(request: SimulerBeregningRequest): rest.SimuleringResponse = withAuthRetry {
-        val xmlStr = xml.encodeToString(SimulerBeregningRequest.serializer(), request)
+    fun simulerJaxb(request: no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest): SimulerBeregningResponse = withAuthRetry {
+        val xmlStr = requestMapper.writeValueAsString(request)
         val response = soap.call(SimulerAction.BEREGNING, xmlStr)
-        (json(response) ?: Beregning.empty(request)).intoDto()
+        val xml = stripEnvelope(response) ?: fault(response)
+        responseMapper.readValue(xml)
     }
 
-    fun simuler(request: rest.SimuleringRequest): rest.SimuleringResponse = withAuthRetry {
-        val req = SimulerBeregningRequest.from(request)
-        val xmlStr = xml.encodeToString(SimulerBeregningRequest.serializer(), req)
-        val response = soap.call(SimulerAction.BEREGNING, xmlStr)
-        (json(response) ?: Beregning.empty(req)).intoDto()
-    }
 
     private fun <T> withAuthRetry(block: () -> T): T {
         return try {
@@ -97,120 +91,85 @@ class SimuleringService(private val soap: Soap, private val sts: Sts) {
         }
     }
 
-    fun json(xmlStr: String): Beregning? = when (classify(xmlStr)) {
-        EnvelopeKind.FAULT -> fault(xmlStr)
-        EnvelopeKind.RESPONSE -> try {
-            wsLog.debug("Forsøker å deserialisere simulerBeregningResponse")
-            simulerBeregningResponse(xmlStr)
-        } catch (e: Throwable) {
-            wsLog.error("Feilet deserialisering av simulerBeregningResponse")
-            secureLog.error("Feilet deserialisering av simulerBeregningResponse: $xmlStr", e)
-            badGateway("Ugyldig respons fra Oppdragssystemet")
-        }
-        EnvelopeKind.UNKNOWN -> {
-            wsLog.error("Ukjent SOAP-svar fra Oppdragssystemet")
-            secureLog.error("Ukjent SOAP-svar fra Oppdragssystemet: $xmlStr")
-            badGateway("Ukjent svar fra Oppdragssystemet")
-        }
+    private fun stripEnvelope(input: String): String? {
+        val start = "<simulerBeregningResponse"
+        val end = "</simulerBeregningResponse>"
+        val startIdx = input.indexOf(start)
+        val endIdx = input.indexOf(end)
+        if (startIdx == -1 || endIdx == -1) return null
+        return input.substring(startIdx, endIdx + end.length)
     }
+}
 
-    private enum class EnvelopeKind { RESPONSE, FAULT, UNKNOWN }
+fun fault(xmlStr: String): Nothing {
+    wsLog.debug("Forsøker å deserialisere fault")
+    val faultcode = extractElementText(xmlStr, "faultcode") ?: "unknown"
+    val faultstring = extractElementText(xmlStr, "faultstring") ?: "unknown"
+    val detail = extractFaultDetail(xmlStr)
+    val fault = Fault(faultcode, faultstring, detail)
+    logAndThrow(fault)
+}
 
-    private fun classify(xmlStr: String): EnvelopeKind = when {
-        "<faultcode" in xmlStr || ":Fault " in xmlStr || ":Fault>" in xmlStr -> EnvelopeKind.FAULT
-        "simulerBeregningResponse" in xmlStr -> EnvelopeKind.RESPONSE
-        else -> EnvelopeKind.UNKNOWN
-    }
+private fun extractFaultDetail(xmlStr: String): FaultDetail? {
+    val detailContent = extractElement(xmlStr, "detail") ?: return null
+    val errorMessage = extractElementText(detailContent, "errorMessage")
+    val cicsFault = extractElementText(detailContent, "CICSFault")
 
-    private fun simulerBeregningResponse(xmlStr: String): Beregning? {
-        // Extract <simulerBeregningResponse>...</simulerBeregningResponse> content
-        val responseBody = extractElement(xmlStr, "simulerBeregningResponse")
-            ?: return null
+    val feilUnderBehandling = if (errorMessage != null) FeilUnderBehandling(errorMessage) else null
 
-        // Parse the inner response element
-        val responseElement = extractElement(responseBody, "response")
-            ?: return null
+    return if (feilUnderBehandling != null || cicsFault != null) {
+        FaultDetail(feilUnderBehandling, cicsFault)
+    } else null
+}
 
-        val simuleringElement = extractElement(responseElement, "simulering")
-            ?: return null
+private fun logAndThrow(fault: Fault): Nothing {
+    wsLog.debug("Håndterer soap fault")
+    secureLog.debug("Håndterer soap fault {}", fault)
 
-        // Strip all xmlns declarations and namespace prefixes for clean parsing
-        val cleanXml = "<simulering>${stripNamespaces(simuleringElement)}</simulering>"
-        return xmlDeserializer.decodeFromString(Beregning.serializer(), cleanXml)
-    }
-
-    private fun fault(xmlStr: String): Nothing {
-        wsLog.debug("Forsøker å deserialisere fault")
-        val faultcode = extractElementText(xmlStr, "faultcode") ?: "unknown"
-        val faultstring = extractElementText(xmlStr, "faultstring") ?: "unknown"
-
-        val detail = extractFaultDetail(xmlStr)
-        val fault = Fault(faultcode, faultstring, detail)
-        logAndThrow(fault)
-    }
-
-    private fun extractFaultDetail(xmlStr: String): FaultDetail? {
-        val detailContent = extractElement(xmlStr, "detail") ?: return null
-
-        val errorMessage = extractElementText(detailContent, "errorMessage")
-        val cicsFault = extractElementText(detailContent, "CICSFault")
-
-        val feilUnderBehandling = if (errorMessage != null) FeilUnderBehandling(errorMessage) else null
-
-        return if (feilUnderBehandling != null || cicsFault != null) {
-            FaultDetail(feilUnderBehandling, cicsFault)
-        } else null
-    }
-
-    private fun logAndThrow(fault: Fault): Nothing {
-        wsLog.debug("Håndterer soap fault")
-        secureLog.debug("Håndterer soap fault {}", fault)
-
-        with(fault.faultstring) {
-            when {
-                contains("Personen finnes ikke") -> notFound(this)
-                contains("ugyldig") -> badRequest(this)
-                contains("Må ha nytt vedtak når Sats/Type/Vedtak-fom endres") -> badRequest(this)
-                contains("simulerBeregningFeilUnderBehandling") -> resolveBehandlingFault(fault)
-                contains("Conversion to SOAP failed") -> resolveSoapConversionFailure(fault)
-                else -> soapError(fault)
-            }
+    with(fault.faultstring) {
+        when {
+            contains("Personen finnes ikke") -> notFound(this)
+            contains("ugyldig") -> badRequest(this)
+            contains("Må ha nytt vedtak når Sats/Type/Vedtak-fom endres") -> badRequest(this)
+            contains("simulerBeregningFeilUnderBehandling") -> resolveBehandlingFault(fault)
+            contains("Conversion to SOAP failed") -> resolveSoapConversionFailure(fault)
+            else -> soapError(fault)
         }
     }
+}
 
-    private fun resolveSoapConversionFailure(fault: Fault): Nothing {
-        val cicsFault = fault.detail?.CICSFault ?: soapError(fault)
+private fun resolveSoapConversionFailure(fault: Fault): Nothing {
+    val cicsFault = fault.detail?.CICSFault ?: soapError(fault)
 
-        if (cicsFault.contains("DFHPI1008")) {
-            forbidden(
-                """
-                ConsumerId (service-user) er ikke gyldig for simuleringstjenesten.
-                Det kan ha vært datalast i Oppdragsystemet. 
-                Kontakt oss eller PO Utbetaling.
-                """
-            )
-        } else {
-            soapError(fault)
-        }
+    if (cicsFault.contains("DFHPI1008")) {
+        forbidden(
+            """
+            ConsumerId (service-user) er ikke gyldig for simuleringstjenesten.
+            Det kan ha vært datalast i Oppdragsystemet. 
+            Kontakt oss eller PO Utbetaling.
+            """
+        )
+    } else {
+        soapError(fault)
     }
+}
 
-    private fun resolveBehandlingFault(fault: Fault): Nothing {
-        val errorMessage = fault.detail?.simulerBeregningFeilUnderBehandling?.errorMessage ?: soapError(fault)
-        with(errorMessage) {
-            when {
-                contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> notFound("SakId ikke funnet")
-                contains("Oppdraget finnes fra før") -> conflict("Utbetaling med SakId/BehandlingId finnes fra før")
-                contains("Referert vedtak/linje ikke funnet") -> notFound("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
-                contains("Navn på person ikke funnet i PDL") -> notFound("Navn på person ikke funnet i PDL")
-                contains("Personen finnes ikke i PDL") -> notFound("Personen finnes ikke i PDL")
-                else -> soapError(fault)
-            }
+private fun resolveBehandlingFault(fault: Fault): Nothing {
+    val errorMessage = fault.detail?.simulerBeregningFeilUnderBehandling?.errorMessage ?: soapError(fault)
+    with(errorMessage) {
+        when {
+            contains("OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før") -> notFound("SakId ikke funnet")
+            contains("Oppdraget finnes fra før") -> conflict("Utbetaling med SakId/BehandlingId finnes fra før")
+            contains("Referert vedtak/linje ikke funnet") -> notFound("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
+            contains("Navn på person ikke funnet i PDL") -> notFound("Navn på person ikke funnet i PDL")
+            contains("Personen finnes ikke i PDL") -> notFound("Personen finnes ikke i PDL")
+            else -> soapError(fault)
         }
     }
 }
 
 /** Extract inner content of an element (handles namespace prefixes) */
-private fun extractElement(xml: String, localName: String): String? {
+fun extractElement(xml: String, localName: String): String? {
     // Match <prefix:localName or <localName with optional attributes
     val openPattern = Regex("""<(?:\w+:)?$localName(?:\s[^>]*)?>""")
     val closePattern = Regex("""</(?:\w+:)?$localName\s*>""")
@@ -228,7 +187,7 @@ private fun extractElementText(xml: String, localName: String): String? {
 }
 
 /** Strip xmlns declarations and namespace prefixes from XML elements */
-private fun stripNamespaces(xml: String): String =
+fun stripNamespaces(xml: String): String =
     xml.replace(Regex("""\s+xmlns(?::\w+)?="[^"]*""""), "")
         .replace(Regex("""<(\w+):"""), "<")
         .replace(Regex("""</(\w+):"""), "</")

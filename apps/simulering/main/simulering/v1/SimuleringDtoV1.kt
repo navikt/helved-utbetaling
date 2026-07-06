@@ -1,6 +1,6 @@
 @file:UseSerializers(libs.kotlinx.LocalDateSerializer::class)
 
-package simulering.models.rest
+package simulering.v1
 
 import kotlinx.serialization.Serializable
 import models.kontrakter.Personident
@@ -9,7 +9,6 @@ import simulering.PersonidentSerializer
 import java.time.LocalDate
 
 object rest {
-
     @Serializable
     data class SimuleringRequest(
         val fagområde: String,

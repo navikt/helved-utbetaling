@@ -2,7 +2,10 @@ package simulering
 
 import libs.auth.JwkGenerator
 import libs.auth.TEST_JWKS
+import libs.kafka.KafkaProducerFake
+import libs.kafka.StreamsMock
 import libs.utils.Resource
+import models.Simulering
 import org.http4k.core.*
 import org.http4k.routing.bind
 import org.http4k.routing.routes
@@ -14,7 +17,13 @@ import java.util.*
 
 class TestRuntime : Sts, Soap, AutoCloseable {
     private val server = fakeRoutes().asServer(SunHttp(0)).start()
+    val kafka: StreamsMock = StreamsMock()
     private val port get() = server.port()
+
+    val dryrunAap: KafkaProducerFake<String, Simulering> get() = kafka.getProducer(Topics.dryrunAap)
+    val dryrunDp: KafkaProducerFake<String, Simulering> get() = kafka.getProducer(Topics.dryrunDp)
+    val dryrunTs: KafkaProducerFake<String, Simulering> get() = kafka.getProducer(Topics.dryrunTs)
+    val dryrunTp: KafkaProducerFake<String, Simulering> get() = kafka.getProducer(Topics.dryrunTp)
 
     val config: Config
         get() = Config(
@@ -37,10 +46,18 @@ class TestRuntime : Sts, Soap, AutoCloseable {
                     user = "",
                     pass = "",
                 )
-            )
+            ),
+            kafka = kafka.config.copy(additionalProperties = Properties().apply {
+                put("state.dir", "build/kafka-streams")
+                put("max.task.idle.ms", -1L)
+                put(org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG, org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers::class.java)
+            })
         )
 
-    override fun close() { server.stop() }
+    override fun close() {
+        server.stop()
+        libs.kafka.Names.clear()
+    }
 
     override fun samlToken() = SamlToken("token", LocalDateTime.now())
     override fun invalidate() {}

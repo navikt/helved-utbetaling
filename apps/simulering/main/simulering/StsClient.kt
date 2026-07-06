@@ -41,12 +41,9 @@ class StsClient(
 
         val json = Json.parseToJsonElement(response.bodyString())
 
-        val accessToken = json.jsonObject["access_token"]?.jsonPrimitive?.contentOrNull
-            ?: stsError(json)
-        val tokenType = json.jsonObject["issued_token_type"]?.jsonPrimitive?.contentOrNull
-            ?: stsError(json)
-        val expiresIn = json.jsonObject["expires_in"]?.jsonPrimitive?.longOrNull
-            ?: stsError(json)
+        val accessToken = json.jsonObject["access_token"]?.jsonPrimitive?.contentOrNull ?: stsError(json)
+        val tokenType = json.jsonObject["issued_token_type"]?.jsonPrimitive?.contentOrNull ?: stsError(json)
+        val expiresIn = json.jsonObject["expires_in"]?.jsonPrimitive?.longOrNull ?: stsError(json)
 
         if (tokenType != "urn:ietf:params:oauth:token-type:saml2") stsError(json)
 

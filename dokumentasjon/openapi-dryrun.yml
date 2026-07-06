@@ -963,6 +963,9 @@ components:
       description: Status for Info-respons.
       enum:
         - OK_UTEN_ENDRING
+        - FEILET
+        - UTILGJENGELIG
+        - UGYLDIG_REQUEST
 
     # ──────────────────────────────────────────────
     #  Felles schemas

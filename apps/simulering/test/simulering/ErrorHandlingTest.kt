@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
-import simulering.models.rest.rest
+import simulering.v1.rest
 
 class ErrorHandlingTest {
 
@@ -20,7 +20,7 @@ class ErrorHandlingTest {
     @Test
     fun `svarer med 400 Bad Request ved feil på request body`() {
         TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config)
+            val app = simulering(config = runtime.config, kafka = runtime.kafka)
 
             runtime.soapRespondWith(
                 Resource.read("/soap-fault.xml")
@@ -41,7 +41,7 @@ class ErrorHandlingTest {
     @Test
     fun `can resolve cics error`() {
         TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config)
+            val app = simulering(config = runtime.config, kafka = runtime.kafka)
 
             runtime.soapRespondWith(xmlCicsFeil)
 
@@ -58,7 +58,7 @@ class ErrorHandlingTest {
     @Test
     fun `fornyer STS-token og prøver på nytt ved FailedAuthentication`() {
         TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config)
+            val app = simulering(config = runtime.config, kafka = runtime.kafka)
 
             runtime.soapRespondWithSequence(
                 failedAuthenticationFault,
@@ -80,7 +80,7 @@ class ErrorHandlingTest {
     @Test
     fun `svarer med 409 Conflict når Oppdraget finnes fra før`() {
         TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config)
+            val app = simulering(config = runtime.config, kafka = runtime.kafka)
 
             runtime.soapRespondWith(oppdragFinnesFraFoerFault)
 
@@ -101,7 +101,7 @@ class ErrorHandlingTest {
         wsLogger.addAppender(appender)
         try {
             TestRuntime().use { runtime ->
-                val app = simulering(config = runtime.config)
+                val app = simulering(config = runtime.config, kafka = runtime.kafka)
 
                 runtime.soapRespondWith(oppdragFinnesFraFoerFault)
 
@@ -126,7 +126,7 @@ class ErrorHandlingTest {
     @Test
     fun `svarer med 502 Bad Gateway ved ukjent SOAP-svar`() {
         TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config)
+            val app = simulering(config = runtime.config, kafka = runtime.kafka)
 
             runtime.soapRespondWith("<noise>uventet</noise>")
 
