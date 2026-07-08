@@ -74,16 +74,12 @@ spec:
           - name: urskog
             envVarPrefix: DB
   envFrom:
-     # TODO: sjekk hva disse inneholder, er det samme eller noe ulikt?
-    - secret: utsjekk-oppdrag-simulering
     - secret: utsjekk-oppdrag
   env:
     - name: PROXY_HOST
       value: https://helved-ws-proxy.dev-fss-pub.nais.io
     - name: PROXY_SCOPE
       value: api://dev-fss.helved.ws-proxy/.default
-    - name: SIMULERING_PATH
-      value: cics/oppdrag/simulerFpServiceWSBinding
     - name: MQ_HOSTNAME
       value: mqls02.preprod.local
     - name: MQ_PORT

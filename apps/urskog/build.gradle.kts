@@ -17,7 +17,6 @@ dependencies {
     implementation(project(":libs:jdbc"))
     implementation(project(":libs:mq"))
     implementation(project(":libs:utils"))
-    implementation(project(":libs:ws"))
     implementation("no.nav.helved:xml:3.1.252")
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")

@@ -48,23 +48,6 @@ val xmlDeserializer: XML = XML.Companion.recommended_1_0 {
     }.build()
 }
 
-@Serializable
-data class FaultDetail(
-    val simulerBeregningFeilUnderBehandling: FeilUnderBehandling? = null,
-    val CICSFault: String? = null,
-)
-
-@Serializable
-data class FeilUnderBehandling(
-    val errorMessage: String? = null,
-)
-
-data class Fault(
-    val faultcode: String,
-    val faultstring: String,
-    val detail: FaultDetail? = null,
-)
-
 class SimuleringService(private val soap: Soap, private val sts: Sts) {
     private val requestMapper: XMLMapper<no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest> = XMLMapper(false)
     private val responseMapper: XMLMapper<SimulerBeregningResponse> = XMLMapper(false)
@@ -100,6 +83,24 @@ class SimuleringService(private val soap: Soap, private val sts: Sts) {
         return input.substring(startIdx, endIdx + end.length)
     }
 }
+
+@Serializable
+data class FaultDetail(
+    val simulerBeregningFeilUnderBehandling: FeilUnderBehandling? = null,
+    val CICSFault: String? = null,
+)
+
+@Serializable
+data class FeilUnderBehandling(
+    val errorMessage: String? = null,
+)
+
+@Serializable
+data class Fault(
+    val faultcode: String,
+    val faultstring: String,
+    val detail: FaultDetail? = null,
+)
 
 fun fault(xmlStr: String): Nothing {
     wsLog.debug("Forsøker å deserialisere fault")
