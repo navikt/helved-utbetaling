@@ -16,7 +16,7 @@ spec:
       application: abetal
       access: write
     - team: helved
-      application: urskog
+      application: simulering
       access: read
     - team: helved
       application: utsjekk

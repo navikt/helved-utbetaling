@@ -7,6 +7,7 @@ import libs.utils.secureLog
 import models.Fagsystem
 import models.Info
 import models.Simulering
+import models.notImplemented
 import models.v2
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
@@ -31,10 +32,12 @@ class SimuleringWorker(
         }
     }
 
-    private fun mapSuccess(response: SimulerBeregningResponse, fagsystem: Fagsystem): Simulering = when {
-        fagsystem == Fagsystem.AAP || fagsystem == Fagsystem.DAGPENGER -> v2.Simulering.from(response)
-        else -> simulering.v1.from(response) ?: Info.OkUtenEndring(fagsystem)
-    }
+    private fun mapSuccess(response: SimulerBeregningResponse, fagsystem: Fagsystem): Simulering = 
+        when(fagsystem) {
+            Fagsystem.TILLEGGSSTØNADER -> simulering.v1.from(response) ?: Info.OkUtenEndring(fagsystem)
+            Fagsystem.TILTAKSPENGER -> simulering.v1.from(response) ?: Info.OkUtenEndring(fagsystem)
+            else -> v2.Simulering.from(response)
+        }
 
     private fun mapError(error: Exception, fagsystem: Fagsystem): Simulering {
         val message = error.message ?: "ukjent feil"
