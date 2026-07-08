@@ -22,20 +22,18 @@ object SimulerAction {
     const val SEND_OPPDRAG = "$HOST/$PATH/$SERVICE/sendInnOppdragRequest"
 }
 
-@Suppress("DEPRECATION")
 @OptIn(ExperimentalXmlUtilApi::class)
-val xml: XML = XML {
+val xml: XML = XML.recommended_1_0 {
     xmlDeclMode = XmlDeclMode.None
-    indent = 2
-    autoPolymorphic = true
-    policy = DefaultXmlSerializationPolicy.Builder10().apply {
+    indentString = "  "
+    policy {
         defaultPrimitiveOutputKind = OutputKind.Element
-    }.build()
+    }
 }
 
 // Separate instance for deserialization that treats primitives as elements
 @OptIn(ExperimentalXmlUtilApi::class)
-val xmlDeserializer: XML = XML.Companion.recommended_1_0 {
+val xmlDeserializer: XML = XML.recommended_1_0 {
     xmlDeclMode = XmlDeclMode.None
     indentString = "  "
     policy = DefaultXmlSerializationPolicy.Builder10().apply {
