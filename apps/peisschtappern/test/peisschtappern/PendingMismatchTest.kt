@@ -13,11 +13,12 @@ class PendingMismatchTest {
         systemTimeMs: Long = Instant.now().toEpochMilli(),
         sakId: String? = "sak-1",
         fagsystem: String? = "AAP",
+        lastPeriodeId: String? = null,
     ) = Daos(
         topic_name = Topics.utbetalinger.name,
         version = "v1",
         key = "key-$uid",
-        value = utbetalingJson(uid, perioder),
+        value = utbetalingJson(uid, perioder, lastPeriodeId),
         partition = 0,
         offset = 0,
         timestamp_ms = systemTimeMs,
@@ -32,11 +33,12 @@ class PendingMismatchTest {
         uid: String,
         perioder: List<Map<String, Any?>>,
         systemTimeMs: Long = Instant.now().toEpochMilli(),
+        lastPeriodeId: String? = null,
     ) = Daos(
         topic_name = Topics.pendingUtbetalinger.name,
         version = "v1",
         key = "key-$uid",
-        value = utbetalingJson(uid, perioder),
+        value = utbetalingJson(uid, perioder, lastPeriodeId),
         partition = 0,
         offset = 0,
         timestamp_ms = systemTimeMs,
@@ -45,13 +47,14 @@ class PendingMismatchTest {
         trace_id = null,
     )
 
-    private fun utbetalingJson(uid: String, perioder: List<Map<String, Any?>>): String {
+    private fun utbetalingJson(uid: String, perioder: List<Map<String, Any?>>, lastPeriodeId: String? = null): String {
         val periodeJson = perioder.joinToString(",") { p ->
             val vedtakssats = p["vedtakssats"]
             val betalendeEnhet = p["betalendeEnhet"]
             """{"fom":"${p["fom"]}","tom":"${p["tom"]}","beløp":${p["beløp"]},"vedtakssats":${if (vedtakssats == null) "null" else vedtakssats},"betalendeEnhet":${if (betalendeEnhet == null) "null" else "\"$betalendeEnhet\""}}"""
         }
-        return """{"uid":"$uid","perioder":[$periodeJson]}"""
+        val lastPeriodeIdJson = if (lastPeriodeId == null) "" else ""","lastPeriodeId":"$lastPeriodeId""""
+        return """{"uid":"$uid","perioder":[$periodeJson]$lastPeriodeIdJson}"""
     }
 
     private fun periode(
@@ -138,6 +141,33 @@ class PendingMismatchTest {
         val newPending = pendingDao(uid, listOf(periode(beløp = 1000)), systemTimeMs = now + 1000)
 
         assertTrue(detectMismatches(listOf(utbetaling), listOf(oldPending, newPending)).isEmpty())
+    }
+
+    @Test
+    fun `mismatch når perioder er like men lastPeriodeId er ulik`() {
+        val uid = "abc-123"
+        val now = Instant.now().toEpochMilli()
+        val perioder = listOf(periode())
+
+        val utbetaling = utbetalingDao(uid, perioder, systemTimeMs = now + 1000, lastPeriodeId = "11363#1")
+        val pending = pendingDao(uid, perioder, systemTimeMs = now, lastPeriodeId = "11363#0")
+
+        val result = detectMismatches(listOf(utbetaling), listOf(pending))
+
+        assertEquals(1, result.size)
+        assertEquals(uid, result.first().uid)
+    }
+
+    @Test
+    fun `ingen mismatch når perioder og lastPeriodeId er like`() {
+        val uid = "abc-123"
+        val now = Instant.now().toEpochMilli()
+        val perioder = listOf(periode())
+
+        val utbetaling = utbetalingDao(uid, perioder, systemTimeMs = now + 1000, lastPeriodeId = "11363#0")
+        val pending = pendingDao(uid, perioder, systemTimeMs = now, lastPeriodeId = "11363#0")
+
+        assertTrue(detectMismatches(listOf(utbetaling), listOf(pending)).isEmpty())
     }
 
     @Test
