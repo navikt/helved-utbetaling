@@ -7,8 +7,6 @@ metadata:
     team: helved
 spec:
   groups:
-    - name: app
-      rules:
     - name: vulnerabilities
       rules:
         - alert: CriticalVulnerability

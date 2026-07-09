@@ -146,6 +146,7 @@ private fun saveOppdragAndSendIfReady(
                 ?: return@transaction StatusReply.mottatt(oppdrag)
             val alreadySent = lockedOppdrag.sent && meta.headers["resend"] != "true"
             if (!alreadySent && pendingIsReady(hashKey, lockedOppdrag.uids)) {
+                checkForDuplicateLinjer(oppdrag, hashKey, meta)
                 mq.send(oppdrag)
                 lockedOppdrag.updateAsSent()
                 StatusReply.sendt(oppdrag)
@@ -175,6 +176,7 @@ private fun updatePendingAndOppdrag(
             val lockedOppdrag = DaoOppdrag.findWithLock(hashKey)
             val alreadySent = lockedOppdrag != null && lockedOppdrag.sent && meta.headers["resend"] != "true"
             if (!alreadySent && lockedOppdrag != null && pendingIsReady(hashKey, lockedOppdrag.uids)) {
+                checkForDuplicateLinjer(lockedOppdrag.oppdrag, hashKey, meta)
                 mq.send(lockedOppdrag.oppdrag)
                 lockedOppdrag.updateAsSent()
                 KeyValue(value.originalKey, StatusReply.sendt(lockedOppdrag.oppdrag))
@@ -196,6 +198,45 @@ private suspend fun pendingIsReady(hashKey: String, expectedUids: List<String>):
     val isReady = expectedUids.size == receivedUids.size && expectedUids.containsAll(receivedUids)
     kafkaLog.info("is ready:$isReady for hash:$hashKey. expected: $expectedUids, received: $receivedUids")
     return isReady
+}
+
+// TODO: Add paused BOOLEAN column to oppdrag table, set it when duplicates detected,
+// skip mq.send(). API or Kafka header with continue=true to unpause.
+private suspend fun checkForDuplicateLinjer(oppdrag: Oppdrag, oppdragHash: String, meta: Metadata) {
+    val isResend = meta.headers["resend"] == "true"
+    val skipDedup = meta.headers["skip-dedup"] == "true"
+    if (isResend || skipDedup) return
+
+    val oppdrag110 = oppdrag.oppdrag110
+    val sakId = oppdrag110.fagsystemId
+
+    for (linje in oppdrag110.oppdragsLinje150s) {
+        val fp = DaoLinjeFingerprint.fingerprint(oppdrag110, linje)
+        val dao = DaoLinjeFingerprint(
+            fingerprint = fp,
+            sakId = sakId,
+            oppdragHash = oppdragHash,
+            delytelseId = linje.delytelseId,
+        )
+
+        if (linje.kodeStatusLinje != null) {
+            dao.markCancelled()
+            continue
+        }
+
+        val isNew = dao.insertOrReclaim()
+        if (!isNew) {
+            kafkaLog.warn(
+                "Mulig duplikat oppdragslinje: sakId={}, klassekode={}, fom={}, tom={}, sats={}, delytelseId={}",
+                sakId,
+                linje.kodeKlassifik,
+                linje.datoVedtakFom,
+                linje.datoVedtakTom,
+                linje.sats,
+                linje.delytelseId,
+            )
+        }
+    }
 }
 
 private suspend fun saveIdempotent(

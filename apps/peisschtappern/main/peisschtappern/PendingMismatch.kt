@@ -20,6 +20,7 @@ private data class UtbetalingEntry(
     val dao: Daos,
     val uid: String,
     val perioder: List<Periode>,
+    val lastPeriodeId: String?,
 )
 
 private fun parsePeriode(json: JsonObject): Periode? {
@@ -38,7 +39,8 @@ private fun parseEntry(dao: Daos): UtbetalingEntry? {
             ?.mapNotNull { parsePeriode(it.jsonObject) }
             ?.sortedWith(compareBy({ it.fom }, { it.tom }, { it.beløp }))
             ?: emptyList()
-        UtbetalingEntry(dao, uid, perioder)
+        val lastPeriodeId = json.textOrNull("lastPeriodeId")
+        UtbetalingEntry(dao, uid, perioder, lastPeriodeId)
     } catch (_: Exception) {
         null
     }
@@ -54,7 +56,7 @@ fun detectMismatches(utbetalinger: List<Daos>, pendingUtbetalinger: List<Daos>):
             ?.maxByOrNull { it.dao.system_time_ms }
 
         latestPrecedingPending
-            ?.takeIf { utbetaling.perioder != it.perioder }
+            ?.takeIf { utbetaling.perioder != it.perioder || utbetaling.lastPeriodeId != it.lastPeriodeId }
             ?.let { PendingMismatch(utbetaling.uid, utbetaling.dao.sakId, utbetaling.dao.fagsystem) }
     }
 }

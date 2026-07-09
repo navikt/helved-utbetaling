@@ -66,7 +66,7 @@ object TestRuntime {
                 urskog(config, kafkaMock, mq)
             },
             onClose = {
-                jdbc.truncate("urskog", DaoOppdrag.table, DaoPendingUtbetaling.table)
+                jdbc.truncate("urskog", DaoOppdrag.table, DaoPendingUtbetaling.table, DaoLinjeFingerprint.table)
                 postgres.close()
             }
         )
