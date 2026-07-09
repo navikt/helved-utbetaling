@@ -83,7 +83,7 @@ class SimuleringServiceV1(
         val simuleringElement = simulering.extractElement(responseElement, "simulering") ?: return null
         // Strip all xmlns declarations and namespace prefixes for clean parsing
         val cleanXml = "<simulering>${simulering.stripNamespaces(simuleringElement)}</simulering>"
-        return simulering.xmlDeserializer.decodeFromString(soap.Beregning.serializer(), cleanXml)
+        return simulering.xml.decodeFromString(soap.Beregning.serializer(), cleanXml)
     }
 
 }
