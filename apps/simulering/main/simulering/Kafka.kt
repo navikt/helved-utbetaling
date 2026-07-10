@@ -64,8 +64,10 @@ class SimuleringScheduler(
         while (iter.hasNext()) {
             val entry = iter.next()
             val age = wallClockTime - entry.value.timestamp()
-            if (age <= evictionTtl.inWholeMilliseconds) {
-                channel.trySend(entry.key to entry.value.value())
+            if (age > evictionTtl.inWholeMilliseconds) {
+                store.delete(entry.key)
+            } else if (channel.trySend(entry.key to entry.value.value()).isSuccess) {
+                store.delete(entry.key)
             }
         }
     }

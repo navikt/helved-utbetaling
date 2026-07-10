@@ -16,7 +16,7 @@ val SecureLogFilter = Filter { next ->
         val response = next(request)
         val body = response.bodyString()
         secureLog.info("RESPONSE: ${response.status} headers=${response.headers} body=$body")
-        Response(response.status).headers(response.headers).body(body)
+        response.body(body)
     }
 }
 
