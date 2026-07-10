@@ -19,8 +19,8 @@ import org.http4k.routing.bind
 import org.http4k.routing.routes
 import java.util.*
 
-/** Bypass access for test clients */
-private val TEST_CLIENTS = setOf("azure-token-generator", "snickerboa")
+/** Bypass access for test clients and proxies that forward fagsystem header */
+private val PROXY_CLIENTS = setOf("azure-token-generator", "snickerboa", "utsjekk")
 
 /** OS/UR got 2 min timeout before rolling back a failed simulering */
 private const val DRYRUN_TIMEOUT_MS = 120_000L
@@ -76,7 +76,7 @@ fun dryrunRoutes(
             val transactionId = req.transactionId()
 
             val fagsystem = when (val name = claims.clientName()) {
-                "azure-token-generator", "snickerboa" -> {
+                in PROXY_CLIENTS -> {
                     val header = req.header("fagsystem")
                         ?: return@to Response(Status.BAD_REQUEST).body("header fagsystem must be specified when using $name")
                     try {
@@ -154,7 +154,7 @@ private fun Request.transactionId(): String =
 
 private fun requireClient(claims: Jwt.Claims, expectedAppName: String) {
     val name = claims.clientName()
-    if (name in TEST_CLIENTS) return
+    if (name in PROXY_CLIENTS) return
     if (name != expectedAppName) {
         throw ApiError(403, "$name har ikke tilgang til dette endepunktet (forventet $expectedAppName)")
     }

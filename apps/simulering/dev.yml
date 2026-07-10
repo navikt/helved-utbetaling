@@ -71,6 +71,8 @@ spec:
         - id: loki
   envFrom:
     - secret: utsjekk-oppdrag-simulering
+  kafka:
+    pool: nav-dev
   env:
     - name: PROXY_HOST
       value: https://helved-ws-proxy.dev-fss-pub.nais.io
