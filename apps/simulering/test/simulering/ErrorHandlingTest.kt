@@ -5,10 +5,14 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import libs.utils.Resource
-import org.http4k.core.*
+import org.http4k.core.Method
+import org.http4k.core.Request
+import org.http4k.core.Status
+import org.http4k.core.with
 import org.http4k.lens.BiDiBodyLens
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import simulering.v1.rest
@@ -17,81 +21,70 @@ class ErrorHandlingTest {
 
     private val requestLens: BiDiBodyLens<rest.SimuleringRequest> = KotlinxJson.autoBody<rest.SimuleringRequest>().toLens()
 
+    @BeforeEach
+    fun setup() {
+        TestRuntime.reset()
+    }
+
     @Test
     fun `svarer med 400 Bad Request ved feil på request body`() {
-        TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config, kafka = runtime.kafka)
+        TestRuntime.soapRespondWith(
+            Resource.read("/soap-fault.xml")
+                .replace("\$errorCode", "lol dummy 123")
+                .replace("\$errorMessage", "Fødselsnummeret er ugyldig")
+        )
 
-            runtime.soapRespondWith(
-                Resource.read("/soap-fault.xml")
-                    .replace("\$errorCode", "lol dummy 123")
-                    .replace("\$errorMessage", "Fødselsnummeret er ugyldig")
-            )
+        val response = TestRuntime.app(
+            Request(Method.POST, "/simuler/legacy")
+                .header("Content-Type", "application/json")
+                .with(requestLens of enSimuleringRequestBody())
+        )
 
-            val response = app(
-                Request(Method.POST, "/simuler/legacy")
-                    .header("Content-Type", "application/json")
-                    .with(requestLens of enSimuleringRequestBody())
-            )
-
-            assertEquals(Status.BAD_REQUEST, response.status)
-        }
+        assertEquals(Status.BAD_REQUEST, response.status)
     }
 
     @Test
     fun `can resolve cics error`() {
-        TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config, kafka = runtime.kafka)
+        TestRuntime.soapRespondWith(xmlCicsFeil)
 
-            runtime.soapRespondWith(xmlCicsFeil)
+        val response = TestRuntime.app(
+            Request(Method.POST, "/simuler/legacy")
+                .header("Content-Type", "application/json")
+                .with(requestLens of enSimuleringRequestBody())
+        )
 
-            val response = app(
-                Request(Method.POST, "/simuler/legacy")
-                    .header("Content-Type", "application/json")
-                    .with(requestLens of enSimuleringRequestBody())
-            )
-
-            assertEquals(Status.INTERNAL_SERVER_ERROR, response.status)
-        }
+        assertEquals(Status.INTERNAL_SERVER_ERROR, response.status)
     }
 
     @Test
     fun `fornyer STS-token og prøver på nytt ved FailedAuthentication`() {
-        TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config, kafka = runtime.kafka)
+        TestRuntime.soapRespondWithSequence(
+            failedAuthenticationFault,
+            Resource.read("/simuler-body-response.xml"),
+        )
 
-            runtime.soapRespondWithSequence(
-                failedAuthenticationFault,
-                Resource.read("/simuler-body-response.xml"),
-            )
+        val response = TestRuntime.app(
+            Request(Method.POST, "/simuler/legacy")
+                .header("Content-Type", "application/json")
+                .with(requestLens of enSimuleringRequestBody())
+        )
 
-            val response = app(
-                Request(Method.POST, "/simuler/legacy")
-                    .header("Content-Type", "application/json")
-                    .with(requestLens of enSimuleringRequestBody())
-            )
-
-            assertEquals(Status.OK, response.status)
-            assertEquals(2, runtime.receivedSoapRequests.size)
-            assertEquals(2, runtime.stsCallCount)
-        }
+        assertEquals(Status.OK, response.status)
+        assertEquals(2, TestRuntime.receivedSoapRequests.size)
+        assertEquals(1, TestRuntime.invalidateCount)
     }
 
     @Test
-    fun `svarer med 409 Conflict når Oppdraget finnes fra før`() {
-        TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config, kafka = runtime.kafka)
+    fun `svarer med 409 Conflict naar Oppdraget finnes fra foer`() {
+        TestRuntime.soapRespondWith(oppdragFinnesFraFoerFault)
 
-            runtime.soapRespondWith(oppdragFinnesFraFoerFault)
+        val response = TestRuntime.app(
+            Request(Method.POST, "/simuler/legacy")
+                .header("Content-Type", "application/json")
+                .with(requestLens of enSimuleringRequestBody())
+        )
 
-            val response = app(
-                Request(Method.POST, "/simuler/legacy")
-                    .header("Content-Type", "application/json")
-                    .with(requestLens of enSimuleringRequestBody())
-            )
-
-            assertEquals(Status.CONFLICT, response.status)
-        }
+        assertEquals(Status.CONFLICT, response.status)
     }
 
     @Test
@@ -100,19 +93,15 @@ class ErrorHandlingTest {
         val appender = ListAppender<ILoggingEvent>().apply { start() }
         wsLogger.addAppender(appender)
         try {
-            TestRuntime().use { runtime ->
-                val app = simulering(config = runtime.config, kafka = runtime.kafka)
+            TestRuntime.soapRespondWith(oppdragFinnesFraFoerFault)
 
-                runtime.soapRespondWith(oppdragFinnesFraFoerFault)
+            val response = TestRuntime.app(
+                Request(Method.POST, "/simuler/legacy")
+                    .header("Content-Type", "application/json")
+                    .with(requestLens of enSimuleringRequestBody())
+            )
 
-                val response = app(
-                    Request(Method.POST, "/simuler/legacy")
-                        .header("Content-Type", "application/json")
-                        .with(requestLens of enSimuleringRequestBody())
-                )
-
-                assertEquals(Status.CONFLICT, response.status)
-            }
+            assertEquals(Status.CONFLICT, response.status)
             val errors = appender.list.filter { it.level == Level.ERROR }
             assertTrue(
                 errors.isEmpty(),
@@ -125,19 +114,15 @@ class ErrorHandlingTest {
 
     @Test
     fun `svarer med 502 Bad Gateway ved ukjent SOAP-svar`() {
-        TestRuntime().use { runtime ->
-            val app = simulering(config = runtime.config, kafka = runtime.kafka)
+        TestRuntime.soapRespondWith("<noise>uventet</noise>")
 
-            runtime.soapRespondWith("<noise>uventet</noise>")
+        val response = TestRuntime.app(
+            Request(Method.POST, "/simuler/legacy")
+                .header("Content-Type", "application/json")
+                .with(requestLens of enSimuleringRequestBody())
+        )
 
-            val response = app(
-                Request(Method.POST, "/simuler/legacy")
-                    .header("Content-Type", "application/json")
-                    .with(requestLens of enSimuleringRequestBody())
-            )
-
-            assertEquals(Status.BAD_GATEWAY, response.status)
-        }
+        assertEquals(Status.BAD_GATEWAY, response.status)
     }
 }
 

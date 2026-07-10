@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package simulering
 
 import io.micrometer.prometheusmetrics.PrometheusConfig
@@ -7,6 +9,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import libs.auth.Jwt
+import libs.auth.JwtVerifier
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.topology
@@ -19,6 +23,7 @@ import org.http4k.client.JavaHttpClient
 import org.http4k.core.*
 import org.http4k.filter.MicrometerMetrics
 import org.http4k.filter.ServerFilters
+import org.http4k.lens.RequestContextKey
 import org.http4k.routing.routes
 import org.http4k.server.ServerConfig
 import org.http4k.server.SunHttpLoom
@@ -33,20 +38,21 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    val app = simulering()
+    val app = app()
     app.asServer(SunHttpLoom(8080, ServerConfig.StopMode.Graceful(Duration.ofSeconds(50)))).start().block()
 }
 
-fun simulering(
+fun app(
     config: Config = Config(),
     prometheus: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
     kafka: Streams = KafkaStreams(),
+    http: HttpHandler = JavaHttpClient(),
+    azure : AzureTokenProvider = AzureTokenProvider(config.azure, http),
+    proxyAuth: () -> String = { "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}" },
+    sts: Sts = StsClient(config.simulering.sts, http, proxyAuth = proxyAuth),
+    soap: Soap = SoapClient(config.simulering, sts, SecureLogFilter.then(http), proxyAuth = proxyAuth),
+    jwtVerifier: JwtVerifier? = null,
 ): HttpHandler {
-    val http = JavaHttpClient()
-    val azure = AzureTokenProvider(config.azure, http)
-    val proxyAuth: () -> String = { "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}" }
-    val sts = StsClient(config.simulering.sts, http, proxyAuth = proxyAuth)
-    val soap = SoapClient(config.simulering, sts, SecureLogFilter.then(http), proxyAuth = proxyAuth)
     val service = SimuleringService(soap, sts)
     val serviceV1 = SimuleringServiceV1(soap, sts)
 
@@ -72,12 +78,23 @@ fun simulering(
         runBlocking(Dispatchers.IO) { worker.run() }
     }
 
-    return errorFilter
+    // Auth setup
+    val contexts = RequestContexts()
+    val claimsLens = RequestContextKey.required<Jwt.Claims>(contexts)
+    val verifier = jwtVerifier ?: createJwtVerifier(config.azure)
+    val authFilter = azureAuthFilter(verifier, claimsLens)
+
+    // Authenticated dryrun routes
+    val authenticatedRoutes = authFilter.then(dryrunRoutes(kafka, config, claimsLens))
+
+    return ServerFilters.InitialiseRequestContext(contexts)
+        .then(errorFilter)
         .then(ServerFilters.MicrometerMetrics.RequestTimer(prometheus))
         .then(ServerFilters.MicrometerMetrics.RequestCounter(prometheus))
         .then(routes(
             actuatorRoutes(prometheus),
             simuleringRoutes(serviceV1),
+            authenticatedRoutes,
         ))
 }
 

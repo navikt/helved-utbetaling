@@ -3,10 +3,11 @@ package simulering
 import kotlinx.coroutines.channels.Channel
 import libs.kafka.*
 import libs.kafka.processor.StateScheduleProcessor
-import models.Simulering
+import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import org.apache.kafka.streams.state.ValueAndTimestamp
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -16,13 +17,33 @@ object Topics {
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
     val dryrunTp = Topic("helved.dryrun-tp.v1", json<Simulering>())
+    val utbetalingAap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
+    val utbetalingDp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
+    val utbetalingTp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
+    val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
 }
 
 object Tables {
     val simuleringer = Table(Topics.simuleringer)
+    val dryrunAap = Table(Topics.dryrunAap)
+    val dryrunDp = Table(Topics.dryrunDp)
+    val dryrunTp = Table(Topics.dryrunTp)
+    val dryrunTs = Table(Topics.dryrunTs)
+}
+
+object Stores {
+    val dryrunAap = Store(Tables.dryrunAap)
+    val dryrunDp = Store(Tables.dryrunDp)
+    val dryrunTp = Store(Tables.dryrunTp)
+    val dryrunTs = Store(Tables.dryrunTs)
 }
 
 fun Topology.simuleringer(channel: Channel<Pair<String, SimulerBeregningRequest>>) {
+    globalKTable(Tables.dryrunAap, retention = 1.hours)
+    globalKTable(Tables.dryrunDp, retention = 1.hours)
+    globalKTable(Tables.dryrunTp, retention = 1.hours)
+    globalKTable(Tables.dryrunTs, retention = 1.hours)
+
     val ktable = consume(Tables.simuleringer)
     val scheduler = SimuleringScheduler(ktable, 5.seconds, channel)
     ktable.schedule(scheduler)
