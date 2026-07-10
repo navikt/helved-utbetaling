@@ -29,6 +29,7 @@ include(
     "libs:http",
     "libs:jdbc",
     "libs:jdbc-test",
+    "libs:jwt",
     "libs:kafka",
     "libs:kafka-test",
     "libs:kotlinx",

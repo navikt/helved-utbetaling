@@ -16,6 +16,7 @@ val http4kVersion = "6.48.0.0"
 
 dependencies {
     implementation(project(":models"))
+    implementation(project(":libs:jwt"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
     implementation(project(":libs:utils"))
@@ -31,4 +32,8 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:auth-test"))
     testImplementation(project(":libs:kafka-test"))
+}
+
+tasks.withType<Test> {
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
 }

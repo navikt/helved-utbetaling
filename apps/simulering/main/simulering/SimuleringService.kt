@@ -22,7 +22,6 @@ object SimulerAction {
     const val SEND_OPPDRAG = "$HOST/$PATH/$SERVICE/sendInnOppdragRequest"
 }
 
-// Separate instance for deserialization that treats primitives as elements
 @OptIn(ExperimentalXmlUtilApi::class)
 val xml: XML = XML.recommended_1_0 {
     xmlDeclMode = XmlDeclMode.None
