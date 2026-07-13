@@ -16,7 +16,7 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:3.1.252")
 
-    implementation("org.apache.kafka:kafka-streams:4.3.0")
+    implementation("org.apache.kafka:kafka-streams:4.3.1")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
@@ -24,7 +24,7 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
-    implementation("org.apache.kafka:kafka-clients:4.3.0")
+    implementation("org.apache.kafka:kafka-clients:4.3.1")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
