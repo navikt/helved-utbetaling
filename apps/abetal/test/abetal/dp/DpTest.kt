@@ -4,7 +4,6 @@ import abetal.*
 import kotlinx.serialization.serializer
 import libs.kafka.KotlinxSerializer
 import libs.kafka.KotlinxDeserializer
-import libs.kafka.JsonSerde
 import libs.kotlinx.KotlinxJson
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -2169,6 +2168,20 @@ internal class DpTest : ConsumerTestBase() {
             Dp.utbetaling(sakId = "ny-sak") {
                 meldekort("blablabla", LocalDate.of(2026, 5, 28),
                     LocalDate.of(2026, 5, 28), 0u, 0u, Utbetalingstype.DagpengerFerietillegg)
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(key)
+            .with(key) { reply -> assertEquals(Status.OK, reply.status) }
+    }
+
+    @Test
+    fun `ny sak med sats over 0 og utbetalt beløp lik 0 blir kvittert OK`() {
+        val key = UUID.randomUUID().toString()
+        TestRuntime.topics.dp.produce(key) {
+            Dp.utbetaling(sakId = "ny-sak-${nextInt}") {
+                meldekort("blablabla", 3.jun, 7.jun, 1000u, 0u)
             }.asBytes()
         }
 
