@@ -78,6 +78,23 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             call.respond(result)
         }
 
+        // Finner alle meldinger for gitt topic mellom fom og tom
+        get("/messages/{topic}") {
+            val channel = checkNotNull(Channel.findOrNull(call.parameters["topic"]!!)) {
+                "Unknown topic ${call.parameters["topic"]}"
+            }
+            val fom = call.queryParameters.milliseconds("fom")
+            val tom = call.queryParameters.milliseconds("tom")
+
+            val result = withContext(jdbcCtx + Dispatchers.IO) {
+                transaction {
+                    Daos.messages(channel, fom, tom)
+                }
+            }
+
+            call.respond(result)
+        }
+
         get("/messages/{topic}/{partition}/{offset}") {
             val channel = checkNotNull(Channel.findOrNull(call.parameters["topic"]!!)) {
                 "Unknown topic ${call.parameters["topic"]}"

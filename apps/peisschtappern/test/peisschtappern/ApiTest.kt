@@ -172,6 +172,25 @@ class ApiTest {
         assertEquals(1, result.total)
         assertEquals(Topics.utbetalinger.name, result.items.first().topic_name)
     }
+    @Test
+    fun `can query messages for fom-tom`() = runTest(TestRuntime.context) {
+        save(Channel.Aap, offset = offset)
+        save(Channel.Aap, offset = offset)
+        save(Channel.Aap, offset = offset)
+        save(Channel.Aap, offset = offset)
+        save(Channel.Aap, offset = offset)
+
+        val now = Instant.now()
+        val fom = now.minusSeconds(5L).toString()
+        val tom = now.plusSeconds(5L).toString()
+
+        val result = TestRuntime.ktor.httpClient.get("/api/messages/aap.utbetaling.v1?fom=$fom&tom=$tom") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<Daos>>()
+
+        assertEquals(5, result.size)
+    }
 
     @Test
     fun `test kvittering endpoint overwrites oppdrag with manual kvittering`() = runTest(TestRuntime.context) {
