@@ -133,6 +133,42 @@ data class Daos(
             }.singleOrNull()
         }
 
+        suspend fun messages(channel: Channel, fom: Long? = null, tom: Long? = null): List<Daos> {
+            val sql = """
+                SELECT 
+                        version,
+                        topic_name, 
+                        record_key, 
+                        record_value,
+                        record_partition,
+                        record_offset,
+                        timestamp_ms,
+                        stream_time_ms,
+                        system_time_ms,
+                        trace_id,
+                        commit,
+                        sak_id,
+                        fagsystem,
+                        status,
+                        headers
+                    FROM ${channel.table.name}
+                    WHERE (? IS NULL OR system_time_ms > ?)
+                        AND (? IS NULL OR system_time_ms < ?)
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                var i = 1
+                stmt.setObject(i++, fom, Types.BIGINT)
+                stmt.setObject(i++, fom, Types.BIGINT)
+                stmt.setObject(i++, tom, Types.BIGINT)
+                stmt.setObject(i, tom, Types.BIGINT)
+
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().use { it.map(::from) }
+            }
+        }
+
         suspend fun pagedMessages(
             channels: List<Channel>,
             page: Int,
