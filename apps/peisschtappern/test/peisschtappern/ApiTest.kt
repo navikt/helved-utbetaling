@@ -193,6 +193,32 @@ class ApiTest {
     }
 
     @Test
+    fun `can find oppdrag without corresponding status messages`() = runTest(TestRuntime.context) {
+        val timestamp = Instant.now().minusSeconds(2 * 60 * 60).toEpochMilli()
+        val key1 = UUID.randomUUID().toString()
+        val key2 = UUID.randomUUID().toString()
+        val key3 = UUID.randomUUID().toString()
+        val key4 = UUID.randomUUID().toString()
+        val key5 = UUID.randomUUID().toString()
+        save(Channel.Oppdrag, key = key1, timestamp = timestamp, offset = offset)
+        save(Channel.Oppdrag, key = key2, timestamp = timestamp, offset = offset)
+        save(Channel.Oppdrag, key = key3, timestamp = timestamp, offset = offset)
+        save(Channel.Oppdrag, key = key4, timestamp = timestamp, offset = offset)
+        save(Channel.Oppdrag, key = key5, timestamp = timestamp, offset = offset)
+
+        save(Channel.Status, key = key1, timestamp = timestamp, offset = offset)
+        save(Channel.Status, key = key3, timestamp = timestamp, offset = offset)
+        save(Channel.Status, key = key5, timestamp = timestamp, offset = offset)
+
+        val result = TestRuntime.ktor.httpClient.get("/api/oppdrag_uten_status") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<Daos>>()
+
+        assertEquals(2, result.size)
+    }
+
+    @Test
     fun `test kvittering endpoint overwrites oppdrag with manual kvittering`() = runTest(TestRuntime.context) {
         val offset = offset
         val xmlMapper = XMLMapper<Oppdrag>()
@@ -620,4 +646,3 @@ class ApiTest {
         }
     }
 }
-

@@ -133,6 +133,65 @@ data class Daos(
             }.singleOrNull()
         }
 
+        suspend fun findOppdragWithMissingStatus(
+            fom: Long? = null,
+            tom: Long? = null,
+            nowMs: Long = System.currentTimeMillis(),
+            thresholdMs: Long = 60 * 60 * 1000 // 1 time
+        ): List<Daos> {
+            val sql = """
+                SELECT
+                    o.version,
+                    o.topic_name, 
+                    o.record_key, 
+                    o.record_value,
+                    o.record_partition,
+                    o.record_offset,
+                    o.timestamp_ms,
+                    o.stream_time_ms,
+                    o.system_time_ms,
+                    o.trace_id,
+                    o.commit,
+                    o.sak_id,
+                    o.fagsystem,
+                    o.status,
+                    o.headers
+                FROM oppdrag o
+                WHERE (? IS NULL OR o.system_time_ms > ?)
+                  AND (? IS NULL OR o.system_time_ms < ?)
+                  AND o.system_time_ms <= ? - ?
+                  
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM status s
+                      WHERE s.record_key = o.record_key
+                  )
+                  AND (
+                      o.trace_id IS NULL
+                      OR NOT EXISTS (
+                          SELECT 1
+                          FROM status s
+                          WHERE s.trace_id = o.trace_id
+                      )
+                  )
+                ORDER BY o.system_time_ms ASC;
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                var i = 1
+                stmt.setObject(i++, fom, Types.BIGINT)
+                stmt.setObject(i++, fom, Types.BIGINT)
+                stmt.setObject(i++, tom, Types.BIGINT)
+                stmt.setObject(i++, tom, Types.BIGINT)
+                stmt.setLong(i++, nowMs)
+                stmt.setLong(i, thresholdMs)
+
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().use { it.map(::from) }
+            }
+        }
+
         suspend fun messages(channel: Channel, fom: Long? = null, tom: Long? = null): List<Daos> {
             val sql = """
                 SELECT 
