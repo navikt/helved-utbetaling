@@ -40,6 +40,19 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 
 fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDatasource) {
     route("/api") {
+        get("/oppdrag_uten_status") {
+            val fom = call.queryParameters.milliseconds("fom")
+            val tom = call.queryParameters.milliseconds("tom")
+
+            val result = withContext(jdbcCtx + Dispatchers.IO) {
+                transaction {
+                    Daos.findOppdragWithMissingStatus(fom, tom)
+                }
+            }
+
+            call.respond(result)
+        }
+
         get("/messages") {
             val channels = call.queryParameters.strings("topics")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
             val page = call.queryParameters["page"]?.toIntOrNull() ?: 1
