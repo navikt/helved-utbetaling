@@ -210,7 +210,7 @@ class ApiTest {
         save(Channel.Status, key = key3, timestamp = timestamp, offset = offset)
         save(Channel.Status, key = key5, timestamp = timestamp, offset = offset)
 
-        val result = TestRuntime.ktor.httpClient.get("/api/oppdrag_uten_status") {
+        val result = TestRuntime.ktor.httpClient.get("/api/dashboard/oppdrag_uten_status") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Daos>>()
