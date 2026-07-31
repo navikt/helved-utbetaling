@@ -40,7 +40,7 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 
 fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDatasource) {
     route("/api") {
-        get("/oppdrag_uten_status") {
+        get("/dashboard/oppdrag_uten_status") {
             val fom = call.queryParameters.milliseconds("fom")
             val tom = call.queryParameters.milliseconds("tom")
 
