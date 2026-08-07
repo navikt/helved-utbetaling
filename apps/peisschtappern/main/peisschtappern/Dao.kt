@@ -174,7 +174,7 @@ data class Daos(
                           WHERE s.trace_id = o.trace_id
                       )
                   )
-                ORDER BY o.system_time_ms ASC;
+                ORDER BY o.system_time_ms;
             """.trimIndent()
 
             return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
@@ -192,9 +192,12 @@ data class Daos(
             }
         }
 
-        suspend fun messages(channel: Channel, fom: Long? = null, tom: Long? = null): List<Daos> {
+        suspend fun messages(channels: List<Channel>, fom: Long? = null, tom: Long? = null, status: String? = null): List<Daos> {
             val sql = """
-                SELECT 
+                WITH unified AS (${
+                channels.joinToString(" UNION ALL ") { channel ->
+                    """
+                    SELECT 
                         version,
                         topic_name, 
                         record_key, 
@@ -211,16 +214,23 @@ data class Daos(
                         status,
                         headers
                     FROM ${channel.table.name}
-                    WHERE (? IS NULL OR system_time_ms > ?)
-                        AND (? IS NULL OR system_time_ms < ?)
+                    """.trimIndent()
+                    }
+                })
+                SELECT * FROM unified
+                WHERE (? IS NULL OR system_time_ms > ?)
+                    AND (? IS NULL OR system_time_ms < ?)
+                    AND (? IS NULL OR status = ?)
             """.trimIndent()
 
             return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                var i = 1
-                stmt.setObject(i++, fom, Types.BIGINT)
-                stmt.setObject(i++, fom, Types.BIGINT)
-                stmt.setObject(i++, tom, Types.BIGINT)
-                stmt.setObject(i, tom, Types.BIGINT)
+                var i = 0
+                stmt.setObject(++i, fom, Types.BIGINT)
+                stmt.setObject(++i, fom, Types.BIGINT)
+                stmt.setObject(++i, tom, Types.BIGINT)
+                stmt.setObject(++i, tom, Types.BIGINT)
+                stmt.setObject(++i, status, Types.VARCHAR)
+                stmt.setObject(++i, status, Types.VARCHAR)
 
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
@@ -432,17 +442,6 @@ data class Daos(
             return query(sql) { stmt ->
                 stmt.setString(1, sakId)
                 stmt.setString(2, fagsystem)
-            }
-        }
-
-        suspend fun findRecentUtbetalinger(since: Long): List<Daos> {
-            val sql = """
-                SELECT * FROM utbetalinger
-                WHERE system_time_ms > ?
-            """.trimIndent()
-
-            return query(sql) { stmt ->
-                stmt.setLong(1, since)
             }
         }
 

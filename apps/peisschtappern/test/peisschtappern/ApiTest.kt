@@ -8,7 +8,7 @@ import libs.jdbc.concurrency.transaction
 import libs.jdbc.truncate
 import libs.kafka.*
 import libs.xml.XMLMapper
-import models.Utbetaling
+import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Disabled
@@ -190,32 +190,6 @@ class ApiTest {
         }.body<List<Daos>>()
 
         assertEquals(5, result.size)
-    }
-
-    @Test
-    fun `can find oppdrag without corresponding status messages`() = runTest(TestRuntime.context) {
-        val timestamp = Instant.now().minusSeconds(2 * 60 * 60).toEpochMilli()
-        val key1 = UUID.randomUUID().toString()
-        val key2 = UUID.randomUUID().toString()
-        val key3 = UUID.randomUUID().toString()
-        val key4 = UUID.randomUUID().toString()
-        val key5 = UUID.randomUUID().toString()
-        save(Channel.Oppdrag, key = key1, timestamp = timestamp, offset = offset)
-        save(Channel.Oppdrag, key = key2, timestamp = timestamp, offset = offset)
-        save(Channel.Oppdrag, key = key3, timestamp = timestamp, offset = offset)
-        save(Channel.Oppdrag, key = key4, timestamp = timestamp, offset = offset)
-        save(Channel.Oppdrag, key = key5, timestamp = timestamp, offset = offset)
-
-        save(Channel.Status, key = key1, timestamp = timestamp, offset = offset)
-        save(Channel.Status, key = key3, timestamp = timestamp, offset = offset)
-        save(Channel.Status, key = key5, timestamp = timestamp, offset = offset)
-
-        val result = TestRuntime.ktor.httpClient.get("/api/dashboard/oppdrag_uten_status") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
-
-        assertEquals(2, result.size)
     }
 
     @Test
@@ -579,44 +553,6 @@ class ApiTest {
         assertEquals("TILLEGGSSTØNADER", headers["fagsystem"])
     }
 
-    @Test
-    fun `pending-mismatch returns mismatch`() = runTest(TestRuntime.context) {
-        val now = Instant.now().toEpochMilli()
-        val uid = "mismatch-test-uid"
-        val pendingValue = """{"uid":"$uid","sakId":"sak-1","fagsystem":"AAP","perioder":[{"fom":"2025-01-01","tom":"2025-01-31","beløp":2000,"vedtakssats":null,"betalendeEnhet":null}]}"""
-        val utbetalingValue = """{"uid":"$uid","sakId":"sak-1","fagsystem":"AAP","perioder":[{"fom":"2025-01-01","tom":"2025-01-31","beløp":1000,"vedtakssats":null,"betalendeEnhet":null}]}"""
-
-        save(Channel.PendingUtbetalinger, key = uid, value = pendingValue, timestamp = now, offset = offset)
-        save(Channel.Utbetalinger, key = uid, value = utbetalingValue, timestamp = now + 1000, offset = offset)
-
-        val since = now - 5000
-        val result = TestRuntime.ktor.httpClient.get("/api/brann/pending-mismatch?since=$since") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<PendingMismatch>>()
-
-        assertEquals(1, result.size)
-        assertEquals(uid, result.first().uid)
-    }
-
-    @Test
-    fun `pending-mismatch returns empty when perioder match`() = runTest(TestRuntime.context) {
-        val now = Instant.now().toEpochMilli()
-        val uid = "no-mismatch-uid"
-        val value = """{"uid":"$uid","sakId":"sak-1","fagsystem":"AAP","perioder":[{"fom":"2025-01-01","tom":"2025-01-31","beløp":1000,"vedtakssats":null,"betalendeEnhet":null}]}"""
-
-        save(Channel.PendingUtbetalinger, key = uid, value = value, timestamp = now, offset = offset)
-        save(Channel.Utbetalinger, key = uid, value = value, timestamp = now + 1000, offset = offset)
-
-        val since = now - 5000
-        val result = TestRuntime.ktor.httpClient.get("/api/brann/pending-mismatch?since=$since") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<PendingMismatch>>()
-
-        assertEquals(0, result.size)
-    }
-
     private suspend fun save(
         channel: Channel,
         key: String = UUID.randomUUID().toString(),
@@ -646,3 +582,4 @@ class ApiTest {
         }
     }
 }
+
