@@ -40,6 +40,23 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 
 fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDatasource) {
     route("/api") {
+        get("/dashboard") {
+            val fom = requireNotNull(call.queryParameters.milliseconds("fom")) {
+                "Mangler query-parameter \"fom\""
+            }
+            val tom = requireNotNull(call.queryParameters.milliseconds("tom")) {
+                "Mangler query-parameter \"tom\""
+            }
+
+            val result = withContext(jdbcCtx + Dispatchers.IO) {
+                transaction {
+                    DashboardService.dashboard(fom, tom)
+                }
+            }
+
+            call.respond(result)
+        }
+
         get("/dashboard/oppdrag_uten_status") {
             val fom = call.queryParameters.milliseconds("fom")
             val tom = call.queryParameters.milliseconds("tom")
@@ -101,7 +118,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
 
             val result = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
-                    Daos.messages(channel, fom, tom)
+                    Daos.messages(listOf(channel), fom, tom)
                 }
             }
 
@@ -162,7 +179,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         get("/saker/{sakId}/{fagsystem}") {
             val sakId = call.parameters["sakId"]!!
             val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { kode ->
-                try { Fagsystem.from(kode.trim()) } catch (e: IllegalStateException) { badRequest("ukjent fagområde: $kode") }
+                try { Fagsystem.from(kode.trim()) } catch (_: IllegalStateException) { badRequest("ukjent fagområde: $kode") }
             }
             val hendelser: List<Daos> = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
@@ -215,10 +232,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
 
                 val mismatches = withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {
-                        val utbetalinger = Daos.findRecentUtbetalinger(since)
-                        val uids = utbetalinger.mapNotNull { parseUid(it.value) }.distinct()
-                        val pending = if (uids.isEmpty()) emptyList() else Daos.findPendingByUids(uids)
-                        detectMismatches(utbetalinger, pending)
+                        PendingMismatchService.detectMismatches(since)
                     }
                 }
 
