@@ -55,7 +55,8 @@ object DashboardService {
                 }
 
             val sisteAvstemtDato: LocalDate? = alleMeldinger
-                .map { parseWeirdAsHellXmlDate(it.periode.datoAvstemtTom) }
+                .filter { it.periode != null }
+                .map { parseWeirdAsHellXmlDate(it.periode!!.datoAvstemtTom) }
                 .fold(LocalDate.EPOCH) { acc, dato ->
                     if (dato > acc) {
                         dato
@@ -72,11 +73,11 @@ object DashboardService {
                 )
             }
 
-            val sisteAvstemming = meldinger.maxByOrNull { it.periode.datoAvstemtTom }!!
+            val sisteAvstemming = meldinger.filter { it.periode != null }.maxByOrNull { it.periode!!.datoAvstemtTom }!!
 
             return@map Dashboard.Avstemming(
                 fagsystem = Fagsystem.from(fagområde!!),
-                datoAvstemtFom = parseWeirdAsHellXmlDate(sisteAvstemming.periode.datoAvstemtFom),
+                datoAvstemtFom = parseWeirdAsHellXmlDate(sisteAvstemming.periode!!.datoAvstemtFom),
                 datoAvstemtTom = parseWeirdAsHellXmlDate(sisteAvstemming.periode.datoAvstemtTom),
                 sisteAvstemtDato = sisteAvstemtDato,
             )
@@ -104,7 +105,7 @@ data class Dashboard(
 @XmlSerialName("avstemmingsdata", AVSTEMMING_NAMESPACE, "ns2")
 private data class AvstemmingXML(
     val aksjon: Aksjon,
-    val periode: Periode,
+    val periode: Periode?,
 ) {
     @Serializable
     @XmlSerialName("aksjon", "", "")
