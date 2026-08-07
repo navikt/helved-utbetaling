@@ -4,7 +4,9 @@ package peisschtappern
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import libs.kotlinx.KotlinxJson
 import models.Fagsystem
+import models.StatusReply
 import nl.adaptivity.xmlutil.serialization.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -31,7 +33,44 @@ object DashboardService {
             pendingMismatch = PendingMismatchService.detectMismatches(fom),
             avstemming = avstemming(fom, tom),
             oppdragUtenKvittering = Daos.findOppdragWithMissingStatus(fom, tom),
+            dobbeltutbetalinger = dobbeltutbetalinger(daos)
         )
+    }
+
+    private fun dobbeltutbetalinger(daos: List<Daos>): List<Dashboard.Suspects> {
+        val suspects: MutableMap<String, Dashboard.Suspects> = mutableMapOf()
+        val statuses =
+            daos.filter { it.topic_name == Channel.Status.topic.name && it.status == "OK" && it.value != null }
+
+        for (suspect in statuses) {
+            val status: StatusReply = KotlinxJson.decodeFromString(suspect.value!!)
+            val lines = status.detaljer?.linjer ?: emptyList()
+
+            for (line in lines.filter { it.beløp > 0u }) {
+                val key = "${line.behandlingId}::${line.klassekode}::${line.fom}::${line.tom}"
+                val suspectGroup = suspects.computeIfAbsent(key) {
+                    Dashboard.Suspects(
+                        behandlingId = line.behandlingId,
+                        klassekode = line.klassekode,
+                        fom = line.fom,
+                        tom = line.tom,
+                        beløp = line.beløp,
+                        kilder = mutableMapOf(),
+                    )
+                }
+
+                suspectGroup.kilder["${suspect.key}::${suspect.partition}::${suspect.offset}"] = Dashboard.Suspects.Kilde(
+                    key = suspect.key,
+                    partition = suspect.partition,
+                    offset = suspect.offset,
+                    timestampMs = suspect.system_time_ms,
+                )
+
+                suspects[key] = suspectGroup
+            }
+        }
+
+        return suspects.values.toList().filter { it.kilder.size > 1 }
     }
 
     private fun parseWeirdAsHellXmlDate(weirdAsHellXmlDate: String): LocalDate {
@@ -91,6 +130,7 @@ data class Dashboard(
     val pendingMismatch: List<PendingMismatch>,
     val avstemming: List<Avstemming>,
     val oppdragUtenKvittering: List<Daos>,
+    val dobbeltutbetalinger: List<Suspects> = emptyList(),
 ) {
     @Serializable
     data class Avstemming(
@@ -99,6 +139,24 @@ data class Dashboard(
         val datoAvstemtFom: LocalDate? = null,
         val datoAvstemtTom: LocalDate? = null,
     )
+
+    @Serializable
+    data class Suspects(
+        val behandlingId: String,
+        val klassekode: String,
+        val fom: LocalDate,
+        val tom: LocalDate,
+        val beløp: UInt,
+        val kilder: MutableMap<String, Kilde>,
+    ) {
+        @Serializable
+        data class Kilde(
+            val key: String,
+            val partition: Int,
+            val offset: Long,
+            val timestampMs: Long
+        )
+    }
 }
 
 @Serializable
