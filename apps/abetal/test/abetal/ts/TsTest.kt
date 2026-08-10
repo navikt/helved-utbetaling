@@ -1372,9 +1372,12 @@ internal class TsTest : ConsumerTestBase() {
             """{ "ugyldig-json": """.toByteArray()
         }
 
-        val status = TestRuntime.topics.status.readValue()
-        assertEquals(Status.FEILET, status.status)
-        assertNotNull(status.error)
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) { status ->
+                assertEquals(Status.FEILET, status.status)
+                assertNotNull(status.error)
+            }
     }
 
     @Test
@@ -1397,9 +1400,12 @@ internal class TsTest : ConsumerTestBase() {
             }.asBytes()
         }
 
-        val status = TestRuntime.topics.status.readValue()
-        assertEquals(Status.FEILET, status.status)
-        assertNotNull(status.error)
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) { status ->
+                assertEquals(Status.FEILET, status.status)
+                assertNotNull(status.error)
+            }
     }
 
     @Test
