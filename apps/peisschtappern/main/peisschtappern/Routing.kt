@@ -227,12 +227,13 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             }
 
             get("/pending-mismatch") {
+                val tom = Instant.now().toEpochMilli()
                 val since = call.queryParameters["since"]?.toLongOrNull()
-                    ?: (Instant.now() - Duration.ofHours(1)).toEpochMilli()
+                    ?: (tom - Duration.ofHours(1).toMillis())
 
                 val mismatches = withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {
-                        PendingMismatchService.detectMismatches(since)
+                        PendingMismatchService.detectMismatches(since, tom)
                     }
                 }
 
