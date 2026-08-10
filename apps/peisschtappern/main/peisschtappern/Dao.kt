@@ -138,24 +138,14 @@ data class Daos(
             tom: Long? = null,
             nowMs: Long = System.currentTimeMillis(),
             thresholdMs: Long = 60 * 60 * 1000 // 1 time
-        ): List<Daos> {
+        ): List<OppdragUtenKvittering> {
             val sql = """
                 SELECT
-                    o.version,
-                    o.topic_name, 
                     o.record_key, 
-                    o.record_value,
-                    o.record_partition,
-                    o.record_offset,
-                    o.timestamp_ms,
-                    o.stream_time_ms,
                     o.system_time_ms,
                     o.trace_id,
-                    o.commit,
                     o.sak_id,
-                    o.fagsystem,
-                    o.status,
-                    o.headers
+                    o.fagsystem
                 FROM oppdrag o
                 WHERE (? IS NULL OR o.system_time_ms > ?)
                   AND (? IS NULL OR o.system_time_ms < ?)
@@ -188,7 +178,71 @@ data class Daos(
 
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
-                stmt.executeQuery().use { it.map(::from) }
+                stmt.executeQuery().use { rs ->
+                    rs.map {
+                        OppdragUtenKvittering(
+                            key = it.getString("record_key"),
+                            trace_id = it.getString("trace_id"),
+                            fagsystem = it.getString("fagsystem"),
+                            sakId = it.getString("sak_id"),
+                            system_time_ms = it.getLong("system_time_ms"),
+                        )
+                    }
+                }
+            }
+        }
+
+        suspend fun antallFeilet(fom: Long, tom: Long): Int {
+            val sql = """
+                SELECT count(*)
+                FROM status
+                WHERE status = 'FEILET'
+                    AND system_time_ms > ?
+                    AND system_time_ms < ?
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setLong(1, fom)
+                stmt.setLong(2, tom)
+
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().use { rs ->
+                    check(rs.next()) { "Forventet resultat fra count(*)" }
+                    rs.getInt(1)
+                }
+            }
+        }
+
+        suspend fun findStatuses(status: String, fom: Long, tom: Long): List<Daos> {
+            val sql = """
+                SELECT
+                    version,
+                    topic_name,
+                    record_key,
+                    record_value,
+                    record_partition,
+                    record_offset,
+                    timestamp_ms,
+                    stream_time_ms,
+                    system_time_ms,
+                    trace_id,
+                    commit,
+                    sak_id,
+                    fagsystem,
+                    status,
+                    headers
+                FROM status
+                WHERE status = ?
+                    AND system_time_ms > ?
+                    AND system_time_ms < ?
+                ORDER BY system_time_ms
+            """.trimIndent()
+
+            return query(sql) { stmt ->
+                stmt.setString(1, status)
+                stmt.setLong(2, fom)
+                stmt.setLong(3, tom)
             }
         }
 
@@ -445,15 +499,18 @@ data class Daos(
             }
         }
 
-        suspend fun findPendingByUids(uids: List<String>): List<Daos> {
+        suspend fun findPendingByUids(uids: List<String>, tom: Long): List<Daos> {
             val sql = """
                 SELECT * FROM pending_utbetalinger
                 WHERE try_jsonb_get_text(record_value, 'uid') = ANY(?)
+                    AND system_time_ms < ?
+                ORDER BY try_jsonb_get_text(record_value, 'uid'), system_time_ms
             """.trimIndent()
 
             return query(sql) { stmt ->
                 val array = stmt.connection.createArrayOf("text", uids.toTypedArray())
                 stmt.setArray(1, array)
+                stmt.setLong(2, tom)
             }
         }
 

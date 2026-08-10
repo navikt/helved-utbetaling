@@ -26,23 +26,20 @@ private val avstemmingXml = XML {
 
 object DashboardService {
     suspend fun dashboard(fom: Long, tom: Long): Dashboard {
-        val daos = Daos.messages(Channel.all(), fom, tom)
+        val successfulStatuses = Daos.findStatuses("OK", fom, tom)
 
         return Dashboard(
-            feiletUtbetalinger = daos.filter { it.status == "FEILET" },
-            pendingMismatch = PendingMismatchService.detectMismatches(fom),
+            feiletUtbetalinger = Daos.antallFeilet(fom, tom),
+            pendingMismatch = PendingMismatchService.detectMismatches(fom, tom),
             avstemming = avstemming(fom, tom),
             oppdragUtenKvittering = Daos.findOppdragWithMissingStatus(fom, tom),
-            dobbeltutbetalinger = dobbeltutbetalinger(daos)
+            dobbeltutbetalinger = dobbeltutbetalinger(successfulStatuses)
         )
     }
 
     private fun dobbeltutbetalinger(daos: List<Daos>): List<Dashboard.Suspects> {
         val suspects: MutableMap<String, Dashboard.Suspects> = mutableMapOf()
-        val statuses =
-            daos.filter { it.topic_name == Channel.Status.topic.name && it.status == "OK" && it.value != null }
-
-        for (suspect in statuses) {
+        for (suspect in daos.filter { it.value != null }) {
             val status: StatusReply = KotlinxJson.decodeFromString(suspect.value!!)
             val lines = status.detaljer?.linjer ?: emptyList()
 
@@ -126,10 +123,10 @@ object DashboardService {
 
 @Serializable
 data class Dashboard(
-    val feiletUtbetalinger: List<Daos>,
+    val feiletUtbetalinger: Int,
     val pendingMismatch: List<PendingMismatch>,
     val avstemming: List<Avstemming>,
-    val oppdragUtenKvittering: List<Daos>,
+    val oppdragUtenKvittering: List<OppdragUtenKvittering>,
     val dobbeltutbetalinger: List<Suspects> = emptyList(),
 ) {
     @Serializable
@@ -158,6 +155,15 @@ data class Dashboard(
         )
     }
 }
+
+@Serializable
+data class OppdragUtenKvittering(
+    val key: String,
+    val trace_id: String?,
+    val fagsystem: String?,
+    val sakId: String?,
+    val system_time_ms: Long,
+)
 
 @Serializable
 @XmlSerialName("avstemmingsdata", AVSTEMMING_NAMESPACE, "ns2")

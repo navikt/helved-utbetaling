@@ -85,9 +85,10 @@ class DashboardApiTest {
         val result = TestRuntime.ktor.httpClient.get("/api/dashboard/oppdrag_uten_status") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        }.body<List<OppdragUtenKvittering>>()
 
         assertEquals(2, result.size)
+        assertEquals(setOf(key2, key4), result.map { it.key }.toSet())
     }
 
 
@@ -105,6 +106,26 @@ class DashboardApiTest {
         }.body<Dashboard>()
 
         assertTrue(dashboard.pendingMismatch.isEmpty())
+    }
+
+    @Test
+    fun `dashboard teller bare feilede statuser i perioden`() = runTest(TestRuntime.context) {
+        val now = nextPendingMismatchTimestamp()
+        val feilet = KotlinxJson.encodeToString(StatusReply(Status.FEILET))
+
+        save(Channel.Status, value = feilet, timestamp = now, offset = offset)
+        save(Channel.Status, value = feilet, timestamp = now + 3_000, offset = offset)
+
+        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+            url {
+                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
+            }
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Dashboard>()
+
+        assertEquals(1, dashboard.feiletUtbetalinger)
     }
 
 
@@ -203,6 +224,26 @@ class DashboardApiTest {
         val uid = UUID.randomUUID().toString()
 
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode())), timestamp = now, offset = offset)
+
+        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+            url {
+                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                parameters.append("tom", Instant.ofEpochMilli(now + 1_000).toString())
+            }
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Dashboard>()
+
+        assertTrue(dashboard.pendingMismatch.isEmpty())
+    }
+
+    @Test
+    fun `dashboard ignorerer utbetaling etter tom`() = runTest(TestRuntime.context) {
+        val now = nextPendingMismatchTimestamp()
+        val uid = UUID.randomUUID().toString()
+
+        save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 2_000u))), timestamp = now, offset = offset)
+        save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now + 2_000, offset = offset)
 
         val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
             url {
