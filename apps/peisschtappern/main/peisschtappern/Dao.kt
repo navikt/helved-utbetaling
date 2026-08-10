@@ -199,6 +199,7 @@ data class Daos(
                 WHERE status = 'FEILET'
                     AND system_time_ms > ?
                     AND system_time_ms < ?
+                    AND record_value NOT LIKE '%simulering stengt%'
             """.trimIndent()
 
             return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->

@@ -112,8 +112,10 @@ class DashboardApiTest {
     fun `dashboard teller bare feilede statuser i perioden`() = runTest(TestRuntime.context) {
         val now = nextPendingMismatchTimestamp()
         val feilet = KotlinxJson.encodeToString(StatusReply(Status.FEILET))
+        val simuleringStengt = """{"status":"FEILET","error":{"msg":"simulering stengt"}}"""
 
         save(Channel.Status, value = feilet, timestamp = now, offset = offset)
+        save(Channel.Status, value = simuleringStengt, timestamp = now + 1_000, offset = offset)
         save(Channel.Status, value = feilet, timestamp = now + 3_000, offset = offset)
 
         val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
