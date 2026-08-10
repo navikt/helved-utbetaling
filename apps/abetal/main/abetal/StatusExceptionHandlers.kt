@@ -20,9 +20,12 @@ class StatusOnProcessingErrorHandler : ProcessingExceptionHandler {
         record: Record<*, *>,
         exception: Exception,
     ): ProcessingExceptionHandler.Response {
-        val key = runCatching { context.sourceRawKey() }
-            .getOrNull()
-            ?.let { resolveKey(it) }
+        val key = context.headers().lastHeader(ORIGINAL_KEY)
+            ?.value()
+            ?.let(::resolveKey)
+            ?: runCatching { context.sourceRawKey() }
+                .getOrNull()
+                ?.let(::resolveKey)
             ?: return ProcessingExceptionHandler.Response.resume()
 
         val error = when (exception) {
