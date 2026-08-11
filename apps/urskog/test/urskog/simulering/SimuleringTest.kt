@@ -188,7 +188,7 @@ class SimuleringTest {
                     listOf(
                         v1.OppsummeringForPeriode(
                             fom = LocalDate.of(2025, 8, 1),
-                            tom = LocalDate.of(2025, 8, 1),
+                            tom = LocalDate.of(2025, 8, 27),
                             tidligereUtbetalt = 4505,
                             nyUtbetaling = 4293,
                             totalEtterbetaling = 0, 
