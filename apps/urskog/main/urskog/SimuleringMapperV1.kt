@@ -54,8 +54,8 @@ private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<v1
 
     return perioderByYearMonth.values.map { perioder ->  
         v1.Periode(
-            fom = perioder.map { LocalDate.parse(it.periodeFom) }.min(),
-            tom = perioder.map { LocalDate.parse(it.periodeTom) }.min(),
+            fom = perioder.minOf { LocalDate.parse(it.periodeFom) },
+            tom = perioder.maxOf { LocalDate.parse(it.periodeTom) },
             posteringer = perioder.flatMap { periode ->
                 periode.beregningStoppnivaas.flatMap { sn ->
                     val fagområde = v1.Fagområde.valueOf(sn.kodeFagomraade.trimEnd())
@@ -110,4 +110,3 @@ private fun nyUtbetaling(posteringer: List<v1.Postering>): Int {
     val positiveFeil = posteringer.filter { it.beløp > 0 && it.type == v1.PosteringType.FEILUTBETALING && it.klassekode in listOf("KL_KODE_FEIL_ARBYT", "KL_KODE_FEIL_TILLST") }.sumOf { it.beløp }
     return positiveYtel - positiveFeil
 }
-
