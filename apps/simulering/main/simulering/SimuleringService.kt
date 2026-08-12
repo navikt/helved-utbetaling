@@ -13,7 +13,6 @@ import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
 import nl.adaptivity.xmlutil.serialization.OutputKind
 import simulering.models.rest.rest
-import simulering.models.soap.soap
 import simulering.models.soap.soap.Beregning
 import simulering.models.soap.soap.SimulerBeregningRequest
 
@@ -203,6 +202,7 @@ class SimuleringService(private val soap: Soap, private val sts: Sts) {
                 contains("Referert vedtak/linje ikke funnet") -> notFound("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
                 contains("Navn på person ikke funnet i PDL") -> notFound("Navn på person ikke funnet i PDL")
                 contains("Personen finnes ikke i PDL") -> notFound("Personen finnes ikke i PDL")
+                contains("DELYTELSE-ID finnes i oppdragsbasen fra før") -> conflict("Utbetaling med DeltytelsesId finnes fra før")
                 else -> soapError(fault)
             }
         }
