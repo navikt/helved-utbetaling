@@ -11,29 +11,44 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    branntaarn()
-}
-
-fun branntaarn(
-    config: Config = Config(),
-    now: LocalDateTime = LocalDateTime.now(),
-) {
-    if (now.toLocalDate().erHelligdag() || now.hour < 6 || now.hour > 21) return
-
+    val config = Config()
     val peisschtappern = PeisschtappernClient(config)
     val slack = SlackClient(config)
 
-    val branner = peisschtappern.branner()
-        .filter { brann -> brann.timeout.isBefore(now) }
-
-    if (branner.isNotEmpty()) {
-        val grouped = branner.groupBy { it.fagsystem }
-        slack.postAggregated(grouped)
-        branner.forEach(peisschtappern::slukk)
-    }
-
-    val mismatches = peisschtappern.pendingMismatches()
-    if (mismatches.isNotEmpty()) {
-        slack.postPendingMismatches(mismatches)
-    }
+    val branner = hentBranner(peisschtappern)
+    brannalarmer(slack, branner)
+    slukk(branner, peisschtappern)
 }
+
+fun hentBranner(peisschtappern: PeisschtappernClient) =
+    manglendeKvittering(peisschtappern) +
+    pendingMismatch(peisschtappern) +
+    peisschtappern.dobbeltutbetalinger()
+
+fun brannalarmer(slack: SlackClient, branner: List<Brann>) {
+    slack.postPendingMismatches(branner.filterIsInstance<PendingMismatch>())
+    slack.postAggregated(branner.filterIsInstance<ManglendeKvittering>().groupBy { it.fagsystem })
+    slack.postDobbeltutbetalinger(branner.filterIsInstance<Dobbeltutbetaling>())
+}
+
+fun slukk(branner: List<Brann>, peisschtappern: PeisschtappernClient) {
+    branner.forEach(peisschtappern::slukk)
+}
+
+fun manglendeKvittering(
+    peisschtappern: PeisschtappernClient,
+    now: LocalDateTime = LocalDateTime.now(),
+): List<Brann> {
+    if (!now.erVarseltid()) return emptyList()
+    return peisschtappern.manglendeKvitteringer().filter { it.timeout.isBefore(now) }
+}
+
+fun pendingMismatch(
+    peisschtappern: PeisschtappernClient,
+    now: LocalDateTime = LocalDateTime.now(),
+): List<Brann> {
+    if (!now.erVarseltid()) return emptyList()
+    return peisschtappern.pendingMismatches()
+}
+
+internal fun LocalDateTime.erVarseltid() = !toLocalDate().erHelligdag() && hour in 6..21

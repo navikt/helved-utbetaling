@@ -37,6 +37,12 @@ object DashboardService {
         )
     }
 
+    suspend fun dobbeltutbetalinger(fom: Long, tom: Long): List<Dashboard.Suspects> {
+        val statuses = Daos.findStatuses("OK", fom, tom)
+        val kjente = KjentDobbeltutbetaling.findAll().map { it.key }.toSet()
+        return dobbeltutbetalinger(statuses).filterNot { it.key in kjente }
+    }
+
     private fun dobbeltutbetalinger(daos: List<Daos>): List<Dashboard.Suspects> {
         val suspects: MutableMap<String, Dashboard.Suspects> = mutableMapOf()
         for (suspect in daos.filter { it.value != null }) {
@@ -44,17 +50,15 @@ object DashboardService {
             val lines = status.detaljer?.linjer ?: emptyList()
 
             for (line in lines.filter { it.beløp > 0u }) {
-                val key = "${line.behandlingId}::${line.klassekode}::${line.fom}::${line.tom}"
-                val suspectGroup = suspects.computeIfAbsent(key) {
-                    Dashboard.Suspects(
-                        behandlingId = line.behandlingId,
-                        klassekode = line.klassekode,
-                        fom = line.fom,
-                        tom = line.tom,
-                        beløp = line.beløp,
-                        kilder = mutableMapOf(),
-                    )
-                }
+                val kandidat = Dashboard.Suspects(
+                    behandlingId = line.behandlingId,
+                    klassekode = line.klassekode,
+                    fom = line.fom,
+                    tom = line.tom,
+                    beløp = line.beløp,
+                    kilder = mutableMapOf(),
+                )
+                val suspectGroup = suspects.getOrPut(kandidat.key) { kandidat }
 
                 suspectGroup.kilder["${suspect.key}::${suspect.partition}::${suspect.offset}"] = Dashboard.Suspects.Kilde(
                     key = suspect.key,
@@ -62,8 +66,6 @@ object DashboardService {
                     offset = suspect.offset,
                     timestampMs = suspect.system_time_ms,
                 )
-
-                suspects[key] = suspectGroup
             }
         }
 
@@ -146,6 +148,8 @@ data class Dashboard(
         val beløp: UInt,
         val kilder: MutableMap<String, Kilde>,
     ) {
+        val key: String get() = "$behandlingId::$klassekode::$fom::$tom"
+
         @Serializable
         data class Kilde(
             val key: String,
