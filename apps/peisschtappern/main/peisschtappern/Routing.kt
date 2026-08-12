@@ -240,6 +240,34 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
                 call.respond(mismatches)
             }
 
+            get("/dobbeltutbetalinger") {
+                val tom = Instant.now().toEpochMilli()
+                val since = call.queryParameters["since"]?.toLongOrNull()
+                    ?: (tom - Duration.ofHours(24).toMillis())
+
+                val suspects = withContext(jdbcCtx + Dispatchers.IO) {
+                    transaction {
+                        DashboardService.dobbeltutbetalinger(since, tom)
+                    }
+                }
+
+                call.respond(suspects)
+            }
+
+            post("/dobbeltutbetalinger") {
+                val behandlingId = call.queryParameters["behandlingId"] ?: badRequest("behandlingId er påkrevd")
+                val klassekode = call.queryParameters["klassekode"] ?: badRequest("klassekode er påkrevd")
+                val fom = call.queryParameters["fom"]?.let(java.time.LocalDate::parse) ?: badRequest("fom er påkrevd")
+                val tom = call.queryParameters["tom"]?.let(java.time.LocalDate::parse) ?: badRequest("tom er påkrevd")
+
+                withContext(jdbcCtx + Dispatchers.IO) {
+                    transaction {
+                        KjentDobbeltutbetaling(behandlingId, klassekode, fom, tom).insert()
+                    }
+                }
+                call.respond(HttpStatusCode.OK)
+            }
+
             delete("/{key}") {
                 withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {

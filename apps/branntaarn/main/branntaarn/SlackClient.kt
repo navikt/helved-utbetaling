@@ -15,7 +15,8 @@ class SlackClient(
     private val json: Json = libs.kotlinx.KotlinxJson,
     private val client: HttpClient = HttpClientFactory.new(json, LogLevel.ALL),
 ) {
-    fun postAggregated(grouped: Map<String, List<Brann>>) {
+    fun postAggregated(grouped: Map<String, List<ManglendeKvittering>>) {
+        if (grouped.isEmpty()) return
         runBlocking {
             client.post(config.slack.host.toString()) {
                 contentType(ContentType.Application.Json)
@@ -25,10 +26,21 @@ class SlackClient(
     }
 
     fun postPendingMismatches(mismatches: List<PendingMismatch>) {
+        if (mismatches.isEmpty()) return
         runBlocking {
             client.post(config.slack.host.toString()) {
                 contentType(ContentType.Application.Json)
                 setBody(jsonPendingMismatches(mismatches, config))
+            }
+        }
+    }
+
+    fun postDobbeltutbetalinger(suspects: List<Dobbeltutbetaling>) {
+        if (suspects.isEmpty()) return
+        runBlocking {
+            client.post(config.slack.host.toString()) {
+                contentType(ContentType.Application.Json)
+                setBody(jsonDobbeltutbetalinger(suspects, config))
             }
         }
     }
@@ -41,7 +53,7 @@ private fun jsonAggregated(
     val totalCount = grouped.values.sumOf { it.size }
     val fagsystemCount = grouped.size
     val fagsystemText = if (fagsystemCount == 1) "fagsystem" else "fagsystems"
-    
+
     val blocks = buildList {
         // Header
         add("""
@@ -54,7 +66,7 @@ private fun jsonAggregated(
           }
         }
         """.trimIndent())
-        
+
         // Summary
         add("""
         {
@@ -65,9 +77,9 @@ private fun jsonAggregated(
           }
         }
         """.trimIndent())
-        
+
         add("""{"type": "divider"}""")
-        
+
         // Per-fagsystem sections (sorted alphabetically)
         grouped.entries.sortedBy { it.key }.forEach { (fagsystem, branner) ->
             val sakIds = branner.map { it.sakId }
@@ -79,7 +91,7 @@ private fun jsonAggregated(
                 val remaining = sakIds.size - displayLimit
                 "$shown _(+$remaining more not shown)_"
             }
-            
+
             add("""
             {
               "type": "section",
@@ -89,11 +101,11 @@ private fun jsonAggregated(
               }
             }
             """.trimIndent())
-            
+
             add("""{"type": "divider"}""")
         }
     }
-    
+
     return """{
   "channel": "team-hel-ved-alerts",
   "blocks": [
@@ -163,6 +175,70 @@ private fun jsonPendingMismatches(
             """.trimIndent())
 
             add("""{"type": "divider"}""")
+        }
+    }
+
+    return """{
+  "channel": "team-hel-ved-alerts",
+  "blocks": [
+    ${blocks.joinToString(",\n    ")}
+  ]
+}"""
+}
+
+private fun jsonDobbeltutbetalinger(suspects: List<Dobbeltutbetaling>, config: Config): String {
+    val totalCount = suspects.size
+
+    val blocks = buildList {
+        add("""
+        {
+          "type": "header",
+          "text": {
+            "type": "plain_text",
+            "text": "${emoji(config)} Dobbeltutbetaling oppdaget (${config.nais.cluster})",
+            "emoji": true
+          }
+        }
+        """.trimIndent())
+
+        add("""
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "*$totalCount dobbeltutbetaling(er) funnet siste 24 timer*\nSamme betalingslinje er bekreftet OK mer enn én gang."
+          }
+        }
+        """.trimIndent())
+
+        add("""{"type": "divider"}""")
+
+        val displayLimit = 20
+        suspects.take(displayLimit).forEach { suspect ->
+            add("""
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*${suspect.behandlingId}* — ${suspect.klassekode}\nPeriode: ${suspect.fom} – ${suspect.tom} | Beløp: ${suspect.beløp} | Antall OK: ${suspect.antallKilder}"
+              }
+            }
+            """.trimIndent())
+
+            add("""{"type": "divider"}""")
+        }
+
+        if (suspects.size > displayLimit) {
+            val remaining = suspects.size - displayLimit
+            add("""
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "_(+$remaining flere ikke vist)_"
+              }
+            }
+            """.trimIndent())
         }
     }
 
