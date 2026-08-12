@@ -70,6 +70,12 @@ data class StreamsConfig(
          */
         this[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.EXACTLY_ONCE_V2
 
+        // Deprecated since 4.3.0, will be removed (and enabled by default) in Kafka Streams 5.0.
+        // It's recommended to set processing.exception.handler.global.enabled to true to enable it.
+        // Enabling the processing exception handler for global state/KTable processing now, ensures future backward compatibility.
+        @Suppress("DEPRECATION")
+        this[StreamsConfig.PROCESSING_EXCEPTION_HANDLER_GLOBAL_ENABLED_CONFIG] = true
+
         putAll(additionalProperties)
     }
 }
