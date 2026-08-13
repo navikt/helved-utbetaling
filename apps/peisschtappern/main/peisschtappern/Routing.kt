@@ -247,7 +247,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
 
                 val suspects = withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {
-                        DashboardService.dobbeltutbetalinger(since, tom)
+                        DobbeltutbetalingService.finnUkjente(since, tom)
                     }
                 }
 
