@@ -1,12 +1,18 @@
 plugins {
-    id("io.ktor.plugin")
+    id("com.gradleup.shadow")
+    kotlin("plugin.serialization")
+    application
 }
 
 application {
     mainClass.set("snickerboa.SnickerboaKt")
 }
 
-val ktorVersion = "3.5.1"
+tasks.register("buildFatJar") {
+    dependsOn(tasks.shadowJar)
+}
+
+val http4kVersion = "6.48.0.0"
 
 dependencies {
     implementation(project(":models"))
@@ -14,17 +20,13 @@ dependencies {
     implementation(project(":libs:kotlinx"))
     implementation(project(":libs:utils"))
 
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
-    implementation("io.ktor:ktor-server-status-pages:${ktorVersion}")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("org.http4k:http4k-core:$http4kVersion")
+    implementation("org.http4k:http4k-format-kotlinx-serialization:$http4kVersion")
+    implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.0")
     implementation("org.apache.kafka:kafka-clients:4.3.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
-    testImplementation(project(":libs:ktor-test"))
-    testImplementation("io.ktor:ktor-server-test-host:${ktorVersion}")
 }
