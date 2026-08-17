@@ -19,7 +19,7 @@ jobs:
         with:
           java-version: 25
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v6.2.0
+      - uses: gradle/actions/setup-gradle@v6.3.0
         with:
           dependency-graph: generate-and-submit
       # `help -q` is a cheap no-op task that still triggers Gradle's
