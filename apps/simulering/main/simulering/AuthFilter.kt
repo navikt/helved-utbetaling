@@ -19,12 +19,16 @@ fun azureAuthFilter(verifier: JwtVerifier, claimsLens: RequestContextLens<Jwt.Cl
         if (token == null) {
             Response(Status.UNAUTHORIZED).body("Missing Authorization header")
         } else {
-            try {
-                val jwt = verifier.verify(token)
-                next(request.with(claimsLens of jwt.claims))
+            val jwt = try {
+                verifier.verify(token)
             } catch (e: Exception) {
                 secureLog.warn("Token validation failed: ${e.message}")
+                null
+            }
+            if (jwt == null) {
                 Response(Status.UNAUTHORIZED).body("Invalid token")
+            } else {
+                next(request.with(claimsLens of jwt.claims))
             }
         }
     }

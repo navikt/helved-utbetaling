@@ -1,17 +1,39 @@
 package simulering
 
-import libs.auth.JwkGenerator
+import com.sun.net.httpserver.HttpServer
+import libs.auth.*
 import libs.kafka.KafkaProducerFake
 import libs.kafka.StreamsMock
 import libs.utils.Resource
 import models.Simulering
 import org.http4k.core.HttpHandler
+import java.net.InetSocketAddress
 import java.net.URI
+import java.net.http.HttpClient
 import java.time.LocalDateTime
 import java.util.*
 
 object TestRuntime : Sts, Soap {
     val kafka: StreamsMock by lazy { StreamsMock() }
+
+    private val jwksServer: HttpServer by lazy {
+        HttpServer.create(InetSocketAddress(0), 0).apply {
+            createContext("/jwks") { exchange ->
+                val body = TEST_JWKS.toByteArray()
+                exchange.responseHeaders.add("Content-Type", "application/json")
+                exchange.sendResponseHeaders(200, body.size.toLong())
+                exchange.responseBody.use { it.write(body) }
+            }
+            start()
+        }
+    }
+
+    private val jwtVerifier: JwtVerifier by lazy {
+        val jwksUrl = URI("http://localhost:${jwksServer.address.port}/jwks").toURL()
+        val jwksClient = JwksClient(jwksUrl, HttpClient.newHttpClient())
+        val tokenConfig = TokenConfig(clientId = "test-client", jwks = jwksUrl, issuer = "test")
+        JwtVerifier(jwksClient, tokenConfig)
+    }
 
     val app: HttpHandler by lazy {
         app(
@@ -19,6 +41,7 @@ object TestRuntime : Sts, Soap {
             kafka = kafka,
             soap = this,
             sts = this,
+            jwtVerifier = jwtVerifier,
         )
     }
 
@@ -102,5 +125,8 @@ object TestRuntime : Sts, Soap {
     }
 
     private val jwkGenerator by lazy { JwkGenerator("test", "test-client") }
-    fun generateToken() = jwkGenerator.generate()
+    fun generateToken(azpName: String? = null): String {
+        val claims = listOfNotNull(azpName?.let { Claim("azp_name", it) })
+        return jwkGenerator.generate(claims)
+    }
 }
