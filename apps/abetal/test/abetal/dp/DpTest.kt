@@ -2,9 +2,8 @@ package abetal.dp
 
 import abetal.*
 import kotlinx.serialization.serializer
-import libs.kafka.KotlinxSerializer
 import libs.kafka.KotlinxDeserializer
-import libs.kafka.JsonSerde
+import libs.kafka.KotlinxSerializer
 import libs.kotlinx.KotlinxJson
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -13,10 +12,8 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
+import java.util.UUID
+import kotlin.test.*
 
 internal class DpTest : ConsumerTestBase() {
 
@@ -365,7 +362,8 @@ internal class DpTest : ConsumerTestBase() {
         val cuid = dpUId(sid, "132735021", StønadTypeDagpenger.DAGPENGER)
         val ctid = "019b1f18-2199-7395-b8f3-82c497ce2941"
 
-        val a = KotlinxJson.decodeFromString<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$abid","ident":"12345678910","vedtakstidspunktet":"2025-12-05T14:57:21.107354","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
+        val a =
+            KotlinxJson.decodeFromString<DpUtbetaling>("""{"sakId":"$sid","behandlingId":"$abid","ident":"12345678910","vedtakstidspunktet":"2025-12-05T14:57:21.107354","utbetalinger":[{"meldeperiode":"132733037","dato":"2025-11-10","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-11","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-12","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-13","sats":911,"utbetaltBeløp":364,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"},{"meldeperiode":"132733037","dato":"2025-11-14","sats":911,"utbetaltBeløp":366,"utbetalingstype":"Dagpenger","rettighetstype":"Ordinær"}]}""")
         TestRuntime.topics.dp.produce(atid, a.asBytes())
         TestRuntime.topics.status.assertThat().has(atid) {
             Dp.mottatt {
@@ -2139,9 +2137,12 @@ internal class DpTest : ConsumerTestBase() {
             """{ "ugyldig-json": """.toByteArray()
         }
 
-        val status = TestRuntime.topics.status.readValue()
-        assertEquals(Status.FEILET, status.status)
-        assertNotNull(status.error)
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) { status ->
+                assertEquals(Status.FEILET, status.status)
+                assertNotNull(status.error)
+            }
     }
 
     @Test
@@ -2157,9 +2158,12 @@ internal class DpTest : ConsumerTestBase() {
             }.asBytes()
         }
 
-        val status = TestRuntime.topics.status.readValue()
-        assertEquals(Status.FEILET, status.status)
-        assertNotNull(status.error)
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .with(transactionId) { status ->
+                assertEquals(Status.FEILET, status.status)
+                assertNotNull(status.error)
+            }
     }
 
     @Test
@@ -2167,13 +2171,88 @@ internal class DpTest : ConsumerTestBase() {
         val key = UUID.randomUUID().toString()
         TestRuntime.topics.dp.produce(key) {
             Dp.utbetaling(sakId = "ny-sak") {
-                meldekort("blablabla", LocalDate.of(2026, 5, 28),
-                    LocalDate.of(2026, 5, 28), 0u, 0u, Utbetalingstype.DagpengerFerietillegg)
+                meldekort(
+                    "blablabla", LocalDate.of(2026, 5, 28),
+                    LocalDate.of(2026, 5, 28), 0u, 0u, Utbetalingstype.DagpengerFerietillegg
+                )
             }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat()
             .has(key)
             .with(key) { reply -> assertEquals(Status.OK, reply.status) }
+    }
+
+    @Test
+    fun `#597 Dagpenger mangler status på utbetaling med 0 i utbetalt beløp`() {
+        val firstKey = "019f3725-34ae-7d2a-a82f-43c4dd58347a"
+        TestRuntime.topics.dp.produce(firstKey) {
+            KotlinxJson.decodeFromString<DpUtbetaling>(
+                """{"sakId":"AZ6M2KLZfmOCyWnleGOMzg==","behandlingId":"AZ83JTSufSqoL0PE3Vg0eg==","ident":"10049437035","vedtakstidspunktet":"2026-07-06T13:16:53.305852","utbetalinger":[]}""".trimIndent()
+            ).asBytes()
+        }
+        TestRuntime.topics.status.assertThat()
+            .has(firstKey)
+            .with(firstKey) { reply -> assertEquals(Status.OK, reply.status) }
+
+        val secondKey = "019f5f99-6cba-7a6a-b607-60a067ae3cdc"
+        TestRuntime.topics.dp.produce(secondKey) {
+            KotlinxJson.decodeFromString<DpUtbetaling>(
+                """
+                  {
+                      "sakId": "AZ6M2KLZfmOCyWnleGOMzg==",
+                      "behandlingId": "AZ9fmWy6emq2B2CgZ6483A==",
+                      "ident": "10049437035",
+                      "vedtakstidspunktet": "2026-07-14T10:07:38.614673",
+                      "utbetalinger": [
+                        {
+                          "meldeperiode": "132788269",
+                          "dato": "2026-06-03",
+                          "sats": 1573,
+                          "utbetaltBeløp": 0,
+                          "utbetalingstype": "Dagpenger",
+                          "rettighetstype": "Ordinær"
+                        },
+                        {
+                          "meldeperiode": "132788269",
+                          "dato": "2026-06-04",
+                          "sats": 1573,
+                          "utbetaltBeløp": 0,
+                          "utbetalingstype": "Dagpenger",
+                          "rettighetstype": "Ordinær"
+                        },
+                        {
+                          "meldeperiode": "132788269",
+                          "dato": "2026-06-05",
+                          "sats": 1573,
+                          "utbetaltBeløp": 0,
+                          "utbetalingstype": "Dagpenger",
+                          "rettighetstype": "Ordinær"
+                        },
+                        {
+                          "meldeperiode": "132788269",
+                          "dato": "2026-06-06",
+                          "sats": 1573,
+                          "utbetaltBeløp": 0,
+                          "utbetalingstype": "Dagpenger",
+                          "rettighetstype": "Ordinær"
+                        },
+                        {
+                          "meldeperiode": "132788269",
+                          "dato": "2026-06-07",
+                          "sats": 1573,
+                          "utbetaltBeløp": 0,
+                          "utbetalingstype": "Dagpenger",
+                          "rettighetstype": "Ordinær"
+                        }
+                      ]
+                    }            
+                """.trimIndent()
+            ).asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(secondKey)
+            .with(secondKey) { reply -> assertEquals(Status.OK, reply.status) }
     }
 }

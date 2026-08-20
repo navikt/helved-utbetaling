@@ -40,6 +40,36 @@ fun Routing.probes(kafka: Streams, meters: PrometheusMeterRegistry) {
 
 fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDatasource) {
     route("/api") {
+        get("/dashboard") {
+            val fom = requireNotNull(call.queryParameters.milliseconds("fom")) {
+                "Mangler query-parameter \"fom\""
+            }
+            val tom = requireNotNull(call.queryParameters.milliseconds("tom")) {
+                "Mangler query-parameter \"tom\""
+            }
+
+            val result = withContext(jdbcCtx + Dispatchers.IO) {
+                transaction {
+                    DashboardService.dashboard(fom, tom)
+                }
+            }
+
+            call.respond(result)
+        }
+
+        get("/dashboard/oppdrag_uten_status") {
+            val fom = call.queryParameters.milliseconds("fom")
+            val tom = call.queryParameters.milliseconds("tom")
+
+            val result = withContext(jdbcCtx + Dispatchers.IO) {
+                transaction {
+                    Daos.findOppdragWithMissingStatus(fom, tom)
+                }
+            }
+
+            call.respond(result)
+        }
+
         get("/messages") {
             val channels = call.queryParameters.strings("topics")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
             val page = call.queryParameters["page"]?.toIntOrNull() ?: 1
@@ -72,6 +102,23 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
                         orderBy = orderBy,
                         direction = direction
                     )
+                }
+            }
+
+            call.respond(result)
+        }
+
+        // Finner alle meldinger for gitt topic mellom fom og tom
+        get("/messages/{topic}") {
+            val channel = checkNotNull(Channel.findOrNull(call.parameters["topic"]!!)) {
+                "Unknown topic ${call.parameters["topic"]}"
+            }
+            val fom = call.queryParameters.milliseconds("fom")
+            val tom = call.queryParameters.milliseconds("tom")
+
+            val result = withContext(jdbcCtx + Dispatchers.IO) {
+                transaction {
+                    Daos.messages(listOf(channel), fom, tom)
                 }
             }
 
@@ -132,7 +179,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         get("/saker/{sakId}/{fagsystem}") {
             val sakId = call.parameters["sakId"]!!
             val fagsystemer: List<Fagsystem> = call.parameters["fagsystem"]!!.split(",").map { kode ->
-                try { Fagsystem.from(kode.trim()) } catch (e: IllegalStateException) { badRequest("ukjent fagområde: $kode") }
+                try { Fagsystem.from(kode.trim()) } catch (_: IllegalStateException) { badRequest("ukjent fagområde: $kode") }
             }
             val hendelser: List<Daos> = withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
@@ -180,19 +227,45 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             }
 
             get("/pending-mismatch") {
+                val tom = Instant.now().toEpochMilli()
                 val since = call.queryParameters["since"]?.toLongOrNull()
-                    ?: (Instant.now() - Duration.ofHours(1)).toEpochMilli()
+                    ?: (tom - Duration.ofHours(1).toMillis())
 
                 val mismatches = withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {
-                        val utbetalinger = Daos.findRecentUtbetalinger(since)
-                        val uids = utbetalinger.mapNotNull { parseUid(it.value) }.distinct()
-                        val pending = if (uids.isEmpty()) emptyList() else Daos.findPendingByUids(uids)
-                        detectMismatches(utbetalinger, pending)
+                        PendingMismatchService.detectMismatches(since, tom)
                     }
                 }
 
                 call.respond(mismatches)
+            }
+
+            get("/dobbeltutbetalinger") {
+                val tom = Instant.now().toEpochMilli()
+                val since = call.queryParameters["since"]?.toLongOrNull()
+                    ?: (tom - Duration.ofHours(24).toMillis())
+
+                val suspects = withContext(jdbcCtx + Dispatchers.IO) {
+                    transaction {
+                        DobbeltutbetalingService.finnUkjente(since, tom)
+                    }
+                }
+
+                call.respond(suspects)
+            }
+
+            post("/dobbeltutbetalinger") {
+                val behandlingId = call.queryParameters["behandlingId"] ?: badRequest("behandlingId er påkrevd")
+                val klassekode = call.queryParameters["klassekode"] ?: badRequest("klassekode er påkrevd")
+                val fom = call.queryParameters["fom"]?.let(java.time.LocalDate::parse) ?: badRequest("fom er påkrevd")
+                val tom = call.queryParameters["tom"]?.let(java.time.LocalDate::parse) ?: badRequest("tom er påkrevd")
+
+                withContext(jdbcCtx + Dispatchers.IO) {
+                    transaction {
+                        KjentDobbeltutbetaling(behandlingId, klassekode, fom, tom).insert()
+                    }
+                }
+                call.respond(HttpStatusCode.OK)
             }
 
             delete("/{key}") {

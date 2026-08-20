@@ -2,6 +2,7 @@ package peisschtappern
 
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.serialization.kotlinx.xml.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.engine.*
@@ -62,6 +63,7 @@ fun Application.peisschtappern(
 
     install(ContentNegotiation) {
         json(libs.kotlinx.KotlinxJson)
+        xml()
     }
 
     install(MicrometerMetrics) {

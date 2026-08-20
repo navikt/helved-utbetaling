@@ -13,9 +13,9 @@ Se [K267.1, Applikasjoner skal ha et forsvarlig sikkerhetsnivå](https://etterle
 _Ansvarlig skal hvert tertial verifisere at backup er konfigurert og gjennomført i tråd med systemets krav til tilgjengelighet av data_. Se [Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%207%20oppstartsm%C3%B8te.pptx?d=wd0872c01fa564fee985804c910a65f3d&csf=1&web=1&e=2L01UL) for detaljer.
 
 Logg over gjennomførte kontroller:
-| Tidspunkt | Kontrollert og godkjent av |
-| -------- | -------- | 
-| 2026-xx-xx    | x     |
+| Tidspunkt | Kontrollert av | Kommentar
+| -------- | -------- | -------- |
+| 2026-08-12    | Anders Skifte | Peisschtappern, Urskog, Utsjekk, Vedskiva, Speiderhytta: Standard backup tier. Alle OK.|
 
 
 # 7.2 Gjenoppretting

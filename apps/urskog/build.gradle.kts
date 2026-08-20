@@ -30,7 +30,7 @@ dependencies {
     testImplementation(project(":libs:jdbc-test"))
     testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:mq-test"))
-    testImplementation("org.apache.kafka:kafka-streams:4.3.0") // StreamsConfig
+    testImplementation("org.apache.kafka:kafka-streams:4.3.1") // StreamsConfig
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
 
