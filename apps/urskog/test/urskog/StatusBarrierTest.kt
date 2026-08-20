@@ -444,7 +444,7 @@ class StatusBarrierTest {
     }
 
     @Test
-    fun `opphør av siste utbetaling på sak flipper sakerAck når saker-aggregat blir tomt`() {
+    fun `opphør av alle utbetalinger på sak flipper sakerAck når saker-aggregat blir tomt`() {
         val transaction = UUID.randomUUID().toString()
         val uid = UtbetalingId(UUID.randomUUID())
         val sakIdStr = "$seq"
@@ -518,6 +518,96 @@ class StatusBarrierTest {
             .has(transaction, size = 1)
             .with(transaction) { reply ->
                 assertEquals(Status.OK, reply.status, "Barrier must resolve to OK after opphør empties saker aggregate")
+            }
+
+        TestRuntime.topics.retryKvittering.assertThat()
+    }
+
+    @Test
+    fun `delvis opphør flipper sakerAck selv om saker-aggregatet forblir ikke-tomt`() {
+        val transaction = UUID.randomUUID().toString()
+        val uid1 = UtbetalingId(UUID.randomUUID())
+        val uid2 = UtbetalingId(UUID.randomUUID())
+        val sakIdStr = "$seq"
+        val sakId = SakId(sakIdStr)
+        val bid = "$seq"
+
+        val oppdrag = TestData.oppdrag(
+            fagsystemId = sakIdStr,
+            fagområde = "AAP",
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    henvisning = bid,
+                    delytelsesId = PeriodeId().toString(),
+                    klassekode = "AAPOR",
+                    datoVedtakFom = 1.nov,
+                    datoVedtakTom = 14.nov,
+                    typeSats = "DAG",
+                    sats = 1000L,
+                    opphør = 1.nov,
+                )
+            ),
+        )
+
+        // Seed saker-aggregat med begge uids (simulerer to aktive utbetalinger på samme sak)
+        TestRuntime.topics.utbetalinger.produce(uid1.toString()) {
+            TestData.utbetaling(uid = uid1, sakId = sakId, originalKey = transaction, fagsystem = Fagsystem.AAP)
+        }
+        TestRuntime.topics.utbetalinger.produce(uid2.toString()) {
+            TestData.utbetaling(uid = uid2, sakId = sakId, originalKey = transaction, fagsystem = Fagsystem.AAP)
+        }
+        TestRuntime.topics.saker.assertThat()
+
+        // Oppdrag for opphør av uid2 ankommer med uids-header
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("uids" to uid2.toString())) { oppdrag }
+        assertEquals(0, TestRuntime.mq.sentOppdrag().size)
+
+        val hashKey = DaoOppdrag.hash(oppdrag)
+        TestRuntime.topics.pendingUtbetalinger.produce(uid2.toString(), mapOf("hash_key" to hashKey)) {
+            TestData.utbetaling(action = Action.DELETE, uid = uid2, sakId = sakId, originalKey = transaction, fagsystem = Fagsystem.AAP)
+        }
+        TestRuntime.topics.status.assertThat()
+            .has(transaction, size = 1)
+            .has(transaction, value = StatusReply(Status.HOS_OPPDRAG, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
+                // beløp=0u fordi kodeStatusLinje=OPPH (se Status.kt::beløp) -- hele linjen er opphørt.
+                DetaljerLinje(bid, 1.nov, 14.nov, null, 0u, "AAPOR"),
+            ))))
+        assertEquals(1, TestRuntime.mq.sentOppdrag().size)
+
+        val daoBefore = runBlocking {
+            withContext(TestRuntime.context) {
+                transaction { DaoOppdrag.findWithLockOrLegacy(hashKey, oppdrag) }
+            }
+        }
+        assertNotNull(daoBefore)
+        assertEquals(false, daoBefore.sakerAck, "sakerAck must be false before saker aggregate processes DELETE")
+
+        // Opphør kun uid2: saker-aggregatet blir {uid1}, altså IKKE tomt.
+        TestRuntime.topics.utbetalinger.produce(uid2.toString()) {
+            TestData.utbetaling(action = Action.DELETE, uid = uid2, sakId = sakId, originalKey = transaction, fagsystem = Fagsystem.AAP)
+        }
+        TestRuntime.topics.saker.assertThat()
+
+        val daoAfter = runBlocking {
+            withContext(TestRuntime.context) {
+                transaction { DaoOppdrag.findWithLockOrLegacy(hashKey, oppdrag) }
+            }
+        }
+        assertNotNull(daoAfter)
+        assertEquals(
+            true,
+            daoAfter.sakerAck,
+            "sakerAck must flip to true when the opphørte uiden is absent from a non-empty saker aggregate",
+        )
+
+        // Kvittering → barrier resolves → Status.OK (uten å vente på at HELE aggregatet tømmes)
+        oppdrag.mmel = TestData.ok()
+        TestRuntime.topics.oppdrag.produce(transaction, mapOf("maxRetries" to "2", "uids" to uid2.toString())) { oppdrag }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transaction, size = 1)
+            .with(transaction) { reply ->
+                assertEquals(Status.OK, reply.status, "Barrier must resolve to OK after partial opphør, not just full aggregate emptying")
             }
 
         TestRuntime.topics.retryKvittering.assertThat()

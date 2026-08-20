@@ -6,7 +6,6 @@ import kotlinx.coroutines.runBlocking
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.intoUids
-import libs.utils.secureLog
 import libs.kafka.*
 import libs.kafka.processor.EnrichMetadataProcessor
 import libs.kafka.processor.Metadata
@@ -179,7 +178,7 @@ private fun updatePendingAndOppdrag(
         }
 
         transaction {
-            DaoPendingUtbetaling(hashKey, key).insertIdempotent()
+            DaoPendingUtbetaling(hashKey, key, action = value.action).insertIdempotent()
             val lockedOppdrag = DaoOppdrag.findWithLock(hashKey)
             val alreadySent = lockedOppdrag != null && lockedOppdrag.sent && meta.headers["resend"] != "true"
             if (!alreadySent && lockedOppdrag != null && pendingIsReady(hashKey, lockedOppdrag.uids)) {
@@ -450,7 +449,10 @@ private fun statusReply(o: Oppdrag): StatusReply {
 /**
  * Write-side completeness barrier:
  * For each new aggregate published to helved.saker.v1 we look up pending oppdrag rows for the same sakId
- * and mark saker_ack=true on rows whose stored uids are all present in the current aggregate.
+ * and mark saker_ack=true once the current aggregate reflects every uid on that oppdrag row correctly.
+ * "Correctly" depends on the action each uid represents:
+ *   - CREATE/UPDATE/FAKE_DELETE add a uid to the sak -> uid must be PRESENT in the new aggregate
+ *   - DELETE (opphør) removes a uid from the sak     -> uid must be ABSENT from the new aggregate
  * This signals that the oppdrag's view of the sak matches utsjekk's view, and lets the kvittering
  * barrier (T7) emit status=OK without racing the saker aggregate.
  */
@@ -469,9 +471,16 @@ private fun markSakerAck(sakKey: SakKey, uids: Set<UtbetalingId>, jdbcCtx: Corou
             val rawFagsystem = Fagsystem.fromFagområde(pending.oppdrag.oppdrag110.kodeFagomraade.trimEnd())
             val fagsystem = if (rawFagsystem.isTilleggsstønader()) Fagsystem.TILLEGGSSTØNADER else rawFagsystem
             if (fagsystem != sakKey.fagsystem) return@forEach
-            if (newUidStrings.isNotEmpty() && !newUidStrings.containsAll(pending.uids)) return@forEach
 
             val hashKey = DaoOppdrag.hash(pending.oppdrag)
+            val received = transaction { DaoPendingUtbetaling.findAll(hashKey) }.filter { it.mottatt }
+            if (received.map { it.uid }.toSet() != pending.uids.toSet()) return@forEach
+
+            val allReady = received.all { row ->
+                if (row.action == Action.DELETE) row.uid !in newUidStrings else row.uid in newUidStrings
+            }
+            if (!allReady) return@forEach
+
             transaction {
                 DaoOppdrag.findWithLock(hashKey)?.updateSakerAck()
             }
