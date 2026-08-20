@@ -7,6 +7,7 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import libs.auth.Jwt
@@ -74,8 +75,10 @@ fun app(
     )
 
     val worker = SimuleringWorker(channel, service, dryrunProducers)
-    thread(isDaemon = true, name = "simulering-worker") {
-        runBlocking(Dispatchers.IO) { worker.run() }
+    thread(isDaemon = true, name = "simulering-workers") {
+        runBlocking(Dispatchers.IO) {
+            repeat(4) { launch { worker.run() } }
+        }
     }
 
     // Auth setup

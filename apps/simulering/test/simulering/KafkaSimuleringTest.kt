@@ -201,6 +201,94 @@ class KafkaSimuleringTest {
         assertTrue(channel.tryReceive().isFailure, "Entry older than 2min should be evicted")
     }
 
+    @Test
+    fun `worker continues after fagsystem parsing failure`() {
+        val channel = Channel<Pair<String, SimulerBeregningRequest>>(Channel.UNLIMITED)
+        val producers = freshProducers()
+        val worker = SimuleringWorker(channel, service, producers)
+
+        TestRuntime.soapRespondWith(jaxbResponse())
+        channel.trySend("bad-key" to simulering(fagområde = "UGYLDIG"))
+        channel.trySend("good-key" to simulering(fagområde = "AAP"))
+
+        runWorkerUntilProduced(worker, channel, producers)
+
+        val history = producers[Fagsystem.AAP]!!.history()
+        assertEquals(1, history.size)
+        assertEquals("good-key", history.first().first)
+    }
+
+    @Test
+    fun `worker continues after producer send failure`() {
+        val channel = Channel<Pair<String, SimulerBeregningRequest>>(Channel.UNLIMITED)
+        val producers = freshProducers()
+        // No producer for DAGPENGER — producerFor will throw
+        val incompleteProducers = producers.filterKeys { it != Fagsystem.DAGPENGER }
+        val worker = SimuleringWorker(channel, service, incompleteProducers)
+
+        TestRuntime.soapRespondWith(jaxbResponse())
+        channel.trySend("dp-key" to simulering(fagområde = "DP"))
+        channel.trySend("aap-key" to simulering(fagområde = "AAP"))
+
+        runWorkerUntilProduced(worker, channel, incompleteProducers)
+
+        val history = incompleteProducers[Fagsystem.AAP]!!.history()
+        assertEquals(1, history.size)
+        assertEquals("aap-key", history.first().first)
+    }
+
+    @Test
+    fun `full dryrun round-trip via kafka topology`() {
+        val channel = Channel<Pair<String, SimulerBeregningRequest>>(Channel.UNLIMITED)
+
+        libs.kafka.Names.clear()
+        val kafka = StreamsMock()
+        kafka.connect(
+            topology = libs.kafka.topology {
+                simuleringer(channel)
+            },
+            config = kafka.config.copy(additionalProperties = java.util.Properties().apply {
+                put(org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG,
+                    org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers::class.java)
+            }),
+            registry = SimpleMeterRegistry(),
+        )
+
+        // 1. Produce SimulerBeregningRequest to simuleringer topic
+        val inputTopic = kafka.testInputTopic(Topics.simuleringer)
+        inputTopic.produce("round-trip-key") { simulering(fagområde = "AAP") }
+
+        // 2. Advance wall clock so scheduler fires (interval=5s)
+        kafka.advanceWallClockTime(6.seconds)
+
+        // 3. Verify channel received the entry
+        val received = channel.tryReceive()
+        assertTrue(received.isSuccess, "Scheduler should have sent entry to channel")
+        assertEquals("round-trip-key", received.getOrThrow().first)
+
+        // 4. Run worker with the received entry — produces to dryrun topic
+        val producers = freshProducers()
+        val worker = SimuleringWorker(channel, service, producers)
+        TestRuntime.soapRespondWith(jaxbResponse())
+        channel.trySend(received.getOrThrow())
+
+        runWorkerUntilProduced(worker, channel, producers)
+
+        val workerHistory = producers[Fagsystem.AAP]!!.history()
+        assertEquals(1, workerHistory.size)
+        val (key, result) = workerHistory.first()
+        assertEquals("round-trip-key", key)
+
+        // 5. Feed worker output into dryrun GlobalKTable topic
+        val dryrunInput = kafka.testInputTopic(Topics.dryrunAap)
+        dryrunInput.produce(key) { result }
+
+        // 6. Verify store returns the result
+        val store = kafka.getStore<String, Simulering>(Stores.dryrunAap)
+        val stored = store.getOrNull("round-trip-key")
+        assertEquals(result, stored)
+    }
+
     private fun runWorkerUntilProduced(
         worker: SimuleringWorker,
         channel: Channel<Pair<String, SimulerBeregningRequest>>,

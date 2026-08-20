@@ -7,7 +7,6 @@ import libs.utils.secureLog
 import models.Fagsystem
 import models.Info
 import models.Simulering
-import models.notImplemented
 import models.v2
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
@@ -19,16 +18,21 @@ class SimuleringWorker(
 ) {
     suspend fun run() {
         for ((key, request) in channel) {
-            val fagsystem = Fagsystem.from(request.request.oppdrag.kodeFagomraade.trimEnd())
-            val simulering = try {
-                val response = service.simulerJaxb(request)
-                mapSuccess(response, fagsystem)
+            try {
+                val fagsystem = Fagsystem.from(request.request.oppdrag.kodeFagomraade.trimEnd())
+                val simulering = try {
+                    val response = service.simulerJaxb(request)
+                    mapSuccess(response, fagsystem)
+                } catch (e: Exception) {
+                    appLog.error("Simulering feilet for fagsystem=$fagsystem")
+                    secureLog.error("Simulering feilet for key=$key fagsystem=$fagsystem", e)
+                    mapError(e, fagsystem)
+                }
+                producerFor(fagsystem).send(key, simulering)
             } catch (e: Exception) {
-                appLog.error("Simulering feilet for fagsystem=$fagsystem")
-                secureLog.error("Simulering feilet for key=$key fagsystem=$fagsystem", e)
-                mapError(e, fagsystem)
+                appLog.error("Feil i simulering-worker")
+                secureLog.error("Feil i simulering-worker for key=$key", e)
             }
-            producerFor(fagsystem).send(key, simulering)
         }
     }
 
