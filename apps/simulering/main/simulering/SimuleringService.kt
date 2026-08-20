@@ -152,6 +152,7 @@ private fun resolveBehandlingFault(fault: Fault): Nothing {
             contains("Referert vedtak/linje ikke funnet") -> notFound("Endret utbetalingsperiode refererer ikke til en eksisterende utbetalingsperiode")
             contains("Navn på person ikke funnet i PDL") -> notFound("Navn på person ikke funnet i PDL")
             contains("Personen finnes ikke i PDL") -> notFound("Personen finnes ikke i PDL")
+            contains("DELYTELSE-ID finnes i oppdragsbasen fra før") -> conflict("Utbetaling med DeltytelsesId finnes fra før")
             else -> soapError(fault)
         }
     }

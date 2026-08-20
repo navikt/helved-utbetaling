@@ -1,7 +1,34 @@
 package peisschtappern
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import libs.kotlinx.KotlinxJson
+import models.Utbetaling
+
+object PendingMismatchService {
+    suspend fun detectMismatches(fom: Long, tom: Long): List<PendingMismatch> {
+        val entries = Daos.messages(listOf(Channel.Utbetalinger), fom, tom)
+            .mapNotNull { dao -> decode<Utbetaling>(dao.value)?.let { dao to it } }
+        val uids = entries.map { it.second.uid.toString() }.distinct()
+        val pendingByUid = if (uids.isEmpty()) emptyMap() else
+            Daos.findPendingByUids(uids, tom)
+                .mapNotNull { dao -> decode<Utbetaling>(dao.value)?.let { dao to it } }
+                .groupBy { it.second.uid }
+
+        return entries.mapNotNull { (dao, utbetaling) ->
+            val latestPrecedingPending = pendingByUid[utbetaling.uid]
+                ?.lastOrNull { it.first.system_time_ms < dao.system_time_ms }
+
+            latestPrecedingPending
+                ?.takeIf { utbetaling.perioder != it.second.perioder || utbetaling.lastPeriodeId != it.second.lastPeriodeId }
+                ?.let { PendingMismatch(utbetaling.uid.toString(), dao.sakId, dao.fagsystem) }
+        }
+    }
+
+    private inline fun <reified T> decode(value: String?): T? {
+        if (value.isNullOrBlank()) return null
+        return runCatching { KotlinxJson.decodeFromString<T>(value) }.getOrNull()
+    }
+}
 
 @Serializable
 data class PendingMismatch(
@@ -9,69 +36,3 @@ data class PendingMismatch(
     val sakId: String?,
     val fagsystem: String?,
 )
-
-private data class Periode(
-    val fom: String,
-    val tom: String,
-    val beløp: Long,
-)
-
-private data class UtbetalingEntry(
-    val dao: Daos,
-    val uid: String,
-    val perioder: List<Periode>,
-    val lastPeriodeId: String?,
-)
-
-private fun parsePeriode(json: JsonObject): Periode? {
-    val fom = json.textOrNull("fom") ?: return null
-    val tom = json.textOrNull("tom") ?: return null
-    val beløp = json.longOrNull("beløp") ?: return null
-    return Periode(fom, tom, beløp)
-}
-
-private fun parseEntry(dao: Daos): UtbetalingEntry? {
-    val value = dao.value?.takeIf { it.isNotBlank() } ?: return null
-    return try {
-        val json = Json.parseToJsonElement(value).jsonObject
-        val uid = json.textOrNull("uid") ?: return null
-        val perioder = (json["perioder"] as? JsonArray)
-            ?.mapNotNull { parsePeriode(it.jsonObject) }
-            ?.sortedWith(compareBy({ it.fom }, { it.tom }, { it.beløp }))
-            ?: emptyList()
-        val lastPeriodeId = json.textOrNull("lastPeriodeId")
-        UtbetalingEntry(dao, uid, perioder, lastPeriodeId)
-    } catch (_: Exception) {
-        null
-    }
-}
-
-fun detectMismatches(utbetalinger: List<Daos>, pendingUtbetalinger: List<Daos>): List<PendingMismatch> {
-    val entries = utbetalinger.mapNotNull(::parseEntry)
-    val pendingByUid = pendingUtbetalinger.mapNotNull(::parseEntry).groupBy { it.uid }
-
-    return entries.mapNotNull { utbetaling ->
-        val latestPrecedingPending = pendingByUid[utbetaling.uid]
-            ?.filter { it.dao.system_time_ms < utbetaling.dao.system_time_ms }
-            ?.maxByOrNull { it.dao.system_time_ms }
-
-        latestPrecedingPending
-            ?.takeIf { utbetaling.perioder != it.perioder || utbetaling.lastPeriodeId != it.lastPeriodeId }
-            ?.let { PendingMismatch(utbetaling.uid, utbetaling.dao.sakId, utbetaling.dao.fagsystem) }
-    }
-}
-
-private fun JsonObject.textOrNull(field: String): String? =
-    get(field)?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotEmpty() }
-
-private fun JsonObject.longOrNull(field: String): Long? =
-    get(field)?.jsonPrimitive?.longOrNull
-
-internal fun parseUid(value: String?): String? {
-    if (value.isNullOrBlank()) return null
-    return try {
-        Json.parseToJsonElement(value).jsonObject.textOrNull("uid")
-    } catch (_: Exception) {
-        null
-    }
-}

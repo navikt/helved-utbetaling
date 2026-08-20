@@ -8,7 +8,7 @@ application {
 }
 
 val ktorVersion = "3.5.1"
-val libVersion = "3.1.250"
+val libVersion = "3.1.252"
 
 dependencies {
     implementation(project(":libs:auth"))
@@ -23,6 +23,7 @@ dependencies {
     implementation("org.apache.kafka:kafka-clients:4.3.0")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-xml:${ktorVersion}")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")

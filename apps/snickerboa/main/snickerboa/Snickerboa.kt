@@ -1,24 +1,12 @@
 package snickerboa
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationStopping
-import io.ktor.server.application.install
-import io.ktor.server.engine.EngineConnectorBuilder
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.metrics.micrometer.MicrometerMetrics
-import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.BadRequestException
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.plugins.statuspages.StatusPages
-import io.ktor.server.response.respond
-import io.ktor.server.routing.routing
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -28,6 +16,20 @@ import libs.kafka.Streams
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.ApiError
+import org.http4k.core.Filter
+import org.http4k.core.HttpHandler
+import org.http4k.core.Response
+import org.http4k.core.Status
+import org.http4k.core.then
+import org.http4k.core.with
+import org.http4k.filter.MicrometerMetrics
+import org.http4k.filter.ServerFilters
+import org.http4k.lens.LensFailure
+import org.http4k.routing.routes
+import org.http4k.server.ServerConfig
+import org.http4k.server.SunHttpLoom
+import org.http4k.server.asServer
+import java.time.Duration
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
@@ -35,52 +37,32 @@ fun main() {
         secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(
-        factory = Netty,
-        configure = {
-            shutdownGracePeriod = 5000L
-            shutdownTimeout = 50_000L
-            connectors.add(EngineConnectorBuilder().apply {
-                port = 8080
-            })
-        },
-        module = Application::snickerboa,
-    ).start(wait = true)
+    val config = Config()
+    val app = snickerboa(config)
+    val server = app.handler.asServer(SunHttpLoom(8080, ServerConfig.StopMode.Graceful(Duration.ofSeconds(50)))).start()
+
+    Runtime.getRuntime().addShutdownHook(Thread {
+        app.close()
+        server.stop()
+    })
+
+    server.block()
 }
 
-fun Application.snickerboa(
+class Snickerboa(
+    val handler: HttpHandler,
+    private val closeables: List<AutoCloseable>,
+) : AutoCloseable {
+    override fun close() = closeables.forEach { it.close() }
+}
+
+fun snickerboa(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    factory: KafkaFactory = object : KafkaFactory {}
-) {
+    factory: KafkaFactory = object : KafkaFactory {},
+): Snickerboa {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-    install(MicrometerMetrics) {
-        registry = prometheus
-        meterBinders += LogbackMetrics()
-    }
-
-    install(ContentNegotiation) {
-        json(libs.kotlinx.KotlinxJson)
-    }
-
-    install(StatusPages) {
-        exception<Throwable> { call, cause ->
-            when (cause) {
-                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
-                is BadRequestException -> {
-                    val msg = "Påkrevd felt mangler eller er null: ${cause.message}"
-                    appLog.warn(msg, cause)
-                    call.respond(HttpStatusCode.BadRequest, msg)
-                }
-
-                else -> {
-                    val msg = "Uhåndtert feil: ${cause.message}"
-                    appLog.warn(msg, cause)
-                    call.respond(HttpStatusCode.InternalServerError, msg)
-                }
-            }
-        }
-    }
+    LogbackMetrics().bindTo(prometheus)
 
     val producers = UtbetalingProducers.create(factory, config.kafka)
     val correlator = RequestReplyCorrelator(producers)
@@ -91,25 +73,51 @@ fun Application.snickerboa(
     val dryrunTsConsumer = factory.createConsumer(config.kafka, Topics.dryrunTs)
     val dryrunTpConsumer = factory.createConsumer(config.kafka, Topics.dryrunTp)
 
-    val statusJob = launch { statusConsumer(correlator, statusKafkaConsumer) }
-    val aapJob = launch { dryrunConsumer(correlator, dryrunAapConsumer) }
-    val dpJob = launch { dryrunConsumer(correlator, dryrunDpConsumer) }
-    val tsJob = launch { dryrunConsumer(correlator, dryrunTsConsumer) }
-    val tpJob = launch { dryrunConsumer(correlator, dryrunTpConsumer) }
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    val statusJob = scope.launch { statusConsumer(correlator, statusKafkaConsumer) }
+    val aapJob = scope.launch { dryrunConsumer(correlator, dryrunAapConsumer) }
+    val dpJob = scope.launch { dryrunConsumer(correlator, dryrunDpConsumer) }
+    val tsJob = scope.launch { dryrunConsumer(correlator, dryrunTsConsumer) }
+    val tpJob = scope.launch { dryrunConsumer(correlator, dryrunTpConsumer) }
 
-    routing {
-        probes(prometheus)
-        api(correlator)
-    }
+    val handler = errorFilter
+        .then(ServerFilters.MicrometerMetrics.RequestTimer(prometheus))
+        .then(ServerFilters.MicrometerMetrics.RequestCounter(prometheus))
+        .then(routes(
+            probes(prometheus),
+            snickerboaRoutes(correlator),
+        ))
 
-    monitor.subscribe(ApplicationStopping) {
-        producers.close()
-        statusJob.cancelJob()
-        aapJob.cancelJob()
-        dpJob.cancelJob()
-        tsJob.cancelJob()
-        tpJob.cancelJob()
-        kafka.close()
+    val closeables = listOf(
+        AutoCloseable { producers.close() },
+        AutoCloseable { statusJob.cancelJob() },
+        AutoCloseable { aapJob.cancelJob() },
+        AutoCloseable { dpJob.cancelJob() },
+        AutoCloseable { tsJob.cancelJob() },
+        AutoCloseable { tpJob.cancelJob() },
+        AutoCloseable { kafka.close() },
+    )
+
+    return Snickerboa(handler, closeables)
+}
+
+private val apiErrorLens = KotlinxJson.autoBody<ApiError>().toLens()
+
+private val errorFilter = Filter { next ->
+    { request ->
+        try {
+            next(request)
+        } catch (e: ApiError) {
+            Response(Status(e.statusCode, "")).with(apiErrorLens of e)
+        } catch (e: LensFailure) {
+            val msg = "Påkrevd felt mangler eller er null: ${e.message}"
+            appLog.warn(msg, e)
+            Response(Status.BAD_REQUEST).body(msg)
+        } catch (e: Throwable) {
+            val msg = "Uhåndtert feil: ${e.message}"
+            appLog.warn(msg, e)
+            Response(Status.INTERNAL_SERVER_ERROR).body(msg)
+        }
     }
 }
 
@@ -119,4 +127,3 @@ fun Job.cancelJob() {
         this@cancelJob.cancelAndJoin()
     }
 }
-

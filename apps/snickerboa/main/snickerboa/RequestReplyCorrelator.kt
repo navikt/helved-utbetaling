@@ -1,6 +1,6 @@
 package snickerboa
 
-import io.ktor.http.HttpStatusCode
+import org.http4k.core.Status
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CompletableDeferred
@@ -15,9 +15,9 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 sealed interface UtbetalingResponse {
-    val statusCode: HttpStatusCode
-    data class Status(override val statusCode: HttpStatusCode, val body: StatusReply) : UtbetalingResponse
-    data class Simulering(override val statusCode: HttpStatusCode, val body: models.Simulering) : UtbetalingResponse
+    val statusCode: Status
+    data class StatusResult(override val statusCode: Status, val body: StatusReply) : UtbetalingResponse
+    data class Simulering(override val statusCode: Status, val body: models.Simulering) : UtbetalingResponse
 }
 
 class RequestReplyCorrelator(
@@ -54,11 +54,11 @@ class RequestReplyCorrelator(
         }
 
         val statusCode = when (reply.status) {
-            models.Status.OK, models.Status.MOTTATT, models.Status.HOS_OPPDRAG -> HttpStatusCode.OK
-            models.Status.FEILET -> HttpStatusCode.fromValue(reply.error?.statusCode ?: 500)
+            models.Status.OK, models.Status.MOTTATT, models.Status.HOS_OPPDRAG -> Status.OK
+            models.Status.FEILET -> Status(reply.error?.statusCode ?: 500, "")
         }
 
-        return UtbetalingResponse.Status(statusCode, reply)
+        return UtbetalingResponse.StatusResult(statusCode, reply)
     }
 
     // TODO: Skal vi lese simulerings topicet direkte?
@@ -71,7 +71,7 @@ class RequestReplyCorrelator(
         try {
             produce(txId)
             val simulering = withTimeout(timeout) { deferred.await() }
-            return UtbetalingResponse.Simulering(HttpStatusCode.OK, simulering)
+            return UtbetalingResponse.Simulering(Status.OK, simulering)
         } catch (_: TimeoutCancellationException) {
             throw ApiError(408, "Fikk ingen respons på simulering innen ${timeout.inWholeSeconds} sekunder", DocumentedErrors.BASE)
         } finally {

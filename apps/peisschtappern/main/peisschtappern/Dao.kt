@@ -133,6 +133,166 @@ data class Daos(
             }.singleOrNull()
         }
 
+        suspend fun findOppdragWithMissingStatus(
+            fom: Long? = null,
+            tom: Long? = null,
+            nowMs: Long = System.currentTimeMillis(),
+            thresholdMs: Long = 60 * 60 * 1000 // 1 time
+        ): List<OppdragUtenKvittering> {
+            val sql = """
+                SELECT
+                    o.record_key, 
+                    o.system_time_ms,
+                    o.trace_id,
+                    o.sak_id,
+                    o.fagsystem
+                FROM oppdrag o
+                WHERE (? IS NULL OR o.system_time_ms > ?)
+                  AND (? IS NULL OR o.system_time_ms < ?)
+                  AND o.system_time_ms <= ? - ?
+                  
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM status s
+                      WHERE s.record_key = o.record_key
+                  )
+                  AND (
+                      o.trace_id IS NULL
+                      OR NOT EXISTS (
+                          SELECT 1
+                          FROM status s
+                          WHERE s.trace_id = o.trace_id
+                      )
+                  )
+                ORDER BY o.system_time_ms;
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                var i = 1
+                stmt.setObject(i++, fom, Types.BIGINT)
+                stmt.setObject(i++, fom, Types.BIGINT)
+                stmt.setObject(i++, tom, Types.BIGINT)
+                stmt.setObject(i++, tom, Types.BIGINT)
+                stmt.setLong(i++, nowMs)
+                stmt.setLong(i, thresholdMs)
+
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().use { rs ->
+                    rs.map {
+                        OppdragUtenKvittering(
+                            key = it.getString("record_key"),
+                            trace_id = it.getString("trace_id"),
+                            fagsystem = it.getString("fagsystem"),
+                            sakId = it.getString("sak_id"),
+                            system_time_ms = it.getLong("system_time_ms"),
+                        )
+                    }
+                }
+            }
+        }
+
+        suspend fun antallFeilet(fom: Long, tom: Long): Int {
+            val sql = """
+                SELECT count(*)
+                FROM status
+                WHERE status = 'FEILET'
+                    AND system_time_ms > ?
+                    AND system_time_ms < ?
+                    AND record_value NOT LIKE '%simulering stengt%'
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setLong(1, fom)
+                stmt.setLong(2, tom)
+
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().use { rs ->
+                    check(rs.next()) { "Forventet resultat fra count(*)" }
+                    rs.getInt(1)
+                }
+            }
+        }
+
+        suspend fun findStatuses(status: String, fom: Long, tom: Long): List<Daos> {
+            val sql = """
+                SELECT
+                    version,
+                    topic_name,
+                    record_key,
+                    record_value,
+                    record_partition,
+                    record_offset,
+                    timestamp_ms,
+                    stream_time_ms,
+                    system_time_ms,
+                    trace_id,
+                    commit,
+                    sak_id,
+                    fagsystem,
+                    status,
+                    headers
+                FROM status
+                WHERE status = ?
+                    AND system_time_ms > ?
+                    AND system_time_ms < ?
+                ORDER BY system_time_ms
+            """.trimIndent()
+
+            return query(sql) { stmt ->
+                stmt.setString(1, status)
+                stmt.setLong(2, fom)
+                stmt.setLong(3, tom)
+            }
+        }
+
+        suspend fun messages(channels: List<Channel>, fom: Long? = null, tom: Long? = null, status: String? = null): List<Daos> {
+            val sql = """
+                WITH unified AS (${
+                channels.joinToString(" UNION ALL ") { channel ->
+                    """
+                    SELECT 
+                        version,
+                        topic_name, 
+                        record_key, 
+                        record_value,
+                        record_partition,
+                        record_offset,
+                        timestamp_ms,
+                        stream_time_ms,
+                        system_time_ms,
+                        trace_id,
+                        commit,
+                        sak_id,
+                        fagsystem,
+                        status,
+                        headers
+                    FROM ${channel.table.name}
+                    """.trimIndent()
+                    }
+                })
+                SELECT * FROM unified
+                WHERE (? IS NULL OR system_time_ms > ?)
+                    AND (? IS NULL OR system_time_ms < ?)
+                    AND (? IS NULL OR status = ?)
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                var i = 0
+                stmt.setObject(++i, fom, Types.BIGINT)
+                stmt.setObject(++i, fom, Types.BIGINT)
+                stmt.setObject(++i, tom, Types.BIGINT)
+                stmt.setObject(++i, tom, Types.BIGINT)
+                stmt.setObject(++i, status, Types.VARCHAR)
+                stmt.setObject(++i, status, Types.VARCHAR)
+
+                daoLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeQuery().use { it.map(::from) }
+            }
+        }
+
         suspend fun pagedMessages(
             channels: List<Channel>,
             page: Int,
@@ -340,26 +500,18 @@ data class Daos(
             }
         }
 
-        suspend fun findRecentUtbetalinger(since: Long): List<Daos> {
-            val sql = """
-                SELECT * FROM utbetalinger
-                WHERE system_time_ms > ?
-            """.trimIndent()
-
-            return query(sql) { stmt ->
-                stmt.setLong(1, since)
-            }
-        }
-
-        suspend fun findPendingByUids(uids: List<String>): List<Daos> {
+        suspend fun findPendingByUids(uids: List<String>, tom: Long): List<Daos> {
             val sql = """
                 SELECT * FROM pending_utbetalinger
                 WHERE try_jsonb_get_text(record_value, 'uid') = ANY(?)
+                    AND system_time_ms < ?
+                ORDER BY try_jsonb_get_text(record_value, 'uid'), system_time_ms
             """.trimIndent()
 
             return query(sql) { stmt ->
                 val array = stmt.connection.createArrayOf("text", uids.toTypedArray())
                 stmt.setArray(1, array)
+                stmt.setLong(2, tom)
             }
         }
 

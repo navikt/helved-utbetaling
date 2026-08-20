@@ -11,11 +11,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7.0.0
-      - uses: actions/setup-java@v5.2.0
+      - uses: actions/setup-java@v5.7.0
         with:
           java-version: 25
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@v6.2.0
         with:
           dependency-graph: generate-and-submit
 

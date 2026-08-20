@@ -54,8 +54,8 @@ private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<v1
 
     return perioderByYearMonth.values.map { perioder ->
         v1.Periode(
-            fom = perioder.map { LocalDate.parse(it.periodeFom) }.min(),
-            tom = perioder.map { LocalDate.parse(it.periodeTom) }.min(),
+            fom = perioder.minOf { LocalDate.parse(it.periodeFom) },
+            tom = perioder.maxOf { LocalDate.parse(it.periodeTom) },
             posteringer = perioder.flatMap { periode ->
                 periode.beregningStoppnivaas.flatMap { sn ->
                     val fagområde = v1.Fagområde.valueOf(sn.kodeFagomraade.trimEnd())

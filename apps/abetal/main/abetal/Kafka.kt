@@ -19,6 +19,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 const val FS_KEY = "fagsystem"
+const val ORIGINAL_KEY = "original-key"
 
 object Topics {
     val dp = Topic("teamdagpenger.utbetaling.v1", bytes())
@@ -107,6 +108,7 @@ fun Topology.dpStream(
         .repartition(Topics.dp, 3, "from-${Topics.dp.name}")
         .merge(consume(Topics.dpIntern))
         .map { key, payload -> DpTuple(key, deserialize<DpUtbetaling>(Topics.dp.name, payload)) }
+        .includeHeader(ORIGINAL_KEY) { it.key }
         .rekey { (_, dp) -> SakKey(SakId(dp.sakId), Fagsystem.DAGPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "dptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -154,6 +156,7 @@ fun Topology.aapStream(
         .repartition(Topics.aap, 3, "from-${Topics.aap.name}")
         .merge(consume(Topics.aapIntern))
         .map { key, payload -> AapTuple(key, deserialize<AapUtbetaling>(Topics.aap.name, payload)) }
+        .includeHeader(ORIGINAL_KEY) { it.key }
         .rekey { (_, aap) -> SakKey(SakId(aap.sakId), Fagsystem.AAP) }
         .leftJoin(Serde.json(), Serde.json(), saker, "aaptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -192,6 +195,7 @@ fun Topology.tsStream(
         .repartition(Topics.ts, 3, "from-${Topics.ts.name}")
         .merge(consume(Topics.tsIntern))
         .map { key, payload -> TsTuple(null, null, key, deserialize<TsDto>(Topics.ts.name, payload)) }
+        .includeHeader(ORIGINAL_KEY) { it.key ?: it.transactionId!! }
         .rekey { (_, dto, _, value) ->
             val ts = dto ?: value!!
             SakKey(SakId(ts.sakId), Fagsystem.TILLEGGSSTØNADER)
@@ -236,6 +240,7 @@ fun Topology.tpStream(
         // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
         // .merge(consume(Topics.tpUtbetalinger))
         .map { key, tp -> TpTuple(key, tp) }
+        .includeHeader(ORIGINAL_KEY) { it.key }
         .rekey { (_, tp) -> SakKey(SakId(tp.sakId), Fagsystem.TILTAKSPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -271,6 +276,7 @@ fun Topology.historiskStream(
         .repartition(Topics.historisk, 3, "from-${Topics.historisk.name}")
         .merge(consume(Topics.historiskIntern))
         .map { key, payload -> HistoriskTuple(key, deserialize<HistoriskUtbetaling>(Topics.historisk.name, payload)) }
+        .includeHeader(ORIGINAL_KEY) { it.key }
         .rekey { (_, historisk) -> SakKey(SakId(historisk.sakId), Fagsystem.HISTORISK) }
         .leftJoin(Serde.json(), Serde.json(), saker, "historisktuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -305,6 +311,7 @@ fun Topology.valpStream(
         .repartition(Topics.valp, 3, "from-${Topics.valp.name}")
         .merge(consume(Topics.valpIntern))
         .map { key, payload -> ValpTuple(key, deserialize<ValpUtbetaling>(Topics.valp.name, payload)) }
+        .includeHeader(ORIGINAL_KEY) { it.key }
         .rekey { (_, valp) -> SakKey(SakId(valp.sakId), Fagsystem.VALP) }
         .leftJoin(Serde.json(), Serde.json(), saker, "valptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
@@ -339,7 +346,8 @@ private object Guard {
     // Dagpenger
     fun ifNoMeldeperiode(pair: StreamsPair<DpTuple, Set<UtbetalingId>?>): Boolean {
         val (utbetalinger, saker) = pair.left.value.utbetalinger to pair.right
-        return (utbetalinger.isEmpty() || utbetalinger.all { it.sats == 0u && it.utbetaltBeløp == 0u }) && saker.isNullOrEmpty()
+        val harIngenUtbetaling = utbetalinger.none { it.utbetaltBeløp > 0u }
+        return harIngenUtbetaling && saker.isNullOrEmpty()
     }
 
     fun replyOk(branch: MappedStream<SakKey, StreamsPair<DpTuple, Set<UtbetalingId>?>>) {

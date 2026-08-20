@@ -8,7 +8,7 @@ import libs.jdbc.concurrency.transaction
 import libs.jdbc.truncate
 import libs.kafka.*
 import libs.xml.XMLMapper
-import models.Utbetaling
+import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Disabled
@@ -171,6 +171,25 @@ class ApiTest {
 
         assertEquals(1, result.total)
         assertEquals(Topics.utbetalinger.name, result.items.first().topic_name)
+    }
+    @Test
+    fun `can query messages for fom-tom`() = runTest(TestRuntime.context) {
+        save(Channel.Aap, offset = offset)
+        save(Channel.Aap, offset = offset)
+        save(Channel.Aap, offset = offset)
+        save(Channel.Aap, offset = offset)
+        save(Channel.Aap, offset = offset)
+
+        val now = Instant.now()
+        val fom = now.minusSeconds(5L).toString()
+        val tom = now.plusSeconds(5L).toString()
+
+        val result = TestRuntime.ktor.httpClient.get("/api/messages/aap.utbetaling.v1?fom=$fom&tom=$tom") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<Daos>>()
+
+        assertEquals(5, result.size)
     }
 
     @Test
@@ -532,44 +551,6 @@ class ApiTest {
         val (recordKey, _, headers) = history.last()
         assertEquals(key, recordKey)
         assertEquals("TILLEGGSSTØNADER", headers["fagsystem"])
-    }
-
-    @Test
-    fun `pending-mismatch returns mismatch`() = runTest(TestRuntime.context) {
-        val now = Instant.now().toEpochMilli()
-        val uid = "mismatch-test-uid"
-        val pendingValue = """{"uid":"$uid","sakId":"sak-1","fagsystem":"AAP","perioder":[{"fom":"2025-01-01","tom":"2025-01-31","beløp":2000,"vedtakssats":null,"betalendeEnhet":null}]}"""
-        val utbetalingValue = """{"uid":"$uid","sakId":"sak-1","fagsystem":"AAP","perioder":[{"fom":"2025-01-01","tom":"2025-01-31","beløp":1000,"vedtakssats":null,"betalendeEnhet":null}]}"""
-
-        save(Channel.PendingUtbetalinger, key = uid, value = pendingValue, timestamp = now, offset = offset)
-        save(Channel.Utbetalinger, key = uid, value = utbetalingValue, timestamp = now + 1000, offset = offset)
-
-        val since = now - 5000
-        val result = TestRuntime.ktor.httpClient.get("/api/brann/pending-mismatch?since=$since") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<PendingMismatch>>()
-
-        assertEquals(1, result.size)
-        assertEquals(uid, result.first().uid)
-    }
-
-    @Test
-    fun `pending-mismatch returns empty when perioder match`() = runTest(TestRuntime.context) {
-        val now = Instant.now().toEpochMilli()
-        val uid = "no-mismatch-uid"
-        val value = """{"uid":"$uid","sakId":"sak-1","fagsystem":"AAP","perioder":[{"fom":"2025-01-01","tom":"2025-01-31","beløp":1000,"vedtakssats":null,"betalendeEnhet":null}]}"""
-
-        save(Channel.PendingUtbetalinger, key = uid, value = value, timestamp = now, offset = offset)
-        save(Channel.Utbetalinger, key = uid, value = value, timestamp = now + 1000, offset = offset)
-
-        val since = now - 5000
-        val result = TestRuntime.ktor.httpClient.get("/api/brann/pending-mismatch?since=$since") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<PendingMismatch>>()
-
-        assertEquals(0, result.size)
     }
 
     private suspend fun save(

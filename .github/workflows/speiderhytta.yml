@@ -27,11 +27,11 @@ jobs:
       checks: write
     steps:
       - uses: actions/checkout@v7.0.0
-      - uses: actions/setup-java@v5.2.0
+      - uses: actions/setup-java@v5.7.0
         with:
           java-version: 25
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@v6.2.0
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
@@ -54,11 +54,11 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@v7.0.0
-      - uses: actions/setup-java@v5.2.0
+      - uses: actions/setup-java@v5.7.0
         with:
           java-version: 25
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@v6.2.0
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
@@ -73,7 +73,7 @@ jobs:
         run: echo "sha=$(sha256sum apps/${{ github.workflow }}/build/split-jars/deps.jar | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - id: deps_cache
-        uses: actions/cache/restore@v5.0.5
+        uses: actions/cache/restore@v6.1.0
         with:
           path: .deps-attested-marker
           key: deps-attested-${{ github.workflow }}-${{ steps.deps_hash.outputs.sha }}
@@ -108,7 +108,7 @@ jobs:
         run: echo "${{ steps.deps_hash.outputs.sha }}" > .deps-attested-marker
 
       - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
-        uses: actions/cache/save@v5.0.5
+        uses: actions/cache/save@v6.1.0
         with:
           path: .deps-attested-marker
           key: deps-attested-${{ github.workflow }}-${{ steps.deps_hash.outputs.sha }}
@@ -163,5 +163,5 @@ jobs:
         env:
           PRINT_PAYLOAD: true
           CLUSTER: prod-gcp
-          RESOURCE: apps/${{ github.workflow }}/slo-configmap.yml,apps/${{ github.workflow }}/prod.yml,apps/${{ github.workflow }}/alert.yml,.nais/vulnerability-alertmanager.yml
+          RESOURCE: apps/${{ github.workflow }}/slo-configmap.yml,apps/${{ github.workflow }}/prod.yml,apps/${{ github.workflow }}/alert.yml
           VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
