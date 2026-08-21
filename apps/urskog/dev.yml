@@ -74,9 +74,8 @@ spec:
           - name: urskog
             envVarPrefix: DB
   envFrom:
-     # TODO: sjekk hva disse inneholder, er det samme eller noe ulikt?
-    - secret: utsjekk-oppdrag-simulering
-    - secret: utsjekk-oppdrag
+    - secret: utsjekk-oppdrag-simulering # servicebruker_passord for SOAP simulering mot OS
+    - secret: utsjekk-oppdrag # MQ_PASSWORD for MQ-oppdrag
   env:
     - name: PROXY_HOST
       value: https://helved-ws-proxy.dev-fss-pub.nais.io
