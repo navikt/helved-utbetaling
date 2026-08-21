@@ -31,9 +31,17 @@ class SimuleringFake : AutoCloseable {
         simuleringResponseCode = statusCode
     }
 
+    /** Set the response for dryrun/v3 proxy requests */
+    fun respondDryrunWith(body: String, statusCode: HttpStatusCode = HttpStatusCode.OK) {
+        dryrunResponseBody = body
+        dryrunResponseCode = statusCode
+    }
+
     fun reset() {
         simuleringResponse = TestData.dto.client.simuleringResponse()
         simuleringResponseCode = HttpStatusCode.OK
+        dryrunResponseBody = null
+        dryrunResponseCode = HttpStatusCode.OK
     }
 
     override fun close() = simulering.stop(0, 0)
@@ -41,6 +49,8 @@ class SimuleringFake : AutoCloseable {
 
 private var simuleringResponse: Any = TestData.dto.client.simuleringResponse()
 private var simuleringResponseCode: HttpStatusCode = HttpStatusCode.OK
+private var dryrunResponseBody: String? = null
+private var dryrunResponseCode: HttpStatusCode = HttpStatusCode.OK
 
 private fun Application.simulering() {
     install(ContentNegotiation) {
@@ -49,8 +59,15 @@ private fun Application.simulering() {
 
     routing {
         post("/simuler/legacy") {
-            // val req = call.receive<UtbetalingsoppdragDto>()
-            call.respond(simuleringResponseCode,simuleringResponse)
+            call.respond(simuleringResponseCode, simuleringResponse)
+        }
+        post("/api/simulering/v3") {
+            val body = dryrunResponseBody ?: """{"error":"no dryrun response configured"}"""
+            call.respondText(body, io.ktor.http.ContentType.Application.Json, dryrunResponseCode)
+        }
+        post("/api/dryrun/{path...}") {
+            val body = dryrunResponseBody ?: """{"error":"no dryrun response configured"}"""
+            call.respondText(body, io.ktor.http.ContentType.Application.Json, dryrunResponseCode)
         }
     }
 }

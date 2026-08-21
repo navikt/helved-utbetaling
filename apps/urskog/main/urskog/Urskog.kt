@@ -62,14 +62,12 @@ fun Application.urskog(
     }
 
     val oppdragProducer = OppdragMQProducer(config, mq, prometheus)
-    val simuleringService = SimuleringService(config)
     val avstemProducer = AvstemmingMQProducer(config, mq)
 
     kafka.connect(
         config = config.kafka,
         registry = prometheus,
         topology = topology {
-            simulering(simuleringService)
             oppdrag(oppdragProducer, prometheus, jdbcCtx)
             avstemming(avstemProducer)
             utbetalingToSak(jdbcCtx)

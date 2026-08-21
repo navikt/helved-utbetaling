@@ -39,6 +39,10 @@ class KStore<K : Any, V : Any>(
 class StateStore<K : Any, V>(private val internalStateStore: ReadOnlyKeyValueStore<K, V>) {
     fun getOrNull(key: K): V? = internalStateStore.get(key)
 
+    fun delete(key: K) {
+        (internalStateStore as KeyValueStore<K, V>).delete(key)
+    }
+
     fun iterator(): Iterator<KeyValue<K, V>> = internalStateStore.all().iterator()
     fun filter(limit: Int = 1000, filter: (KeyValue<K, V>) -> Boolean): List<Pair<K, V>> {
         val seq = sequence<Pair<K, V>> {

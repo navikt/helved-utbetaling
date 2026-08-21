@@ -1,59 +1,34 @@
 package utsjekk.routes
 
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.encodeToString
-import libs.kafka.Streams
+import libs.auth.AzureTokenProvider
+import libs.http.HttpClientFactory
 import libs.jdbc.concurrency.CoroutineDatasource
-import models.*
-import models.Simulering
+import models.unauthorized
 import utsjekk.*
 import utsjekk.iverksetting.IverksettingService
 import utsjekk.simulering.*
-import utsjekk.utbetaling.Utbetaling
-import utsjekk.utbetaling.UtbetalingApi
-import utsjekk.utbetaling.UtbetalingId
-import utsjekk.utbetaling.UtbetalingService
-import java.util.*
-import kotlin.time.Duration.Companion.seconds
-
-/** Bypass access for our test clients */
-private val TEST_CLIENTS = setOf("azure-token-generator", "snickerboa")
-
-/** OS/UR got 2 min timeout before rolling back a failed simulering */
-private val DRYRUN_TIMEOUT = 120.seconds
 
 class SimuleringRoutes(
-    config: Config,
-    kafka: Streams,
+    private val config: Config,
     iverksettingService: IverksettingService,
-    private val utbetalingService: UtbetalingService,
-    jdbcCtx: CoroutineDatasource,
-) : AutoCloseable {
+    private val jdbcCtx: CoroutineDatasource,
+    private val client: HttpClient = HttpClientFactory.new(
+        json = libs.kotlinx.KotlinxJson,
+        retries = 1,
+        requestTimeoutMs = 130_000, // slightly above simulering's 120s dryrun timeout
+        connectionTimeoutMs = 5000,
+    ),
+    private val azure: AzureTokenProvider = AzureTokenProvider(libs.kotlinx.KotlinxJson, config.azure),
+) {
     private val validatorV2: SimuleringService = SimuleringService(iverksettingService, jdbcCtx)
     private val simuleringClient = SimuleringClient(config, jdbcCtx)
-
-    private val dryrunAapStore = kafka.getStore(Stores.dryrunAap)
-    private val dryrunDpStore = kafka.getStore(Stores.dryrunDp)
-    private val dryrunTpStore = kafka.getStore(Stores.dryrunTp)
-    private val dryrunTsStore = kafka.getStore(Stores.dryrunTs)
-
-    private val aapProducer = kafka.createProducer(config.kafka, Topics.utbetalingAap)
-    private val dpProducer = kafka.createProducer(config.kafka, Topics.utbetalingDp)
-    private val tpProducer = kafka.createProducer(config.kafka, Topics.utbetalingTp)
-    private val tsProducer = kafka.createProducer(config.kafka, Topics.utbetalingTs)
-
-    override fun close() {
-        aapProducer.close()
-        dpProducer.close()
-        tpProducer.close()
-        tsProducer.close()
-    }
 
     fun utsjekk(route: Route) {
         route.route("/api/simulering/v2") {
@@ -79,173 +54,41 @@ class SimuleringRoutes(
         }
     }
 
+    // Proxy /api/simulering/v3 to apps/simulering.
+    // Kept for backwards compatibility — callers should migrate to calling simulering directly.
     fun abetal(route: Route) {
         route.route("/api/simulering/v3") {
             post {
-                val transactionId = call.transactionId()
-
-                val fagsystem = when (val name = call.client().name) {
-                    "azure-token-generator" -> {
-                        val fagsystem = call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator")
-                        try {
-                            Fagsystem.valueOf(fagsystem)
-                        } catch (e: Exception) {
-                            val doubleDecoded = String(fagsystem.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
-                            Fagsystem.valueOf(doubleDecoded)
-                        }
-                    }
-                    "snickerboa" -> {
-                        val fagsystem = call.request.headers["fagsystem"] ?: badRequest("header fagystem must be specified when using azure-token-generator")
-                        try {
-                            Fagsystem.valueOf(fagsystem)
-                        } catch (e: Exception) {
-                            val doubleDecoded = String(fagsystem.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
-                            Fagsystem.valueOf(doubleDecoded)
-                        }
-                    }
-                    "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
-                    "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
-                    else -> forbidden(msg = "mangler mapping mellom appname ($name) og fagsystem-enum", doc = "kom_i_gang")
-                }
-
-                when (fagsystem) {
-                    Fagsystem.DAGPENGER -> dryrunDagpenger(call, transactionId)
-                    Fagsystem.AAP -> dryrunAap(call, transactionId)
-                    Fagsystem.TILLEGGSSTØNADER -> dryrunTilleggsstønader(call, transactionId) // de andre fagområdene blir utledet fra DTOen
-                    Fagsystem.TILTAKSPENGER -> dryrunTiltakspenger(call, transactionId)
-                    else -> notFound("simulering/v3 for $fagsystem is not implemented yet")
-                }
+                proxyToSimulering(call, "/api/simulering/v3")
             }
         }
     }
 
+    // Proxy /api/dryrun/* to apps/simulering.
+    // Kept for backwards compatibility — callers should migrate to calling simulering directly.
     fun dryrun(route: Route) {
         route.route("/api/dryrun") {
-            post("/aap") {
-                requireClient(call, "utbetal")
-                val transactionId = call.transactionId()
-                dryrunAap(call, transactionId)
-            }
-            post("/dagpenger") {
-                requireClient(call, "dp-mellom-barken-og-veden")
-                val transactionId = call.transactionId()
-                dryrunDagpenger(call, transactionId)
-            }
-            post("/tilleggsstonader") {
-                requireClient(call, "tilleggsstonader-sak")
-                val transactionId = call.transactionId()
-                dryrunTilleggsstønader(call, transactionId)
-            }
-            post("/tiltakspenger") {
-                requireClient(call, "tiltakspenger-saksbehandling-api")
-                val transactionId = call.transactionId()
-                dryrunTiltakspenger(call, transactionId)
-            }
+            post("/aap") { proxyToSimulering(call, "/api/dryrun/aap") }
+            post("/dagpenger") { proxyToSimulering(call, "/api/dryrun/dagpenger") }
+            post("/tilleggsstonader") { proxyToSimulering(call, "/api/dryrun/tilleggsstonader") }
+            post("/tiltakspenger") { proxyToSimulering(call, "/api/dryrun/tiltakspenger") }
         }
     }
 
-    private suspend fun dryrunDagpenger(call: RoutingCall, transactionId: String) {
-        val dto = call.receive<DpUtbetaling>().copy(dryrun = true)
-        dpProducer.send(transactionId, dto)
+    private suspend fun proxyToSimulering(call: RoutingCall, path: String) {
+        val token = azure.getClientCredentialsToken(config.simulering.scope)
+        val body = call.receive<ByteArray>()
 
-        val result = withTimeoutOrNull(DRYRUN_TIMEOUT) {
-            while (true) {
-                val simResult = dryrunDpStore.getOrNull(transactionId)
-                if (simResult != null) {
-                    return@withTimeoutOrNull simResult
-                }
-                delay(500)
-            }
+        val response = client.post("${config.simulering.host}$path") {
+            bearerAuth(token.access_token)
+            contentType(ContentType.Application.Json)
+            call.request.headers["Transaction-ID"]?.let { header("Transaction-ID", it) }
+            call.request.headers["fagsystem"]?.let { header("fagsystem", it) }
+            setBody(body)
         }
 
-        when (result) {
-            is Simulering -> call.respondSimulering(result)
-            null -> call.respond(HttpStatusCode.RequestTimeout)
-            else -> call.respond(HttpStatusCode.InternalServerError)
-        }
-    }
-
-    private suspend fun dryrunAap(call: RoutingCall, transactionId: String) {
-        val dto = call.receive<AapUtbetaling>().copy(dryrun = true)
-        aapProducer.send(transactionId, dto)
-
-        val result = withTimeoutOrNull(DRYRUN_TIMEOUT) {
-            while (true) {
-                val simResult = dryrunAapStore.getOrNull(transactionId)
-                if (simResult != null) {
-                    return@withTimeoutOrNull simResult
-                }
-                delay(500)
-            }
-        }
-
-        when (result) {
-            is Simulering -> call.respondSimulering(result)
-            null -> call.respond(HttpStatusCode.RequestTimeout)
-            else -> call.respond(HttpStatusCode.InternalServerError)
-        }
-    }
-
-    private suspend fun dryrunTilleggsstønader(call: RoutingCall, transactionId: String) {
-        val dto = call.receive<TsDto>().copy(dryrun = true)
-        tsProducer.send(transactionId, dto)
-
-        val result = withTimeoutOrNull(DRYRUN_TIMEOUT) {
-            while (true) {
-                val simResult = dryrunTsStore.getOrNull(transactionId)
-                if (simResult != null) {
-                    return@withTimeoutOrNull simResult
-                }
-                delay(500)
-            }
-        }
-
-        when (result) {
-            is Simulering -> call.respondSimulering(result)
-            null -> call.respond(HttpStatusCode.RequestTimeout)
-            else -> call.respond(HttpStatusCode.InternalServerError)
-        }
-    }
-
-    private suspend fun dryrunTiltakspenger(call: RoutingCall, transactionId: String) {
-        val dto = call.receive<TpUtbetaling>().copy(dryrun = true)
-        tpProducer.send(transactionId, dto)
-
-        val result = withTimeoutOrNull(DRYRUN_TIMEOUT) {
-            while (true) {
-                val simResult = dryrunTpStore.getOrNull(transactionId)
-                if (simResult != null) {
-                    return@withTimeoutOrNull simResult
-                }
-                delay(500)
-            }
-        }
-
-        when (result) {
-            is Simulering -> call.respondSimulering(result)
-            null -> call.respond(HttpStatusCode.RequestTimeout)
-            else -> call.respond(HttpStatusCode.InternalServerError)
-        }
-    }
-
-}
-
-private suspend fun RoutingCall.respondSimulering(simulering: Simulering) {
-    val json = libs.kotlinx.KotlinxJson.encodeToString(Simulering.serializer(), simulering)
-    val status = when (simulering) {
-        is Info -> HttpStatusCode.Found
-        else -> HttpStatusCode.OK
-    }
-    respondText(json, ContentType.Application.Json, status)
-}
-
-private fun RoutingCall.transactionId(): String =
-    request.headers["Transaction-ID"] ?: UUID.randomUUID().toString()
-
-private fun requireClient(call: RoutingCall, expectedAppName: String) {
-    val name = call.client().name
-    if (name in TEST_CLIENTS) return
-    if (name != expectedAppName) {
-        forbidden(msg = "$name har ikke tilgang til dette endepunktet (forventet $expectedAppName)")
+        val responseBody = response.bodyAsText()
+        val contentType = response.contentType() ?: ContentType.Application.Json
+        call.respondText(responseBody, contentType, response.status)
     }
 }

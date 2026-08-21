@@ -22,10 +22,6 @@ import utsjekk.createTopology
 val httpClient: HttpClient by lazy { TestRuntime.ktor.httpClient }
 
 class TestTopics(kafka: StreamsMock) {
-    val dryrunAap = kafka.testTopic(Topics.dryrunAap)
-    val dryrunDp = kafka.testTopic(Topics.dryrunDp)
-    val dryrunTp = kafka.testTopic(Topics.dryrunTp)
-    val dryrunTs = kafka.testTopic(Topics.dryrunTs)
     val oppdrag = kafka.testTopic(Topics.oppdrag) 
     val status = kafka.testTopic(Topics.status)
     val utbetaling = kafka.testTopic(Topics.utbetaling)

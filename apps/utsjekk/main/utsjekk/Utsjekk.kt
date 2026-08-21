@@ -142,9 +142,7 @@ ${call.bodyAsText()}""".trimIndent()
 
     val simuleringRoutes = SimuleringRoutes(
         config,
-        kafka,
         iverksettingService,
-        utbetalingService,
         jdbcCtx,
     )
 
@@ -167,7 +165,6 @@ ${call.bodyAsText()}""".trimIndent()
         kafka.close()
         oppdragProducer.close()
         utbetalingProducer.close()
-        simuleringRoutes.close()
     }
 }
 

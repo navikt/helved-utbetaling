@@ -16,6 +16,18 @@ spec:
     inbound:
       rules:
         - application: utsjekk
+        - application: snickerboa
+        - application: tiltakspenger-saksbehandling-api
+          namespace: tpts
+        - application: tilleggsstonader-sak
+          namespace: tilleggsstonader
+        - application: azure-token-generator
+          namespace: nais
+          cluster: dev-gcp
+        - application: utbetal
+          namespace: aap
+        - application: dp-mellom-barken-og-veden
+          namespace: teamdagpenger
     outbound:
       external:
         - host: helved-ws-proxy.dev-fss-pub.nais.io
@@ -59,6 +71,8 @@ spec:
         - id: loki
   envFrom:
     - secret: utsjekk-oppdrag-simulering
+  kafka:
+    pool: nav-dev
   env:
     - name: PROXY_HOST
       value: https://helved-ws-proxy.dev-fss-pub.nais.io
