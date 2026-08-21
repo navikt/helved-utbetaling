@@ -57,6 +57,20 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             call.respond(result)
         }
 
+        post("/korriger_utbetaling") {
+            val utbetaling = call.receive<Dashboard.KorrigertFeiletUtbetaling>()
+            if (utbetaling.topic.isBlank()) badRequest("topic er påkrevd")
+            if (utbetaling.key.isBlank()) badRequest("key er påkrevd")
+
+            withContext(jdbcCtx + Dispatchers.IO) {
+                transaction {
+                    Daos.korrigerFeiletUtbetaling(utbetaling)
+                }
+            }
+
+            call.respond(HttpStatusCode.OK)
+        }
+
         get("/dashboard/oppdrag_uten_status") {
             val fom = call.queryParameters.milliseconds("fom")
             val tom = call.queryParameters.milliseconds("tom")
