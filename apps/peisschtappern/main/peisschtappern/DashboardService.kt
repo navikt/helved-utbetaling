@@ -100,6 +100,7 @@ data class Dashboard(
     data class KorrigertFeiletUtbetaling(
         val topic: String,
         val key: String,
+        val reason: String,
     )
 
     @Serializable
