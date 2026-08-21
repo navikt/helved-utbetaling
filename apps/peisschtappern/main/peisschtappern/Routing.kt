@@ -61,6 +61,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             val utbetaling = call.receive<Dashboard.KorrigertFeiletUtbetaling>()
             if (utbetaling.topic.isBlank()) badRequest("topic er påkrevd")
             if (utbetaling.key.isBlank()) badRequest("key er påkrevd")
+            if (utbetaling.reason.isBlank()) badRequest("reason er påkrevd")
 
             withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {

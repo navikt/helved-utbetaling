@@ -69,7 +69,8 @@ class DashboardApiTest {
         val now = Instant.now()
         val korrigertUtbetaling = Dashboard.KorrigertFeiletUtbetaling(
             topic = Channel.Status.topic.name,
-            key = UUID.randomUUID().toString()
+            key = UUID.randomUUID().toString(),
+            reason = "Utbetalingen er kontrollert og korrigert"
         )
 
         TestRuntime.ktor.httpClient.post("/api/korriger_utbetaling") {
@@ -94,26 +95,28 @@ class DashboardApiTest {
 
     @Test
     fun `kan markere samme feilede utbetaling som korrigert på nytt`() = runTest(TestRuntime.context) {
-        val korrigertUtbetaling = Dashboard.KorrigertFeiletUtbetaling(
+        val opprinneligKorrigering = Dashboard.KorrigertFeiletUtbetaling(
             topic = Channel.Status.topic.name,
-            key = UUID.randomUUID().toString()
+            key = UUID.randomUUID().toString(),
+            reason = "Første korrigering"
         )
 
         TestRuntime.ktor.httpClient.post("/api/korriger_utbetaling") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(korrigertUtbetaling)
+            setBody(opprinneligKorrigering)
         }.apply {
             assertEquals(HttpStatusCode.OK, status)
         }
 
         val fom = Instant.now()
         while (!Instant.now().isAfter(fom)) Thread.onSpinWait()
+        val oppdatertKorrigering = opprinneligKorrigering.copy(reason = "Oppdatert forklaring")
 
         TestRuntime.ktor.httpClient.post("/api/korriger_utbetaling") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
-            setBody(korrigertUtbetaling)
+            setBody(oppdatertKorrigering)
         }.apply {
             assertEquals(HttpStatusCode.OK, status)
         }
@@ -127,7 +130,7 @@ class DashboardApiTest {
             accept(ContentType.Application.Json)
         }.body<Dashboard>()
 
-        assertEquals(1, dashboard.korrigerteFeiletUtbetalinger.count { it == korrigertUtbetaling })
+        assertEquals(1, dashboard.korrigerteFeiletUtbetalinger.count { it == oppdatertKorrigering })
     }
 
 
