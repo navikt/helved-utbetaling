@@ -33,6 +33,7 @@ class DashboardApiTest {
         TestRuntime.jdbc.truncate("peisschtappern.utbetalinger")
         TestRuntime.jdbc.truncate("peisschtappern.pending_utbetalinger")
         TestRuntime.jdbc.truncate("peisschtappern.avstemming")
+        TestRuntime.jdbc.truncate("peisschtappern.korrigerte_feilet_utbetalinger")
     }
 
     @Test
@@ -61,6 +62,72 @@ class DashboardApiTest {
         assertNull(dashboard.avstemming[3].datoAvstemtFom)
         assertNull(dashboard.avstemming[3].datoAvstemtTom)
         assertEquals(LocalDate.now().minusDays(20), dashboard.avstemming[3].sisteAvstemtDato)
+    }
+
+    @Test
+    fun `kan markere en feilet utbetaling som korrigert`() = runTest(TestRuntime.context) {
+        val now = Instant.now()
+        val korrigertUtbetaling = Dashboard.KorrigertFeiletUtbetaling(
+            topic = Channel.Status.topic.name,
+            key = UUID.randomUUID().toString()
+        )
+
+        TestRuntime.ktor.httpClient.post("/api/korriger_utbetaling") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(korrigertUtbetaling)
+        }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+
+        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+            url {
+                parameters.append("fom", now.minusSeconds(60).toString())
+                parameters.append("tom", now.plusSeconds(60).toString())
+            }
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Dashboard>()
+
+        assertEquals(1, dashboard.korrigerteFeiletUtbetalinger.count { it == korrigertUtbetaling })
+    }
+
+    @Test
+    fun `kan markere samme feilede utbetaling som korrigert på nytt`() = runTest(TestRuntime.context) {
+        val korrigertUtbetaling = Dashboard.KorrigertFeiletUtbetaling(
+            topic = Channel.Status.topic.name,
+            key = UUID.randomUUID().toString()
+        )
+
+        TestRuntime.ktor.httpClient.post("/api/korriger_utbetaling") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(korrigertUtbetaling)
+        }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+
+        val fom = Instant.now()
+        while (!Instant.now().isAfter(fom)) Thread.onSpinWait()
+
+        TestRuntime.ktor.httpClient.post("/api/korriger_utbetaling") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(korrigertUtbetaling)
+        }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+
+        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+            url {
+                parameters.append("fom", fom.toString())
+                parameters.append("tom", fom.plusSeconds(60).toString())
+            }
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Dashboard>()
+
+        assertEquals(1, dashboard.korrigerteFeiletUtbetalinger.count { it == korrigertUtbetaling })
     }
 
 

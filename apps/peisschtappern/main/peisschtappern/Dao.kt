@@ -212,6 +212,45 @@ data class Daos(
             }
         }
 
+        suspend fun korrigerteFeiletUtbetalinger(since: Long): List<Dashboard.KorrigertFeiletUtbetaling> {
+            val sql = """
+                SELECT topic_name, record_key
+                FROM korrigerte_feilet_utbetalinger
+                WHERE registered_at > ?
+            """.trimIndent()
+
+            return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setLong(1, since)
+                stmt.executeQuery().use { rs ->
+                    rs.map {
+                        Dashboard.KorrigertFeiletUtbetaling(
+                            topic = it.getString("topic_name"),
+                            key = it.getString("record_key"),
+                        )
+                    }
+                }
+            }
+        }
+
+        suspend fun korrigerFeiletUtbetaling(
+            utbetaling: Dashboard.KorrigertFeiletUtbetaling,
+            registeredAt: Long = System.currentTimeMillis()
+        ) {
+            val sql = """
+                INSERT INTO korrigerte_feilet_utbetalinger (topic_name, record_key, registered_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT (topic_name, record_key) DO UPDATE
+                SET registered_at = EXCLUDED.registered_at
+            """.trimIndent()
+
+            currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, utbetaling.topic)
+                stmt.setString(2, utbetaling.key)
+                stmt.setLong(3, registeredAt)
+                stmt.executeUpdate()
+            }
+        }
+
         suspend fun findStatuses(status: String, fom: Long, tom: Long): List<Daos> {
             val sql = """
                 SELECT
