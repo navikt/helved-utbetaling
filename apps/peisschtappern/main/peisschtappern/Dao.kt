@@ -192,9 +192,9 @@ data class Daos(
             }
         }
 
-        suspend fun antallFeilet(fom: Long, tom: Long): Int {
+        suspend fun feiletUtbetalinger(fom: Long, tom: Long): List<Daos> {
             val sql = """
-                SELECT count(*)
+                SELECT *
                 FROM status
                 WHERE status = 'FEILET'
                     AND system_time_ms > ?
@@ -208,10 +208,7 @@ data class Daos(
 
                 daoLog.debug(sql)
                 secureLog.debug(stmt.toString())
-                stmt.executeQuery().use { rs ->
-                    check(rs.next()) { "Forventet resultat fra count(*)" }
-                    rs.getInt(1)
-                }
+                stmt.executeQuery().use { it.map(::from) }
             }
         }
 

@@ -127,7 +127,7 @@ class DashboardApiTest {
             accept(ContentType.Application.Json)
         }.body<Dashboard>()
 
-        assertEquals(1, dashboard.feiletUtbetalinger)
+        assertEquals(1, dashboard.feiletUtbetalinger.size)
     }
 
 
