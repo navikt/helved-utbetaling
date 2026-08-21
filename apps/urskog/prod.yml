@@ -81,9 +81,8 @@ spec:
           - name: "pgaudit.log_parameter"
             value: "on"
   envFrom:
-     # TODO: sjekk hva disse inneholder, er det samme eller noe ulikt?
-    - secret: utsjekk-oppdrag-simulering
-    - secret: utsjekk-oppdrag
+    - secret: utsjekk-oppdrag-simulering # servicebruker_passord for SOAP simulering mot OS
+    - secret: utsjekk-oppdrag # MQ_PASSWORD for MQ-oppdrag
   env:
     - name: PROXY_HOST
       value: https://helved-ws-proxy.prod-fss-pub.nais.io
