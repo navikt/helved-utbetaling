@@ -1,6 +1,7 @@
 package peisschtappern
 
 import io.ktor.http.*
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -262,7 +263,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
 
                 val suspects = withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {
-                        DobbeltutbetalingService.finnUkjente(since, tom)
+                        DobbeltutbetalingService.finnUslukkede(since, tom)
                     }
                 }
 
@@ -270,14 +271,20 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             }
 
             post("/dobbeltutbetalinger") {
-                val behandlingId = call.queryParameters["behandlingId"] ?: badRequest("behandlingId er påkrevd")
-                val klassekode = call.queryParameters["klassekode"] ?: badRequest("klassekode er påkrevd")
-                val fom = call.queryParameters["fom"]?.let(java.time.LocalDate::parse) ?: badRequest("fom er påkrevd")
-                val tom = call.queryParameters["tom"]?.let(java.time.LocalDate::parse) ?: badRequest("tom er påkrevd")
-
+                val kjentDobbeltutbetaling = call.kjentDobbeltutbetaling()
                 withContext(jdbcCtx + Dispatchers.IO) {
                     transaction {
-                        KjentDobbeltutbetaling(behandlingId, klassekode, fom, tom).insert()
+                        kjentDobbeltutbetaling.håndter()
+                    }
+                }
+                call.respond(HttpStatusCode.OK)
+            }
+
+            post("/dobbeltutbetalinger/slukk") {
+                val brann = call.kjentDobbeltutbetaling()
+                withContext(jdbcCtx + Dispatchers.IO) {
+                    transaction {
+                        brann.slukk()
                     }
                 }
                 call.respond(HttpStatusCode.OK)
@@ -449,6 +456,14 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             )
         }
     }
+}
+
+private fun ApplicationCall.kjentDobbeltutbetaling(): KjentDobbeltutbetaling {
+    val behandlingId = request.queryParameters["behandlingId"] ?: badRequest("behandlingId er påkrevd")
+    val klassekode = request.queryParameters["klassekode"] ?: badRequest("klassekode er påkrevd")
+    val fom = request.queryParameters["fom"]?.let(java.time.LocalDate::parse) ?: badRequest("fom er påkrevd")
+    val tom = request.queryParameters["tom"]?.let(java.time.LocalDate::parse) ?: badRequest("tom er påkrevd")
+    return KjentDobbeltutbetaling(behandlingId, klassekode, fom, tom)
 }
 
 @Serializable

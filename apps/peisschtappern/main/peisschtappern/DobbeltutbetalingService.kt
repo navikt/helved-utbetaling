@@ -10,10 +10,22 @@ import java.time.LocalDate
 
 object DobbeltutbetalingService {
 
-    suspend fun finnUkjente(fom: Long, tom: Long): List<Suspect> {
+    suspend fun finnUslukkede(fom: Long, tom: Long): List<Suspect> {
         val statuses = Daos.findStatuses("OK", fom, tom)
-        val kjente = KjentDobbeltutbetaling.findAll().map { it.key }.toSet()
-        return finn(statuses).filterNot { it.key in kjente }
+        val slukkede = KjentDobbeltutbetaling.findAll()
+            .filter { it.slukketAt != null || it.håndtertAt != null }
+            .map { it.key }
+            .toSet()
+        return finn(statuses).filterNot { it.key in slukkede }
+    }
+
+    suspend fun finnUhåndterte(fom: Long, tom: Long): List<Suspect> {
+        val statuses = Daos.findStatuses("OK", fom, tom)
+        val håndterte = KjentDobbeltutbetaling.findAll()
+            .filter { it.håndtertAt != null }
+            .map { it.key }
+            .toSet()
+        return finn(statuses).filterNot { it.key in håndterte }
     }
 
     fun finn(daos: List<Daos>): List<Suspect> {
