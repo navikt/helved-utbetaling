@@ -1,6 +1,7 @@
 package peisschtappern
 
 import io.ktor.http.*
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -457,7 +458,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
     }
 }
 
-private fun io.ktor.server.application.ApplicationCall.kjentDobbeltutbetaling(): KjentDobbeltutbetaling {
+private fun ApplicationCall.kjentDobbeltutbetaling(): KjentDobbeltutbetaling {
     val behandlingId = request.queryParameters["behandlingId"] ?: badRequest("behandlingId er påkrevd")
     val klassekode = request.queryParameters["klassekode"] ?: badRequest("klassekode er påkrevd")
     val fom = request.queryParameters["fom"]?.let(java.time.LocalDate::parse) ?: badRequest("fom er påkrevd")
