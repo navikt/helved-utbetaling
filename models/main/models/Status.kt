@@ -74,7 +74,7 @@ private fun detaljer(o: Oppdrag): Detaljer {
         linjer = o.oppdrag110.oppdragsLinje150s.map { linje ->
             DetaljerLinje(
                 behandlingId = linje.henvisning.trimEnd(),
-                fom = (linje.datoStatusFom ?: linje.datoVedtakFom).toGregorianCalendar().toZonedDateTime().toLocalDate(),
+                fom = (linje.datoStatusFom?.takeIf { linje.kodeStatusLinje == TkodeStatusLinje.OPPH } ?: linje.datoVedtakFom).toGregorianCalendar().toZonedDateTime().toLocalDate(),
                 tom = linje.datoVedtakTom.toGregorianCalendar().toZonedDateTime().toLocalDate(),
                 beløp = beløp(linje),
                 vedtakssats = linje.vedtakssats157?.vedtakssats?.toLong()?.toUInt(),
