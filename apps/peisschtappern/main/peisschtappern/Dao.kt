@@ -194,12 +194,17 @@ data class Daos(
 
         suspend fun feiletUtbetalinger(fom: Long, tom: Long): List<Daos> {
             val sql = """
-                SELECT *
+                SELECT status.*
                 FROM status
-                WHERE status = 'FEILET'
-                    AND system_time_ms > ?
-                    AND system_time_ms < ?
-                    AND record_value NOT LIKE '%simulering stengt%'
+                WHERE status.status = 'FEILET'
+                    AND status.system_time_ms > ?
+                    AND status.system_time_ms < ?
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM korrigerte_feilet_utbetalinger korrigert
+                        WHERE korrigert.topic_name = status.topic_name
+                            AND korrigert.record_key = status.record_key
+                    )
             """.trimIndent()
 
             return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
