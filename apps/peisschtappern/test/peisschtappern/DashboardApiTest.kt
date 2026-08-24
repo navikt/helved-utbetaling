@@ -186,7 +186,7 @@ class DashboardApiTest {
     }
 
     @Test
-    fun `dashboard teller bare feilede statuser i perioden`() = runTest(TestRuntime.context) {
+    fun `dashboard teller alle feilede statuser i perioden`() = runTest(TestRuntime.context) {
         val now = nextPendingMismatchTimestamp()
         val feilet = KotlinxJson.encodeToString(StatusReply(Status.FEILET))
         val simuleringStengt = """{"status":"FEILET","error":{"msg":"simulering stengt"}}"""
@@ -195,16 +195,28 @@ class DashboardApiTest {
         save(Channel.Status, value = simuleringStengt, timestamp = now + 1_000, offset = offset)
         save(Channel.Status, value = feilet, timestamp = now + 3_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        transaction {
+            assertEquals(2, Daos.feiletUtbetalinger(now - 1_000, now + 2_000).size)
+        }
+    }
 
-        assertEquals(1, dashboard.feiletUtbetalinger.size)
+    @Test
+    fun `dashboard teller ikke korrigerte feilede utbetalinger`() = runTest(TestRuntime.context) {
+        val now = nextPendingMismatchTimestamp()
+        val key = UUID.randomUUID().toString()
+        val feilet = KotlinxJson.encodeToString(StatusReply(Status.FEILET))
+
+        save(Channel.Status, key = key, value = feilet, timestamp = now, offset = offset)
+        transaction {
+            Daos.korrigerFeiletUtbetaling(
+                topic = Channel.Status.topic.name,
+                key = key,
+                reason = "Utbetalingen er korrigert",
+                registeredAt = now
+            )
+
+            assertTrue(Daos.feiletUtbetalinger(now - 1_000, now + 1_000).isEmpty())
+        }
     }
 
 
