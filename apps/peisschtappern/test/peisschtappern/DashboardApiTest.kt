@@ -186,7 +186,7 @@ class DashboardApiTest {
     }
 
     @Test
-    fun `dashboard teller alle feilede statuser i perioden`() = runTest(TestRuntime.context) {
+    fun `dashboard teller bare relevante feilede statuser i perioden`() = runTest(TestRuntime.context) {
         val now = nextPendingMismatchTimestamp()
         val feilet = KotlinxJson.encodeToString(StatusReply(Status.FEILET))
         val simuleringStengt = """{"status":"FEILET","error":{"msg":"simulering stengt"}}"""
@@ -196,7 +196,7 @@ class DashboardApiTest {
         save(Channel.Status, value = feilet, timestamp = now + 3_000, offset = offset)
 
         transaction {
-            assertEquals(2, Daos.feiletUtbetalinger(now - 1_000, now + 2_000).size)
+            assertEquals(1, Daos.feiletUtbetalinger(now - 1_000, now + 2_000).size)
         }
     }
 

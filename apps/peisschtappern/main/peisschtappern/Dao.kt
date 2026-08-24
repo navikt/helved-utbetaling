@@ -199,6 +199,7 @@ data class Daos(
                 WHERE status.status = 'FEILET'
                     AND status.system_time_ms > ?
                     AND status.system_time_ms < ?
+                    AND status.record_value NOT LIKE '%simulering stengt%'
                     AND NOT EXISTS (
                         SELECT 1
                         FROM korrigerte_feilet_utbetalinger korrigert
