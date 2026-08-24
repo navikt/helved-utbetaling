@@ -148,7 +148,11 @@ object AggregateService {
                         SimuleringService.delete(prev, prev)
                     }
 
-                    // TODO: Må håndtere fake delete i simulering etterhvert
+                    new.action == Action.FAKE_DELETE -> {
+                        secureLog.info("simuler opphør (fake delete) for $prev")
+                        val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
+                        SimuleringService.delete(prev, prev)
+                    }
 
                     // reintroduser en tidligere opphørt utbetaling
                     prev?.action == Action.DELETE && new.action == Action.CREATE -> {
