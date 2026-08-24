@@ -214,7 +214,7 @@ data class Daos(
 
         suspend fun korrigerteFeiletUtbetalinger(since: Long): List<Dashboard.KorrigertFeiletUtbetaling> {
             val sql = """
-                SELECT topic_name, record_key, reason
+                SELECT topic_name, record_key, reason, registered_at
                 FROM korrigerte_feilet_utbetalinger
                 WHERE registered_at > ?
             """.trimIndent()
@@ -227,6 +227,7 @@ data class Daos(
                             topic = it.getString("topic_name"),
                             key = it.getString("record_key"),
                             reason = it.getString("reason"),
+                            registeredAt = it.getLong("registered_at"),
                         )
                     }
                 }
@@ -234,8 +235,10 @@ data class Daos(
         }
 
         suspend fun korrigerFeiletUtbetaling(
-            utbetaling: Dashboard.KorrigertFeiletUtbetaling,
-            registeredAt: Long = System.currentTimeMillis()
+            topic: String,
+            key: String,
+            reason: String,
+            registeredAt: Long
         ) {
             val sql = """
                 INSERT INTO korrigerte_feilet_utbetalinger (topic_name, record_key, reason, registered_at)
@@ -246,9 +249,9 @@ data class Daos(
             """.trimIndent()
 
             currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, utbetaling.topic)
-                stmt.setString(2, utbetaling.key)
-                stmt.setString(3, utbetaling.reason)
+                stmt.setString(1, topic)
+                stmt.setString(2, key)
+                stmt.setString(3, reason)
                 stmt.setLong(4, registeredAt)
                 stmt.executeUpdate()
             }
