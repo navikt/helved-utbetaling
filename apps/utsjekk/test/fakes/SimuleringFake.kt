@@ -7,13 +7,10 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import libs.ktor.port
 import utsjekk.SimuleringConfig
-import utsjekk.simulering.client
-import utsjekk.utbetaling.UtbetalingsoppdragDto
 import java.net.URI
 
 class SimuleringFake : AutoCloseable {
@@ -61,7 +58,7 @@ private fun Application.simulering() {
         post("/simuler/legacy") {
             call.respond(simuleringResponseCode, simuleringResponse)
         }
-        post("/api/simulering/v3") {
+        post("/api/simulering") {
             val body = dryrunResponseBody ?: """{"error":"no dryrun response configured"}"""
             call.respondText(body, io.ktor.http.ContentType.Application.Json, dryrunResponseCode)
         }
