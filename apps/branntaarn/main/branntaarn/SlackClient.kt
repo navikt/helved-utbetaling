@@ -215,12 +215,15 @@ private fun jsonDobbeltutbetalinger(suspects: List<Dobbeltutbetaling>, config: C
 
         val displayLimit = 20
         suspects.take(displayLimit).forEach { suspect ->
+            val peisenLink = if (suspect.sakId != null && suspect.fagsystem != null)
+                "\n<${config.peisen.host}/sak?sakId=${suspect.sakId}&fagsystem=${suspect.fagsystem}|Åpne i Peisen>"
+            else ""
             add("""
             {
               "type": "section",
               "text": {
                 "type": "mrkdwn",
-                "text": "*${suspect.behandlingId}* — ${suspect.klassekode}\nPeriode: ${suspect.fom} – ${suspect.tom} | Beløp: ${suspect.beløp} | Antall OK: ${suspect.antallKilder}"
+                "text": "*${suspect.behandlingId}* — ${suspect.klassekode}\nPeriode: ${suspect.fom} – ${suspect.tom} | Beløp: ${suspect.beløp} | Antall OK: ${suspect.antallKilder}$peisenLink"
               }
             }
             """.trimIndent())

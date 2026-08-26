@@ -1,7 +1,6 @@
 package urskog.oppdrag
 
 import models.*
-import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import urskog.*
@@ -177,8 +176,46 @@ class OppdragTest {
             .has(uid, size = 1)
             .hasHeader(uid, FS_KEY to "AAP")
         statusRecords.with(uid) { reply ->
-            kotlin.test.assertEquals(Status.OK, reply.status, "utsjekk-REST bypass må kortslutte til Status.OK")
+            assertEquals(Status.OK, reply.status, "utsjekk-REST bypass må kortslutte til Status.OK")
         }
+
+        TestRuntime.topics.retryKvittering.assertThat()
+    }
+
+    @Test
+    fun `opphør vises med dato for hele perioden i status, ikke bare dato fra siste oppdragslinje`() {
+        val uid = UUID.randomUUID().toString()
+        val bid = "$seq"
+
+        val kvittering = TestData.oppdrag(
+            mmel = TestData.ok(),
+            fagsystemId = "$seq",
+            fagområde = "AAP",
+            oppdragslinjer = listOf(
+                TestData.oppdragslinje(
+                    henvisning = bid,
+                    delytelsesId = PeriodeId().toString(),
+                    klassekode = "AAPOR",
+                    datoVedtakFom = 3.nov,
+                    datoVedtakTom = 3.nov,
+                    typeSats = "DAG",
+                    sats = 1122L,
+                    kodeEndring = "ENDR",
+                    opphør = 1.nov,
+                )
+            ),
+        )
+
+        TestRuntime.topics.oppdrag.produce(uid, mapOf("maxRetries" to "1")) {
+            kvittering
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(uid, size = 1)
+            .hasHeader(uid, FS_KEY to "AAP")
+            .has(uid, value = StatusReply(Status.OK, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
+                DetaljerLinje(bid, 1.nov, 3.nov, null, 0u, "AAPOR"),
+            ))))
 
         TestRuntime.topics.retryKvittering.assertThat()
     }

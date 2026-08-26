@@ -27,7 +27,8 @@ object DashboardService {
         val successfulStatuses = Daos.findStatuses("OK", fom, tom)
 
         return Dashboard(
-            feiletUtbetalinger = Daos.antallFeilet(fom, tom),
+            feiletUtbetalinger = Daos.feiletUtbetalinger(fom, tom),
+            korrigerteFeiletUtbetalinger = Daos.korrigerteFeiletUtbetalinger(fom),
             pendingMismatch = PendingMismatchService.detectMismatches(fom, tom),
             avstemming = avstemming(fom, tom),
             oppdragUtenKvittering = Daos.findOppdragWithMissingStatus(fom, tom),
@@ -88,12 +89,21 @@ object DashboardService {
 
 @Serializable
 data class Dashboard(
-    val feiletUtbetalinger: Int,
+    val feiletUtbetalinger: List<Daos>,
+    val korrigerteFeiletUtbetalinger: List<KorrigertFeiletUtbetaling>,
     val pendingMismatch: List<PendingMismatch>,
     val avstemming: List<Avstemming>,
     val oppdragUtenKvittering: List<OppdragUtenKvittering>,
     val dobbeltutbetalinger: List<Suspect> = emptyList(),
 ) {
+    @Serializable
+    data class KorrigertFeiletUtbetaling(
+        val topic: String,
+        val key: String,
+        val reason: String,
+        val registeredAt: Long,
+    )
+
     @Serializable
     data class Avstemming(
         val fagsystem: Fagsystem,
