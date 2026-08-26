@@ -127,4 +127,10 @@ class StreamsMock : Streams {
         producers.clear()
         internalStreams.close()
     }
+
+    fun reset() {
+        producers.values.forEach { producer ->
+            (producer as KafkaProducerFake<*, *>).clear()
+        }
+    }
 }
