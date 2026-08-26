@@ -6,7 +6,7 @@ application {
     mainClass.set("statistikkern.StatistikkernKt")
 }
 
-val ktorVersion = "3.5.1"
+val ktorVersion = "3.5.2"
 
 dependencies {
     implementation(project(":models"))
