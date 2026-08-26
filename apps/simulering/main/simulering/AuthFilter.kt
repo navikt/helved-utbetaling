@@ -8,7 +8,6 @@ import libs.auth.JwtVerifier
 import libs.auth.TokenConfig
 import libs.utils.secureLog
 import org.http4k.core.*
-import org.http4k.lens.RequestContextKey
 import org.http4k.lens.RequestContextLens
 import java.net.http.HttpClient
 import java.time.Duration
@@ -48,4 +47,5 @@ fun createJwtVerifier(config: AzureConfig): JwtVerifier {
 }
 
 fun Jwt.Claims.clientName(): String =
-    claim("azp_name") ?: error("Missing azp_name claim")
+    (claim("azp_name") ?: error("Missing azp_name claim"))
+        .substringAfterLast(":")
