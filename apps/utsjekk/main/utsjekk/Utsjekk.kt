@@ -37,6 +37,7 @@ import models.ApiError
 import models.badRequest
 import models.forbidden
 import models.kontrakter.Fagsystem
+import models.kontrakter.tilFagsystem
 import models.unauthorized
 import utsjekk.iverksetting.IverksettingMigrator
 import utsjekk.iverksetting.IverksettingService
@@ -185,10 +186,11 @@ sealed class TokenType(open val jwt: String) {
     data class Client(override val jwt: String) : TokenType(jwt)
 }
 
+// The "Fagsystem" header uses the ASCII-safe `kode` (e.g. "TILLST") rather than the
+// enum name, since enum names contain ÆØÅ which are prone to mojibake over HTTP headers.
 fun RoutingCall.fagsystem() =
     if (System.getenv("ENV") != "prod") {
-        request.header("Fagsystem")?.let { Fagsystem.valueOf(it) }
-            ?: client().toFagsystem()
+        request.header("Fagsystem")?.tilFagsystem() ?: client().toFagsystem()
     } else {
         client().toFagsystem()
     }
