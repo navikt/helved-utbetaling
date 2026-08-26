@@ -7,7 +7,7 @@ application {
     mainClass.set("utsjekk.UtsjekkKt")
 }
 
-val ktorVersion = "3.5.1"
+val ktorVersion = "3.5.2"
 
 dependencies {
     implementation(project(":models"))
