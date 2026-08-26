@@ -20,10 +20,6 @@ import javax.sql.DataSource
 
 val testLog = logger("test")
 
-class TestTopics(kafka: StreamsMock) {
-    val oppdrag = kafka.testTopic(Topics.oppdrag) 
-}
-
 object TestRuntime {
     private val migrationDirs = listOf(File("test/migrations"), File("migrations"))
     private val postgres: PostgresContainer by lazy {
@@ -35,11 +31,10 @@ object TestRuntime {
     }
     val azure: AzureFake by lazy { AzureFake() }
     val peisschtappern: PeisschtappernFake by lazy { PeisschtappernFake() }
-    private val kafkaFake: KafkaFactoryFake by lazy { KafkaFactoryFake() }
-    val kafka: KafkaFactoryFake
+    val kafka: StreamsMock
         get() {
             ktor // ensures producers/consumers are registered with the factory
-            return kafkaFake
+            return streams
         }
     val streams: StreamsMock by lazy { StreamsMock() }
     val jdbc: DataSource by lazy { Jdbc.initialize(postgres.config) }
@@ -62,7 +57,6 @@ object TestRuntime {
                 vedskiva(
                     config,
                     streams,
-                    kafkaFake,
                 )
             },
             onClose = {
@@ -74,7 +68,7 @@ object TestRuntime {
 
     fun reset() {
         jdbc.truncate("vedskiva", Scheduled.TABLE_NAME, OppdragDao.table)
-        kafkaFake.reset()
+        streams.reset()
         PeisschtappernFake.response.clear()
     }
 }
@@ -150,38 +144,3 @@ class PeisschtappernFake {
     }
 }
 
-@Suppress("UNCHECKED_CAST")
-class KafkaFactoryFake: KafkaFactory {
-    private val producers = mutableMapOf<String, KafkaProducerFake<*, * >>()
-    private val consumers = mutableMapOf<String, KafkaConsumerFake<*, * >>()
-
-    override fun <K: Any, V> createProducer(
-        config: StreamsConfig,
-        topic: Topic<K, V & Any>,
-    ): KafkaProducerFake<K, V> {
-        if (producers.containsKey(topic.name)) error("producer already registered for $topic")
-        producers[topic.name] = KafkaProducerFake(topic)
-        return producers[topic.name]!! as KafkaProducerFake<K, V>
-    }
-
-    override fun <K: Any, V> createConsumer(
-        config: StreamsConfig,
-        topic: Topic<K, V & Any>,
-        resetPolicy: OffsetResetPolicy,  
-        maxProcessingTimeMs: Int,
-        groupId: Int,
-    ): KafkaConsumerFake<K, V> {
-        consumers[topic.name] = KafkaConsumerFake(topic)
-        return consumers[topic.name]!! as KafkaConsumerFake<K, V>
-    }
-
-    fun reset() {
-        producers.values.forEach { topic -> 
-            topic.clear()
-        }
-    }
-
-    fun <K: Any, V> getProducer(topic: Topic<K, V & Any>): KafkaProducerFake<K, V> {
-        return producers[topic.name]!! as KafkaProducerFake<K, V>
-    }
-}

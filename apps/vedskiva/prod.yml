@@ -13,7 +13,7 @@ spec:
       memory: 1024Mi
     requests:
       memory: 800Mi
-      cpu: 1200m
+      cpu: 200m
   liveness:
     path: /actuator/health
     initialDelay: 5

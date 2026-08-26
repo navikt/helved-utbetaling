@@ -7,7 +7,7 @@ application {
     mainClass.set("urskog.UrskogKt")
 }
 
-val ktorVersion = "3.5.1"
+val ktorVersion = "3.5.2"
 
 dependencies {
     implementation(project(":models"))
