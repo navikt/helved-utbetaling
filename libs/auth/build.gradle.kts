@@ -2,7 +2,7 @@ plugins {
     kotlin("plugin.serialization")
 }
 
-val ktorVersion = "3.5.1"
+val ktorVersion = "3.5.2"
 
 dependencies {
     api(project(":libs:cache"))
