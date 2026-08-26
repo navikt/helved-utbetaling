@@ -7,7 +7,6 @@ import org.http4k.routing.bind
 import org.http4k.routing.routes
 import simulering.v1.SimuleringServiceV1
 import simulering.v1.rest
-import simulering.v1.soap.SimulerBeregningRequest
 
 private val simRequestLens: BiDiBodyLens<rest.SimuleringRequest> = KotlinxJson.autoBody<rest.SimuleringRequest>().toLens()
 private val responseLens: BiDiBodyLens<rest.SimuleringResponse> = KotlinxJson.autoBody<rest.SimuleringResponse>().toLens()

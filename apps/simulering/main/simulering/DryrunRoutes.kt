@@ -3,16 +3,13 @@
 package simulering
 
 import libs.auth.Jwt
-import libs.kafka.KafkaProducer
 import libs.kafka.StateStore
 import libs.kafka.Streams
 import models.*
-import models.ApiError
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
-import org.http4k.lens.BiDiBodyLens
 import org.http4k.lens.RequestContextLens
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
@@ -71,7 +68,7 @@ fun dryrunRoutes(
     }
 
     return routes(
-        "/api/simulering/v3" bind Method.POST to { req ->
+        "/api/simulering" bind Method.POST to { req ->
             val claims = claimsLens(req)
             val transactionId = req.transactionId()
 
@@ -86,6 +83,7 @@ fun dryrunRoutes(
                         Fagsystem.valueOf(doubleDecoded)
                     }
                 }
+                // TODO: Legg til appnavn når andre begynner å simulere
                 "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
                 "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
                 else -> return@to Response(Status.FORBIDDEN)
@@ -97,28 +95,8 @@ fun dryrunRoutes(
                 Fagsystem.AAP -> dryrunAap(req, transactionId)
                 Fagsystem.TILLEGGSSTØNADER -> dryrunTilleggsstønader(req, transactionId)
                 Fagsystem.TILTAKSPENGER -> dryrunTiltakspenger(req, transactionId)
-                else -> Response(Status.NOT_FOUND).body("simulering/v3 for $fagsystem is not implemented yet")
+                else -> Response(Status.NOT_FOUND).body("simulering for $fagsystem is not implemented yet")
             }
-        },
-
-        "/api/dryrun/aap" bind Method.POST to { req ->
-            requireClient(claimsLens(req), "utbetal")
-            dryrunAap(req, req.transactionId())
-        },
-
-        "/api/dryrun/dagpenger" bind Method.POST to { req ->
-            requireClient(claimsLens(req), "dp-mellom-barken-og-veden")
-            dryrunDagpenger(req, req.transactionId())
-        },
-
-        "/api/dryrun/tilleggsstonader" bind Method.POST to { req ->
-            requireClient(claimsLens(req), "tilleggsstonader-sak")
-            dryrunTilleggsstønader(req, req.transactionId())
-        },
-
-        "/api/dryrun/tiltakspenger" bind Method.POST to { req ->
-            requireClient(claimsLens(req), "tiltakspenger-saksbehandling-api")
-            dryrunTiltakspenger(req, req.transactionId())
         },
     )
 }
@@ -151,11 +129,3 @@ private fun respondSimulering(simulering: Simulering, status: Status): Response 
 
 private fun Request.transactionId(): String =
     header("Transaction-ID") ?: UUID.randomUUID().toString()
-
-private fun requireClient(claims: Jwt.Claims, expectedAppName: String) {
-    val name = claims.clientName()
-    if (name in PROXY_CLIENTS) return
-    if (name != expectedAppName) {
-        throw ApiError(403, "$name har ikke tilgang til dette endepunktet (forventet $expectedAppName)")
-    }
-}

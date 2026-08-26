@@ -53,7 +53,7 @@ class SimuleringScheduler(
     ktable: KTable<String, SimulerBeregningRequest>,
     interval: Duration,
     private val channel: Channel<Pair<String, SimulerBeregningRequest>>,
-    private val evictionTtl: Duration = 2.minutes,
+    private val evictionTtl: Duration = 3.minutes, // TODO: Finn riktig verdi her
 ) : StateScheduleProcessor<String, SimulerBeregningRequest>(
     named = "simulering-scheduler",
     table = ktable,

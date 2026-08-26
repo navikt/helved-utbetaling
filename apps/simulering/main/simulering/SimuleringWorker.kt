@@ -30,7 +30,7 @@ class SimuleringWorker(
                 }
                 producerFor(fagsystem).send(key, simulering)
             } catch (e: Exception) {
-                appLog.error("Feil i simulering-worker")
+                appLog.error("Feil i simulering-worker for key=$key")
                 secureLog.error("Feil i simulering-worker for key=$key", e)
             }
         }
