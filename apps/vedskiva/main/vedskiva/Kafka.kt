@@ -19,8 +19,6 @@ object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
 }
 
-open class Kafka : KafkaFactory
-
 fun topology(jdbcCtx: CoroutineDatasource) = topology {
     consume(Topics.oppdrag)
         // ved avvent feilregistrering vi har ikke avstemming115

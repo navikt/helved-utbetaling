@@ -27,7 +27,6 @@ import libs.auth.TokenProvider
 import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.jdbc.context
-import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.utils.appLog
@@ -56,7 +55,6 @@ fun main() {
 fun Application.vedskiva(
     config: Config = Config(),
     streams: Streams = KafkaStreams(),
-    kafka: KafkaFactory = Kafka(), // FIXME: streams har en innebygget ekvivalent
 ) {
     val metrics = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     install(MicrometerMetrics) {
@@ -79,7 +77,7 @@ fun Application.vedskiva(
         }
     }
 
-    val producer = kafka.createProducer(config.kafka, Topics.avstemming) 
+    val producer = streams.createProducer(config.kafka, Topics.avstemming)
     val service = AvstemmingService(producer)
 
     streams.connect(
