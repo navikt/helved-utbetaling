@@ -70,6 +70,7 @@ spec:
     - secret: utsjekk-oppdrag-simulering
   kafka:
     pool: nav-prod
+    streams: true
   env:
     - name: PROXY_HOST
       value: https://helved-ws-proxy.prod-fss-pub.nais.io
