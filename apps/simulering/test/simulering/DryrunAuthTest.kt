@@ -17,7 +17,7 @@ class DryrunAuthTest {
     @Test
     fun `401 when no Authorization header`() {
         val response = TestRuntime.app(
-            Request(Method.POST, "/api/simulering/v3")
+            Request(Method.POST, "/api/simulering")
                 .header("Content-Type", "application/json")
                 .body("{}")
         )
@@ -27,7 +27,7 @@ class DryrunAuthTest {
     @Test
     fun `401 when invalid token`() {
         val response = TestRuntime.app(
-            Request(Method.POST, "/api/simulering/v3")
+            Request(Method.POST, "/api/simulering")
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer garbage.token.here")
                 .body("{}")
@@ -39,7 +39,7 @@ class DryrunAuthTest {
     fun `403 when unknown client`() {
         val token = TestRuntime.generateToken(azpName = "unknown-app")
         val response = TestRuntime.app(
-            Request(Method.POST, "/api/simulering/v3")
+            Request(Method.POST, "/api/simulering")
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer $token")
                 .body("{}")
@@ -51,7 +51,7 @@ class DryrunAuthTest {
     fun `known client passes auth for simulering v3`() {
         val token = TestRuntime.generateToken(azpName = "tilleggsstonader-sak")
         val response = TestRuntime.app(
-            Request(Method.POST, "/api/simulering/v3")
+            Request(Method.POST, "/api/simulering")
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer $token")
                 .body("{}")
@@ -66,7 +66,7 @@ class DryrunAuthTest {
     @Test
     fun `401 on dryrun endpoint without token`() {
         val response = TestRuntime.app(
-            Request(Method.POST, "/api/dryrun/tilleggsstonader")
+            Request(Method.POST, "/api/simulering")
                 .header("Content-Type", "application/json")
                 .body("{}")
         )
@@ -77,7 +77,7 @@ class DryrunAuthTest {
     fun `403 on dryrun endpoint with wrong client`() {
         val token = TestRuntime.generateToken(azpName = "wrong-app")
         val response = TestRuntime.app(
-            Request(Method.POST, "/api/dryrun/tilleggsstonader")
+            Request(Method.POST, "/api/simulering")
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer $token")
                 .body("{}")

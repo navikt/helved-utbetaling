@@ -31,6 +31,7 @@ class SimuleringRoutes(
     private val simuleringClient = SimuleringClient(config, jdbcCtx)
 
     fun utsjekk(route: Route) {
+        // Tiltakspenger er de eneste som bruker denne
         route.route("/api/simulering/v2") {
             post {
                 val fagsystem = call.fagsystem()
@@ -59,7 +60,7 @@ class SimuleringRoutes(
     fun abetal(route: Route) {
         route.route("/api/simulering/v3") {
             post {
-                proxyToSimulering(call, "/api/simulering/v3")
+                proxyToSimulering(call, "/api/simulering")
             }
         }
     }
@@ -68,10 +69,10 @@ class SimuleringRoutes(
     // Kept for backwards compatibility — callers should migrate to calling simulering directly.
     fun dryrun(route: Route) {
         route.route("/api/dryrun") {
-            post("/aap") { proxyToSimulering(call, "/api/dryrun/aap") }
-            post("/dagpenger") { proxyToSimulering(call, "/api/dryrun/dagpenger") }
-            post("/tilleggsstonader") { proxyToSimulering(call, "/api/dryrun/tilleggsstonader") }
-            post("/tiltakspenger") { proxyToSimulering(call, "/api/dryrun/tiltakspenger") }
+            post("/aap") { proxyToSimulering(call, "/api/simulering") }
+            post("/dagpenger") { proxyToSimulering(call, "/api/simulering") }
+            post("/tilleggsstonader") { proxyToSimulering(call, "/api/simulering") }
+            post("/tiltakspenger") { proxyToSimulering(call, "/api/simulering") }
         }
     }
 

@@ -16,7 +16,6 @@ import utsjekk.Config
 import utsjekk.TokenType
 import utsjekk.iverksetting.*
 import utsjekk.iverksetting.UtbetalingId
-import utsjekk.utbetaling.UtbetalingsoppdragDto
 
 class SimuleringClient(
     private val config: Config,
@@ -31,6 +30,7 @@ class SimuleringClient(
     ),
     private val azure: AzureTokenProvider = AzureTokenProvider(json, config.azure)
 ) {
+    // Tiltakspenger er de eneste som bruker denne
     suspend fun hentSimuleringsresultatMedOppsummering(
         simulering: domain.Simulering,
         token: TokenType,
