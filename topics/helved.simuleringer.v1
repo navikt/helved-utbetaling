@@ -18,6 +18,10 @@ spec:
     - team: helved
       application: simulering
       access: read
+      # TODO: Fjern tilgang
+    - team: helved
+      application: urskog
+      access: read
     - team: helved
       application: utsjekk
       access: write
