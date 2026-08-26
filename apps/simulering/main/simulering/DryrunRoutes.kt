@@ -76,12 +76,9 @@ fun dryrunRoutes(
                 in PROXY_CLIENTS -> {
                     val header = req.header("fagsystem")
                         ?: return@to Response(Status.BAD_REQUEST).body("header fagsystem must be specified when using $name")
-                    try {
-                        Fagsystem.valueOf(header)
-                    } catch (e: Exception) {
-                        val doubleDecoded = String(header.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
-                        Fagsystem.valueOf(doubleDecoded)
-                    }
+                    // Use the ASCII-safe kode (e.g. "TILLST") instead of the enum name,
+                    // since enum names contain ÆØÅ which are prone to mojibake over HTTP headers.
+                    Fagsystem.from(header)
                 }
                 // TODO: Legg til appnavn når andre begynner å simulere
                 "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
