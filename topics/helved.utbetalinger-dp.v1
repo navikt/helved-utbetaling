@@ -23,4 +23,7 @@ spec:
       access: write
     - team: helved
       application: peisschtappern
-      access: readwrite 
+      access: readwrite
+    - team: helved
+      application: simulering
+      access: write

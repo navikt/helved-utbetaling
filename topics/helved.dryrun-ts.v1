@@ -17,7 +17,7 @@ spec:
       access: write
     - team: helved
       application: simulering
-      access: write
+      access: readwrite
     - team: helved
       application: utsjekk
       access: read
