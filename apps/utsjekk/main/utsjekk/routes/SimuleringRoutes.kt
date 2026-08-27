@@ -10,6 +10,7 @@ import io.ktor.server.routing.*
 import libs.auth.AzureTokenProvider
 import libs.http.HttpClientFactory
 import libs.jdbc.concurrency.CoroutineDatasource
+import models.forbidden
 import models.unauthorized
 import utsjekk.*
 import utsjekk.iverksetting.IverksettingService
@@ -77,11 +78,12 @@ class SimuleringRoutes(
     }
 
     private suspend fun proxyToSimulering(call: RoutingCall, path: String) {
-        val token = azure.getClientCredentialsToken(config.simulering.scope)
+        val token = call.request.authorization()?.replace("Bearer ", "") ?: forbidden("mangler authorization token")
+        val obo = azure.getOnBehalfOfToken(token, config.simulering.scope)
         val body = call.receive<ByteArray>()
 
         val response = client.post("${config.simulering.host}$path") {
-            bearerAuth(token.access_token)
+            bearerAuth(obo.access_token)
             contentType(ContentType.Application.Json)
             call.request.headers["Transaction-ID"]?.let { header("Transaction-ID", it) }
             call.request.headers["fagsystem"]?.let { header("fagsystem", it) }
