@@ -42,7 +42,7 @@ class IverksettingRouteTest {
                 assertEquals(HttpStatusCode.Accepted, it.status)
             }
 
-            val status = runBlocking {
+            val status = run {
                 TestRuntime.jdbc.await {
                     IverksettingResultatDao.select {
                         this.fagsystem = Fagsystem.TILLEGGSSTØNADER
@@ -155,7 +155,7 @@ class IverksettingRouteTest {
 
         assertEquals(HttpStatusCode.BadRequest, res.status)
         assertEquals(
-            """{"statusCode":400,"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","doc":"${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling","system":"HELVED"}""",
+            """{"statusCode":400,"msg":"Klarte ikke lese request body. Sjekk at du ikke mangler noen felter","doc":"${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling","source":"HELVED"}""",
             res.bodyAsText()
         )
     }
