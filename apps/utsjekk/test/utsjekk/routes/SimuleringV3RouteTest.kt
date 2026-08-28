@@ -53,7 +53,7 @@ class SimuleringV3RouteTest {
             contentType(ContentType.Application.Json)
             bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.AZURE_TOKEN_GENERATOR))
             header("Transaction-ID", key)
-            header("fagsystem", "DAGPENGER")
+            header("fagsystem", "DP")
             setBody(
                 DpUtbetaling(
                     dryrun = true,

@@ -176,7 +176,7 @@ fun ApplicationCall.client(): Client =
         ?.split(":")
         ?.last()
         ?.let(::Client)
-        ?: forbidden("missing JWT claim")
+        ?: forbidden("missing JWT claim azp_name")
 
 fun ApplicationCall.hasClaim(claim: String): Boolean =
     principal<JwtPrincipal>()?.claims?.claim(claim) != null
@@ -188,12 +188,10 @@ sealed class TokenType(open val jwt: String) {
 
 // The "Fagsystem" header uses the ASCII-safe `kode` (e.g. "TILLST") rather than the
 // enum name, since enum names contain ÆØÅ which are prone to mojibake over HTTP headers.
-fun RoutingCall.fagsystem() =
-    if (System.getenv("ENV") != "prod") {
-        request.header("Fagsystem")?.tilFagsystem() ?: client().toFagsystem()
-    } else {
-        client().toFagsystem()
-    }
+fun RoutingCall.fagsystem() = when (System.getenv("ENV")) {
+    "prod" -> client().toFagsystem()
+    else -> request.header("fagsystem")?.tilFagsystem() ?: client().toFagsystem()
+}
 
 @JvmInline
 value class Client(

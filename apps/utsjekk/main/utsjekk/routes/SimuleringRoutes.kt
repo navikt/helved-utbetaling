@@ -81,12 +81,13 @@ class SimuleringRoutes(
         val token = call.request.authorization()?.replace("Bearer ", "") ?: forbidden("mangler authorization token")
         val obo = azure.getOnBehalfOfToken(token, config.simulering.scope)
         val body = call.receive<ByteArray>()
+        val fs = call.fagsystem()
 
         val response = client.post("${config.simulering.host}$path") {
             bearerAuth(obo.access_token)
             contentType(ContentType.Application.Json)
             call.request.headers["Transaction-ID"]?.let { header("Transaction-ID", it) }
-            call.request.headers["fagsystem"]?.let { header("fagsystem", it) }
+            header("fagsystem", fs.kode)
             setBody(body)
         }
 
