@@ -36,10 +36,10 @@ class SimuleringWorker(
         }
     }
 
-    private fun mapSuccess(response: SimulerBeregningResponse, fagsystem: Fagsystem): Simulering = 
-        when(fagsystem) {
-            Fagsystem.TILLEGGSSTØNADER -> simulering.v1.from(response) ?: Info.OkUtenEndring(fagsystem)
-            Fagsystem.TILTAKSPENGER -> simulering.v1.from(response) ?: Info.OkUtenEndring(fagsystem)
+    private fun mapSuccess(response: SimulerBeregningResponse, fagsystem: Fagsystem): Simulering =
+        when {
+            fagsystem.isTilleggsstønader() -> simulering.v1.from(response) ?: Info.OkUtenEndring(fagsystem)
+            fagsystem == Fagsystem.TILTAKSPENGER -> simulering.v1.from(response) ?: Info.OkUtenEndring(fagsystem)
             else -> v2.Simulering.from(response)
         }
 
