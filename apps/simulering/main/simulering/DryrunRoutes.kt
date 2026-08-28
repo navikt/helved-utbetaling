@@ -6,7 +6,6 @@ import libs.auth.Jwt
 import libs.kafka.StateStore
 import libs.kafka.Streams
 import models.*
-import models.kontrakter.tilFagsystem
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response
@@ -70,7 +69,7 @@ fun dryrunRoutes(
             val claims = claimsLens(req)
             val transactionId = req.transactionId()
 
-            val fs = when (java.lang.System.getenv("ENV")) {
+            val fs = when (System.getenv("ENV")) {
                 "prod" -> fagsystem(claims.clientName())
                 else -> req.header("fagsystem")?.let(Fagsystem::fromFagområde) ?: fagsystem(claims.clientName())
             }
@@ -112,8 +111,8 @@ private fun respondFromStore(store: StateStore<String, Simulering>, key: String)
 }
 
 private fun pollStore(store: StateStore<String, Simulering>, key: String): Simulering? {
-    val deadline = java.lang.System.currentTimeMillis() + DRYRUN_TIMEOUT_MS
-    while (java.lang.System.currentTimeMillis() < deadline) {
+    val deadline = System.currentTimeMillis() + DRYRUN_TIMEOUT_MS
+    while (System.currentTimeMillis() < deadline) {
         val result = store.getOrNull(key)
         if (result != null) return result
         Thread.sleep(POLL_INTERVAL_MS)
