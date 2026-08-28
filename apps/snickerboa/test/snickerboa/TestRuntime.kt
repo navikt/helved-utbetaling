@@ -18,7 +18,7 @@ object TestRuntime {
     val kafka: VanillaKafkaMock  = VanillaKafkaMock()
     val config = Config(kafka = kafka.config)
     val topics = TestTopics(kafka)
-    val app = snickerboa(config, kafka, factory = kafka)
+    val app = snickerboa(config, kafka)
 }
 
 fun aapUtbetaling(dryrun: Boolean = false) = AapUtbetaling(
