@@ -7,6 +7,7 @@ import libs.auth.JwksClient
 import libs.auth.JwtVerifier
 import libs.auth.TokenConfig
 import libs.utils.secureLog
+import models.forbidden
 import org.http4k.core.*
 import org.http4k.lens.RequestContextLens
 import java.net.http.HttpClient
@@ -47,5 +48,5 @@ fun createJwtVerifier(config: AzureConfig): JwtVerifier {
 }
 
 fun Jwt.Claims.clientName(): String =
-    (claim("azp_name") ?: error("Missing azp_name claim"))
+    (claim("azp_name") ?: forbidden("Missing azp_name claim"))
         .substringAfterLast(":")

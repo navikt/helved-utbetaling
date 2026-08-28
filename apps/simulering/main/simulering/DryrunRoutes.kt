@@ -6,6 +6,7 @@ import libs.auth.Jwt
 import libs.kafka.StateStore
 import libs.kafka.Streams
 import models.*
+import models.kontrakter.tilFagsystem
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response
@@ -15,9 +16,6 @@ import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 import java.util.*
-
-/** Bypass access for test clients and proxies that forward fagsystem header */
-private val PROXY_CLIENTS = setOf("azure-token-generator", "snickerboa", "utsjekk")
 
 /** OS/UR got 2 min timeout before rolling back a failed simulering */
 private const val DRYRUN_TIMEOUT_MS = 120_000L
@@ -72,31 +70,37 @@ fun dryrunRoutes(
             val claims = claimsLens(req)
             val transactionId = req.transactionId()
 
-            val fagsystem = when (val name = claims.clientName()) {
-                in PROXY_CLIENTS -> {
-                    val header = req.header("fagsystem")
-                        ?: return@to Response(Status.BAD_REQUEST).body("header fagsystem must be specified when using $name")
-                    // Use the ASCII-safe kode (e.g. "TILLST") instead of the enum name,
-                    // since enum names contain ÆØÅ which are prone to mojibake over HTTP headers.
-                    Fagsystem.from(header)
-                }
-                // TODO: Legg til appnavn når andre begynner å simulere
-                "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
-                "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
-                else -> return@to Response(Status.FORBIDDEN)
-                    .body("mangler mapping mellom appname ($name) og fagsystem-enum")
+            val fs = when (java.lang.System.getenv("ENV")) {
+                "prod" -> fagsystem(claims.clientName())
+                else -> req.header("fagsystem")?.let(Fagsystem::fromFagområde) ?: fagsystem(claims.clientName())
             }
 
-            when (fagsystem) {
+            when (fs) {
                 Fagsystem.DAGPENGER -> dryrunDagpenger(req, transactionId)
                 Fagsystem.AAP -> dryrunAap(req, transactionId)
                 Fagsystem.TILLEGGSSTØNADER -> dryrunTilleggsstønader(req, transactionId)
                 Fagsystem.TILTAKSPENGER -> dryrunTiltakspenger(req, transactionId)
-                else -> Response(Status.NOT_FOUND).body("simulering for $fagsystem is not implemented yet")
+                else -> Response(Status.NOT_FOUND).body("simulering for $fs is not implemented yet")
             }
         },
     )
 }
+
+private fun fagsystem(fs: String): Fagsystem =
+    when (fs) {
+        "azure-token-generator" -> Fagsystem.AAP
+        "helved-peisen" -> Fagsystem.TILLEGGSSTØNADER
+        "snickerboa" -> Fagsystem.DAGPENGER
+        "utbetal" -> Fagsystem.AAP
+        "dp-mellom-barken-og-veden" -> Fagsystem.DAGPENGER
+        "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
+        "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
+        else ->
+            forbidden(
+                msg = "mangler mapping mellom appname ($fs) og fagsystem-enum",
+                doc = "kom_i_gang",
+            )
+    }
 
 private fun respondFromStore(store: StateStore<String, Simulering>, key: String): Response {
     val result = pollStore(store, key)
