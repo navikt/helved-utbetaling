@@ -354,7 +354,7 @@ private fun kvitteringReadyOrRetry(
                 // in ~2.5 min which isn't always enough. Use wall-clock budget instead.
                 val maxWaitMs = meta.headers["barrierMaxWaitMs"]?.toLongOrNull()
                     ?: BARRIER_MAX_WAIT_MS
-                val now = java.lang.System.currentTimeMillis()
+                val now = System.currentTimeMillis()
                 val startedAt = meta.headers[BARRIER_STARTED_AT]?.toLongOrNull() ?: now
                 val elapsed = now - startedAt
                 if (elapsed >= maxWaitMs) {

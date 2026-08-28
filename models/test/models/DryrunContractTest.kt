@@ -5,9 +5,6 @@ import io.swagger.v3.parser.OpenAPIV3Parser
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.contextual
-import kotlinx.serialization.json.Json
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -27,7 +24,7 @@ import libs.kotlinx.KotlinxJson
  */
 class DryrunContractTest {
     private val spec by lazy {
-        val specPath = java.lang.System.getProperty("user.dir") + "/../dokumentasjon/openapi-dryrun.yml"
+        val specPath = System.getProperty("user.dir") + "/../dokumentasjon/openapi-dryrun.yml"
         val result = OpenAPIV3Parser().readLocation(specPath, null, null)
         assertNotNull(result.openAPI, "Failed to parse OpenAPI spec: ${result.messages}")
         result.openAPI

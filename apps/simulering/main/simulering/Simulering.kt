@@ -116,7 +116,7 @@ private val errorFilter = Filter { next ->
         try {
             next(request)
         } catch (e: ApiError) {
-            val dto = ApiErrorDto(e.statusCode, e.msg, e.doc, e.system?.name)
+            val dto = ApiErrorDto(e.statusCode, e.msg, e.doc, e.source?.name)
             Response(Status(e.statusCode, ""))
                 .header("Content-Type", "application/json")
                 .body(errorJson.encodeToString(dto))

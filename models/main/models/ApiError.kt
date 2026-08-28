@@ -98,7 +98,7 @@ object DocumentedErrors {
 }
 
 @Serializable
-enum class System {
+enum class Source {
     HELVED,
     OSUR
 }
@@ -108,7 +108,7 @@ data class ApiError(
     val statusCode: Int,
     val msg: String,
     val doc: String? = DocumentedErrors.BASE,
-    val system: System? = System.HELVED,
+    val source: Source? = Source.HELVED,
 ) : RuntimeException(msg)
 
 fun badRequest(msg: String, doc: String? = null): Nothing = throw ApiError(400, msg, doc ?: DocumentedErrors.BASE)
@@ -145,15 +145,15 @@ fun Mmel.apiError(code: Int): ApiError {
                 statusCode = 404,
                 msg = DocumentedErrors.Async.Utbetaling.UTBETALING_FINNES_IKKE.msg,
                 doc = DocumentedErrors.Async.Utbetaling.UTBETALING_FINNES_IKKE.doc,
-                system = System.OSUR
+                source = Source.OSUR
             )
             contains("Oppdraget finnes fra før") -> ApiError(
                 statusCode = 409,
                 msg = DocumentedErrors.Async.Utbetaling.UTBETALING_FINNES_ALLEREDE.msg,
                 doc = DocumentedErrors.Async.Utbetaling.UTBETALING_FINNES_ALLEREDE.doc,
-                system = System.OSUR
+                source = Source.OSUR
             )
-            else -> ApiError(statusCode = code, msg = this, system = System.OSUR)
+            else -> ApiError(statusCode = code, msg = this, source = Source.OSUR)
         }
     }
 }
