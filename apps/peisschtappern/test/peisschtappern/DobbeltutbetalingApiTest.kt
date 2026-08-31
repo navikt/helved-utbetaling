@@ -41,7 +41,7 @@ class DobbeltutbetalingApiTest {
     }
 
     @Test
-    fun `GET dobbeltutbetalinger filtrerer ut kjente`() = runTest(TestRuntime.context) {
+    fun `GET dobbeltutbetalinger filtrerer ut slukkede`() = runTest(TestRuntime.context) {
         saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
         saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
 
@@ -51,7 +51,7 @@ class DobbeltutbetalingApiTest {
                 klassekode = "DAGP",
                 fom = LocalDate.of(2026, 1, 1),
                 tom = LocalDate.of(2026, 1, 31),
-            ).insert()
+            ).slukk()
         }
 
         val result = TestRuntime.ktor.httpClient.get("/api/brann/dobbeltutbetalinger") {
@@ -63,7 +63,7 @@ class DobbeltutbetalingApiTest {
     }
 
     @Test
-    fun `POST dobbeltutbetalinger lagrer kjent`() = runTest(TestRuntime.context) {
+    fun `POST dobbeltutbetalinger lagrer håndtert`() = runTest(TestRuntime.context) {
         val response = TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger") {
             bearerAuth(TestRuntime.azure.generateToken())
             parameter("behandlingId", "beh-1")
@@ -81,6 +81,7 @@ class DobbeltutbetalingApiTest {
             assertEquals("DAGP", klassekode)
             assertEquals(LocalDate.of(2026, 1, 1), fom)
             assertEquals(LocalDate.of(2026, 1, 31), tom)
+            assertTrue(håndtertAt != null)
         }
     }
 
@@ -99,6 +100,95 @@ class DobbeltutbetalingApiTest {
 
         val kjente = transaction { KjentDobbeltutbetaling.findAll() }
         assertEquals(1, kjente.size)
+        assertTrue(kjente.single().håndtertAt != null)
+    }
+
+    @Test
+    fun `GET dobbeltutbetalinger filtrerer ut håndterte`() = runTest(TestRuntime.context) {
+        saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
+        saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
+
+        TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            parameter("behandlingId", "beh-1")
+            parameter("klassekode", "DAGP")
+            parameter("fom", "2026-01-01")
+            parameter("tom", "2026-01-31")
+        }
+
+        val uslukkede = TestRuntime.ktor.httpClient.get("/api/brann/dobbeltutbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<Suspect>>()
+
+        assertTrue(uslukkede.isEmpty())
+    }
+
+    @Test
+    fun `håndtering fjerner dobbeltutbetalingen fra uhåndterte`() = runTest(TestRuntime.context) {
+        saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
+        saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
+
+        TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            parameter("behandlingId", "beh-1")
+            parameter("klassekode", "DAGP")
+            parameter("fom", "2026-01-01")
+            parameter("tom", "2026-01-31")
+        }
+
+        val now = Instant.now().toEpochMilli()
+        val uhåndterte = transaction {
+            DobbeltutbetalingService.finnUhåndterte(now - 60_000, now + 60_000)
+        }
+        assertTrue(uhåndterte.isEmpty())
+    }
+
+    @Test
+    fun `POST dobbeltutbetalinger slukk er idempotent`() = runTest(TestRuntime.context) {
+        repeat(3) {
+            val response = TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger/slukk") {
+                bearerAuth(TestRuntime.azure.generateToken())
+                parameter("behandlingId", "beh-1")
+                parameter("klassekode", "DAGP")
+                parameter("fom", "2026-01-01")
+                parameter("tom", "2026-01-31")
+            }
+            assertEquals(HttpStatusCode.OK, response.status)
+        }
+
+        val kjente = transaction { KjentDobbeltutbetaling.findAll() }
+        assertEquals(1, kjente.size)
+        assertTrue(kjente.single().slukketAt != null)
+    }
+
+    @Test
+    fun `slukking skjuler brannen men ikke dobbeltutbetalingen i dashboardet`() = runTest(TestRuntime.context) {
+        saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
+        saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
+
+        val response = TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger/slukk") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            parameter("behandlingId", "beh-1")
+            parameter("klassekode", "DAGP")
+            parameter("fom", "2026-01-01")
+            parameter("tom", "2026-01-31")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val kjente = transaction { KjentDobbeltutbetaling.findAll() }
+        assertTrue(kjente.single().slukketAt != null)
+
+        val uvarslede = TestRuntime.ktor.httpClient.get("/api/brann/dobbeltutbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+        }.body<List<Suspect>>()
+        assertTrue(uvarslede.isEmpty())
+
+        val now = Instant.now().toEpochMilli()
+        val uhåndterte = transaction {
+            DobbeltutbetalingService.finnUhåndterte(now - 60_000, now + 60_000)
+        }
+        assertEquals(1, uhåndterte.size)
     }
 
     private suspend fun saveStatus(
