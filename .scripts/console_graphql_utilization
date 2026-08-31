@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# 1. login to nais cli
+#   nais login --nais
+
+# 2. proxy graphql
+#   nais api proxy
+
+# 3. get utilization from graphql and analyze the data
+curl -s http://localhost:4242/graphql -H 'Content-Type: application/json' -d '{
+  "query": "{ team(slug: \"helved\") { environment(name: \"dev-gcp\") { application(name: \"simulering\") { utilization { series(input: { start: \"2026-08-24T00:00:00Z\", end: \"2026-08-31T23:59:59Z\", resourceType: MEMORY }) { timestamp value } } } } } }"
+}' 2>&1 | python3 -c "
+import sys,json
+from collections import defaultdict
+data = json.load(sys.stdin)
+points = data['data']['team']['environment']['application']['utilization']['series']
+
+# Group by timestamp, take max value (peak memory before kill)
+buckets = defaultdict(list)
+for p in points:
+    buckets[p['timestamp']].append(p['value']/1024/1024)
+
+print('Timestamp                Max(Mi)  Instances  Pattern')
+print('-' * 70)
+for ts in sorted(buckets):
+    vals = buckets[ts]
+    mx = max(vals)
+    n = len(vals)
+    bar = '█' * int(mx / 10)
+    leak = ' ⚠️ LEAK' if mx > 400 else ''
+    crash = f' 💥 {n} restarts' if n > 1 else ''
+    print(f'{ts}  {mx:6.0f}   {n:3d}       {bar}{leak}{crash}')
+"
