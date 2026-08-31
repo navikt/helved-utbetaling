@@ -38,10 +38,10 @@ spec:
           cluster: dev-fss
   resources:
     limits:
-      memory: 512Mi
+      memory: 1024Mi
     requests:
-      memory: 300Mi
-      cpu: 20m
+      memory: 512Mi
+      cpu: 180m
   replicas:
     min: 1
     max: 1
