@@ -3,7 +3,7 @@ dependencies {
     api(project(":libs:utils"))
     api("no.nav.helved:xml:3.1.252")
     api("com.ibm.mq:com.ibm.mq.allclient:9.4.4.0")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:mq-test"))
 }
