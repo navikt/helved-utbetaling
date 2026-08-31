@@ -56,5 +56,11 @@ class StateStore<K : Any, V>(private val internalStateStore: ReadOnlyKeyValueSto
         }
         return seq.toList()
     }
+
+    fun forEach(action: (KeyValue<K, V>) -> Unit) {
+        internalStateStore.all().use { iter -> 
+            iter.forEach(action)
+        }
+    }
 }
 

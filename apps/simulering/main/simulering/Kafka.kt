@@ -60,9 +60,7 @@ class SimuleringScheduler(
     interval = interval,
 ) {
     override fun schedule(wallClockTime: Long, store: StateStore<String, ValueAndTimestamp<SimulerBeregningRequest>>) {
-        val iter = store.iterator()
-        while (iter.hasNext()) {
-            val entry = iter.next()
+        store.forEach { entry -> 
             val age = wallClockTime - entry.value.timestamp()
             if (age > evictionTtl.inWholeMilliseconds) {
                 store.delete(entry.key)
