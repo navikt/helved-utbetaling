@@ -24,15 +24,13 @@ private val avstemmingXml = XML {
 
 object DashboardService {
     suspend fun dashboard(fom: Long, tom: Long): Dashboard {
-        val successfulStatuses = Daos.findStatuses("OK", fom, tom)
-
         return Dashboard(
             feiletUtbetalinger = Daos.feiletUtbetalinger(fom, tom),
             korrigerteFeiletUtbetalinger = Daos.korrigerteFeiletUtbetalinger(fom),
             pendingMismatch = PendingMismatchService.detectMismatches(fom, tom),
             avstemming = avstemming(fom, tom),
             oppdragUtenKvittering = Daos.findOppdragWithMissingStatus(fom, tom),
-            dobbeltutbetalinger = DobbeltutbetalingService.finn(successfulStatuses)
+            dobbeltutbetalinger = DobbeltutbetalingService.finnUhåndterte(fom, tom),
         )
     }
 
