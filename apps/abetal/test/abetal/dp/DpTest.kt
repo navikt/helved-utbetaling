@@ -13,6 +13,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+import libs.kafka.StreamsPair
+import no.nav.system.os.entiteter.typer.simpletypes.KodeStatusLinje
 import kotlin.test.*
 
 internal class DpTest : ConsumerTestBase() {
@@ -2254,5 +2256,35 @@ internal class DpTest : ConsumerTestBase() {
         TestRuntime.topics.status.assertThat()
             .has(secondKey)
             .with(secondKey) { reply -> assertEquals(Status.OK, reply.status) }
+    }
+
+    @Test
+    fun `fake delete gir samme simulering som 'ekte' delete`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val uid = UtbetalingId(UUID.randomUUID())
+
+        val prev = utbetaling(action = Action.CREATE, uid = uid, sakId = sid, behandlingId = bid) {
+            periode(3.jun, 14.jun, 100u)
+        }.copy(dryrun = true)
+
+        val delete = utbetaling(action = Action.DELETE, uid = uid, sakId = sid, behandlingId = bid) {
+            periode(1.jan, 1.jan, 1u)
+        }.copy(dryrun = true)
+
+        val fakeDelete = utbetaling(action = Action.FAKE_DELETE, uid = uid, sakId = sid, behandlingId = bid) {
+            periode(1.jan, 1.jan, 1u)
+        }.copy(dryrun = true)
+
+        val (_, simuleringer) = AggregateService.utledSimulering(listOf(StreamsPair(delete, prev)))
+        val (_, fakeDeleteSimuleringer) = AggregateService.utledSimulering(listOf(StreamsPair(fakeDelete, prev)))
+
+        val ekteLinje = simuleringer.single().request.oppdrag.oppdragslinjes.single()
+        val fakeLinje = fakeDeleteSimuleringer.single().request.oppdrag.oppdragslinjes.single()
+
+        assertEquals(KodeStatusLinje.OPPH, fakeLinje.kodeStatusLinje)
+        assertEquals(ekteLinje.kodeStatusLinje, fakeLinje.kodeStatusLinje)
+        assertEquals(ekteLinje.datoStatusFom, fakeLinje.datoStatusFom)
+        assertEquals(ekteLinje.sats, fakeLinje.sats)
     }
 }

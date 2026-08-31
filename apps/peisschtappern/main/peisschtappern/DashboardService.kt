@@ -99,6 +99,7 @@ data class Dashboard(
         val topic: String,
         val key: String,
         val reason: String,
+        val registeredAt: Long,
     )
 
     @Serializable

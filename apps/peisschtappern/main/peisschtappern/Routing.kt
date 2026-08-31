@@ -59,18 +59,29 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         }
 
         post("/korriger_utbetaling") {
-            val utbetaling = call.receive<Dashboard.KorrigertFeiletUtbetaling>()
-            if (utbetaling.topic.isBlank()) badRequest("topic er påkrevd")
-            if (utbetaling.key.isBlank()) badRequest("key er påkrevd")
-            if (utbetaling.reason.isBlank()) badRequest("reason er påkrevd")
+            val request = call.receive<KorrigerUtbetalingRequest>()
+            if (request.topic.isBlank()) badRequest("topic er påkrevd")
+            if (request.key.isBlank()) badRequest("key er påkrevd")
+            if (request.reason.isBlank()) badRequest("reason er påkrevd")
+            val korrigertUtbetaling = Dashboard.KorrigertFeiletUtbetaling(
+                topic = request.topic,
+                key = request.key,
+                reason = request.reason,
+                registeredAt = System.currentTimeMillis()
+            )
 
             withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
-                    Daos.korrigerFeiletUtbetaling(utbetaling)
+                    Daos.korrigerFeiletUtbetaling(
+                        topic = korrigertUtbetaling.topic,
+                        key = korrigertUtbetaling.key,
+                        reason = korrigertUtbetaling.reason,
+                        registeredAt = korrigertUtbetaling.registeredAt
+                    )
                 }
             }
 
-            call.respond(HttpStatusCode.OK)
+            call.respond(HttpStatusCode.OK, korrigertUtbetaling)
         }
 
         get("/dashboard/oppdrag_uten_status") {
@@ -483,6 +494,13 @@ data class MessageRequest(
     val partition: String,
     val offset: String,
     val reason: String? = null,
+)
+
+@Serializable
+data class KorrigerUtbetalingRequest(
+    val topic: String,
+    val key: String,
+    val reason: String,
 )
 
 @Serializable

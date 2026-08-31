@@ -7,7 +7,7 @@ application {
     mainClass.set("vedskiva.VedskivaKt")
 }
 
-val ktorVersion = "3.5.1"
+val ktorVersion = "3.5.2"
 
 dependencies {
     implementation(project(":models"))
@@ -24,7 +24,6 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
-    implementation("org.apache.kafka:kafka-clients:4.3.0")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))

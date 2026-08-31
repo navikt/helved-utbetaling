@@ -10,7 +10,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.utils.appLog
@@ -59,19 +58,18 @@ class Snickerboa(
 fun snickerboa(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    factory: KafkaFactory = object : KafkaFactory {},
 ): Snickerboa {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     LogbackMetrics().bindTo(prometheus)
 
-    val producers = UtbetalingProducers.create(factory, config.kafka)
+    val producers = UtbetalingProducers.create(kafka, config.kafka)
     val correlator = RequestReplyCorrelator(producers)
 
-    val statusKafkaConsumer = factory.createConsumer(config.kafka, Topics.status)
-    val dryrunAapConsumer = factory.createConsumer(config.kafka, Topics.dryrunAap)
-    val dryrunDpConsumer = factory.createConsumer(config.kafka, Topics.dryrunDp)
-    val dryrunTsConsumer = factory.createConsumer(config.kafka, Topics.dryrunTs)
-    val dryrunTpConsumer = factory.createConsumer(config.kafka, Topics.dryrunTp)
+    val statusKafkaConsumer = kafka.createConsumer(config.kafka, Topics.status)
+    val dryrunAapConsumer = kafka.createConsumer(config.kafka, Topics.dryrunAap)
+    val dryrunDpConsumer = kafka.createConsumer(config.kafka, Topics.dryrunDp)
+    val dryrunTsConsumer = kafka.createConsumer(config.kafka, Topics.dryrunTs)
+    val dryrunTpConsumer = kafka.createConsumer(config.kafka, Topics.dryrunTp)
 
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val statusJob = scope.launch { statusConsumer(correlator, statusKafkaConsumer) }

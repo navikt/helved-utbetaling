@@ -42,6 +42,8 @@ object DobbeltutbetalingService {
                     tom = line.tom,
                     beløp = line.beløp,
                     kilder = mutableMapOf(),
+                    sakId = suspect.sakId,
+                    fagsystem = suspect.fagsystem,
                 )
                 val suspectGroup = suspects.getOrPut(kandidat.key) { kandidat }
 
@@ -66,6 +68,8 @@ data class Suspect(
     val tom: LocalDate,
     val beløp: UInt,
     val kilder: MutableMap<String, Kilde>,
+    val sakId: String? = null,
+    val fagsystem: String? = null,
 ) {
     val key: String get() = "$behandlingId::$klassekode::$fom::$tom"
 
