@@ -186,7 +186,7 @@ private fun jsonPendingMismatches(
 }"""
 }
 
-private fun jsonDobbeltutbetalinger(suspects: List<Dobbeltutbetaling>, config: Config): String {
+internal fun jsonDobbeltutbetalinger(suspects: List<Dobbeltutbetaling>, config: Config): String {
     val totalCount = suspects.size
 
     val blocks = buildList {
