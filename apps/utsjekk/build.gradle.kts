@@ -27,13 +27,13 @@ dependencies {
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     implementation("io.ktor:ktor-server-double-receive:${ktorVersion}")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:jdbc-test"))
     testImplementation(project(":libs:auth-test"))
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
 
