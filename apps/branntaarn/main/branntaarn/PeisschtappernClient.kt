@@ -86,7 +86,7 @@ class PeisschtappernClient(
                     is ManglendeKvittering -> client.delete("${config.peisschtappern.host}/api/brann/${brann.key}") {
                         bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
                     }
-                    is Dobbeltutbetaling -> client.post("${config.peisschtappern.host}/api/brann/dobbeltutbetalinger") {
+                    is Dobbeltutbetaling -> client.post("${config.peisschtappern.host}/api/brann/dobbeltutbetalinger/slukk") {
                         bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
                         parameter("behandlingId", brann.behandlingId)
                         parameter("klassekode", brann.klassekode)
@@ -94,7 +94,6 @@ class PeisschtappernClient(
                         parameter("tom", brann.tom)
                     }
                     is PendingMismatch -> Unit
-
                 }
             }
         } catch (e: ConnectTimeoutException) {
