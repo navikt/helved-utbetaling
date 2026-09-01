@@ -38,14 +38,17 @@ object Stores {
     val dryrunTs = Store(Tables.dryrunTs)
 }
 
-fun Topology.simuleringer(channel: Channel<Pair<String, SimulerBeregningRequest>>) {
+fun Topology.simuleringer(
+    channel: Channel<Pair<String, SimulerBeregningRequest>>,
+    backpressureChannel: Channel<Pair<String, Fagsystem>>,
+) {
     globalKTable(Tables.dryrunAap, retention = 1.hours)
     globalKTable(Tables.dryrunDp, retention = 1.hours)
     globalKTable(Tables.dryrunTp, retention = 1.hours)
     globalKTable(Tables.dryrunTs, retention = 1.hours)
 
     val ktable = consume(Tables.simuleringer)
-    val scheduler = SimuleringScheduler(ktable, 5.seconds, channel)
+    val scheduler = SimuleringScheduler(ktable, 5.seconds, channel, backpressureChannel)
     ktable.schedule(scheduler)
 }
 
@@ -53,7 +56,8 @@ class SimuleringScheduler(
     ktable: KTable<String, SimulerBeregningRequest>,
     interval: Duration,
     private val channel: Channel<Pair<String, SimulerBeregningRequest>>,
-    private val evictionTtl: Duration = 3.minutes, // TODO: Finn riktig verdi her
+    private val backpressureChannel: Channel<Pair<String, Fagsystem>>,
+    private val evictionTtl: Duration = 2.minutes,
 ) : StateScheduleProcessor<String, SimulerBeregningRequest>(
     named = "simulering-scheduler",
     table = ktable,
@@ -64,10 +68,19 @@ class SimuleringScheduler(
             val age = wallClockTime - entry.value.timestamp()
             if (age > evictionTtl.inWholeMilliseconds) {
                 store.delete(entry.key)
-            } else if (channel.trySend(entry.key to entry.value.value()).isSuccess) {
+                backpressure(entry.key, entry.value.value())
+            } else {
                 store.delete(entry.key)
+                if (!channel.trySend(entry.key to entry.value.value()).isSuccess) {
+                    backpressure(entry.key, entry.value.value())
+                }
             }
         }
+    }
+
+    private fun backpressure(key: String, sim: SimulerBeregningRequest) {
+        val fagsystem = Fagsystem.from(sim.request.oppdrag.kodeFagomraade.trimEnd())
+        backpressureChannel.trySend(key to fagsystem)
     }
 }
 
