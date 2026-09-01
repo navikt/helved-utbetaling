@@ -25,8 +25,14 @@ class SimuleringWorker(
                     val response = service.simulerJaxb(request)
                     mapSuccess(response, fagsystem)
                 } catch (e: Exception) {
-                    appLog.error("Simulering feilet for fagsystem=$fagsystem")
-                    secureLog.error("Simulering feilet for key=$key fagsystem=$fagsystem", e)
+                    val message = e.message ?: "ukjent feil"
+                    if (isInvalidRequest(message)) {
+                        appLog.warn("Simulering feilet for fagsystem=$fagsystem")
+                        secureLog.warn("Simulering feilet for key=$key fagsystem=$fagsystem", e)
+                    } else {
+                        appLog.error("Simulering feilet for fagsystem=$fagsystem")
+                        secureLog.error("Simulering feilet for key=$key fagsystem=$fagsystem", e)
+                    }
                     mapError(e, fagsystem)
                 }
                 producerFor(fagsystem).send(key, simulering)
