@@ -119,6 +119,21 @@ private val stønadstyperForTillst = listOf(
     StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_OPPFØLGING, // INDOPPFAG - TSDROPPFAG2-OP
     StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_NAV, // UTVAOONAV - TSDRUTVAVKLOPPF-OP
     StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_UTVIDET_OPPFØLGING_I_OPPLÆRING, // UTVOPPFOPL - TSDRUTVOPPFOPPL-OP
+
+    StønadTypeTilleggsstønader.REISE_OPPSTART_AAP, // TSROAAISP3-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_ENSLIG_FORSØRGER, // TSROAAISP2-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_ETTERLATTE, // TSROAAISP4-OP
+
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_ARBEIDSFORBEREDENDE, // TSROAAFT-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_ARBEIDSTRENING, // TSROAATTILT-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_AVKLARING, // TSROAAAG-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_ENKELTPLASS_AMO, // TSROAEPAMO-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_ENKELTPLASS_FAG_YRKE_HOYERE_UTD, // TSROAEPVGSHOY-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_GRUPPE_AMO, // TSROAGRAMO-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_GRUPPE_FAG_YRKE_HOYERE_UTD, // TSROAGRVGSHOY-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_HØYERE_UTDANNING, // TSROAHOYUTD-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_JOBBKLUBB, // TSROAJK2009-OP
+    StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_OPPFØLGING, // TSROAOPPFAG-OP
 )
 
 /**
@@ -151,6 +166,16 @@ fun TsUtbetaling.fagsystem(): Fagsystem {
             StønadTypeTilleggsstønader.REISE_OPPSTART_ENSLIG_FORSØRGER -> Fagsystem.TILLSTRO
             StønadTypeTilleggsstønader.REISE_OPPSTART_AAP -> Fagsystem.TILLSTRO
             StønadTypeTilleggsstønader.REISE_OPPSTART_ETTERLATTE -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_ARBEIDSFORBEREDENDE -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_ARBEIDSTRENING -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_AVKLARING -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_ENKELTPLASS_AMO -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_ENKELTPLASS_FAG_YRKE_HOYERE_UTD -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_GRUPPE_AMO -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_GRUPPE_FAG_YRKE_HOYERE_UTD -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_HØYERE_UTDANNING -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_JOBBKLUBB -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_OPPSTART_TILTAK_OPPFØLGING -> Fagsystem.TILLSTRO
             StønadTypeTilleggsstønader.REIS_ARBEID_ENSLIG_FORSØRGER -> Fagsystem.TILLSTRA
             StønadTypeTilleggsstønader.REIS_ARBEID_AAP -> Fagsystem.TILLSTRA
             StønadTypeTilleggsstønader.REIS_ARBEID_ETTERLATTE -> Fagsystem.TILLSTRA
