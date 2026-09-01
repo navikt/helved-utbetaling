@@ -26,16 +26,23 @@ class ActuatorTest {
     @Test
     fun meter() = runTest {
         // Trigger at least one server request so ktor_http_server_requests_seconds
-        // exists in the metric registry. Under class-concurrency this test may
-        // run before any other test class has issued a request.
+        // exists in the metric registry.
         httpClient.get("/actuator/ready")
 
-        val res = httpClient.get("/actuator/metric")
-        assertEquals(HttpStatusCode.OK, res.status)
+        // Micrometer records the timer asynchronously after the response is sent.
+        // Poll until the metric appears.
+        var body = ""
+        repeat(100) {
+            body = httpClient.get("/actuator/metric").bodyAsText()
+            if (body.contains("ktor_http_server_requests_seconds")) return@runTest run {
+                assertTrue(body.contains("logback_events_total"))
+                assertTrue(body.contains("jvm_threads_states_threads"))
+            }
+            Thread.sleep(10)
+        }
 
-        val body = res.bodyAsText()
         assertTrue(body.contains("logback_events_total"))
-        assertTrue(body.contains("ktor_http_server_requests_seconds"))
+        assertTrue(body.contains("ktor_http_server_requests_seconds"), "metric not found after polling")
         assertTrue(body.contains("jvm_threads_states_threads"))
     }
 }

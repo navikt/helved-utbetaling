@@ -5,6 +5,7 @@ plugins {
 val ktorVersion = "3.5.2"
 
 dependencies {
+    api(project(":libs:jwt"))
     api(project(":libs:cache"))
     api(project(":libs:http"))
     api(project(":libs:utils"))

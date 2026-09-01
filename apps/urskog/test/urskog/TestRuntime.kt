@@ -14,7 +14,6 @@ import libs.kafka.StreamsMock
 import libs.ktor.KtorRuntime
 import libs.mq.MQConfig
 import libs.utils.logger
-import libs.ws.SoapConfig
 import org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG
 import org.apache.kafka.streams.state.BuiltInDslStoreSuppliers
 import java.io.File
@@ -31,10 +30,6 @@ class TestTopics(kafka: StreamsMock) {
     val pendingUtbetalinger = kafka.testTopic(Topics.pendingUtbetalinger)
     val status = kafka.testTopic(Topics.status)
     val retryKvittering = kafka.testTopic(Topics.retryKvittering)
-    val simuleringer = kafka.testTopic(Topics.simuleringer) 
-    val dryrunAap = kafka.testTopic(Topics.dryrunAap) 
-    val dryrunTilleggsstønader = kafka.testTopic(Topics.dryrunTilleggsstønader) 
-    val dryrunTiltakspenger = kafka.testTopic(Topics.dryrunTiltakspenger) 
 }
 
 object TestRuntime {
@@ -55,13 +50,11 @@ object TestRuntime {
             return kafkaMock
         }
     val mq: FakeMQ by lazy { FakeMQ() }
-    val ws: FakeWS by lazy { FakeWS() }
     val fakes: HttpFakes by lazy { HttpFakes() }
     val config: Config by lazy {
         TestConfig.create(
             proxy = fakes.proxyConfig,
             azure = fakes.azureConfig,
-            simulering = fakes.simuleringConfig,
             jdbc = postgres.config,
         )
     }
@@ -89,7 +82,6 @@ object TestConfig {
     fun create(
         proxy: ProxyConfig,
         azure: AzureConfig,
-        simulering: SoapConfig,
         jdbc: JdbcConfig,
     ): Config {
         val oppdrag = OppdragConfig(
@@ -118,7 +110,6 @@ object TestConfig {
             mq = mq,
             proxy = proxy,
             azure = azure,
-            simulering = simulering,
             cluster = "test-cluster",
         )
     }

@@ -16,6 +16,10 @@ spec:
       application: abetal
       access: write
     - team: helved
+      application: simulering
+      access: readwrite
+      # TODO: Fjern tilgang
+    - team: helved
       application: urskog
       access: write
     - team: helved

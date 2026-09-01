@@ -13,7 +13,6 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import models.kontrakter.Personident
 import org.http4k.format.ConfigurableKotlinxSerialization
-import java.util.*
 
 object PersonidentSerializer : KSerializer<Personident> {
     override val descriptor = PrimitiveSerialDescriptor("Personident", PrimitiveKind.STRING)
@@ -21,8 +20,7 @@ object PersonidentSerializer : KSerializer<Personident> {
     override fun deserialize(decoder: Decoder): Personident {
         val jsonDecoder = decoder as? JsonDecoder
         if (jsonDecoder != null) {
-            val element = jsonDecoder.decodeJsonElement()
-            val verdi = when (element) {
+            val verdi = when (val element = jsonDecoder.decodeJsonElement()) {
                 is JsonPrimitive -> element.content
                 is JsonObject -> element["verdi"]!!.jsonPrimitive.content
                 else -> error("Unexpected JSON for Personident: $element")

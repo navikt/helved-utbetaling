@@ -21,4 +21,11 @@ Will be placed somewhere like `/private/var/folders/bh/xltypjf53350jvww3cr_f4g00
 
 Example: `nais aiven get kafka robin-helved-f8fda16d helved`
 
+### Console Utilization (restarts/OOMs)
+First login to nais `nais login --nais`,
 
+Then forward proxy the graphql api `nais api proxy`
+
+Change the script with app, cluster and timestamps.
+
+> ./console_graphql_utilization

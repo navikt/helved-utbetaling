@@ -81,15 +81,12 @@ spec:
           - name: "pgaudit.log_parameter"
             value: "on"
   envFrom:
-    - secret: utsjekk-oppdrag-simulering # servicebruker_passord for SOAP simulering mot OS
-    - secret: utsjekk-oppdrag # MQ_PASSWORD for MQ-oppdrag
+    - secret: utsjekk-oppdrag
   env:
     - name: PROXY_HOST
       value: https://helved-ws-proxy.prod-fss-pub.nais.io
     - name: PROXY_SCOPE
       value: api://prod-fss.helved.ws-proxy/.default
-    - name: SIMULERING_PATH
-      value: cics/cics/services/simulerFpServiceWSBinding
     - name: MQ_HOSTNAME
       value: mpls02.adeo.no
     - name: MQ_PORT

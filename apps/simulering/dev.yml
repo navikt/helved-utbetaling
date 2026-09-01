@@ -16,6 +16,18 @@ spec:
     inbound:
       rules:
         - application: utsjekk
+        - application: snickerboa
+        - application: tiltakspenger-saksbehandling-api
+          namespace: tpts
+        - application: tilleggsstonader-sak
+          namespace: tilleggsstonader
+        - application: azure-token-generator
+          namespace: nais
+          cluster: dev-gcp
+        - application: utbetal
+          namespace: aap
+        - application: dp-mellom-barken-og-veden
+          namespace: teamdagpenger
     outbound:
       external:
         - host: helved-ws-proxy.dev-fss-pub.nais.io
@@ -26,10 +38,10 @@ spec:
           cluster: dev-fss
   resources:
     limits:
-      memory: 512Mi
+      memory: 1024Mi
     requests:
-      memory: 300Mi
-      cpu: 20m
+      memory: 512Mi
+      cpu: 180m
   replicas:
     min: 1
     max: 1
@@ -41,12 +53,13 @@ spec:
           - id: "928636f4-fd0d-4149-978e-a6fb68bb19de"
   liveness:
     path: /actuator/live
-    initialDelay: 5
-    periodSeconds: 2
+    initialDelay: 30
+    periodSeconds: 5
   readiness:
     path: /actuator/ready
-    initialDelay: 5
-    periodSeconds: 2
+    initialDelay: 10
+    periodSeconds: 5
+    failureThreshold: 30
   prometheus:
     path: /actuator/metrics
     enabled: true
@@ -59,6 +72,9 @@ spec:
         - id: loki
   envFrom:
     - secret: utsjekk-oppdrag-simulering
+  kafka:
+    pool: nav-dev
+    streams: true
   env:
     - name: PROXY_HOST
       value: https://helved-ws-proxy.dev-fss-pub.nais.io

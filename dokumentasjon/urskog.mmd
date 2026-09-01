@@ -5,14 +5,9 @@ graph LR
 
 subgraph Topologi
     %% TOPICS
-    helved.simuleringer.v1([helved.simuleringer.v1])
-	helved.dryrun-aap.v1([helved.dryrun-aap.v1])
-	helved.status.v1([helved.status.v1])
-	helved.dryrun-dp.v1([helved.dryrun-dp.v1])
-	helved.dryrun-ts.v1([helved.dryrun-ts.v1])
-	helved.dryrun-tp.v1([helved.dryrun-tp.v1])
-	helved.oppdrag.v1([helved.oppdrag.v1])
+    helved.oppdrag.v1([helved.oppdrag.v1])
 	helved.retry-kvittering.v1([helved.retry-kvittering.v1])
+	helved.status.v1([helved.status.v1])
 	helved.pending-utbetalinger.v1([helved.pending-utbetalinger.v1])
 	helved.avstemming.v1([helved.avstemming.v1])
 	helved.utbetalinger.v1([helved.utbetalinger.v1])
@@ -51,17 +46,8 @@ subgraph Topologi
     
     
     %% BASIC STREAMS
-    helved.simuleringer.v1 --> helved.status.v1
-	helved.simuleringer.v1 --> helved.dryrun-dp.v1
-	helved.simuleringer.v1 --> helved.dryrun-ts.v1
-	helved.simuleringer.v1 --> helved.status.v1
-	helved.simuleringer.v1 --> helved.status.v1
-	helved.simuleringer.v1 --> helved.dryrun-aap.v1
-	helved.simuleringer.v1 --> helved.status.v1
-	helved.simuleringer.v1 --> helved.dryrun-tp.v1
-	helved.simuleringer.v1 --> helved.status.v1
+    helved.oppdrag.v1 --> helved.status.v1
 	helved.oppdrag.v1 --> helved.retry-kvittering.v1
-	helved.oppdrag.v1 --> helved.status.v1
 	helved.oppdrag.v1 --> helved.status.v1
 	helved.retry-kvittering.v1 --> helved.retry-kvittering.v1
 	helved.retry-kvittering.v1 --> helved.status.v1
@@ -80,14 +66,9 @@ end
 %% blue     #07cff6
 
 %% STYLES
-style helved.simuleringer.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.dryrun-aap.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.dryrun-dp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.dryrun-ts.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style helved.dryrun-tp.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.oppdrag.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.retry-kvittering.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.pending-utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.avstemming.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.utbetalinger.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a

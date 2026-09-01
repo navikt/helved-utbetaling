@@ -15,15 +15,10 @@ import utsjekk.iverksetting.OppdragStatus
 import utsjekk.utbetaling.UtbetalingDao
 import utsjekk.utbetaling.UtbetalingId
 import java.util.*
-import kotlin.time.Duration.Companion.hours
 
 object Topics {
     const val NUM_PARTITIONS = 3
 
-    val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
-    val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
-    val dryrunTp = Topic("helved.dryrun-tp.v1", json<Simulering>())
-    val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val utbetaling = Topic("helved.utbetalinger.v1", json<Utbetaling>())
@@ -33,25 +28,7 @@ object Topics {
     val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
 }
 
-object Tables {
-    val dryrunAap = Table(Topics.dryrunAap)
-    val dryrunDp = Table(Topics.dryrunDp)
-    val dryrunTp = Table(Topics.dryrunTp)
-    val dryrunTs = Table(Topics.dryrunTs)
-}
-
-object Stores {
-    val dryrunAap = Store(Tables.dryrunAap)
-    val dryrunDp = Store(Tables.dryrunDp)
-    val dryrunTp = Store(Tables.dryrunTp)
-    val dryrunTs = Store(Tables.dryrunTs)
-}
-
 fun createTopology(jdbcCtx: CoroutineDatasource): Topology = topology {
-    globalKTable(Tables.dryrunAap, retention = 1.hours)
-    globalKTable(Tables.dryrunDp, retention = 1.hours)
-    globalKTable(Tables.dryrunTp, retention = 1.hours)
-    globalKTable(Tables.dryrunTs, retention = 1.hours)
     consumeStatus(jdbcCtx)
 }
 
