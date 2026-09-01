@@ -237,6 +237,9 @@ data class Info (
     @Serializable
     enum class Status {
         OK_UTEN_ENDRING,
+        FEILET,
+        UTILGJENGELIG,
+        UGYLDIG_REQUEST,
     }
 
     companion object {
@@ -251,5 +254,14 @@ data class Info (
                 ,
             )
         }
+
+        fun Feilet(fagsystem: Fagsystem, message: String): Simulering =
+            Info(Status.FEILET, fagsystem, message)
+
+        fun Utilgjengelig(fagsystem: Fagsystem, message: String): Simulering =
+            Info(Status.UTILGJENGELIG, fagsystem, message)
+
+        fun UgyldigRequest(fagsystem: Fagsystem, message: String): Simulering =
+            Info(Status.UGYLDIG_REQUEST, fagsystem, message)
     }
 }

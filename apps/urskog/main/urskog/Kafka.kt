@@ -5,13 +5,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
-import libs.utils.intoUids
 import libs.kafka.*
 import libs.kafka.processor.EnrichMetadataProcessor
 import libs.kafka.processor.Metadata
 import libs.kafka.processor.Processor
+import libs.utils.intoUids
 import models.*
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
@@ -22,11 +21,6 @@ object Topics {
     val saker = Topic("helved.saker.v1", jsonjsonSet<SakKey, UtbetalingId>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val pendingUtbetalinger = Topic("helved.pending-utbetalinger.v1", json<Utbetaling>())
-    val simuleringer = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
-    val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
-    val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
-    val dryrunTilleggsstønader = Topic("helved.dryrun-ts.v1", json<Simulering>())
-    val dryrunTiltakspenger = Topic("helved.dryrun-tp.v1", json<Simulering>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val avstemming = Topic("helved.avstemming.v1", xml<Avstemmingsdata>())
     val retryKvittering = Topic("helved.retry-kvittering.v1", xml<Oppdrag>())
@@ -270,48 +264,6 @@ fun Topology.avstemming(avstemProducer: AvstemmingMQProducer) {
     }
 }
 
-fun Topology.simulering(simuleringService: SimuleringService) {
-    consume(Topics.simuleringer)
-        .map { sim ->
-            Result.catch {
-                runBlocking {
-                    val fagsystem = Fagsystem.from(sim.request.oppdrag.kodeFagomraade)
-                    simuleringService.simuler(sim) to fagsystem
-                }
-            }
-        }
-        .branch({ result -> result.isOk() }) {
-            map { result -> result.unwrap() }
-                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.AAP }) {
-                    map { (sim, _) -> sim }
-                        .map { Result.catch { v2.Simulering.from(it) } }
-                        .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunAap) }
-                        .default { map { it.unwrapErr().copy(simulering = true) }.produce(Topics.status) }
-                }
-                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.DAGPENGER }) {
-                    map { (sim, _) -> sim }
-                        .map { Result.catch { v2.Simulering.from(it) } }
-                        .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunDp) }
-                        .default { map { it.unwrapErr().copy(simulering = true) }.produce(Topics.status) }
-                }
-                .branch({ (_, fagsystem) -> fagsystem.isTilleggsstønader() }) {
-                    map { (sim, _) -> sim }
-                        .map { Result.catch { intoV1(it) ?: Info.OkUtenEndring(Fagsystem.TILLEGGSSTØNADER) } }
-                        .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunTilleggsstønader) }
-                        .default { map { it.unwrapErr().copy(simulering = true) }.produce(Topics.status) }
-                }
-                .branch({ (_, fagsystem) -> fagsystem == Fagsystem.TILTAKSPENGER }) {
-                    map { (sim, _) -> sim }
-                        .map { Result.catch { intoV1(it) ?: Info.OkUtenEndring(Fagsystem.TILTAKSPENGER) } }
-                        .branch({ it.isOk() }) { map { it.unwrap() }.produce(Topics.dryrunTiltakspenger) }
-                        .default { map { it.unwrapErr().copy(simulering = true) }.produce(Topics.status) }
-                }
-        }
-        .default {
-            map { result -> result.unwrapErr().copy(simulering = true) }.produce(Topics.status)
-        }
-}
-
 private val mapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 
 private const val kvitteringDefaultMaxRetries: Int = 1000
@@ -402,7 +354,7 @@ private fun kvitteringReadyOrRetry(
                 // in ~2.5 min which isn't always enough. Use wall-clock budget instead.
                 val maxWaitMs = meta.headers["barrierMaxWaitMs"]?.toLongOrNull()
                     ?: BARRIER_MAX_WAIT_MS
-                val now = java.lang.System.currentTimeMillis()
+                val now = System.currentTimeMillis()
                 val startedAt = meta.headers[BARRIER_STARTED_AT]?.toLongOrNull() ?: now
                 val elapsed = now - startedAt
                 if (elapsed >= maxWaitMs) {

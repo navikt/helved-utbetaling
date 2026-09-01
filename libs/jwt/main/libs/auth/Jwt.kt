@@ -125,7 +125,6 @@ class JwtVerifier(private val jwks: JwksClient, private val config: TokenConfig)
         claims.expiresAt()?.let { require(it + leeway > now) { "Token expired" } }
         claims.notBefore()?.let { require(it - leeway <= now) { "Token not yet valid" } }
         claims.issuedAt()?.let { exp -> claims.expiresAt()?.let { require(exp <= it) { "iat after exp" } }}
-        require(claims.issuer() == config.issuer) { "Invalid issures" }
+        require(claims.issuer() == config.issuer) { "Invalid issuer" }
     }
 }
-

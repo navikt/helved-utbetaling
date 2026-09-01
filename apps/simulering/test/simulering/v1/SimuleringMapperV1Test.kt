@@ -1,12 +1,12 @@
-package simulering.models.soap
+package simulering.v1
 
 import models.kontrakter.Personident
 import org.junit.jupiter.api.Test
-import simulering.models.rest.rest
+import simulering.v1.rest
 import java.time.LocalDate
 import kotlin.test.assertNull
 
-class SimuleringMappingTest {
+class SimuleringMapperV1Test {
 
     @Test
     fun `setter ikke ref-felter for endringer`() {

@@ -16,8 +16,12 @@ val http4kVersion = "6.48.0.0"
 
 dependencies {
     implementation(project(":models"))
+    implementation(project(":libs:jwt"))
+    implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
     implementation(project(":libs:utils"))
+    implementation("no.nav.helved:xml:3.1.252")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     implementation("org.http4k:http4k-core:$http4kVersion")
     implementation("org.http4k:http4k-format-kotlinx-serialization:$http4kVersion")
@@ -27,4 +31,9 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:auth-test"))
+    testImplementation(project(":libs:kafka-test"))
+}
+
+tasks.withType<Test> {
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
 }

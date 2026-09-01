@@ -9,291 +9,78 @@ import io.ktor.http.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
-import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
 import models.*
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import utsjekk.Topics
 
 class SimuleringV3RouteTest {
 
-    @Test
-    fun `simuler for dagpenger`() =
-        runTest {
-            val key = UUID.randomUUID().toString()
+    @BeforeEach
+    fun setup() {
+        TestRuntime.simulering.reset()
+    }
 
-            val a = async {
-                httpClient.post("/api/simulering/v3") {
-                    contentType(ContentType.Application.Json)
-                    bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.AZURE_TOKEN_GENERATOR))
-                    header("Transaction-ID", key)
-                    header("fagsystem", "DAGPENGER")
-                    setBody(
-                        DpUtbetaling(
-                            dryrun = true,
-                            behandlingId = "1234",
+    @Test
+    fun `simuler for dagpenger via v3 proxy`() = runTest {
+        val key = UUID.randomUUID().toString()
+        val sim = v2.Simulering(
+            perioder = listOf(
+                v2.Simuleringsperiode(
+                    fom = LocalDate.of(2025, 8, 18),
+                    tom = LocalDate.of(2025, 8, 19),
+                    utbetalinger = listOf(
+                        v2.SimulertUtbetaling(
+                            fagsystem = Fagsystem.DAGPENGER,
                             sakId = "sakId",
-                            ident = "12345678910",
-                            vedtakstidspunktet = LocalDateTime.now(),
-                            utbetalinger = listOf(
-                                DpUtbetalingsdag(
-                                    meldeperiode = "18-19 aug",
-                                    dato = LocalDate.of(2025, 8, 18),
-                                    sats = 573u,
-                                    utbetaltBeløp = 573u,
-                                    utbetalingstype = Utbetalingstype.Dagpenger
-                                ),
-                                DpUtbetalingsdag(
-                                    meldeperiode = "18-19 aug",
-                                    dato = LocalDate.of(2025, 8, 19),
-                                    sats = 999u,
-                                    utbetaltBeløp = 999u,
-                                    utbetalingstype = Utbetalingstype.Dagpenger
-                                )
-                            ),
+                            utbetalesTil = "12345678910",
+                            stønadstype = StønadTypeDagpenger.DAGPENGER,
+                            tidligereUtbetalt = 1572,
+                            nyttBeløp = 1572,
+                            posteringer = listOf(),
                         )
                     )
-                }
-            }
-
-            val sim = v2.Simulering(
-                perioder = listOf(
-                    v2.Simuleringsperiode(
-                        fom = LocalDate.of(2025, 8, 18),
-                        tom = LocalDate.of(2025, 8, 19),
-                        utbetalinger = listOf(
-                            v2.SimulertUtbetaling(
-                                fagsystem = Fagsystem.DAGPENGER,
-                                sakId = "sakId",
-                                utbetalesTil = "12345678910",
-                                stønadstype = StønadTypeDagpenger.DAGPENGER,
-                                tidligereUtbetalt = 1572,
-                                nyttBeløp = 1572,
-                                posteringer = listOf(),
-                            )
-                        )
-                    )
-                )
-            )
-
-            TestRuntime.topics.dryrunDp.produce(key) {
-                sim
-            }
-
-            val res = a.await()
-
-            assertEquals(HttpStatusCode.OK, res.status)
-            assertEquals(sim, res.body<Simulering>())
-        }
-
-    @Test
-    @Disabled
-    fun `simuler for dagpenger feiler med status`() =
-        runTest {
-            val key = UUID.randomUUID().toString()
-
-            val a = async {
-                httpClient.post("/api/simulering/v3") {
-                    contentType(ContentType.Application.Json)
-                    bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.AZURE_TOKEN_GENERATOR))
-                    header("Transaction-ID", key)
-                    header("fagsystem", "DAGPENGER")
-                    setBody(
-                        DpUtbetaling(
-                            dryrun = true,
-                            behandlingId = "1234",
-                            sakId = "sakId",
-                            ident = "12345678910",
-                            vedtakstidspunktet = LocalDateTime.now(),
-                            utbetalinger = listOf(
-                                DpUtbetalingsdag(
-                                    meldeperiode = "18-19 aug",
-                                    dato = LocalDate.of(2025, 8, 18),
-                                    sats = 573u,
-                                    utbetaltBeløp = 573u,
-                                    utbetalingstype = Utbetalingstype.Dagpenger
-                                ),
-                                DpUtbetalingsdag(
-                                    meldeperiode = "18-19 aug",
-                                    dato = LocalDate.of(2025, 8, 19),
-                                    sats = 999u,
-                                    utbetaltBeløp = 999u,
-                                    utbetalingstype = Utbetalingstype.Dagpenger
-                                )
-                            ),
-                        )
-                    )
-                }
-            }
-
-            val status = StatusReply.err(ApiError(400, "bad bad bad")) 
-
-            TestRuntime.topics.status.produce(key) {
-                status
-            }
-
-            val res = a.await()
-
-            assertEquals(HttpStatusCode.BadRequest, res.status)
-            assertEquals(status, res.body<StatusReply>())
-        }
-
-    @Test
-    fun `simuler for tilleggsstønader`() = runTest {
-        val transactionId = UUID.randomUUID().toString()
-        val dto = TsDto(
-            dryrun = true,
-            sakId = "sakId",
-            behandlingId = "1234",
-            personident = "12345678910",
-            vedtakstidspunkt = LocalDateTime.now(),
-            periodetype = Periodetype.EN_GANG,
-            saksbehandler = null,
-            beslutter = null,
-            utbetalinger = listOf(
-                TsUtbetaling(
-                    id = UUID.randomUUID(),
-                    stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
-                    brukFagområdeTillst = false,
-                    perioder = listOf(
-                        TsPeriode(
-                            fom = LocalDate.of(2025, 10, 1),
-                            tom = LocalDate.of(2025, 10, 31),
-                            beløp = 573u,
-                        ),
-                    ),
-                ),
-                TsUtbetaling(
-                    id = UUID.randomUUID(),
-                    stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
-                    brukFagområdeTillst = false,
-                    perioder = listOf(
-                        TsPeriode(
-                            fom = LocalDate.of(2025, 11, 1),
-                            tom = LocalDate.of(2025, 11, 30),
-                            beløp = 574u,
-                        ),
-                    ),
                 )
             )
         )
 
-        val a = async {
-            httpClient.post("/api/simulering/v3") {
-                contentType(ContentType.Application.Json)
-                bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.AZURE_TOKEN_GENERATOR))
-                header("Transaction-ID", transactionId)
-                header("fagsystem", "TILLEGGSSTØNADER")
-                setBody(dto)
-            }
-        }
+        val json = libs.kotlinx.KotlinxJson.encodeToString(Simulering.serializer(), sim)
+        TestRuntime.simulering.respondDryrunWith(json, HttpStatusCode.OK)
 
-
-        val sim = v1.Simulering(
-            oppsummeringer = listOf(
-                v1.OppsummeringForPeriode(
-                    fom = LocalDate.of(2025, 10, 1),
-                    tom = LocalDate.of(2025, 10, 31),
-                    tidligereUtbetalt = 573,
-                    nyUtbetaling = 573,
-                    totalEtterbetaling = 0,
-                    totalFeilutbetaling = 0,
-                ),
-                v1.OppsummeringForPeriode(
-                    fom = LocalDate.of(2025, 11, 1),
-                    tom = LocalDate.of(2025, 11, 30),
-                    tidligereUtbetalt = 574,
-                    nyUtbetaling = 574,
-                    totalEtterbetaling = 0,
-                    totalFeilutbetaling = 0,
-                )
-            ),
-            detaljer = v1.SimuleringDetaljer(
-                gjelderId = "12345678910",
-                datoBeregnet = LocalDate.now(),
-                totalBeløp = 573,
-                perioder = listOf(
-                    v1.Periode(
-                        fom = LocalDate.of(2025, 10, 1),
-                        tom = LocalDate.of(2025, 10, 31),
-                        posteringer = listOf(
-                            v1.Postering(
-                                fagområde = v1.Fagområde.TILLSTDR,
-                                sakId = SakId("sakId"),
-                                fom = LocalDate.of(2025, 10, 1),
-                                tom = LocalDate.of(2025, 10, 31),
-                                beløp = 573,
-                                type = v1.PosteringType.YTELSE,
-                                klassekode = "TSDRASISP3-OP",
-                            )
-                        )
+        val res = httpClient.post("/api/simulering/v3") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.AZURE_TOKEN_GENERATOR))
+            header("Transaction-ID", key)
+            header("fagsystem", "DP")
+            setBody(
+                DpUtbetaling(
+                    dryrun = true,
+                    behandlingId = "1234",
+                    sakId = "sakId",
+                    ident = "12345678910",
+                    vedtakstidspunktet = LocalDateTime.now(),
+                    utbetalinger = listOf(
+                        DpUtbetalingsdag(
+                            meldeperiode = "18-19 aug",
+                            dato = LocalDate.of(2025, 8, 18),
+                            sats = 573u,
+                            utbetaltBeløp = 573u,
+                            utbetalingstype = Utbetalingstype.Dagpenger
+                        ),
                     ),
-                    v1.Periode(
-                        fom = LocalDate.of(2025, 11, 1),
-                        tom = LocalDate.of(2025, 11, 30),
-                        posteringer = listOf(
-                            v1.Postering(
-                                fagområde = v1.Fagområde.TILLSTDR,
-                                sakId = SakId("sakId"),
-                                fom = LocalDate.of(2025, 11, 1),
-                                tom = LocalDate.of(2025, 11, 30),
-                                beløp = 574,
-                                type = v1.PosteringType.YTELSE,
-                                klassekode = "TSDRASISP3-OP",
-                            )
-                        )
-                    )
-                ),
+                )
             )
-        )
-
-        TestRuntime.topics.dryrunTs.produce(transactionId) {
-            sim
         }
-
-        val res = a.await()
-
-        val tsTopic = TestRuntime.kafka.getProducer(Topics.utbetalingTs)
-        assertEquals(0, tsTopic.uncommitted().size)
-        val actual = tsTopic.history().singleOrNull { (key, _) -> key == transactionId }?.second
-        assertEquals(dto, actual)
 
         assertEquals(HttpStatusCode.OK, res.status)
-        assertEquals(sim, res.body<v1.Simulering>())
+        assertEquals(sim, res.body<Simulering>())
     }
 
     @Test
     fun `dryrun dagpenger via ny route`() = runTest {
         val key = UUID.randomUUID().toString()
-
-        val a = async {
-            httpClient.post("/api/dryrun/dagpenger") {
-                contentType(ContentType.Application.Json)
-                bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.DAGPENGER))
-                header("Transaction-ID", key)
-                setBody(
-                    DpUtbetaling(
-                        dryrun = true,
-                        behandlingId = "1234",
-                        sakId = "sakId",
-                        ident = "12345678910",
-                        vedtakstidspunktet = LocalDateTime.now(),
-                        utbetalinger = listOf(
-                            DpUtbetalingsdag(
-                                meldeperiode = "18-19 aug",
-                                dato = LocalDate.of(2025, 8, 18),
-                                sats = 573u,
-                                utbetaltBeløp = 573u,
-                                utbetalingstype = Utbetalingstype.Dagpenger
-                            ),
-                        ),
-                    )
-                )
-            }
-        }
-
         val sim = v2.Simulering(
             perioder = listOf(
                 v2.Simuleringsperiode(
@@ -314,11 +101,32 @@ class SimuleringV3RouteTest {
             )
         )
 
-        TestRuntime.topics.dryrunDp.produce(key) {
-            sim
-        }
+        val json = libs.kotlinx.KotlinxJson.encodeToString(Simulering.serializer(), sim)
+        TestRuntime.simulering.respondDryrunWith(json, HttpStatusCode.OK)
 
-        val res = a.await()
+        val res = httpClient.post("/api/dryrun/dagpenger") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.DAGPENGER))
+            header("Transaction-ID", key)
+            setBody(
+                DpUtbetaling(
+                    dryrun = true,
+                    behandlingId = "1234",
+                    sakId = "sakId",
+                    ident = "12345678910",
+                    vedtakstidspunktet = LocalDateTime.now(),
+                    utbetalinger = listOf(
+                        DpUtbetalingsdag(
+                            meldeperiode = "18-19 aug",
+                            dato = LocalDate.of(2025, 8, 18),
+                            sats = 573u,
+                            utbetaltBeløp = 573u,
+                            utbetalingstype = Utbetalingstype.Dagpenger
+                        ),
+                    ),
+                )
+            )
+        }
 
         assertEquals(HttpStatusCode.OK, res.status)
         assertEquals(sim, res.body<Simulering>())
@@ -327,39 +135,6 @@ class SimuleringV3RouteTest {
     @Test
     fun `dryrun tilleggsstonader via ny route`() = runTest {
         val transactionId = UUID.randomUUID().toString()
-        val dto = TsDto(
-            dryrun = true,
-            sakId = "sakId",
-            behandlingId = "1234",
-            personident = "12345678910",
-            vedtakstidspunkt = LocalDateTime.now(),
-            periodetype = Periodetype.EN_GANG,
-            saksbehandler = null,
-            beslutter = null,
-            utbetalinger = listOf(
-                TsUtbetaling(
-                    id = UUID.randomUUID(),
-                    stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
-                    brukFagområdeTillst = false,
-                    perioder = listOf(
-                        TsPeriode(
-                            fom = LocalDate.of(2025, 10, 1),
-                            tom = LocalDate.of(2025, 10, 31),
-                            beløp = 573u,
-                        ),
-                    ),
-                ),
-            )
-        )
-
-        val a = async {
-            httpClient.post("/api/dryrun/tilleggsstonader") {
-                contentType(ContentType.Application.Json)
-                bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILLEGGSSTØNADER))
-                header("Transaction-ID", transactionId)
-                setBody(dto)
-            }
-        }
 
         val sim = v1.Simulering(
             oppsummeringer = listOf(
@@ -396,36 +171,65 @@ class SimuleringV3RouteTest {
             )
         )
 
-        TestRuntime.topics.dryrunTs.produce(transactionId) {
-            sim
-        }
+        val json = libs.kotlinx.KotlinxJson.encodeToString(Simulering.serializer(), sim)
+        TestRuntime.simulering.respondDryrunWith(json, HttpStatusCode.OK)
 
-        val res = a.await()
+        val res = httpClient.post("/api/dryrun/tilleggsstonader") {
+            contentType(ContentType.Application.Json)
+            bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILLEGGSSTØNADER))
+            header("Transaction-ID", transactionId)
+            setBody(
+                TsDto(
+                    dryrun = true,
+                    sakId = "sakId",
+                    behandlingId = "1234",
+                    personident = "12345678910",
+                    vedtakstidspunkt = LocalDateTime.now(),
+                    periodetype = Periodetype.EN_GANG,
+                    saksbehandler = null,
+                    beslutter = null,
+                    utbetalinger = listOf(
+                        TsUtbetaling(
+                            id = UUID.randomUUID(),
+                            stønad = StønadTypeTilleggsstønader.DAGLIG_REISE_AAP,
+                            brukFagområdeTillst = false,
+                            perioder = listOf(
+                                TsPeriode(
+                                    fom = LocalDate.of(2025, 10, 1),
+                                    tom = LocalDate.of(2025, 10, 31),
+                                    beløp = 573u,
+                                ),
+                            ),
+                        ),
+                    )
+                )
+            )
+        }
 
         assertEquals(HttpStatusCode.OK, res.status)
         assertEquals(sim, res.body<v1.Simulering>())
     }
 
     @Test
-    fun `dryrun aap avviser feil klient`() = runTest {
-        val res = httpClient.post("/api/dryrun/aap") {
+    fun `dryrun proxy returns timeout from simulering`() = runTest {
+        TestRuntime.simulering.respondDryrunWith("", HttpStatusCode.RequestTimeout)
+
+        val res = httpClient.post("/api/dryrun/dagpenger") {
             contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILLEGGSSTØNADER))
+            bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.DAGPENGER))
             header("Transaction-ID", UUID.randomUUID().toString())
             setBody(
-                AapUtbetaling(
+                DpUtbetaling(
                     dryrun = true,
-                    sakId = "sakId",
                     behandlingId = "1234",
+                    sakId = "sakId",
                     ident = "12345678910",
                     vedtakstidspunktet = LocalDateTime.now(),
-                    utbetalinger = listOf()
+                    utbetalinger = listOf(),
                 )
             )
         }
 
-        assertEquals(HttpStatusCode.Forbidden, res.status)
+        assertEquals(HttpStatusCode.RequestTimeout, res.status)
     }
 }
-
-

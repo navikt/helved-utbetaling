@@ -14,6 +14,7 @@ import libs.jdbc.concurrency.transaction
 import models.kontrakter.Fagsystem
 import models.kontrakter.StønadTypeDagpenger
 import models.kontrakter.StønadTypeTiltakspenger
+import models.kontrakter.StønadTypeTilleggsstønader
 import libs.kotlinx.KotlinxJson
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -127,6 +128,37 @@ class SimuleringRouteTest {
                                                 barnetillegg = false,
                                                 brukersNavKontor = "4400",
                                                 meldekortId = "M1",
+                                            ),
+                                    ),
+                                ),
+                        ),
+                    )
+                }
+
+            assertEquals(HttpStatusCode.OK, res.status)
+        }
+
+    @Test
+    fun `simuler for tilleggsstønader`() =
+        runTest {
+            val sakId = SakId(RandomOSURId.generate())
+            val behId = BehandlingId("noe-tull")
+            val res =
+                httpClient.post("/api/simulering/v2") {
+                    contentType(ContentType.Application.Json)
+                    bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.TILLEGGSSTØNADER))
+                    header("Fagsystem", Fagsystem.TILLEGGSSTØNADER.kode)
+                    setBody(
+                        simuleringRequest(
+                            sakId = sakId,
+                            behandlingId = behId,
+                            utbetalinger =
+                                listOf(
+                                    utbetaling(
+                                        stønadsdata =
+                                            StønadsdataTilleggsstønaderDto(
+                                                stønadstype = StønadTypeTilleggsstønader.TILSYN_BARN_ENSLIG_FORSØRGER,
+                                                brukersNavKontor = "4400",
                                             ),
                                     ),
                                 ),

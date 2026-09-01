@@ -1,4 +1,4 @@
-package urskog
+package simulering.v1
 
 import java.time.LocalDate
 import java.time.YearMonth
@@ -8,7 +8,7 @@ import kotlin.math.abs
 import no.nav.system.os.entiteter.beregningskjema.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
-fun intoV1(jaxb: SimulerBeregningResponse): Simulering? {
+fun from(jaxb: SimulerBeregningResponse): Simulering? {
     return jaxb.response?.let { response ->
         v1.Simulering(
             oppsummeringer = oppsummeringer(response.simulering.beregningsPeriodes),
@@ -35,7 +35,7 @@ private fun into(periode: BeregningsPeriode): v1.Periode {
             sn.beregningStoppnivaaDetaljers.map { detaljer ->
                 v1.Postering(
                     fagområde = fagområde,
-                    sakId = SakId(sn.fagsystemId.trimEnd()), // hva gjør vi med ny/gammel newtypes?
+                    sakId = SakId(sn.fagsystemId.trimEnd()),
                     fom = LocalDate.parse(detaljer.faktiskFom),
                     tom = LocalDate.parse(detaljer.faktiskTom),
                     beløp = detaljer.belop.toDouble().toInt(),
@@ -48,11 +48,11 @@ private fun into(periode: BeregningsPeriode): v1.Periode {
 }
 
 private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<v1.OppsummeringForPeriode> {
-    val perioderByYearMonth = beregningsPeriodes.groupBy { 
-        YearMonth.parse(it.periodeFom, DateTimeFormatter.ISO_LOCAL_DATE) 
+    val perioderByYearMonth = beregningsPeriodes.groupBy {
+        YearMonth.parse(it.periodeFom, DateTimeFormatter.ISO_LOCAL_DATE)
     }
 
-    return perioderByYearMonth.values.map { perioder ->  
+    return perioderByYearMonth.values.map { perioder ->
         v1.Periode(
             fom = perioder.minOf { LocalDate.parse(it.periodeFom) },
             tom = perioder.maxOf { LocalDate.parse(it.periodeTom) },
@@ -62,7 +62,7 @@ private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<v1
                     sn.beregningStoppnivaaDetaljers.map { detaljer ->
                         v1.Postering(
                             fagområde = fagområde,
-                            sakId = SakId(sn.fagsystemId.trimEnd()), // hva gjør vi med ny/gammel newtypes?
+                            sakId = SakId(sn.fagsystemId.trimEnd()),
                             fom = LocalDate.parse(detaljer.faktiskFom),
                             tom = LocalDate.parse(detaljer.faktiskTom),
                             beløp = detaljer.belop.toDouble().toInt(),
@@ -75,7 +75,7 @@ private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<v1
         )
     }
     .map { periode ->
-        val totalEtterbetaling = if (periode.fom > LocalDate.now()) 0 else totalEtterbetaling(periode.posteringer) 
+        val totalEtterbetaling = if (periode.fom > LocalDate.now()) 0 else totalEtterbetaling(periode.posteringer)
         v1.OppsummeringForPeriode(
             fom = periode.fom,
             tom = periode.tom,
@@ -89,7 +89,7 @@ private fun oppsummeringer(beregningsPeriodes: List<BeregningsPeriode>): List<v1
 
 private fun totalEtterbetaling(posteringer: List<v1.Postering>): Int {
     val justeringer = posteringer.filter { it.type == v1.PosteringType.FEILUTBETALING && it.klassekode in listOf("KL_KODE_JUST_ARBYT", "KL_KODE_JUST_TILLST") }.sumOf { it.beløp }
-    val resultat = nyUtbetaling(posteringer) - tidligereUtbetalt(posteringer) 
+    val resultat = nyUtbetaling(posteringer) - tidligereUtbetalt(posteringer)
     return when (justeringer < 0) {
         true  -> maxOf(resultat - abs(justeringer), 0)
         false -> maxOf(resultat, 0)
