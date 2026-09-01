@@ -53,12 +53,13 @@ spec:
           - id: "928636f4-fd0d-4149-978e-a6fb68bb19de"
   liveness:
     path: /actuator/live
-    initialDelay: 5
-    periodSeconds: 2
+    initialDelay: 30
+    periodSeconds: 5
   readiness:
     path: /actuator/ready
-    initialDelay: 5
-    periodSeconds: 2
+    initialDelay: 10
+    periodSeconds: 5
+    failureThreshold: 30
   prometheus:
     path: /actuator/metrics
     enabled: true
