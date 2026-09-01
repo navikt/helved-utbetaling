@@ -13,6 +13,7 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 
 class SimuleringWorker(
     private val channel: Channel<Pair<String, SimulerBeregningRequest>>,
+    private val backpressureChannel: Channel<Pair<String, Fagsystem>>,
     private val service: SimuleringService,
     private val producers: Map<Fagsystem, KafkaProducer<String, Simulering>>,
 ) {
@@ -32,6 +33,18 @@ class SimuleringWorker(
             } catch (e: Exception) {
                 appLog.error("Feil i simulering-worker for key=$key")
                 secureLog.error("Feil i simulering-worker for key=$key", e)
+            }
+        }
+    }
+
+    suspend fun drainBackpressure() {
+        for ((key, fagsystem) in backpressureChannel) {
+            try {
+                producerFor(fagsystem).send(key, Info.Utilgjengelig(fagsystem, "simulering har for lang kø, prøv igjen senere"))
+            } catch(e: Exception) {
+                // TODO: vurder å bytte til warning + metrikker for å styre alerts ved forekomst-frekvens
+                appLog.error("Feil ved sending av backpressure-svar for key=$key")
+                secureLog.error("Feil ved sending av backpressure-svar for key=$key", e)
             }
         }
     }

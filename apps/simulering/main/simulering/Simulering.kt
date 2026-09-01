@@ -22,6 +22,7 @@ import models.Fagsystem
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import org.http4k.client.JavaHttpClient
 import org.http4k.core.*
+import org.http4k.filter.ClientFilters
 import org.http4k.filter.MicrometerMetrics
 import org.http4k.filter.ServerFilters
 import org.http4k.lens.RequestContextKey
@@ -47,7 +48,7 @@ fun app(
     config: Config = Config(),
     prometheus: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT),
     kafka: Streams = KafkaStreams(),
-    http: HttpHandler = JavaHttpClient(),
+    http: HttpHandler = JavaHttpClient(requestModifier = { it.timeout(Duration.ofMinutes(2))}),
     azure : AzureTokenProvider = AzureTokenProvider(config.azure, http),
     proxyAuth: () -> String = { "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}" },
     sts: Sts = StsClient(config.simulering.sts, http, proxyAuth = proxyAuth),
@@ -57,7 +58,12 @@ fun app(
     val service = SimuleringService(soap, sts)
     val serviceV1 = SimuleringServiceV1(soap, sts)
 
-    val channel = Channel<Pair<String, SimulerBeregningRequest>>(Channel.UNLIMITED)
+    // Hvis OS timer ut/treg responstid og denne bygger seg opp, trenger vi ikke
+    // fullføre alle simuleringer fordi de vil nok time ut av konsumenten sine timeouts uansett.
+    // capacity = 16 sørger for at simuleringer fungerer så lenge OS er performant.
+    val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
+
+    val backpressureChannel = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
 
     val dryrunProducers = mapOf(
         Fagsystem.AAP to kafka.createProducer(config.kafka, Topics.dryrunAap),
@@ -70,14 +76,15 @@ fun app(
         config = config.kafka,
         registry = prometheus,
         topology = topology {
-            simuleringer(channel)
+            simuleringer(channel, backpressureChannel)
         }
     )
 
-    val worker = SimuleringWorker(channel, service, dryrunProducers)
+    val worker = SimuleringWorker(channel, backpressureChannel, service, dryrunProducers)
     thread(isDaemon = true, name = "simulering-workers") {
         runBlocking(Dispatchers.IO) {
             repeat(4) { launch { worker.run() } }
+            launch { worker.drainBackpressure() }
         }
     }
 
