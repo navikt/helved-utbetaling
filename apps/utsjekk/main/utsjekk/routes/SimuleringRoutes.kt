@@ -79,12 +79,19 @@ class SimuleringRoutes(
 
     private suspend fun proxyToSimulering(call: RoutingCall, path: String) {
         val token = call.request.authorization()?.replace("Bearer ", "") ?: forbidden("mangler authorization token")
-        val obo = azure.getOnBehalfOfToken(token, config.simulering.scope)
+        val azureToken = if (call.hasClaim("NAVident")) {
+            azure.getOnBehalfOfToken(token, config.simulering.scope)
+        } else if (call.hasClaim("azp_name")) {
+            azure.getClientCredentialsToken(config.simulering.scope)
+        } else {
+            unauthorized("Mangler claims")
+        }
+
         val body = call.receive<ByteArray>()
         val fs = call.fagsystem()
 
         val response = client.post("${config.simulering.host}$path") {
-            bearerAuth(obo.access_token)
+            bearerAuth(azureToken.access_token)
             contentType(ContentType.Application.Json)
             call.request.headers["Transaction-ID"]?.let { header("Transaction-ID", it) }
             header("fagsystem", fs.kode)
