@@ -89,7 +89,7 @@ object SimuleringService {
             datoOppdragGjelderFom = LocalDate.of(2000, 1, 1).format()
             saksbehId = new.saksbehandlerId.ident
             enhets.addAll(enheter(new))
-            val sistePeriode = prev.perioder.maxBy { it.fom }
+            val sistePeriode = prev.sistePeriode ?:prev.perioder.maxBy { it.fom }
             val opphør = prev.perioder.minBy { it.fom }.fom
             val oppdragslinje = oppdragslinje(new, true, sistePeriode, prev.lastPeriodeId, null, opphør)
             oppdragslinjes.add(oppdragslinje)

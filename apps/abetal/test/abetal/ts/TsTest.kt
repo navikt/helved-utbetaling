@@ -7,6 +7,7 @@ import kotlinx.serialization.serializer
 import libs.kafka.KotlinxDeserializer
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
+import java.time.LocalDate
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -1552,6 +1553,119 @@ internal class TsTest : ConsumerTestBase() {
             .has(uid.toString())
             .with(uid.toString()) {
                 assertEquals(periodeId1, it.lastPeriodeId)
+            }
+    }
+
+    @Test
+    fun `opphør - full sletting etter tidligere opphør bruker forrige registrerte vedtaksperiode`() {
+        // Reproduserer produksjonshendelsen (sak 3466, uid bb274a19-4fe8-4c12-acaa-88ab81701131)
+        // som feilet hos OS med "Må ha nytt vedtak når Sats/Type/Vedtak-fom endres".
+        val sid = SakId("3466")
+        val uid = UtbetalingId(UUID.fromString("bb274a19-4fe8-4c12-acaa-88ab81701131"))
+        val personident = "30098619898"
+        val vedtakstidspunkt = LocalDate.of(2026, 1, 6).atStartOfDay()
+        val førstePeriodeFom = LocalDate.of(2025, 8, 19)
+        val andrePeriodeFom = LocalDate.of(2026, 1, 1)
+
+        // 1. UTGANGSPUNKT - opprett utbetaling med 2 perioder
+        val transactionId1 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId1) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = "16476",
+                ident = personident,
+                vedtakstidspunkt = vedtakstidspunkt,
+                periodetype = Periodetype.UKEDAG,
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false, stønad = StønadTypeTilleggsstønader.LÆREMIDLER_AAP) {
+                    periode(førstePeriodeFom, førstePeriodeFom, 4505u)
+                    periode(andrePeriodeFom, andrePeriodeFom, 4605u)
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId1)
+        var periodeId1: PeriodeId? = null
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid.toString())
+            .with(uid.toString()) { periodeId1 = it.lastPeriodeId }
+
+        val oppdrag1 = TestRuntime.topics.oppdrag.assertThat().has(transactionId1).get(transactionId1)
+        kvitterOk(transactionId1, oppdrag1, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+
+        // 2. FØRSTE OPPHØR - fjern siste periode (2 → 1 periode). OS beholder
+        // fortsatt 2026-01-01/2026-01-01 med sats 4605 som datoVedtakFom/datoVedtakTom/sats på linja.
+        val transactionId2 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId2) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = "16477",
+                ident = personident,
+                vedtakstidspunkt = vedtakstidspunkt,
+                periodetype = Periodetype.UKEDAG,
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false, stønad = StønadTypeTilleggsstønader.LÆREMIDLER_AAP) {
+                    periode(førstePeriodeFom, førstePeriodeFom, 4505u)
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId2)
+        TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
+
+        val oppdrag2 = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId2)
+            .with(transactionId2) { oppdrag ->
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(andrePeriodeFom, it.datoVedtakFom.toLocalDate())
+                    assertEquals(andrePeriodeFom, it.datoVedtakTom.toLocalDate())
+                    assertEquals(4605, it.sats.toLong())
+                }
+            }
+            .get(transactionId2)
+
+        kvitterOk(transactionId2, oppdrag2, listOf(uid))
+
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+
+        // 3. FULL SLETTING - hele behandlingen trekkes (tom periodeliste => Action.DELETE).
+        // Den rå periodelisten er nå kun [2025-08-19], men OS forventer fortsatt at
+        // datoVedtakFom/datoVedtakTom/sats matcher det siste registrerte (2026-01-01, 4605) -
+        // ikke den rå periodelisten.
+        val transactionId3 = UUID.randomUUID().toString()
+        TestRuntime.topics.ts.produce(transactionId3) {
+            Ts.dto(
+                sakId = sid.id,
+                behandlingId = "16478",
+                ident = personident,
+                vedtakstidspunkt = vedtakstidspunkt,
+                periodetype = Periodetype.UKEDAG,
+            ) {
+                Ts.utbetaling(uid, brukFagområdeTillst = false, stønad = StønadTypeTilleggsstønader.LÆREMIDLER_AAP) {
+                    // ingen perioder => full opphør/sletting av utbetalingen
+                }
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId3)
+        TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
+
+        TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId3)
+            .with(transactionId3) { oppdrag ->
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals(1, oppdrag.oppdrag110.oppdragsLinje150s.size)
+                oppdrag.oppdrag110.oppdragsLinje150s[0].let {
+                    assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+                    assertEquals("ENDR", it.kodeEndringLinje)
+                    assertEquals(periodeId1.toString(), it.delytelseId)
+                    assertNull(it.refDelytelseId)
+                    assertEquals(4605, it.sats.toLong())
+                    assertEquals(andrePeriodeFom, it.datoVedtakFom.toLocalDate())
+                    assertEquals(andrePeriodeFom, it.datoVedtakTom.toLocalDate())
+                }
             }
     }
 

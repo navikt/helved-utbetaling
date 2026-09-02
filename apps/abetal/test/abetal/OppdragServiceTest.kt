@@ -1,15 +1,12 @@
 package abetal
 
-import abetal.utbetaling
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import models.*
-import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
 
@@ -980,6 +977,35 @@ class OppdragServiceTest {
         assertEquals("AAP", oppdrag.oppdrag110.avstemming115.kodeKomponent)
         val todayAtTen = LocalDateTime.now().with(LocalTime.of(10, 10, 0, 0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS"))
         assertEquals(todayAtTen, oppdrag.oppdrag110.avstemming115.nokkelAvstemming)
+    }
+
+    @Test
+    fun `opphør etter et tidligere opphør bruker forrige siste linje`() {
+        val prev = utbetaling(
+            action = Action.UPDATE,
+            uid = UtbetalingId(UUID.randomUUID()),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(1.jul, 1.aug, 300u)
+        }.copy(
+            sistePeriode = utbetalingsperiode(1.jul, 1.jul, 300u)
+        )
+
+        val new = utbetaling(
+            action = Action.DELETE,
+            sakId = prev.sakId,
+            uid = UtbetalingId(UUID.randomUUID()),
+            fagsystem = Fagsystem.AAP,
+        ) {
+            periode(1.jul, 1.aug, 300u)
+        }
+
+        val oppdrag = OppdragService.delete(new, prev)
+        val linje = oppdrag.oppdrag110.oppdragsLinje150s.single()
+
+        assertEquals(prev.sistePeriode!!.fom, linje.datoVedtakFom.toLocalDate())
+        assertEquals(prev.sistePeriode!!.tom, linje.datoVedtakTom.toLocalDate())
+        assertEquals(prev.sistePeriode!!.beløp.toLong(), linje.sats.toLong())
     }
 }
 
