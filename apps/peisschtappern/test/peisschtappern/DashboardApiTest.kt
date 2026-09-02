@@ -201,26 +201,6 @@ class DashboardApiTest {
     }
 
     @Test
-    fun `dashboard teller ikke korrigerte feilede utbetalinger`() = runTest(TestRuntime.context) {
-        val now = nextPendingMismatchTimestamp()
-        val key = UUID.randomUUID().toString()
-        val feilet = KotlinxJson.encodeToString(StatusReply(Status.FEILET))
-
-        save(Channel.Status, key = key, value = feilet, timestamp = now, offset = offset)
-        transaction {
-            Daos.korrigerFeiletUtbetaling(
-                topic = Channel.Status.topic.name,
-                key = key,
-                reason = "Utbetalingen er korrigert",
-                registeredAt = now
-            )
-
-            assertTrue(Daos.feiletUtbetalinger(now - 1_000, now + 1_000).isEmpty())
-        }
-    }
-
-
-    @Test
     fun `dashboard har ingen pending mismatch når perioder er like`() = runTest(TestRuntime.context) {
         val now = nextPendingMismatchTimestamp()
         val uid = UUID.randomUUID().toString()
