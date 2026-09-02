@@ -200,12 +200,6 @@ data class Daos(
                     AND status.system_time_ms > ?
                     AND status.system_time_ms < ?
                     AND status.record_value NOT LIKE '%simulering stengt%'
-                    AND NOT EXISTS (
-                        SELECT 1
-                        FROM korrigerte_feilet_utbetalinger korrigert
-                        WHERE korrigert.topic_name = status.topic_name
-                            AND korrigert.record_key = status.record_key
-                    )
             """.trimIndent()
 
             return currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
