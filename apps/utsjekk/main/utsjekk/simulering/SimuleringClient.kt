@@ -8,7 +8,10 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import libs.auth.AzureToken
 import libs.auth.AzureTokenProvider
+import libs.auth.ProviderRejected
+import libs.auth.ProviderUnavailable
 import libs.http.HttpClientFactory
 import libs.jdbc.concurrency.CoroutineDatasource
 import models.*
@@ -45,8 +48,17 @@ class SimuleringClient(
             is TokenType.Client -> azure.getClientCredentialsToken(config.simulering.scope)
         }
 
+        val accessToken = when (azureToken) {
+            is AzureToken -> azureToken.access_token
+            is ProviderRejected -> when (token) {
+                is TokenType.Obo -> unauthorized("Kunne ikke veksle inn token")
+                is TokenType.Client -> unavailable("Token provider avviste client credentials")
+            }
+            is ProviderUnavailable -> unavailable("Token provider er utilgjengelig")
+        }
+
         val response = client.post("${config.simulering.host}/simuler/legacy") {
-            bearerAuth(azureToken.access_token)
+            bearerAuth(accessToken)
             contentType(ContentType.Application.Json)
             setBody(request)
         }

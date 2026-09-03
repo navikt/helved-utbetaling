@@ -5,6 +5,8 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.client.request.forms.*
+import kotlinx.coroutines.CancellationException
 import libs.cache.Cache
 import libs.cache.CacheKey
 import libs.cache.TokenCache
@@ -29,40 +31,49 @@ class TokenClient(
     suspend fun getAccessToken(
         tokenUrl: URL,
         key: CacheKey,
-        body: () -> String,
-    ): AzureToken {
+        body: Parameters,
+    ): TokenResponse {
         return when (val token = cache.get(key)) {
-            null -> update(tokenUrl, key, body())
+            null -> update(tokenUrl, key, body)
             else -> token
         }
     }
 
-    private suspend fun update(tokenUrl: URL, key: CacheKey, body: String): AzureToken {
-        val res = http.post(tokenUrl) {
-            accept(ContentType.Application.Json)
-            contentType(ContentType.Application.FormUrlEncoded)
-            setBody(body)
-        }
+    private suspend fun update(tokenUrl: URL, key: CacheKey, body: Parameters): TokenResponse {
+        return try {
+            val res = http.post(tokenUrl) {
+                accept(ContentType.Application.Json)
+                contentType(ContentType.Application.FormUrlEncoded)
+                setBody(FormDataContent(body))
+            }
 
-        val token = res.tryInto<AzureToken>()
-        cache.add(key, token)
-        return token
+            val token = res.into()
+            if (token is AzureToken) cache.add(key, token)
+            token
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: Exception) {
+            authLog.warn("Failed to get token from provider: $name")
+            secureLog.error("Failed to get token from provider: $name", cause)
+            ProviderUnavailable()
+        }
     }
 
-    private suspend inline fun <reified T> HttpResponse.tryInto(): T {
-        when (status.value) {
-            in 200..299 -> return body<T>()
+    private suspend fun HttpResponse.into(): TokenResponse {
+        return when (status.value) {
+            in 200..299 -> body<AzureToken>()
+            HttpStatusCode.TooManyRequests.value -> ProviderUnavailable(status.value)
+            in 400..499 -> ProviderRejected(status.value)
             else -> {
                 authLog.warn("Failed to get token from provider: $name")
-                secureLog.warn(
-                    """
+                secureLog.error(
+                    """Failed to get token from provider: $name
                     Got HTTP ${status.value} when issuing token from provider: ${request.url}
                     Status: ${status.value}
                     Body: ${bodyAsText()}
                     """.trimIndent(),
                 )
-
-                error("Failed to get token from provider: ${request.url}")
+                ProviderUnavailable(status.value)
             }
         }
     }

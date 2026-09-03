@@ -7,11 +7,15 @@ import java.time.Instant
 
 private const val LEEWAY_SEC = 60
 
+sealed interface TokenResponse
+data class ProviderRejected(val status: Int) : TokenResponse
+data class ProviderUnavailable(val status: Int? = null) : TokenResponse
+
 @Serializable
 data class AzureToken(
     val expires_in: Long,
     val access_token: String
-) : Token {
+) : Token, TokenResponse {
     @Transient
     private val expiry: Instant = Instant.now().plusSeconds(expires_in - LEEWAY_SEC)
 

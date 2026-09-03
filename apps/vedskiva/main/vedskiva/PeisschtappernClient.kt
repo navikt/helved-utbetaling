@@ -12,10 +12,14 @@ import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
+import libs.auth.AzureToken
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import libs.auth.AzureTokenProvider
+import libs.auth.ProviderRejected
+import libs.auth.ProviderUnavailable
 import libs.http.HttpClientFactory
+import models.unavailable
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class PeisschtappernClient(
@@ -26,8 +30,14 @@ class PeisschtappernClient(
 ) {
 
     suspend fun oppdrag(fom: LocalDateTime, tom: LocalDateTime): List<Dao> {
+        val token = when(val tokenResponse = azure.getClientCredentialsToken(config.peisschtappern.scope)) {
+            is AzureToken -> tokenResponse.access_token
+            is ProviderRejected -> unavailable("Token provider avviste client credentials")
+            is ProviderUnavailable -> unavailable("Token provider er utilgjengelig")
+        }
+
         val response = client.get("${config.peisschtappern.host}/api/messages") {
-            bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
+            bearerAuth(token)
             contentType(ContentType.Application.Json)
             parameter("topics", "helved.oppdrag.v1")
             parameter("pageSize", 10000)
@@ -37,8 +47,6 @@ class PeisschtappernClient(
 
         return response.body<Page>().items
     }
-
-
 }
 
 @Serializable

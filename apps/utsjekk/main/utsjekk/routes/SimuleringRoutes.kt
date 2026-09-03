@@ -7,11 +7,15 @@ import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import libs.auth.AzureToken
 import libs.auth.AzureTokenProvider
+import libs.auth.ProviderRejected
+import libs.auth.ProviderUnavailable
 import libs.http.HttpClientFactory
 import libs.jdbc.concurrency.CoroutineDatasource
 import models.forbidden
 import models.unauthorized
+import models.unavailable
 import utsjekk.*
 import utsjekk.iverksetting.IverksettingService
 import utsjekk.simulering.*
@@ -78,11 +82,20 @@ class SimuleringRoutes(
     }
 
     private suspend fun proxyToSimulering(call: RoutingCall, path: String) {
-        val token = call.request.authorization()?.replace("Bearer ", "") ?: forbidden("mangler authorization token")
-        val azureToken = if (call.hasClaim("NAVident")) {
-            azure.getOnBehalfOfToken(token, config.simulering.scope)
+
+        val token = if (call.hasClaim("NAVident")) {
+            val authToken = call.request.authorization()?.replace("Bearer ", "") ?: forbidden("mangler authorization token")
+            when(val token = azure.getOnBehalfOfToken(authToken, config.simulering.scope)) {
+                is AzureToken -> token.access_token
+                is ProviderRejected -> unauthorized("Kunne ikke veksle inn token")
+                is ProviderUnavailable -> unavailable("Token provider er utilgjengelig")
+            }
         } else if (call.hasClaim("azp_name")) {
-            azure.getClientCredentialsToken(config.simulering.scope)
+            when(val token = azure.getClientCredentialsToken(config.simulering.scope)) {
+                is AzureToken -> token.access_token
+                is ProviderRejected -> unavailable("Token provider avviste client credentials")
+                is ProviderUnavailable -> unavailable("Token provider er utilgjengelig")
+            }
         } else {
             unauthorized("Mangler claims")
         }
@@ -91,7 +104,7 @@ class SimuleringRoutes(
         val fs = call.fagsystem()
 
         val response = client.post("${config.simulering.host}$path") {
-            bearerAuth(azureToken.access_token)
+            bearerAuth(token)
             contentType(ContentType.Application.Json)
             call.request.headers["Transaction-ID"]?.let { header("Transaction-ID", it) }
             header("fagsystem", fs.kode)

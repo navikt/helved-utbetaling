@@ -5,8 +5,10 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.http.*
 import libs.auth.*
 import libs.ktor.port
 import java.net.URI
@@ -34,8 +36,18 @@ class AzureFake : AutoCloseable {
 
     private val jwksGenerator = JwkGenerator(config.issuer, config.clientId)
 
-    fun generateToken(azp_name: String = Azp.TILLEGGSSTØNADER) =
-        jwksGenerator.generate(listOf(Claim("azp_name", azp_name)))
+    fun generateToken(
+        azp_name: String = Azp.TILLEGGSSTØNADER,
+        tokenResponseStatus: Int? = null,
+        navIdent: String? = null,
+    ) =
+        jwksGenerator.generate(
+            buildList {
+                add(Claim("azp_name", azp_name))
+                tokenResponseStatus?.let { add(Claim("token_response_status", it.toString())) }
+                navIdent?.let { add(Claim("NAVident", it)) }
+            },
+        )
 
     override fun close() = azure.stop(0, 0)
 }
@@ -51,7 +63,20 @@ private fun Application.azure() {
         }
 
         post("/token") {
-            call.respond(AzureToken(3600, "token"))
+            val status = call.receiveText().tokenResponseStatus()
+            if (status == null) {
+                call.respond(AzureToken(3600, "token"))
+            } else {
+                call.respond(HttpStatusCode.fromValue(status))
+            }
         }
     }
+}
+
+private fun String.tokenResponseStatus(): Int? {
+    val assertion = substringAfter("assertion=", "").substringBefore("&")
+    if (assertion.isEmpty()) return null
+    val payload = assertion.substringAfter('.').substringBefore('.')
+    val claims = java.util.Base64.getUrlDecoder().decode(payload).decodeToString()
+    return "\"token_response_status\":\"(\\d+)\"".toRegex().find(claims)?.groupValues?.get(1)?.toInt()
 }
