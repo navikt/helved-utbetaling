@@ -234,6 +234,41 @@ class SimuleringV3RouteTest {
     }
 
     @Test
+    fun `dryrun proxy forwards Info responses from simulering`() = runTest {
+        val responses = mapOf(
+            Info.Status.OK_UTEN_ENDRING to HttpStatusCode.OK,
+            Info.Status.UGYLDIG_REQUEST to HttpStatusCode.BadRequest,
+            Info.Status.UTILGJENGELIG to HttpStatusCode.ServiceUnavailable,
+            Info.Status.FEILET to HttpStatusCode.InternalServerError,
+        )
+
+        responses.forEach { (status, expectedHttpStatus) ->
+            val info = Info(status, Fagsystem.DAGPENGER, "melding")
+            val json = libs.kotlinx.KotlinxJson.encodeToString(Simulering.serializer(), info)
+            TestRuntime.simulering.respondDryrunWith(json, expectedHttpStatus)
+
+            val res = httpClient.post("/api/dryrun/dagpenger") {
+                contentType(ContentType.Application.Json)
+                bearerAuth(TestRuntime.azure.generateToken(azp_name = Azp.DAGPENGER))
+                header("Transaction-ID", UUID.randomUUID().toString())
+                setBody(
+                    DpUtbetaling(
+                        dryrun = true,
+                        behandlingId = "1234",
+                        sakId = "sakId",
+                        ident = "12345678910",
+                        vedtakstidspunktet = LocalDateTime.now(),
+                        utbetalinger = listOf(),
+                    )
+                )
+            }
+
+            assertEquals(expectedHttpStatus, res.status)
+            assertEquals(info, res.body<Simulering>())
+        }
+    }
+
+    @Test
     fun `dryrun returns unauthorized when Azure rejects token exchange`() = runTest {
         val res = httpClient.post("/api/dryrun/tilleggsstonader") {
             bearerAuth(TestRuntime.azure.generateToken(Azp.TILLEGGSSTØNADER, HttpStatusCode.BadRequest.value, "A123456"))

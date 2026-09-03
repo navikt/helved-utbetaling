@@ -5,6 +5,8 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import models.Fagsystem
+import models.Info
 import kotlin.test.assertEquals
 
 class DryrunAuthTest {
@@ -83,5 +85,20 @@ class DryrunAuthTest {
                 .body("{}")
         )
         assertEquals(Status.FORBIDDEN, response.status)
+    }
+
+    @Test
+    fun `Info status maps to HTTP status`() {
+        val expectedStatuses = mapOf(
+            Info.Status.OK_UTEN_ENDRING to Status.OK,
+            Info.Status.UGYLDIG_REQUEST to Status.BAD_REQUEST,
+            Info.Status.UTILGJENGELIG to Status.SERVICE_UNAVAILABLE,
+            Info.Status.FEILET to Status.INTERNAL_SERVER_ERROR,
+        )
+
+        expectedStatuses.forEach { (infoStatus, httpStatus) ->
+            val info = Info(infoStatus, Fagsystem.DAGPENGER, "melding")
+            assertEquals(httpStatus, info.httpStatus())
+        }
     }
 }
