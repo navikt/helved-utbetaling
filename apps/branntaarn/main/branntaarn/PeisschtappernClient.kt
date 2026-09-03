@@ -18,13 +18,17 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonClassDiscriminator
+import libs.auth.AzureToken
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import libs.auth.AzureTokenProvider
+import libs.auth.ProviderRejected
+import libs.auth.ProviderUnavailable
 import libs.http.HttpClientFactory
 import libs.utils.appLog
+import models.unavailable
 
 class PeisschtappernClient(
     private val config: Config,
@@ -37,7 +41,7 @@ class PeisschtappernClient(
         return try {
             runBlocking {
                 val response = client.get("${config.peisschtappern.host}/api/brann") {
-                    bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
+                    bearerAuth(getToken())
                 }
                 response.body()
             }
@@ -52,7 +56,7 @@ class PeisschtappernClient(
             runBlocking {
                 val since = (Instant.now() - Duration.ofHours(1)).toEpochMilli()
                 val response = client.get("${config.peisschtappern.host}/api/brann/pending-mismatch") {
-                    bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
+                    bearerAuth(getToken())
                     parameter("since", since)
                 }
                 response.body()
@@ -68,7 +72,7 @@ class PeisschtappernClient(
             runBlocking {
                 val since = (Instant.now() - Duration.ofHours(24)).toEpochMilli()
                 val response = client.get("${config.peisschtappern.host}/api/brann/dobbeltutbetalinger") {
-                    bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
+                    bearerAuth(getToken())
                     parameter("since", since)
                 }
                 response.body()
@@ -84,10 +88,10 @@ class PeisschtappernClient(
             runBlocking {
                 when (brann) {
                     is ManglendeKvittering -> client.delete("${config.peisschtappern.host}/api/brann/${brann.key}") {
-                        bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
+                        bearerAuth(getToken())
                     }
                     is Dobbeltutbetaling -> client.post("${config.peisschtappern.host}/api/brann/dobbeltutbetalinger/slukk") {
-                        bearerAuth(azure.getClientCredentialsToken(config.peisschtappern.scope).access_token)
+                        bearerAuth(getToken())
                         parameter("behandlingId", brann.behandlingId)
                         parameter("klassekode", brann.klassekode)
                         parameter("fom", brann.fom)
@@ -98,6 +102,14 @@ class PeisschtappernClient(
             }
         } catch (e: ConnectTimeoutException) {
             appLog.warn("klarte ikke slukke brann fra peisschtappern", e)
+        }
+    }
+
+    private suspend fun getToken(): String {
+        return when(val token = azure.getClientCredentialsToken(config.peisschtappern.scope)) {
+            is AzureToken -> token.access_token
+            is ProviderRejected -> unavailable("Token provider avviste client credentials")
+            is ProviderUnavailable -> unavailable("Token provider er utilgjengelig")
         }
     }
 }

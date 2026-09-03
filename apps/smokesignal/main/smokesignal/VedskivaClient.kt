@@ -2,19 +2,23 @@
 
 package smokesignal
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
+import libs.auth.AzureToken
 import libs.auth.AzureTokenProvider
+import libs.auth.ProviderRejected
+import libs.auth.ProviderUnavailable
 import libs.http.HttpClientFactory
 import libs.utils.appLog
 import libs.utils.secureLog
+import models.unavailable
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -32,7 +36,7 @@ class VedskivaClient(
 
     override suspend fun next(): AvstemmingRequest {
         val next = client.post("${config.vedskiva.host}/api/next_range") {
-            bearerAuth(azure.getClientCredentialsToken(config.vedskiva.scope).access_token)
+            bearerAuth(getToken())
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
             setBody(DateBody(LocalDate.now()))
@@ -47,7 +51,7 @@ class VedskivaClient(
 
     override suspend fun signal(req: AvstemmingRequest) {
         val res = client.post("${config.vedskiva.host}/api/avstem") {
-            bearerAuth(azure.getClientCredentialsToken(config.vedskiva.scope).access_token)
+            bearerAuth(getToken())
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
             setBody(req)
@@ -60,6 +64,14 @@ class VedskivaClient(
         if (res.status != HttpStatusCode.OK) {
             appLog.error("Failed to trigger avstemming: $req => <redacted>")
             secureLog.error("Failed to trigger avstemming: $req => ${res.bodyAsText()}")
+        }
+    }
+
+    private suspend fun getToken(): String {
+        return when(val tokenResponse = azure.getClientCredentialsToken(config.vedskiva.scope)) {
+            is AzureToken -> tokenResponse.access_token
+            is ProviderRejected -> unavailable("Token provider avviste client credentials")
+            is ProviderUnavailable -> unavailable("Token provider er utilgjengelig")
         }
     }
 }

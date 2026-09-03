@@ -1,9 +1,12 @@
 package libs.auth
 
 import kotlinx.serialization.json.Json
+import io.ktor.http.Parameters
+import io.ktor.http.ParametersBuilder
 import libs.cache.TokenCache
 import libs.http.HttpClientFactory
 import libs.utils.env
+import libs.utils.sha256
 import java.net.URL
 
 data class AzureConfig(
@@ -23,39 +26,36 @@ class AzureTokenProvider(
         cache = TokenCache(),
     )
 ) {
-    suspend fun getClientCredentialsToken(scope: String): AzureToken =
-        client.getAccessToken(config.tokenEndpoint, scope) {
-            """
-                client_id=${config.clientId}
-                &client_secret=${config.clientSecret}
-                &scope=$scope
-                &grant_type=client_credentials
-            """.asUrlPart()
-        }
 
-    suspend fun getOnBehalfOfToken(access_token: String, scope: String): AzureToken =
-        client.getAccessToken(config.tokenEndpoint, scope) {
-            """
-                client_id=${config.clientId}
-                &client_secret=${config.clientSecret}
-                &assertion=$access_token
-                &scope=$scope
-                &grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer
-                &requested_token_use=on_behalf_of
-            """.asUrlPart()
-        }
+    suspend fun getClientCredentialsToken(scope: String): TokenResponse =
+        client.getAccessToken(config.tokenEndpoint, scope, tokenBody(scope, "client_credentials"))
 
-    suspend fun getUsernamePasswordToken(scope: String, username: String, password: String): AzureToken =
-        client.getAccessToken(config.tokenEndpoint, username) {
-            """
-                client_id=${config.clientId}
-                &client_secret=${config.clientSecret}
-                &scope=$scope
-                &username=$username
-                &password=$password
-                &grant_type=password
-            """.asUrlPart()
+    suspend fun getOnBehalfOfToken(access_token: String, scope: String): TokenResponse =
+        client.getAccessToken(
+            config.tokenEndpoint,
+            "$scope:${access_token.sha256()}",
+            tokenBody(scope, "urn:ietf:params:oauth:grant-type:jwt-bearer") {
+                append("assertion", access_token)
+                append("requested_token_use", "on_behalf_of")
+            },
+        )
+
+    suspend fun getUsernamePasswordToken(scope: String, username: String, password: String): TokenResponse =
+        client.getAccessToken(
+            config.tokenEndpoint,
+            "$scope:${username.sha256()}",
+            tokenBody(scope, "password") {
+                append("username", username)
+                append("password", password)
+            },
+        )
+
+    private fun tokenBody(scope: String, grantType: String, extra: ParametersBuilder.() -> Unit = {}) =
+        Parameters.build {
+            append("client_id", config.clientId)
+            append("client_secret", config.clientSecret)
+            append("scope", scope)
+            append("grant_type", grantType)
+            extra()
         }
 }
-
-private fun String.asUrlPart() = trimIndent().replace("\n", "")

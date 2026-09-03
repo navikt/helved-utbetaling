@@ -4,6 +4,7 @@ import kotlinx.coroutines.channels.Channel
 import libs.kafka.KafkaProducer
 import libs.utils.appLog
 import libs.utils.secureLog
+import models.ApiError
 import models.Fagsystem
 import models.Info
 import models.Simulering
@@ -25,15 +26,7 @@ class SimuleringWorker(
                     val response = service.simulerJaxb(request)
                     mapSuccess(response, fagsystem)
                 } catch (e: Exception) {
-                    val message = e.message ?: "ukjent feil"
-                    if (isInvalidRequest(message)) {
-                        appLog.warn("Simulering feilet for fagsystem=$fagsystem")
-                        secureLog.warn("Simulering feilet for key=$key fagsystem=$fagsystem", e)
-                    } else {
-                        appLog.error("Simulering feilet for fagsystem=$fagsystem")
-                        secureLog.error("Simulering feilet for key=$key fagsystem=$fagsystem", e)
-                    }
-                    mapError(e, fagsystem)
+                    mapAndLogError(e, key, fagsystem)
                 }
                 producerFor(fagsystem).send(key, simulering)
             } catch (e: Exception) {
@@ -46,12 +39,42 @@ class SimuleringWorker(
     suspend fun drainBackpressure() {
         for ((key, fagsystem) in backpressureChannel) {
             try {
-                producerFor(fagsystem).send(key, Info.Utilgjengelig(fagsystem, "simulering har for lang kø, prøv igjen senere"))
+                appLog.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
+                secureLog.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
+                producerFor(fagsystem).send(key, Info.Utilgjengelig(fagsystem, "Simulering har for lang kø, prøv igjen senere"))
             } catch(e: Exception) {
                 // TODO: vurder å bytte til warning + metrikker for å styre alerts ved forekomst-frekvens
-                appLog.error("Feil ved sending av backpressure-svar for key=$key")
-                secureLog.error("Feil ved sending av backpressure-svar for key=$key", e)
+                appLog.error("Feil ved sending av backpressure-svar for $fagsystem key=$key")
+                secureLog.error("Feil ved sending av backpressure-svar for $fagsystem key=$key", e)
             }
+        }
+    }
+
+    private fun mapAndLogError(error: Exception, key: String, fs: Fagsystem): Simulering {
+        val msg = if (error is ApiError) error.msg else error.message ?: "ukjent feil"
+
+        fun ugyldig(): Simulering {
+            appLog.warn("Ugyldig simulering $fs $key $msg")
+            secureLog.warn("Ugyldig simulering $fs $key $msg", error)
+            return Info.UgyldigRequest(fs, msg)
+        }
+
+        fun utilgjengelig(): Simulering {
+            appLog.error("Simulering utilgjengelig $fs $key $msg")
+            secureLog.error("Simulering utilgjengelig $fs $key $msg", error)
+            return Info.Utilgjengelig(fs, msg)
+        }
+
+        fun feilet(): Simulering {
+            appLog.error("Simulering feilet $fs $key $msg")
+            secureLog.error("Simulering feilet $fs $key $msg", error)
+            return Info.Feilet(fs, msg)
+        }
+
+        return when {
+            isInvalidRequest(error, msg) -> ugyldig()
+            isUnavailable(error, msg) -> utilgjengelig()
+            else -> feilet()
         }
     }
 
@@ -62,25 +85,20 @@ class SimuleringWorker(
             else -> v2.Simulering.from(response)
         }
 
-    private fun mapError(error: Exception, fagsystem: Fagsystem): Simulering {
-        val message = error.message ?: "ukjent feil"
-        return when {
-            isUnavailable(message) -> Info.Utilgjengelig(fagsystem, message)
-            isInvalidRequest(message) -> Info.UgyldigRequest(fagsystem, message)
-            else -> Info.Feilet(fagsystem, message)
-        }
-    }
+    private fun isInvalidRequest(error: Exception, msg: String) =
+        (error is ApiError && error.statusCode in 400..499)
+            || msg.contains("finnes ikke")
+            || msg.contains("ugyldig")
+            || msg.contains("finnes fra før")
+            || msg.contains("DFHPI1008")
+            || msg.contains("Referert vedtak")
 
-    private fun isUnavailable(msg: String) = msg.contains("stengt")
-        || msg.contains("utilgjengelig")
-        || msg.contains("SOAP Body")
-        || msg.contains("502")
-
-    private fun isInvalidRequest(msg: String) = msg.contains("finnes ikke")
-        || msg.contains("ugyldig")
-        || msg.contains("finnes fra før")
-        || msg.contains("DFHPI1008")
-        || msg.contains("Referert vedtak")
+    private fun isUnavailable(error: Exception, msg: String) =
+        (error is ApiError && error.statusCode in 500..599)
+            || msg.contains("stengt")
+            || msg.contains("utilgjengelig")
+            || msg.contains("SOAP Body")
+            || msg.contains("502")
 
     private fun producerFor(fagsystem: Fagsystem): KafkaProducer<String, Simulering> {
         val key = if (fagsystem.isTilleggsstønader()) Fagsystem.TILLEGGSSTØNADER else fagsystem

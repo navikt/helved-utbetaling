@@ -232,4 +232,23 @@ class SimuleringV3RouteTest {
 
         assertEquals(HttpStatusCode.RequestTimeout, res.status)
     }
+
+    @Test
+    fun `dryrun returns unauthorized when Azure rejects token exchange`() = runTest {
+        val res = httpClient.post("/api/dryrun/tilleggsstonader") {
+            bearerAuth(TestRuntime.azure.generateToken(Azp.TILLEGGSSTØNADER, HttpStatusCode.BadRequest.value, "A123456"))
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, res.status)
+    }
+
+    @Test
+    fun `dryrun returns unavailable when Azure token provider is unavailable`() = runTest {
+        val res = httpClient.post("/api/dryrun/tilleggsstonader") {
+            bearerAuth(TestRuntime.azure.generateToken(Azp.TILLEGGSSTØNADER, HttpStatusCode.InternalServerError.value, "A123456"))
+        }
+
+        assertEquals(HttpStatusCode.ServiceUnavailable, res.status)
+    }
+
 }
