@@ -104,7 +104,7 @@ private fun fagsystem(fs: String): Fagsystem =
 private fun respondFromStore(store: StateStore<String, Simulering>, key: String): Response {
     val result = pollStore(store, key)
     return when (result) {
-        is Info -> respondSimulering(result, Status.FOUND)
+        is Info -> respondSimulering(result, result.httpStatus())
         is Simulering -> respondSimulering(result, Status.OK)
         null -> Response(Status.REQUEST_TIMEOUT)
     }
@@ -118,6 +118,13 @@ private fun pollStore(store: StateStore<String, Simulering>, key: String): Simul
         Thread.sleep(POLL_INTERVAL_MS)
     }
     return null
+}
+
+internal fun Info.httpStatus() = when(status) {
+    Info.Status.OK_UTEN_ENDRING -> Status.OK
+    Info.Status.UGYLDIG_REQUEST -> Status.BAD_REQUEST
+    Info.Status.UTILGJENGELIG -> Status.SERVICE_UNAVAILABLE
+    Info.Status.FEILET -> Status.INTERNAL_SERVER_ERROR
 }
 
 private fun respondSimulering(simulering: Simulering, status: Status): Response {
