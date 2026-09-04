@@ -17,6 +17,8 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.math.floor
+import kotlin.math.ln
 
 const val FS_KEY = "fagsystem"
 const val ORIGINAL_KEY = "original-key"
@@ -422,8 +424,6 @@ object OppdragSerializer : KSerializer<Oppdrag> {
  * TODO: når vi ikke har utsjekk lengre, skal status utledes her sammen med flyttinga.
  */
 fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
-    val defaultMaxRetries = 1000
-
     consume(Topics.oppdrag)
         .merge(consume(Topics.retryOppdrag))
         .processor(Processor { EnrichMetadataProcessor() })
@@ -438,7 +438,7 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
             }
 
             val retries = meta.headers["retries"]?.toIntOrNull() ?: 0
-            val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: defaultMaxRetries
+            val maxRetries = meta.headers["maxRetries"]?.toIntOrNull() ?: maxRetriesFor(uids.size)
             val shouldRetry = retries < maxRetries
 
             appLog.info("Prøver å ferdigstille oppdrag $key med uids ${meta.headers["uids"]} forsøk $retries av $maxRetries")
@@ -475,6 +475,29 @@ fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
                 error("Denne burde ikke oppstå oppdrag: ${kv.originalKey}")
             }
         }
+}
+
+private const val defaultMaxRetries = 1000
+
+/**
+* retries vil være eksponensiell ved fler uids i et oppdrag.
+* Hver gang en uid mangler, vil uids.size antall oppdrag bli produsert til retry-topic.
+* f.ek 5 uids i et oppdrag feiler -> 5 retries blir opprettet, disse 5 splitter 5 nye hver = 25 oppdrag opprettes, osv
+* Med logaritmisk kalkulere maxRetries får vi kompensert for dette
+* uids.size 1    = 1000 retires
+* uids.size 2    = 8 retires hver
+* uids.size 3    = 5 retires hver
+* ...
+* uids.size 10   = 2 retires hver
+* uids.size 1000 = 1 retires hver
+*/
+private fun maxRetriesFor(uidCount: Int): Int {
+    if (uidCount <= 1) return defaultMaxRetries
+
+    return floor(
+        ln(1 + defaultMaxRetries.toDouble() * (uidCount - 1) / uidCount) /
+            ln(uidCount.toDouble())
+    ).toInt()
 }
 
 /**
