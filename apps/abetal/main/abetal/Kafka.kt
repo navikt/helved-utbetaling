@@ -422,7 +422,7 @@ object OppdragSerializer : KSerializer<Oppdrag> {
  * TODO: når vi ikke har utsjekk lengre, skal status utledes her sammen med flyttinga.
  */
 fun Topology.successfulUtbetalingStream(pending: KTable<String, Utbetaling>) {
-    val defaultMaxRetries = 1000
+    val defaultMaxRetries = 1
 
     consume(Topics.oppdrag)
         .merge(consume(Topics.retryOppdrag))
