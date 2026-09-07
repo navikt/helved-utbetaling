@@ -11,6 +11,11 @@ sealed interface TestTopic<K: Any, V: Any> {
     ): TestTopic<K, V> {
         fun produce(key: K, value: () -> V) = input.pipeInput(key, value())
         fun produce(key: K, advanceClockMs: Long, value: () -> V) = input.pipeInput(key, value(), Instant.now().plusMillis(advanceClockMs))
+        fun produce(key: K, headers: Map<String, String>, value: () -> V) {
+            val record = TestRecord(key, value())
+            headers.forEach { (headerKey, headerValue) -> record.headers().add(headerKey, headerValue.toByteArray(Charsets.UTF_8)) }
+            input.pipeInput(record)
+        }
         fun tombstone(key: K) = input.pipeInput(key, null)
     }
 

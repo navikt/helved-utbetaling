@@ -29,13 +29,13 @@ class KafkaSimuleringTest {
 
     @Test
     fun `simulering for TS produserer v1 resultat til dryrun-ts topic`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
 
         TestRuntime.soapRespondWith(jaxbResponse())
-        channel.trySend("test-key" to simulering(fagområde = "TILLST"))
+        channel.trySend(SimuleringRequest("test-key", simulering(fagområde = "TILLST")))
 
         runWorkerUntilProduced(worker, channel, producers)
 
@@ -48,13 +48,13 @@ class KafkaSimuleringTest {
 
     @Test
     fun `simulering for AAP produserer v2 resultat til dryrun-aap topic`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
 
         TestRuntime.soapRespondWith(jaxbResponse())
-        channel.trySend("aap-key" to simulering(fagområde = "AAP"))
+        channel.trySend(SimuleringRequest("aap-key", simulering(fagområde = "AAP")))
 
         runWorkerUntilProduced(worker, channel, producers)
 
@@ -67,8 +67,8 @@ class KafkaSimuleringTest {
 
     @Test
     fun `SOAP fault produserer Info med UGYLDIG_REQUEST`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
 
@@ -82,7 +82,7 @@ class KafkaSimuleringTest {
             </detail>
         """.trimIndent()
         TestRuntime.soapRespondWith(soapFault(fault))
-        channel.trySend("dp-key" to simulering(fagområde = "DP"))
+        channel.trySend(SimuleringRequest("dp-key", simulering(fagområde = "DP")))
 
         runWorkerUntilProduced(worker, channel, producers)
 
@@ -96,15 +96,15 @@ class KafkaSimuleringTest {
 
     @Test
     fun `tom SOAP-respons produserer Info OkUtenEndring for TS`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
 
         TestRuntime.soapRespondWith("""
             <simulerBeregningResponse xmlns="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt"></simulerBeregningResponse>
         """.trimIndent())
-        channel.trySend("ts-key" to simulering(fagområde = "TILLST"))
+        channel.trySend(SimuleringRequest("ts-key", simulering(fagområde = "TILLST")))
 
         runWorkerUntilProduced(worker, channel, producers)
 
@@ -117,13 +117,13 @@ class KafkaSimuleringTest {
 
     @Test
     fun `simuler sak 200001495 produserer korrekt v1 resultat`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
 
         TestRuntime.soapRespondWith(Resource.read("/simuler-ts-200001495.xml"))
-        channel.trySend("ts-key" to simulering(fagområde = "TILLST"))
+        channel.trySend(SimuleringRequest("ts-key", simulering(fagområde = "TILLST")))
 
         runWorkerUntilProduced(worker, channel, producers)
 
@@ -134,13 +134,13 @@ class KafkaSimuleringTest {
 
     @Test
     fun `simuler sak 200001495 produserer korrekt v2 resultat`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
 
         TestRuntime.soapRespondWith(Resource.read("/simuler-ts-200001495.xml"))
-        channel.trySend("aap-key" to simulering(fagområde = "AAP"))
+        channel.trySend(SimuleringRequest("aap-key", simulering(fagområde = "AAP")))
 
         runWorkerUntilProduced(worker, channel, producers)
 
@@ -151,13 +151,13 @@ class KafkaSimuleringTest {
 
     @Test
     fun `simuler sak 4819 produserer korrekt v1 resultat`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
 
         TestRuntime.soapRespondWith(Resource.read("/simuler-ts-4819.xml"))
-        channel.trySend("ts-key" to simulering(fagområde = "TILLST"))
+        channel.trySend(SimuleringRequest("ts-key", simulering(fagområde = "TILLST")))
 
         runWorkerUntilProduced(worker, channel, producers)
 
@@ -168,13 +168,13 @@ class KafkaSimuleringTest {
 
     @Test
     fun `simuler sak 4819 produserer korrekt v2 resultat`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
 
         TestRuntime.soapRespondWith(Resource.read("/simuler-ts-4819.xml"))
-        channel.trySend("aap-key" to simulering(fagområde = "AAP"))
+        channel.trySend(SimuleringRequest("aap-key", simulering(fagområde = "AAP")))
 
         runWorkerUntilProduced(worker, channel, producers)
 
@@ -185,15 +185,15 @@ class KafkaSimuleringTest {
 
     @Test
     fun `scheduler evicts entries older than evictionTtl`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
 
         libs.kafka.Names.clear()
         val kafka = StreamsMock()
         kafka.connect(
             topology = libs.kafka.topology {
                 val ktable = consume(Tables.simuleringer)
-                val scheduler = SimuleringScheduler(ktable, 5.milliseconds, channel, channelBackpressure, 2.minutes)
+                val scheduler = SimuleringScheduler(ktable, 5.milliseconds, channel, channelBackpressure, 2.minutes, null)
                 ktable.schedule(scheduler)
             },
             config = kafka.config.copy(additionalProperties = java.util.Properties().apply {
@@ -212,14 +212,14 @@ class KafkaSimuleringTest {
 
     @Test
     fun `worker continues after fagsystem parsing failure`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
 
         TestRuntime.soapRespondWith(jaxbResponse())
-        channel.trySend("bad-key" to simulering(fagområde = "UGYLDIG"))
-        channel.trySend("good-key" to simulering(fagområde = "AAP"))
+        channel.trySend(SimuleringRequest("bad-key", simulering(fagområde = "UGYLDIG")))
+        channel.trySend(SimuleringRequest("good-key", simulering(fagområde = "AAP")))
 
         runWorkerUntilProduced(worker, channel, producers)
 
@@ -230,16 +230,16 @@ class KafkaSimuleringTest {
 
     @Test
     fun `worker continues after producer send failure`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
         val producers = freshProducers()
         // No producer for DAGPENGER — producerFor will throw
         val incompleteProducers = producers.filterKeys { it != Fagsystem.DAGPENGER }
         val worker = SimuleringWorker(channel, channelBackpressure, service, incompleteProducers)
 
         TestRuntime.soapRespondWith(jaxbResponse())
-        channel.trySend("dp-key" to simulering(fagområde = "DP"))
-        channel.trySend("aap-key" to simulering(fagområde = "AAP"))
+        channel.trySend(SimuleringRequest("dp-key", simulering(fagområde = "DP")))
+        channel.trySend(SimuleringRequest("aap-key", simulering(fagområde = "AAP")))
 
         runWorkerUntilProduced(worker, channel, incompleteProducers)
 
@@ -250,8 +250,8 @@ class KafkaSimuleringTest {
 
     @Test
     fun `full dryrun round-trip via kafka topology`() {
-        val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
-        val channelBackpressure = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
 
         libs.kafka.Names.clear()
         val kafka = StreamsMock()
@@ -259,7 +259,7 @@ class KafkaSimuleringTest {
             topology = libs.kafka.topology {
                 simuleringer(channel, channelBackpressure)
             },
-            config = kafka.config.copy(additionalProperties = java.util.Properties().apply {
+            config = kafka.config.copy(applicationId = "test-simulering-round-trip-${System.nanoTime()}", additionalProperties = java.util.Properties().apply {
                 put(org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG,
                     org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers::class.java)
             }),
@@ -268,7 +268,7 @@ class KafkaSimuleringTest {
 
         // 1. Produce SimulerBeregningRequest to simuleringer topic
         val inputTopic = kafka.testInputTopic(Topics.simuleringer)
-        inputTopic.produce("round-trip-key") { simulering(fagområde = "AAP") }
+        inputTopic.produce("round-trip-key", mapOf("x-correlation-id" to "header-value")) { simulering(fagområde = "AAP") }
 
         // 2. Advance wall clock so scheduler fires (interval=5s)
         kafka.advanceWallClockTime(6.seconds)
@@ -276,7 +276,8 @@ class KafkaSimuleringTest {
         // 3. Verify channel received the entry
         val received = channel.tryReceive()
         assertTrue(received.isSuccess, "Scheduler should have sent entry to channel")
-        assertEquals("round-trip-key", received.getOrThrow().first)
+        assertEquals("round-trip-key", received.getOrThrow().key)
+        assertEquals(mapOf("x-correlation-id" to "header-value"), received.getOrThrow().headers)
 
         // 4. Run worker with the received entry — produces to dryrun topic
         val producers = freshProducers()
@@ -286,10 +287,11 @@ class KafkaSimuleringTest {
 
         runWorkerUntilProduced(worker, channel, producers)
 
-        val workerHistory = producers[Fagsystem.AAP]!!.history()
+        val workerHistory = producers[Fagsystem.AAP]!!.historyWithHeaders()
         assertEquals(1, workerHistory.size)
-        val (key, result) = workerHistory.first()
+        val (key, result, headers) = workerHistory.first()
         assertEquals("round-trip-key", key)
+        assertEquals(mapOf("x-correlation-id" to "header-value"), headers)
 
         // 5. Feed worker output into dryrun GlobalKTable topic
         val dryrunInput = kafka.testInputTopic(Topics.dryrunAap)
@@ -301,9 +303,25 @@ class KafkaSimuleringTest {
         assertEquals(result, stored)
     }
 
+    @Test
+    fun `worker sends simulation without headers for requests stored before header sidecar deployment`() {
+        val channel = Channel<SimuleringRequest>(capacity = 16)
+        val channelBackpressure = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
+        val producers = freshProducers()
+        val worker = SimuleringWorker(channel, channelBackpressure, service, producers)
+
+        TestRuntime.soapRespondWith(jaxbResponse())
+        channel.trySend(SimuleringRequest("legacy-key", simulering(fagområde = "AAP")))
+
+        runWorkerUntilProduced(worker, channel, producers)
+
+        val (_, _, headers) = producers[Fagsystem.AAP]!!.historyWithHeaders().single()
+        assertEquals(emptyMap(), headers)
+    }
+
     private fun runWorkerUntilProduced(
         worker: SimuleringWorker,
-        channel: Channel<Pair<String, SimulerBeregningRequest>>,
+        channel: Channel<SimuleringRequest>,
         producers: Map<Fagsystem, KafkaProducerFake<String, Simulering>>,
     ) {
         runBlocking {
