@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
 import kotlin.concurrent.thread
 import libs.kafka.processor.LogConsumeTopicProcessor
+import libs.kafka.processor.Processor
 import libs.kafka.stream.ConsumedStream
 import libs.utils.appLog
 import org.apache.kafka.streams.KafkaStreams
@@ -190,12 +191,24 @@ class Topology {
         return ConsumedStream(stream.skipTombstone(topic) )
     }
 
+    fun <K: Any, V : Any> consume(
+        table: Table<K, V>,
+        beforeMaterialize: Processor<K, V?, K, V?>,
+    ): KTable<K, V> {
+        return builder
+            .stream(table.sourceTopicName, table.sourceTopic.consumed())
+            .process({ LogConsumeTopicProcessor<K, V?>(table.sourceTopic) })
+            .process(beforeMaterialize.supplier)
+            .toKTable(table)
+    }
+
     fun <K: Any, V : Any> consume(table: Table<K, V>): KTable<K, V> {
         return builder
             .stream(table.sourceTopicName, table.sourceTopic.consumed())
             .process({ LogConsumeTopicProcessor<K, V?>(table.sourceTopic) })
             .toKTable(table)
     }
+
 
     fun <K: Any, V: Any> globalKTable(
         table: Table<K, V>,
@@ -221,4 +234,3 @@ class Topology {
 }
 
 fun topology(init: Topology.() -> Unit): Topology = Topology().apply(init)
-

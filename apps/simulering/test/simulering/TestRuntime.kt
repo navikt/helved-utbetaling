@@ -68,7 +68,8 @@ object TestRuntime : Sts, Soap {
                 ),
             ),
             kafka = kafka.config.copy(additionalProperties = Properties().apply {
-                put("state.dir", "build/kafka-streams")
+                val workerId = System.getProperty("org.gradle.test.worker") ?: "0"
+                put("state.dir", "build/kafka-streams/state-w$workerId")
                 put("max.task.idle.ms", -1L)
                 put(
                     org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG,

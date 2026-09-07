@@ -61,9 +61,9 @@ fun app(
     // Hvis OS timer ut/treg responstid og denne bygger seg opp, trenger vi ikke
     // fullføre alle simuleringer fordi de vil nok time ut av konsumenten sine timeouts uansett.
     // capacity = 16 sørger for at simuleringer fungerer så lenge OS er performant.
-    val channel = Channel<Pair<String, SimulerBeregningRequest>>(capacity = 16)
+    val channel = Channel<SimuleringRequest>(capacity = 16)
 
-    val backpressureChannel = Channel<Pair<String, Fagsystem>>(Channel.UNLIMITED)
+    val backpressureChannel = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
 
     val dryrunProducers = mapOf(
         Fagsystem.AAP to kafka.createProducer(config.kafka, Topics.dryrunAap),

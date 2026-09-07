@@ -23,11 +23,16 @@ abstract class StateScheduleProcessor<K: Any, V: Any>(
 
 ): ScheduleProcessor<K, V> {
 
+    protected open fun additionalStateStores(): List<String> = emptyList()
+
+    protected open fun init(context: FixedKeyProcessorContext<K, V>) {}
+
     internal fun addToStreams() {
         table.internalKTable.toStream().processValues(
             { InternalProcessor(table.table.stateStoreName) },
             Named.`as`(named),
             table.table.stateStoreName,
+            *additionalStateStores().toTypedArray(),
         )
     }
 
@@ -36,6 +41,7 @@ abstract class StateScheduleProcessor<K: Any, V: Any>(
 
         override fun init(context: FixedKeyProcessorContext<K, V>) {
             val store: TimestampedKeyValueStore<K, V> = context.getStateStore(stateStoreName)
+            this@StateScheduleProcessor.init(context)
             context.schedule(interval.toJavaDuration(), PunctuationType.WALL_CLOCK_TIME) { wallClockTime ->
                 schedule(wallClockTime, StateStore(store))
             }

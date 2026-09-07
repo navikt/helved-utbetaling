@@ -13,13 +13,13 @@ import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.S
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
 class SimuleringWorker(
-    private val channel: Channel<Pair<String, SimulerBeregningRequest>>,
-    private val backpressureChannel: Channel<Pair<String, Fagsystem>>,
+    private val channel: Channel<SimuleringRequest>,
+    private val backpressureChannel: Channel<SimuleringBackpressure>,
     private val service: SimuleringService,
     private val producers: Map<Fagsystem, KafkaProducer<String, Simulering>>,
 ) {
     suspend fun run() {
-        for ((key, request) in channel) {
+        for ((key, request, headers) in channel) {
             try {
                 val fagsystem = Fagsystem.from(request.request.oppdrag.kodeFagomraade.trimEnd())
                 val simulering = try {
@@ -28,7 +28,7 @@ class SimuleringWorker(
                 } catch (e: Exception) {
                     mapAndLogError(e, key, fagsystem)
                 }
-                producerFor(fagsystem).send(key, simulering)
+                producerFor(fagsystem).send(key, simulering, headers)
             } catch (e: Exception) {
                 appLog.error("Feil i simulering-worker for key=$key")
                 secureLog.error("Feil i simulering-worker for key=$key", e)
@@ -37,11 +37,11 @@ class SimuleringWorker(
     }
 
     suspend fun drainBackpressure() {
-        for ((key, fagsystem) in backpressureChannel) {
+        for ((key, fagsystem, headers) in backpressureChannel) {
             try {
                 appLog.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
                 secureLog.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
-                producerFor(fagsystem).send(key, Info.Utilgjengelig(fagsystem, "Simulering har for lang kø, prøv igjen senere"))
+                producerFor(fagsystem).send(key, Info.Utilgjengelig(fagsystem, "Simulering har for lang kø, prøv igjen senere"), headers)
             } catch(e: Exception) {
                 // TODO: vurder å bytte til warning + metrikker for å styre alerts ved forekomst-frekvens
                 appLog.error("Feil ved sending av backpressure-svar for $fagsystem key=$key")
