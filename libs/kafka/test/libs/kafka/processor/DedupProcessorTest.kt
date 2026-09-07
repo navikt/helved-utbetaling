@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
-import org.apache.kafka.streams.state.TimestampedKeyValueStore
 import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration

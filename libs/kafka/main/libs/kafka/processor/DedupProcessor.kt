@@ -10,8 +10,8 @@ import org.apache.kafka.streams.processor.api.ProcessorSupplier
 import org.apache.kafka.streams.processor.api.Record
 import org.apache.kafka.streams.state.StoreBuilder
 import org.apache.kafka.streams.state.Stores
-import org.apache.kafka.streams.state.TimestampedKeyValueStore
-import org.apache.kafka.streams.state.ValueAndTimestamp
+import org.apache.kafka.streams.state.TimestampedKeyValueStoreWithHeaders
+import org.apache.kafka.streams.state.ValueTimestampHeaders
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
@@ -32,12 +32,12 @@ class DedupProcessor<K: Any, V: Any> (
     private val hasher: (K, V) -> Int,
     private val downstream: (V) -> Unit,
 ): Processor<K, V, K, V> {
-    private lateinit var store: TimestampedKeyValueStore<String, V>
+    private lateinit var store: TimestampedKeyValueStoreWithHeaders<String, V>
     private lateinit var context: ProcessorContext<K, V>
 
     override fun init(ctx: ProcessorContext<K, V>) {
         context = ctx
-        store = context.getStateStore(stateStoreName) as TimestampedKeyValueStore<String, V>
+        store = context.getStateStore(stateStoreName) as TimestampedKeyValueStoreWithHeaders<String, V>
         context.schedule(retention.toJavaDuration(), PunctuationType.WALL_CLOCK_TIME) { now ->
             val iter = store.all()
             while (iter.hasNext()) {
@@ -58,7 +58,7 @@ class DedupProcessor<K: Any, V: Any> (
         if (seen == null || now - seen.timestamp() > retention.inWholeMilliseconds) {
             try {
                 downstream(record.value())
-                store.put(dedupKey, ValueAndTimestamp.make(record.value(), now))
+                store.put(dedupKey, ValueTimestampHeaders.make(record.value(), now, record.headers()))
                 kafkaLog.info("dedup allow key=${record.key()} value.hash=${record.value().hashCode()}")
                 context.forward(record)
             } catch (e: Exception) {
@@ -80,8 +80,8 @@ class DedupProcessor<K: Any, V: Any> (
         ): ProcessorSupplier<K, V, K, V> {
             return object: ProcessorSupplier<K, V, K, V> {
                 override fun stores(): Set<StoreBuilder<*>> { 
-                    val inner = Stores.persistentTimestampedKeyValueStore(store.name)
-                    return setOf(Stores.timestampedKeyValueStoreBuilder(inner, store.serde.key, store.serde.value))
+                    val inner = Stores.persistentTimestampedKeyValueStoreWithHeaders(store.name)
+                    return setOf(Stores.timestampedKeyValueStoreWithHeadersBuilder(inner, store.serde.key, store.serde.value))
                 }
                 override fun get(): Processor<K, V, K, V> = DedupProcessor(store.name, retention, hasher, downstream)
             }
