@@ -2,6 +2,7 @@ package simulering
 
 import kotlinx.coroutines.channels.Channel
 import libs.kafka.KafkaProducer
+import libs.tracing.Tracing
 import libs.utils.appLog
 import libs.utils.secureLog
 import models.ApiError
@@ -28,7 +29,9 @@ class SimuleringWorker(
                 } catch (e: Exception) {
                     mapAndLogError(e, key, fagsystem)
                 }
-                producerFor(fagsystem).send(key, simulering, headers)
+                withTraceparent(headers) {
+                    producerFor(fagsystem).send(key, simulering, headers)
+                }
             } catch (e: Exception) {
                 appLog.error("Feil i simulering-worker for key=$key")
                 secureLog.error("Feil i simulering-worker for key=$key", e)
@@ -41,7 +44,9 @@ class SimuleringWorker(
             try {
                 appLog.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
                 secureLog.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
-                producerFor(fagsystem).send(key, Info.Utilgjengelig(fagsystem, "Simulering har for lang kø, prøv igjen senere"), headers)
+                withTraceparent(headers) {
+                    producerFor(fagsystem).send(key, Info.Utilgjengelig(fagsystem, "Simulering har for lang kø, prøv igjen senere"), headers)
+                }
             } catch(e: Exception) {
                 // TODO: vurder å bytte til warning + metrikker for å styre alerts ved forekomst-frekvens
                 appLog.error("Feil ved sending av backpressure-svar for $fagsystem key=$key")
@@ -103,5 +108,15 @@ class SimuleringWorker(
     private fun producerFor(fagsystem: Fagsystem): KafkaProducer<String, Simulering> {
         val key = if (fagsystem.isTilleggsstønader()) Fagsystem.TILLEGGSSTØNADER else fagsystem
         return producers[key] ?: error("Ingen producer for fagsystem $fagsystem")
+    }
+
+    private fun <T> withTraceparent(
+        headers: Map<String, String>,
+        block: () -> T,
+    ): T {
+        val traceparent = headers["traceparent"] ?: return block()
+        return Tracing.contextFromTraceparent(traceparent)
+            .makeCurrent()
+            .use { block() }
     }
 }

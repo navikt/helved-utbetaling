@@ -19,6 +19,7 @@ dependencies {
     implementation(project(":libs:jwt"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
+    implementation(project(":libs:tracing"))
     implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:3.1.252")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
