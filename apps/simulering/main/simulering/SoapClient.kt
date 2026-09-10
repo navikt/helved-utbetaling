@@ -2,7 +2,7 @@ package simulering
 
 import libs.utils.Resource
 import libs.utils.logger
-import libs.utils.secureLog
+import libs.utils.Log
 import models.badGateway
 import org.http4k.core.*
 import java.net.URL
@@ -12,10 +12,10 @@ val wsLog = logger("ws")
 
 val SecureLogFilter = Filter { next ->
     { request ->
-        secureLog.info("REQUEST: ${request.method} ${request.uri} headers=${request.headers} body=${request.bodyString()}")
+        Log.info("REQUEST: ${request.method} ${request.uri} headers=${request.headers}", "body=${request.bodyString()}")
         val response = next(request)
         val body = response.bodyString()
-        secureLog.info("RESPONSE: ${response.status} headers=${response.headers} body=$body")
+        Log.info("RESPONSE: ${response.status} headers=${response.headers}", "body=$body")
         response.body(body)
     }
 }

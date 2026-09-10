@@ -29,14 +29,12 @@ import libs.jdbc.Migrator
 import libs.jdbc.context
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(

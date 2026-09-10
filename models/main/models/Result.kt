@@ -1,7 +1,6 @@
 package models
 
-import libs.utils.secureLog
-import libs.utils.appLog
+import libs.utils.Log
 
 
 sealed interface Result<out V, out E> {
@@ -16,8 +15,7 @@ sealed interface Result<out V, out E> {
                 Err(StatusReply(status = Status.FEILET, error = e))
             } catch (e: Throwable) {
                 val msg = "Result.catch failed with an unknown throwable"
-                appLog.error(msg)
-                secureLog.error(msg, e)
+                Log.error(msg, e)
                 val error = ApiError(500, msg)
                 Err(StatusReply(status = Status.FEILET, error = error))
             }

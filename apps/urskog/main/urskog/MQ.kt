@@ -11,8 +11,7 @@ import libs.kafka.Streams
 import libs.mq.DefaultMQConsumer
 import libs.mq.DefaultMQProducer
 import libs.mq.MQ
-import libs.mq.mqLog
-import libs.utils.secureLog
+import libs.utils.Log
 import libs.utils.sha256
 import libs.xml.XMLMapper
 import models.BehandlingId
@@ -29,42 +28,37 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
     fun send(oppdrag: Oppdrag): Oppdrag {
-        val oppdragXml = mapper.writeValueAsString(oppdrag)
-        val hash = oppdragXml.sha256()
-        val sid = oppdrag.oppdrag110.fagsystemId 
-        val bid = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId)
-        val lastDelytelsesId = oppdrag.lastDelytelseId() 
-        val pid = lastDelytelsesId?.let{ PeriodeId.decode(it) }
+        val xml = mapper.writeValueAsString(oppdrag)
+        val hash = xml.sha256()
+        val info = info(oppdrag, hash)
 
         runCatching {
-            producer.produce(oppdragXml) {
+            producer.produce(xml) {
                 jmsReplyTo = kvitteringQueue
             }
             meters.counter("helved_oppdrag_mq", listOf(
                 Tag.of("status", "Sendt"),
                 Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
-            mqLog.info("Sender oppdrag hashKey($hash)")
-            sendDarePocAapKopi(oppdrag, oppdragXml, hash)
+            Log.info("Sender oppdrag $info")
+            sendDarePocAapKopi(oppdrag.fagsystem(), xml, info)
             return oppdrag
         }.onFailure {
             meters.counter("helved_oppdrag_mq", listOf(
                 Tag.of("status", "Feilet"),
                 Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
-            mqLog.error("Feilet sending av oppdrag hashKey($hash) sakId:$sid, behandling:$bid, lastDelytelsesId/periodeId: $lastDelytelsesId/$pid")
-            secureLog.error("Feilet sending av oppdrag hashKey($hash)", it)
+            Log.error("Feilet sending av oppdrag $info", it)
         }.getOrThrow()
     }
 
-    private fun sendDarePocAapKopi(oppdrag: Oppdrag, oppdragXml: String, hash: String) {
+    private fun sendDarePocAapKopi(fagsystem: String, xml: String, info: String) {
         if (config.cluster  != "dev-gcp") return
-        if (oppdrag.fagsystem() != Fagsystem.AAP.name) return
+        if (fagsystem != Fagsystem.AAP.name) return
         runCatching {
-            darePocAapProducer.produce(oppdragXml)
+            darePocAapProducer.produce(xml)
         }.onFailure {
-            mqLog.error("Feilet sending av AAP-kopi til DARE POC-kø hashKey($hash)")
-            secureLog.error("Feilet sending av AAP-kopi til DARE POC-kø hashKey($hash)", it)
+            Log.error("Feilet sending av AAP-kopi til DARE POC-kø $info", it)
         }
     }
 }
@@ -78,13 +72,22 @@ class AvstemmingMQProducer(config: Config, mq: MQ) {
 
         runCatching {
             producer.produce(xml)
-            mqLog.info("Sender grensesnittavstemming til oppdrag")
-            secureLog.trace("Sender grensesnittavstemming til oppdrag $xml")
+            Log.info("Sender grensesnittavstemming til oppdrag", secretMsg = xml)
         }.onFailure {
-            mqLog.error("Feil ved grensesnittavstemming")
-            secureLog.error("Feil ved grensesnittavstemming", it)
+            Log.error("Feil ved grensesnittavstemming", it)
         }.getOrThrow()
     }
+}
+
+private fun info(
+    oppdrag: Oppdrag,
+    hashKey: String,
+) : String {
+    val sid = oppdrag.oppdrag110.fagsystemId
+    val bid = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId)
+    val lastDelytelsesId = oppdrag.lastDelytelseId() 
+    val pid = lastDelytelsesId?.let{ PeriodeId.decode(it) }
+    return "sak:$sid, behandling:$bid, lastDelytelsesId/periodeId:$lastDelytelsesId/$pid hash:$hashKey"
 }
 
 class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams, private val jdbcCtx: CoroutineDatasource): AutoCloseable {
@@ -93,20 +96,21 @@ class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams, private val j
     private val consumer = DefaultMQConsumer(mq, config.oppdrag.kvitteringsKø, ::onMessage)
 
     fun onMessage(message: TextMessage) {
-        val kvittering = mapper.readValue(leggTilNamespacePrefiks(message.text))
-        val hashKey = DaoOppdrag.hashStripped(kvittering)
-        val stripped = DaoOppdrag.strip(kvittering)
+        val oppdrag = mapper.readValue(leggTilNamespacePrefiks(message.text))
+        val hash = DaoOppdrag.hashStripped(oppdrag)
+        val info = info(oppdrag, hash)
+        val stripped = DaoOppdrag.strip(oppdrag)
         val dao = runBlocking {
             withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
-                    DaoOppdrag.findOrLegacy(hashKey, stripped)
-                        ?: error("fant ikke noe sted å lagre kvittering for hashKey($hashKey) sakId:${kvittering.sakId()}")
+                    DaoOppdrag.findOrLegacy(hash, stripped)
+                        ?: error("fant ikke noe sted å lagre kvittering for $info")
                 }
             }
         }
-        mqLog.info("Mottok kvittering ${kvittering.alvorlighetsgrad()} for key:${dao.kafkaKey} oppdrag hashKey($hashKey) sakId:${kvittering.sakId()}")
+        Log.info("Mottok kvittering ${oppdrag.alvorlighetsgrad()} $info")
         val headers = mapOf("uids" to dao.uids.joinToString(","))
-        oppdragProducer.send(dao.kafkaKey, kvittering, headers)
+        oppdragProducer.send(dao.kafkaKey, oppdrag, headers)
     }
 
 

@@ -16,8 +16,7 @@ import libs.auth.AzureTokenProvider
 import libs.auth.ProviderRejected
 import libs.auth.ProviderUnavailable
 import libs.http.HttpClientFactory
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import models.unavailable
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -42,8 +41,7 @@ class VedskivaClient(
             setBody(DateBody(LocalDate.now()))
         }
         if (next.status != HttpStatusCode.OK) {
-            appLog.error("vedskiva /api/next_range responded ${next.status}")
-            secureLog.error("vedskiva /api/next_range responded ${next.status}: ${next.bodyAsText()}")
+            Log.error("vedskiva /api/next_range responded ${next.status}: ${next.bodyAsText()}")
             error("vedskiva /api/next_range responded ${next.status}")
         }
         return next.body<AvstemmingRequest>()
@@ -58,12 +56,11 @@ class VedskivaClient(
         }
 
         if (res.status == HttpStatusCode.Conflict) {
-            appLog.info("Allerede avstemt i dag")
+            Log.info("Allerede avstemt i dag")
             return 
         }
         if (res.status != HttpStatusCode.OK) {
-            appLog.error("Failed to trigger avstemming: $req => <redacted>")
-            secureLog.error("Failed to trigger avstemming: $req => ${res.bodyAsText()}")
+            Log.error("Failed to trigger avstemming", "$req => ${res.bodyAsText()}")
         }
     }
 

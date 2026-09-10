@@ -12,8 +12,7 @@ import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.Streams
 import libs.kafka.Topic
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import models.Fagsystem
 import models.badRequest
 import java.time.Duration
@@ -406,8 +405,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             )
         } catch (e: Exception) {
             val msg = "Failed to create kvittering for uid:${request.key}"
-            appLog.error(msg)
-            secureLog.error(msg, e)
+            Log.error(msg, e)
             call.respond(HttpStatusCode.BadRequest, msg)
         }
     }
@@ -437,8 +435,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         } catch (e: Exception) {
             val msg =
                 "Failed to move pending utbetaling with partition ${request.partition} and offset ${request.offset}"
-            appLog.error(msg)
-            secureLog.error(msg, e)
+            Log.error(msg, e)
             call.respond(HttpStatusCode.BadRequest, msg)
         }
     }

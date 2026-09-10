@@ -31,8 +31,7 @@ import libs.kafka.Streams
 import libs.kafka.Topology
 import libs.ktor.CallLog
 import libs.ktor.bodyAsText
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import models.ApiError
 import models.badRequest
 import models.forbidden
@@ -52,8 +51,7 @@ import java.util.*
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(
@@ -93,14 +91,13 @@ fun Application.utsjekk(
                 is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
                 is BadRequestException -> {
                     val msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
-                    appLog.debug(msg)
-                    secureLog.debug(msg, cause)
+                    Log.debug(msg, cause)
                     val res = ApiError(statusCode = 400, msg = msg)
                     call.respond(HttpStatusCode.BadRequest, res)
                 }
                 else -> {
                     val msg = "Ukjent feil, helved er varslet."
-                    appLog.error(msg, cause)
+                    Log.error(msg, cause)
                     val res = ApiError(statusCode = 500, msg = msg)
                     call.respond(HttpStatusCode.InternalServerError, res)
                 }
@@ -113,12 +110,10 @@ fun Application.utsjekk(
     install(CallLog) {
         exclude { call -> call.request.path().startsWith("/actuator") }
         log { call ->
-            appLog.debug("${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}")
-            if (call.response.status()?.isSuccess() == false) {
-                secureLog.debug(
-                    """${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}
-${call.bodyAsText()}""".trimIndent()
-                )
+            val msg = "${call.request.httpMethod.value} ${call.request.local.uri} gave ${call.response.status()}"
+            when(call.response.status()?.isSuccess()) {
+                false -> Log.debug(msg, call.bodyAsText())
+                else -> Log.debug(msg)
             }
         }
     }

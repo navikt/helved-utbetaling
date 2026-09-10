@@ -11,7 +11,7 @@ import libs.cache.Cache
 import libs.cache.CacheKey
 import libs.cache.TokenCache
 import libs.utils.logger
-import libs.utils.secureLog
+import libs.utils.Log
 import java.net.URL
 
 private val authLog = logger("auth")
@@ -53,8 +53,7 @@ class TokenClient(
         } catch (cause: CancellationException) {
             throw cause
         } catch (cause: Exception) {
-            authLog.warn("Failed to get token from provider: $name")
-            secureLog.error("Failed to get token from provider: $name", cause)
+            Log.warn("Failed to get token from provider: $name", cause)
             ProviderUnavailable()
         }
     }
@@ -66,8 +65,8 @@ class TokenClient(
             in 400..499 -> ProviderRejected(status.value)
             else -> {
                 authLog.warn("Failed to get token from provider: $name")
-                secureLog.error(
-                    """Failed to get token from provider: $name
+                Log.warn("Failed to get token from provider: $name",
+                    """
                     Got HTTP ${status.value} when issuing token from provider: ${request.url}
                     Status: ${status.value}
                     Body: ${bodyAsText()}

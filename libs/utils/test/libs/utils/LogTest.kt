@@ -3,6 +3,10 @@ package libs.utils
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.spi.LoggingEvent
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.core.read.ListAppender
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import kotlin.test.Test
@@ -80,5 +84,39 @@ class LogTest {
 
         appender.stop()
         server.close()
+    }
+
+    @Test
+    fun `error logs location publicly and exception securely`() {
+        val (app, appender) = capture("appLog")
+        val (secure, secureAppender) = capture("secureLog")
+        val error = IllegalStateException("boom")
+
+        try {
+            Log.error("failed", error)
+            assertEquals("failed", appender.list.single().formattedMessage)
+            assertFalse(appender.list.single().throwableProxy != null)
+            assertEquals("LogTest.kt", appender.list.single().mdcPropertyMap["location"]?.substringBefore(":"))
+            val proxy = secureAppender.list.single().throwableProxy
+            assertEquals(IllegalStateException::class.java.name, proxy.className)
+            assertEquals("boom", proxy.message)
+        } finally {
+            app.detachAppender(appender)
+            secure.detachAppender(secureAppender)
+        }
+    }
+
+    @Test
+    fun `error removes location from MDC`() {
+        Log.error("failed", RuntimeException())
+        assertEquals(null, MDC.get("location"))
+    }
+
+    private fun capture(name: String): Pair<Logger, ListAppender<ILoggingEvent>> {
+        val logger = LoggerFactory.getLogger(name) as Logger
+        return logger to ListAppender<ILoggingEvent>().also {
+            it.start()
+            logger.addAppender(it)
+        }
     }
 }

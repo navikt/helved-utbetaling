@@ -41,7 +41,7 @@ open class KafkaProducer<K: Any, V>(
             ProducerRecord<K, V>(topic.name, partition, key, value)
         } else {
             // TODO: hvis K ikke er String, så må vi ta inn serde
-            kafkaLog.error("key $key was not string, and we cannot calculate partition. Using default", key)
+            Log.error("key $key was not string, and we cannot calculate partition. Using default", "$key", kafkaLog)
             ProducerRecord<K, V>(topic.name, key, value)
         }
         headers.forEach { (k, v) -> 
@@ -67,7 +67,7 @@ open class KafkaProducer<K: Any, V>(
             val partition = partition(key as String, numberOfPartitions)
             return send(ProducerRecord<K, V>(topic.name, partition, key, null))
         } else {
-            kafkaLog.warn("key $key was not string, and we cannot calculate partition. Usingn default", key)
+            Log.warn("key $key was not string, and we cannot calculate partition. Usingn default", "$key", kafkaLog)
             return send(ProducerRecord<K, V>(topic.name, key, null))
         }
     }
@@ -86,8 +86,7 @@ open class KafkaProducer<K: Any, V>(
                     res = SendResult(true, md.offset(), md.partition(), md.topic())
                 }
                 else -> {
-                    kafkaLog.error("Failed to produce record for ${record.key()} on ${topic.name}:${md.partition()}")
-                    secureLog.error("Failed to produce record for ${record.key()} on ${topic.name}:${md.partition()}", err)
+                    Log.error("Failed to produce record for ${record.key()} on ${topic.name}:${md.partition()}", err, kafkaLog)
                 }
             }
         }.get()

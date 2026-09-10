@@ -3,7 +3,7 @@ package libs.auth
 import io.ktor.http.*
 import io.ktor.server.auth.*
 import io.ktor.server.response.*
-import libs.utils.secureLog
+import libs.utils.Log
 import java.net.http.HttpClient
 import java.time.Duration
 import java.util.*
@@ -35,12 +35,12 @@ fun AuthenticationConfig.jwt(
             try {
                 val jwt = verifier.verify(credential.token)
                 if (!customValidation(jwt.claims)) {
-                    secureLog.warn("Custom validation failed")
+                    Log.warn("Custom validation failed")
                     return@authenticate null
                 }
                 JwtPrincipal(jwt.claims)
             } catch (e: Exception) {
-                secureLog.warn("Token validation failed: ${e.message}")
+                Log.warn("Token validation failed", e)
                 null // auto 401
             }
         }

@@ -1,10 +1,11 @@
 package libs.kafka
 
-import libs.utils.secureLog
+import libs.utils.Log
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.streams.errors.*
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse as StreamHandler
+import org.slf4j.MDC
 
 class ReplaceThread(message: Any) : RuntimeException(message.toString())
 
@@ -28,10 +29,7 @@ class ConsumeAgainHandler : DeserializationExceptionHandler {
                Offset: ${record.offset()}
                TaskId: ${context.taskId()}
         """.trimIndent()
-
-        kafkaLog.warn(msg)
-        secureLog.warn(msg, exception)
-
+        Log.warn(msg, exception, kafkaLog)
         return DeserializationExceptionHandler.Response.fail()
     }
 }
@@ -51,10 +49,7 @@ class ConsumeNextHandler : DeserializationExceptionHandler {
                Offset: ${record.offset()}
                TaskId: ${context.taskId()}
         """.trimIndent()
-
-        kafkaLog.warn(msg)
-        secureLog.warn(msg, exception)
-
+        Log.warn(msg, exception, kafkaLog)
         return DeserializationExceptionHandler.Response.resume()
     }
 }
@@ -67,8 +62,7 @@ class ProcessAgainHandler : ProcessingExceptionHandler {
         r: org.apache.kafka.streams.processor.api.Record<*, *>,
         e: java.lang.Exception
     ): ProcessingExceptionHandler.Response {
-        kafkaLog.error("Feil ved prosessering i topologien, forsøker igjen.")
-        secureLog.error("Feil ved prosessering i topologien, forsøker igjen.", e)
+        Log.error("Feil ved prosessering i topologien, forsøker igjen.", e, kafkaLog)
         return ProcessingExceptionHandler.Response.fail()
     }
 }
@@ -81,8 +75,7 @@ class ProcessNextHandler : ProcessingExceptionHandler {
         r: org.apache.kafka.streams.processor.api.Record<*, *>,
         e: java.lang.Exception
     ): ProcessingExceptionHandler.Response {
-        kafkaLog.error("Feil ved prosessering i topologien, fortsetter med neste record.")
-        secureLog.error("Feil ved prosessering i topologien, fortsetter med neste record.", e)
+        Log.error("Feil ved prosessering i topologien, fortsetter med neste record.", e, kafkaLog)
         return ProcessingExceptionHandler.Response.resume()
     }
 }
@@ -99,12 +92,10 @@ class ProcessNextHandler : ProcessingExceptionHandler {
 class UncaughtHandler: StreamsUncaughtExceptionHandler {
     override fun handle(exception: Throwable): StreamHandler {
         if (exception.isStandbyRace()) {
-            kafkaLog.warn("Kjent race i state-updater (standby transition), erstatter tråd")
-            secureLog.warn("Kjent race i state-updater (standby transition), erstatter tråd", exception)
+            Log.warn("Kjent race i state-updater (standby transition), erstatter tråd", exception, kafkaLog)
             return StreamHandler.REPLACE_THREAD
         }
-        kafkaLog.error("Uventet feil, logger og avslutter client")
-        secureLog.error("Uventet feil, logger og avslutter client", exception)
+        Log.error("Uventet feil, logger og avslutter client", exception, kafkaLog)
         return StreamHandler.SHUTDOWN_CLIENT
     }
 
@@ -124,10 +115,9 @@ class ProduceAgainHandler : ProductionExceptionHandler {
     override fun handleError(
         c: ErrorHandlerContext?,
         r: ProducerRecord<ByteArray, ByteArray>?,
-        e: java.lang.Exception?
+        e: java.lang.Exception,
     ): ProductionExceptionHandler.Response {
-        kafkaLog.error("Feil ved serializing, forsøker igjen.")
-        secureLog.error("Feil ved serializing, forsøker igjen.", e)
+        Log.error("Feil ved serializing, forsøker igjen.", e, kafkaLog)
         return ProductionExceptionHandler.Response.fail()
     }
 }
@@ -138,10 +128,9 @@ class ProduceNextHandler : ProductionExceptionHandler {
     override fun handleError(
         c: ErrorHandlerContext?,
         r: ProducerRecord<ByteArray, ByteArray>?,
-        e: java.lang.Exception?
+        e: java.lang.Exception
     ): ProductionExceptionHandler.Response {
-        kafkaLog.error("Feil ved serializing, fortsetter med neste record.")
-        secureLog.error("Feil ved serializing, fortsetter med neste record.", e)
+        Log.error("Feil ved serializing, fortsetter med neste record.", e, kafkaLog)
         return ProductionExceptionHandler.Response.resume()
     }
 }

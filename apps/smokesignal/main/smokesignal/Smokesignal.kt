@@ -1,15 +1,13 @@
 package smokesignal
 
 import kotlinx.coroutines.runBlocking
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import models.erHelligdag
 import java.time.LocalDate
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
         Thread.sleep(100)
     }
 

@@ -9,7 +9,7 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import libs.utils.secureLog
+import libs.utils.Log
 import models.badGateway
 import nl.adaptivity.xmlutil.serialization.XmlElement
 import nl.adaptivity.xmlutil.serialization.XmlSerialName
@@ -43,7 +43,7 @@ class SimuleringServiceV1(
             block()
         } catch (e: SoapException) {
             if (e.message?.contains("FailedAuthentication") == true) {
-                wsLog.warn("STS-token feilet med FailedAuthentication, invaliderer cache og prøver på nytt")
+                Log.warn("STS-token feilet med FailedAuthentication, invaliderer cache og prøver på nytt", wsLog)
                 sts.invalidate()
                 block()
             } else {
@@ -55,16 +55,14 @@ class SimuleringServiceV1(
     fun json(xmlStr: String): soap.Beregning? = when (classify(xmlStr)) {
         EnvelopeKind.FAULT -> simulering.fault(xmlStr)
         EnvelopeKind.RESPONSE -> try {
-            wsLog.debug("Forsøker å deserialisere simulerBeregningResponse")
+            Log.debug("Forsøker å deserialisere simulerBeregningResponse", wsLog)
             simulerBeregningResponse(xmlStr)
         } catch (e: Throwable) {
-            wsLog.error("Feilet deserialisering av simulerBeregningResponse")
-            secureLog.error("Feilet deserialisering av simulerBeregningResponse: $xmlStr", e)
+            Log.error("Feilet deserialisering av simulerBeregningResponse", xmlStr, e, wsLog)
             badGateway("Ugyldig respons fra Oppdragssystemet")
         }
         EnvelopeKind.UNKNOWN -> {
-            wsLog.error("Ukjent SOAP-svar fra Oppdragssystemet")
-            secureLog.error("Ukjent SOAP-svar fra Oppdragssystemet: $xmlStr")
+            Log.error("Ukjent SOAP-svar fra Oppdragssystemet", xmlStr, wsLog)
             badGateway("Ukjent svar fra Oppdragssystemet")
         }
     }

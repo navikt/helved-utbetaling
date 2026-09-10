@@ -15,8 +15,7 @@ import libs.auth.JwtVerifier
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.topology
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import models.ApiError
 import models.Fagsystem
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
@@ -36,8 +35,7 @@ import kotlin.concurrent.thread
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     val app = app()
@@ -129,8 +127,7 @@ private val errorFilter = Filter { next ->
                 .body(errorJson.encodeToString(dto))
         } catch (e: Throwable) {
             val msg = "Uhåndtert feil i ${request.method} ${request.uri} - Helved har fått beskjed."
-            appLog.error(msg)
-            secureLog.error(msg, e)
+            Log.error(msg, e)
             Response(Status.INTERNAL_SERVER_ERROR).body("Uhåndtert feil - Helved har fått beskjed.")
         }
     }

@@ -14,8 +14,7 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
 import libs.kafka.Topology
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -24,8 +23,7 @@ import java.time.Duration
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(

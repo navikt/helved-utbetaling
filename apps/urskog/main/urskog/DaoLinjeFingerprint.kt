@@ -1,7 +1,6 @@
 package urskog
 
 import libs.jdbc.Dao
-import libs.utils.secureLog
 import libs.utils.sha256
 import no.trygdeetaten.skjema.oppdrag.Oppdrag110
 import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150

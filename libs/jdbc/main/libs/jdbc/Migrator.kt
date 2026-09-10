@@ -5,7 +5,7 @@ import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.connection
 import libs.jdbc.concurrency.transaction
 import libs.utils.Resource
-import libs.utils.secureLog
+import libs.utils.Log
 import libs.utils.jdbcLog
 import java.io.File
 import java.nio.charset.Charset
@@ -83,7 +83,7 @@ class Migrator(locations: List<File>) {
             .filterValues { migration ->
                 when (migration) {
                     null -> true
-                    else -> !migration.success.also { if (it) jdbcLog.info("Migration [SKIP] ${migration.filename}") }
+                    else -> !migration.success.also { if (it) Log.info("Migration [SKIP] ${migration.filename}", jdbcLog) }
                 }
             }
             .mapNotNull { (candidate, migration) ->
@@ -96,11 +96,10 @@ class Migrator(locations: List<File>) {
                             else -> Migration.update(migration.copy(success = true, checksum = candidate.migration.checksum))
                         }
 
-                        jdbcLog.info("Migration [DONE] ${candidate.file.name}")
+                        Log.info("Migration [DONE] ${candidate.file.name}", jdbcLog)
                     }
                 } catch (e: Exception) {
-                    jdbcLog.info("Migration [FAIL] ${candidate.file.name}")
-                    secureLog.error("Migration [FAIL] ${candidate.file.name}", e)
+                    Log.error("Migration [FAIL] ${candidate.file.name}", e, jdbcLog)
                 }
             }
     }
@@ -112,7 +111,7 @@ class Migrator(locations: List<File>) {
             }
 
             if (migration.checksum != candidate.migration.checksum) {
-                jdbcLog.info("${candidate.file.name}, checksum: ${candidate.migration.checksum} != previously migrated ${migration.checksum}")
+                Log.info("${candidate.file.name}, checksum: ${candidate.migration.checksum} != previously migrated ${migration.checksum}", jdbcLog)
                 error("Checksum differs from existing migration: ${candidate.file.name}")
             }
         }
@@ -122,7 +121,7 @@ class Migrator(locations: List<File>) {
         transaction {
             val sql = file.readText(Charset.forName("UTF-8"))
             coroutineContext.connection.prepareStatement(sql).execute()
-            jdbcLog.debug(sql)
+            Log.debug(sql, jdbcLog)
         }
     }
 
@@ -148,7 +147,7 @@ class Migrator(locations: List<File>) {
     private suspend fun executeSql(sql: String) =
         transaction {
             coroutineContext.connection.prepareStatement(sql).execute()
-            jdbcLog.debug(sql)
+            Log.debug(sql, jdbcLog)
         }
 }
 
@@ -190,7 +189,7 @@ internal data class Migration(
             coroutineContext.connection
                 .prepareStatement("SELECT * FROM migrations")
                 .use { stmt ->
-                    secureLog.debug(stmt.toString())
+                    Log.debug("SELECT * FROM migrations", stmt.toString())
                     stmt.executeQuery().map(::from)
                 }
         }
@@ -204,7 +203,7 @@ internal data class Migration(
                     stmt.setString(3, migration.checksum)
                     stmt.setObject(4, migration.created_at)
                     stmt.setBoolean(5, migration.success)
-                    secureLog.debug(stmt.toString())
+                    Log.debug(stmt.toString())
                     stmt.executeUpdate()
                 }
         }
@@ -216,7 +215,7 @@ internal data class Migration(
                     stmt.setBoolean(1, migration.success)
                     stmt.setString(2, migration.checksum)
                     stmt.setInt(3, migration.version)
-                    secureLog.debug(stmt.toString())
+                    Log.debug("UPDATE migrations SET success = ?, checksum = ? WHERE version = ?", stmt.toString())
                     stmt.executeUpdate()
                 }
         }
