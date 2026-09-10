@@ -28,8 +28,7 @@ import libs.jdbc.Jdbc
 import libs.jdbc.Migrator
 import libs.jdbc.context
 import libs.jdbc.concurrency.CoroutineDatasource
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import speiderhytta.dora.DeployService
 import speiderhytta.dora.DoraQueryService
 import speiderhytta.dora.IncidentService
@@ -46,8 +45,7 @@ import speiderhytta.slo.sloRoutes
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(
@@ -84,7 +82,7 @@ fun Application.speiderhytta(config: Config = Config()) {
     val doraQuery = DoraQueryService()
 
     val sloDefs = SloDefinitionLoader(config.slo.definitionsDir).load()
-    appLog.info("loaded {} SLO definitions", sloDefs.size)
+    Log.info("loaded ${sloDefs.size} SLO definitions")
     val prom = PrometheusClient(config.prometheus)
     val sloService = SloService(sloDefs, prom, metrics, jdbcCtx)
 
@@ -100,7 +98,7 @@ fun Application.speiderhytta(config: Config = Config()) {
             try {
                 sloService.snapshot()
             } catch (t: Throwable) {
-                appLog.warn("SLO snapshot failed", t)
+                Log.warn("SLO snapshot failed", t)
             }
             delay(config.pollIntervals.sloSnapshot)
         }

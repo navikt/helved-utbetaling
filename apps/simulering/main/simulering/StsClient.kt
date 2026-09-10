@@ -1,7 +1,7 @@
 package simulering
 
 import kotlinx.serialization.json.*
-import libs.utils.secureLog
+import libs.utils.Log
 import org.http4k.core.*
 import java.net.URL
 import java.time.LocalDateTime
@@ -35,8 +35,9 @@ class StsClient(
         val response = http(request)
 
         if (response.status != Status.OK) {
-            secureLog.error("STS feil: ${response.status} ${response.bodyString()}")
-            error("Unexpected status ${response.status} from STS")
+            val err = IllegalStateException("Unexpected status ${response.status} from STS ${response.bodyString()}")
+            Log.error("Unexpected status ${response.status} from STS", err)
+            throw err
         }
 
         val json = Json.parseToJsonElement(response.bodyString())

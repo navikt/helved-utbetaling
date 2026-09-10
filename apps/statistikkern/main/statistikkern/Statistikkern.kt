@@ -21,13 +21,11 @@ import kotlinx.coroutines.runBlocking
 import libs.kafka.KafkaFactory
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(
@@ -81,7 +79,7 @@ fun Application.statistikkern(
 
 fun Job.cancelJob() {
     if (!this.isCompleted) runBlocking(Dispatchers.IO) {
-        appLog.info("Job cancelled")
+        Log.info("Job cancelled")
         this@cancelJob.cancelAndJoin()
     }
 }

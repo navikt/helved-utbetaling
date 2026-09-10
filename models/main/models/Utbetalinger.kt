@@ -13,8 +13,7 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.LocalDate
@@ -115,7 +114,7 @@ data class Utbetaling(
 
     fun isDuplicate(other: Utbetaling?): Boolean {
         if (other == null) {
-            appLog.info("uid $uid is new")
+            Log.info("uid $uid is new")
             return false
         }
 
@@ -134,11 +133,11 @@ data class Utbetaling(
 
 
         if (isDuplicate) {
-            appLog.info("Duplicate message found for $uid")
+            Log.info("Duplicate message found for $uid")
             return isDuplicate
         }
 
-        appLog.info("uid $uid is changed")
+        Log.info("uid $uid is changed")
         return isDuplicate
     }
 }
@@ -253,8 +252,7 @@ value class PeriodeId(private val id: String) {
                 // ^ les neste 64 og lag en long
                 return PeriodeId(UUID(byteBuffer.long, byteBuffer.long).toString())
             } catch (e: Throwable) {
-                appLog.debug("Klarte ikke dekomprimere UUID: $encoded. Bruker det gamle formatet.")
-                secureLog.warn("Klarte ikke dekomprimere UUID: $encoded. Bruker det gamle formatet.", e)
+                Log.warn("Klarte ikke dekomprimere UUID: $encoded. Bruker det gamle formatet.", e)
                 return PeriodeId(encoded)
             }
         }

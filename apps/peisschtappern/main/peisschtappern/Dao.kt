@@ -6,7 +6,7 @@ import libs.jdbc.Dao
 import libs.jdbc.concurrency.connection
 import libs.jdbc.map
 import libs.utils.logger
-import libs.utils.secureLog
+import libs.utils.Log
 import java.sql.ResultSet
 import java.sql.Types
 
@@ -45,7 +45,7 @@ data class Header(
 ) {
     companion object {
         fun fromString(str: String): Header {
-            daoLog.debug("trying to split '$str' on ':'")
+            Log.debug("trying to split '$str' on ':'")
             val parts = str.split(":")
             return Header(parts[0], parts.getOrNull(1))
         }
@@ -176,8 +176,7 @@ data class Daos(
                 stmt.setLong(i++, nowMs)
                 stmt.setLong(i, thresholdMs)
 
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
+                Log.debug(sql, stmt.toString(), daoLog)
                 stmt.executeQuery().use { rs ->
                     rs.map {
                         OppdragUtenKvittering(
@@ -206,8 +205,7 @@ data class Daos(
                 stmt.setLong(1, fom)
                 stmt.setLong(2, tom)
 
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
+                Log.debug(sql, stmt.toString(), daoLog)
                 stmt.executeQuery().use { it.map(::from) }
             }
         }
@@ -329,8 +327,7 @@ data class Daos(
                 stmt.setObject(++i, status, Types.VARCHAR)
                 stmt.setObject(++i, status, Types.VARCHAR)
 
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
+                Log.debug(sql, stmt.toString(), daoLog)
                 stmt.executeQuery().use { it.map(::from) }
             }
         }
@@ -419,8 +416,7 @@ data class Daos(
                 stmt.setObject(i++, traceId, Types.VARCHAR)
                 stmt.setInt(i++, pageSize)
                 stmt.setInt(i, (page - 1) * pageSize)
-                daoLog.debug(sql)
-                secureLog.debug(stmt.toString())
+                Log.debug(sql, stmt.toString(), daoLog)
                 stmt.executeQuery().use { rs ->
                     var total: Int? = null
 

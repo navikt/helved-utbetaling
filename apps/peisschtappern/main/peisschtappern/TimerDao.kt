@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import libs.jdbc.Dao
 import libs.utils.logger
-import libs.utils.secureLog
+import libs.utils.Log
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
@@ -38,8 +38,7 @@ data class TimerDao(
 
             return query(sql) { stmt ->
                 stmt.setString(1, key)
-                timeDaoLog.debug(sql)
-                secureLog.debug(stmt.toString())
+                Log.debug(sql, stmt.toString(), timeDaoLog)
             }.singleOrNull()
         }
 

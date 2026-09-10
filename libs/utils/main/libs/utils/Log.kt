@@ -7,6 +7,7 @@ import ch.qos.logback.core.OutputStreamAppender
 import ch.qos.logback.core.encoder.EncoderBase
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import java.io.IOException
 import java.io.OutputStream
 import java.net.Socket
@@ -21,6 +22,106 @@ val auditLog: Logger = logger("audit")
 val appLog: Logger = logger("appLog")
 val jdbcLog: Logger = logger("jdbc")
 val dryrunLog: Logger = logger("dryrun")
+
+object Log {
+    fun debug(message: String, logger: Logger = appLog) {
+        logger.debug(message)
+    }
+
+    fun debug(message: String, secretMsg: String, logger: Logger = appLog) {
+        logger.debug(message)
+        secureLog.debug("$message | $secretMsg")
+    }
+
+    fun debug(message: String, error: Throwable, logger: Logger = appLog) {
+        MDC.putCloseable("location", location(error)).use {
+            logger.debug(message)
+            secureLog.debug(message, error)
+        }
+    }
+
+    fun debug(message: String, secretMsg: String, error: Throwable, logger: Logger = appLog) {
+        MDC.putCloseable("location", location(error)).use {
+            logger.debug(message)
+            secureLog.debug("$message | $secretMsg", error)
+        }
+    }
+
+    fun info(message: String, logger: Logger = appLog) {
+        logger.info(message)
+    }
+
+    fun info(message: String, secretMsg: String, logger: Logger = appLog) {
+        logger.info(message)
+        secureLog.info("$message | $secretMsg")
+    }
+
+    fun info(message: String, error: Throwable, logger: Logger = appLog) {
+        MDC.putCloseable("location", location(error)).use {
+            logger.info(message)
+            secureLog.info(message, error)
+        }
+    }
+
+    fun info(message: String, secretMsg: String, error: Throwable, logger: Logger = appLog) {
+        MDC.putCloseable("location", location(error)).use {
+            logger.info(message)
+            secureLog.info("$message | $secretMsg", error)
+        }
+    }
+
+    fun warn(message: String, logger: Logger = appLog) {
+        logger.warn(message)
+    }
+
+    fun warn(message: String, secretMsg: String, logger: Logger = appLog) {
+        logger.warn(message)
+        secureLog.warn("$message | $secretMsg")
+    }
+
+    fun warn(message: String, error: Throwable, logger: Logger = appLog) {
+        MDC.putCloseable("location", location(error)).use {
+            logger.warn(message)
+            secureLog.warn(message, error)
+        }
+    }
+
+    fun warn(message: String, secretMsg: String, error: Throwable, logger: Logger = appLog) {
+        MDC.putCloseable("location", location(error)).use {
+            logger.warn(message)
+            secureLog.warn("$message | $secretMsg", error)
+        }
+    }
+
+    fun error(message: String, logger: Logger = appLog) {
+        logger.error(message)
+    }
+
+    fun error(message: String, secretMsg: String, logger: Logger = appLog) {
+        logger.error(message)
+        secureLog.error("$message | $secretMsg")
+    }
+
+    fun error(message: String, error: Throwable, logger: Logger = appLog) {
+        MDC.putCloseable("location", location(error)).use {
+            logger.error(message)
+            secureLog.error(message, error)
+        }
+    }
+
+    fun error(message: String, secretMsg: String, error: Throwable, logger: Logger = appLog) {
+        MDC.putCloseable("location", location(error)).use {
+            logger.error(message)
+            secureLog.error("$message | $secretMsg", error)
+        }
+    }
+
+    private fun location(e: Throwable): String {
+        return e.stackTrace.firstOrNull { it.fileName != null }
+            ?.let { "${it.fileName}:${it.lineNumber}" }
+            ?: "unknown"
+    }
+}
 
 class LogTcpAppender: OutputStreamAppender<ILoggingEvent>() {
     var destination: String = ""

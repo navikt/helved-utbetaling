@@ -3,7 +3,7 @@ package libs.jdbc.concurrency
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import libs.utils.jdbcLog
-import libs.utils.secureLog
+import libs.utils.Log
 import java.sql.Connection
 import java.sql.SQLException
 import kotlin.contracts.ExperimentalContracts
@@ -53,8 +53,7 @@ internal fun Connection.closeCatching() {
     try {
         close()
     } catch (e: SQLException) {
-        jdbcLog.warn("Failed to close database connection")
-        secureLog.warn("Failed to close database connection", e)
+        Log.warn("Failed to close database connection", e, jdbcLog)
     }
 }
 
@@ -63,8 +62,7 @@ internal fun Connection.isClosedCatching(): Boolean {
     return try {
         isClosed
     } catch (e: SQLException) {
-        jdbcLog.warn("Connection isClosedCatching check failed, already closed?")
-        secureLog.warn("Connection isClosedCatching check failed, already closed?", e)
+        Log.warn("Connection isClosedCatching check failed, already closed?", e, jdbcLog)
         true
     }
 }

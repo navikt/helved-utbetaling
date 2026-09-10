@@ -6,7 +6,7 @@ import libs.auth.Jwt
 import libs.auth.JwksClient
 import libs.auth.JwtVerifier
 import libs.auth.TokenConfig
-import libs.utils.secureLog
+import libs.utils.Log
 import models.forbidden
 import org.http4k.core.*
 import org.http4k.lens.RequestContextLens
@@ -22,7 +22,7 @@ fun azureAuthFilter(verifier: JwtVerifier, claimsLens: RequestContextLens<Jwt.Cl
             val jwt = try {
                 verifier.verify(token)
             } catch (e: Exception) {
-                secureLog.warn("Token validation failed: ${e.message}")
+                Log.warn("Token validation failed", e)
                 null
             }
             if (jwt == null) {

@@ -6,7 +6,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import libs.utils.env
 import libs.utils.logger
-import libs.utils.secureLog
+import libs.utils.Log
 import org.http4k.core.*
 import java.net.URL
 import java.time.Duration
@@ -49,9 +49,8 @@ class AzureTokenProvider(
         val response = http(request)
 
         if (response.status.code !in 200..299) {
-            authLog.warn("Failed to get token from Azure AD")
-            secureLog.warn("Got HTTP ${response.status.code} from ${config.tokenEndpoint}: ${response.bodyString()}")
-            error("Failed to get token from Azure AD: ${config.tokenEndpoint}")
+            Log.warn("Failed to get token from Azure AD, got HTTP ${response.status.code} from ${config.tokenEndpoint}", response.bodyString(), authLog)
+            error("Failed to get token from Azure AD, got HTTP ${response.status.code} from ${config.tokenEndpoint}")
         }
 
         val token = json.decodeFromString<AzureToken>(response.bodyString())

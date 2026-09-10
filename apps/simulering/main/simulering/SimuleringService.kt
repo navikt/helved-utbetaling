@@ -1,7 +1,7 @@
 package simulering
 
 import kotlinx.serialization.Serializable
-import libs.utils.secureLog
+import libs.utils.Log
 import libs.xml.XMLMapper
 import models.badRequest
 import models.conflict
@@ -53,7 +53,7 @@ class SimuleringService(private val soap: Soap, private val sts: Sts) {
             block()
         } catch (e: SoapException) {
             if (e.message?.contains("FailedAuthentication") == true) {
-                wsLog.warn("STS-token feilet med FailedAuthentication, invaliderer cache og prøver på nytt")
+                Log.warn("STS-token feilet med FailedAuthentication, invaliderer cache og prøver på nytt")
                 sts.invalidate()
                 block()
             } else {
@@ -91,7 +91,7 @@ data class Fault(
 )
 
 fun fault(xmlStr: String): Nothing {
-    wsLog.debug("Forsøker å deserialisere fault")
+    Log.debug("Forsøker å deserialisere fault")
     val faultcode = extractElementText(xmlStr, "faultcode") ?: "unknown"
     val faultstring = extractElementText(xmlStr, "faultstring") ?: "unknown"
     val detail = extractFaultDetail(xmlStr)
@@ -112,8 +112,7 @@ private fun extractFaultDetail(xmlStr: String): FaultDetail? {
 }
 
 private fun logAndThrow(fault: Fault): Nothing {
-    wsLog.debug("Håndterer soap fault")
-    secureLog.debug("Håndterer soap fault {}", fault)
+    Log.debug("Håndterer soap fault", "$fault", wsLog)
 
     with(fault.faultstring) {
         when {

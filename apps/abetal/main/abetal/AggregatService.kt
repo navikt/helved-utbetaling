@@ -1,7 +1,7 @@
 package abetal
 
 import libs.kafka.StreamsPair
-import libs.utils.secureLog
+import libs.utils.Log
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
@@ -45,7 +45,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("opphør utbetaling {}", new.uid)
+                        Log.debug("opphør utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
 
@@ -65,7 +65,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("opphør utbetaling {}", new.uid)
+                        Log.debug("opphør utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
 
@@ -83,7 +83,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("reintroduser en tidligere opphørt utbetaling {}", new.uid)
+                        Log.debug("reintroduser en tidligere opphørt utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
 
@@ -100,7 +100,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("opprett utbetaling {}", new.uid)
+                        Log.debug("opprett utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
 
@@ -117,7 +117,7 @@ object AggregateService {
                                 vedtakssats = sisteLinje?.vedtakssats157?.vedtakssats?.toLong()?.toUInt(), 
                             )
                         )
-                        secureLog.debug("endre utbetaling {}", new.uid)
+                        Log.debug("endre utbetaling ${new.uid}")
                         utbetaling to oppdrag
                     }
                 }
@@ -143,30 +143,30 @@ object AggregateService {
                 new.validate()
                 when {
                     new.action == Action.DELETE -> {
-                        secureLog.info("simuler opphør for $prev")
+                        Log.info("simuler opphør for ${new.uid}", "$prev")
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         SimuleringService.delete(prev, prev)
                     }
 
                     new.action == Action.FAKE_DELETE -> {
-                        secureLog.info("simuler opphør (fake delete) for $prev")
+                        Log.info("simuler opphør (fake delete) for ${new.uid}", "$prev")
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
                         SimuleringService.delete(prev, prev)
                     }
 
                     // reintroduser en tidligere opphørt utbetaling
                     prev?.action == Action.DELETE && new.action == Action.CREATE -> {
-                        secureLog.info("simuler recreate for $new")
+                        Log.info("simuler recreate for ${new.uid}", "$new")
                         SimuleringService.opprett(new, prev.lastPeriodeId)
                     }
 
                     prev == null -> {
-                        secureLog.info("simuler opprett for $new")
+                        Log.info("simuler opprett for ${new.uid}", "$new")
                         SimuleringService.opprett(new)
                     }
 
                     else -> {
-                        secureLog.info("simuler endring for $prev -> $new")
+                        Log.info("simuler endring for ${new.uid}", "$new")
                         SimuleringService.update(new, prev)
                     }
                 }

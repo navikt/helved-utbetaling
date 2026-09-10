@@ -5,8 +5,8 @@ import java.time.LocalDate
 import kotlin.coroutines.coroutineContext
 import libs.jdbc.concurrency.connection
 import libs.jdbc.map
-import libs.utils.logger
-import libs.utils.secureLog
+import libs.utils.Log
+import libs.utils.jdbcLog
 
 data class Scheduled(
     val created_at: LocalDate,
@@ -19,8 +19,7 @@ data class Scheduled(
         suspend fun lastOrNull(): Scheduled? {
             val sql = "SELECT * FROM  $TABLE_NAME ORDER BY created_at DESC LIMIT 1"
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                jdbcLog.debug(sql)
-                secureLog.debug(stmt.toString())
+                Log.debug(sql, stmt.toString(), jdbcLog)
                 stmt.executeQuery().map(::from).singleOrNull()
             }
         }
@@ -32,8 +31,7 @@ data class Scheduled(
             stmt.setObject(1, created_at)
             stmt.setObject(2, avstemt_fom)
             stmt.setObject(3, avstemt_tom)
-            jdbcLog.debug(sql)
-            secureLog.debug(stmt.toString())
+            Log.debug(sql, stmt.toString())
             stmt.executeUpdate()
         }
     }
@@ -44,6 +42,4 @@ private fun from(r: ResultSet) = Scheduled(
     avstemt_fom = r.getDate("avstemt_fom").toLocalDate(),
     avstemt_tom = r.getDate("avstemt_tom").toLocalDate(),
 )
-
-private val jdbcLog = logger("jdbc")
 

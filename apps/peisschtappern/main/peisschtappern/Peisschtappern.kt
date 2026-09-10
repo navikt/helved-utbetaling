@@ -27,15 +27,13 @@ import libs.jdbc.Migrator
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.context
 import libs.kafka.*
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(
@@ -77,14 +75,13 @@ fun Application.peisschtappern(
                 is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
                 is BadRequestException -> {
                     val msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
-                    appLog.debug(msg)
-                    secureLog.debug(msg, cause)
+                    Log.debug(msg, cause)
                     val res = ApiError(statusCode = 400, msg = msg)
                     call.respond(HttpStatusCode.BadRequest, res)
                 }
                 else -> {
                     val msg = "Ukjent feil, helved er varslet."
-                    appLog.error(msg, cause)
+                    Log.error(msg, cause)
                     val res = ApiError(statusCode = 500, msg = msg)
                     call.respond(HttpStatusCode.InternalServerError, res)
                 }

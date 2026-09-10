@@ -9,7 +9,7 @@ import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.StatusCode
 import libs.tracing.*
 import libs.utils.logger
-import libs.utils.secureLog
+import libs.utils.Log
 import java.util.*
 import java.time.LocalDateTime
 import javax.jms.JMSContext
@@ -37,7 +37,7 @@ class DefaultMQProducer(
         message: String,
         config: JMSProducer.() -> Unit,
     ): String {
-        mqLog.info("Producing message on $queue")
+        Log.info("Producing message on $queue")
         return mq.transaction { ctx ->
             ctx.clientID = UUID.randomUUID().toString()
             val producer = ctx.createProducer().apply(config)
@@ -87,7 +87,7 @@ open class DefaultMQConsumer(
         return context.createConsumer(queue).apply {
             messageListener = MessageListener {
                 val message = it as TextMessage
-                mqLog.info("Consuming message on ${queue.baseQueueName}")
+                Log.info("Consuming message on ${queue.baseQueueName}")
                 mq.transacted(context) {
                     val context = Tracing.restoreContext(it.jmsCorrelationID)
                     fun spanBuilder(builder: SpanBuilder): SpanBuilder {
@@ -118,7 +118,7 @@ open class DefaultMQConsumer(
     }
 
     override fun onException(exception: JMSException) {
-        mqLog.error("MQ ${queue.baseQueueName} failed, reconnecting...", exception)
+        Log.error("MQ ${queue.baseQueueName} failed, reconnecting...", exception)
         reconnect()
     }
 
@@ -129,17 +129,17 @@ open class DefaultMQConsumer(
         while (true) {
             attempt++
             val backoff = minOf((10*attempt).seconds, maxBackoff)
-            mqLog.info("Reconnect attempt $attempt for ${queue.baseQueueName}, backoff $backoff")
+            Log.info("Reconnect attempt $attempt for ${queue.baseQueueName}, backoff $backoff")
             Thread.sleep(backoff.inWholeMilliseconds)
             try {
                 runCatching { close() }
                 context = createContext()
                 consumer = createConsumer()
                 start()
-                mqLog.info("Sucessfully reconnected MQ ${queue.baseQueueName} after $attempt attempts")
+                Log.info("Sucessfully reconnected MQ ${queue.baseQueueName} after $attempt attempts")
                 return
             } catch (e: Exception) {
-                mqLog.error("MQ reconnect ${queue.baseQueueName} failed, reconnecting...", e)
+                Log.error("MQ reconnect ${queue.baseQueueName} failed, reconnecting...", e)
             }
         }
     }
@@ -182,7 +182,7 @@ class DefaultMQ(private val config: MQConfig) : MQ {
         )
 
     override fun depth(queue: MQQueue): Int {
-        mqLog.debug("Checking queue depth for ${queue.baseQueueName}")
+        Log.debug("Checking queue depth for ${queue.baseQueueName}")
         return transaction { ctx ->
             ctx.createBrowser(queue).use { browse ->
                 browse.enumeration.toList().size
@@ -191,17 +191,16 @@ class DefaultMQ(private val config: MQConfig) : MQ {
     }
 
     override fun <T : Any> transacted(ctx: JMSContext, block: () -> T): T {
-        mqLog.debug("MQ transaction created {}", ctx)
+        Log.debug("MQ transaction created", "$ctx")
 
         val result = runCatching {
             block()
         }.onSuccess {
             ctx.commit()
-            mqLog.debug("MQ transaction committed {}", ctx)
+            Log.debug("MQ transaction committed", "$ctx")
         }.onFailure {
             ctx.rollback()
-            mqLog.error("MQ transaction rolled back {}, please check secureLogs or BOQ (backout queue)", ctx)
-            secureLog.error("MQ transaction rolled back {}", ctx, it)
+            Log.error("MQ transaction rolled back, please check secureLogs or backout queue", "$ctx", it)
         }
 
         return result.getOrThrow()

@@ -5,9 +5,8 @@ package models
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import java.time.LocalDate
-import libs.utils.appLog
 import libs.utils.env
-import libs.utils.secureLog
+import libs.utils.Log
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import no.trygdeetaten.skjema.oppdrag.OppdragsLinje150
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
@@ -31,8 +30,10 @@ data class StatusReply(
 
         private fun logError(statusReply: StatusReply) {
             if (env("NAIS_CLUSTER_NAME", "prod-gcp") == "prod-gcp") {
-                appLog.error("Mottok status FEILET")
-                secureLog.error("Mottok status FEILET", statusReply.error)
+                when(statusReply.error) {
+                    null -> Log.error("Mottok status FEILET")
+                    else -> Log.error("Mottok status FEILET", statusReply.error)
+                }
             }
         }
     }

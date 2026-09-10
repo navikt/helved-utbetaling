@@ -6,8 +6,6 @@ import libs.jdbc.concurrency.connection
 import libs.jdbc.map
 import libs.jdbc.Dao
 import java.sql.Timestamp
-import libs.utils.logger
-import libs.utils.secureLog
 import java.time.LocalDateTime
 
 data class OppdragDao(

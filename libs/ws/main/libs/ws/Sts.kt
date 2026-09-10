@@ -9,7 +9,7 @@ import kotlinx.serialization.json.*
 import libs.cache.Token
 import libs.cache.TokenCache
 import libs.http.HttpClientFactory
-import libs.utils.secureLog
+import libs.utils.Log
 import java.net.URL
 import java.time.Duration
 import java.time.LocalDateTime
@@ -88,9 +88,9 @@ class StsClient(
             }
 
             else -> {
-                wsLog.error("Unexpected status code: $status when calling ${request.url}")
-                secureLog.error("Unexpected status code: $status when calling ${request.url} ${bodyAsText()}")
-                error("Unexpected status code: $status when calling ${request.url}")
+                val e = IllegalStateException("Unexpected status code: $status when calling ${request.url}")
+                Log.error("Unexpected status code: $status when calling ${request.url} ${bodyAsText()}", e, wsLog)
+                throw e
             }
         }
     }

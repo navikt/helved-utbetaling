@@ -15,8 +15,7 @@ import utsjekk.*
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     embeddedServer(Netty, port = 8080, module = Application::testApp).start(wait = true)
@@ -36,7 +35,7 @@ fun Application.testApp() {
                 )
             ).migrate()
         }
-        appLog.info("setup database")
+        Log.info("setup database")
     }
     utsjekk(TestRuntime.config, TestRuntime.kafka)
     testRouting()

@@ -3,8 +3,7 @@ package simulering
 import kotlinx.coroutines.channels.Channel
 import libs.kafka.KafkaProducer
 import libs.tracing.Tracing
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import models.ApiError
 import models.Fagsystem
 import models.Info
@@ -33,8 +32,7 @@ class SimuleringWorker(
                     producerFor(fagsystem).send(key, simulering, headers)
                 }
             } catch (e: Exception) {
-                appLog.error("Feil i simulering-worker for key=$key")
-                secureLog.error("Feil i simulering-worker for key=$key", e)
+                Log.error("Feil i simulering-worker for key=$key", e)
             }
         }
     }
@@ -42,15 +40,12 @@ class SimuleringWorker(
     suspend fun drainBackpressure() {
         for ((key, fagsystem, headers) in backpressureChannel) {
             try {
-                appLog.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
-                secureLog.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
+                Log.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
                 withTraceparent(headers) {
                     producerFor(fagsystem).send(key, Info.Utilgjengelig(fagsystem, "Simulering har for lang kø, prøv igjen senere"), headers)
                 }
             } catch(e: Exception) {
-                // TODO: vurder å bytte til warning + metrikker for å styre alerts ved forekomst-frekvens
-                appLog.error("Feil ved sending av backpressure-svar for $fagsystem key=$key")
-                secureLog.error("Feil ved sending av backpressure-svar for $fagsystem key=$key", e)
+                Log.error("Feil ved sending av backpressure-svar for $fagsystem key=$key", e)
             }
         }
     }
@@ -59,20 +54,17 @@ class SimuleringWorker(
         val msg = if (error is ApiError) error.msg else error.message ?: "ukjent feil"
 
         fun ugyldig(): Simulering {
-            appLog.warn("Ugyldig simulering $fs $key $msg")
-            secureLog.warn("Ugyldig simulering $fs $key $msg", error)
+            Log.warn("Ugyldig simulering $fs $key $msg", error)
             return Info.UgyldigRequest(fs, msg)
         }
 
         fun utilgjengelig(): Simulering {
-            appLog.error("Simulering utilgjengelig $fs $key $msg")
-            secureLog.error("Simulering utilgjengelig $fs $key $msg", error)
+            Log.error("Simulering utilgjengelig $fs $key $msg", error)
             return Info.Utilgjengelig(fs, msg)
         }
 
         fun feilet(): Simulering {
-            appLog.error("Simulering feilet $fs $key $msg")
-            secureLog.error("Simulering feilet $fs $key $msg", error)
+            Log.error("Simulering feilet $fs $key $msg", error)
             return Info.Feilet(fs, msg)
         }
 

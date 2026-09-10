@@ -1,6 +1,6 @@
 package libs.kafka
 
-import libs.utils.secureLog
+import libs.utils.Log
 import kotlin.reflect.KClass
 import libs.xml.*
 import org.apache.kafka.common.serialization.Deserializer
@@ -106,7 +106,12 @@ class KotlinxDeserializer<T>(private val kSerializer: KSerializer<T>) : Deserial
         try {
             return libs.kotlinx.KotlinxJson.decodeFromString(kSerializer, rawJson)
         } catch (e: Exception) {
-            secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawJson")
+            Log.warn(
+                message = "Deserialization failed on topic $topic.",
+                secretMsg = "Raw data: $rawJson",
+                error = e,
+                logger = kafkaLog,
+            )
             throw DeserializationException(topic, e)
         }
     }
@@ -141,7 +146,12 @@ class XmlDeserializer<T : Any>(private val mapper: XMLMapper<T>) : Deserializer<
             return mapper.readValue(data)
         } catch (e: Exception) {
             val rawXml = String(data, Charsets.UTF_8)
-            secureLog.warn("Deserialization failed on topic $topic. Raw data: $rawXml")
+            Log.warn(
+                message = "Deserialization failed on topic $topic.",
+                secretMsg = "Raw data: $rawXml",
+                error = e,
+                logger = kafkaLog,
+            )
             throw DeserializationException(topic, e)
         }
     }

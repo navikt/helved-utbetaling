@@ -12,8 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import libs.kafka.KafkaStreams
 import libs.kafka.Streams
-import libs.utils.appLog
-import libs.utils.secureLog
+import libs.utils.Log
 import models.ApiError
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
@@ -32,8 +31,7 @@ import java.time.Duration
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
-        appLog.error("Uhåndtert feil ${e.javaClass.canonicalName}")
-        secureLog.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
+        Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
     val config = Config()
@@ -109,11 +107,11 @@ private val errorFilter = Filter { next ->
             Response(Status(e.statusCode, "")).with(apiErrorLens of e)
         } catch (e: LensFailure) {
             val msg = "Påkrevd felt mangler eller er null: ${e.message}"
-            appLog.warn(msg, e)
+            Log.warn(msg, e)
             Response(Status.BAD_REQUEST).body(msg)
         } catch (e: Throwable) {
             val msg = "Uhåndtert feil: ${e.message}"
-            appLog.warn(msg, e)
+            Log.warn(msg, e)
             Response(Status.INTERNAL_SERVER_ERROR).body(msg)
         }
     }
@@ -121,7 +119,7 @@ private val errorFilter = Filter { next ->
 
 fun Job.cancelJob() {
     if (!this.isCompleted) runBlocking(Dispatchers.IO) {
-        appLog.info("Job cancelled")
+        Log.info("Job cancelled")
         this@cancelJob.cancelAndJoin()
     }
 }
