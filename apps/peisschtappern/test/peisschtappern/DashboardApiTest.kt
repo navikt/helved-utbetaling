@@ -28,12 +28,12 @@ private fun nextPendingMismatchTimestamp(): Long =
 class DashboardApiTest {
     @AfterEach
     fun resetDashboardData() {
-        TestRuntime.jdbc.truncate("peisschtappern.oppdrag")
-        TestRuntime.jdbc.truncate("peisschtappern.status")
-        TestRuntime.jdbc.truncate("peisschtappern.utbetalinger")
-        TestRuntime.jdbc.truncate("peisschtappern.pending_utbetalinger")
-        TestRuntime.jdbc.truncate("peisschtappern.avstemming")
-        TestRuntime.jdbc.truncate("peisschtappern.korrigerte_feilet_utbetalinger")
+        TestRuntime.jdbc.truncate("peisschtappern", "oppdrag")
+        TestRuntime.jdbc.truncate("peisschtappern", "status")
+        TestRuntime.jdbc.truncate("peisschtappern", "utbetalinger")
+        TestRuntime.jdbc.truncate("peisschtappern", "pending_utbetalinger")
+        TestRuntime.jdbc.truncate("peisschtappern", "avstemming")
+        TestRuntime.jdbc.truncate("peisschtappern", "korrigerte_feilet_utbetalinger")
     }
 
     @Test
