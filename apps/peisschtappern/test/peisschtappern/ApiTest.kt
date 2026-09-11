@@ -317,6 +317,59 @@ class ApiTest {
     }
 
     @Test
+    fun `endre utbetaling sends validated json to kafka with manuell endring headers`() = runTest(TestRuntime.context) {
+        val key = "213ae04f-d3cd-433b-9a71-992905d5043c"
+        val jsonPayload = """
+            {"dryrun":false,"originalKey":"213ae04f-d3cd-433b-9a71-992905d5043c","fagsystem":"TILLEGGSSTØNADER","uid":"dda57903-7349-4cb2-9d3e-0012e2b28590","action":"DELETE","førsteUtbetalingPåSak":false,"sakId":"200001343","behandlingId":"2259","lastPeriodeId":"200001343#0","sistePeriode":{"fom":"2025-10-15","tom":"2025-10-15","beløp":2703,"betalendeEnhet":null,"vedtakssats":null},"personident":"15510060730","vedtakstidspunkt":"2026-01-05T12:59:33.235","stønad":"LÆREMIDLER_AAP","beslutterId":"VL","saksbehandlerId":"VL","periodetype":"UKEDAG","avvent":null,"perioder":[{"fom":"2025-10-15","tom":"2025-10-15","beløp":2703,"betalendeEnhet":null,"vedtakssats":null}]}
+        """.trimIndent()
+
+        val requestBody = EndreUtbetalingRequest(
+            key = key,
+            value = jsonPayload,
+            reason = "satt inn manglende sistePeriode",
+        )
+
+        TestRuntime.ktor.httpClient.post("/endre-utbetaling") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(requestBody)
+        }.apply {
+            assertEquals(HttpStatusCode.OK, status)
+        }
+
+        val producer = TestRuntime.kafka.getProducer(Topic("helved.utbetalinger.v1", json<Utbetaling>()))
+        assertEquals(1, producer.history().size)
+
+        val (recordKey, value, headers) = producer.historyWithHeaders().last()
+        assertEquals(key, recordKey)
+        assertNotNull(value.sistePeriode)
+        assertEquals("true", headers["manuelt-endret"])
+        assertNotNull(headers["endret-av"])
+        assertNotNull(headers["endret-tidspunkt"])
+        assertEquals("satt inn manglende sistePeriode", headers["endret-aarsak"])
+    }
+
+    @Test
+    fun `endre utbetaling rejects invalid json`() = runTest(TestRuntime.context) {
+        val requestBody = EndreUtbetalingRequest(
+            key = "some-key",
+            value = "{not valid json",
+            reason = "en grunn",
+        )
+
+        TestRuntime.ktor.httpClient.post("/endre-utbetaling") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(requestBody)
+        }.apply {
+            assertEquals(HttpStatusCode.BadRequest, status)
+        }
+
+        val producer = TestRuntime.kafka.getProducer(Topic("helved.utbetalinger.v1", json<Utbetaling>()))
+        assertEquals(0, producer.history().size)
+    }
+
+    @Test
     fun `resend oppdrag`() = runTest(TestRuntime.context) {
         val offset = offset
         save(Channel.Oppdrag, value = TestData.oppdragXml(), offset = offset)
