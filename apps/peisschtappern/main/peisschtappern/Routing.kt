@@ -1,9 +1,9 @@
 package peisschtappern
 
-import io.ktor.http.*
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.request.*
-import io.ktor.server.response.*
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.*
@@ -57,30 +57,30 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             call.respond(result)
         }
 
-        post("/korriger_utbetaling") {
-            val request = call.receive<KorrigerUtbetalingRequest>()
-            if (request.topic.isBlank()) badRequest("topic er påkrevd")
-            if (request.key.isBlank()) badRequest("key er påkrevd")
-            if (request.reason.isBlank()) badRequest("reason er påkrevd")
-            val korrigertUtbetaling = Dashboard.KorrigertFeiletUtbetaling(
-                topic = request.topic,
-                key = request.key,
-                reason = request.reason,
-                registeredAt = System.currentTimeMillis()
-            )
+        post("/korriger_utbetalinger") {
+            val request = call.receive<KorrigerUtbetalingerRequest>()
+            for (utbetaling in request.utbetalinger) {
+                if (utbetaling.topic.isBlank()) badRequest("topic er påkrevd")
+                if (utbetaling.key.isBlank()) badRequest("key er påkrevd")
+                if (utbetaling.reason.isBlank()) badRequest("reason er påkrevd")
+            }
+
+            val registeredAt = System.currentTimeMillis()
 
             withContext(jdbcCtx + Dispatchers.IO) {
                 transaction {
-                    Daos.korrigerFeiletUtbetaling(
-                        topic = korrigertUtbetaling.topic,
-                        key = korrigertUtbetaling.key,
-                        reason = korrigertUtbetaling.reason,
-                        registeredAt = korrigertUtbetaling.registeredAt
-                    )
+                    request.utbetalinger.forEach {
+                        Daos.korrigerFeiletUtbetaling(
+                            topic = it.topic,
+                            key = it.key,
+                            reason = it.reason,
+                            registeredAt = registeredAt
+                        )
+                    }
                 }
             }
 
-            call.respond(HttpStatusCode.OK, korrigertUtbetaling)
+            call.respond(HttpStatusCode.OK)
         }
 
         get("/dashboard/oppdrag_uten_status") {
@@ -422,7 +422,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
                         Channel.PendingUtbetalinger.table
                     )
                     if (utbetaling == null) {
-                        badRequest( "Kan ikke flytte pending utbetaling. Fant ikke utbetaling i topic ${request.topic} med partition ${request.partition} og offset ${request.offset}")
+                        badRequest("Kan ikke flytte pending utbetaling. Fant ikke utbetaling i topic ${request.topic} med partition ${request.partition} og offset ${request.offset}")
                     }
                     manuellEndringService.flyttPendingTilUtbetalinger(
                         key = utbetaling.key,
@@ -514,11 +514,16 @@ data class MessageRequest(
 )
 
 @Serializable
-data class KorrigerUtbetalingRequest(
-    val topic: String,
-    val key: String,
-    val reason: String,
-)
+data class KorrigerUtbetalingerRequest(
+    val utbetalinger: List<FeiletUtbetaling>
+) {
+    @Serializable
+    data class FeiletUtbetaling(
+        val topic: String,
+        val key: String,
+        val reason: String,
+    )
+}
 
 @Serializable
 data class EndreUtbetalingRequest(

@@ -65,81 +65,79 @@ class DashboardApiTest {
     }
 
     @Test
-    fun `kan markere en feilet utbetaling som korrigert`() = runTest(TestRuntime.context) {
+    fun `kan markere flere feilede utbetalinger som korrigert`() = runTest(TestRuntime.context) {
         val now = Instant.now()
-        val request = KorrigerUtbetalingRequest(
-            topic = Channel.Status.topic.name,
-            key = UUID.randomUUID().toString(),
-            reason = "Utbetalingen er kontrollert og korrigert"
+        val utbetalinger = listOf(
+            KorrigerUtbetalingerRequest.FeiletUtbetaling(
+                topic = Channel.Status.topic.name,
+                key = UUID.randomUUID().toString(),
+                reason = "Utbetalingen er kontrollert og korrigert"
+            ),
+            KorrigerUtbetalingerRequest.FeiletUtbetaling(
+                topic = Channel.Oppdrag.topic.name,
+                key = UUID.randomUUID().toString(),
+                reason = "Oppdraget er korrigert"
+            )
         )
 
-        val korrigertUtbetaling = TestRuntime.ktor.httpClient.post("/api/korriger_utbetaling") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.also { response ->
-            assertEquals(HttpStatusCode.OK, response.status)
-        }.body<Dashboard.KorrigertFeiletUtbetaling>()
+        korrigerUtbetalinger(utbetalinger)
 
-        assertEquals(request.topic, korrigertUtbetaling.topic)
-        assertEquals(request.key, korrigertUtbetaling.key)
-        assertEquals(request.reason, korrigertUtbetaling.reason)
-        assertTrue(korrigertUtbetaling.registeredAt >= now.toEpochMilli())
-
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", now.minusSeconds(60).toString())
-                parameters.append("tom", now.plusSeconds(60).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
-
-        assertEquals(1, dashboard.korrigerteFeiletUtbetalinger.count { it == korrigertUtbetaling })
+        val korrigeringer = korrigeringer(now.minusSeconds(60))
+        assertEquals(utbetalinger.size, korrigeringer.size)
+        utbetalinger.forEach { utbetaling ->
+            val korrigering = korrigeringer.single { it.key == utbetaling.key }
+            assertEquals(utbetaling.topic, korrigering.topic)
+            assertEquals(utbetaling.reason, korrigering.reason)
+            assertTrue(korrigering.registeredAt >= now.toEpochMilli())
+        }
+        assertEquals(1, korrigeringer.map { it.registeredAt }.distinct().size)
     }
 
     @Test
     fun `kan markere samme feilede utbetaling som korrigert på nytt`() = runTest(TestRuntime.context) {
-        val opprinneligRequest = KorrigerUtbetalingRequest(
+        val now = Instant.now()
+        val utbetaling = KorrigerUtbetalingerRequest.FeiletUtbetaling(
             topic = Channel.Status.topic.name,
             key = UUID.randomUUID().toString(),
             reason = "Første korrigering"
         )
 
-        val opprinneligKorrigering = TestRuntime.ktor.httpClient.post("/api/korriger_utbetaling") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(opprinneligRequest)
-        }.also { response ->
-            assertEquals(HttpStatusCode.OK, response.status)
-        }.body<Dashboard.KorrigertFeiletUtbetaling>()
+        korrigerUtbetalinger(listOf(utbetaling))
+        val opprinneligKorrigering = korrigeringer(now.minusSeconds(60)).single()
+        assertEquals(utbetaling.topic, opprinneligKorrigering.topic)
+        assertEquals(utbetaling.key, opprinneligKorrigering.key)
+        assertEquals(utbetaling.reason, opprinneligKorrigering.reason)
 
-        val fom = Instant.now()
-        while (!Instant.now().isAfter(fom)) Thread.onSpinWait()
-        val oppdatertRequest = opprinneligRequest.copy(reason = "Oppdatert forklaring")
+        while (System.currentTimeMillis() <= opprinneligKorrigering.registeredAt) Thread.onSpinWait()
+        val oppdatertUtbetaling = utbetaling.copy(reason = "Oppdatert forklaring")
+        korrigerUtbetalinger(listOf(oppdatertUtbetaling))
 
-        val oppdatertKorrigering = TestRuntime.ktor.httpClient.post("/api/korriger_utbetaling") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(oppdatertRequest)
-        }.also { response ->
-            assertEquals(HttpStatusCode.OK, response.status)
-        }.body<Dashboard.KorrigertFeiletUtbetaling>()
-
+        val oppdatertKorrigering = korrigeringer(now.minusSeconds(60)).single()
+        assertEquals(oppdatertUtbetaling.topic, oppdatertKorrigering.topic)
+        assertEquals(oppdatertUtbetaling.key, oppdatertKorrigering.key)
+        assertEquals(oppdatertUtbetaling.reason, oppdatertKorrigering.reason)
         assertTrue(oppdatertKorrigering.registeredAt > opprinneligKorrigering.registeredAt)
-
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", fom.toString())
-                parameters.append("tom", fom.plusSeconds(60).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
-
-        assertEquals(1, dashboard.korrigerteFeiletUtbetalinger.count { it == oppdatertKorrigering })
     }
 
+    @Test
+    fun `ugyldig utbetaling avviser hele korrigeringen`() = runTest(TestRuntime.context) {
+        val now = Instant.now()
+        val gyldig = KorrigerUtbetalingerRequest.FeiletUtbetaling(
+            topic = Channel.Status.topic.name,
+            key = UUID.randomUUID().toString(),
+            reason = "Kontrollert og korrigert"
+        )
+        val ugyldige = listOf(
+            gyldig.copy(topic = " "),
+            gyldig.copy(key = " "),
+            gyldig.copy(reason = " ")
+        )
+
+        ugyldige.forEach { ugyldig ->
+            korrigerUtbetalinger(listOf(gyldig, ugyldig), HttpStatusCode.BadRequest)
+            assertTrue(korrigeringer(now.minusSeconds(60)).isEmpty())
+        }
+    }
 
     @Test
     fun `can find oppdrag without corresponding status messages`() = runTest(TestRuntime.context) {
@@ -417,6 +415,29 @@ class DashboardApiTest {
 
         assertEquals(mismatchUid, dashboard.pendingMismatch.single().uid)
     }
+
+
+    private suspend fun korrigerUtbetalinger(
+        utbetalinger: List<KorrigerUtbetalingerRequest.FeiletUtbetaling>,
+        expectedStatus: HttpStatusCode = HttpStatusCode.OK
+    ) {
+        val response = TestRuntime.ktor.httpClient.post("/api/korriger_utbetalinger") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(KorrigerUtbetalingerRequest(utbetalinger))
+        }
+        assertEquals(expectedStatus, response.status)
+    }
+
+    private suspend fun korrigeringer(fom: Instant): List<Dashboard.KorrigertFeiletUtbetaling> =
+        TestRuntime.ktor.httpClient.get("/api/dashboard") {
+            url {
+                parameters.append("fom", fom.toString())
+                parameters.append("tom", Instant.now().plusSeconds(60).toString())
+            }
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<Dashboard>().korrigerteFeiletUtbetalinger
 
 
     private fun periode(
