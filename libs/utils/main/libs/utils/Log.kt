@@ -117,7 +117,9 @@ object Log {
     }
 
     private fun location(e: Throwable): String {
-        return e.stackTrace.firstOrNull { it.fileName != null }
+        return e.stackTrace
+            .dropWhile { it.fileName == "ApiError.kt" }
+            .firstOrNull { it.fileName != null }
             ?.let { "${it.fileName}:${it.lineNumber}" }
             ?: "unknown"
     }

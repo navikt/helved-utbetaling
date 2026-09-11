@@ -11,7 +11,7 @@ import libs.utils.CsvReader
 import libs.utils.Resource
 import libs.utils.Rule
 import libs.utils.sha256
-import models.forrigeVirkedag
+import libs.utils.forrigeVirkedag
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.*

@@ -4,6 +4,7 @@ package models
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import libs.utils.nesteUkedag
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID

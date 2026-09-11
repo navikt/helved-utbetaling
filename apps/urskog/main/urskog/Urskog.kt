@@ -20,7 +20,7 @@ import libs.kafka.topology
 import libs.mq.DefaultMQ
 import libs.mq.MQ
 import libs.utils.Log
-import models.erHelligdag
+import libs.utils.erHelligdag
 import java.time.LocalDate
 
 fun main() {

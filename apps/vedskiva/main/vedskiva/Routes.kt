@@ -13,8 +13,8 @@ import kotlinx.serialization.UseSerializers
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
-import models.erHelligdag
-import models.forrigeVirkedag
+import libs.utils.erHelligdag
+import libs.utils.forrigeVirkedag
 import java.time.LocalDate
 import java.time.LocalDateTime
 

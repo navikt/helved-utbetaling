@@ -1,6 +1,7 @@
 package branntaarn
 
 import libs.utils.Log
+import libs.utils.erHelligdag
 import models.*
 import java.time.LocalDateTime
 
