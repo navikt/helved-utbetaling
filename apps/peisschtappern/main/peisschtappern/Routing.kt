@@ -440,6 +440,26 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         }
     }
 
+    post("/endre-utbetaling") {
+        val request = call.receive<EndreUtbetalingRequest>()
+        if (request.key.isBlank()) badRequest("key er påkrevd")
+        if (request.value.isBlank()) badRequest("value er påkrevd")
+        if (request.reason.isBlank()) badRequest("reason er påkrevd for å endre utbetaling manuelt")
+
+        try {
+            val utbetaling = manuellEndringService.endreUtbetalingManuelt(
+                key = request.key,
+                value = request.value,
+                audit = Audit.from(call, request.reason),
+            )
+            call.respond(HttpStatusCode.OK, utbetaling)
+        } catch (e: Exception) {
+            val msg = "Failed to endre utbetaling manuelt med key ${request.key}. Sjekk at json er gyldig."
+            Log.error(msg, e)
+            call.respond(HttpStatusCode.BadRequest, msg)
+        }
+    }
+
     post("/tombstone-utbetaling") {
         val request = call.receive<TombstoneRequest>()
         when (manuellEndringService.tombstoneUtbetaling(request.key, Audit.from(call, request.reason))) {
@@ -497,6 +517,13 @@ data class MessageRequest(
 data class KorrigerUtbetalingRequest(
     val topic: String,
     val key: String,
+    val reason: String,
+)
+
+@Serializable
+data class EndreUtbetalingRequest(
+    val key: String,
+    val value: String,
     val reason: String,
 )
 

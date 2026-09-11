@@ -1,8 +1,6 @@
 package peisschtappern
 
-import libs.kafka.JsonSerde
 import libs.kafka.KafkaProducer
-import kotlinx.serialization.decodeFromString
 import libs.kotlinx.KotlinxJson
 import libs.xml.XMLMapper
 import libs.utils.auditLog
@@ -15,6 +13,7 @@ import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.ObjectFactory
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import java.time.Instant
 
 class ManuellEndringService(
     private val oppdragProducer: KafkaProducer<String, Oppdrag>,
@@ -77,6 +76,27 @@ class ManuellEndringService(
             auditLog.info("$audit -> flytt pending til utbetalinger manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
 
+        return utbetaling
+    }
+
+    fun endreUtbetalingManuelt(
+        key: String,
+        value: String,
+        audit: Audit,
+    ): Utbetaling {
+        val utbetaling = KotlinxJson.decodeFromString<Utbetaling>(value)
+        utbetaling.validate()
+
+        val headers = buildMap {
+            put("manuelt-endret", "true")
+            put("endret-av", audit.ident)
+            put("endret-tidspunkt", Instant.now().toString())
+            audit.reason?.let { put("endret-aarsak", it) }
+        }
+        val result = utbetalingerProducer.send(key, utbetaling, headers)
+        if(result.isSuccess) {
+            auditLog.info("$audit -> endret utbetaling manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
+        }
         return utbetaling
     }
 
