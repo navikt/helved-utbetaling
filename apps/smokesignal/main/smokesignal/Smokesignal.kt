@@ -2,7 +2,7 @@ package smokesignal
 
 import kotlinx.coroutines.runBlocking
 import libs.utils.Log
-import models.erHelligdag
+import libs.utils.erHelligdag
 import java.time.LocalDate
 
 fun main() {

@@ -1,9 +1,12 @@
 package simulering
 
+import java.time.LocalTime
+import java.time.LocalDateTime
 import kotlinx.coroutines.channels.Channel
 import libs.kafka.KafkaProducer
 import libs.tracing.Tracing
 import libs.utils.Log
+import libs.utils.erHelligdag
 import models.ApiError
 import models.Fagsystem
 import models.Info
@@ -54,17 +57,23 @@ class SimuleringWorker(
         val msg = if (error is ApiError) error.msg else error.message ?: "ukjent feil"
 
         fun ugyldig(): Simulering {
-            Log.warn("Ugyldig simulering $fs $key $msg", error)
+            Log.warn("Ugyldig simulering ($fs $key)", error)
             return Info.UgyldigRequest(fs, msg)
         }
 
         fun utilgjengelig(): Simulering {
-            Log.error("Simulering utilgjengelig $fs $key $msg", error)
+            val now = LocalDateTime.now()
+            val utenforÅpningstid = now.toLocalDate().erHelligdag() || now.toLocalTime() !in LocalTime.of(6, 0)..<LocalTime.of(21, 0)
+            val simuleringStengtErr = error is ApiError && error.statusCode == 502 && msg.contains("simulering stengt")
+            when (utenforÅpningstid && simuleringStengtErr) {
+                true -> Log.warn("Simulering utilgjengelig ($fs $key)", error)
+                false -> Log.error("Simulering utilgjengelig ($fs $key)", error)
+            }
             return Info.Utilgjengelig(fs, msg)
         }
 
         fun feilet(): Simulering {
-            Log.error("Simulering feilet $fs $key $msg", error)
+            Log.error("Simulering feilet ($fs $key)", error)
             return Info.Feilet(fs, msg)
         }
 
