@@ -17,7 +17,7 @@ data class StatusReply(
     val detaljer: Detaljer? = null,
     val error: ApiError? = null,
     val simulering: Boolean = false
-    ) {
+) {
 
     companion object {
         fun mottatt(oppdrag: Oppdrag): StatusReply = StatusReply(Status.MOTTATT, detaljer(oppdrag))

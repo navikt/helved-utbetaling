@@ -144,7 +144,7 @@ fun Topology.dpStream(
                         .getOrElse(StreamResult::OppdragError)
                 }
                 .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-                .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+                .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(Fagsystem.DAGPENGER, this) }
                 .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
                 .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.DAGPENGER, this) }
         }
@@ -183,7 +183,7 @@ fun Topology.aapStream(
                         .getOrElse(StreamResult::OppdragError)
                 }
                 .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-                .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+                .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(Fagsystem.AAP, this) }
                 .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
                 .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.AAP, this) }
         }
@@ -228,7 +228,7 @@ fun Topology.tsStream(
                         .getOrElse(StreamResult::OppdragError)
                 }
                 .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-                .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+                .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(Fagsystem.TILLEGGSSTØNADER, this) }
                 .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
                 .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILLEGGSSTØNADER, this) }
         }
@@ -265,7 +265,7 @@ fun Topology.tpStream(
                 .getOrElse(StreamResult::OppdragError)
         }
         .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+        .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(Fagsystem.TILTAKSPENGER, this) }
         .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
         .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILTAKSPENGER, this) }
 }
@@ -300,7 +300,7 @@ fun Topology.historiskStream(
                 .getOrElse(StreamResult::OppdragError)
         }
         .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+        .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(Fagsystem.HISTORISK, this) }
         .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
         .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.HISTORISK, this) }
 }
@@ -335,7 +335,7 @@ fun Topology.valpStream(
                 .getOrElse(StreamResult::OppdragError)
         }
         .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-        .branch({ it is StreamResult.SimuleringError }, ::replySimuleringError)
+        .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(Fagsystem.VALP, this) }
         .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
         .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.VALP, this) }
 }
@@ -547,8 +547,27 @@ private fun replyOppdragError(branch: MappedStream<String, StreamResult>) {
     branch.map { (it as StreamResult.OppdragError).status }.produce(Topics.status)
 }
 
-private fun replySimuleringError(branch: MappedStream<String, StreamResult>) {
-    branch.map { (it as StreamResult.SimuleringError).status.copy(simulering = true) }.produce(Topics.status)
+private fun feiletSimulering(fs: Fagsystem, err: StreamResult.SimuleringError): Simulering {
+    return Info.Feilet(fs, err.status.error?.msg ?: "ukjent feil")
+}
+
+private fun replySimuleringError(fagsystem: Fagsystem, branch: MappedStream<String, StreamResult>) {
+    branch.map { it as StreamResult.SimuleringError }
+        .branch({ fagsystem == Fagsystem.AAP }) {
+            map { feiletSimulering(fagsystem, it) }.produce(Topics.dryrunAap)
+        }
+        .branch({ fagsystem == Fagsystem.DAGPENGER }) {
+            map { feiletSimulering(fagsystem, it) }.produce(Topics.dryrunDp)
+        }
+        .branch({ fagsystem == Fagsystem.TILLEGGSSTØNADER }) {
+            map { feiletSimulering(fagsystem, it) }.produce(Topics.dryrunTs)
+        }
+        .branch({ fagsystem == Fagsystem.TILTAKSPENGER }) {
+            map { feiletSimulering(fagsystem, it) }.produce(Topics.dryrunTp)
+        }
+        .default {
+            map { it.status.copy(simulering = true) }.produce(Topics.status)
+        }
 }
 
 private fun MappedStream<String, List<OppdragAggregate>>.replyOkIfIdempotentOppdrag() {

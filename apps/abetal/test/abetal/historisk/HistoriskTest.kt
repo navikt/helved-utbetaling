@@ -17,7 +17,6 @@ internal class HistoriskTest : ConsumerTestBase() {
 
     @Test
     fun `can serialize and deserialize`() {
-        
         val original = Historisk.utbetaling(UtbetalingId(UUID.randomUUID()), "123", "123") {
             Historisk.periode(7.jun, 18.jun, 100u)
         }
