@@ -108,6 +108,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             val fagsystem = call.parameters.fagsystem()
             val traceId = call.queryParameters["trace_id"]
             val status = call.queryParameters["status"]?.split(",")
+            val manueltEndret = call.queryParameters.manueltEndret()
             val orderBy = call.queryParameters.orderBy()
             val direction = call.queryParameters.direction()
 
@@ -125,6 +126,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
                         fagsystem = fagsystem,
                         traceId = traceId,
                         status = status,
+                        manueltEndret = manueltEndret,
                         orderBy = orderBy,
                         direction = direction
                     )

@@ -53,6 +53,9 @@ fun Parameters.include() =
         ?.filter { !it.startsWith("!") && !it.startsWith("not:") }
         ?.takeIf { it.isNotEmpty() }
 
+fun Parameters.manueltEndret() =
+    this["manueltEndret"]?.toBoolean()
+
 fun Parameters.exclude() =
     this
         .strings("value")
