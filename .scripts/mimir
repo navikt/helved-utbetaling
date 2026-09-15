@@ -1,0 +1,15 @@
+# consumer lag
+script='sum(
+  deriv(
+    kafka_consumergroup_group_topic_sum_lag{
+      k8s_cluster_name="dev",
+      topic="helved.abetal_stream_-pk-leftjoin-pending-repartition"
+    }[10m]
+  )
+)'
+
+# script='sum(kafka_consumergroup_group_topic_sum_lag{k8s_cluster_name="dev",topic=~"helved.*"})'
+
+curl --silent --show-error --fail-with-body --get \
+  'https://prometheus.nav.cloud.nais.io/prometheus/api/v1/query' \
+  --data-urlencode "query=$script"
