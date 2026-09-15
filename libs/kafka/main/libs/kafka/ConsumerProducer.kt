@@ -62,14 +62,18 @@ open class KafkaProducer<K: Any, V>(
         return send(record)
     }
 
-    fun tombstone(key: K, numberOfPartitions: Int = 3): SendResult {
-        if (key is String) {
+    fun tombstone(key: K, numberOfPartitions: Int = 3, headers: Map<String, String> = emptyMap()): SendResult {
+        val record = if (key is String) {
             val partition = partition(key as String, numberOfPartitions)
-            return send(ProducerRecord<K, V>(topic.name, partition, key, null))
+            ProducerRecord<K, V>(topic.name, partition, key, null)
         } else {
-            Log.warn("key $key was not string, and we cannot calculate partition. Usingn default", "$key", kafkaLog)
-            return send(ProducerRecord<K, V>(topic.name, key, null))
+            Log.warn("key $key was not string, and we cannot calculate partition. Using default", "$key", kafkaLog)
+            ProducerRecord<K, V>(topic.name, key, null)
         }
+        headers.forEach { (k, v) ->
+            record.headers().add(k, v.toByteArray(Charsets.UTF_8))
+        }
+        return send(record)
     }
 
     private fun send(record: ProducerRecord<K, V>): SendResult {
