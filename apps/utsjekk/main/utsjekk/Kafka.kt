@@ -22,10 +22,6 @@ object Topics {
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val status = Topic("helved.status.v1", json<StatusReply>())
     val utbetaling = Topic("helved.utbetalinger.v1", json<Utbetaling>())
-    val utbetalingAap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
-    val utbetalingDp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
-    val utbetalingTp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
-    val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
 }
 
 fun createTopology(jdbcCtx: CoroutineDatasource): Topology = topology {
