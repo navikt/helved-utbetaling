@@ -447,11 +447,7 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
         if (request.reason.isBlank()) badRequest("reason er påkrevd for å endre utbetaling manuelt")
 
         try {
-            val utbetaling = manuellEndringService.endreUtbetalingManuelt(
-                key = request.key,
-                value = request.value,
-                audit = Audit.from(call, request.reason),
-            )
+            val utbetaling = manuellEndringService.endreUtbetalingManuelt(request.key, request.value, Audit.from(call, request.reason))
             call.respond(HttpStatusCode.OK, utbetaling)
         } catch (e: Exception) {
             val msg = "Failed to endre utbetaling manuelt med key ${request.key}. Sjekk at json er gyldig."

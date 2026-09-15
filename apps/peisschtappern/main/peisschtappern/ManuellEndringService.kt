@@ -41,7 +41,7 @@ class ManuellEndringService(
         )
         oppdrag.mmel = mmel
 
-        val result = oppdragProducer.send(messageKey, oppdrag)
+        val result = oppdragProducer.send(messageKey, oppdrag, auditHeaders(audit))
         if(result.isSuccess) {
             auditLog.info("$audit -> setter kvittering på oppdrag manuelt -> key:${messageKey} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
@@ -57,7 +57,7 @@ class ManuellEndringService(
         val xmlMapper = XMLMapper<Oppdrag>()
         val oppdrag = xmlMapper.readValue(value)
 
-        val headers = mapOf("resend" to "true")
+        val headers = mapOf("resend" to "true") + auditHeaders(audit)
         val result =  oppdragProducer.send(key, oppdrag, headers)
         if(result.isSuccess) {
             auditLog.info("$audit -> sender oppdrag manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
@@ -71,7 +71,7 @@ class ManuellEndringService(
         audit: Audit,
     ): Utbetaling {
         val utbetaling = KotlinxJson.decodeFromString<Utbetaling>(value)
-        val result = utbetalingerProducer.send(key, utbetaling)
+        val result = utbetalingerProducer.send(key, utbetaling, auditHeaders(audit))
         if(result.isSuccess) {
             auditLog.info("$audit -> flytt pending til utbetalinger manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
@@ -87,12 +87,7 @@ class ManuellEndringService(
         val utbetaling = KotlinxJson.decodeFromString<Utbetaling>(value)
         utbetaling.validate()
 
-        val headers = buildMap {
-            put("manuelt-endret", "true")
-            put("endret-av", audit.ident)
-            put("endret-tidspunkt", Instant.now().toString())
-            audit.reason?.let { put("endret-aarsak", it) }
-        }
+        val headers = auditHeaders(audit)
         val result = utbetalingerProducer.send(key, utbetaling, headers)
         if(result.isSuccess) {
             auditLog.info("$audit -> endret utbetaling manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
@@ -101,7 +96,7 @@ class ManuellEndringService(
     }
 
     fun tombstoneUtbetaling(key: String, audit: Audit): Boolean { 
-        val result = utbetalingerProducer.tombstone(key)
+        val result = utbetalingerProducer.tombstone(key, headers = auditHeaders(audit))
         if(result.isSuccess) {
             auditLog.info("$audit -> tombstone utbetaling manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
@@ -114,7 +109,7 @@ class ManuellEndringService(
         audit: Audit,
     ): Boolean {
         val dp = KotlinxJson.decodeFromString<DpUtbetaling>(value)
-        val result =  dpProducer.send(key, dp)
+        val result =  dpProducer.send(key, dp, auditHeaders(audit))
         if(result.isSuccess) {
             auditLog.info("$audit -> rekjør dagpenger manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
@@ -127,7 +122,7 @@ class ManuellEndringService(
         audit: Audit,
     ): Boolean {
         val ts = KotlinxJson.decodeFromString<TsDto>(value)
-        val result = tsProducer.send(key, ts)
+        val result = tsProducer.send(key, ts, auditHeaders(audit))
         if(result.isSuccess) {
             auditLog.info("$audit -> rekjør tilleggsstønader manuelt -> key:${key} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
@@ -140,13 +135,20 @@ class ManuellEndringService(
         audit: Audit,
     ): Boolean {
         val status = StatusReply(Status.OK)
-        val headers = mapOf("fagsystem" to fagsystem.name)
+        val headers = mapOf("fagsystem" to fagsystem.name) + auditHeaders(audit)
         val result = statusProducer.send(key, status, headers)
         if(result.isSuccess) {
             auditLog.info("$audit -> send OK status manuelt -> key:${key} fagsystem:${fagsystem.name} topic:${result.topic} partition:${result.partition} offset:${result.offset}")
         }
         return result.isSuccess
     }
+}
+
+private fun auditHeaders(audit: Audit): Map<String, String> = buildMap {
+    put("manuelt-endret", "true")
+    put("endret-av", audit.ident)
+    put("endret-tidspunkt", Instant.now().toString())
+    audit.reason?.let { put("endret-aarsak", it) }
 }
 
 private fun createMmel(
