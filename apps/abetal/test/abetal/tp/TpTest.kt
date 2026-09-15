@@ -162,9 +162,7 @@ internal class TpTest : ConsumerTestBase() {
             }
         }
 
-        TestRuntime.topics.status.assertThat().has(transactionId).with(transactionId) { statusReply ->
-            assertEquals(Status.OK, statusReply.status)
-        }
+        TestRuntime.topics.status.assertThat().isEmpty()
 
         TestRuntime.topics.simulering.assertThat().hasNot(transactionId)
 

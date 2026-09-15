@@ -17,7 +17,8 @@ jobs:
           - helved.dryrun-tp.v1
           - helved.dryrun-ts.v1
           - helved.dryrun-dp.v1
-          - helved.kvittering.v1
+          - helved.dryrun-historisk.v1
+          - helved.dryrun-valp.v1
           - helved.avstemming.v1
           - helved.oppdrag.v1
           - helved.saker.v1

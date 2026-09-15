@@ -295,11 +295,7 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
             
             produceMessage(key, dryrunMessage)
             
-            TestRuntime.topics.status.assertThat()
-                .has(key)
-                .with(key) { statusReply ->
-                    assertEquals(Status.OK, statusReply.status)
-                }
+            TestRuntime.topics.status.assertThat().isEmpty()
             
             // Should not create a simulering since nothing changed
             TestRuntime.topics.simulering.assertThat().hasNot(key)
@@ -310,6 +306,8 @@ abstract class ConsumerParameterizedTestBase<TMessage>: ConsumerTestBase() {
                 Fagsystem.DAGPENGER -> TestRuntime.topics.dryrunDp
                 Fagsystem.TILLEGGSSTØNADER, Fagsystem.TILLSTPB -> TestRuntime.topics.dryrunTs
                 Fagsystem.TILTAKSPENGER -> TestRuntime.topics.dryrunTp
+                Fagsystem.VALP -> TestRuntime.topics.dryrunValp
+                Fagsystem.HISTORISK -> TestRuntime.topics.dryrunHistorisk
                 else -> null
             }
             dryrunTopic?.assertThat()

@@ -48,6 +48,8 @@ object Topics {
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
     val dryrunTp = Topic("helved.dryrun-tp.v1", json<Simulering>())
     val retryOppdrag = Topic("helved.retry-oppdrag.v1", xml<Oppdrag>())
+    val dryrunValp = Topic("helved.dryrun-valp.v1", json<Simulering>())
+    val dryrunHistorisk = Topic("helved.dryrun-historisk.v1", json<Simulering>())
 }
 
 object Tables {
@@ -539,7 +541,6 @@ private fun replyOppdragOk(branch: MappedStream<String, StreamResult>) {
 private fun replySimuleringOk(fagsystem: Fagsystem, branch: MappedStream<String, StreamResult>) {
     val result = branch.map { (it as StreamResult.SimuleringOk).simulering }
     result.sendSimulering()
-    result.replyOkIfIdempotentSimulering()
     result.replyOkUtenEndringSimulering(fagsystem)
 }
 
@@ -565,6 +566,12 @@ private fun replySimuleringError(fagsystem: Fagsystem, branch: MappedStream<Stri
         .branch({ fagsystem == Fagsystem.TILTAKSPENGER }) {
             map { feiletSimulering(fagsystem, it) }.produce(Topics.dryrunTp)
         }
+        .branch({ fagsystem == Fagsystem.VALP }) {
+            map { feiletSimulering(fagsystem, it) }.produce(Topics.dryrunValp)
+        }
+        .branch({ fagsystem == Fagsystem.HISTORISK }) {
+            map { feiletSimulering(fagsystem, it) }.produce(Topics.dryrunHistorisk)
+        }
         .default {
             map { it.status.copy(simulering = true) }.produce(Topics.status)
         }
@@ -580,16 +587,6 @@ private fun MappedStream<String, List<OppdragAggregate>>.replyOkIfIdempotentOppd
         .produce(Topics.status)
 }
 
-private fun MappedStream<String, DryrunAggregate>.replyOkIfIdempotentSimulering() {
-    this
-        .filter { it.requests.isEmpty() }
-        .map {
-            appLog.info("idempotent aggregat kicked in. Will reply OK")
-            StatusReply.ok().copy(simulering = true)
-        }
-        .produce(Topics.status)
-}
-
 private fun MappedStream<String, DryrunAggregate>.replyOkUtenEndringSimulering(fagsystem: Fagsystem) {
     val ok = this
         .filter { it.isRequested && it.requests.isEmpty() }
@@ -600,6 +597,8 @@ private fun MappedStream<String, DryrunAggregate>.replyOkUtenEndringSimulering(f
         .branch({ (it as Info).fagsystem == Fagsystem.DAGPENGER }) { produce(Topics.dryrunDp) }
         .branch({ (it as Info).fagsystem == Fagsystem.TILLEGGSSTØNADER }) { produce(Topics.dryrunTs) }
         .branch({ (it as Info).fagsystem == Fagsystem.TILTAKSPENGER }) { produce(Topics.dryrunTp) }
+        .branch({ (it as Info).fagsystem == Fagsystem.VALP }) { produce(Topics.dryrunValp) }
+        .branch({ (it as Info).fagsystem == Fagsystem.HISTORISK }) { produce(Topics.dryrunHistorisk) }
 }
 
 private fun MappedStream<String, List<OppdragAggregate>>.sendOppdrag() {

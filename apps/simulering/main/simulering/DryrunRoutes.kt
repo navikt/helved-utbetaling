@@ -29,16 +29,22 @@ fun dryrunRoutes(
     val dpProducer = kafka.createProducer(config.kafka, Topics.utbetalingDp)
     val tpProducer = kafka.createProducer(config.kafka, Topics.utbetalingTp)
     val tsProducer = kafka.createProducer(config.kafka, Topics.utbetalingTs)
+    val valpProducer = kafka.createProducer(config.kafka, Topics.utbetalingValp)
+    val historiskProducer = kafka.createProducer(config.kafka, Topics.utbetalingHistorisk)
 
     val dryrunAapStore = kafka.getStore(Stores.dryrunAap)
     val dryrunDpStore = kafka.getStore(Stores.dryrunDp)
     val dryrunTpStore = kafka.getStore(Stores.dryrunTp)
     val dryrunTsStore = kafka.getStore(Stores.dryrunTs)
+    val dryrunValpStore = kafka.getStore(Stores.dryrunValp)
+    val dryrunHistoriskStore = kafka.getStore(Stores.dryrunHistorisk)
 
     val aapBody = KotlinxJson.autoBody<AapUtbetaling>().toLens()
     val dpBody = KotlinxJson.autoBody<DpUtbetaling>().toLens()
     val tpBody = KotlinxJson.autoBody<TpUtbetaling>().toLens()
     val tsBody = KotlinxJson.autoBody<TsDto>().toLens()
+    val valpBody = KotlinxJson.autoBody<ValpUtbetaling>().toLens()
+    val historiskBody = KotlinxJson.autoBody<HistoriskUtbetaling>().toLens()
 
     fun dryrunAap(req: Request, transactionId: String): Response {
         val dto = aapBody(req).copy(dryrun = true)
@@ -64,6 +70,18 @@ fun dryrunRoutes(
         return respondFromStore(dryrunTpStore, transactionId)
     }
 
+    fun dryrunValp(req: Request, transactionId: String): Response {
+        val dto = valpBody(req).copy(dryrun = true)
+        valpProducer.send(transactionId, dto)
+        return respondFromStore(dryrunValpStore, transactionId)
+    }
+
+    fun dryrunHistorisk(req: Request, transactionId: String): Response {
+        val dto = historiskBody(req).copy(dryrun = true)
+        historiskProducer.send(transactionId, dto)
+        return respondFromStore(dryrunHistoriskStore, transactionId)
+    }
+
     return routes(
         "/api/simulering" bind Method.POST to { req ->
             val claims = claimsLens(req)
@@ -79,6 +97,8 @@ fun dryrunRoutes(
                 Fagsystem.AAP -> dryrunAap(req, transactionId)
                 Fagsystem.TILLEGGSSTØNADER -> dryrunTilleggsstønader(req, transactionId)
                 Fagsystem.TILTAKSPENGER -> dryrunTiltakspenger(req, transactionId)
+                Fagsystem.VALP -> dryrunValp(req, transactionId)
+                Fagsystem.HISTORISK -> dryrunHistorisk(req, transactionId)
                 else -> Response(Status.NOT_FOUND).body("simulering for $fs is not implemented yet")
             }
         },

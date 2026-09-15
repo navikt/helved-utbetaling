@@ -6,12 +6,15 @@ import libs.kafka.KotlinxSerializer
 import kotlinx.serialization.serializer
 import libs.kafka.KotlinxDeserializer
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 internal class HistoriskTest : ConsumerTestBase() {
 
@@ -566,10 +569,13 @@ internal class HistoriskTest : ConsumerTestBase() {
             }.asBytes()
         }
 
-        TestRuntime.topics.status.assertThat()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.dryrunHistorisk.assertThat()
             .has(transactionId)
-            .with(transactionId) { statusReply ->
-                assertEquals(Status.OK, statusReply.status)
+            .with(transactionId) { simulering ->
+                assertTrue(simulering is Info)
+                assertEquals(Info.Status.OK_UTEN_ENDRING, simulering.status)
+                assertEquals(Fagsystem.HISTORISK, simulering.fagsystem)
             }
 
         TestRuntime.topics.simulering.assertThat().hasNot(transactionId)
@@ -667,11 +673,14 @@ internal class HistoriskTest : ConsumerTestBase() {
             }.asBytes()
         }
 
-        TestRuntime.topics.status.assertThat()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.dryrunHistorisk.assertThat()
             .has(transactionId)
-            .with(transactionId) { statusReply ->
-                assertEquals(Status.FEILET, statusReply.status)
-                assertEquals(true, statusReply.simulering)
+            .with(transactionId) { info ->
+                assertTrue(info is Info)
+                assertEquals(Fagsystem.HISTORISK, info.fagsystem)
+                assertEquals(Info.Status.FEILET, info.status)
+                assertEquals("Tom må være >= fom", info.message)
             }
 
         TestRuntime.topics.oppdrag.assertThat().hasNot(transactionId)
@@ -712,11 +721,13 @@ internal class HistoriskTest : ConsumerTestBase() {
             }.asBytes()
         }
 
-        TestRuntime.topics.status.assertThat()
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.dryrunHistorisk.assertThat()
             .has(transactionId)
-            .with(transactionId) { statusReply ->
-                assertEquals(Status.OK, statusReply.status)
-                assertEquals(true, statusReply.simulering)
+            .with(transactionId) { simulering ->
+                assertTrue(simulering is Info)
+                assertEquals(Info.Status.OK_UTEN_ENDRING, simulering.status)
+                assertEquals(Fagsystem.HISTORISK, simulering.fagsystem)
             }
 
         TestRuntime.topics.oppdrag.assertThat().hasNot(transactionId)

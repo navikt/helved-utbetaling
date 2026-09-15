@@ -16,5 +16,7 @@ open class ConsumerTestBase {
         TestRuntime.topics.dryrunDp.assertThat().isEmpty()
         TestRuntime.topics.dryrunTs.assertThat().isEmpty()
         TestRuntime.topics.dryrunTp.assertThat().isEmpty()
+        TestRuntime.topics.dryrunValp.assertThat().isEmpty()
+        TestRuntime.topics.dryrunHistorisk.assertThat().isEmpty()
     }
 }

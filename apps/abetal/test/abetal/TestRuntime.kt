@@ -29,6 +29,8 @@ class TestTopics(kafka: StreamsMock) {
     val dryrunDp = kafka.testTopic(Topics.dryrunDp)
     val dryrunTs = kafka.testTopic(Topics.dryrunTs)
     val dryrunTp = kafka.testTopic(Topics.dryrunTp)
+    val dryrunValp = kafka.testTopic(Topics.dryrunValp)
+    val dryrunHistorisk = kafka.testTopic(Topics.dryrunHistorisk)
 }
 
 object TestRuntime {

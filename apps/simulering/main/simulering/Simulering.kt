@@ -68,6 +68,8 @@ fun app(
         Fagsystem.DAGPENGER to kafka.createProducer(config.kafka, Topics.dryrunDp),
         Fagsystem.TILLEGGSSTØNADER to kafka.createProducer(config.kafka, Topics.dryrunTs),
         Fagsystem.TILTAKSPENGER to kafka.createProducer(config.kafka, Topics.dryrunTp),
+        Fagsystem.VALP to kafka.createProducer(config.kafka, Topics.dryrunValp),
+        Fagsystem.HISTORISK to kafka.createProducer(config.kafka, Topics.dryrunHistorisk),
     )
 
     kafka.connect(

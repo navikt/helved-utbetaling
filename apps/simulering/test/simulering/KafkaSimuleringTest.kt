@@ -341,6 +341,8 @@ class KafkaSimuleringTest {
         Fagsystem.DAGPENGER to KafkaProducerFake(Topics.dryrunDp),
         Fagsystem.TILLEGGSSTØNADER to KafkaProducerFake(Topics.dryrunTs),
         Fagsystem.TILTAKSPENGER to KafkaProducerFake(Topics.dryrunTp),
+        Fagsystem.VALP to KafkaProducerFake(Topics.dryrunValp),
+        Fagsystem.HISTORISK to KafkaProducerFake(Topics.dryrunHistorisk),
     )
 
     private fun jaxbResponse(): String = Resource.read("/simuler-jaxb-response.xml")

@@ -27,6 +27,8 @@ object Topics {
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
     val dryrunTp = Topic("helved.dryrun-tp.v1", json<Simulering>())
+    val dryrunValp = Topic("helved.dryrun-valp.v1", json<Simulering>())
+    val dryrunHistorisk = Topic("helved.dryrun-historisk.v1", json<Simulering>())
 }
 
 class UtbetalingProducers(
