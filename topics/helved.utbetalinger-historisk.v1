@@ -16,9 +16,6 @@ spec:
       application: abetal
       access: read
     - team: helved
-      application: utsjekk
-      access: write
-    - team: helved
       application: snickerboa
       access: write
     - team: helved

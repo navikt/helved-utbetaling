@@ -12,7 +12,6 @@ import libs.tracing.Tracing
 object Topics {
     val avstemming = Topic("helved.avstemming.v1", bytes())
     val oppdrag = Topic("helved.oppdrag.v1", bytes())
-    val kvittering = Topic("helved.kvittering.v1", bytes())
     val simuleringer = Topic("helved.simuleringer.v1", bytes())
     val utbetalinger = Topic("helved.utbetalinger.v1", bytes())
     val saker = Topic("helved.saker.v1", bytes())

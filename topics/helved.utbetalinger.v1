@@ -19,7 +19,7 @@ spec:
       access: read
     - team: helved
       application: peisschtappern
-      access: readwrite 
+      access: readwrite
     - team: helved
       application: utsjekk
       access: readwrite
