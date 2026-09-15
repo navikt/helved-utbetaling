@@ -346,6 +346,7 @@ data class Daos(
             fagsystem: List<String>? = null,
             traceId: String? = null,
             status: List<String>? = null,
+            manueltEndret: Boolean? = null,
             orderBy: String? = null,
             direction: String,
         ): Page {
@@ -391,6 +392,7 @@ data class Daos(
                     AND (? IS NULL OR system_time_ms > ?)
                     AND (? IS NULL OR system_time_ms < ?)
                     AND (? IS NULL OR trace_id = ?)
+                    AND (?::boolean IS NULL OR (headers ILIKE '%manuelt-endret:true%') = ?)
                 $orderClause
                 LIMIT ? OFFSET ?
             """.trimIndent()
@@ -416,6 +418,8 @@ data class Daos(
                 stmt.setObject(i++, tom, Types.BIGINT)
                 stmt.setObject(i++, traceId, Types.VARCHAR)
                 stmt.setObject(i++, traceId, Types.VARCHAR)
+                stmt.setObject(i++, manueltEndret, Types.BOOLEAN)
+                stmt.setObject(i++, manueltEndret, Types.BOOLEAN)
                 stmt.setInt(i++, pageSize)
                 stmt.setInt(i, (page - 1) * pageSize)
                 Log.debug(sql, stmt.toString(), daoLog)
