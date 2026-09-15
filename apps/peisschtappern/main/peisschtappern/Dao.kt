@@ -19,6 +19,8 @@ enum class Table {
     dryrun_tp,
     dryrun_ts,
     dryrun_dp,
+    dryrun_valp,
+    dryrun_historisk,
     simuleringer,
     utbetalinger,
     saker,

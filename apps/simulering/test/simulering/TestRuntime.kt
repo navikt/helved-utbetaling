@@ -83,6 +83,8 @@ object TestRuntime : Sts, Soap {
     val dryrunDp: KafkaProducerFake<String, Simulering> get() = kafka.getProducer(Topics.dryrunDp)
     val dryrunTs: KafkaProducerFake<String, Simulering> get() = kafka.getProducer(Topics.dryrunTs)
     val dryrunTp: KafkaProducerFake<String, Simulering> get() = kafka.getProducer(Topics.dryrunTp)
+    val dryrunValp: KafkaProducerFake<String, Simulering> get() = kafka.getProducer(Topics.dryrunValp)
+    val dryrunHistorisk: KafkaProducerFake<String, Simulering> get() = kafka.getProducer(Topics.dryrunHistorisk)
 
     // Sts fake
     override fun samlToken() = SamlToken("token", LocalDateTime.now())

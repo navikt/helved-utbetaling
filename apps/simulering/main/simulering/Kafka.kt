@@ -19,10 +19,14 @@ object Topics {
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
     val dryrunTp = Topic("helved.dryrun-tp.v1", json<Simulering>())
+    val dryrunValp = Topic("helved.dryrun-valp.v1", json<Simulering>())
+    val dryrunHistorisk = Topic("helved.dryrun-historisk.v1", json<Simulering>())
     val utbetalingAap = Topic("helved.utbetalinger-aap.v1", json<AapUtbetaling>())
     val utbetalingDp = Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>())
     val utbetalingTp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
     val utbetalingTs = Topic("helved.utbetalinger-ts.v1", json<TsDto>())
+    val utbetalingValp = Topic("helved.utbetalinger-valp.v1", json<ValpUtbetaling>())
+    val utbetalingHistorisk = Topic("helved.utbetalinger-historisk.v1", json<HistoriskUtbetaling>())
 }
 
 object Tables {
@@ -31,6 +35,8 @@ object Tables {
     val dryrunDp = Table(Topics.dryrunDp)
     val dryrunTp = Table(Topics.dryrunTp)
     val dryrunTs = Table(Topics.dryrunTs)
+    val dryrunValp = Table(Topics.dryrunValp)
+    val dryrunHistorisk = Table(Topics.dryrunHistorisk)
 }
 
 object Stores {
@@ -38,6 +44,8 @@ object Stores {
     val dryrunDp = Store(Tables.dryrunDp)
     val dryrunTp = Store(Tables.dryrunTp)
     val dryrunTs = Store(Tables.dryrunTs)
+    val dryrunValp = Store(Tables.dryrunValp)
+    val dryrunHistorisk = Store(Tables.dryrunHistorisk)
     val simuleringHeaders = Store("simulering-headers-store", Topics.simuleringer.serdes)
 }
 
@@ -61,6 +69,8 @@ fun Topology.simuleringer(
     globalKTable(Tables.dryrunDp, retention = 1.hours)
     globalKTable(Tables.dryrunTp, retention = 1.hours)
     globalKTable(Tables.dryrunTs, retention = 1.hours)
+    globalKTable(Tables.dryrunValp, retention = 1.hours)
+    globalKTable(Tables.dryrunHistorisk, retention = 1.hours)
 
     val ktable = consume(Tables.simuleringer, simuleringHeadersProcessor(Stores.simuleringHeaders))
     val scheduler = SimuleringScheduler(ktable, 5.seconds, channel, backpressureChannel)

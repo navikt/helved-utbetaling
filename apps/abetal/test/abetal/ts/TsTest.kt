@@ -1104,9 +1104,7 @@ internal class TsTest : ConsumerTestBase() {
             }.asBytes()
         }
 
-        TestRuntime.topics.status.assertThat().has(key).with(key) { statusReply ->
-            assertEquals(Status.OK, statusReply.status)
-        }
+        TestRuntime.topics.status.assertThat().isEmpty()
 
         TestRuntime.topics.simulering.assertThat().hasNot(key)
 

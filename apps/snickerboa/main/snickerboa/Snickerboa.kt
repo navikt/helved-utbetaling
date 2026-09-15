@@ -68,6 +68,8 @@ fun snickerboa(
     val dryrunDpConsumer = kafka.createConsumer(config.kafka, Topics.dryrunDp)
     val dryrunTsConsumer = kafka.createConsumer(config.kafka, Topics.dryrunTs)
     val dryrunTpConsumer = kafka.createConsumer(config.kafka, Topics.dryrunTp)
+    val dryrunValpConsumer = kafka.createConsumer(config.kafka, Topics.dryrunValp)
+    val dryrunHistoriskConsumer = kafka.createConsumer(config.kafka, Topics.dryrunHistorisk)
 
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val statusJob = scope.launch { statusConsumer(correlator, statusKafkaConsumer) }
@@ -75,6 +77,8 @@ fun snickerboa(
     val dpJob = scope.launch { dryrunConsumer(correlator, dryrunDpConsumer) }
     val tsJob = scope.launch { dryrunConsumer(correlator, dryrunTsConsumer) }
     val tpJob = scope.launch { dryrunConsumer(correlator, dryrunTpConsumer) }
+    val valpJob = scope.launch { dryrunConsumer(correlator, dryrunValpConsumer) }
+    val historiskJob = scope.launch { dryrunConsumer(correlator, dryrunHistoriskConsumer) }
 
     val handler = errorFilter
         .then(ServerFilters.MicrometerMetrics.RequestTimer(prometheus))
@@ -91,6 +95,8 @@ fun snickerboa(
         AutoCloseable { dpJob.cancelJob() },
         AutoCloseable { tsJob.cancelJob() },
         AutoCloseable { tpJob.cancelJob() },
+        AutoCloseable { valpJob.cancelJob() },
+        AutoCloseable { historiskJob.cancelJob() },
         AutoCloseable { kafka.close() },
     )
 
