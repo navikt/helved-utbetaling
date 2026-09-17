@@ -1,15 +1,53 @@
-# consumer lag
-script='sum(
-  deriv(
-    kafka_consumergroup_group_topic_sum_lag{
-      k8s_cluster_name="dev",
-      topic="helved.abetal_stream_-pk-leftjoin-pending-repartition"
-    }[10m]
-  )
-)'
+#!/usr/bin/env bash
+set -euo pipefail
 
-# script='sum(kafka_consumergroup_group_topic_sum_lag{k8s_cluster_name="dev",topic=~"helved.*"})'
+# Usage: ./.scripts/mimir <mode> [start end step]
+# Modes: consumer-lag, scaled-to-zero, scaled-to-zero-history
+
+mode="${1:-}"
+endpoint='query'
+
+case "$mode" in
+  # ./.scripts/mimir consumer-lag
+  # Returns 10-minute consumer-lag growth rate for dev topic.
+  consumer-lag)
+    script='sum(
+      deriv(
+        kafka_consumergroup_group_topic_sum_lag{
+          k8s_cluster_name="dev",
+          topic="helved.abetal_stream_-pk-leftjoin-pending-repartition"
+        }[10m]
+      )
+    )'
+    ;;
+
+  # ./.scripts/mimir scaled-to-zero
+  # Lists helved deployments currently configured with zero desired replicas.
+  scaled-to-zero)
+    script='kube_deployment_spec_replicas{namespace="helved"} == 0'
+    ;;
+
+  # ./.scripts/mimir scaled-to-zero-history 2026-08-17T00:00:00Z 2026-09-16T23:59:59Z 5m
+  # Returns each helved deployment's desired replica count over time; zero values identify scale-down periods.
+  scaled-to-zero-history)
+    endpoint='query_range'
+    script='kube_deployment_spec_replicas{namespace="helved"}'
+    start="${2:?start timestamp required, e.g. 2026-08-17T00:00:00Z}"
+    end="${3:?end timestamp required, e.g. 2026-09-16T23:59:59Z}"
+    step="${4:-5m}"
+    ;;
+
+  *)
+    printf 'Usage: %s <consumer-lag|scaled-to-zero|scaled-to-zero-history> [start end step]\n' "$0" >&2
+    exit 2
+    ;;
+esac
+
+args=(--data-urlencode "query=$script")
+if [[ "$endpoint" == 'query_range' ]]; then
+  args+=(--data-urlencode "start=$start" --data-urlencode "end=$end" --data-urlencode "step=$step")
+fi
 
 curl --silent --show-error --fail-with-body --get \
-  'https://prometheus.nav.cloud.nais.io/prometheus/api/v1/query' \
-  --data-urlencode "query=$script"
+  "https://prometheus.nav.cloud.nais.io/prometheus/api/v1/$endpoint" \
+  "${args[@]}"
