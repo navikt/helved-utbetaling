@@ -344,7 +344,7 @@ class ApiTest {
         assertEquals(key, recordKey)
         assertNotNull(value.sistePeriode)
         assertEquals("true", headers["manuelt-endret"])
-        assertEquals("ENDRING", headers["endret-operasjon"])
+        assertEquals("ENDRING", headers["endret-type"])
         assertNotNull(headers["endret-av"])
         assertNotNull(headers["endret-tidspunkt"])
         assertEquals("satt inn manglende sistePeriode", headers["endret-aarsak"])
