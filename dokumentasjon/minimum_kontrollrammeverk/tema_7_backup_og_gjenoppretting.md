@@ -20,10 +20,12 @@ Logg over gjennomførte kontroller:
 
 # 7.2 Gjenoppretting
 
+Vi øver på gjenoppretting ved å gjøre en *point in time recovery* (PITR) på én av CloudSQL-databasene. Fremgangsmåten vil være lik for tilsvarende databaser.
+
 ### Årlig Kontroll
 _Ansvarlig skal årlig teste at det er mulig å gjenopprette data fra sikkerhetskopi, i tråd med systemets krav til tilgjengelighet_. Se [Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%207%20oppstartsm%C3%B8te.pptx?d=wd0872c01fa564fee985804c910a65f3d&csf=1&web=1&e=2L01UL) for detaljer.
 
 Logg over gjennomførte kontroller:
-| Tidspunkt | Kontrollert og godkjent av |
-| -------- | -------- | 
-| 2026-xx-xx    | x     |
+| Tidspunkt | Kontrollert og godkjent av | Kommentar |
+| -------- | -------- | -------- | 
+| 2026-09-17    | Hele teamet | Vi gjorde en Point in time recovery (PITR) på en av databasene. Detaljer om gjennomføring og logg over hva som ble gjort finnes i oppgave [#620](https://github.com/navikt/team-helved/issues/620#issuecomment-5693836707)    |
