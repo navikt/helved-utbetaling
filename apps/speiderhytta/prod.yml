@@ -45,6 +45,8 @@ spec:
             value: "write,ddl"
           - name: "pgaudit.log_parameter"
             value: "on"
+          - name: "pgaudit.log_relation"
+            value: "on"
   observability:
     autoInstrumentation:
       enabled: true
