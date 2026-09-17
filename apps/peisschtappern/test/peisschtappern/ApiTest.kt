@@ -344,6 +344,7 @@ class ApiTest {
         assertEquals(key, recordKey)
         assertNotNull(value.sistePeriode)
         assertEquals("true", headers["manuelt-endret"])
+        assertEquals("ENDRING", headers["endret-operasjon"])
         assertNotNull(headers["endret-av"])
         assertNotNull(headers["endret-tidspunkt"])
         assertEquals("satt inn manglende sistePeriode", headers["endret-aarsak"])
@@ -588,7 +589,7 @@ class ApiTest {
     @Test
     fun `send ok-status with TILLEGGSSTØNADER fagsystem header`() = runTest(TestRuntime.context) {
         val key = UUID.randomUUID().toString()
-        val request = OkStatusRequest(key = key, reason = "manual ack", fagsystem = "TILLEGGSSTØNADER")
+        val request = OkStatusRequest(key = key, reason = "testingtesting", fagsystem = "TILLEGGSSTØNADER")
 
         TestRuntime.ktor.httpClient.post("/ok-status") {
             bearerAuth(TestRuntime.azure.generateToken())
@@ -604,6 +605,11 @@ class ApiTest {
         val (recordKey, _, headers) = history.last()
         assertEquals(key, recordKey)
         assertEquals("TILLEGGSSTØNADER", headers["fagsystem"])
+        assertEquals("true", headers["manuelt-endret"])
+        assertEquals("STATUS_OK", headers["endret-type"])
+        assertNotNull(headers["endret-av"])
+        assertNotNull(headers["endret-tidspunkt"])
+        assertEquals("testingtesting", headers["endret-aarsak"])
     }
 
     private suspend fun save(
