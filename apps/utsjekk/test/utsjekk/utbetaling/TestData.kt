@@ -112,6 +112,34 @@ fun UtbetalingApi.Companion.dagpenger(
     )
 }
 
+fun UtbetalingApi.Companion.aap(
+    vedtakstidspunkt: LocalDate,
+    periodeType: PeriodeType,
+    perioder: List<UtbetalingsperiodeApi>,
+    stønad: StønadTypeAAP = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+    sakId: SakId = SakId(RandomOSURId.generate()),
+    personident: Personident = Personident.random(),
+    behandlingId: BehandlingId = BehandlingId(RandomOSURId.generate()),
+    saksbehandlerId: Navident = Navident(TestData.DEFAULT_SAKSBEHANDLER),
+    beslutterId: Navident = Navident(TestData.DEFAULT_BESLUTTER),
+    avvent: Avvent? = null,
+    erFørsteUtbetalingPåSak: Boolean? = null,
+    ): UtbetalingApi {
+    return UtbetalingApi(
+        sakId.id,
+        behandlingId.id,
+        personident.ident,
+        vedtakstidspunkt.atStartOfDay(),
+        stønad,
+        beslutterId.ident,
+        saksbehandlerId.ident,
+        periodeType,
+        perioder,
+        avvent,
+        erFørsteUtbetalingPåSak
+    )
+}
+
 fun Utbetalingsperiode.Companion.dagpenger(
     fom: LocalDate,
     tom: LocalDate,

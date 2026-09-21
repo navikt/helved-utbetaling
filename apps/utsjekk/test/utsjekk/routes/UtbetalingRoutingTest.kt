@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+import kotlin.collections.plus
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -321,7 +322,7 @@ class UtbetalingRoutingTest {
             periodeType = PeriodeType.MND,
             perioder = listOf(
                 UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u), // <-- must be a single day or..
-                UtbetalingsperiodeApi(1.mar, 1.mar, 800u),     // <-- must be sent in a different request 
+                UtbetalingsperiodeApi(1.mar, 1.mar, 800u),     // <-- must be sent in a different request
             ),
         )
         val uid = UUID.randomUUID()
@@ -692,6 +693,46 @@ class UtbetalingRoutingTest {
     }
 
     @Test
+    fun `cannot update migrated Utbetaling`() = runTest(TestRuntime.context) {
+        val utbetaling = UtbetalingApi.aap(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
+            UtbetalingDao.markMigrated(UtbetalingId(uid))
+        }
+
+        val updatedUtbetaling = utbetaling.copy(
+            vedtakstidspunkt = 8.des.atStartOfDay(),
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 25_000u)),
+        )
+        val res = httpClient.put("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(updatedUtbetaling)
+        }
+
+        assertEquals(HttpStatusCode.Locked, res.status)
+        val error = res.body<ApiError>()
+        assertEquals("Utbetalingen er migrert til kafka, og kan kun endres derfra", error.msg)
+    }
+
+    @Test
     fun `can add new utbetaling to sak`() = runTest(TestRuntime.context) {
         val sakId = SakId(RandomOSURId.generate())
         val uid = UUID.randomUUID()
@@ -964,6 +1005,42 @@ class UtbetalingRoutingTest {
             assertEquals("Fant ikke utbetaling med uid $uid", error.msg)
             assertEquals(DocumentedErrors.BASE, error.doc)
         }
+    }
+
+    @Test
+    fun `cannot delete migrated Utbetaling`() = runTest(TestRuntime.context) {
+        val utbetaling = UtbetalingApi.aap(
+            vedtakstidspunkt = 1.feb,
+            periodeType = PeriodeType.MND,
+            perioder = listOf(UtbetalingsperiodeApi(1.feb, 29.feb, 24_000u)),
+        )
+
+        val uid = UUID.randomUUID()
+        httpClient.post("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }.also {
+            assertEquals(HttpStatusCode.Created, it.status)
+        }
+
+        transaction {
+            UtbetalingDao
+                .findOrNull(UtbetalingId(uid))!!
+                .copy(status = Status.OK)
+                .update(UtbetalingId(uid))
+            UtbetalingDao.markMigrated(UtbetalingId(uid))
+        }
+
+        val res = httpClient.delete("/utbetalinger/$uid") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(utbetaling)
+        }
+
+        assertEquals(HttpStatusCode.Locked, res.status)
+        val error = res.body<ApiError>()
+        assertEquals("Utbetalingen er migrert til kafka, og kan kun endres derfra", error.msg)
     }
 
     @Test

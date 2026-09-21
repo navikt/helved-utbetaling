@@ -87,6 +87,10 @@ class UtbetalingService(
                     UtbetalingDao.findOrNull(uid) ?: notFound("Fant ikke utbetaling med uid $uid")
                 }
 
+                if (dao.migrated_at != null) {
+                    locked("Utbetalingen er migrert til kafka, og kan kun endres derfra")
+                }
+
                 if (dao.status in setOf(Status.IKKE_PÅBEGYNT, Status.SENDT_TIL_OPPDRAG)) {
                     locked("Utbetalingen har et pågående oppdrag, vent til dette er ferdig")
                 }
@@ -147,6 +151,10 @@ class UtbetalingService(
             withLock(uid.toString()) {
                 val dao = transaction {
                     UtbetalingDao.findOrNull(uid) ?: notFound("Fant ikke utbetaling med uid $uid")
+                }
+
+                if (dao.migrated_at != null) {
+                    locked("Utbetalingen er migrert til kafka, og kan kun endres derfra")
                 }
 
                 if (dao.status in setOf(Status.IKKE_PÅBEGYNT, Status.SENDT_TIL_OPPDRAG)) {
