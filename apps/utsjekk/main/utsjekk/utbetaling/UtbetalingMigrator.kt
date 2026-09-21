@@ -50,6 +50,7 @@ class UtbetalingMigrator(
                 val utbet = utbetaling(uid, request, dao.data, lastAvvent)
                 val key = utbet.uid.id.toString()
                 utbetalingProducer.send(key, utbet, mapOf("migrated" to request.toString()))
+                UtbetalingDao.markMigrated(uid)
             }
         }
     }
@@ -78,6 +79,7 @@ class UtbetalingMigrator(
                     val utbet = utbetaling(uid, migrationReq, dao.data, lastAvvent)
                     val key = utbet.uid.id.toString()
                     utbetalingProducer.send(key, utbet, mapOf("migrated" to request.toString()))
+                    UtbetalingDao.markMigrated(uid)
                 }
             }
         }

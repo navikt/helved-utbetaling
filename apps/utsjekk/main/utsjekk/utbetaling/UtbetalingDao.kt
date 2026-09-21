@@ -24,6 +24,7 @@ data class UtbetalingDao(
     val created_at: LocalDateTime = LocalDateTime.now(),
     val updated_at: LocalDateTime = created_at,
     val deleted_at: LocalDateTime? = null,
+    val migrated_at: LocalDateTime? = null,
 ) {
     companion object : Dao<UtbetalingDao> {
         override val table = "utbetaling"
@@ -35,6 +36,7 @@ data class UtbetalingDao(
             created_at = rs.getTimestamp("created_at").toLocalDateTime(),
             updated_at = rs.getTimestamp("updated_at").toLocalDateTime(),
             deleted_at = rs.getTimestamp("deleted_at")?.toLocalDateTime(),
+            migrated_at = rs.getTimestamp("migrated_at")?.toLocalDateTime(),
         )
 
         suspend fun findOrNull(id: UtbetalingId, history: Boolean = false): UtbetalingDao? {
@@ -70,6 +72,26 @@ data class UtbetalingDao(
 
             return query(sql) { stmt -> stmt.setObject(1, sakId.id) }
                 .filter { it.deleted_at == null || history }
+        }
+
+        /**
+         * Markerer alle rader (inkl. historikk) for en utbetaling som migrert.
+         * En migrert utbetaling skal ikke lenger kunne endres via REST-APIet.
+         */
+        suspend fun markMigrated(id: UtbetalingId): Result<Unit, DatabaseError> {
+            val sql = """
+                UPDATE $table
+                SET migrated_at = ?
+                WHERE utbetaling_id = ?
+            """.trimIndent()
+
+            return tryResult {
+                update(sql) { stmt -> 
+                    stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
+                    stmt.setObject(2, id.id)
+                }
+            }.map { Unit }
+                .mapErr { DatabaseError.Unknown }
         }
     }
 
