@@ -114,6 +114,7 @@ private fun fagsystem(fs: String): Fagsystem =
         "dp-mellom-barken-og-veden" -> Fagsystem.DAGPENGER
         "tilleggsstonader-sak" -> Fagsystem.TILLEGGSSTØNADER
         "tiltakspenger-saksbehandling-api" -> Fagsystem.TILTAKSPENGER
+        "mulighetsrommet-api" -> Fagsystem.VALP
         else ->
             forbidden(
                 msg = "mangler mapping mellom appname ($fs) og fagsystem-enum",
