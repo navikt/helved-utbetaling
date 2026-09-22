@@ -24,6 +24,17 @@ fun Route.utbetalinger(
         call.respond(HttpStatusCode.OK)
     }
 
+    // Brukes for utbetalinger uten uid (utbetalingsid), f.eks. AAP-utbetalinger sendt inn via Kafka.
+    // Slike utbetalinger identifiseres av transaksjonsnøkkelen (kafka-nøkkelen), ikke uid.
+    post("/utbetalinger/avvent") {
+        val api = call.receive<FeilregistrerAvventKeyRequest>()
+        if (api.key.isBlank()) badRequest("key må være satt")
+        if (!api.avvent.feilregistrering) badRequest("feilregistrering må være satt til true")
+        if (api.avvent.overføres == null) badRequest("overføres må være satt")
+        utbetalingService.updateAvventKey(api)
+        call.respond(HttpStatusCode.Created)
+    }
+
     route("/utbetalinger/{uid}") {
 
         post("/migrate") {
