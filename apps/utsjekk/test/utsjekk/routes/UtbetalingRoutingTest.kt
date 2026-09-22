@@ -24,6 +24,7 @@ import java.util.UUID
 import kotlin.collections.plus
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.milliseconds
 
 class UtbetalingRoutingTest {
 
@@ -216,7 +217,7 @@ class UtbetalingRoutingTest {
             StatusReply.ok(oppdrag)
         }
         val status = runBlocking {
-            withTimeout(1000L) {
+            withTimeout(1000L.milliseconds) {
                 var status: Status? = null
                 while (status != Status.OK) {
                     httpClient.get("/utbetalinger/$uid/status") {
@@ -1647,5 +1648,62 @@ class UtbetalingRoutingTest {
         val oppdrag = oppdragTopic.history().single { (key, _) -> key == uid.toString() }.second
         assertNull(oppdrag.oppdrag110.avstemming115)
         assertTrue(oppdrag.oppdrag110.oppdragsEnhet120s.isEmpty())
+    }
+
+    @Test
+    fun `feilregistrer avvent på key produserer oppdrag med feilreg J på riktig kafka-nøkkel`() = runTest(TestRuntime.context) {
+        val transaksjonsnøkkel = "aap-transaksjon-${UUID.randomUUID()}"
+        val request = FeilregistrerAvventKeyRequest(
+            key = transaksjonsnøkkel,
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            sakId = RandomOSURId.generate(),
+            personident = "12345678910",
+            saksbehandlerId = "Z999999",
+            avvent = Avvent(
+                fom = 1.feb,
+                tom = 28.feb,
+                overføres = 2.jan,
+                årsak = Årsak.AVVENT_AVREGNING,
+                feilregistrering = true,
+            ),
+        )
+
+        val res = httpClient.post("/utbetalinger/avvent") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        assertEquals(HttpStatusCode.Created, res.status)
+
+        val oppdragTopic = TestRuntime.kafka.getProducer(Topics.oppdrag)
+        val oppdrag = oppdragTopic.history().singleOrNull { (key, _) -> key == transaksjonsnøkkel }?.second
+        assertNotNull(oppdrag)
+        assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+        assertEquals(request.sakId, oppdrag.oppdrag110.fagsystemId)
+        assertNotNull(oppdrag.oppdrag110.avvent118)
+        assertEquals("J", oppdrag.oppdrag110.avvent118.feilreg)
+        val headers = oppdragTopic.historyWithHeaders().single { (key, _, _) -> key == transaksjonsnøkkel }.third
+        assertEquals("utsjekk-avvent", headers["source"])
+    }
+
+    @Test
+    fun `feilregistrer avvent på key uten key gir bad request`() = runTest(TestRuntime.context) {
+        val request = FeilregistrerAvventKeyRequest(
+            key = "",
+            stønad = StønadTypeAAP.AAP_UNDER_ARBEIDSAVKLARING,
+            sakId = RandomOSURId.generate(),
+            personident = "12345678910",
+            saksbehandlerId = "Z999999",
+            avvent = Avvent(1.feb, 28.feb, 2.jan, Årsak.AVVENT_AVREGNING, true),
+        )
+
+        val res = httpClient.post("/utbetalinger/avvent") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        val error = res.body<ApiError>()
+        assertEquals("key må være satt", error.msg)
     }
 }
