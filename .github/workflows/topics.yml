@@ -31,7 +31,6 @@ jobs:
           - helved.utbetalinger-historisk.v1
           - helved.utbetalinger.v1
           - helved.pending-utbetalinger.v1
-          - helved.fk.v1
           - helved.retry-oppdrag.v1
           - helved.retry-kvittering.v1
           - helved.utbetalinger-valp.v1
