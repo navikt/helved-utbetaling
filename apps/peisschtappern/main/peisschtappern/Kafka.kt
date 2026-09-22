@@ -26,7 +26,6 @@ object Topics {
     val dryrunHistorisk = Topic("helved.dryrun-historisk.v1", bytes())
     val status = Topic("helved.status.v1", bytes())
     val pendingUtbetalinger = Topic("helved.pending-utbetalinger.v1", bytes())
-    val fk = Topic("helved.fk.v1", bytes())
     val tsIntern = Topic("helved.utbetalinger-ts.v1", bytes())
     val tpIntern = Topic("helved.utbetalinger-tp.v1", bytes())
     val ts = Topic("tilleggsstonader.utbetaling.v1", bytes())

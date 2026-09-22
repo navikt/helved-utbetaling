@@ -553,7 +553,6 @@ sealed class Channel(
     data object DryrunDp : Channel(Topics.dryrunDp, Table.dryrun_dp, 11)
     data object Status : Channel(Topics.status, Table.status, 12)
     data object PendingUtbetalinger : Channel(Topics.pendingUtbetalinger, Table.pending_utbetalinger, 13)
-    data object Fk : Channel(Topics.fk, Table.fk, 14)
     data object DpIntern : Channel(Topics.dpIntern, Table.dpIntern, 15)
     data object Dp : Channel(Topics.dp, Table.dp, 16)
     data object TsIntern : Channel(Topics.tsIntern, Table.tsIntern, 17)
