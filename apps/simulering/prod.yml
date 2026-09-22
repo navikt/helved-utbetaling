@@ -25,6 +25,8 @@ spec:
           namespace: aap
         - application: dp-mellom-barken-og-veden
           namespace: teamdagpenger
+        - namespace: team-mulighetsrommet
+          application: mulighetsrommet-api
     outbound:
       external:
         - host: helved-ws-proxy.prod-fss-pub.nais.io
