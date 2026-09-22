@@ -18,6 +18,8 @@ Vi har et verktøy kalt Peisen som vi bruker til overvåking og debugging av utb
 
 Tilgang til Nais-plattformen administreres via et eget Nais-team (tilgangsgruppe).
 
+**Kontrollen er ikke relevant**
+
 ## 4.2 Forvaltning av tilganger​
 
 Listen over medlemmer i ovennevnte Nais-team kontrolleres og godkjennes månedlig via varsel fra Nais på Slack.
@@ -29,7 +31,7 @@ Ved utskiftninger i Team hel ved vil tinganger bli gitt til nye medlemmer og tru
 
 ## 4.3 Endring i tilgangsbehov​
 
-Kravet er ikke relevant, ref første punkt.
+**Kontrollen er ikke relevant**
 
 ## 4.4 Terminering​
 

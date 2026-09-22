@@ -19,7 +19,7 @@ Vi har ingen innlogging og følgelig heller ingen ikke-personlige brukere i løs
 
 Vi har et verktøy kalt Peisen som vi bruker til overvåking og debugging av utbetalinger. I produksjon er det kun Team hel ved som har tilgang til Peisen. Tilgang administreres via Mine tilganger. Det er kun personlige brukere.
 
-
+**Kontrollen er ikke relevant**
 
 
 ## 2.2 Autentisering
@@ -27,3 +27,5 @@ Vi har et verktøy kalt Peisen som vi bruker til overvåking og debugging av utb
 Alle endepunkter i Utsjekk har tilgangskontroll. 
 
 Tilgang til Peisen (internt verktøy) gis via en egen Entra ID-gruppe og administreres via Mine tilganger. Vi bruker ellers standard NAIS-funksjonalitet for autentisering.
+
+**Ingen spesifikk dokumentasjon kreves for denne kontrollen** ([Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%202%20oppstartsm%C3%B8te.pptx?d=wed148c72e0634b4ea2e7433ddf05526c&csf=1&web=1&e=VIRIQa) med kravene for _Ikke personlige brukere og Autentisering_)

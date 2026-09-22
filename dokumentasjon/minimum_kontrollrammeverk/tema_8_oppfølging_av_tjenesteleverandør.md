@@ -5,4 +5,5 @@
 
 ## 8.1 Oppfølging av kontroller hos tjenesteleverandør​
 
-Ikke relevant for Team hel ved. Vi bruker ikke tjenesteleverandører.
+**Kontrollen er ikke relevant**. 
+Vi bruker ikke tjenesteleverandører.
