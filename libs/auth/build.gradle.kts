@@ -2,7 +2,7 @@ plugins {
     kotlin("plugin.serialization")
 }
 
-val ktorVersion = "3.5.2"
+val ktorVersion = "3.6.0"
 
 dependencies {
     api(project(":libs:jwt"))
