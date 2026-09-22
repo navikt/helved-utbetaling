@@ -27,7 +27,6 @@ enum class Table {
     aap,
     status,
     pending_utbetalinger,
-    fk,
     aapIntern,
     dpIntern,
     dp,
