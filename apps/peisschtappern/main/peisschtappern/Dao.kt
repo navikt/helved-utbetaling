@@ -493,7 +493,7 @@ data class Daos(
                 """
                     SELECT record_key
                     FROM ${it.name}
-                    WHERE try_jsonb_get_text(record_value, 'sakId') = ?
+                    WHERE sak_id = ?
                 """.trimIndent()
             }
 
@@ -508,7 +508,7 @@ data class Daos(
             val sql = """
                 SELECT *
                 FROM ${table.name}
-                WHERE try_jsonb_get_text(record_value, 'sakId') = ?
+                WHERE sak_id = ?
             """.trimIndent()
 
             return query(sql) { stmt ->
@@ -533,8 +533,7 @@ data class Daos(
             val sql = """
                 SELECT *
                 FROM saker
-                WHERE json(record_key) ->> 'sakId' = ?
-                    AND json(record_key) ->> 'fagsystem' = ?;
+                WHERE sak_id = ? AND fagsystem = ?;
             """.trimIndent()
 
             return query(sql) { stmt ->

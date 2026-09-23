@@ -1,0 +1,516 @@
+#!/usr/bin/env perl
+# Generate a standalone HTML overview from PostgreSQL migration files.
+# Uses only Perl core modules. Unsupported SQL is ignored.
+
+use strict;
+use warnings;
+use File::Basename qw(basename);
+use File::Spec;
+use JSON::PP qw(encode_json);
+
+sub usage { die "Usage: schema-overview MIGRATIONS_DIR [--output FILE]\n" }
+
+my $directory = shift @ARGV // usage();
+my $output;
+if (@ARGV) {
+    usage() unless @ARGV == 2 && $ARGV[0] eq '--output';
+    $output = $ARGV[1];
+}
+usage() unless -d $directory;
+
+my @files;
+sub collect_sql {
+    my ($path) = @_;
+    opendir my $dir, $path or die "Cannot open $path: $!\n";
+    for my $entry (readdir $dir) {
+        next if $entry eq '.' || $entry eq '..';
+        my $child = File::Spec->catfile($path, $entry);
+        -d $child ? collect_sql($child) : push @files, $child if $child =~ /\.sql\z/i;
+    }
+    closedir $dir;
+}
+collect_sql($directory);
+die "No .sql files found in: $directory\n" unless @files;
+
+@files = sort {
+    my ($an) = basename($a) =~ /^V(\d+)/i;
+    my ($bn) = basename($b) =~ /^V(\d+)/i;
+    ($an // 9_999_999_999) <=> ($bn // 9_999_999_999) || $a cmp $b;
+} @files;
+
+my (%tables, %columns, %indexes, @table_order, @unmodeled);
+my $source = '';
+
+sub trim { my $s = shift // ''; $s =~ s/^\s+|\s+$//g; return $s }
+sub html { my $s = shift // ''; $s =~ s/&/&amp;/g; $s =~ s/</&lt;/g; $s =~ s/>/&gt;/g; $s =~ s/"/&quot;/g; return $s }
+sub identifier {
+    my $s = trim(shift);
+    return substr($s, 1, -1) if $s =~ /^".*"$/;
+    return lc $s;
+}
+sub remember_table {
+    my ($name) = @_;
+    return if exists $tables{$name};
+    $tables{$name} = { source => basename($source), exists => 1, columns => [], primary_key => '' };
+    push @table_order, $name;
+}
+sub split_top_level {
+    my ($text) = @_;
+    my @items;
+    my ($start, $depth, $quote, $dollar) = (0, 0, '', '');
+    for (my $i = 0; $i < length $text; $i++) {
+        my $char = substr($text, $i, 1);
+        if ($dollar ne '') {
+            if (substr($text, $i, length $dollar) eq $dollar) { $i += length($dollar) - 1; $dollar = '' }
+            next;
+        }
+        if ($quote ne '') {
+            if ($char eq $quote) { $i++ if $quote eq q{'} && substr($text, $i + 1, 1) eq q{'}; $quote = '' }
+            next;
+        }
+        if ($char eq q{'} || $char eq q{"}) { $quote = $char; next }
+        if ($char eq '$' && substr($text, $i) =~ /^(\$[A-Za-z_][A-Za-z_0-9]*\$|\$\$)/) { $dollar = $1; $i += length($dollar) - 1; next }
+        $depth++ if $char eq '(';
+        $depth-- if $char eq ')';
+        if ($char eq ',' && !$depth) { push @items, substr($text, $start, $i - $start); $start = $i + 1 }
+    }
+    push @items, substr($text, $start);
+    return @items;
+}
+sub add_column {
+    my ($table, $definition) = @_;
+    $definition = trim($definition);
+    $definition =~ s/^add\s+column\s+//i;
+    if ($definition =~ /^primary\s+key\b/i) { $tables{$table}{primary_key} = $definition; return }
+    return if $definition =~ /^(constraint|unique|check|foreign\s+key|exclude)\b/i;
+    return unless $definition =~ /^((?:"[^"]+")|\S+)\s+(.+)\z/s;
+    my ($name, $rest) = (identifier($1), $2);
+    my ($type) = $rest =~ /^(.*?)(?=\s+(?:not\s+null|null|default|generated|primary\s+key|unique|references|check|constraint)\b|\z)/is;
+    my ($default) = $rest =~ /\bdefault\s+(.+?)(?=\s+(?:generated|primary\s+key|unique|references|check|constraint)\b|\z)/is;
+    my ($generated) = $rest =~ /(generated\s+always\s+as\s*\(.+\)\s*stored)/is;
+    my $key = "$table\0$name";
+    push @{ $tables{$table}{columns} }, $name unless exists $columns{$key};
+    $columns{$key} = {
+        type => trim($type), default => trim($default), generated => trim($generated),
+        not_null => ($rest =~ /\bnot\s+null\b/i ? 1 : 0),
+    };
+    $tables{$table}{primary_key} = "PRIMARY KEY ($name)" if $rest =~ /\bprimary\s+key\b/i;
+}
+sub process {
+    my ($statement) = @_;
+    $statement = trim($statement);
+    $statement =~ s/\s+/ /g;
+    return if $statement eq '' || $statement =~ /^(begin|commit|rollback)\z/i;
+    if ($statement =~ /^create\s+table\s+(?:if\s+not\s+exists\s+)?((?:"[^"]+")|[^\s(]+)\s*\((.*)\)\z/is) {
+        my $table = identifier($1); remember_table($table); add_column($table, $_) for split_top_level($2); return;
+    }
+    if ($statement =~ /^drop\s+table\s+(?:if\s+exists\s+)?((?:"[^"]+")|[^\s;]+)/i) {
+        my $table = identifier($1); $tables{$table}{exists} = 0 if exists $tables{$table}; return;
+    }
+    if ($statement =~ /^alter\s+table\s+((?:"[^"]+")|\S+)\s+add\s+column\s+(.+)\z/is) {
+        my $table = identifier($1); remember_table($table); add_column($table, $_) for split_top_level($2); return;
+    }
+    if ($statement =~ /^alter\s+table\s+((?:"[^"]+")|\S+)\s+drop\s+column\s+(?:if\s+exists\s+)?((?:"[^"]+")|\S+)/i) {
+        delete $columns{identifier($1) . "\0" . identifier($2)}; return;
+    }
+    if ($statement =~ /^alter\s+table\s+((?:"[^"]+")|\S+)\s+rename\s+column\s+((?:"[^"]+")|\S+)\s+to\s+((?:"[^"]+")|\S+)/i) {
+        my ($table, $old, $new) = map identifier($_), ($1, $2, $3);
+        my $old_key = "$table\0$old"; my $new_key = "$table\0$new";
+        $columns{$new_key} = delete $columns{$old_key};
+        for (@{ $tables{$table}{columns} }) { $_ = $new if $_ eq $old }
+        return;
+    }
+    if ($statement =~ /^alter\s+table\s+((?:"[^"]+")|\S+)\s+alter\s+column\s+((?:"[^"]+")|\S+)\s+set\s+default\s+(.+)\z/is) {
+        $columns{identifier($1) . "\0" . identifier($2)}{default} = trim($3); return;
+    }
+    if ($statement =~ /^create\s+(unique\s+)?index\s+(?:if\s+not\s+exists\s+)?((?:"[^"]+")|\S+)\s+on\s+((?:"[^"]+")|[^\s(]+)/i) {
+        my ($name, $table) = map identifier($_), ($2, $3);
+        $indexes{$name} = { table => $table, source => basename($source), definition => $statement }; return;
+    }
+    if ($statement =~ /^drop\s+index\s+(?:if\s+exists\s+)?((?:"[^"]+")|\S+)/i) { delete $indexes{identifier($1)}; return }
+    push @unmodeled, basename($source) . ": " . $statement;
+}
+sub statements {
+    my ($text) = @_;
+    $text =~ s{--[^\n]*}{}g;
+    my @result;
+    my ($start, $quote, $dollar) = (0, '', '');
+    for (my $i = 0; $i < length $text; $i++) {
+        my $char = substr($text, $i, 1);
+        if ($dollar ne '') { if (substr($text, $i, length $dollar) eq $dollar) { $i += length($dollar) - 1; $dollar = '' } next }
+        if ($quote ne '') { if ($char eq $quote) { $i++ if $quote eq q{'} && substr($text, $i + 1, 1) eq q{'}; $quote = '' } next }
+        if ($char eq q{'} || $char eq q{"}) { $quote = $char; next }
+        if ($char eq '$' && substr($text, $i) =~ /^(\$[A-Za-z_][A-Za-z_0-9]*\$|\$\$)/) { $dollar = $1; $i += length($dollar) - 1; next }
+        if ($char eq ';') { push @result, substr($text, $start, $i - $start); $start = $i + 1 }
+    }
+    push @result, substr($text, $start);
+    return @result;
+}
+sub is_topic_table {
+    my ($table) = @_;
+    return $tables{$table}{exists} && $table !~ /^(timer|korrigerte?_feilet_utbetalinger|kjent_dobbeltutbetaling|kvittering|fk|oppdragsdata)$/;
+}
+sub topic_group {
+    my ($table) = @_;
+    return 'XML' if $table =~ /^(oppdrag|simuleringer)$/;
+    return 'JSON';
+}
+sub column_signature {
+    my ($table, $name) = @_;
+    my $column = $columns{"$table\0$name"};
+    return join "\x1e", map { normalized_sql($_) } ($name, $column->{type}, $column->{not_null}, $column->{default}, $column->{generated});
+}
+sub normalized_sql {
+    my ($sql) = @_;
+    $sql = trim($sql // '');
+    my ($result, $quoted) = ('', '');
+    for (my $i = 0; $i < length $sql; $i++) {
+        my $character = substr($sql, $i, 1);
+        if ($quoted ne '') {
+            $result .= $character;
+            if ($character eq $quoted) {
+                if ($quoted eq q{'} && substr($sql, $i + 1, 1) eq q{'}) { $result .= substr($sql, ++$i, 1) }
+                else { $quoted = '' }
+            }
+            next;
+        }
+        if ($character eq q{'} || $character eq q{"}) { $quoted = $character; $result .= $character; next }
+        $result .= lc $character;
+    }
+    $result =~ s/\s+/ /g;
+    return $result;
+}
+sub column_description {
+    my ($table, $name) = @_;
+    my $column = $columns{"$table\0$name"};
+    return '' unless $column;
+    my @details = ($column->{type});
+    push @details, 'NOT NULL' if $column->{not_null};
+    push @details, "DEFAULT $column->{default}" if $column->{default} ne '';
+    push @details, $column->{generated} if $column->{generated} ne '';
+    return join ' ', @details;
+}
+sub normalized_index_definition {
+    my ($definition) = @_;
+    my ($unique) = $definition =~ /^create\s+(unique\s+)?index\b/i;
+    $unique //= '';
+    $definition =~ s/^create\s+(?:unique\s+)?index\s+(?:if\s+not\s+exists\s+)?(?:"[^"]+"|\S+)\s+on\s+(?:"[^"]+"|\S+)\s*/$unique/i;
+    return normalized_sql($definition);
+}
+sub index_signature {
+    my ($table) = @_;
+    return join "\x1d", sort map { normalized_index_definition($indexes{$_}{definition}) } grep { $indexes{$_}{table} eq $table } keys %indexes;
+}
+sub table_signature {
+    my ($table) = @_;
+    my @columns = map { column_signature($table, $_) } grep { exists $columns{"$table\0$_"} } @{ $tables{$table}{columns} };
+    return join "\x1f", join("\x1e", @columns), normalized_sql($tables{$table}{primary_key}), index_signature($table);
+}
+sub difference_list {
+    my ($table, $baseline) = @_;
+    my (%table_columns, %baseline_columns);
+    $table_columns{$_} = column_signature($table, $_) for grep { exists $columns{"$table\0$_"} } @{ $tables{$table}{columns} };
+    $baseline_columns{$_} = column_signature($baseline, $_) for grep { exists $columns{"$baseline\0$_"} } @{ $tables{$baseline}{columns} };
+    my @result;
+    push @result, 'Only in this table - column: ' . $_ for sort grep { !exists $baseline_columns{$_} } keys %table_columns;
+    push @result, 'Only in reference - column: ' . $_ for sort grep { !exists $table_columns{$_} } keys %baseline_columns;
+    push @result, 'Different definition - column: ' . $_ for sort grep { exists $baseline_columns{$_} && $table_columns{$_} ne $baseline_columns{$_} } keys %table_columns;
+    push @result, 'Different definition - primary key' if normalized_sql($tables{$table}{primary_key}) ne normalized_sql($tables{$baseline}{primary_key});
+    my (%table_indexes, %baseline_indexes);
+    $table_indexes{$_} = 1 for split /\x1d/, index_signature($table);
+    $baseline_indexes{$_} = 1 for split /\x1d/, index_signature($baseline);
+    push @result, 'Only in this table - index: ' . $_ for sort grep { $_ ne '' && !exists $baseline_indexes{$_} } keys %table_indexes;
+    push @result, 'Only in reference - index: ' . $_ for sort grep { $_ ne '' && !exists $table_indexes{$_} } keys %baseline_indexes;
+    return @result;
+}
+
+for my $file (@files) {
+    $source = $file;
+    open my $fh, '<', $file or die "Cannot read $file: $!\n";
+    local $/; my $sql = <$fh>; close $fh;
+    process($_) for statements($sql);
+}
+
+my (@topic_tables, %matches_baseline, %table_differences, %baseline_by_group);
+@topic_tables = grep { is_topic_table($_) } @table_order;
+for my $group ('XML', 'JSON') {
+    my @group_tables = grep { topic_group($_) eq $group } @topic_tables;
+    my ($baseline, $fewest_differences) = ('', undef);
+    for my $candidate (@group_tables) {
+        my $difference_count = 0;
+        for my $other (@group_tables) {
+            next if $candidate eq $other;
+            $difference_count += scalar difference_list($candidate, $other);
+        }
+        if (!defined($fewest_differences) || $difference_count < $fewest_differences || ($difference_count == $fewest_differences && ($candidate cmp $baseline) < 0)) {
+            ($baseline, $fewest_differences) = ($candidate, $difference_count);
+        }
+    }
+    $baseline_by_group{$group} = $baseline;
+}
+for my $table (@table_order) {
+    next unless is_topic_table($table);
+    my $baseline = $baseline_by_group{topic_group($table)};
+    my $baseline_signature = table_signature($baseline);
+    $matches_baseline{$table} = table_signature($table) eq $baseline_signature;
+    $table_differences{$table} = [ difference_list($table, $baseline) ] unless $matches_baseline{$table};
+}
+
+if (defined $output) { open STDOUT, '>', $output or die "Cannot write $output: $!\n" }
+print <<'HTML';
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database Schema Overview</title>
+<style>
+    :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; color: light-dark(#1d252c, #e8edf2); background: light-dark(#f7f8fa, #111820); }
+    main { max-width: 1100px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+    h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -.04em; }
+    h2 { margin: 0 0 1rem; font-size: 1.35rem; }
+    header { border-bottom: 1px solid light-dark(#d5dbe1, #2d3a45); padding-bottom: 2rem; }
+    header p { color: light-dark(#53616d, #9ba9b5); margin-bottom: 0; }
+    .scroll { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 600px; }
+    th, td { border-top: 1px solid light-dark(#e4e8eb, #2d3a45); padding: .75rem 1.25rem; text-align: left; vertical-align: top; }
+    th { color: light-dark(#53616d, #9ba9b5); font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; }
+    code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .88em; }
+    .details { color: light-dark(#53616d, #b2bec8); white-space: pre-wrap; word-break: break-word; }
+    .manual-compare { background: light-dark(#fff, #17212b); border: 1px solid light-dark(#d5dbe1, #2d3a45); border-radius: .75rem; margin: 2rem 0; padding: 1.25rem; }
+    .compare-controls { align-items: end; display: grid; gap: .75rem; grid-template-columns: 1fr auto 1fr; }
+    .compare-controls label { display: grid; font-weight: 700; gap: .35rem; }
+    select, button { background: light-dark(#fff, #17212b); border: 1px solid light-dark(#9eabb6, #54616c); border-radius: .35rem; color: inherit; font: inherit; padding: .55rem .7rem; }
+    button { cursor: pointer; font-weight: 700; }
+    .compare-result { margin-top: 1.25rem; }
+    .compare-summary { color: light-dark(#53616d, #9ba9b5); }
+    .side-by-side { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+    .compare-panel { border: 1px solid light-dark(#d5dbe1, #2d3a45); border-radius: .5rem; overflow: hidden; }
+    .compare-panel h3 { margin: 0; padding: .85rem; }
+    .compare-panel h4 { border-top: 1px solid light-dark(#d5dbe1, #2d3a45); margin: 0; padding: .75rem .85rem 0; }
+    .compare-panel table { min-width: 0; }
+    .compare-panel th, .compare-panel td { padding: .5rem .7rem; }
+    .compare-panel .only-left { background: light-dark(#fff3d6, #493611); }
+    .compare-panel .only-right { background: light-dark(#fde6e6, #482225); }
+    .compare-panel .definition-diff { background: light-dark(#ffe8d9, #4d2c1d); }
+    .compare-indexes { margin: 0; padding: .85rem 1.5rem; }
+    .compare-indexes li { border-radius: .25rem; padding: .25rem; }
+    .sync-sql { background: light-dark(#fff8e8, #2c2110); border: 1px solid light-dark(#e8c77e, #7d5a1d); border-radius: .5rem; margin-top: 1rem; padding: 1rem; }
+    .sync-sql h3 { margin: 0 0 .5rem; }
+    .sync-sql pre { background: light-dark(#fff, #111820); margin: .75rem 0 0; overflow: auto; padding: .9rem; }
+    .template { background: light-dark(#fff, #17212b); border: 1px solid light-dark(#d5dbe1, #2d3a45); border-radius: .75rem; margin: 2rem 0; overflow: hidden; }
+    .template h2 { padding: 1.25rem 1.25rem 0; }
+    .template p { padding: 0 1.25rem; }
+    .template pre { background: light-dark(#edf1f5, #0d141b); margin: 1.25rem 0 0; overflow: auto; padding: 1.25rem; }
+    @media (max-width: 700px) { .compare-controls, .side-by-side { grid-template-columns: 1fr; } .compare-controls button { width: 100%; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Database Schema Overview</h1>
+<p>Compare final PostgreSQL table schemas.</p>
+</header>
+HTML
+print qq{<section class="manual-compare">\n<h2>Compare any two tables</h2>\n<p>Select a left and right table. Rows align by name; highlighted rows are the only differences.</p>\n<div class="compare-controls"><label>Left table<select id="left-table"></select></label><button type="button" id="swap-tables">Swap sides</button><label>Right table<select id="right-table"></select></label></div><div class="compare-result" id="compare-result"></div>\n</section>\n};
+my %comparison_data;
+for my $table (@table_order) {
+    next unless $tables{$table}{exists};
+    my %table_columns;
+    for my $name (@{ $tables{$table}{columns} }) {
+        next unless exists $columns{"$table\0$name"};
+        $table_columns{$name} = {
+            display => column_description($table, $name),
+            normalized => column_signature($table, $name),
+        };
+    }
+    my @table_indexes = map {
+        {
+            name => $_,
+            display => $indexes{$_}{definition},
+            normalized => normalized_index_definition($indexes{$_}{definition}),
+        }
+    } sort grep { $indexes{$_}{table} eq $table } keys %indexes;
+    my %column_definitions;
+    for my $name (keys %table_columns) {
+        my $column = $columns{"$table\0$name"};
+        my @parts = ($name, $column->{type});
+        push @parts, 'NOT NULL' if $column->{not_null};
+        push @parts, "DEFAULT $column->{default}" if $column->{default} ne '';
+        push @parts, $column->{generated} if $column->{generated} ne '';
+        $column_definitions{$name} = join ' ', @parts;
+    }
+    $comparison_data{$table} = {
+        columns => \%table_columns,
+        column_definitions => \%column_definitions,
+        indexes => \@table_indexes,
+        primary_key => $tables{$table}{primary_key},
+        normalized_primary_key => normalized_sql($tables{$table}{primary_key}),
+    };
+}
+my $comparison_json = encode_json(\%comparison_data);
+print "<script>\nconst schemaTables = $comparison_json;\n";
+print <<'HTML';
+HTML
+print <<'JAVASCRIPT';
+const leftSelect = document.querySelector('#left-table');
+const rightSelect = document.querySelector('#right-table');
+const result = document.querySelector('#compare-result');
+const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+const status = (left, right) => !left ? 'only-left' : !right ? 'only-right' : left.normalized !== right.normalized ? 'definition-diff' : '';
+const indexMap = table => Object.fromEntries(table.indexes.map(index => [index.normalized, index]));
+const quoteIdentifier = value => String(value);
+const indexNameFor = (rightTable, leftIndexName) => `${rightTable}_${leftIndexName}`.slice(0, 63);
+function createIndexSql(index, leftName, rightName) {
+    const indexName = indexNameFor(rightName, index.name);
+    return index.display
+        .replace(/^(create\s+(?:unique\s+)?index\s+)(?:"[^"]+"|\S+)/i, `$1${quoteIdentifier(indexName)}`)
+        .replace(new RegExp(`\\bon\\s+${leftName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'), `ON ${quoteIdentifier(rightName)}`);
+}
+function syncSql(leftName, left, rightName, right) {
+    const statements = [`-- Review before running. This SQL changes ${quoteIdentifier(rightName)} to match ${quoteIdentifier(leftName)}.`, '-- Add columns present only on the left.'];
+    const commonColumns = Object.keys(left.columns).filter(name => right.columns[name]);
+    for (const name of Object.keys(left.columns).sort()) if (!right.columns[name]) statements.push(`ALTER TABLE ${quoteIdentifier(rightName)} ADD COLUMN ${left.column_definitions[name]};`);
+    const changedColumns = commonColumns.filter(name => left.columns[name].normalized !== right.columns[name].normalized);
+    if (changedColumns.length) {
+        statements.push('', '-- DESTRUCTIVE: recreate columns whose definitions differ. Existing values in these columns are lost.');
+        for (const name of changedColumns.sort()) statements.push(`ALTER TABLE ${quoteIdentifier(rightName)} DROP COLUMN ${quoteIdentifier(name)};\nALTER TABLE ${quoteIdentifier(rightName)} ADD COLUMN ${left.column_definitions[name]};`);
+    }
+    if (left.normalized_primary_key !== right.normalized_primary_key) {
+        statements.push('', '-- DESTRUCTIVE: replace the primary key. Verify constraint name and data first.', `ALTER TABLE ${quoteIdentifier(rightName)} DROP CONSTRAINT ${quoteIdentifier(`${rightName}_pkey`)};`, `ALTER TABLE ${quoteIdentifier(rightName)} ADD ${left.primary_key};`);
+    }
+    const leftIndexes = indexMap(left); const rightIndexes = indexMap(right);
+    const leftOnlyIndexes = Object.keys(leftIndexes).filter(signature => !rightIndexes[signature]);
+    if (leftOnlyIndexes.length) {
+        statements.push('', '-- Add indexes present only on the left. Generated index names are prefixed with the right table name.');
+        for (const signature of leftOnlyIndexes.sort()) statements.push(createIndexSql(leftIndexes[signature], leftName, rightName) + ';');
+    }
+    const rightOnlyColumns = Object.keys(right.columns).filter(name => !left.columns[name]);
+    const rightOnlyIndexes = Object.keys(rightIndexes).filter(signature => !leftIndexes[signature]);
+    if (rightOnlyColumns.length || rightOnlyIndexes.length) {
+        statements.push('', '-- OPTIONAL AND DESTRUCTIVE: remove items that exist only on the right. Uncomment after review.');
+        for (const signature of rightOnlyIndexes.sort()) statements.push(`-- DROP INDEX ${quoteIdentifier(rightIndexes[signature].name)};`);
+        for (const name of rightOnlyColumns.sort()) statements.push(`-- ALTER TABLE ${quoteIdentifier(rightName)} DROP COLUMN ${quoteIdentifier(name)};`);
+    }
+    return statements.join('\n');
+}
+function renderTable(name, table, other, side) {
+    const indexes = indexMap(table); const otherIndexes = indexMap(other);
+    const columnRows = Object.keys(table.columns).sort().map(columnName => {
+        const column = table.columns[columnName]; const otherColumn = other.columns[columnName];
+        const rowStatus = status(column, otherColumn);
+        return `<tr class="${rowStatus}"><td><code>${escapeHtml(columnName)}</code></td><td><code>${escapeHtml(column.display)}</code></td></tr>`;
+    }).join('') || '<tr><td colspan="2"><em>No columns</em></td></tr>';
+    const primaryKeyClass = table.normalized_primary_key === other.normalized_primary_key ? '' : 'definition-diff';
+    const indexRows = Object.keys(indexes).sort().map(signature => {
+        const index = indexes[signature]; const rowStatus = otherIndexes[signature] ? '' : side === 'left' ? 'only-left' : 'only-right';
+        return `<li class="${rowStatus}"><code>${escapeHtml(index.name)}</code><br><code>${escapeHtml(index.display)}</code></li>`;
+    }).join('') || '<li><em>No indexes</em></li>';
+    return `<section class="compare-panel"><h3><code>${escapeHtml(name)}</code></h3><div class="scroll"><table><thead><tr><th>Column</th><th>Definition</th></tr></thead><tbody>${columnRows}</tbody></table></div><h4>Primary key</h4><div class="scroll"><table><tbody><tr class="${primaryKeyClass}"><td><code>${escapeHtml(table.primary_key || 'None')}</code></td></tr></tbody></table></div><h4>Indexes</h4><ul class="compare-indexes">${indexRows}</ul></section>`;
+}
+function renderComparison() {
+    const leftName = leftSelect.value; const rightName = rightSelect.value;
+    const left = schemaTables[leftName]; const right = schemaTables[rightName];
+    const primaryKeyDiff = left.normalized_primary_key !== right.normalized_primary_key;
+    const columnDiffs = Object.keys(left.columns).filter(name => !right.columns[name] || left.columns[name].normalized !== right.columns[name].normalized).length + Object.keys(right.columns).filter(name => !left.columns[name]).length;
+    const indexDiffs = [...new Set([...Object.keys(indexMap(left)), ...Object.keys(indexMap(right))])].filter(key => !indexMap(left)[key] || !indexMap(right)[key]).length;
+    const total = columnDiffs + indexDiffs + (primaryKeyDiff ? 1 : 0);
+    const sql = total === 0 ? '' : `<section class="sync-sql"><h3>Make right match left</h3><p>Generated SQL is never run automatically. Review destructive and optional statements before executing.</p><pre><code>${escapeHtml(syncSql(leftName, left, rightName, right))}</code></pre></section>`;
+    result.innerHTML = `<p class="compare-summary"><strong>${total === 0 ? 'No differences' : total + ' differences'}</strong> between <code>${escapeHtml(leftName)}</code> and <code>${escapeHtml(rightName)}</code>. Both complete schemas are shown below. Highlighted rows only: amber is left-only, red is right-only, orange is a different definition.</p><div class="side-by-side">${renderTable(leftName, left, right, 'left')}${renderTable(rightName, right, left, 'right')}</div>${sql}`;
+}
+for (const table of Object.keys(schemaTables).sort()) {
+    leftSelect.add(new Option(table, table));
+    rightSelect.add(new Option(table, table));
+}
+leftSelect.value = 'aap' in schemaTables ? 'aap' : leftSelect.options[0]?.value;
+rightSelect.value = 'aapintern' in schemaTables ? 'aapintern' : rightSelect.options[1]?.value;
+leftSelect.addEventListener('change', renderComparison);
+rightSelect.addEventListener('change', renderComparison);
+document.querySelector('#swap-tables').addEventListener('click', () => { [leftSelect.value, rightSelect.value] = [rightSelect.value, leftSelect.value]; renderComparison(); });
+renderComparison();
+</script>
+JAVASCRIPT
+my $topic_group_template = <<'SQL';
+-- Replace all {{...}} placeholders before running this as a migration.
+-- {{topic_table}} -> aap, {{internal_table}} -> aapintern,
+-- {{dryrun_table}} -> dryrun_aap, {{fagsystem}} -> AAP
+-- Assumes try_jsonb_get_text(text, text) already exists.
+
+CREATE TABLE {{topic_table}}
+(
+    id               bigserial PRIMARY KEY,
+    version          text,
+    topic_name       text,
+    record_key       text,
+    record_value     text,
+    record_partition integer,
+    record_offset    bigint,
+    timestamp_ms     bigint,
+    stream_time_ms   bigint,
+    system_time_ms   bigint,
+    trace_id         text,
+    commit           text,
+    sak_id           text GENERATED ALWAYS AS (try_jsonb_get_text(record_value, 'sakId')) STORED,
+    fagsystem        text DEFAULT '{{fagsystem}}',
+    status           text,
+    headers          text
+);
+
+CREATE INDEX {{topic_table}}_key ON {{topic_table}} (record_key);
+CREATE INDEX {{topic_table}}_sak_id_idx ON {{topic_table}} (sak_id);
+CREATE INDEX {{topic_table}}_timestamp_ms_idx ON {{topic_table}} (timestamp_ms DESC);
+CREATE INDEX {{topic_table}}_system_time_ms_idx ON {{topic_table}} (system_time_ms DESC);
+
+CREATE TABLE {{internal_table}}
+(
+    id               bigserial PRIMARY KEY,
+    version          text,
+    topic_name       text,
+    record_key       text,
+    record_value     text,
+    record_partition integer,
+    record_offset    bigint,
+    timestamp_ms     bigint,
+    stream_time_ms   bigint,
+    system_time_ms   bigint,
+    trace_id         text,
+    commit           text,
+    sak_id           text GENERATED ALWAYS AS (try_jsonb_get_text(record_value, 'sakId')) STORED,
+    fagsystem        text DEFAULT '{{fagsystem}}',
+    status           text,
+    headers          text
+);
+
+CREATE INDEX {{internal_table}}_key ON {{internal_table}} (record_key);
+CREATE INDEX {{internal_table}}_sak_id_idx ON {{internal_table}} (sak_id);
+CREATE INDEX {{internal_table}}_timestamp_ms_idx ON {{internal_table}} (timestamp_ms DESC);
+CREATE INDEX {{internal_table}}_system_time_ms_idx ON {{internal_table}} (system_time_ms DESC);
+
+CREATE TABLE {{dryrun_table}}
+(
+    id               bigserial PRIMARY KEY,
+    version          text,
+    topic_name       text,
+    record_key       text,
+    record_value     text,
+    record_partition integer,
+    record_offset    bigint,
+    timestamp_ms     bigint,
+    stream_time_ms   bigint,
+    system_time_ms   bigint,
+    trace_id         text,
+    commit           text,
+    sak_id           text GENERATED ALWAYS AS (try_jsonb_get_text(record_value, 'sakId')) STORED,
+    fagsystem        text DEFAULT '{{fagsystem}}',
+    status           text,
+    headers          text
+);
+
+CREATE INDEX {{dryrun_table}}_key ON {{dryrun_table}} (record_key);
+CREATE INDEX {{dryrun_table}}_sak_id_idx ON {{dryrun_table}} (sak_id);
+CREATE INDEX {{dryrun_table}}_timestamp_ms_idx ON {{dryrun_table}} (timestamp_ms DESC);
+CREATE INDEX {{dryrun_table}}_system_time_ms_idx ON {{dryrun_table}} (system_time_ms DESC);
+SQL
+print '<section class="template"><h2>JSON Topic-Table Group Template</h2><p>Copy this template when adding a source, internal, and dryrun JSON topic group. Replace every <code>{{...}}</code> placeholder.</p><pre><code>' . html($topic_group_template) . "</code></pre></section>\n";
+print "</main>\n</body>\n</html>\n";
