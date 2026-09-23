@@ -114,7 +114,7 @@ internal class ValidationParameterizedTest {
             val err = assertThrows<ApiError> {
                 utbet.validate()
             }
-            assertEquals("Utbetalinger kan ikke strekke seg over 1100 dager", err.msg)
+            assertEquals("Utbetalinger kan ikke strekke seg over 1000 dager", err.msg)
         },
         
         DynamicTest.dynamicTest("error ved manglende perioder") {
