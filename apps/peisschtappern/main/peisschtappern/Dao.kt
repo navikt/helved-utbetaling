@@ -47,7 +47,7 @@ data class Header(
     companion object {
         fun fromString(str: String): Header {
             Log.debug("trying to split '$str' on ':'")
-            val parts = str.split(":")
+            val parts = str.split(":", limit = 2)
             return Header(parts[0], parts.getOrNull(1))
         }
     }
