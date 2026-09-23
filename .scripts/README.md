@@ -29,3 +29,17 @@ Then forward proxy the graphql api `nais api proxy`
 Change the script with app, cluster and timestamps.
 
 > ./console_graphql_utilization
+
+### Migration schema overview
+Generate standalone HTML from PostgreSQL migrations:
+
+> ./.scripts/schema-overview apps/peisschtappern/migrations --output /tmp/peisschtappern-schema.html
+
+Write report to a file instead of standard output:
+
+> open /tmp/peisschtappern-schema.html
+
+The script tracks final tables, columns, primary keys, and indexes after all migrations. It compares XML (`oppdrag`, `simuleringer`) and JSON Kafka-topic tables separately, including index differences. `timer`, `korrigerte_feilet_utbetalinger`, `kjent_dobbeltutbetaling`, `kvittering`, `fk`, and `oppdragsdata` are excluded from this comparison.
+
+### JSON topic-table group template
+`schema-overview` embeds a copy-and-fill SQL template below its comparison view for adding a source, internal, and dryrun table. Replace its four `{{...}}` placeholders before adding it as a migration.
