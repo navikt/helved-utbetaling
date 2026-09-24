@@ -172,10 +172,24 @@ object AggregateService {
                 }
             }
 
+        // TODO: kun støtte en sak per aggregat og feile hvis vi finner fler?
         val simuleringerPerSak = simuleringer.groupBy { it.request.oppdrag.fagsystemId.trimEnd() }
             .map { (_, group) -> group.reduce { acc, next -> acc + next } }
+            .onEach { simulering -> simulering.validate() }
 
         return aggregate.any() to simuleringerPerSak
+    }
+}
+
+fun SimulerBeregningRequest.validate() {
+    if (this.request.oppdrag.oppdragslinjes.size > 1000) {
+        badRequest(DocumentedErrors.Async.Utbetaling.FOR_LANG_KJEDE)
+    }
+}
+
+fun Oppdrag.validate() {
+    if (this.oppdrag110.oppdragsLinje150s.size > 1000) {
+        badRequest(DocumentedErrors.Async.Utbetaling.FOR_LANG_KJEDE)
     }
 }
 

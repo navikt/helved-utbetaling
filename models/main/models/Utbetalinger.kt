@@ -104,12 +104,9 @@ data class Utbetaling(
         failOnÅrsskifte()
         failOnDuplicatePerioder()
         failOnTomBeforeFom()
-        //failOnIllegalFutureUtbetaling()
-        failOnTooManyPeriods()
         failOnZeroBeløp()
         failOnTooLongSakId()
         failOnTooLongBehandlingId()
-        //failOnWeekendInPeriodetypeDag()
     }
 
     fun isDuplicate(other: Utbetaling?): Boolean {
@@ -205,22 +202,6 @@ fun Utbetaling.failOnDuplicatePerioder() {
 
 fun Utbetaling.failOnTomBeforeFom() {
     if (!perioder.all { it.fom <= it.tom }) badRequest(DocumentedErrors.Async.Utbetaling.UGYLDIG_PERIODE)
-}
-
-fun Utbetaling.failOnIllegalFutureUtbetaling() {
-    if (stønad is StønadTypeTilleggsstønader) return
-    val isDay = periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG)
-    val dayIsFuture = perioder.maxBy { it.tom }.tom.isAfter(LocalDate.now())
-    if (isDay && dayIsFuture) badRequest(DocumentedErrors.Async.Utbetaling.FREMTIDIG_UTBETALING)
-}
-
-fun Utbetaling.failOnTooManyPeriods() {
-    if (periodetype in listOf(Periodetype.DAG, Periodetype.UKEDAG)) {
-        val min = perioder.minBy { it.fom }.fom
-        val max = perioder.maxBy { it.tom }.tom
-        val tooManyPeriods = java.time.temporal.ChronoUnit.DAYS.between(min, max) + 1 > 1100
-        if (tooManyPeriods) badRequest(DocumentedErrors.Async.Utbetaling.FOR_LANG_UTBETALING)
-    }
 }
 
 fun Utbetaling.failOnTooLongSakId() {

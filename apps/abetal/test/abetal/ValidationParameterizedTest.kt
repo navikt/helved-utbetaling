@@ -96,27 +96,6 @@ internal class ValidationParameterizedTest {
             assertEquals("Tom må være >= fom", err.msg)
         },
         
-        DynamicTest.dynamicTest("error ved for mange perioder") {
-            val perioder = buildList<Utbetalingsperiode> {
-                for (i in 1L..1101L) {
-                    add(Utbetalingsperiode(
-                        fom = LocalDate.now().minusDays(i),
-                        tom = LocalDate.now().minusDays(i),
-                        beløp = 100u,
-                    ))
-                }
-            }
-            val utbet = createUtbetaling(
-                periodetype = Periodetype.DAG,
-                perioder = perioder
-            )
-
-            val err = assertThrows<ApiError> {
-                utbet.validate()
-            }
-            assertEquals("Utbetalinger kan ikke strekke seg over 1100 dager", err.msg)
-        },
-        
         DynamicTest.dynamicTest("error ved manglende perioder") {
             val utbet = createUtbetaling(
                 periodetype = Periodetype.DAG,
