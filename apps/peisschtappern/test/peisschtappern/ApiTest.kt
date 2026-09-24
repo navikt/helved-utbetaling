@@ -39,6 +39,16 @@ class ApiTest {
     }
 
     @Test
+    fun `lists topics registered in peisschtappern`() = runTest(TestRuntime.context) {
+        val topics = TestRuntime.ktor.httpClient.get("/api/topics") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            accept(ContentType.Application.Json)
+        }.body<List<String>>()
+
+        assertEquals(Channel.all().sortedBy(Channel::revision).map { it.topic.name }, topics)
+    }
+
+    @Test
     fun `can query for key`() = runTest(TestRuntime.context) {
         save(Channel.Aap, "testkey", offset = offset)
         save(Channel.Utbetalinger, "testkey", offset = offset)
@@ -641,4 +651,3 @@ class ApiTest {
         }
     }
 }
-

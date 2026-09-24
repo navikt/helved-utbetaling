@@ -96,6 +96,10 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
             call.respond(result)
         }
 
+        get("/topics") {
+            call.respond(Channel.all().sortedBy(Channel::revision).map { it.topic.name })
+        }
+
         get("/messages") {
             val channels = call.queryParameters.strings("topics")?.mapNotNull(Channel::findOrNull) ?: Channel.all()
             val page = call.queryParameters["page"]?.toIntOrNull() ?: 1
