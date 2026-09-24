@@ -54,6 +54,10 @@ object DocumentedErrors {
                 "Utbetalinger kan ikke strekke seg over 1100 dager",
                 "$URL/kom_i_gang/opprett_utbetaling#for-lang-utbetaling"
             ),
+            FOR_LANG_KJEDE(
+                "Utbetalinger kan ikke bestå av mer enn 1000 oppdragslinjer",
+                "$URL/kom_i_gang/opprett_utbetaling#for-lang-utbetaling"
+            ),
             IMMUTABLE_FIELD_SAK_ID(
                 "Kan ikke endre 'sakId'",
                 "$URL/kom_i_gang/endre_utbetaling#immutable-field"
