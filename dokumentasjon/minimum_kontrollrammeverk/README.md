@@ -12,7 +12,7 @@ Se `.md`-fil per tema for detaljer om hvor og hvordan kontrollene loggføres.
 
 | Tema | Krav | Kontrolleres | Sist kontrollert |
 | --- | --- | --- | --- |
-| 1 | 1.1 Oppsett av logger | årlig |  |
+| 1 | 1.1 Oppsett av logger | årlig | 2026-09-25 |
 | 1 | 1.2 Gjennomgang av logger | tertialvis | Kontinuerlig i [Gaal](https://audit-approval.iap.nav.cloud.nais.io/?team=helved) |
 | 5 | 5.1 Regelsett for endringshåndtering | årlig | 2026-09-25 |
 | 5 | 5.5 Produksjonssetting - Automatisk | årlig | 2026-09-25 |
