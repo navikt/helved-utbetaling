@@ -321,7 +321,7 @@ sealed interface Stønadstype {
                 .getOrThrow()
 
         fun fraKode(klassekode: String): Stønadstype =
-            (StønadTypeDagpenger.entries + StønadTypeTiltakspenger.entries + StønadTypeTilleggsstønader.entries + StønadTypeAAP.entries + StønadTypeHistorisk.entries)
+            (StønadTypeDagpenger.entries + StønadTypeTiltakspenger.entries + StønadTypeTilleggsstønader.entries + StønadTypeAAP.entries + StønadTypeHistorisk.entries + StønadTypeValp.entries)
                 .single { it.klassekode == klassekode }
     }
 }
@@ -419,6 +419,7 @@ fun StønadTypeTiltakspenger.medBarnetillegg(barnetillegg: Boolean): StønadType
             StønadTypeTiltakspenger.ARBEIDSMARKEDSOPPLÆRING_AMO -> StønadTypeTiltakspenger.ARBEIDSMARKEDSOPPLÆRING_AMO_BARN
             StønadTypeTiltakspenger.NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER -> StønadTypeTiltakspenger
                 .NORSKOPPLÆRING_GRUNNLEGGENDE_FERDIGHETER_BARN
+
             StønadTypeTiltakspenger.FAG_OG_YRKESOPPLÆRING -> StønadTypeTiltakspenger.FAG_OG_YRKESOPPLÆRING_BARN
             StønadTypeTiltakspenger.STUDIESPESIALISERING -> StønadTypeTiltakspenger.STUDIESPESIALISERING_BARN
             StønadTypeTiltakspenger.FAGSKOLE -> StønadTypeTiltakspenger.FAGSKOLE_BARN
@@ -439,6 +440,7 @@ enum class StønadTypeTilleggsstønader(override val klassekode: String) : Støn
     BOUTGIFTER_AAP("TSBUASIA-OP"),
     BOUTGIFTER_ENSLIG_FORSØRGER("TSBUAISP2-OP"),
     BOUTGIFTER_ETTERLATTE("TSBUAISP3-O"),
+
     @Deprecated("skrivefeil", ReplaceWith("DAGLIG_REISE_ENSLIG_FORSØRGER"))
     DAGLIG_REISE_ENSLIG_FORSØRGET("TSDRASISP4-OP"),
     DAGLIG_REISE_ENSLIG_FORSØRGER("TSDRASISP4-OP"),
