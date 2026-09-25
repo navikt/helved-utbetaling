@@ -27,6 +27,6 @@ Se også:
 _Ansvarlig skal hvert tertial gjennomgå dataflyten i systemet for å identifisere hvilke jobber/grensesnitt som overfører kritisk data_. Se [Powerpoint](https://navno.sharepoint.com/:p:/r/sites/Helhetligkvalitetssystem/Delte%20dokumenter/Minimum%20kontrollrammeverk%20%C3%B8konomisystem%20(MKR-%C3%98S)/Presentasjoner%20fra%20oppskytningsrampe/Tema%206%20oppstartsm%C3%B8te.pptx?d=w322b3c9a9f884e7aa1698e2d9d8d395d&csf=1&web=1&e=A0Imrs) for detaljer.
 
 Logg over gjennomførte kontroller:
-| Tidspunkt | Kontrollert og godkjent av |
-| -------- | -------- | 
-| 2026-xx-xx    | x     |
+| Tidspunkt | Kontrollert og godkjent av | Kommentar |
+| -------- | -------- | -------- | 
+| 2026-09-25    | x     | Det ble [funnet avvik i avstemming](https://nav-it.slack.com/archives/C06SJTR2X3L/p1781611393367689) for 15-17 mai. I tillegg ble det ikke sendt avstemming 19 mai. Rotårsaken (problemer med Kafka hos Aiven) ble funnet og avstemmingen ble korrigert i løpet av kort tid. Det ble også laget en mekanisme som fanger opp og varsler om en avstemming ikke har kjørt. <br/></br> Relatert til overnevnte, og på grunn av samme rotårsak, var det også et knippe transaksjoner som feilet 15-18 mai og 1-2 juni. Disse ble fanget opp av overvåkingsmekanismene våre. Problemet ble løst i løpet av kort tid. <br/><br/> Vi hadde også et tilfelle i juni hvor et utbetalingsoppdrag ikke ble kvittert. Det ble fanget opp med en gang og løst ved at kvitteringa ble sendt på nytt. |
