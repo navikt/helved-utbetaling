@@ -27,9 +27,9 @@ _Årlig, eller ved vesentlige endringer, skal ansvarlig godkjenne oppsettet av l
 
 Logg over gjennomførte kontroller:
 
-| Tidspunkt | Kontrollert og godkjent av |
-| -------- | -------- | 
-| 2026-xx-xx    | x     |
+| Tidspunkt | Kontrollert og godkjent av | Kommentar |
+| -------- | -------- | -------- | 
+| 2026-09-25    | Hele teamet  | Logging er inhenhold til krav og ovennevnte dokumentasjon |
 
 
 
