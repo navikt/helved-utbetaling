@@ -31,6 +31,10 @@ mqjms.log*
 
 TODO
 
+.out/
+nob
+**/*.nob
+
 # opencode plugin artifacts
 opencode.json
 node_modules/
