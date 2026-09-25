@@ -9,10 +9,10 @@ Vi (Team hel ved) følger som regel dette mønsteret:
 
 - Når vi par- eller mobprogrammerer bruker vi `Co-authored-by` i Git for å dokumentere hvem som har deltatt. Par- og mobprogrammering fungerer som løpende godkjenning av endringer. 
 - Endringer kan også utvikles og sjekkes inn av én utvikler alene. Vi har ikke krav om at alle endringer skal være godkjent av en annen utvikler før deploy. At testene kjører grønt, er tilstrekkelig grunnlag for å deploye en endring uten separat godkjenning fra en annen utvikler.
+- Funksjonelle kodeendringer skal være dekket av automatiserte tester.
+- Automatiske bygg- og testjobber må kjøre grønt for at koden skal deployes.
 - Vi etterstreber små endringer om gangen, fordi det gjør det enklere å både avdekke og rette feil. Alle DORA-metrikkene måles automatisk og visualiseres i et eget dashboard.
 - For sporbarhet refererer vi til oppgave-id i hver commit. Vi har regler i GitHub som sikrer at hver commit henviser til en oppgave. Commits, tester og deployer knyttes automatisk til oppgavene i Kanban-boardet gjennom et eget verktøy. 
-- Alle kodeendringer skal være dekket av automatiserte tester.
-- Automatiske bygg- og testjobber må kjøre grønt for at koden skal deployes.
 - Vi bruker GitHub som sentral plattform for kildekode, endringshistorikk og utrulling. Bygg, testing og deploy gjennomføres ved hjelp av GitHub Actions.
 - Vi deplyer til dev og prod samtidig. Dette reduserer forskjeller mellom miljøene og gjør endringshåndteringen enklere.
 
@@ -26,7 +26,7 @@ Logg over gjennomførte kontroller:
 
 | Tidspunkt | Kontrollert og godkjent av |
 | -------- | -------- | 
-| 2026-xx-xx    | x     |
+| 2026-09-25    | Hele teamet     |
 
 ## 5.2 Klassifisering av endringer​
 
@@ -60,6 +60,6 @@ _Dersom produksjonssetting er helt eller delvis automatisert skal Ansvarlig årl
 
 Logg over gjennomførte kontroller:
 
-| Tidspunkt | Kontrollert og godkjent av |
-| -------- | -------- | 
-| 2026-xx-xx    | x     |
+| Tidspunkt | Kontrollert og godkjent av | Kommentar |
+| -------- | -------- | -------- | 
+| 2026-09-25    | Hele teamet     | Repoene Helved-utbetaling (monorepo som utgjør systemet "Utsjekk") og Peisen, begge definert som hjelpesystemer |
