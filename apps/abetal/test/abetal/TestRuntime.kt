@@ -35,7 +35,9 @@ class TestTopics(kafka: StreamsMock) {
 
 object TestRuntime {
     val kafka: StreamsMock = StreamsMock()
+    val azure = AzureFake()
     val config = Config(
+        azure = azure.config,
         kafka = kafka.config.copy(additionalProperties = Properties().apply {
             this[org.apache.kafka.streams.StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG] =
                 StatusOnProcessingErrorHandler::class.java
@@ -44,18 +46,16 @@ object TestRuntime {
             put(DSL_STORE_SUPPLIERS_CLASS_CONFIG, BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers::class.java)
         })
     )
-    init {
-        KtorRuntime<Config>(
-            appName = "abetal",
-            jsonConfig = libs.kotlinx.KotlinxJson,
-            module = {
-                abetal(
-                    config = config,
-                    kafka = kafka,
-                    topology = createTopology(kafka),
-                )
-            }
-        )
-    }
+    val ktor = KtorRuntime<Config>(
+        appName = "abetal",
+        jsonConfig = libs.kotlinx.KotlinxJson,
+        module = {
+            abetal(
+                config = config,
+                kafka = kafka,
+                topology = createTopology(kafka),
+            )
+        },
+    )
     val topics: TestTopics = TestTopics(kafka)
 }

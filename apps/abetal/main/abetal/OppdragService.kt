@@ -107,7 +107,6 @@ object OppdragService {
     }
 }
 
-
 private fun XMLGregorianCalendar.toLocalDate() = toGregorianCalendar().toZonedDateTime().toLocalDate()
 
 private fun skalTilføreOpphørslinje(

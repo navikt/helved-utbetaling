@@ -143,18 +143,6 @@ class UtbetalingService(
         }
     }
 
-    suspend fun updateAvventKey(request: FeilregistrerAvventKeyRequest) {
-        val oppdrag = UtbetalingOppdragService.avvent(request)
-        withContext(Dispatchers.IO) {
-            oppdragProducer.send(
-                key = request.key,
-                value = oppdrag,
-                partition = partition(request.key),
-                headers = mapOf("source" to "utsjekk-avvent"),
-            )
-        }
-    }
-
     /**
      * Slett en utbetalingsperiode (opphør hele perioden).
      */
@@ -282,4 +270,3 @@ private fun klassekode(stønadstype: StønadTypeAAP): String = when (stønadstyp
 private fun klassekode(stønadstype: StønadTypeHistorisk): String = when (stønadstype) {
     StønadTypeHistorisk.TILSKUDD_SMÅHJELPEMIDLER -> "HJRIM"
 }
-
