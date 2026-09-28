@@ -1,20 +1,30 @@
 package abetal
 
+import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import io.ktor.server.engine.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import libs.kafka.KafkaStreams
+import libs.kafka.KafkaProducer
 import libs.kafka.Streams
 import libs.kafka.Topology
+import libs.auth.TokenProvider
+import libs.auth.jwt
 import libs.utils.Log
+import models.ApiError
+import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -56,13 +66,38 @@ fun Application.abetal(
             encodeDefaults = true
         })
     }
+    install(Authentication) {
+        jwt(TokenProvider.AZURE, config.azure)
+    }
+    install(StatusPages) {
+        exception<ApiError> { call, cause ->
+            call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
+        }
+        exception<BadRequestException> { call, cause ->
+            val message = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
+            Log.debug(message, cause)
+            call.respond(HttpStatusCode.BadRequest, ApiError(statusCode = 400, msg = message))
+        }
+        exception<Throwable> { call, cause ->
+            val message = "Ukjent feil, helved er varslet."
+            Log.error(message, cause)
+            call.respond(HttpStatusCode.InternalServerError, ApiError(statusCode = 500, msg = message))
+        }
+    }
 
+    val oppdragProducer: KafkaProducer<String, Oppdrag> =
+        kafka.createProducer(config.kafka, Topics.oppdrag)
+    val feilregisterAvvent = FeilregisterAvvent(oppdragProducer)
     monitor.subscribe(ApplicationStopping) {
+        oppdragProducer.close()
         kafka.close()
     }
 
     routing {
         probes(kafka, prometheus)
+        authenticate(TokenProvider.AZURE) {
+            feilregisterAvvent.route(this)
+        }
     }
 
     val httpClient = HttpClient.newBuilder()
