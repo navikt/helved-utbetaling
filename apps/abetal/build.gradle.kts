@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
+    implementation(project(":libs:auth"))
     implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:3.1.252")
 
@@ -21,6 +22,7 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
@@ -29,6 +31,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:ktor-test"))
+    testImplementation(project(":libs:auth-test"))
 }
 
 // abetal tests share a single TestRuntime (singleton StreamsMock + topics) and
