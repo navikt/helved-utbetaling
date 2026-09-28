@@ -66,6 +66,14 @@ object TestRuntime {
             "incident",
             "poller_cursor",
             "slo_snapshot",
+            "audit_task_comment",
+            "audit_workflow_step",
+            "audit_workflow_job",
+            "audit_workflow_source",
+            "audit_workflow_execution_commit",
+            "audit_control_snapshot",
+            "audit_workflow_execution",
+            "audit_commit",
         )
     }
 }
