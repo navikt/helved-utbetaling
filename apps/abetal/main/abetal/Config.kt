@@ -1,5 +1,6 @@
 package abetal
 
+import libs.auth.AzureConfig
 import libs.kafka.StreamsConfig
 import libs.utils.env
 import java.net.URI
@@ -8,6 +9,7 @@ import java.util.*
 
 data class Config(
     val utsjekk: URL = URI(env("UTSJEKK_HOST", "http://utsjekk")).toURL(),
+    val azure: AzureConfig = AzureConfig(),
     val kafka: StreamsConfig = StreamsConfig(
         additionalProperties = Properties().apply {
             // Publiser statusmeldinger når vi ikke klarer å prosessere meldinger

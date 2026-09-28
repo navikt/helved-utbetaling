@@ -65,16 +65,6 @@ data class FeilregistrerAvventRequest(
 )
 
 @Serializable
-data class FeilregistrerAvventKeyRequest(
-    val key: String,
-    val stønad: Stønadstype,
-    val sakId: String,
-    val personident: String,
-    val saksbehandlerId: String,
-    val avvent: Avvent,
-)
-
-@Serializable
 enum class PeriodeType {
     /** man - fre */
     UKEDAG,
