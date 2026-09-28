@@ -17,6 +17,7 @@ import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -38,6 +39,11 @@ import speiderhytta.dora.asFetcher
 import speiderhytta.dora.doraRoutes
 import speiderhytta.github.GithubApp
 import speiderhytta.github.GithubClient
+import speiderhytta.audit.AuditService
+import speiderhytta.audit.asAuditFetcher
+import speiderhytta.audit.auditRoutes
+import speiderhytta.audit.TaskCommentProjector
+import speiderhytta.audit.asTaskCommentClient
 import speiderhytta.slo.PrometheusClient
 import speiderhytta.slo.SloDefinitionLoader
 import speiderhytta.slo.SloService
@@ -79,6 +85,19 @@ fun Application.speiderhytta(config: Config = Config()) {
     val github = GithubClient(config.github, app = githubApp)
     val deployService = DeployService(github.asDeployFetcher(), metrics, codeRepos = config.github.codeRepos, jdbcCtx = jdbcCtx)
     val incidentService = IncidentService(github.asFetcher(), metrics, jdbcCtx)
+    val taskComments = if (config.audit.taskCommentsEnabled) {
+        TaskCommentProjector(github.asTaskCommentClient(), jdbcCtx)
+    } else {
+        null
+    }
+    Log.info("GitHub task comments enabled: ${config.audit.taskCommentsEnabled}")
+    val auditService = AuditService(
+        github.asAuditFetcher(),
+        config.github.codeRepos,
+        jdbcCtx,
+        config.github.issueRepo,
+        taskComments,
+    )
     val doraQuery = DoraQueryService()
 
     val sloDefs = SloDefinitionLoader(config.slo.definitionsDir).load()
@@ -93,6 +112,34 @@ fun Application.speiderhytta(config: Config = Config()) {
     Poller("incident", config.pollIntervals.incident, metrics, jdbcCtx) { since ->
         incidentService.ingest(since)
     }.launchIn(scope)
+    config.github.codeRepos.distinctBy { it.repo }.forEach { repository ->
+        Poller("audit-commits:${repository.repo}", config.pollIntervals.audit, metrics, jdbcCtx) { since ->
+            auditService.ingestCommits(repository.repo, since.minusSeconds(AUDIT_OVERLAP_SECONDS))
+        }.launchIn(scope)
+        repository.apps.forEach { (app, workflowFile) ->
+            Poller(
+                name = "audit-workflow:${repository.repo}:$app:$workflowFile",
+                interval = config.pollIntervals.audit,
+                metrics = metrics,
+                jdbcCtx = jdbcCtx,
+                allowCursorRewind = true,
+            ) { since ->
+                auditService.ingestWorkflow(repository.repo, app, workflowFile, since.minusSeconds(AUDIT_WORKFLOW_LOOKBACK_SECONDS))
+            }.launchIn(scope)
+        }
+    }
+    scope.launch {
+        while (true) {
+            try {
+                auditService.snapshotControls()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                Log.warn("GitHub control snapshot failed", t)
+            }
+            delay(config.pollIntervals.auditControls)
+        }
+    }
     scope.launch {
         while (true) {
             try {
@@ -107,9 +154,17 @@ fun Application.speiderhytta(config: Config = Config()) {
     routing {
         doraRoutes(doraQuery, jdbcCtx, config.apps)
         sloRoutes(sloService, jdbcCtx, config.apps)
+        auditRoutes(
+            jdbcCtx = jdbcCtx,
+            codeRepositories = config.github.codeRepos.map { it.repo }.toSet(),
+            taskRepository = config.github.issueRepo,
+        )
         route("/actuator") {
             get("/metric") { call.respond(meters.scrape()) }
             get("/health") { call.respond(HttpStatusCode.OK) }
         }
     }
 }
+
+private const val AUDIT_OVERLAP_SECONDS = 600L
+private const val AUDIT_WORKFLOW_LOOKBACK_SECONDS = 3600L

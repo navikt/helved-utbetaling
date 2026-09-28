@@ -7,6 +7,8 @@ import java.net.URI
 import java.net.URL
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 data class Config(
     val jdbc: JdbcConfig = JdbcConfig(
@@ -14,6 +16,7 @@ data class Config(
         migrations = listOf(File("migrations")),
     ),
     val github: GithubConfig = GithubConfig(),
+    val audit: AuditConfig = AuditConfig(),
     val prometheus: PrometheusConfig = PrometheusConfig(),
     val slo: SloConfig = SloConfig(),
     val pollIntervals: PollIntervals = PollIntervals(),
@@ -40,8 +43,9 @@ data class CodeRepoConfig(
  * GitHub App credentials and target repos.
  *
  * The same App is used against three repos:
- *  - `helved-utbetaling` and `helved-peisen` for deploy data (`actions: read`, `contents: read`).
- *  - `team-helved` for incident issues (`issues: read`) — that's where the team's kanban board lives.
+ *  - `helved-utbetaling` and `helved-peisen` for deploy and audit data
+ *    (`actions: read`, `contents: read`, `administration: read`).
+ *  - `team-helved` for incidents and managed audit comments (`issues: write`).
  *
  * The App must be installed on all three repos. The same App ID +
  * installation ID work for every repo the App has access to (no per-repo
@@ -68,6 +72,10 @@ data class GithubConfig(
     val issueRepo: String get() = "$issueRepoOwner/$issueRepoName"
 }
 
+data class AuditConfig(
+    val taskCommentsEnabled: Boolean = env("AUDIT_TASK_COMMENTS_ENABLED", false),
+)
+
 data class PrometheusConfig(
     val url: URL = URI("https://prometheus.nav.cloud.nais.io/prometheus").toURL(),
 )
@@ -80,6 +88,8 @@ data class PollIntervals(
     val deploy: Duration = 60.seconds,
     val incident: Duration = 60.seconds,
     val sloSnapshot: Duration = 300.seconds,
+    val audit: Duration = 10.minutes,
+    val auditControls: Duration = 6.hours,
 )
 
 /**
