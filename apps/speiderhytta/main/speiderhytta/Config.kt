@@ -16,7 +16,6 @@ data class Config(
         migrations = listOf(File("migrations")),
     ),
     val github: GithubConfig = GithubConfig(),
-    val audit: AuditConfig = AuditConfig(),
     val prometheus: PrometheusConfig = PrometheusConfig(),
     val slo: SloConfig = SloConfig(),
     val pollIntervals: PollIntervals = PollIntervals(),
@@ -71,10 +70,6 @@ data class GithubConfig(
 ) {
     val issueRepo: String get() = "$issueRepoOwner/$issueRepoName"
 }
-
-data class AuditConfig(
-    val taskCommentsEnabled: Boolean = env("AUDIT_TASK_COMMENTS_ENABLED", false),
-)
 
 data class PrometheusConfig(
     val url: URL = URI("https://prometheus.nav.cloud.nais.io/prometheus").toURL(),
