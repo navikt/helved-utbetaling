@@ -85,12 +85,7 @@ fun Application.speiderhytta(config: Config = Config()) {
     val github = GithubClient(config.github, app = githubApp)
     val deployService = DeployService(github.asDeployFetcher(), metrics, codeRepos = config.github.codeRepos, jdbcCtx = jdbcCtx)
     val incidentService = IncidentService(github.asFetcher(), metrics, jdbcCtx)
-    val taskComments = if (config.audit.taskCommentsEnabled) {
-        TaskCommentProjector(github.asTaskCommentClient(), jdbcCtx)
-    } else {
-        null
-    }
-    Log.info("GitHub task comments enabled: ${config.audit.taskCommentsEnabled}")
+    val taskComments = TaskCommentProjector(github.asTaskCommentClient(), jdbcCtx)
     val auditService = AuditService(
         github.asAuditFetcher(),
         config.github.codeRepos,
