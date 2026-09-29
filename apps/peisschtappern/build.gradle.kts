@@ -19,6 +19,7 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":models"))
     implementation("no.nav.helved:xml:$libVersion")
+    implementation("com.google.cloud:google-cloud-logging:3.39.0")
 
     implementation("org.apache.kafka:kafka-clients:4.3.0")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
