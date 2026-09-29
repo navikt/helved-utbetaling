@@ -7,7 +7,6 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.json.Json
 import libs.auth.*
 import libs.ktor.*
 import java.net.URI
@@ -36,6 +35,18 @@ class AzureFake : AutoCloseable {
     ) 
 
     override fun close() = azure.stop(0, 0)
+}
+
+class AuditLogReaderFake : AuditLogReader {
+    val entries = mutableListOf<AuditLogEntry>()
+    var lastFilter: String? = null
+    var lastPageSize: Int? = null
+
+    override fun list(filter: String?, pageSize: Int, pageToken: String?): AuditLogPage {
+        lastFilter = filter
+        lastPageSize = pageSize
+        return AuditLogPage(entries.take(pageSize), nextPageToken = null)
+    }
 }
 
 private fun Application.azure() {

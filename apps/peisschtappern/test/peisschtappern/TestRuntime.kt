@@ -31,6 +31,7 @@ object TestRuntime {
         )
     }
     val azure: AzureFake by lazy { AzureFake() }
+    val auditLogs: AuditLogReaderFake by lazy { AuditLogReaderFake() }
     // Kafka mock and the ktor app form a chicken/egg pair: the StreamsMock
     // instance must exist before the ktor module runs (the module wires it
     // into the topology), but `kafka.testTopic(...)` only works AFTER the
@@ -59,7 +60,7 @@ object TestRuntime {
             appName = "peisschtappern",
             jsonConfig = libs.kotlinx.KotlinxJson,
             module = {
-                peisschtappern(config, kafkaMock)
+                peisschtappern(config, kafkaMock, auditLogs)
             },
             onClose = {
                 jdbc.truncate(

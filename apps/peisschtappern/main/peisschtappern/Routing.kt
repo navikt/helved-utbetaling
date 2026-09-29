@@ -15,6 +15,7 @@ import libs.kafka.Topic
 import libs.utils.Log
 import models.Fagsystem
 import models.badRequest
+import models.notFound
 import java.time.Duration
 import java.time.Instant
 
@@ -485,6 +486,19 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
                 "Feilet å sende OK status på ${Topics.status.name} med key ${request.key}"
             )
         }
+    }
+}
+
+fun Route.auditLogs(auditLogs: AuditLogReader?) {
+    get("/api/audit-logs") {
+        if (auditLogs == null) notFound("Audit-logger er ikke konfigurert i dette miljøet")
+        val filter = call.queryParameters["filter"]?.takeIf { it.isNotBlank() }
+        val pageToken = call.queryParameters["pageToken"]?.takeIf { it.isNotBlank() }
+        val pageSize = call.queryParameters["pageSize"]?.toIntOrNull() ?: 100
+
+        Log.info("Henter audit-logger. ${Audit.from(call)}")
+        val page = withContext(Dispatchers.IO) { auditLogs.list(filter, pageSize, pageToken) }
+        call.respond(page)
     }
 }
 
