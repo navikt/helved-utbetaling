@@ -58,17 +58,6 @@ data class AuditCommit(
             stmt.setString(2, sha)
         }.firstOrNull()
 
-        suspend fun selectForTask(taskRepository: String, taskNumber: Long, limit: Int): List<AuditCommit> = query(
-            """
-            SELECT * FROM $table WHERE task_repository = ? AND task_number = ?
-            ORDER BY committed_at DESC LIMIT ?
-            """.trimIndent(),
-        ) { stmt ->
-            stmt.setString(1, taskRepository)
-            stmt.setLong(2, taskNumber)
-            stmt.setInt(3, limit)
-        }
-
         suspend fun selectAllForTask(taskRepository: String, taskNumber: Long): List<AuditCommit> = query(
             """
             SELECT * FROM $table WHERE task_repository = ? AND task_number = ?

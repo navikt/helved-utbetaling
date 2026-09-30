@@ -1,6 +1,7 @@
 package speiderhytta.audit
 
 import io.ktor.client.request.get
+import io.ktor.client.call.body
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
@@ -14,23 +15,10 @@ import java.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class AuditRoutesTest {
     @AfterTest fun reset() = TestRuntime.reset()
-
-    @Test
-    fun `task-ruten godtar konfigurert task-repository`() = runTest {
-        val response = TestRuntime.httpClient.get("/audit/tasks/navikt/team-helved/633")
-
-        assertEquals(HttpStatusCode.OK, response.status)
-    }
-
-    @Test
-    fun `task-ruten avviser code repository`() = runTest {
-        val response = TestRuntime.httpClient.get("/audit/tasks/navikt/helved-utbetaling/633")
-
-        assertEquals(HttpStatusCode.NotFound, response.status)
-    }
 
     @Test
     fun `evidence bruker commits og kontroller fra attemptet som deployet`() = runTest(TestRuntime.context) {
@@ -81,6 +69,85 @@ class AuditRoutesTest {
 
         assertEquals(listOf("abc123"), result!!.commits.map { it.sha })
         assertEquals(1, result.controls.single().payload.jsonObject["reviews"]?.jsonPrimitive?.content?.toInt())
+    }
+
+    @Test
+    fun `workflow-listen aggregerer attempts og deploy-resultat`() = runTest(TestRuntime.context) {
+        val repository = "navikt/helved-utbetaling"
+        val firstUpdated = Instant.parse("2026-09-21T12:00:00Z")
+        val latestUpdated = firstUpdated.plusSeconds(600)
+        transaction {
+            workflow(repository, attempt = 1, updatedAt = firstUpdated).copy(conclusion = "failure").insert()
+            workflow(repository, attempt = 2, updatedAt = latestUpdated).copy(conclusion = "success").insert()
+            val latestId = AuditWorkflowExecution.find(repository, 99, 2)!!.id!!
+            job(latestId, 2, "success").insert()
+            AuditCommit(
+                repository = repository,
+                sha = "abc123",
+                message = "fiks utbetaling",
+                authoredAt = latestUpdated,
+                committedAt = latestUpdated,
+                parents = JsonObject(emptyMap()),
+                rawMetadata = JsonObject(emptyMap()),
+            ).insert()
+            AuditWorkflowExecutionCommit(latestId, AuditCommit.find(repository, "abc123")!!.id!!).insert()
+        }
+
+        val response = TestRuntime.httpClient.get(
+            "/audit/workflows/navikt/helved-utbetaling?app=utsjekk&from=2026-09-21T11:00:00Z&to=2026-09-21T13:00:00Z&limit=10",
+        )
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val rows = response.body<List<WorkflowRunSummary>>()
+        assertEquals(1, rows.size)
+        rows.single().let { row ->
+            assertEquals(99, row.runId)
+            assertEquals(2, row.attemptCount)
+            assertEquals(2, row.latestAttempt)
+            assertEquals("success", row.conclusion)
+            assertEquals("success", row.deployProdConclusion)
+            assertTrue(row.hasPreviousFailures)
+            assertEquals("fiks utbetaling", row.commitMessage)
+            assertEquals(latestUpdated, row.updatedAt)
+        }
+    }
+
+    @Test
+    fun `workflow-listen sorterer nyeste først og filtrerer app`() = runTest(TestRuntime.context) {
+        val repository = "navikt/helved-utbetaling"
+        val older = Instant.parse("2026-09-21T12:00:00Z")
+        val newer = older.plusSeconds(600)
+        transaction {
+            workflow(repository, attempt = 1, updatedAt = older).insert()
+            workflow(repository, attempt = 1, updatedAt = newer).copy(
+                app = "abetal",
+                workflowFile = "abetal.yml",
+                runId = 100,
+                headSha = "def456",
+                runUrl = "https://github.example/run/100",
+            ).insert()
+        }
+
+        val all = TestRuntime.httpClient.get("/audit/workflows/navikt/helved-utbetaling")
+            .body<List<WorkflowRunSummary>>()
+        val filtered = TestRuntime.httpClient.get("/audit/workflows/navikt/helved-utbetaling?app=utsjekk")
+            .body<List<WorkflowRunSummary>>()
+
+        assertEquals(listOf(100L, 99L), all.map { it.runId })
+        assertEquals(listOf(99L), filtered.map { it.runId })
+    }
+
+    @Test
+    fun `workflow-listen avviser ugyldig tidsintervall`() = runTest {
+        val invalidTimestamp = TestRuntime.httpClient.get(
+            "/audit/workflows/navikt/helved-utbetaling?from=ikke-et-tidspunkt",
+        )
+        val reversed = TestRuntime.httpClient.get(
+            "/audit/workflows/navikt/helved-utbetaling?from=2026-09-22T00:00:00Z&to=2026-09-21T00:00:00Z",
+        )
+
+        assertEquals(HttpStatusCode.BadRequest, invalidTimestamp.status)
+        assertEquals(HttpStatusCode.BadRequest, reversed.status)
     }
 
     private fun workflow(repository: String, attempt: Int, updatedAt: Instant) = AuditWorkflowExecution(

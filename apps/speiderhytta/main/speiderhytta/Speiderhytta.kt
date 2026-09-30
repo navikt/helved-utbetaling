@@ -152,7 +152,6 @@ fun Application.speiderhytta(config: Config = Config()) {
         auditRoutes(
             jdbcCtx = jdbcCtx,
             codeRepositories = config.github.codeRepos.map { it.repo }.toSet(),
-            taskRepository = config.github.issueRepo,
         )
         route("/actuator") {
             get("/metric") { call.respond(meters.scrape()) }
