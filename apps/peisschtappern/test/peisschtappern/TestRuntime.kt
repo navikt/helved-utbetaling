@@ -32,6 +32,8 @@ object TestRuntime {
     }
     val azure: AzureFake by lazy { AzureFake() }
     val auditLogs: AuditLogReaderFake by lazy { AuditLogReaderFake() }
+    const val auditLogResource = "projects/test/locations/europe-north1/buckets/TeamAudit/views/_AllLogs"
+    const val databaseAuditLogResource = "projects/test"
     // Kafka mock and the ktor app form a chicken/egg pair: the StreamsMock
     // instance must exist before the ktor module runs (the module wires it
     // into the topology), but `kafka.testTopic(...)` only works AFTER the
@@ -52,6 +54,8 @@ object TestRuntime {
             jdbc = postgres.config,
             kafka = kafkaMock.config,
             image = "test:test",
+            auditLogBucket = auditLogResource,
+            databaseAuditLog = databaseAuditLogResource,
         )
     }
 

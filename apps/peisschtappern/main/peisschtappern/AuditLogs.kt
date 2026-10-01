@@ -7,6 +7,7 @@ import com.google.logging.v2.LogEntry
 import com.google.protobuf.util.JsonFormat
 import com.google.protobuf.util.Timestamps
 import kotlinx.serialization.Serializable
+import java.time.Instant
 
 @Serializable
 data class AuditLogEntry(
@@ -23,24 +24,30 @@ data class AuditLogPage(
 )
 
 interface AuditLogReader {
-    fun list(filter: String?, pageSize: Int, pageToken: String?): AuditLogPage
+    fun list(resourceName: String, fom: Instant?, tom: Instant?, pageSize: Int, pageToken: String?, filter: String? = null): AuditLogPage
 }
 
 /**
- * Leser fra en log view i Cloud Logging, f.eks.
- * projects/helved-prod-119e/locations/europe-north1/buckets/TeamAudit/views/_AllLogs.
+ * Leser fra et Cloud Logging resource name (prosjekt eller log view).
  * Autentiserer med Workload Identity (Application Default Credentials).
- * Appens GSA trenger roles/logging.viewAccessor på viewet.
  */
-class GcpAuditLogReader(private val view: String) : AuditLogReader, AutoCloseable {
-    private val client: LoggingClient by lazy { LoggingClient.create() }
+class GcpAuditLogReader : AuditLogReader, AutoCloseable {
+    private val clientDelegate = lazy { LoggingClient.create() }
+    private val client: LoggingClient by clientDelegate
 
-    override fun list(filter: String?, pageSize: Int, pageToken: String?): AuditLogPage {
+    override fun list(resourceName: String, fom: Instant?, tom: Instant?, pageSize: Int, pageToken: String?, filter: String?): AuditLogPage {
         val request = ListLogEntriesRequest.newBuilder()
-            .addResourceNames(view)
+            .addResourceNames(resourceName)
             .setOrderBy("timestamp desc")
             .setPageSize(pageSize)
-            .apply { if (filter != null) setFilter(filter) }
+            .apply {
+                val conditions = listOfNotNull(
+                    filter,
+                    fom?.let { "timestamp>=\"$it\"" },
+                    tom?.let { "timestamp<=\"$it\"" }
+                )
+                if (conditions.isNotEmpty()) setFilter(conditions.joinToString(" AND "))
+            }
             .apply { if (pageToken != null) setPageToken(pageToken) }
             .build()
 
@@ -51,7 +58,9 @@ class GcpAuditLogReader(private val view: String) : AuditLogReader, AutoCloseabl
         )
     }
 
-    override fun close() = client.close()
+    override fun close() {
+        if (clientDelegate.isInitialized()) client.close()
+    }
 }
 
 private val jsonPrinter = JsonFormat.printer()
@@ -69,3 +78,8 @@ private fun toAuditLogEntry(entry: LogEntry) = AuditLogEntry(
         else -> ""
     },
 )
+
+// Vi bruker dette filteret for å hente ut de samme manuelle (database)endringer
+fun databaseAuditLogFilter(): String =
+    """resource.type="cloudsql_database" AND protoPayload.methodName="cloudsql.instances.query" AND protoPayload.request.user=~"(?i)@nav[.]no$" """
+        .trim()

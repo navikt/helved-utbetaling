@@ -15,7 +15,6 @@ import libs.kafka.Topic
 import libs.utils.Log
 import models.Fagsystem
 import models.badRequest
-import models.notFound
 import java.time.Duration
 import java.time.Instant
 
@@ -489,16 +488,33 @@ fun Route.api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDa
     }
 }
 
-fun Route.auditLogs(auditLogs: AuditLogReader?) {
-    get("/api/audit-logs") {
-        if (auditLogs == null) notFound("Audit-logger er ikke konfigurert i dette miljøet")
-        val filter = call.queryParameters["filter"]?.takeIf { it.isNotBlank() }
-        val pageToken = call.queryParameters["pageToken"]?.takeIf { it.isNotBlank() }
-        val pageSize = call.queryParameters["pageSize"]?.toIntOrNull() ?: 100
+fun Route.auditLogs(auditLogs: AuditLogReader, auditLogResource: String?, databaseAuditLogResource: String?) {
+    auditLogResource?.let { resourceName ->
+        get("/api/audit-logs") {
+            val fom = call.request.queryParameters["fom"]?.let(Instant::parse)
+            val tom = call.request.queryParameters["tom"]?.let(Instant::parse)
+            val pageToken = call.request.queryParameters["pageToken"]?.takeIf { it.isNotBlank() }
+            val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 100
 
-        Log.info("Henter audit-logger. ${Audit.from(call)}")
-        val page = withContext(Dispatchers.IO) { auditLogs.list(filter, pageSize, pageToken) }
-        call.respond(page)
+            val page = withContext(Dispatchers.IO) {
+                auditLogs.list(resourceName, fom, tom, pageSize, pageToken, null)
+            }
+            call.respond(page)
+        }
+    }
+
+    databaseAuditLogResource?.let { resourceName ->
+        get("/api/audit-logs/database") {
+            val fom = call.request.queryParameters["fom"]?.let(Instant::parse)
+            val tom = call.request.queryParameters["tom"]?.let(Instant::parse)
+            val pageToken = call.request.queryParameters["pageToken"]?.takeIf { it.isNotBlank() }
+            val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 100
+
+            val page = withContext(Dispatchers.IO) {
+                auditLogs.list(resourceName, fom, tom, pageSize, pageToken, databaseAuditLogFilter())
+            }
+            call.respond(page)
+        }
     }
 }
 

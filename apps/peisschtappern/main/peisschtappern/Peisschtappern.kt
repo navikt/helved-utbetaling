@@ -52,7 +52,7 @@ fun main() {
 fun Application.peisschtappern(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    auditLogs: AuditLogReader? = config.auditLogView?.let(::GcpAuditLogReader),
+    auditLogs: AuditLogReader = GcpAuditLogReader(),
 ) {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
@@ -115,7 +115,7 @@ fun Application.peisschtappern(
 
         authenticate(TokenProvider.AZURE) {
             api(manuellEndringService, jdbcCtx)
-            auditLogs(auditLogs)
+            auditLogs(auditLogs, config.auditLogBucket, config.databaseAuditLog)
         }
     }
 
@@ -152,4 +152,3 @@ data class Audit(
             "name:$name email:$email ident:$ident"
         }
 }
-

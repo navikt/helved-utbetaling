@@ -14,5 +14,6 @@ data class Config(
     val kafka: StreamsConfig = StreamsConfig(),
     val azure: AzureConfig = AzureConfig(),
     val image: String = env("NAIS_APP_IMAGE"),
-    val auditLogView: String? = System.getenv("AUDIT_LOG_VIEW"),
+    val auditLogBucket: String? = System.getenv("AUDIT_LOG_BUCKET"),
+    val databaseAuditLog: String? = System.getenv("DATABASE_AUDIT_LOG"),
 )
