@@ -10,6 +10,7 @@ import io.ktor.server.routing.*
 import libs.auth.*
 import libs.ktor.*
 import java.net.URI
+import java.time.Instant
 
 class AzureFake : AutoCloseable {
     private val azure = embeddedServer(Netty, port = 0, module = Application::azure).apply { start() }
@@ -38,14 +39,22 @@ class AzureFake : AutoCloseable {
 }
 
 class AuditLogReaderFake : AuditLogReader {
-    val entries = mutableListOf<AuditLogEntry>()
+    val entries = mutableMapOf<String, MutableList<AuditLogEntry>>()
+    var lastResourceName: String? = null
+    var lastFom: Instant? = null
+    var lastTom: Instant? = null
     var lastFilter: String? = null
     var lastPageSize: Int? = null
+    var lastPageToken: String? = null
 
-    override fun list(filter: String?, pageSize: Int, pageToken: String?): AuditLogPage {
+    override fun list(resourceName: String, fom: Instant?, tom: Instant?, pageSize: Int, pageToken: String?, filter: String?): AuditLogPage {
+        lastResourceName = resourceName
+        lastFom = fom
+        lastTom = tom
         lastFilter = filter
         lastPageSize = pageSize
-        return AuditLogPage(entries.take(pageSize), nextPageToken = null)
+        lastPageToken = pageToken
+        return AuditLogPage(entries[resourceName].orEmpty().take(pageSize), nextPageToken = null)
     }
 }
 
