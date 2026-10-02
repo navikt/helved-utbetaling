@@ -46,36 +46,36 @@ fun Route.auditRoutes(
             call.respond(rows)
         }
 
-        get("/evidence/{owner}/{repo}/workflows/{runId}") {
+        get("/report/{owner}/{repo}/workflows/{runId}") {
             val repository = repository(call.parameters["owner"], call.parameters["repo"])
                 ?: return@get call.respond(HttpStatusCode.BadRequest, "missing repository")
             if (repository !in codeRepositories) return@get call.respond(HttpStatusCode.NotFound, "unknown repository")
             val runId = call.parameters["runId"]?.toLongOrNull()
                 ?: return@get call.respond(HttpStatusCode.BadRequest, "invalid run id")
-            val evidence = withContext(jdbcCtx + Dispatchers.IO) {
-                transaction { evidence(repository, runId) }
+            val report = withContext(jdbcCtx + Dispatchers.IO) {
+                transaction { report(repository, runId) }
             } ?: return@get call.respond(HttpStatusCode.NotFound, "unknown workflow run")
-            call.respond(evidence)
+            call.respond(report)
         }
     }
 }
 
 @Serializable
-data class AuditEvidence(
-    val attempts: List<AuditAttemptEvidence>,
+data class AuditReport(
+    val attempts: List<AuditAttemptReport>,
     val commits: List<AuditCommit>,
     val controls: List<AuditControlSnapshot>,
 )
 
 @Serializable
-data class AuditAttemptEvidence(
+data class AuditAttemptReport(
     val workflow: AuditWorkflowExecution,
     val source: AuditWorkflowSource?,
-    val jobs: List<AuditJobEvidence>,
+    val jobs: List<AuditJobReport>,
 )
 
 @Serializable
-data class AuditJobEvidence(val job: AuditWorkflowJob, val steps: List<AuditWorkflowStep>)
+data class AuditJobReport(val job: AuditWorkflowJob, val steps: List<AuditWorkflowStep>)
 
 @Serializable
 data class WorkflowRunSummary(
@@ -171,26 +171,26 @@ data class WorkflowRunSummary(
     }
 }
 
-internal suspend fun evidence(repository: String, runId: Long): AuditEvidence? {
+internal suspend fun report(repository: String, runId: Long): AuditReport? {
     val workflows = AuditWorkflowExecution.attempts(repository, runId)
     if (workflows.isEmpty()) return null
     val attempts = workflows.map { workflow ->
         val workflowId = workflow.id ?: error("audit workflow id is missing")
         val jobs = AuditWorkflowJob.forExecution(workflowId).map { job ->
-            AuditJobEvidence(job, AuditWorkflowStep.forJob(job.id ?: error("audit job id is missing")))
+            AuditJobReport(job, AuditWorkflowStep.forJob(job.id ?: error("audit job id is missing")))
         }
-        AuditAttemptEvidence(workflow, AuditWorkflowSource.find(workflowId), jobs)
+        AuditAttemptReport(workflow, AuditWorkflowSource.find(workflowId), jobs)
     }
     val latest = workflows.maxBy { it.runAttempt }
     val deploymentAttempt = attempts.lastOrNull { attempt ->
         attempt.jobs.any { it.job.name == "deploy-prod" && it.job.conclusion == "success" }
     }
-    val evidenceWorkflow = deploymentAttempt?.workflow ?: latest
-    val evidenceWorkflowId = evidenceWorkflow.id ?: error("audit workflow id is missing")
-    return AuditEvidence(
+    val reportWorkflow = deploymentAttempt?.workflow ?: latest
+    val reportWorkflowId = reportWorkflow.id ?: error("audit workflow id is missing")
+    return AuditReport(
         attempts = attempts,
-        commits = AuditWorkflowExecutionCommit.commitsForExecution(evidenceWorkflowId),
-        controls = AuditControlSnapshot.at(repository, "main", evidenceWorkflow.updatedAt),
+        commits = AuditWorkflowExecutionCommit.commitsForExecution(reportWorkflowId),
+        controls = AuditControlSnapshot.at(repository, "main", reportWorkflow.updatedAt),
     )
 }
 
