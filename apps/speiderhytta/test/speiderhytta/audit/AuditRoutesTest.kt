@@ -21,7 +21,7 @@ class AuditRoutesTest {
     @AfterTest fun reset() = TestRuntime.reset()
 
     @Test
-    fun `evidence bruker commits og kontroller fra attemptet som deployet`() = runTest(TestRuntime.context) {
+    fun `report bruker commits og kontroller fra attemptet som deployet`() = runTest(TestRuntime.context) {
         val deployedAt = Instant.parse("2026-09-21T12:00:00Z")
         val failedAt = deployedAt.plusSeconds(3600)
         val repository = "navikt/helved-utbetaling"
@@ -65,7 +65,7 @@ class AuditRoutesTest {
             AuditWorkflowExecutionCommit(deployedId, AuditCommit.find(repository, "abc123")!!.id!!).insert()
         }
 
-        val result = transaction { evidence(repository, 99) }
+        val result = transaction { report(repository, 99) }
 
         assertEquals(listOf("abc123"), result!!.commits.map { it.sha })
         assertEquals(1, result.controls.single().payload.jsonObject["reviews"]?.jsonPrimitive?.content?.toInt())
