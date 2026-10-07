@@ -183,6 +183,7 @@ fun TsUtbetaling.fagsystem(): Fagsystem {
             StønadTypeTilleggsstønader.FLYTTING_ENSLIG_FORSØRGER -> Fagsystem.TILLSTFL
             StønadTypeTilleggsstønader.FLYTTING_AAP -> Fagsystem.TILLSTFL
             StønadTypeTilleggsstønader.FLYTTING_ETTERLATTE -> Fagsystem.TILLSTFL
+            StønadTypeTilleggsstønader.FLYTTING_ARBEIDSSØKER -> Fagsystem.TILLSTFL
 
             StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ARBEIDSFORBEREDENDE -> Fagsystem.TILLSTDR
             StønadTypeTilleggsstønader.DAGLIG_REISE_TILTAK_ARBEIDSRETTET_REHAB -> Fagsystem.TILLSTDR
