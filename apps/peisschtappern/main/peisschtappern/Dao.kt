@@ -9,6 +9,8 @@ import libs.utils.logger
 import libs.utils.Log
 import java.sql.ResultSet
 import java.sql.Types
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 private val daoLog = logger("dao")
 
@@ -555,6 +557,27 @@ data class Daos(
                 stmt.setArray(1, array)
                 stmt.setLong(2, tom)
             }
+        }
+
+        suspend fun findAvstemmingsgrunnlag(
+            fom: LocalDateTime,
+            tom: LocalDateTime,
+            registrertTom: Long
+        ): List<Pair<String, LocalDateTime>> {
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")
+            val sql = """
+                SELECT DISTINCT btrim(fagsystem) AS fagsystem, nokkel_avstemming
+                FROM oppdrag
+                WHERE nokkel_avstemming >= ? AND nokkel_avstemming <= ?
+                    AND system_time_ms <= ?
+            """.trimIndent()
+            return query(sql, mapper = { rs ->
+                rs.getString("fagsystem") to LocalDateTime.parse(rs.getString("nokkel_avstemming"), formatter)
+            }) { stmt ->
+                stmt.setString(1, fom.format(formatter))
+                stmt.setString(2, tom.format(formatter))
+                stmt.setLong(3, registrertTom)
+            }.filterNotNull()
         }
 
         suspend fun findAvstemminger(fom: Long, tom: Long): List<Daos> {
