@@ -58,10 +58,55 @@ class DashboardApiTest {
             accept(ContentType.Application.Json)
         }.body<Dashboard>()
 
-        assertEquals(4, dashboard.avstemming.size)
-        assertNull(dashboard.avstemming[3].datoAvstemtFom)
-        assertNull(dashboard.avstemming[3].datoAvstemtTom)
-        assertEquals(LocalDate.now().minusDays(20), dashboard.avstemming[3].sisteAvstemtDato)
+        assertEquals(Fagsystem.entries.size, dashboard.avstemming.size)
+        val historisk = dashboard.avstemming.single { it.fagsystem == Fagsystem.HISTORISK }
+        assertNull(historisk.datoAvstemtFom)
+        assertNull(historisk.datoAvstemtTom)
+        assertEquals(LocalDate.now().minusDays(20), historisk.sisteAvstemtDato)
+    }
+
+    @Test
+    fun `dashboard skiller manglende avstemming fra ingen aktivitet`() = runTest(TestRuntime.context) {
+        val dato = LocalDate.of(2025, 4, 22)
+        val (fom, tom) = avstemmingsperiode(dato)
+        val registrert = dato.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
+        val nøkkel = "2025-04-19-11.00.00.000000"
+        save(
+            Channel.Oppdrag,
+            value = TestData.oppdragXml(fagsystem = "DP", alvorlighetsgrad = "08")
+                .replace("2025-04-10-11.00.00.000000", nøkkel),
+            timestamp = registrert - 1,
+            offset = offset
+        )
+        // The reconciliation key determines eligibility, even if the audit timestamp is outside the period.
+        save(
+            Channel.Oppdrag,
+            value = TestData.oppdragXml(fagsystem = "AAP")
+                .replace("2025-04-10-11.00.00.000000", nøkkel),
+            timestamp = registrert - 1,
+            offset = offset
+        )
+        saveAvstemming(Fagsystem.AAP, fom.toLocalDate(), tom.toLocalDate().plusDays(1), Instant.ofEpochMilli(registrert))
+        save(
+            Channel.Oppdrag,
+            value = TestData.oppdragXml(fagsystem = "TILTPENG")
+                .replace(Regex("<avstemming-115>.*?</avstemming-115>", RegexOption.DOT_MATCHES_ALL), ""),
+            timestamp = registrert - 1,
+            offset = offset
+        )
+        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+            url {
+                parameters.append("fom", fom.toInstant(ZoneOffset.UTC).toString())
+                parameters.append("tom", Instant.ofEpochMilli(registrert).toString())
+            }
+            bearerAuth(TestRuntime.azure.generateToken())
+        }.body<Dashboard>()
+        val statuser = dashboard.avstemming.associateBy { it.fagsystem }
+        assertEquals(Avstemmingsstatus.MISSING, statuser.getValue(Fagsystem.DAGPENGER).status)
+        assertEquals(Avstemmingsstatus.COMPLETED, statuser.getValue(Fagsystem.AAP).status)
+        assertEquals(Avstemmingsstatus.NOT_REQUIRED, statuser.getValue(Fagsystem.TILTAKSPENGER).status)
+        assertEquals(LocalDate.of(2025, 4, 16), statuser.getValue(Fagsystem.AAP).vurdertFom)
+        assertEquals(LocalDate.of(2025, 4, 21), statuser.getValue(Fagsystem.AAP).vurdertTom)
     }
 
     @Test
@@ -478,16 +523,21 @@ class DashboardApiTest {
         tom: LocalDate,
         timestamp: Instant = LocalDate.now().minusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC),
     ) {
-        save(
-            Channel.Avstemming,
-            value = TestData.avstemmingXml(
-                fagsystem = fagsystem,
-                fom = fom.atStartOfDay(),
-                tom = tom.atStartOfDay(),
-            ),
-            offset = offset,
-            timestamp = timestamp.toEpochMilli(),
-        )
+        for (type in listOf("START", "DATA", "AVSL")) {
+            save(
+                Channel.Avstemming,
+                value = TestData.avstemmingXml(
+                    fagsystem = fagsystem,
+                    type = type,
+                    fom = fom.atStartOfDay(),
+                    tom = tom.atStartOfDay()
+                ).let { xml ->
+                    if (type == "DATA") xml else xml.replace(Regex("<periode>.*?</periode>", RegexOption.DOT_MATCHES_ALL), "")
+                },
+                offset = offset,
+                timestamp = timestamp.toEpochMilli()
+            )
+        }
     }
 
 
