@@ -8,6 +8,11 @@ metadata:
 spec:
   image: {{ image }}
   terminationGracePeriodSeconds: 70
+  # Startup includes migrations that can rewrite the production oppdrag table.
+  startup:
+    path: /actuator/live
+    periodSeconds: 10
+    failureThreshold: 180
   liveness:
     path: /actuator/live
     initialDelay: 30
