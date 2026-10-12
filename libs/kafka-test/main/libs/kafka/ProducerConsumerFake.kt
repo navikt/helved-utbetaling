@@ -76,6 +76,14 @@ class KafkaConsumerFake<K: Any, V>(
      class InternalMockConsumer<K, V>(
          resetPolicy: OffsetResetPolicy,
      ) : MockConsumer<K, V>(resetPolicy.name) {
+         override fun subscribe(topics: Collection<String>) {
+             super.subscribe(topics)
+             val partitions = topics.flatMap { topic -> (0..2).map { TopicPartition(topic, it) } }
+             rebalance(partitions)
+             super.updateBeginningOffsets(partitions.associateWith { 0L })
+             super.seekToBeginning(partitions)
+         }
+
          override fun seekToEnd(partitions: Collection<TopicPartition>) {
              super.updateEndOffsets(partitions.associateWith { 0L })
              super.seekToEnd(partitions)
