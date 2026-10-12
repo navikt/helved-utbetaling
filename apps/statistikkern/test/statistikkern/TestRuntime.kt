@@ -44,7 +44,7 @@ object TestRuntime {
             appName = "statistikkern",
             jsonConfig = libs.kotlinx.KotlinxJson,
             module = {
-                statistikkern(config, kafka, bq, kafka)
+                statistikkern(config, bq, kafka)
             }
         )
     }

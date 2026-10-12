@@ -19,8 +19,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import libs.kafka.KafkaFactory
-import libs.kafka.KafkaStreams
-import libs.kafka.Streams
+import libs.kafka.OffsetResetPolicy
 import libs.utils.Log
 
 fun main() {
@@ -43,7 +42,6 @@ fun main() {
 
 fun Application.statistikkern(
     config: Config = Config(),
-    kafka: Streams = KafkaStreams(),
     bqService: BigQueryService = BigQueryService(),
     factory: KafkaFactory = object : KafkaFactory {}
 ) {
@@ -57,9 +55,9 @@ fun Application.statistikkern(
         json(libs.kotlinx.KotlinxJson)
     }
 
-    val utbetalingConsumer = factory.createConsumer(config.kafka, Topics.utbetalinger)
-    val statusConsumer = factory.createConsumer(config.kafka, Topics.status)
-    val oppdragConsumer = factory.createConsumer(config.kafka, Topics.oppdrag)
+    val utbetalingConsumer = factory.createConsumer(config.kafka, Topics.utbetalinger, resetPolicy = OffsetResetPolicy.latest)
+    val statusConsumer = factory.createConsumer(config.kafka, Topics.status, resetPolicy = OffsetResetPolicy.latest)
+    val oppdragConsumer = factory.createConsumer(config.kafka, Topics.oppdrag, resetPolicy = OffsetResetPolicy.latest)
 
     val utbetalingJob = launch { utbetalingConsumer(bqService, utbetalingConsumer) }
     val statusJob = launch { statusConsumer(bqService, statusConsumer) }
@@ -73,7 +71,9 @@ fun Application.statistikkern(
         utbetalingJob.cancelJob()
         statusJob.cancelJob()
         oppdragJob.cancelJob()
-        kafka.close()
+        utbetalingConsumer.close()
+        statusConsumer.close()
+        oppdragConsumer.close()
     }
 }
 
