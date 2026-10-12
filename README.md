@@ -49,6 +49,11 @@ Spec for utsjekk sitt rest-api.
 
 ## Development
 
+### Logging
+
+Secure and audit logs use `LogstashTcpSocketAppender` to send JSON to
+[NAIS Team Logs](https://doc.nais.io/observability/logging/how-to/team-logs/).
+
 ### Reusable Testcontainers
 `~/.testcontainers.properties`:
 ```properties

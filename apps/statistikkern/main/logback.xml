@@ -1,19 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <shutdownHook class="ch.qos.logback.core.hook.DefaultShutdownHook"/>
 
     <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="libs.utils.LogJsonEncoder"/>
     </appender>
 
-    <appender name="secureLog" class="libs.utils.LogTcpAppender">
+    <appender name="secureLog" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>team-logs.nais-system:5170</destination>
+        <keepAliveDuration>30 seconds</keepAliveDuration>
+        <writeTimeout>1 minute</writeTimeout>
+        <reconnectionDelay>1 second</reconnectionDelay>
+        <connectionTimeout>5 seconds</connectionTimeout>
         <encoder class="libs.utils.LogJsonEncoder">
             <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${HOSTNAME}","nais_container_name":"${NAIS_APP_NAME}"}</customFields>
         </encoder>
     </appender>
 
-    <appender name="auditLog" class="libs.utils.LogTcpAppender">
+    <appender name="auditLog" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>team-logs.nais-system:5170</destination>
+        <keepAliveDuration>30 seconds</keepAliveDuration>
+        <writeTimeout>1 minute</writeTimeout>
+        <reconnectionDelay>1 second</reconnectionDelay>
+        <connectionTimeout>5 seconds</connectionTimeout>
         <encoder class="libs.utils.LogJsonEncoder">
             <customFields>{"google_cloud_project":"${GOOGLE_CLOUD_PROJECT}","nais_namespace_name":"${NAIS_NAMESPACE}","nais_pod_name":"${HOSTNAME}","nais_container_name":"${NAIS_APP_NAME}","team_audit":"helved"}</customFields>
         </encoder>
@@ -34,4 +43,3 @@
     <logger name="com.google.auth"           level="WARN" additivity="false"><appender-ref ref="json"/></logger>
     <logger name="io.grpc"                   level="WARN" additivity="false"><appender-ref ref="json"/></logger>
 </configuration>
-

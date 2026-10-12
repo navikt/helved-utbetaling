@@ -3,15 +3,10 @@ package libs.utils
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.spi.ThrowableProxyUtil
 import ch.qos.logback.core.CoreConstants
-import ch.qos.logback.core.OutputStreamAppender
 import ch.qos.logback.core.encoder.EncoderBase
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
-import java.io.IOException
-import java.io.OutputStream
-import java.net.Socket
-import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
@@ -125,51 +120,6 @@ object Log {
     }
 }
 
-class LogTcpAppender: OutputStreamAppender<ILoggingEvent>() {
-    var destination: String = ""
-    private var socket: Socket? = null
-
-    override fun start() {
-        connect()
-        super.start()
-    }
-
-    override fun writeOut(event: ILoggingEvent) {
-        try {
-            super.writeOut(event)
-        } catch (e: IOException) {
-            addWarn("TCP write failed, reconnecting: ${e.message}")
-            reconnect()
-            try {
-                super.writeOut(event)
-            } catch (e2: IOException) {
-                addError("TCP reconect failed, dropping event", e2)
-            }
-        }
-    }
-
-    override fun stop() {
-        runCatching { socket?.close() }
-        super.stop()
-    }
-
-    private fun connect() {
-        val (host, port) = destination.split(":")
-        socket = Socket(host, port.toInt())
-        outputStream = socket!!.getOutputStream()
-    }
-
-    private fun reconnect() {
-        runCatching { socket?.close() }
-        try {
-            connect()
-        } catch (e: IOException) {
-            addError("TCP reconnect failed: ${e.message}")
-            outputStream = OutputStream.nullOutputStream()
-        }
-    }
-}
-
 /**
  * Logstash-compatible JSON encoder for TCP secure-log shipping.
  * Produces the same schema as LogstashEncoder: @timestamp, @version, message,
@@ -233,4 +183,3 @@ class LogJsonEncoder : EncoderBase<ILoggingEvent>() {
             .withZone(ZoneOffset.UTC)
     }
 }
-
