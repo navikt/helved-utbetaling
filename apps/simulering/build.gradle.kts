@@ -12,7 +12,7 @@ tasks.register("buildFatJar") {
     dependsOn(tasks.shadowJar)
 }
 
-val http4kVersion = "6.48.0.0"
+val http4kVersion = "6.61.0.0"
 
 dependencies {
     implementation(project(":models"))
