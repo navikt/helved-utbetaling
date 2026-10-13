@@ -81,7 +81,7 @@ spec:
         - application: simulering
   gcp:
     sqlInstances:
-      - type: "POSTGRES_17" # WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade
+      - type: "POSTGRES_18" # WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade
         diskAutoresize: true
         tier: "db-f1-micro"
         cascadingDelete: false
