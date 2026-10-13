@@ -68,7 +68,7 @@ spec:
           namespace: nais-system
   gcp:
     sqlInstances:
-      - type: "POSTGRES_15" # WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade
+      - type: "POSTGRES_16" # WARN: IF This is changed, all data will be lost. Read on nais.io how to upgrade
         diskAutoresize: true
         tier: "db-f1-micro"
         cascadingDelete: false
