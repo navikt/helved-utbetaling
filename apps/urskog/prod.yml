@@ -61,7 +61,7 @@ spec:
     streams: true
   gcp:
     sqlInstances:
-      - type: "POSTGRES_17" 
+      - type: "POSTGRES_18"
         diskAutoresize: true
         tier: "db-custom-1-3840"
         cascadingDelete: false
