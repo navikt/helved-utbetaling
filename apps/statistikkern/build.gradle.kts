@@ -1,12 +1,17 @@
 plugins {
-    id("io.ktor.plugin")
+    id("com.gradleup.shadow")
+    application
 }
 
 application {
     mainClass.set("statistikkern.StatistikkernKt")
 }
 
-val ktorVersion = "3.6.0"
+tasks.register("buildFatJar") {
+    dependsOn(tasks.shadowJar)
+}
+
+val http4kVersion = "6.61.0.0"
 
 dependencies {
     implementation(project(":models"))
@@ -16,17 +21,13 @@ dependencies {
     implementation("no.nav.helved:xml:3.1.252")
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.0")
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-content-negotiation:${ktorVersion}")
-    implementation("io.ktor:ktor-server-netty:${ktorVersion}")
-    implementation("io.ktor:ktor-server-metrics-micrometer:${ktorVersion}")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    implementation("com.google.cloud:google-cloud-bigquery:2.71.0")
+    implementation("org.http4k:http4k-core:$http4kVersion")
+    implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    implementation("com.google.cloud:google-cloud-bigquery:2.73.0")
     implementation("org.apache.kafka:kafka-clients:4.3.0")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
-    testImplementation(project(":libs:ktor-test"))
-    testImplementation("io.ktor:ktor-server-test-host:${ktorVersion}")
     testImplementation("org.testcontainers:gcloud:1.21.4")
 }
