@@ -25,7 +25,7 @@ suspend fun utbetalingConsumer(
     consumer: KafkaConsumer<String, Utbetaling>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.seekToEnd(0, 1, 2)
+        consumer.subscribe()
         while (isActive) {
             for (record in consumer.poll(1.seconds)) {
                 try {
@@ -47,7 +47,7 @@ suspend fun oppdragConsumer(
     consumer: KafkaConsumer<String, Oppdrag>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.seekToEnd(0,1,2)
+        consumer.subscribe()
         while (isActive) {
             for (record in consumer.poll(1.seconds)) {
                 try {
@@ -69,14 +69,18 @@ suspend fun statusConsumer(
     consumer: KafkaConsumer<String, StatusReply>,
 ) {
     withContext(Dispatchers.IO) {
-        consumer.seekToEnd(0,1,2)
+        consumer.subscribe()
         while (isActive) {
             for (record in consumer.poll(1.seconds)) {
-                val status = record.value ?: continue
-                val systemTimeMs = record.headers["x-sy"]?.toLongOrNull()
-                val fagsystem = record.headers["fagsystem"]
+                try {
+                    val status = record.value ?: continue
+                    val systemTimeMs = record.headers["x-sy"]?.toLongOrNull()
+                    val fagsystem = record.headers["fagsystem"]
 
-                bqService.upsertStatus(record.key, status, systemTimeMs, fagsystem)
+                    bqService.upsertStatus(record.key, status, systemTimeMs, fagsystem)
+                } catch (e: Exception) {
+                    appLog.warn("Feil ved prosessering av status, key=${record.key}: ${e.message}", e)
+                }
             }
             delay(1)
         }

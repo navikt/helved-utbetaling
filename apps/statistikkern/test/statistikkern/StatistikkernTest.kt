@@ -27,7 +27,7 @@ class StatistikkernTest {
 
     @Test
     fun `utbetaling lagres i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
+        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
 
         val mottattTidMs = 1_700_000_000_000L
         val originalKey = UUID.randomUUID().toString()
@@ -56,7 +56,7 @@ class StatistikkernTest {
 
     @Test
     fun `utbetaling med flere perioder lagres i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
+        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
 
         val key = "test-key-flere-perioder"
         val perioder = listOf(
@@ -85,7 +85,7 @@ class StatistikkernTest {
 
     @Test
     fun `dryrun utbetaling lagres ikke i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
+        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
 
         val key = "test-key-dryrun"
         val utbetaling = utbetaling(dryrun = true)
@@ -96,7 +96,7 @@ class StatistikkernTest {
 
     @Test
     fun `utbetaling upsert overskriver eksisterende rad ved duplikat`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
+        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
 
         val key = "test-key-upsert"
         val utbetaling = utbetaling()
@@ -111,7 +111,7 @@ class StatistikkernTest {
 
     @Test
     fun `status lagres i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
+        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
 
         val key = "test-uid-status"
         TestRuntime.topics.status.populate(
@@ -131,7 +131,7 @@ class StatistikkernTest {
 
     @Test
     fun `tombstone på status-topic hoppes over`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
+        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
 
         val key = "test-uid-tombstone"
         TestRuntime.topics.status.populate(key, null, partition = 0, offset = offset.getAndIncrement())
@@ -141,7 +141,7 @@ class StatistikkernTest {
 
     @Test
     fun `oppdrag lagres i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.kafka, TestRuntime.bq, TestRuntime.kafka) }
+        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
 
         val sakId = "SAK-${UUID.randomUUID()}"
         val oppdrag = oppdrag(sakId = sakId)
