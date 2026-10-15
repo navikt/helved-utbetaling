@@ -1,24 +1,31 @@
 package statistikkern
 
-import io.ktor.server.testing.testApplication
 import java.time.LocalDate
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import models.StatusReply
 import models.Utbetalingsperiode
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class StatistikkernTest {
 
     @BeforeEach
     fun reset() {
-        TestRuntime.kafka.reset()
+        TestRuntime.start()
+    }
+
+    @AfterEach
+    fun stop() {
+        TestRuntime.stop()
     }
 
     companion object {
@@ -26,9 +33,7 @@ class StatistikkernTest {
     }
 
     @Test
-    fun `utbetaling lagres i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
-
+    fun `utbetaling lagres i bigquery`() {
         val mottattTidMs = 1_700_000_000_000L
         val originalKey = UUID.randomUUID().toString()
         val utbetaling = utbetaling(originalKey = originalKey)
@@ -55,9 +60,7 @@ class StatistikkernTest {
     }
 
     @Test
-    fun `utbetaling med flere perioder lagres i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
-
+    fun `utbetaling med flere perioder lagres i bigquery`() {
         val key = "test-key-flere-perioder"
         val perioder = listOf(
             Utbetalingsperiode(fom = LocalDate.of(2025, 1, 6), tom = LocalDate.of(2025, 1, 7), beløp = 800u),
@@ -84,9 +87,7 @@ class StatistikkernTest {
     }
 
     @Test
-    fun `dryrun utbetaling lagres ikke i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
-
+    fun `dryrun utbetaling lagres ikke i bigquery`() {
         val key = "test-key-dryrun"
         val utbetaling = utbetaling(dryrun = true)
         TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = offset.getAndIncrement())
@@ -95,9 +96,7 @@ class StatistikkernTest {
     }
 
     @Test
-    fun `utbetaling upsert overskriver eksisterende rad ved duplikat`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
-
+    fun `utbetaling upsert overskriver eksisterende rad ved duplikat`() {
         val key = "test-key-upsert"
         val utbetaling = utbetaling()
         TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = 100, headers = mapOf("x-sy" to "1700000000000")
@@ -110,9 +109,7 @@ class StatistikkernTest {
     }
 
     @Test
-    fun `status lagres i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
-
+    fun `status lagres i bigquery`() {
         val key = "test-uid-status"
         TestRuntime.topics.status.populate(
             key, StatusReply.ok(),
@@ -130,9 +127,7 @@ class StatistikkernTest {
     }
 
     @Test
-    fun `tombstone på status-topic hoppes over`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
-
+    fun `tombstone på status-topic hoppes over`() {
         val key = "test-uid-tombstone"
         TestRuntime.topics.status.populate(key, null, partition = 0, offset = offset.getAndIncrement())
 
@@ -140,9 +135,7 @@ class StatistikkernTest {
     }
 
     @Test
-    fun `oppdrag lagres i bigquery`() = testApplication {
-        application { statistikkern(TestRuntime.config, TestRuntime.bq, TestRuntime.kafka) }
-
+    fun `oppdrag lagres i bigquery`() {
         val sakId = "SAK-${UUID.randomUUID()}"
         val oppdrag = oppdrag(sakId = sakId)
         TestRuntime.topics.oppdrag.populate(sakId, oppdrag, partition = 0, offset = offset.getAndIncrement())
@@ -157,9 +150,11 @@ class StatistikkernTest {
     }
 }
 
-private suspend fun awaitCondition(
+private fun awaitCondition(
     timeout: kotlin.time.Duration = 10.seconds,
     condition: () -> Boolean,
-) = withTimeout(timeout) {
-    while (!condition()) delay(50)
+) = runBlocking {
+    withTimeout(timeout) {
+        while (!condition()) delay(5.milliseconds)
+    }
 }

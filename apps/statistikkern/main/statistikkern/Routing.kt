@@ -1,16 +1,20 @@
 package statistikkern
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Routing
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import org.http4k.core.Method
+import org.http4k.core.Response
+import org.http4k.core.Status
+import org.http4k.routing.bind
+import org.http4k.routing.routes
 
-fun Routing.probes(meters: PrometheusMeterRegistry) {
-    route("/actuator") {
-        get("/metric") { call.respond(meters.scrape()) }
-        get("/ready") { call.respond(HttpStatusCode.OK) }
-        get("/live") { call.respond(HttpStatusCode.OK) }
+fun probes(meters: PrometheusMeterRegistry) = routes(
+    "/actuator/metric" bind Method.GET to {
+        Response(Status.OK).body(meters.scrape())
+    },
+    "/actuator/ready" bind Method.GET to {
+        Response(Status.OK)
+    },
+    "/actuator/live" bind Method.GET to {
+        Response(Status.OK)
     }
-}
+)

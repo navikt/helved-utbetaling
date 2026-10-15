@@ -6,7 +6,6 @@ import java.time.LocalDateTime
 import java.util.UUID
 import libs.kafka.KafkaConsumerFake
 import libs.kafka.VanillaKafkaMock
-import libs.ktor.KtorRuntime
 import models.Action.CREATE
 import models.BehandlingId
 import models.Fagsystem
@@ -37,16 +36,20 @@ object TestRuntime {
         bigQuery = BigQueryEmulator.bigQuery,
     )
     val config = Config(kafka = kafka.config)
-    val topics = TestTopics(kafka)
+    lateinit var topics: TestTopics
+        private set
 
-    init {
-        KtorRuntime<Config>(
-            appName = "statistikkern",
-            jsonConfig = libs.kotlinx.KotlinxJson,
-            module = {
-                statistikkern(config, bq, kafka)
-            }
-        )
+    lateinit var app: Statistikkern
+        private set
+
+    fun start() {
+        kafka.reset()
+        app = statistikkern(config, bq, kafka)
+        topics = TestTopics(kafka)
+    }
+
+    fun stop() {
+        app.close()
     }
 }
 
