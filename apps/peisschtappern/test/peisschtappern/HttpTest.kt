@@ -10,10 +10,23 @@ import libs.kotlinx.KotlinxJson
 import models.ApiError
 import models.badRequest
 import org.http4k.core.*
+import org.http4k.routing.*
 import java.net.http.HttpClient
 import kotlin.test.*
 
 class HttpTest {
+    @Test
+    fun `audit routes can be disabled without preventing startup`() {
+        assertNull(auditLogs(AuditLogReaderFake(), null, null))
+        val handler = routes(*listOfNotNull(
+            "/api/topics" bind Method.GET to { Response(Status.OK) },
+            auditLogs(AuditLogReaderFake(), null, null)
+        ).toTypedArray())
+        assertEquals(Status.OK, handler(Request(Method.GET, "/api/topics")).status)
+        assertEquals(Status.NOT_FOUND, handler(Request(Method.GET, "/api/audit-logs")).status)
+        assertEquals(Status.NOT_FOUND, handler(Request(Method.GET, "/api/audit-logs/database")).status)
+    }
+
     @Test
     fun `probes reflect Kafka health without authentication`() {
         val kafka = object : Streams by StreamsMock() {

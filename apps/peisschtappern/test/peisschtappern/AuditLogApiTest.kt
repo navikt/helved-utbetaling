@@ -93,11 +93,11 @@ class AuditLogApiTest {
 
     @Test
     fun `each audit route is registered independently`() {
-        val audit = auditLogs(AuditLogReaderFake(), TestRuntime.auditLogResource, null)
+        val audit = requireNotNull(auditLogs(AuditLogReaderFake(), TestRuntime.auditLogResource, null))
         assertEquals(Status.OK, audit(Request(Method.GET, "/api/audit-logs")).status)
         assertEquals(Status.NOT_FOUND, audit(Request(Method.GET, "/api/audit-logs/database")).status)
 
-        val database = auditLogs(AuditLogReaderFake(), null, TestRuntime.databaseAuditLogResource)
+        val database = requireNotNull(auditLogs(AuditLogReaderFake(), null, TestRuntime.databaseAuditLogResource))
         assertEquals(Status.NOT_FOUND, database(Request(Method.GET, "/api/audit-logs")).status)
         assertEquals(Status.OK, database(Request(Method.GET, "/api/audit-logs/database")).status)
     }

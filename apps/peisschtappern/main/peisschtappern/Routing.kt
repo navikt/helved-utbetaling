@@ -423,12 +423,13 @@ fun api(manuellEndringService: ManuellEndringService, jdbcCtx: CoroutineDatasour
     }
 )
 
-fun auditLogs(auditLogs: AuditLogReader, auditLogResource: String?, databaseAuditLogResource: String?) = routes(
-    *listOfNotNull(
+fun auditLogs(auditLogs: AuditLogReader, auditLogResource: String?, databaseAuditLogResource: String?): RoutingHttpHandler? {
+    val auditRoutes = listOfNotNull(
         auditLogResource?.let { auditLogRoute("/api/audit-logs", auditLogs, it, null) },
         databaseAuditLogResource?.let { auditLogRoute("/api/audit-logs/database", auditLogs, it, databaseAuditLogFilter()) }
-    ).toTypedArray()
-)
+    )
+    return auditRoutes.takeIf { it.isNotEmpty() }?.let { routes(*it.toTypedArray()) }
+}
 
 private fun auditLogRoute(path: String, auditLogs: AuditLogReader, resourceName: String, filter: String?) =
     path bind Method.GET to { req: Request ->

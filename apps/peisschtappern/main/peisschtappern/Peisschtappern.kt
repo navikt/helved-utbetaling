@@ -82,8 +82,10 @@ fun peisschtappern(
     val verifier = JwtVerifier(JwksClient(config.azure.jwks, http), config.azure)
     val protectedRoutes = azureAuthFilter(verifier).then(
         routes(
-            api(manuellEndringService, jdbcCtx),
-            auditLogs(auditLogs, config.auditLogBucket, config.databaseAuditLog)
+            *listOfNotNull(
+                api(manuellEndringService, jdbcCtx),
+                auditLogs(auditLogs, config.auditLogBucket, config.databaseAuditLog)
+            ).toTypedArray()
         )
     )
 
