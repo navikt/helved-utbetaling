@@ -1,8 +1,6 @@
 package vedskiva
 
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import org.http4k.core.Status
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.jdbc.concurrency.transaction
@@ -16,7 +14,6 @@ import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.AksjonType
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.*
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -64,11 +61,9 @@ class VedskivaTest {
             tom = LocalDate.of(2026, 2, 18).atStartOfDay().minusMinutes(1),
         )
 
-        val res = TestRuntime.ktor.httpClient.post ("/api/avstem/dryrun") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }.body<List<Pair<String, List<Avstemmingsdata>>>>()
+        val response = TestRuntime.post("/api/avstem/dryrun", req)
+        assertEquals(Status.OK, response.status)
+        val res = avstemmingerLens(response)
 
         assertEquals(0, avsProducer.history().size)
 
@@ -163,17 +158,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -205,17 +192,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        val res = TestRuntime.ktor.httpClient.post ("/api/avstem/dryrun") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }.body<List<Pair<String, List<Avstemmingsdata>>>>()
+        val res = TestRuntime.post("/api/avstem/dryrun", req).let(avstemmingerLens)
 
         assertEquals(0, avsProducer.history().size)
 
@@ -238,63 +217,6 @@ class VedskivaTest {
         assertEquals(AksjonType.AVSL, end.aksjon.aksjonType)
     }
 
-    @Disabled("Tror denne ikke lenger er nødvendig siden nokkelAvstemming i oppdrag-115 er satt til feil dato i testdataen")
-    @Test
-    fun `test with dev data from may 5th`() = runTest(TestRuntime.context) {
-        withContext(TestRuntime.context) {
-            transaction {
-                Scheduled(
-                    created_at = LocalDate.of(2025, 5, 5),
-                    avstemt_fom = LocalDate.of(2025, 5, 4),
-                    avstemt_tom = LocalDate.of(2025, 5, 4)
-                ).insert()
-            }
-        }
-
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.of(2025, 5, 6)))
-        }.body<AvstemmingRequest>()
-
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
-
-        assertEquals(6, avsProducer.history().size)
-
-        assertEquals(AksjonType.START, avsProducer.history()[0].second.aksjon.aksjonType)
-        val aap = avsProducer.history()[1].second
-
-        assertEquals(7, aap.total.totalAntall)
-        assertEquals(5455, aap.total.totalBelop.toInt())
-        assertEquals(7, aap.grunnlag.godkjentAntall)
-        assertEquals(5455, aap.grunnlag.godkjentBelop.toInt())
-        assertEquals(0, aap.grunnlag.varselAntall)
-        assertEquals(0, aap.grunnlag.varselBelop.toInt())
-        assertEquals(0, aap.grunnlag.avvistAntall)
-        assertEquals(0, aap.grunnlag.avvistBelop.toInt())
-        assertEquals(0, aap.grunnlag.manglerAntall)
-        assertEquals(0, aap.grunnlag.manglerBelop.toInt())
-        assertEquals(AksjonType.AVSL, avsProducer.history()[2].second.aksjon.aksjonType)
-
-        assertEquals(AksjonType.START, avsProducer.history()[3].second.aksjon.aksjonType)
-        val tilt = avsProducer.history()[4].second
-        assertEquals(4, tilt.total.totalAntall)
-        assertEquals(2280, tilt.total.totalBelop.toInt())
-        assertEquals(4, tilt.grunnlag.godkjentAntall)
-        assertEquals(2280, tilt.grunnlag.godkjentBelop.toInt())
-        assertEquals(0, tilt.grunnlag.varselAntall)
-        assertEquals(0, tilt.grunnlag.varselBelop.toInt())
-        assertEquals(0, tilt.grunnlag.avvistAntall)
-        assertEquals(0, tilt.grunnlag.avvistBelop.toInt())
-        assertEquals(0, tilt.grunnlag.manglerAntall)
-        assertEquals(0, tilt.grunnlag.manglerBelop.toInt())
-        assertEquals(AksjonType.AVSL, avsProducer.history()[5].second.aksjon.aksjonType)
-    }
-
     @Test
     fun `can avstemme 04 (Varsel)`() = runTest(TestRuntime.context) {
         seedOppdrag(
@@ -307,17 +229,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -349,17 +263,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -391,17 +297,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -433,17 +331,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -486,17 +376,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
     }
@@ -512,17 +394,9 @@ class VedskivaTest {
         )
         seedOppdrag(dao, dao, dao.copy(offset = 1))
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -563,17 +437,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -605,17 +471,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -700,17 +558,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -795,17 +645,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -858,17 +700,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(3, avsProducer.history().size)
         val start = avsProducer.history()[0].second
@@ -901,17 +735,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(0, avsProducer.history().size)
     }
@@ -929,17 +755,9 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
 
         assertEquals(0, avsProducer.history().size)
     }
@@ -956,26 +774,14 @@ class VedskivaTest {
             )
         )
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
         assertEquals(3, avsProducer.history().size)
 
         TestRuntime.kafka.reset()
 
-        TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        TestRuntime.post("/api/avstem", req)
         assertEquals(0, avsProducer.history().size)
     }
 
@@ -997,21 +803,12 @@ class VedskivaTest {
             }
         }
 
-        val req = TestRuntime.ktor.httpClient.post("/api/next_range") {
-            contentType(ContentType.Application.Json)
-            accept(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(DateBody(LocalDate.now()))
-        }.body<AvstemmingRequest>()
+        val req = TestRuntime.post("/api/next_range", DateBody(LocalDate.now())).let(avstemmingRequestLens)
 
-        val res = TestRuntime.ktor.httpClient.post ("/api/avstem") {
-            contentType(ContentType.Application.Json)
-            bearerAuth(TestRuntime.azure.generateToken())
-            setBody(req)
-        }
+        val res = TestRuntime.post("/api/avstem", req)
 
         assertEquals(0, avsProducer.history().size)
-        assertEquals(res.status, HttpStatusCode.Conflict)
+        assertEquals(res.status, Status.CONFLICT)
     }
 }
 
