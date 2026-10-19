@@ -1,7 +1,7 @@
 package peisschtappern
 
 import java.io.File
-import libs.auth.AzureConfig
+import libs.auth.TokenConfig
 import libs.kafka.StreamsConfig
 import libs.jdbc.JdbcConfig
 import libs.utils.env
@@ -12,7 +12,7 @@ data class Config(
         migrations = listOf(File("migrations")),
     ),
     val kafka: StreamsConfig = StreamsConfig(),
-    val azure: AzureConfig = AzureConfig(),
+    val azure: TokenConfig = TokenConfig(),
     val image: String = env("NAIS_APP_IMAGE"),
     val auditLogBucket: String? = System.getenv("AUDIT_LOG_BUCKET"),
     val databaseAuditLog: String? = System.getenv("DATABASE_AUDIT_LOG"),

@@ -30,7 +30,7 @@ class DobbeltutbetalingApiTest {
         saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
         saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
 
-        val result = TestRuntime.ktor.httpClient.get("/api/brann/dobbeltutbetalinger") {
+        val result = TestRuntime.httpClient.get("/api/brann/dobbeltutbetalinger") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Suspect>>()
@@ -54,7 +54,7 @@ class DobbeltutbetalingApiTest {
             ).slukk()
         }
 
-        val result = TestRuntime.ktor.httpClient.get("/api/brann/dobbeltutbetalinger") {
+        val result = TestRuntime.httpClient.get("/api/brann/dobbeltutbetalinger") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Suspect>>()
@@ -64,7 +64,7 @@ class DobbeltutbetalingApiTest {
 
     @Test
     fun `POST dobbeltutbetalinger lagrer håndtert`() = runTest(TestRuntime.context) {
-        val response = TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger") {
+        val response = TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger") {
             bearerAuth(TestRuntime.azure.generateToken())
             parameter("behandlingId", "beh-1")
             parameter("klassekode", "DAGP")
@@ -88,7 +88,7 @@ class DobbeltutbetalingApiTest {
     @Test
     fun `POST dobbeltutbetalinger er idempotent`() = runTest(TestRuntime.context) {
         repeat(3) {
-            val response = TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger") {
+            val response = TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger") {
                 bearerAuth(TestRuntime.azure.generateToken())
                 parameter("behandlingId", "beh-1")
                 parameter("klassekode", "DAGP")
@@ -108,7 +108,7 @@ class DobbeltutbetalingApiTest {
         saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
         saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
 
-        TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger") {
+        TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger") {
             bearerAuth(TestRuntime.azure.generateToken())
             parameter("behandlingId", "beh-1")
             parameter("klassekode", "DAGP")
@@ -116,7 +116,7 @@ class DobbeltutbetalingApiTest {
             parameter("tom", "2026-01-31")
         }
 
-        val uslukkede = TestRuntime.ktor.httpClient.get("/api/brann/dobbeltutbetalinger") {
+        val uslukkede = TestRuntime.httpClient.get("/api/brann/dobbeltutbetalinger") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<Suspect>>()
@@ -129,7 +129,7 @@ class DobbeltutbetalingApiTest {
         saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
         saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
 
-        TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger") {
+        TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger") {
             bearerAuth(TestRuntime.azure.generateToken())
             parameter("behandlingId", "beh-1")
             parameter("klassekode", "DAGP")
@@ -147,7 +147,7 @@ class DobbeltutbetalingApiTest {
     @Test
     fun `POST dobbeltutbetalinger slukk er idempotent`() = runTest(TestRuntime.context) {
         repeat(3) {
-            val response = TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger/slukk") {
+            val response = TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger/slukk") {
                 bearerAuth(TestRuntime.azure.generateToken())
                 parameter("behandlingId", "beh-1")
                 parameter("klassekode", "DAGP")
@@ -167,7 +167,7 @@ class DobbeltutbetalingApiTest {
         saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
         saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
 
-        val response = TestRuntime.ktor.httpClient.post("/api/brann/dobbeltutbetalinger/slukk") {
+        val response = TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger/slukk") {
             bearerAuth(TestRuntime.azure.generateToken())
             parameter("behandlingId", "beh-1")
             parameter("klassekode", "DAGP")
@@ -179,7 +179,7 @@ class DobbeltutbetalingApiTest {
         val kjente = transaction { KjentDobbeltutbetaling.findAll() }
         assertTrue(kjente.single().slukketAt != null)
 
-        val uvarslede = TestRuntime.ktor.httpClient.get("/api/brann/dobbeltutbetalinger") {
+        val uvarslede = TestRuntime.httpClient.get("/api/brann/dobbeltutbetalinger") {
             bearerAuth(TestRuntime.azure.generateToken())
         }.body<List<Suspect>>()
         assertTrue(uvarslede.isEmpty())

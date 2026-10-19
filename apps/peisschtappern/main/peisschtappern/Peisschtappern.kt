@@ -1,96 +1,57 @@
 package peisschtappern
 
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.serialization.kotlinx.xml.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.engine.*
-import io.ktor.server.metrics.micrometer.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.statuspages.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import libs.auth.Jwt
-import libs.auth.JwtPrincipal
-import libs.auth.TokenProvider
-import libs.auth.jwt
-import libs.jdbc.Jdbc
-import libs.jdbc.Migrator
+import libs.auth.JwksClient
+import libs.auth.JwtVerifier
+import libs.jdbc.*
 import libs.jdbc.concurrency.CoroutineDatasource
-import libs.jdbc.context
 import libs.kafka.*
 import libs.utils.Log
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import org.http4k.core.HttpHandler
+import org.http4k.core.then
+import org.http4k.filter.MicrometerMetrics
+import org.http4k.filter.ServerFilters
+import org.http4k.routing.routes
+import org.http4k.server.*
+import java.net.http.HttpClient
+import java.time.Duration
 
 fun main() {
     Thread.currentThread().setUncaughtExceptionHandler { _, e ->
         Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(
-        factory = Netty,
-        configure = {
-            shutdownGracePeriod = 5000L
-            shutdownTimeout = 50_000L
-            connectors.add(EngineConnectorBuilder().apply {
-                port = 8080
-            })
-        },
-        module = Application::peisschtappern,
-    ).start(wait = true)
+    val app = peisschtappern()
+    val server = app.handler
+        .asServer(SunHttpLoom(8080, ServerConfig.StopMode.Graceful(Duration.ofSeconds(50))))
+        .start()
+
+    Runtime.getRuntime().addShutdownHook(Thread {
+        app.use { server.stop() }
+    })
+
+    server.block()
 }
 
-fun Application.peisschtappern(
+class Peisschtappern(val handler: HttpHandler, private val closeables: List<AutoCloseable>) : AutoCloseable {
+    override fun close() = closeables.forEach { it.close() }
+}
+
+fun peisschtappern(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    auditLogs: AuditLogReader = GcpAuditLogReader(),
-) {
+    auditLogs: AuditLogReader = GcpAuditLogReader()
+): Peisschtappern {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-
-    install(Authentication) {
-        jwt(TokenProvider.AZURE, config.azure)
-    }
-
-    install(ContentNegotiation) {
-        json(libs.kotlinx.KotlinxJson)
-        xml()
-    }
-
-    install(MicrometerMetrics) {
-        registry = prometheus
-        meterBinders += LogbackMetrics()
-    }
-
-    install(StatusPages) {
-        exception<Throwable> { call, cause ->
-            when (cause) {
-                is ApiError -> call.respond(HttpStatusCode.fromValue(cause.statusCode), cause)
-                is BadRequestException -> {
-                    val msg = "Klarte ikke lese json meldingen. Sjekk at formatet på meldingen din er korrekt, f.eks navn på felter, påkrevde felter, e.l."
-                    Log.debug(msg, cause)
-                    val res = ApiError(statusCode = 400, msg = msg)
-                    call.respond(HttpStatusCode.BadRequest, res)
-                }
-                else -> {
-                    val msg = "Ukjent feil, helved er varslet."
-                    Log.error(msg, cause)
-                    val res = ApiError(statusCode = 500, msg = msg)
-                    call.respond(HttpStatusCode.InternalServerError, res)
-                }
-            }
-        }
-    }
-
+    val logbackMetrics = LogbackMetrics().also { it.bindTo(prometheus) }
     val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()
+
     runBlocking {
         withContext(jdbcCtx) {
             Migrator(config.jdbc.migrations).migrate()
@@ -108,47 +69,43 @@ fun Application.peisschtappern(
     val dpProducer = kafka.createProducer(config.kafka, Topic("helved.utbetalinger-dp.v1", json<DpUtbetaling>()))
     val tsProducer = kafka.createProducer(config.kafka, Topic("helved.utbetalinger-ts.v1", json<TsDto>()))
     val statusProducer = kafka.createProducer(config.kafka, Topic("helved.status.v1", json<StatusReply>()))
-    val manuellEndringService = ManuellEndringService(oppdragsdataProducer, utbetalingProducer, dpProducer, tsProducer, statusProducer)
 
-    routing {
-        probes(kafka, prometheus)
+    val manuellEndringService = ManuellEndringService(
+        oppdragProducer = oppdragsdataProducer,
+        utbetalingerProducer = utbetalingProducer,
+        dpProducer = dpProducer,
+        tsProducer = tsProducer,
+        statusProducer = statusProducer
+    )
 
-        authenticate(TokenProvider.AZURE) {
-            api(manuellEndringService, jdbcCtx)
+    val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(1)).build()
+    val verifier = JwtVerifier(JwksClient(config.azure.jwks, http), config.azure)
+    val protectedRoutes = azureAuthFilter(verifier).then(
+        routes(
+            api(manuellEndringService, jdbcCtx),
             auditLogs(auditLogs, config.auditLogBucket, config.databaseAuditLog)
-        }
-    }
+        )
+    )
 
-    monitor.subscribe(ApplicationStopping) {
-        kafka.close()
-        oppdragsdataProducer.close()
-        (auditLogs as? AutoCloseable)?.close()
-    }
+    val handler = ServerFilters.MicrometerMetrics.RequestTimer(prometheus)
+        .then(ServerFilters.MicrometerMetrics.RequestCounter(prometheus))
+        .then(errorFilter)
+        .then(routes(probes(kafka, prometheus), protectedRoutes))
 
-}
-
-data class Audit(
-    val ident: String,
-    val name: String,
-    val email: String,
-    val reason: String?,
-) {
-    companion object {
-        fun from(call: ApplicationCall, reason: String? = null): Audit {
-            val claims = call.principal<JwtPrincipal>()?.claims ?: Jwt.Claims(emptyMap())
-            return Audit(
-                name = claims.claim("name") ?: "test",
-                ident = claims.claim("NAVident") ?: "test",
-                email = claims.claim("preferred_username") ?: "test",
-                reason = reason
-            )
-        }
-    }
-
-    override fun toString(): String =
-        if (reason != null) {
-            "name:$name email:$email ident:$ident reason:$reason"
-        } else {
-            "name:$name email:$email ident:$ident"
-        }
+    return Peisschtappern(
+        handler,
+        listOfNotNull(
+            kafka,
+            oppdragsdataProducer,
+            utbetalingProducer,
+            dpProducer,
+            tsProducer,
+            statusProducer,
+            auditLogs as? AutoCloseable,
+            jdbcCtx.datasource as? AutoCloseable,
+            http,
+            logbackMetrics,
+            AutoCloseable { prometheus.close() }
+        )
+    )
 }

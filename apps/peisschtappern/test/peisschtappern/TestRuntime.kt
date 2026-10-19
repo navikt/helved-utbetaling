@@ -4,7 +4,6 @@ import libs.jdbc.Jdbc
 import libs.jdbc.PostgresContainer
 import libs.jdbc.migrateTemplate
 import libs.jdbc.concurrency.CoroutineDatasource
-import libs.jdbc.truncate
 import libs.kafka.KafkaConsumer
 import libs.kafka.KafkaConsumerFake
 import libs.kafka.KafkaFactory
@@ -14,12 +13,15 @@ import libs.kafka.OffsetResetPolicy
 import libs.kafka.StreamsConfig
 import libs.kafka.StreamsMock
 import libs.kafka.Topic
-import libs.ktor.KtorRuntime
-import libs.utils.logger
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
+import org.http4k.server.SunHttpLoom
+import org.http4k.server.asServer
 import java.io.File
 import javax.sql.DataSource
-
-private val testLog = logger("test")
 
 object TestRuntime {
     private val migrationDirs = listOf(File("test/premigrations"), File("migrations"))
@@ -34,16 +36,11 @@ object TestRuntime {
     val auditLogs: AuditLogReaderFake by lazy { AuditLogReaderFake() }
     const val auditLogResource = "projects/test/locations/europe-north1/buckets/TeamAudit/views/_AllLogs"
     const val databaseAuditLogResource = "projects/test"
-    // Kafka mock and the ktor app form a chicken/egg pair: the StreamsMock
-    // instance must exist before the ktor module runs (the module wires it
-    // into the topology), but `kafka.testTopic(...)` only works AFTER the
-    // module has called `connect()` which initializes the underlying
-    // TopologyTestDriver. We construct the mock eagerly inside its first
-    // access, then trigger ktor init to register the topology.
+    // Connect the topology before exposing Kafka test topics.
     private val kafkaMock: StreamsMock by lazy { StreamsMock() }
     val kafka: StreamsMock
         get() {
-            ktor // ensures topology is connected
+            app // ensures topology is connected
             return kafkaMock
         }
     val jdbc: DataSource by lazy { Jdbc.initialize(postgres.config) }
@@ -59,24 +56,24 @@ object TestRuntime {
         )
     }
 
-    val ktor: KtorRuntime<Config> by lazy {
-        KtorRuntime<Config>(
-            appName = "peisschtappern",
-            jsonConfig = libs.kotlinx.KotlinxJson,
-            module = {
-                peisschtappern(config, kafkaMock, auditLogs)
-            },
-            onClose = {
-                jdbc.truncate(
-                    "peisschtappern",
-                    *Table.entries.map { it.name }.toTypedArray(),
-                    TimerDao.table,
-                    "korrigerte_feilet_utbetalinger"
-                )
-                postgres.close()
+    val app: Peisschtappern by lazy { peisschtappern(config, kafkaMock, auditLogs) }
+
+    private val server by lazy {
+        app.handler.asServer(SunHttpLoom(0)).start().also { server ->
+            Runtime.getRuntime().addShutdownHook(Thread {
+                server.stop()
+                app.close()
                 azure.close()
-            }
-        )
+                postgres.close()
+            })
+        }
+    }
+
+    val httpClient by lazy {
+        HttpClient(CIO) {
+            install(ContentNegotiation) { json(libs.kotlinx.KotlinxJson) }
+            defaultRequest { url("http://localhost:${server.port()}") }
+        }
     }
 }
 

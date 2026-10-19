@@ -3,12 +3,10 @@ package peisschtappern
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.routing.*
-import io.ktor.server.testing.*
 import kotlinx.coroutines.test.runTest
+import org.http4k.core.Request
+import org.http4k.core.Method
+import org.http4k.core.Status
 import java.time.Instant
 import kotlin.test.*
 
@@ -18,7 +16,7 @@ class AuditLogApiTest {
         val entry = AuditLogEntry("2026-09-29T08:00:00Z", "INFO", "projects/p/logs/audit", "{}")
         TestRuntime.auditLogs.entries[TestRuntime.auditLogResource] = mutableListOf(entry)
 
-        val res = TestRuntime.ktor.httpClient.get("/api/audit-logs") {
+        val res = TestRuntime.httpClient.get("/api/audit-logs") {
             url {
                 parameters.append("fom", "2026-09-29T00:00:00Z")
                 parameters.append("tom", "2026-09-30T00:00:00Z")
@@ -40,7 +38,7 @@ class AuditLogApiTest {
 
     @Test
     fun `requires token`() = runTest(TestRuntime.context) {
-        val res = TestRuntime.ktor.httpClient.get("/api/audit-logs")
+        val res = TestRuntime.httpClient.get("/api/audit-logs")
         assertEquals(HttpStatusCode.Unauthorized, res.status)
     }
 
@@ -49,7 +47,7 @@ class AuditLogApiTest {
         val entry = AuditLogEntry("2026-06-16T12:45:13.031Z", "INFO", "projects/p/logs/audit", "{}")
         TestRuntime.auditLogs.entries[TestRuntime.databaseAuditLogResource] = mutableListOf(entry)
 
-        val res = TestRuntime.ktor.httpClient.get("/api/audit-logs/database") {
+        val res = TestRuntime.httpClient.get("/api/audit-logs/database") {
             url {
                 parameters.append("fom", "2026-06-16T00:00:00Z")
                 parameters.append("tom", "2026-06-17T00:00:00Z")
@@ -75,7 +73,7 @@ class AuditLogApiTest {
 
     @Test
     fun `developer audit logs enforce filter without optional query`() = runTest(TestRuntime.context) {
-        val res = TestRuntime.ktor.httpClient.get("/api/audit-logs/database") {
+        val res = TestRuntime.httpClient.get("/api/audit-logs/database") {
             bearerAuth(TestRuntime.azure.generateToken())
         }
 
@@ -89,30 +87,18 @@ class AuditLogApiTest {
 
     @Test
     fun `developer audit logs require token`() = runTest(TestRuntime.context) {
-        val res = TestRuntime.ktor.httpClient.get("/api/audit-logs/database")
+        val res = TestRuntime.httpClient.get("/api/audit-logs/database")
         assertEquals(HttpStatusCode.Unauthorized, res.status)
     }
 
     @Test
     fun `each audit route is registered independently`() {
-        testApplication {
-            application {
-                install(ContentNegotiation) { json(libs.kotlinx.KotlinxJson) }
-                routing { auditLogs(AuditLogReaderFake(), TestRuntime.auditLogResource, null) }
-            }
+        val audit = auditLogs(AuditLogReaderFake(), TestRuntime.auditLogResource, null)
+        assertEquals(Status.OK, audit(Request(Method.GET, "/api/audit-logs")).status)
+        assertEquals(Status.NOT_FOUND, audit(Request(Method.GET, "/api/audit-logs/database")).status)
 
-            assertEquals(HttpStatusCode.OK, client.get("/api/audit-logs").status)
-            assertEquals(HttpStatusCode.NotFound, client.get("/api/audit-logs/database").status)
-        }
-
-        testApplication {
-            application {
-                install(ContentNegotiation) { json(libs.kotlinx.KotlinxJson) }
-                routing { auditLogs(AuditLogReaderFake(), null, TestRuntime.databaseAuditLogResource) }
-            }
-
-            assertEquals(HttpStatusCode.NotFound, client.get("/api/audit-logs").status)
-            assertEquals(HttpStatusCode.OK, client.get("/api/audit-logs/database").status)
-        }
+        val database = auditLogs(AuditLogReaderFake(), null, TestRuntime.databaseAuditLogResource)
+        assertEquals(Status.NOT_FOUND, database(Request(Method.GET, "/api/audit-logs")).status)
+        assertEquals(Status.OK, database(Request(Method.GET, "/api/audit-logs/database")).status)
     }
 }
