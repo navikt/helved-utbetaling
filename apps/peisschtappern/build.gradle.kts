@@ -1,5 +1,6 @@
 plugins {
-    id("io.ktor.plugin")
+    id("com.gradleup.shadow")
+    application
     kotlin("plugin.serialization")
 }
 
@@ -7,11 +8,16 @@ application {
     mainClass.set("peisschtappern.PeisschtappernKt")
 }
 
+tasks.register("buildFatJar") {
+    dependsOn(tasks.shadowJar)
+}
+
+val http4kVersion = "6.61.0.0"
 val ktorVersion = "3.6.0"
 val libVersion = "3.1.252"
 
 dependencies {
-    implementation(project(":libs:auth"))
+    implementation(project(":libs:jwt"))
     implementation(project(":libs:jdbc"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
@@ -19,24 +25,23 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":models"))
     implementation("no.nav.helved:xml:$libVersion")
+    implementation("io.github.pdvrieze.xmlutil:serialization-jvm:0.91.3")
     implementation("com.google.cloud:google-cloud-logging:3.39.0")
 
+    implementation("org.http4k:http4k-core:$http4kVersion")
+    implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
+
     implementation("org.apache.kafka:kafka-clients:4.3.0")
-    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-xml:${ktorVersion}")
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
     testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation(project(":libs:kafka-test"))
-    testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:jdbc-test"))
     testImplementation(project(":libs:auth-test"))
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    testImplementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
 }
 
 // peisschtappern tests share a single TestRuntime (Kafka topology that consumes

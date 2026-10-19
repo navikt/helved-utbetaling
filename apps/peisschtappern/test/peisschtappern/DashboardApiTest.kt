@@ -49,7 +49,7 @@ class DashboardApiTest {
         val queryFom = fom.atStartOfDay().toInstant(ZoneOffset.UTC).toString()
         val queryTom = tom.atStartOfDay().toInstant(ZoneOffset.UTC).toString()
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", queryFom)
                 parameters.append("tom", queryTom)
@@ -94,7 +94,7 @@ class DashboardApiTest {
             timestamp = registrert - 1,
             offset = offset
         )
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", fom.toInstant(ZoneOffset.UTC).toString())
                 parameters.append("tom", Instant.ofEpochMilli(registrert).toString())
@@ -202,7 +202,7 @@ class DashboardApiTest {
         save(Channel.Status, key = key3, timestamp = timestamp, offset = offset)
         save(Channel.Status, key = key5, timestamp = timestamp, offset = offset)
 
-        val result = TestRuntime.ktor.httpClient.get("/api/dashboard/oppdrag_uten_status") {
+        val result = TestRuntime.httpClient.get("/api/dashboard/oppdrag_uten_status") {
             bearerAuth(TestRuntime.azure.generateToken())
             accept(ContentType.Application.Json)
         }.body<List<OppdragUtenKvittering>>()
@@ -216,7 +216,7 @@ class DashboardApiTest {
     fun `dashboard har ingen pending mismatch når tabellene er tomme`() = runTest(TestRuntime.context) {
         val now = nextPendingMismatchTimestamp()
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 1_000).toString())
@@ -252,7 +252,7 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = value, timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = value, timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
@@ -273,7 +273,7 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 2_000u))), timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
@@ -298,7 +298,7 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, perioder.take(1)), timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, perioder), timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
@@ -319,7 +319,7 @@ class DashboardApiTest {
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now, offset = offset)
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 2_000u))), timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
@@ -339,7 +339,7 @@ class DashboardApiTest {
 
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode())), timestamp = now, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 1_000).toString())
@@ -359,7 +359,7 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 2_000u))), timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now + 2_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 1_000).toString())
@@ -381,7 +381,7 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now + 1_000, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now + 2_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 3_000).toString())
@@ -402,7 +402,7 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode()), "11363#0"), timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode()), "11363#1"), timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
@@ -424,7 +424,7 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = value, timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = value, timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
@@ -449,7 +449,7 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = matchingUid, value = matchingValue, timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = matchingUid, value = matchingValue, timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
                 parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
@@ -466,7 +466,7 @@ class DashboardApiTest {
         utbetalinger: List<KorrigerUtbetalingerRequest.FeiletUtbetaling>,
         expectedStatus: HttpStatusCode = HttpStatusCode.OK
     ) {
-        val response = TestRuntime.ktor.httpClient.post("/api/korriger_utbetalinger") {
+        val response = TestRuntime.httpClient.post("/api/korriger_utbetalinger") {
             bearerAuth(TestRuntime.azure.generateToken())
             contentType(ContentType.Application.Json)
             setBody(KorrigerUtbetalingerRequest(utbetalinger))
@@ -475,7 +475,7 @@ class DashboardApiTest {
     }
 
     private suspend fun korrigeringer(fom: Instant): List<Dashboard.KorrigertFeiletUtbetaling> =
-        TestRuntime.ktor.httpClient.get("/api/dashboard") {
+        TestRuntime.httpClient.get("/api/dashboard") {
             url {
                 parameters.append("fom", fom.toString())
                 parameters.append("tom", Instant.now().plusSeconds(60).toString())

@@ -1,6 +1,6 @@
 package peisschtappern
 
-import io.ktor.http.Parameters
+import org.http4k.core.Request
 import models.Fagsystem
 import java.time.Instant
 import kotlin.collections.filter
@@ -8,16 +8,16 @@ import kotlin.collections.map
 import kotlin.text.slice
 import kotlin.text.startsWith
 
-fun Parameters.strings(key: String) =
-    this[key]?.split(",")
+fun Request.strings(key: String) =
+    query(key)?.split(",")
 
-fun Parameters.milliseconds(key: String) =
-    this[key]
+fun Request.milliseconds(key: String) =
+    query(key)
         ?.runCatching { Instant.parse(this).toEpochMilli() }
         ?.getOrNull()
 
-fun Parameters.fagsystem() =
-    this["fagsystem"]
+fun Request.fagsystem() =
+    query("fagsystem")
         ?.split(",")
         ?.flatMap { fagsystem ->
             listOf(
@@ -32,31 +32,31 @@ fun Parameters.fagsystem() =
             } ?: emptyList()
         }
 
-fun Parameters.orderBy() =
-    when (this["orderBy"]) {
+fun Request.orderBy() =
+    when (query("orderBy")) {
         "offset" -> "record_offset"
         "timestamp" -> "system_time_ms"
         null -> null
-        else -> error("Invalid orderBy parameter: ${this["orderBy"]}")
+        else -> error("Invalid orderBy parameter: ${query("orderBy")}")
     }
 
-fun Parameters.direction() =
-    when (this["direction"]) {
+fun Request.direction() =
+    when (query("direction")) {
         "ASC" -> "ASC"
         null, "DESC" -> "DESC"
-        else -> error("Invalid direction parameter: ${this["direction"]}")
+        else -> error("Invalid direction parameter: ${query("direction")}")
     }
 
-fun Parameters.include() =
+fun Request.include() =
     this
         .strings("value")
         ?.filter { !it.startsWith("!") && !it.startsWith("not:") }
         ?.takeIf { it.isNotEmpty() }
 
-fun Parameters.manueltEndret() =
-    this["manueltEndret"]?.toBoolean()
+fun Request.manueltEndret() =
+    query("manueltEndret")?.toBoolean()
 
-fun Parameters.exclude() =
+fun Request.exclude() =
     this
         .strings("value")
         ?.filter { it.startsWith("!") || it.startsWith("not:") }

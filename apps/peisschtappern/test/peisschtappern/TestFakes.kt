@@ -1,27 +1,22 @@
 package peisschtappern
 
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import libs.auth.*
-import libs.ktor.*
+import org.http4k.core.*
+import org.http4k.routing.*
+import org.http4k.server.SunHttpLoom
+import org.http4k.server.asServer
 import java.net.URI
 import java.time.Instant
 
 class AzureFake : AutoCloseable {
-    private val azure = embeddedServer(Netty, port = 0, module = Application::azure).apply { start() }
+    private val azure = routes("/jwks" bind Method.GET to { Response(Status.OK).body(TEST_JWKS) })
+        .asServer(SunHttpLoom(0)).start()
 
     val config by lazy {
-        AzureConfig(
-            tokenEndpoint = "http://localhost:${azure.engine.port}/token".let(::URI).toURL(),
-            jwks = "http://localhost:${azure.engine.port}/jwks".let(::URI).toURL(),
+        TokenConfig(
+            jwks = URI("http://localhost:${azure.port()}/jwks").toURL(),
             issuer = "test",
-            clientId = "hei",
-            clientSecret = "på deg"
+            clientId = "hei"
         )
     }
 
@@ -35,7 +30,7 @@ class AzureFake : AutoCloseable {
         Claim("preferred_username", "test@nav.no"),
     ) 
 
-    override fun close() = azure.stop(0, 0)
+    override fun close() { azure.stop() }
 }
 
 class AuditLogReaderFake : AuditLogReader {
@@ -55,19 +50,5 @@ class AuditLogReaderFake : AuditLogReader {
         lastPageSize = pageSize
         lastPageToken = pageToken
         return AuditLogPage(entries[resourceName].orEmpty().take(pageSize), nextPageToken = null)
-    }
-}
-
-private fun Application.azure() {
-    install(ContentNegotiation) {
-        json(libs.kotlinx.KotlinxJson)
-    }
-    routing {
-        get("/jwks") {
-            call.respondText(TEST_JWKS)
-        }
-        post("/token") {
-            call.respond(AzureToken(3600, "token"))
-        }
     }
 }
