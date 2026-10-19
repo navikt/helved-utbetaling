@@ -19,5 +19,5 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:auth-test"))
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
