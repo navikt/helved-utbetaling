@@ -1,19 +1,22 @@
 package vedskiva
 
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import libs.jdbc.Jdbc
 import libs.jdbc.PostgresContainer
 import libs.jdbc.migrateTemplate
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.truncate
 import libs.kafka.*
-import libs.ktor.KtorRuntime
 import libs.utils.logger
+import org.http4k.core.HttpHandler
+import org.http4k.core.Method
+import org.http4k.core.Request
+import org.http4k.core.Response
+import org.http4k.core.Status
+import org.http4k.core.with
+import org.http4k.routing.bind
+import org.http4k.routing.routes
+import org.http4k.server.SunHttpLoom
+import org.http4k.server.asServer
 import java.io.File
 import java.net.URI
 import javax.sql.DataSource
@@ -33,7 +36,7 @@ object TestRuntime {
     val peisschtappern: PeisschtappernFake by lazy { PeisschtappernFake() }
     val kafka: StreamsMock
         get() {
-            ktor // ensures producers/consumers are registered with the factory
+            app // ensures producers/consumers are registered with the factory
             return streams
         }
     val streams: StreamsMock by lazy { StreamsMock() }
@@ -49,60 +52,55 @@ object TestRuntime {
     }
 
 
-    val ktor: KtorRuntime<Config> by lazy {
-        KtorRuntime<Config>(
-            appName = "vedskiva",
-            jsonConfig = VedskivaKotlinx,
-            module = {
-                vedskiva(
-                    config,
-                    streams,
-                )
-            },
-            onClose = {
-                reset()
+    val app: HttpHandler by lazy {
+        vedskiva(config, streams).also {
+            Runtime.getRuntime().addShutdownHook(Thread {
+                azure.close()
+                peisschtappern.close()
                 postgres.close()
-            },
-        )
+            })
+        }
     }
 
+    inline fun <reified T : Any> post(path: String, body: T): Response =
+        app(
+            Request(Method.POST, path)
+                .header("Authorization", "Bearer ${azure.generateToken()}")
+                .with(VedskivaJson.autoBody<T>().toLens() of body)
+        )
+
     fun reset() {
+        app
         jdbc.truncate("vedskiva", Scheduled.TABLE_NAME, OppdragDao.table)
         streams.reset()
         PeisschtappernFake.response.clear()
     }
 }
 
-class AzureFake {
-    private val server = KtorRuntime<Nothing>(
-        "vedskiva.azure", 
-        jsonConfig = libs.kotlinx.KotlinxJson,
-        AzureFake::azure
-    )
+class AzureFake : AutoCloseable {
+    private val server = routes(
+        "/jwks" bind Method.GET to {
+            Response(Status.OK)
+                .header("Content-Type", "application/json")
+                .body(libs.auth.TEST_JWKS)
+        },
+        "/token" bind Method.POST to {
+            Response(Status.OK)
+                .header("Content-Type", "application/json")
+                .body("""{"expires_in":3600,"access_token":"token"}""")
+        }
+    ).asServer(SunHttpLoom(0)).start()
 
     fun generateToken() = jwksGenerator.generate()
 
-    companion object {
-        fun azure(app: Application) {
-            app.install(ContentNegotiation) { 
-                json(libs.kotlinx.KotlinxJson)
-            }
-            app.routing {
-                get("/jwks") {
-                    call.respondText(libs.auth.TEST_JWKS)
-                }
-
-                post("/token") {
-                    call.respond(libs.auth.AzureToken(3600, "token"))
-                }
-            }
-        }
+    override fun close() {
+        server.stop()
     }
 
     val config by lazy {
         libs.auth.AzureConfig(
-            tokenEndpoint = "http://localhost:${server.port}/token".let(::URI).toURL(),
-            jwks = "http://localhost:${server.port}/jwks".let(::URI).toURL(),
+            tokenEndpoint = "http://localhost:${server.port()}/token".let(::URI).toURL(),
+            jwks = "http://localhost:${server.port()}/jwks".let(::URI).toURL(),
             issuer = "test",
             clientId = "hei",
             clientSecret = "på deg"
@@ -111,34 +109,30 @@ class AzureFake {
     private val jwksGenerator = libs.auth.JwkGenerator(config.issuer, config.clientId)
 }
 
-class PeisschtappernFake {
-    private val server = KtorRuntime<Nothing>(
-        "vedskiva.peisschtappern", 
-        jsonConfig = libs.kotlinx.KotlinxJson,
-        PeisschtappernFake::server
-    )
+class PeisschtappernFake : AutoCloseable {
+    private val server = routes(
+        "/api/messages" bind Method.GET to {
+            if (response.isNotEmpty()) {
+                Response(Status.OK).with(VedskivaJson.autoBody<Page>().toLens() of Page(response, response.size))
+            } else {
+                Response(Status.OK)
+                    .header("Content-Type", "application/json")
+                    .body(libs.utils.Resource.read("/may_5th.json"))
+            }
+        }
+    ).asServer(SunHttpLoom(0)).start()
+
+    override fun close() {
+        server.stop()
+    }
 
     companion object {
         val response = mutableListOf<Dao>()
-        fun server(app: Application) {
-            app.install(ContentNegotiation) { 
-                json(libs.kotlinx.KotlinxJson)
-            }
-            app.routing {
-                get("/api/messages") {
-                    if (response.isNotEmpty()) {
-                        call.respond(Page(response, response.size))
-                    } else {
-                        call.respondText(libs.utils.Resource.read("/may_5th.json"), ContentType.Application.Json)
-                    }
-                }
-            }
-        }
     }
 
     val config by lazy {
         PeisschtappernConfig(
-            host = "http://localhost:${server.port}".let(::URI).toURL(),
+            host = "http://localhost:${server.port()}".let(::URI).toURL(),
             scope = "test"
         )
     }

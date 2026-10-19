@@ -2,13 +2,8 @@
 
 package vedskiva
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.get
-import io.ktor.client.request.parameter
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
@@ -18,14 +13,18 @@ import java.time.format.DateTimeFormatter
 import libs.auth.AzureTokenProvider
 import libs.auth.ProviderRejected
 import libs.auth.ProviderUnavailable
-import libs.http.HttpClientFactory
 import models.unavailable
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import org.http4k.client.JavaHttpClient
+import org.http4k.core.HttpHandler
+import org.http4k.core.Method
+import org.http4k.core.Request
+import java.time.Duration
 
 class PeisschtappernClient(
     private val config: Config,
     private val json: Json = libs.kotlinx.KotlinxJson,
-    private val client: HttpClient = HttpClientFactory.new(json),
+    private val client: HttpHandler = JavaHttpClient(requestModifier = { it.timeout(Duration.ofSeconds(60)) }),
     private val azure: AzureTokenProvider = AzureTokenProvider(json, config.azure)
 ) {
 
@@ -36,16 +35,17 @@ class PeisschtappernClient(
             is ProviderUnavailable -> unavailable("Token provider er utilgjengelig")
         }
 
-        val response = client.get("${config.peisschtappern.host}/api/messages") {
-            bearerAuth(token)
-            contentType(ContentType.Application.Json)
-            parameter("topics", "helved.oppdrag.v1")
-            parameter("pageSize", 10000)
-            parameter("fom", formatter.format(fom))
-            parameter("tom", formatter.format(tom))
-        }
+        val request = Request(Method.GET, "${config.peisschtappern.host}/api/messages")
+            .header("Authorization", "Bearer $token")
+            .header("Content-Type", "application/json")
+            .query("topics", "helved.oppdrag.v1")
+            .query("pageSize", "10000")
+            .query("fom", formatter.format(fom))
+            .query("tom", formatter.format(tom))
 
-        return response.body<Page>().items
+        val response = runInterruptible(Dispatchers.IO) { client(request) }
+
+        return json.decodeFromString<Page>(response.bodyString()).items
     }
 }
 

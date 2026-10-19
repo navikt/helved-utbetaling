@@ -1,13 +1,18 @@
 plugins {
-    id("io.ktor.plugin")
+    id("com.gradleup.shadow")
     kotlin("plugin.serialization")
+    application
 }
 
 application {
     mainClass.set("vedskiva.VedskivaKt")
 }
 
-val ktorVersion = "3.6.0"
+tasks.register("buildFatJar") {
+    dependsOn(tasks.shadowJar)
+}
+
+val http4kVersion = "6.61.0.0"
 
 dependencies {
     implementation(project(":models"))
@@ -15,20 +20,18 @@ dependencies {
     implementation(project(":libs:jdbc"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
-    implementation(project(":libs:ktor"))
     implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:3.1.252")
 
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("org.http4k:http4k-core:$http4kVersion")
+    implementation("org.http4k:http4k-format-kotlinx-serialization:$http4kVersion")
+    implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:jdbc-test"))
-    testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:auth-test"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }

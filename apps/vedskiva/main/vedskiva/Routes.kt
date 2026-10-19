@@ -2,12 +2,9 @@
 
 package vedskiva
 
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import libs.jdbc.concurrency.CoroutineDatasource
@@ -15,6 +12,13 @@ import libs.jdbc.concurrency.transaction
 import libs.utils.appLog
 import libs.utils.erHelligdag
 import libs.utils.forrigeVirkedag
+import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
+import org.http4k.core.Method
+import org.http4k.core.Response
+import org.http4k.core.Status
+import org.http4k.core.with
+import org.http4k.routing.bind
+import org.http4k.routing.routes
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -30,54 +34,54 @@ data class DateBody(
     val date: LocalDate,
 )
 
-fun Route.avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) {
-    route("/api") {
-        post("/next_range") {
-            val today = call.receive<DateBody>().date
-            withContext(jdbcCtx + Dispatchers.IO) {
-                val last: Scheduled? = transaction { Scheduled.lastOrNull() }
-                val avstemFom = (last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()).atStartOfDay()
-                val avstemTom = today.atStartOfDay().minusNanos(1)
-                call.respond(AvstemmingRequest(today, avstemFom, avstemTom))
-            }
+internal val dateBodyLens = VedskivaJson.autoBody<DateBody>().toLens()
+internal val avstemmingRequestLens = VedskivaJson.autoBody<AvstemmingRequest>().toLens()
+internal val avstemmingerLens = VedskivaJson.autoBody<List<Pair<String, List<Avstemmingsdata>>>>().toLens()
+
+fun avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) = routes(
+    "/next_range" bind Method.POST to { request ->
+        val today = dateBodyLens(request).date
+        runBlocking(jdbcCtx + Dispatchers.IO) {
+            val last: Scheduled? = transaction { Scheduled.lastOrNull() }
+            val avstemFom = (last?.avstemt_tom?.plusDays(1) ?: today.forrigeVirkedag()).atStartOfDay()
+            val avstemTom = today.atStartOfDay().minusNanos(1)
+            Response(Status.OK).with(avstemmingRequestLens of AvstemmingRequest(today, avstemFom, avstemTom))
         }
+    },
+    "/avstem" bind Method.POST to { request ->
+        val req = avstemmingRequestLens(request)
+        appLog.info("starter avstemming for ${req.today}, mellom [${req.fom} - ${req.tom}]")
 
-        route("/avstem") {
-            post {
-                val req = call.receive<AvstemmingRequest>()
-                appLog.info("starter avstemming for ${req.today}, mellom [${req.fom} - ${req.tom}]")
-
-                withContext(jdbcCtx + Dispatchers.IO) {
-                    if (req.today.erHelligdag()) {
-                        call.respond(HttpStatusCode.Locked, "Today is a holiday or weekend, no avstemming")
-                        return@withContext
-                    }
-
-                    val last: Scheduled? = transaction { Scheduled.lastOrNull() }
-
-                    if (req.today == last?.created_at) {
-                        call.respond(HttpStatusCode.Conflict, "Already avstemt today (${req.today})")
-                        return@withContext
-                    }
-
-                    service.avstem(req.fom, req.tom)
-
-                    transaction {
-                        Scheduled(req.today, req.fom.toLocalDate(), req.tom.toLocalDate()).insert()
-                    }
-
-                    call.respond(HttpStatusCode.OK)
-                }
+        runBlocking(jdbcCtx + Dispatchers.IO) {
+            if (req.today.erHelligdag()) {
+                return@runBlocking Response(Status.LOCKED).body("Today is a holiday or weekend, no avstemming")
             }
 
-            post("/dryrun") {
-                val req = call.receive<AvstemmingRequest>()
-                withContext(jdbcCtx + Dispatchers.IO) {
-                    val avstemminger = service.avstemminger(req.fom, req.tom)
-                    call.respond(avstemminger)
-                }
+            val last: Scheduled? = transaction { Scheduled.lastOrNull() }
+            if (req.today == last?.created_at) {
+                return@runBlocking Response(Status.CONFLICT).body("Already avstemt today (${req.today})")
             }
+
+            service.avstem(req.fom, req.tom)
+            transaction {
+                Scheduled(req.today, req.fom.toLocalDate(), req.tom.toLocalDate()).insert()
+            }
+            Response(Status.OK)
+        }
+    },
+    "/avstem/dryrun" bind Method.POST to { request ->
+        val req = avstemmingRequestLens(request)
+        runBlocking(jdbcCtx + Dispatchers.IO) {
+            Response(Status.OK).with(avstemmingerLens of service.avstemminger(req.fom, req.tom))
         }
     }
-}
+)
 
+fun actuatorRoutes(metrics: PrometheusMeterRegistry) = routes(
+    "/actuator/metric" bind Method.GET to {
+        Response(Status.OK).body(metrics.scrape())
+    },
+    "/actuator/health" bind Method.GET to {
+        Response(Status.OK)
+    }
+)
