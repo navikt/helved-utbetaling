@@ -29,7 +29,7 @@ dependencies {
     testImplementation(project(":libs:jdbc-test"))
     testImplementation(project(":libs:ktor-test"))
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
 
 // speiderhytta tests share a single Postgres schema and the DAO tests rely on
