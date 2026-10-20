@@ -6,6 +6,8 @@ import javax.jms.*
 import javax.jms.Queue
 
 class JMSContextFake() : JMSContextStub() {
+    override fun close() {}
+
     val consumers = HashMap<Destination, JMSConsumer>()
 
     val producers = mutableListOf<JMSProducer>()
@@ -59,6 +61,8 @@ class TextMessageFake(private val msg: String) : TextMessageStub() {
 }
 
 class JMSConsumerFake : JMSConsumerStub() {
+    override fun close() {}
+
     private lateinit var listener: MessageListener
     override fun getMessageListener(): MessageListener = listener
     override fun setMessageListener(p0: MessageListener) {
@@ -67,7 +71,7 @@ class JMSConsumerFake : JMSConsumerStub() {
 }
 
 abstract class JMSContextStub: JMSContext {
-    override fun close() = TODO("fake")
+    override fun close(): Unit = TODO("fake")
     override fun createContext(p0: Int): JMSContext = TODO("fake")
     override fun getClientID(): String = TODO("fake")
     override fun setClientID(p0: String?) {}
@@ -208,7 +212,7 @@ abstract class TextMessageStub: TextMessage {
 }
 
 abstract class JMSConsumerStub(): JMSConsumer {
-    override fun close() = TODO("fake")
+    override fun close(): Unit = TODO("fake")
     override fun getMessageSelector(): String = TODO("fake")
     override fun receive(): Message = TODO("fake")
     override fun receive(p0: Long): Message = TODO("fake")
@@ -217,4 +221,3 @@ abstract class JMSConsumerStub(): JMSConsumer {
     override fun <T : Any?> receiveBody(p0: Class<T>?, p1: Long): T = TODO("fake")
     override fun <T : Any?> receiveBodyNoWait(p0: Class<T>?): T = TODO("fake")
 }
-

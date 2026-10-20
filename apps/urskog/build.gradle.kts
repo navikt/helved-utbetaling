@@ -1,5 +1,6 @@
 plugins {
-    id("io.ktor.plugin")
+    id("com.gradleup.shadow")
+    application
     kotlin("plugin.serialization")
 }
 
@@ -7,11 +8,14 @@ application {
     mainClass.set("urskog.UrskogKt")
 }
 
-val ktorVersion = "3.6.0"
+tasks.register("buildFatJar") {
+    dependsOn(tasks.shadowJar)
+}
+
+val http4kVersion = "6.61.0.0"
 
 dependencies {
     implementation(project(":models"))
-    implementation(project(":libs:auth"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
     implementation(project(":libs:jdbc"))
@@ -19,16 +23,13 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:3.1.252")
 
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("org.http4k:http4k-core:$http4kVersion")
+    implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
 
     testImplementation(kotlin("test")) 
-    testImplementation(project(":libs:auth-test"))
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:jdbc-test"))
-    testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:mq-test"))
     testImplementation("org.apache.kafka:kafka-streams:4.3.1") // StreamsConfig
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")

@@ -1,13 +1,11 @@
 package urskog
 
 import com.ibm.mq.jms.MQQueue
-import libs.auth.AzureConfig
 import libs.jdbc.JdbcConfig
 import libs.kafka.StreamsConfig
 import libs.mq.MQConfig
 import libs.utils.env
 import java.io.File
-import java.net.URL
 import java.util.*
 
 data class Config(
@@ -31,8 +29,6 @@ data class Config(
         username = "srvdp-oppdrag",
         password = env("MQ_PASSWORD"), // from secret utsjekk-oppdrag
     ),
-    val proxy: ProxyConfig = ProxyConfig(),
-    val azure: AzureConfig = AzureConfig(),
     val cluster: String = env("NAIS_CLUSTER_NAME"),
 )
 
@@ -43,9 +39,4 @@ data class OppdragConfig(
     val avstemmingKø: MQQueue = MQQueue(env("MQ_AVSTEMMING_QUEUE")).apply {
         targetClient = 1 // Skru av JMS-headere, da OS ikke støtter disse for avstemming
     }
-)
-
-data class ProxyConfig(
-    val host: URL = env("PROXY_HOST"),
-    val scope: String = env("PROXY_SCOPE"),
 )
