@@ -1,10 +1,5 @@
 package urskog
 
-import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.metrics.micrometer.*
-import io.ktor.server.netty.*
-import io.ktor.server.routing.*
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -21,6 +16,14 @@ import libs.mq.DefaultMQ
 import libs.mq.MQ
 import libs.utils.Log
 import libs.utils.erHelligdag
+import org.http4k.core.HttpHandler
+import org.http4k.core.then
+import org.http4k.filter.MicrometerMetrics
+import org.http4k.filter.ServerFilters
+import org.http4k.server.ServerConfig
+import org.http4k.server.SunHttpLoom
+import org.http4k.server.asServer
+import java.time.Duration
 import java.time.LocalDate
 
 fun main() {
@@ -28,29 +31,40 @@ fun main() {
         Log.error("Uhåndtert feil ${e.javaClass.canonicalName}", e)
     }
 
-    embeddedServer(
-        factory = Netty,
-        configure = {
-            shutdownGracePeriod = 5000L
-            shutdownTimeout = 50_000L
-            connectors.add(EngineConnectorBuilder().apply {
-                port = 8080
-            })
-        },
-        module = Application::urskog,
-    ).start(wait = true)
+    val app = urskog()
+    val server = app.handler
+        .asServer(SunHttpLoom(8080, ServerConfig.StopMode.Graceful(Duration.ofSeconds(50))))
+        .start()
+
+    Runtime.getRuntime().addShutdownHook(Thread {
+        try {
+            app.close()
+        } finally {
+            server.stop()
+        }
+    })
+
+    app.start()
+    server.block()
 }
 
-fun Application.urskog(
+class Urskog(
+    val handler: HttpHandler,
+    private val kvitteringConsumer: KvitteringMQConsumer,
+    private val closeables: List<AutoCloseable>
+) : AutoCloseable {
+    fun start() = kvitteringConsumer.start()
+
+    override fun close() = closeables.forEach { it.close() }
+}
+
+fun urskog(
     config: Config = Config(),
     kafka: Streams = KafkaStreams(),
-    mq: MQ = DefaultMQ(config.mq),
-) {
+    mq: MQ = DefaultMQ(config.mq)
+): Urskog {
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-    install(MicrometerMetrics) {
-        registry = prometheus
-        meterBinders += LogbackMetrics()
-    }
+    val logbackMetrics = LogbackMetrics().also { it.bindTo(prometheus) }
 
     val jdbcCtx: CoroutineDatasource = Jdbc.initialize(config.jdbc).context()
     runBlocking {
@@ -77,18 +91,19 @@ fun Application.urskog(
 
     val kvitteringConsumer = KvitteringMQConsumer(config, mq, kafka, jdbcCtx)
 
-    monitor.subscribe(ApplicationStarted) {
-        kvitteringConsumer.start()
-    }
+    val handler = ServerFilters.MicrometerMetrics.RequestTimer(prometheus)
+        .then(ServerFilters.MicrometerMetrics.RequestCounter(prometheus))
+        .then(probes(kafka, prometheus))
 
-    monitor.subscribe(ApplicationStopping) { 
-        kafka.close()
-        kvitteringConsumer.close()
-    }
-
-    routing {
-        probes(kafka, prometheus)
-    }
+    return Urskog(
+        handler,
+        kvitteringConsumer,
+        listOfNotNull(
+            kvitteringConsumer,
+            kafka,
+            jdbcCtx.datasource as? AutoCloseable,
+            logbackMetrics,
+            AutoCloseable { prometheus.close() }
+        )
+    )
 }
-
-

@@ -1,7 +1,6 @@
 package urskog
 
 import com.ibm.mq.jms.MQQueue
-import libs.auth.AzureConfig
 import libs.jdbc.Jdbc
 import libs.jdbc.JdbcConfig
 import libs.jdbc.PostgresContainer
@@ -11,7 +10,6 @@ import libs.jdbc.truncate
 import libs.kafka.SslConfig
 import libs.kafka.StreamsConfig
 import libs.kafka.StreamsMock
-import libs.ktor.KtorRuntime
 import libs.mq.MQConfig
 import libs.utils.logger
 import org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG
@@ -46,42 +44,30 @@ object TestRuntime {
     private val kafkaMock: StreamsMock by lazy { StreamsMock() }
     val kafka: StreamsMock
         get() {
-            ktor // ensures topology is connected
+            app // ensures topology is connected
             return kafkaMock
         }
     val mq: FakeMQ by lazy { FakeMQ() }
-    val fakes: HttpFakes by lazy { HttpFakes() }
-    val config: Config by lazy {
-        TestConfig.create(
-            proxy = fakes.proxyConfig,
-            azure = fakes.azureConfig,
-            jdbc = postgres.config,
-        )
-    }
-    val ktor: KtorRuntime<Config> by lazy {
-        KtorRuntime<Config>(
-            appName = "urskog",
-            jsonConfig = libs.kotlinx.KotlinxJson,
-            module = {
-                urskog(config, kafkaMock, mq)
-            },
-            onClose = {
+    val config: Config by lazy { TestConfig.create(postgres.config) }
+    val app: Urskog by lazy {
+        urskog(config, kafkaMock, mq).also { app ->
+            app.start()
+            Runtime.getRuntime().addShutdownHook(Thread {
+                app.close()
                 jdbc.truncate("urskog", DaoOppdrag.table, DaoPendingUtbetaling.table, DaoLinjeFingerprint.table)
                 postgres.close()
-            }
-        )
+            })
+        }
     }
     val topics: TestTopics by lazy {
-        // Topology must be registered (via ktor) before testTopic() works.
-        ktor
+        // Topology must be registered (via app) before testTopic() works.
+        app
         TestTopics(kafkaMock)
     }
 }
 
 object TestConfig {
     fun create(
-        proxy: ProxyConfig,
-        azure: AzureConfig,
         jdbc: JdbcConfig,
     ): Config {
         val oppdrag = OppdragConfig(
@@ -108,8 +94,6 @@ object TestConfig {
             kafka = kafka,
             oppdrag = oppdrag,
             mq = mq,
-            proxy = proxy,
-            azure = azure,
             cluster = "test-cluster",
         )
     }
