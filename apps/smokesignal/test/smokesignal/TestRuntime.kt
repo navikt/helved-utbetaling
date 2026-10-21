@@ -1,6 +1,5 @@
 package smokesignal
 
-import libs.auth.AzureConfig
 import java.net.URI
 import java.net.URL
 import java.time.LocalDate
@@ -11,8 +10,6 @@ object TestRuntime {
     val config = Config(
         azure = AzureConfig(
             tokenEndpoint = URI("http://localhost").toURL(),
-            jwks = URI("http://localhost").toURL(),
-            issuer = "issuer",
             clientId = "clientId",
             clientSecret = "clientSeecret",
         ),
