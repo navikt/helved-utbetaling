@@ -1,5 +1,6 @@
 plugins {
-    id("io.ktor.plugin")
+    id("com.gradleup.shadow")
+    application
     kotlin("plugin.serialization")
 }
 
@@ -7,30 +8,29 @@ application {
     mainClass.set("abetal.AbetalKt")
 }
 
-val ktorVersion = "3.6.0"
+tasks.register("buildFatJar") {
+    dependsOn(tasks.shadowJar)
+}
+
+val http4kVersion = "6.61.0.0"
 
 dependencies {
     implementation(project(":models"))
     implementation(project(":libs:kafka"))
     implementation(project(":libs:kotlinx"))
-    implementation(project(":libs:auth"))
+    implementation(project(":libs:jwt"))
     implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:3.1.252")
 
     implementation("org.apache.kafka:kafka-streams:4.3.1")
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-server-metrics-micrometer:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
+    implementation("org.http4k:http4k-core:$http4kVersion")
+    implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("org.apache.kafka:kafka-clients:4.3.1")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
-    testImplementation(project(":libs:ktor-test"))
     testImplementation(project(":libs:auth-test"))
 }
 

@@ -1,30 +1,58 @@
 package abetal
 
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import models.*
+import libs.kotlinx.KotlinxJson
+import org.http4k.core.*
+import org.http4k.core.Status
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.*
 
 class AvventRouteTest {
-    private val httpClient = TestRuntime.ktor.httpClient
+    private val handler = TestRuntime.app.handler
 
     @Test
-    fun `feilregistrerer avvent på transaksjonsnøkkel`() = runBlocking {
+    fun `avviser ugyldige token før meldingen behandles`() {
+        val azure = TestRuntime.azure.config
+        val tokens = listOf(
+            "invalid",
+            libs.auth.JwkGenerator("wrong-issuer", azure.clientId).generate(),
+            libs.auth.JwkGenerator(azure.issuer, "wrong-audience").generate()
+        )
+        for (token in tokens) {
+            val response = handler(Request(Method.POST, "/utbetalinger/avvent")
+                .header("Authorization", "Bearer $token")
+                .body("{"))
+            assertEquals(Status.UNAUTHORIZED, response.status)
+        }
+    }
+
+    @Test
+    fun `ugyldig JSON gir strukturert feilrespons`() {
+        for (body in listOf("{", "{}")) {
+            val response = handler(Request(Method.POST, "/utbetalinger/avvent")
+                .header("Authorization", "Bearer ${TestRuntime.azure.generateToken()}")
+                .header("Content-Type", "application/json")
+                .body(body))
+            assertEquals(Status.BAD_REQUEST, response.status)
+            assertEquals(400, KotlinxJson.decodeFromString<ApiError>(response.bodyString()).statusCode)
+        }
+    }
+
+    @Test
+    fun `feilregistrerer avvent på transaksjonsnøkkel`() {
         val key = "aap-transaksjon-${UUID.randomUUID()}"
         val request = request(key)
 
-        val response = httpClient.post("/utbetalinger/avvent") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }
+        val response = handler(
+            Request(Method.POST, "/utbetalinger/avvent")
+                .header("Authorization", "Bearer ${TestRuntime.azure.generateToken()}")
+                .header("Content-Type", "application/json")
+                .body(KotlinxJson.encodeToString(request))
+        )
 
-        assertEquals(HttpStatusCode.Created, response.status)
+        assertEquals(Status.CREATED, response.status)
         val producer = TestRuntime.kafka.getProducer(Topics.oppdrag)
         val oppdrag = producer.history().single { (recordKey, _) -> recordKey == key }.second
         assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
@@ -43,49 +71,53 @@ class AvventRouteTest {
     }
 
     @Test
-    fun `avviser feilregistrering uten transaksjonsnøkkel`() = runBlocking {
-        val response = httpClient.post("/utbetalinger/avvent") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(request(""))
-        }
+    fun `avviser feilregistrering uten transaksjonsnøkkel`() {
+        val response = handler(
+            Request(Method.POST, "/utbetalinger/avvent")
+                .header("Authorization", "Bearer ${TestRuntime.azure.generateToken()}")
+                .header("Content-Type", "application/json")
+                .body(KotlinxJson.encodeToString(request("")))
+        )
 
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-        assertEquals("key må være satt", response.body<ApiError>().msg)
+        assertEquals(Status.BAD_REQUEST, response.status)
+        assertEquals("key må være satt", KotlinxJson.decodeFromString<ApiError>(response.bodyString()).msg)
     }
 
     @Test
-    fun `avviser avvent som ikke er feilregistrert`() = runBlocking {
-        val response = httpClient.post("/utbetalinger/avvent") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(request("aap-transaksjon-${UUID.randomUUID()}", feilregistrering = false))
-        }
+    fun `avviser avvent som ikke er feilregistrert`() {
+        val response = handler(
+            Request(Method.POST, "/utbetalinger/avvent")
+                .header("Authorization", "Bearer ${TestRuntime.azure.generateToken()}")
+                .header("Content-Type", "application/json")
+                .body(KotlinxJson.encodeToString(request("aap-transaksjon-${UUID.randomUUID()}", feilregistrering = false)))
+        )
 
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-        assertEquals("feilregistrering må være satt til true", response.body<ApiError>().msg)
+        assertEquals(Status.BAD_REQUEST, response.status)
+        assertEquals("feilregistrering må være satt til true", KotlinxJson.decodeFromString<ApiError>(response.bodyString()).msg)
     }
 
     @Test
-    fun `avviser avvent uten overføringsdato`() = runBlocking {
-        val response = httpClient.post("/utbetalinger/avvent") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(request("aap-transaksjon-${UUID.randomUUID()}", overføres = null))
-        }
+    fun `avviser avvent uten overføringsdato`() {
+        val response = handler(
+            Request(Method.POST, "/utbetalinger/avvent")
+                .header("Authorization", "Bearer ${TestRuntime.azure.generateToken()}")
+                .header("Content-Type", "application/json")
+                .body(KotlinxJson.encodeToString(request("aap-transaksjon-${UUID.randomUUID()}", overføres = null)))
+        )
 
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-        assertEquals("overføres må være satt", response.body<ApiError>().msg)
+        assertEquals(Status.BAD_REQUEST, response.status)
+        assertEquals("overføres må være satt", KotlinxJson.decodeFromString<ApiError>(response.bodyString()).msg)
     }
 
     @Test
-    fun `krever autentisering for feilregistrering av avvent`() = runBlocking {
-        val response = httpClient.post("/utbetalinger/avvent") {
-            contentType(ContentType.Application.Json)
-            setBody(request("aap-transaksjon-${UUID.randomUUID()}"))
-        }
+    fun `krever autentisering for feilregistrering av avvent`() {
+        val response = handler(
+            Request(Method.POST, "/utbetalinger/avvent")
+                .header("Content-Type", "application/json")
+                .body(KotlinxJson.encodeToString(request("aap-transaksjon-${UUID.randomUUID()}")))
+        )
 
-        assertEquals(HttpStatusCode.Unauthorized, response.status)
+        assertEquals(Status.UNAUTHORIZED, response.status)
     }
 
     private fun request(

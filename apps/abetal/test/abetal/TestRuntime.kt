@@ -1,7 +1,6 @@
 package abetal
 
 import libs.kafka.StreamsMock
-import libs.ktor.KtorRuntime
 import org.apache.kafka.streams.StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG
 import org.apache.kafka.streams.state.BuiltInDslStoreSuppliers
 import java.util.Properties
@@ -46,16 +45,11 @@ object TestRuntime {
             put(DSL_STORE_SUPPLIERS_CLASS_CONFIG, BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers::class.java)
         })
     )
-    val ktor = KtorRuntime<Config>(
-        appName = "abetal",
-        jsonConfig = libs.kotlinx.KotlinxJson,
-        module = {
-            abetal(
-                config = config,
-                kafka = kafka,
-                topology = createTopology(kafka),
-            )
-        },
-    )
+    val app = abetal(config, kafka, createTopology(kafka)).also { app ->
+        Runtime.getRuntime().addShutdownHook(Thread {
+            app.close()
+            azure.close()
+        })
+    }
     val topics: TestTopics = TestTopics(kafka)
 }
