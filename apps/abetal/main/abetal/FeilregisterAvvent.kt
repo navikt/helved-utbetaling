@@ -1,10 +1,10 @@
 package abetal
 
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import org.http4k.core.Method
+import org.http4k.core.Response
+import org.http4k.core.Status
+import org.http4k.routing.bind
 import libs.kafka.KafkaProducer
 import models.*
 import no.trygdeetaten.skjema.oppdrag.ObjectFactory
@@ -15,18 +15,16 @@ class FeilregisterAvvent(
 ) {
     private val objectFactory = ObjectFactory()
 
-    fun route(route: Route) {
-        route.post("/utbetalinger/avvent") {
-            val request = call.receive<Request>()
-            request.validate()
+    fun route() = "/utbetalinger/avvent" bind Method.POST to { httpRequest ->
+        val request = httpRequest.receive<Request>()
+        request.validate()
 
-            oppdragProducer.send(
-                key = request.key,
-                value = request.toOppdrag(),
-                headers = mapOf("source" to "abetal-avvent"),
-            )
-            call.respond(HttpStatusCode.Created)
-        }
+        oppdragProducer.send(
+            key = request.key,
+            value = request.toOppdrag(),
+            headers = mapOf("source" to "abetal-avvent")
+        )
+        Response(Status.CREATED)
     }
 
     private fun Request.validate() {
