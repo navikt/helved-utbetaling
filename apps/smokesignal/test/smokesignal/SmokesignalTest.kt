@@ -6,6 +6,15 @@ import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
 
 class SmokesignalTest {
+    @Test
+    fun `sender ikke avstemming i helgen`() = runBlocking {
+        val vedskiva = object : Vedskiva {
+            override suspend fun next(): AvstemmingRequest = error("Skal ikke hente periode i helgen")
+            override suspend fun signal(req: AvstemmingRequest) = error("Skal ikke avstemme i helgen")
+        }
+        smokesignal(TestRuntime.config, vedskiva, LocalDate.of(2026, 2, 14))
+    }
+
 
     @Test
     fun `will first request next then send the signal`() {
@@ -21,6 +30,7 @@ class SmokesignalTest {
             smokesignal(
                 TestRuntime.config,
                 TestRuntime.vedskiva,
+                today = fake.today,
             )
         }
 
