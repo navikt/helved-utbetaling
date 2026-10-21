@@ -74,8 +74,3 @@ spec:
       rules:
         - application: logging
           namespace: nais-system
-        - application: peisschtappern
-  env:
-    - name: PEISSCHTAPPERN_SCOPE
-      value: api://prod-gcp.helved.peisschtappern/.default
-
