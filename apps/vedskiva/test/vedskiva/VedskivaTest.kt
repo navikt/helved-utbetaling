@@ -812,6 +812,20 @@ class VedskivaTest {
     }
 }
 
+private data class Dao(
+    val version: String,
+    val topic_name: String,
+    val key: String,
+    val value: String?,
+    val partition: Int,
+    val offset: Long,
+    val timestamp_ms: Long,
+    val stream_time_ms: Long,
+    val system_time_ms: Long
+) {
+    val oppdrag: Oppdrag? get() = value?.let { xmlMapper.readValue(it) }
+}
+
 private val xmlMapper: libs.xml.XMLMapper<Oppdrag> = libs.xml.XMLMapper()
 private val objectFactory = ObjectFactory()
 private val avstemmingFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")

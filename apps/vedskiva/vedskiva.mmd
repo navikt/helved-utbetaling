@@ -10,6 +10,6 @@ flowchart RL
     avstemming(["helved.avstemming.v1"])
         
   end
-    oppdrag(["helved.oppdrag.v1"]) --> Peisschtappern
+    oppdrag(["helved.oppdrag.v1"]) --> |store| postgres
     postgres --> |query last scheduled| avstemming
-    Peisschtappern --> |query oppdrag| avstemming
+    postgres --> |query oppdrag| avstemming

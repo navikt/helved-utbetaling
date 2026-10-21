@@ -33,7 +33,6 @@ object TestRuntime {
         )
     }
     val azure: AzureFake by lazy { AzureFake() }
-    val peisschtappern: PeisschtappernFake by lazy { PeisschtappernFake() }
     val kafka: StreamsMock
         get() {
             app // ensures producers/consumers are registered with the factory
@@ -47,7 +46,6 @@ object TestRuntime {
             kafka = StreamsConfig("test-application", "localhost:9092", SslConfig("", "", "")),
             jdbc = postgres.config,
             azure = azure.config,
-            peisschtappern.config,
         )
     }
 
@@ -56,7 +54,6 @@ object TestRuntime {
         vedskiva(config, streams).also {
             Runtime.getRuntime().addShutdownHook(Thread {
                 azure.close()
-                peisschtappern.close()
                 postgres.close()
             })
         }
@@ -73,7 +70,6 @@ object TestRuntime {
         app
         jdbc.truncate("vedskiva", Scheduled.TABLE_NAME, OppdragDao.table)
         streams.reset()
-        PeisschtappernFake.response.clear()
     }
 }
 
@@ -107,34 +103,5 @@ class AzureFake : AutoCloseable {
         )
     }
     private val jwksGenerator = libs.auth.JwkGenerator(config.issuer, config.clientId)
-}
-
-class PeisschtappernFake : AutoCloseable {
-    private val server = routes(
-        "/api/messages" bind Method.GET to {
-            if (response.isNotEmpty()) {
-                Response(Status.OK).with(VedskivaJson.autoBody<Page>().toLens() of Page(response, response.size))
-            } else {
-                Response(Status.OK)
-                    .header("Content-Type", "application/json")
-                    .body(libs.utils.Resource.read("/may_5th.json"))
-            }
-        }
-    ).asServer(SunHttpLoom(0)).start()
-
-    override fun close() {
-        server.stop()
-    }
-
-    companion object {
-        val response = mutableListOf<Dao>()
-    }
-
-    val config by lazy {
-        PeisschtappernConfig(
-            host = "http://localhost:${server.port()}".let(::URI).toURL(),
-            scope = "test"
-        )
-    }
 }
 
