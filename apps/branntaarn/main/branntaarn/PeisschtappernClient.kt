@@ -2,116 +2,79 @@
 
 package branntaarn
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.network.sockets.ConnectTimeoutException
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonClassDiscriminator
-import libs.auth.AzureToken
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
-import libs.auth.AzureTokenProvider
-import libs.auth.ProviderRejected
-import libs.auth.ProviderUnavailable
-import libs.http.HttpClientFactory
 import libs.utils.appLog
-import models.unavailable
+import org.http4k.core.*
+import org.http4k.filter.ClientFilters
 
 class PeisschtappernClient(
-    private val config: Config,
+    config: Config,
+    http: HttpHandler,
     private val json: Json = libs.kotlinx.KotlinxJson,
-    private val client: HttpClient = HttpClientFactory.new(json, LogLevel.ALL),
-    private val azure: AzureTokenProvider = AzureTokenProvider(json, config.azure)
+    azure: AzureTokenProvider = AzureTokenProvider(config.azure, http, json),
 ) {
+    private val http = ClientFilters.SetBaseUriFrom(Uri.of(config.peisschtappern.host.toString()))
+        .then(ClientFilters.BearerAuth { azure.getClientCredentialsToken(config.peisschtappern.scope).access_token })
+        .then(http)
 
     fun manglendeKvitteringer(): List<ManglendeKvittering> {
-        return try {
-            runBlocking {
-                val response = client.get("${config.peisschtappern.host}/api/brann") {
-                    bearerAuth(getToken())
-                }
-                response.body()
-            }
-        } catch (e: ConnectTimeoutException) {
-            appLog.warn("klarte ikke hente branner fra peisschtappern", e)
-            emptyList()
+        val response = http(Request(Method.GET, "/api/brann"))
+        if (!response.status.successful) {
+            appLog.warn("klarte ikke hente branner fra peisschtappern: ${response.status}")
+            return emptyList()
         }
+        return json.decodeFromString(response.bodyString())
     }
 
     fun pendingMismatches(): List<PendingMismatch> {
-        return try {
-            runBlocking {
-                val since = (Instant.now() - Duration.ofHours(1)).toEpochMilli()
-                val response = client.get("${config.peisschtappern.host}/api/brann/pending-mismatch") {
-                    bearerAuth(getToken())
-                    parameter("since", since)
-                }
-                response.body()
-            }
-        } catch (e: ConnectTimeoutException) {
-            appLog.warn("klarte ikke hente pending mismatches fra peisschtappern", e)
-            emptyList()
+        val response = http(
+            Request(Method.GET, "/api/brann/pending-mismatch")
+                .query("since", since(Duration.ofHours(1)))
+        )
+        if (!response.status.successful) {
+            appLog.warn("klarte ikke hente pending mismatches fra peisschtappern: ${response.status}")
+            return emptyList()
         }
+        return json.decodeFromString(response.bodyString())
     }
 
     fun dobbeltutbetalinger(): List<Dobbeltutbetaling> {
-        return try {
-            runBlocking {
-                val since = (Instant.now() - Duration.ofHours(24)).toEpochMilli()
-                val response = client.get("${config.peisschtappern.host}/api/brann/dobbeltutbetalinger") {
-                    bearerAuth(getToken())
-                    parameter("since", since)
-                }
-                response.body()
-            }
-        } catch (e: ConnectTimeoutException) {
-            appLog.warn("klarte ikke hente dobbeltutbetalinger fra peisschtappern", e)
-            emptyList()
+        val response = http(
+            Request(Method.GET, "/api/brann/dobbeltutbetalinger")
+                .query("since", since(Duration.ofHours(24)))
+        )
+        if (!response.status.successful) {
+            appLog.warn("klarte ikke hente dobbeltutbetalinger fra peisschtappern: ${response.status}")
+            return emptyList()
         }
+        return json.decodeFromString(response.bodyString())
     }
-
     fun slukk(brann: Brann) {
-        try {
-            runBlocking {
-                when (brann) {
-                    is ManglendeKvittering -> client.delete("${config.peisschtappern.host}/api/brann/${brann.key}") {
-                        bearerAuth(getToken())
-                    }
-                    is Dobbeltutbetaling -> client.post("${config.peisschtappern.host}/api/brann/dobbeltutbetalinger/slukk") {
-                        bearerAuth(getToken())
-                        parameter("behandlingId", brann.behandlingId)
-                        parameter("klassekode", brann.klassekode)
-                        parameter("fom", brann.fom)
-                        parameter("tom", brann.tom)
-                    }
-                    is PendingMismatch -> Unit
-                }
-            }
-        } catch (e: ConnectTimeoutException) {
-            appLog.warn("klarte ikke slukke brann fra peisschtappern", e)
+        val request = when (brann) {
+            is ManglendeKvittering -> Request(Method.DELETE, "/api/brann/${brann.key}")
+            is Dobbeltutbetaling -> Request(Method.POST, "/api/brann/dobbeltutbetalinger/slukk")
+                .query("behandlingId", brann.behandlingId)
+                .query("klassekode", brann.klassekode)
+                .query("fom", brann.fom.toString())
+                .query("tom", brann.tom.toString())
+            is PendingMismatch -> return
+        }
+        val response = http(request)
+        if (!response.status.successful) {
+            appLog.warn("klarte ikke slukke brann i peisschtappern: ${request.method} ${request.uri.path} ga ${response.status}")
         }
     }
 
-    private suspend fun getToken(): String {
-        return when(val token = azure.getClientCredentialsToken(config.peisschtappern.scope)) {
-            is AzureToken -> token.access_token
-            is ProviderRejected -> unavailable("Token provider avviste client credentials")
-            is ProviderUnavailable -> unavailable("Token provider er utilgjengelig")
-        }
-    }
+    private fun since(duration: Duration): String = (Instant.now() - duration).toEpochMilli().toString()
 }
 
 @OptIn(ExperimentalSerializationApi::class)
