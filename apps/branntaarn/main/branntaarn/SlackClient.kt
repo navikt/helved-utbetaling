@@ -1,48 +1,36 @@
 package branntaarn
 
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
-import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
-import libs.http.HttpClientFactory
+import org.http4k.core.*
 
 class SlackClient(
     private val config: Config,
-    private val json: Json = libs.kotlinx.KotlinxJson,
-    private val client: HttpClient = HttpClientFactory.new(json, LogLevel.ALL),
+    private val http: HttpHandler,
 ) {
     fun postAggregated(grouped: Map<String, List<ManglendeKvittering>>) {
         if (grouped.isEmpty()) return
-        runBlocking {
-            client.post(config.slack.host.toString()) {
-                contentType(ContentType.Application.Json)
-                setBody(jsonAggregated(grouped, config))
-            }
-        }
+        http(
+            Request(Method.POST, config.slack.host.toString())
+                .header("Content-Type", "application/json")
+                .body(jsonAggregated(grouped, config))
+        )
     }
 
     fun postPendingMismatches(mismatches: List<PendingMismatch>) {
         if (mismatches.isEmpty()) return
-        runBlocking {
-            client.post(config.slack.host.toString()) {
-                contentType(ContentType.Application.Json)
-                setBody(jsonPendingMismatches(mismatches, config))
-            }
-        }
+        http(
+            Request(Method.POST, config.slack.host.toString())
+                .header("Content-Type", "application/json")
+                .body(jsonPendingMismatches(mismatches, config))
+        )
     }
 
     fun postDobbeltutbetalinger(suspects: List<Dobbeltutbetaling>) {
         if (suspects.isEmpty()) return
-        runBlocking {
-            client.post(config.slack.host.toString()) {
-                contentType(ContentType.Application.Json)
-                setBody(jsonDobbeltutbetalinger(suspects, config))
-            }
-        }
+        http(
+            Request(Method.POST, config.slack.host.toString())
+                .header("Content-Type", "application/json")
+                .body(jsonDobbeltutbetalinger(suspects, config))
+        )
     }
 }
 
