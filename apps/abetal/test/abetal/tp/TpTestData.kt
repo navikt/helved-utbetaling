@@ -5,6 +5,8 @@ import java.time.LocalDateTime
 import models.*
 import abetal.*
 
+internal fun TpUtbetaling.asBytes() = libs.kotlinx.KotlinxJson.encodeToString(this).toByteArray()
+
 fun MutableList<DetaljerLinje>.linje(
     behandlingId: BehandlingId,
     fom: LocalDate,
@@ -62,4 +64,3 @@ object Tp {
         )
     }
 }
-
