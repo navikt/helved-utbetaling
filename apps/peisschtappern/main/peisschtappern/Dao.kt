@@ -34,6 +34,7 @@ enum class Table {
     dp,
     tsIntern,
     tpIntern,
+    tp,
     ts,
     historisk,
     historiskIntern,

@@ -4,7 +4,6 @@ import abetal.*
 import kotlinx.serialization.serializer
 import libs.kafka.KotlinxSerializer
 import libs.kafka.KotlinxDeserializer
-import libs.kafka.JsonSerde
 import libs.kotlinx.KotlinxJson
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -16,6 +15,30 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class TpTest : ConsumerTestBase() {
+
+    @Test
+    fun `behandler utbetaling fra internt topic`() {
+        val transactionId = UUID.randomUUID().toString()
+        val sakId = "$nextInt"
+        val behandlingId = "$nextInt"
+        val meldeperiode = UUID.randomUUID().toString()
+        val uid = tpUId(sakId, meldeperiode, StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING)
+
+        TestRuntime.topics.tpIntern.produce(transactionId) {
+            Tp.utbetaling(sakId, behandlingId) {
+                Tp.periode(meldeperiode, 7.jun21, 18.jun21, 553u)
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat()
+            .has(transactionId)
+            .hasHeader(transactionId, FS_KEY to Fagsystem.TILTAKSPENGER.name)
+            .with(transactionId) { assertEquals(Status.MOTTATT, it.status) }
+        TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) { assertEquals(sakId, it.oppdrag110.fagsystemId) }
+        TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
+    }
 
     @Test
     fun `can serialize and deserialize`() {
@@ -53,7 +76,7 @@ internal class TpTest : ConsumerTestBase() {
         )
         val uid = "db4aea1c-a343-54d1-504f-5ab063a5fc16"
         val transactionId = UUID.randomUUID().toString()
-        TestRuntime.topics.tp.produce(transactionId) { utbet }
+        TestRuntime.topics.tp.produce(transactionId) { utbet.asBytes() }
         TestRuntime.topics.status.assertThat().has(transactionId)
         TestRuntime.topics.utbetalinger.assertThat().isEmpty()
         TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid)
@@ -110,7 +133,7 @@ internal class TpTest : ConsumerTestBase() {
             }""".trimIndent()
         )
         val transactionId2 = UUID.randomUUID().toString()
-        TestRuntime.topics.tp.produce(transactionId2) { dryrun }
+        TestRuntime.topics.tp.produce(transactionId2) { dryrun.asBytes() }
         TestRuntime.topics.simulering.assertThat()
             .has(transactionId2)
             .with(transactionId2) { simulering ->
@@ -159,7 +182,7 @@ internal class TpTest : ConsumerTestBase() {
         TestRuntime.topics.tp.produce(transactionId) {
             Tp.utbetaling(sid.id, bid.id, dryrun = true) {
                 Tp.periode(meldeperiode, 1.jan, 2.jan, 100u, stønad = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().isEmpty()
@@ -211,7 +234,7 @@ internal class TpTest : ConsumerTestBase() {
             Tp.utbetaling(sid.id, bid.id) {
                 Tp.periode(meldeperiode1, 7.jun21, 18.jun21, 553u) +
                 Tp.periode(meldeperiode2, 7.jul21, 20.jul21, 779u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -310,7 +333,7 @@ internal class TpTest : ConsumerTestBase() {
                 Tp.periode(meldeperiode1, 7.jun21, 20.jun21, 553u) +
                 Tp.periode(meldeperiode2, 7.jul21, 20.jul21, 779u) +
                 Tp.periode(meldeperiode3, 7.aug21, 20.aug21, 3000u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -434,7 +457,7 @@ internal class TpTest : ConsumerTestBase() {
             Tp.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
                 Tp.periode(meldeperiode1, 3.jun, 14.jun, 100u) +
                 Tp.periode(meldeperiode2, 17.jun, 28.jun, 200u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId2) {
@@ -514,7 +537,7 @@ internal class TpTest : ConsumerTestBase() {
         TestRuntime.topics.tp.produce(transactionId2) {
             Tp.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
                 Tp.periode(meldeperiode, 3.jun, 14.jun, 80u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId2) {
@@ -591,7 +614,7 @@ internal class TpTest : ConsumerTestBase() {
         TestRuntime.topics.tp.produce(transactionId) {
             Tp.utbetaling(sid.id, bid.id, vedtakstidspunkt = 14.jun.atStartOfDay()) {
                 emptyList()
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -718,7 +741,7 @@ internal class TpTest : ConsumerTestBase() {
             Tp.utbetaling(sid.id, bid.id) {
                 Tp.periode("132460781", 2.sep, 13.sep, 600u) +
                 Tp.periode("132462765", 30.sep, 10.okt, 600u)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {
@@ -821,7 +844,7 @@ internal class TpTest : ConsumerTestBase() {
         val transactionId = UUID.randomUUID().toString()
         val uid = tpUId("HV2511260231", "20250630-20250711", StønadTypeTiltakspenger.GRUPPE_AMO)
 
-        TestRuntime.topics.tp.produce(transactionId) { utbet }
+        TestRuntime.topics.tp.produce(transactionId) { utbet.asBytes() }
 
         TestRuntime.topics.pendingUtbetalinger.assertThat()
             .has(uid.toString())
@@ -856,7 +879,7 @@ internal class TpTest : ConsumerTestBase() {
         TestRuntime.topics.tp.produce(transactionId) {
             Tp.utbetaling(sid.id, bid.id) {
                 Tp.periode(meldeperiode, 7.jun21, 18.jun21, 553u, stønad = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, barnetillegg = true)
-            }
+            }.asBytes()
         }
 
         TestRuntime.topics.status.assertThat().has(transactionId) {

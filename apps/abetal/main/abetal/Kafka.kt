@@ -29,9 +29,8 @@ object Topics {
     val ts = Topic("tilleggsstonader.utbetaling.v1", bytes())
     val historisk = Topic("historisk.utbetaling.v1", bytes())
     val valp = Topic("team-mulighetsrommet.tilskudd.utbetaling-v1", bytes())
+    val tp = Topic("tpts.utbetaling-v1", bytes())
 
-    // TODO: rename denne til tpUtbetalinger når ts har laget topic
-    val tp = Topic("helved.utbetalinger-tp.v1", json<TpUtbetaling>())
     val utbetalinger = Topic("helved.utbetalinger.v1", json<Utbetaling>())
     val oppdrag = Topic("helved.oppdrag.v1", xml<Oppdrag>())
     val simulering = Topic("helved.simuleringer.v1", jaxb<SimulerBeregningRequest>())
@@ -43,6 +42,7 @@ object Topics {
     val tsIntern = Topic("helved.utbetalinger-ts.v1", bytes())
     val historiskIntern = Topic("helved.utbetalinger-historisk.v1", bytes())
     val valpIntern = Topic("helved.utbetalinger-valp.v1", bytes())
+    val tpIntern = Topic("helved.utbetalinger-tp.v1", bytes())
     val dryrunAap = Topic("helved.dryrun-aap.v1", json<Simulering>())
     val dryrunDp = Topic("helved.dryrun-dp.v1", json<Simulering>())
     val dryrunTs = Topic("helved.dryrun-ts.v1", json<Simulering>())
@@ -241,9 +241,9 @@ fun Topology.tpStream(
     kafka: Streams,
 ) {
     consume(Topics.tp)
-        // .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
-        // .merge(consume(Topics.tpUtbetalinger))
-        .map { key, tp -> TpTuple(key, tp) }
+        .repartition(Topics.tp, 3, "from-${Topics.tp.name}")
+        .merge(consume(Topics.tpIntern))
+        .map { key, payload -> TpTuple(key, deserialize<TpUtbetaling>(Topics.tp.name, payload)) }
         .includeHeader(ORIGINAL_KEY) { it.key }
         .rekey { (_, tp) -> SakKey(SakId(tp.sakId), Fagsystem.TILTAKSPENGER) }
         .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
