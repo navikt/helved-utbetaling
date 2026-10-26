@@ -2,7 +2,7 @@ dependencies {
     implementation(project(":libs:utils"))
 
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    api("org.postgresql:postgresql:42.7.8")
+    api("org.postgresql:postgresql:42.7.14")
     api("com.zaxxer:HikariCP:7.0.2")
 
     testImplementation("com.h2database:h2:2.4.240")
