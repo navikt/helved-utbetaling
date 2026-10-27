@@ -28,7 +28,7 @@ object AggregateService {
             .filter(::hasChanges)
             .map { (new, prev) ->
                 new.validate()
-
+                // TODO: Er det sannsynlig at personident endres samtidig som Action.DELETE?
                 when {
                     new.action == Action.DELETE -> {
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")

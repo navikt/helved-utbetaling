@@ -4,7 +4,6 @@ import abetal.*
 import kotlinx.serialization.serializer
 import libs.kafka.KotlinxSerializer
 import libs.kafka.KotlinxDeserializer
-import libs.kafka.JsonSerde
 import libs.kotlinx.KotlinxJson
 import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
@@ -472,6 +471,72 @@ internal class TpTest : ConsumerTestBase() {
             .with(uid2.toString()) {
                 assertUtbetaling(expected, it)
             }
+    }
+
+    @Test
+    fun `update - personident can change from d-nummer to fødselsnummer`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val meldeperiode1 = "132460781"
+        val meldeperiode2 = "232460781"
+        val uid1 = tpUId(sid.id, meldeperiode1, StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING)
+        val uid2 = tpUId(sid.id, meldeperiode2, StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING)
+        val dnummer = "41234567890"
+        val fnr = "12345678910"
+
+        val existing1 = utbetaling(
+            action = Action.CREATE,
+            uid = uid1,
+            sakId = sid,
+            behandlingId = bid,
+            originalKey = transactionId,
+            stønad = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
+            personident = Personident(dnummer),
+            vedtakstidspunkt = 14.jun.atStartOfDay(),
+            beslutterId = Navident("tp"),
+            saksbehandlerId = Navident("tp"),
+            fagsystem = Fagsystem.TILTAKSPENGER,
+        ) {
+            periode(3.jun, 14.jun, 100u, null)
+        }
+        val existing2 = existing1.copy(uid = uid2, perioder = listOf(periode(17.jun, 28.jun, 100u, null)))
+
+        TestRuntime.topics.utbetalinger.produce(uid1.toString(), existing1)
+        TestRuntime.topics.utbetalinger.produce(uid2.toString(), existing2)
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.TILTAKSPENGER), setOf(uid1, uid2))
+        TestRuntime.topics.tp.produce(transactionId) {
+            Tp.utbetaling(sid.id, bid.id, personident = fnr, vedtakstidspunkt = 14.jun.atStartOfDay()) {
+                Tp.periode(meldeperiode1, 3.jun, 14.jun, 200u) +
+                Tp.periode(meldeperiode2, 17.jun, 28.jun, 100u)
+            }
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId) {
+            Tp.mottatt {
+                linje(bid, 3.jun, 14.jun, 200u)
+            }
+        }
+
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) { oppdrag ->
+                assertEquals("ENDR", oppdrag.oppdrag110.kodeEndring)
+                assertEquals(fnr, oppdrag.oppdrag110.oppdragGjelderId)
+                assertTrue(oppdrag.oppdrag110.oppdragsLinje150s.isNotEmpty())
+                oppdrag.oppdrag110.oppdragsLinje150s.forEach { assertEquals(fnr, it.utbetalesTilId) }
+            }
+            .get(transactionId)
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat()
+            .has(uid1.toString())
+            .with(uid1.toString()) { assertEquals(Personident(fnr), it.personident) }
+
+        kvitterOk(transactionId, oppdrag, listOf(uid1))
+
+        TestRuntime.topics.utbetalinger.assertThat()
+            .has(uid1.toString())
+            .with(uid1.toString()) { assertEquals(Personident(fnr), it.personident) }
     }
 
     @Test
