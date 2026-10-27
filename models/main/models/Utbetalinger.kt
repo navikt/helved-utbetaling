@@ -162,14 +162,12 @@ fun Utbetaling.failOnEmptyPerioder() {
 
 fun Utbetaling.validateLockedFields(other: Utbetaling) {
     if (sakId != other.sakId) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID)
-    if (personident != other.personident) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERSONIDENT)
     if (stønad != other.stønad) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_STØNAD)
     if (periodetype != other.periodetype) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERIODETYPE)
 }
 
 fun Utbetaling.preValidateLockedFields(other: Utbetaling) {
     if (sakId != other.sakId) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_SAK_ID)
-    if (personident != other.personident) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERSONIDENT)
     if (periodetype != other.periodetype) badRequest(DocumentedErrors.Async.Utbetaling.IMMUTABLE_FIELD_PERIODETYPE)
 }
 
