@@ -249,27 +249,30 @@ fun Topology.tpStream(
         .leftJoin(Serde.json(), Serde.json(), saker, "tptuple-leftjoin-saker")
         .peek { key, _, saker -> kafkaLog.info("joined with saker on key:$key. Uids: $saker") }
         .includeHeader(FS_KEY) { Fagsystem.TILTAKSPENGER.name }
-        .map { sakKey, req, ids -> TpDto.splitToDomain(sakKey.sakId, req.key, req.value, ids) }
-        .rekey { dtos -> dtos.first().originalKey }
-        .map { value ->
-            val store = kafka.getStore(Stores.utbetalinger)
-            val aggregate = value.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
-            require(value.all { it.dryrun } || value.none { it.dryrun }) {
-                "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
-            }
-            if (value.any { it.dryrun }) {
-                return@map Result.catch { AggregateService.utledSimulering(aggregate) }
-                    .map(StreamResult::SimuleringOk)
-                    .getOrElse(StreamResult::SimuleringError)
-            }
-            Result.catch { AggregateService.utledOppdrag(aggregate) }
-                .map(StreamResult::OppdragOk)
-                .getOrElse(StreamResult::OppdragError)
+        .branch(Guard::ifNoPerioder, Guard::replyOkTp)
+        .default {
+            this.map { sakKey, (req, uids) -> TpDto.splitToDomain(sakKey.sakId, req.key, req.value, uids) }
+                .rekey { _, dtos -> dtos.first().originalKey }
+                .map { utbetalinger ->
+                    val store = kafka.getStore(Stores.utbetalinger)
+                    val aggregate = utbetalinger.map { StreamsPair(it, store.getOrNull(it.uid.toString())) }
+                    require(utbetalinger.all { it.dryrun } || utbetalinger.none { it.dryrun }) {
+                        "Kan ikke blande dryrun og ikke-dryrun utbetalinger"
+                    }
+                    if (utbetalinger.any { it.dryrun }) {
+                        return@map Result.catch { AggregateService.utledSimulering(aggregate) }
+                            .map(StreamResult::SimuleringOk)
+                            .getOrElse(StreamResult::SimuleringError)
+                    }
+                    Result.catch { AggregateService.utledOppdrag(aggregate) }
+                        .map(StreamResult::OppdragOk)
+                        .getOrElse(StreamResult::OppdragError)
+                }
+                .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
+                .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(Fagsystem.TILTAKSPENGER, this) }
+                .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
+                .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILTAKSPENGER, this) }
         }
-        .branch({ it is StreamResult.OppdragError }, ::replyOppdragError)
-        .branch({ it is StreamResult.SimuleringError }) { replySimuleringError(Fagsystem.TILTAKSPENGER, this) }
-        .branch({ it is StreamResult.OppdragOk }, ::replyOppdragOk)
-        .branch({ it is StreamResult.SimuleringOk }) { replySimuleringOk(Fagsystem.TILTAKSPENGER, this) }
 }
 
 fun Topology.historiskStream(
@@ -371,6 +374,20 @@ private object Guard {
         branch.rekey { (aapTuple, _) -> aapTuple.key }
             .map {
                 appLog.info("idempotens guard (AAP) - will reply OK for sakId=${it.left.value.sakId}")
+                StatusReply.ok()
+            }.produce(Topics.status)
+    }
+
+    // Tiltakspenger
+    fun ifNoPerioder(pair: StreamsPair<TpTuple, Set<UtbetalingId>?>): Boolean {
+        val (perioder, saker) = pair.left.value.perioder to pair.right
+        return perioder.isEmpty() && saker.isNullOrEmpty()
+    }
+
+    fun replyOkTp(branch: MappedStream<SakKey, StreamsPair<TpTuple, Set<UtbetalingId>?>>) {
+        branch.rekey { (tpTuple, _) -> tpTuple.key }
+            .map {
+                appLog.info("idempotens guard (TP) - will reply OK for sakId=${it.left.value.sakId}")
                 StatusReply.ok()
             }.produce(Topics.status)
     }
