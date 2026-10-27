@@ -27,6 +27,72 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
+    fun `create - melding med tom liste for ny sak returnerer OK`() {
+        val transactionId = UUID.randomUUID().toString()
+
+        TestRuntime.topics.tp.produce(transactionId) {
+            Tp.utbetaling("$nextInt", "$nextInt") { emptyList() }
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId, StatusReply.ok())
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+        TestRuntime.topics.utbetalinger.assertThat().isEmpty()
+    }
+
+    @Test
+    fun `update - utbetaling lik forrige returnerer OK uten oppdrag`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val meldeperiode = UUID.randomUUID().toString()
+        val uid = tpUId(sid.id, meldeperiode, StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING)
+
+        val existingUtbetaling = utbetaling(
+            action = Action.CREATE,
+            uid = uid,
+            sakId = sid,
+            behandlingId = bid,
+            originalKey = transactionId,
+            personident = Personident("12345678910"),
+            vedtakstidspunkt = 14.jun.atStartOfDay(),
+            beslutterId = Navident("tp"),
+            saksbehandlerId = Navident("tp"),
+            fagsystem = Fagsystem.TILTAKSPENGER,
+        ) {
+            periode(1.jan, 2.jan, 100u, null)
+        }
+        TestRuntime.topics.utbetalinger.produce(uid.toString(), existingUtbetaling)
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.TILTAKSPENGER), setOf(uid))
+
+        TestRuntime.topics.tp.produce(transactionId) {
+            Tp.utbetaling(sid.id, bid.id) {
+                Tp.periode(meldeperiode, 1.jan, 2.jan, 100u)
+            }
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId, StatusReply.ok())
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+    }
+
+    @Test
+    fun `create - melding med tom liste for sak uten utbetalinger returnerer OK`() {
+        val sid = SakId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.TILTAKSPENGER), emptySet())
+
+        TestRuntime.topics.tp.produce(transactionId) {
+            Tp.utbetaling(sid.id, "$nextInt") { emptyList() }
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId, StatusReply.ok())
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+        TestRuntime.topics.pendingUtbetalinger.assertThat().isEmpty()
+    }
+
+    @Test
     fun `simulation - dry run tp utbetaling`() {
         val utbet = KotlinxJson.decodeFromString<TpUtbetaling>(
             """

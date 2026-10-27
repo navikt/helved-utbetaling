@@ -14,9 +14,9 @@ subgraph Topologi
 	ktable-helved.saker.v1-repartition([ktable-helved.saker.v1-repartition])
 	aaptuple-leftjoin-saker-repartition([aaptuple-leftjoin-saker-repartition])
 	dptuple-leftjoin-saker-repartition([dptuple-leftjoin-saker-repartition])
+	tptuple-leftjoin-saker-repartition([tptuple-leftjoin-saker-repartition])
 	tstuple-leftjoin-saker-repartition([tstuple-leftjoin-saker-repartition])
 	historisktuple-leftjoin-saker-repartition([historisktuple-leftjoin-saker-repartition])
-	tptuple-leftjoin-saker-repartition([tptuple-leftjoin-saker-repartition])
 	valptuple-leftjoin-saker-repartition([valptuple-leftjoin-saker-repartition])
 	helved.status.v1([helved.status.v1])
 	helved.dryrun-aap.v1([helved.dryrun-aap.v1])
@@ -48,9 +48,9 @@ subgraph Topologi
     pk-leftjoin-pending{leftjoin}
 	aaptuple-leftjoin-saker{leftjoin}
 	dptuple-leftjoin-saker{leftjoin}
+	tptuple-leftjoin-saker{leftjoin}
 	tstuple-leftjoin-saker{leftjoin}
 	historisktuple-leftjoin-saker{leftjoin}
-	tptuple-leftjoin-saker{leftjoin}
 	valptuple-leftjoin-saker{leftjoin}
 
     %% STATE PROCESSORS
@@ -70,8 +70,8 @@ subgraph Topologi
     %% JOIN STREAMS
     pk-leftjoin-pending-repartition --> pk-leftjoin-pending
 	helved.pending-utbetalinger.v1-state-store-v4 --> pk-leftjoin-pending
-	pk-leftjoin-pending --> helved.retry-oppdrag.v1
 	pk-leftjoin-pending --> helved.utbetalinger.v1
+	pk-leftjoin-pending --> helved.retry-oppdrag.v1
 	aaptuple-leftjoin-saker-repartition --> aaptuple-leftjoin-saker
 	helved.saker.v1-state-store --> aaptuple-leftjoin-saker
 	aaptuple-leftjoin-saker --> helved.status.v1
@@ -96,6 +96,18 @@ subgraph Topologi
 	dptuple-leftjoin-saker --> helved.dryrun-tp.v1
 	dptuple-leftjoin-saker --> helved.dryrun-valp.v1
 	dptuple-leftjoin-saker --> helved.dryrun-historisk.v1
+	tptuple-leftjoin-saker-repartition --> tptuple-leftjoin-saker
+	helved.saker.v1-state-store --> tptuple-leftjoin-saker
+	tptuple-leftjoin-saker --> helved.dryrun-aap.v1
+	tptuple-leftjoin-saker --> helved.dryrun-dp.v1
+	tptuple-leftjoin-saker --> helved.dryrun-ts.v1
+	tptuple-leftjoin-saker --> helved.dryrun-tp.v1
+	tptuple-leftjoin-saker --> helved.dryrun-valp.v1
+	tptuple-leftjoin-saker --> helved.dryrun-historisk.v1
+	tptuple-leftjoin-saker --> helved.simuleringer.v1
+	tptuple-leftjoin-saker --> helved.status.v1
+	tptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
+	tptuple-leftjoin-saker --> helved.oppdrag.v1
 	tstuple-leftjoin-saker-repartition --> tstuple-leftjoin-saker
 	helved.saker.v1-state-store --> tstuple-leftjoin-saker
 	tstuple-leftjoin-saker --> helved.status.v1
@@ -111,36 +123,24 @@ subgraph Topologi
 	historisktuple-leftjoin-saker-repartition --> historisktuple-leftjoin-saker
 	helved.saker.v1-state-store --> historisktuple-leftjoin-saker
 	historisktuple-leftjoin-saker --> helved.status.v1
-	historisktuple-leftjoin-saker --> helved.pending-utbetalinger.v1
-	historisktuple-leftjoin-saker --> helved.oppdrag.v1
 	historisktuple-leftjoin-saker --> helved.dryrun-aap.v1
-	historisktuple-leftjoin-saker --> helved.dryrun-dp.v1
 	historisktuple-leftjoin-saker --> helved.dryrun-ts.v1
+	historisktuple-leftjoin-saker --> helved.dryrun-dp.v1
 	historisktuple-leftjoin-saker --> helved.dryrun-tp.v1
 	historisktuple-leftjoin-saker --> helved.dryrun-valp.v1
 	historisktuple-leftjoin-saker --> helved.dryrun-historisk.v1
+	historisktuple-leftjoin-saker --> helved.pending-utbetalinger.v1
+	historisktuple-leftjoin-saker --> helved.oppdrag.v1
 	historisktuple-leftjoin-saker --> helved.simuleringer.v1
-	tptuple-leftjoin-saker-repartition --> tptuple-leftjoin-saker
-	helved.saker.v1-state-store --> tptuple-leftjoin-saker
-	tptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
-	tptuple-leftjoin-saker --> helved.status.v1
-	tptuple-leftjoin-saker --> helved.oppdrag.v1
-	tptuple-leftjoin-saker --> helved.dryrun-aap.v1
-	tptuple-leftjoin-saker --> helved.dryrun-dp.v1
-	tptuple-leftjoin-saker --> helved.dryrun-ts.v1
-	tptuple-leftjoin-saker --> helved.dryrun-tp.v1
-	tptuple-leftjoin-saker --> helved.dryrun-valp.v1
-	tptuple-leftjoin-saker --> helved.dryrun-historisk.v1
-	tptuple-leftjoin-saker --> helved.simuleringer.v1
 	valptuple-leftjoin-saker-repartition --> valptuple-leftjoin-saker
 	helved.saker.v1-state-store --> valptuple-leftjoin-saker
 	valptuple-leftjoin-saker --> helved.status.v1
+	valptuple-leftjoin-saker --> helved.dryrun-aap.v1
+	valptuple-leftjoin-saker --> helved.dryrun-dp.v1
 	valptuple-leftjoin-saker --> helved.dryrun-ts.v1
 	valptuple-leftjoin-saker --> helved.dryrun-tp.v1
 	valptuple-leftjoin-saker --> helved.dryrun-valp.v1
 	valptuple-leftjoin-saker --> helved.dryrun-historisk.v1
-	valptuple-leftjoin-saker --> helved.dryrun-aap.v1
-	valptuple-leftjoin-saker --> helved.dryrun-dp.v1
 	valptuple-leftjoin-saker --> helved.pending-utbetalinger.v1
 	valptuple-leftjoin-saker --> helved.oppdrag.v1
 	valptuple-leftjoin-saker --> helved.simuleringer.v1
@@ -200,9 +200,9 @@ style helved.saker.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a2
 style ktable-helved.saker.v1-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style aaptuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style dptuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
+style tptuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style tstuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style historisktuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
-style tptuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style valptuple-leftjoin-saker-repartition fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.status.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
 style helved.dryrun-aap.v1 fill:#c233b4, stroke:#2a204a, stroke-width:2px, color:#2a204a
