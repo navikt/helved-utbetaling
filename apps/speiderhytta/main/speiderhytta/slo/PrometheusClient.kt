@@ -1,14 +1,14 @@
 package speiderhytta.slo
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.request.get
-import io.ktor.client.request.parameter
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.runInterruptible
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
-import libs.http.HttpClientFactory
 import libs.utils.appLog
+import org.http4k.client.JavaHttpClient
+import org.http4k.core.HttpHandler
+import org.http4k.core.Method
+import org.http4k.core.Request
 import speiderhytta.PrometheusConfig
 
 /**
@@ -18,18 +18,24 @@ import speiderhytta.PrometheusConfig
  * queries (for charts). Both return a `result[].value[ts, "string"]` shape.
  *
  * Unknown fields in the Prometheus response are ignored via `ignoreUnknownKeys`
- * in the default [HttpClientFactory] Json config.
+ * in [libs.kotlinx.KotlinxJson].
  */
 class PrometheusClient(
     private val config: PrometheusConfig,
-    private val client: HttpClient = HttpClientFactory.new(libs.kotlinx.KotlinxJson, LogLevel.INFO),
+    private val client: HttpHandler = JavaHttpClient(),
 ) {
 
     suspend fun instant(query: String): Double? {
         val url = "${config.url}/api/v1/query"
         return try {
-            val response: PromResponse = client.get(url) { parameter("query", query) }.body()
-            response.data?.result?.firstOrNull()?.value?.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
+            val response = runInterruptible {
+                client(Request(Method.GET, url).query("query", query))
+            }
+            if (!response.status.successful) return null
+            val parsed = libs.kotlinx.KotlinxJson.decodeFromString<PromResponse>(response.bodyString())
+            parsed.data?.result?.firstOrNull()?.value?.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
+        } catch (e: CancellationException) {
+            throw e
         } catch (t: Throwable) {
             appLog.warn("prometheus instant query failed: {}", query, t)
             null

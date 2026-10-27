@@ -2,63 +2,74 @@
 
 package speiderhytta.audit
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import libs.jdbc.Dao
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
+import org.http4k.core.Method
+import org.http4k.core.Response
+import org.http4k.core.Status
+import org.http4k.core.with
+import org.http4k.routing.RoutingHttpHandler
+import org.http4k.routing.bind
+import org.http4k.routing.path
+import org.http4k.routing.routes
+import speiderhytta.KotlinxJson
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
 
-fun Route.auditRoutes(
+private val workflowListLens = KotlinxJson.autoBody<List<WorkflowRunSummary>>().toLens()
+private val reportLens = KotlinxJson.autoBody<AuditReport>().toLens()
+
+fun auditRoutes(
     jdbcCtx: CoroutineDatasource,
     codeRepositories: Set<String>,
-) {
-    route("/audit") {
-        get("/workflows/{owner}/{repo}") {
-            val repository = repository(call.parameters["owner"], call.parameters["repo"])
-                ?: return@get call.respond(HttpStatusCode.BadRequest, "missing repository")
-            if (repository !in codeRepositories) return@get call.respond(HttpStatusCode.NotFound, "unknown repository")
-            val from = instant(call.request.queryParameters["from"])
-                ?: call.request.queryParameters["from"]?.let {
-                    return@get call.respond(HttpStatusCode.BadRequest, "invalid from timestamp")
+): RoutingHttpHandler = routes(
+    "/audit/workflows/{owner}/{repo}" bind Method.GET to { req ->
+        val repository = repository(req.path("owner"), req.path("repo"))
+        val fromRaw = req.query("from")
+        val toRaw = req.query("to")
+        val from = instant(fromRaw)
+        val to = instant(toRaw)
+        when {
+            repository == null -> Response(Status.BAD_REQUEST).body("missing repository")
+            repository !in codeRepositories -> Response(Status.NOT_FOUND).body("unknown repository")
+            from == null && fromRaw != null -> Response(Status.BAD_REQUEST).body("invalid from timestamp")
+            to == null && toRaw != null -> Response(Status.BAD_REQUEST).body("invalid to timestamp")
+            from != null && to != null && from.isAfter(to) ->
+                Response(Status.BAD_REQUEST).body("from must be before or equal to to")
+            else -> {
+                val app = req.query("app")?.takeUnless { it.isBlank() }
+                val limit = limit(req.query("limit"))
+                val rows = runBlocking(jdbcCtx + Dispatchers.IO) {
+                    transaction { WorkflowRunSummary.list(repository, app, from, to, limit) }
                 }
-            val to = instant(call.request.queryParameters["to"])
-                ?: call.request.queryParameters["to"]?.let {
-                    return@get call.respond(HttpStatusCode.BadRequest, "invalid to timestamp")
-                }
-            if (from != null && to != null && from.isAfter(to)) {
-                return@get call.respond(HttpStatusCode.BadRequest, "from must be before or equal to to")
+                Response(Status.OK).with(workflowListLens of rows)
             }
-            val app = call.request.queryParameters["app"]?.takeUnless { it.isBlank() }
-            val limit = limit(call.request.queryParameters["limit"])
-            val rows = withContext(jdbcCtx + Dispatchers.IO) {
-                transaction { WorkflowRunSummary.list(repository, app, from, to, limit) }
-            }
-            call.respond(rows)
         }
+    },
 
-        get("/report/{owner}/{repo}/workflows/{runId}") {
-            val repository = repository(call.parameters["owner"], call.parameters["repo"])
-                ?: return@get call.respond(HttpStatusCode.BadRequest, "missing repository")
-            if (repository !in codeRepositories) return@get call.respond(HttpStatusCode.NotFound, "unknown repository")
-            val runId = call.parameters["runId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, "invalid run id")
-            val report = withContext(jdbcCtx + Dispatchers.IO) {
-                transaction { report(repository, runId) }
-            } ?: return@get call.respond(HttpStatusCode.NotFound, "unknown workflow run")
-            call.respond(report)
+    "/audit/report/{owner}/{repo}/workflows/{runId}" bind Method.GET to { req ->
+        val repository = repository(req.path("owner"), req.path("repo"))
+        val runId = req.path("runId")?.toLongOrNull()
+        when {
+            repository == null -> Response(Status.BAD_REQUEST).body("missing repository")
+            repository !in codeRepositories -> Response(Status.NOT_FOUND).body("unknown repository")
+            runId == null -> Response(Status.BAD_REQUEST).body("invalid run id")
+            else -> {
+                val report = runBlocking(jdbcCtx + Dispatchers.IO) {
+                    transaction { report(repository, runId) }
+                }
+                if (report == null) Response(Status.NOT_FOUND).body("unknown workflow run")
+                else Response(Status.OK).with(reportLens of report)
+            }
         }
-    }
-}
+    },
+)
 
 @Serializable
 data class AuditReport(

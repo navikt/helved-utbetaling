@@ -1,22 +1,15 @@
 package speiderhytta.github
 
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.MockRequestHandleScope
-import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.HttpRequestData
-import io.ktor.client.request.HttpResponseData
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.http4k.core.HttpHandler
+import org.http4k.core.Method
+import org.http4k.core.Request
+import org.http4k.core.Response
+import org.http4k.core.Status
 import speiderhytta.GithubConfig
 import java.net.URI
 import java.security.KeyPairGenerator
@@ -30,14 +23,14 @@ class GithubClientTest {
     fun `paginering henter alle commits med riktige parametere`() = runTest {
         val requestedPages = mutableListOf<String?>()
         val client = githubClient { request ->
-            when (request.url.encodedPath) {
+            when (request.uri.path) {
                 "/repos/navikt/repo/commits" -> {
-                    requestedPages.add(request.url.parameters["page"])
-                    val page = request.url.parameters["page"]?.toInt()
+                    requestedPages.add(request.query("page"))
+                    val page = request.query("page")?.toInt()
                     val commits = if (page == 1) (1..100).map { commitJson("sha-$it") } else listOf(commitJson("sha-101"))
                     jsonResponse(commits.joinToString(prefix = "[", postfix = "]"))
                 }
-                else -> error("Unexpected request ${request.url}")
+                else -> error("Unexpected request ${request.uri}")
             }
         }
 
@@ -50,13 +43,13 @@ class GithubClientTest {
     @Test
     fun `rulesets kombinerer liste og detaljer`() = runTest {
         val client = githubClient { request ->
-            when (request.url.encodedPath) {
+            when (request.uri.path) {
                 "/repos/navikt/repo/rulesets" -> {
-                    assertEquals("true", request.url.parameters["includes_parents"])
+                    assertEquals("true", request.query("includes_parents"))
                     jsonResponse("""[{"id":7,"_links":{"self":{"href":"https://api.github.test/repos/navikt/repo/rulesets/7"}}}]""")
                 }
                 "/repos/navikt/repo/rulesets/7" -> jsonResponse("""{"id":7,"name":"main protection"}""")
-                else -> error("Unexpected request ${request.url}")
+                else -> error("Unexpected request ${request.uri}")
             }
         }
 
@@ -70,16 +63,16 @@ class GithubClientTest {
     @Test
     fun `mapper GitHub-feil til fetch status`() = runTest {
         val statuses = listOf(
-            HttpStatusCode.NotFound to FetchStatus.NOT_FOUND,
-            HttpStatusCode.Forbidden to FetchStatus.FORBIDDEN,
-            HttpStatusCode.InternalServerError to FetchStatus.FAILED,
+            Status.NOT_FOUND to FetchStatus.NOT_FOUND,
+            Status.FORBIDDEN to FetchStatus.FORBIDDEN,
+            Status.INTERNAL_SERVER_ERROR to FetchStatus.FAILED,
         )
 
         statuses.forEach { (httpStatus, expected) ->
             val client = githubClient { request ->
-                when (request.url.encodedPath) {
+                when (request.uri.path) {
                     "/repos/navikt/repo/branches/main/protection" -> jsonResponse("{}", httpStatus)
-                    else -> error("Unexpected request ${request.url}")
+                    else -> error("Unexpected request ${request.uri}")
                 }
             }
 
@@ -90,9 +83,9 @@ class GithubClientTest {
     @Test
     fun `returnerer null når kommentaren som skal oppdateres er slettet`() = runTest {
         val client = githubClient { request ->
-            when (request.url.encodedPath) {
-                "/repos/navikt/team-helved/issues/comments/42" -> jsonResponse("{}", HttpStatusCode.NotFound)
-                else -> error("Unexpected request ${request.url}")
+            when (request.uri.path) {
+                "/repos/navikt/team-helved/issues/comments/42" -> jsonResponse("{}", Status.NOT_FOUND)
+                else -> error("Unexpected request ${request.uri}")
             }
         }
 
@@ -102,42 +95,123 @@ class GithubClientTest {
     @Test
     fun `propagerer cancellation ved kontrollhenting`() = runTest {
         val client = githubClient { request ->
-            when (request.url.encodedPath) {
+            when (request.uri.path) {
                 "/repos/navikt/repo/branches/main/protection" -> throw CancellationException("stopp")
-                else -> error("Unexpected request ${request.url}")
+                else -> error("Unexpected request ${request.uri}")
             }
         }
 
         assertFailsWith<CancellationException> { client.branchProtection("navikt/repo", "main") }
     }
 
-    private fun githubClient(handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData): GithubClient {
+    @Test
+    fun `sender installation token og GitHub-headere på API-kall`() = runTest {
+        val client = githubClient { request ->
+            assertEquals("Bearer installation-token", request.header("Authorization"))
+            assertEquals("application/vnd.github+json", request.header("Accept"))
+            assertEquals("2022-11-28", request.header("X-GitHub-Api-Version"))
+            jsonResponse("[]")
+        }
+
+        client.auditCommits("navikt/repo", "main", java.time.Instant.EPOCH)
+    }
+
+    @Test
+    fun `oppretter issue-kommentar med riktig metode og JSON-body`() = runTest {
+        val client = githubClient { request ->
+            assertEquals(Method.POST, request.method)
+            assertEquals("/repos/navikt/team-helved/issues/42/comments", request.uri.path)
+            assertEquals("application/json", request.header("Content-Type"))
+            assertEquals("""{"body":"kontrollert"}""", request.bodyString())
+            jsonResponse("""{"id":7,"body":"kontrollert"}""")
+        }
+
+        val comment = client.createIssueComment("navikt/team-helved", 42, "kontrollert")
+
+        assertEquals(7, comment.id)
+        assertEquals("kontrollert", comment.body)
+    }
+
+    @Test
+    fun `propagerer serverfeil ved opprettelse av issue-kommentar`() = runTest {
+        val client = githubClient { jsonResponse("{}", Status.INTERNAL_SERVER_ERROR) }
+
+        val error = assertFailsWith<GithubHttpException> {
+            client.createIssueComment("navikt/team-helved", 42, "kontrollert")
+        }
+
+        assertEquals(Status.INTERNAL_SERVER_ERROR, error.status)
+    }
+
+    @Test
+    fun `beholder tom liste som fallback ved feil under workflow-henting`() = runTest {
+        val client = githubClient { error("GitHub unavailable") }
+
+        assertEquals(emptyList(), client.appWorkflowRuns("navikt/repo", "deploy.yml", java.time.Instant.EPOCH))
+    }
+
+    @Test
+    fun `beholder tom liste som fallback ved feil under jobbhenting`() = runTest {
+        val client = githubClient { error("GitHub unavailable") }
+
+        assertEquals(emptyList(), client.workflowRunJobs("navikt/repo", 42))
+    }
+
+    @Test
+    fun `workflow-henting bruker eksisterende enkeltkall med hundre runs`() = runTest {
+        var requests = 0
+        val client = githubClient { request ->
+            requests++
+            assertEquals("/repos/navikt/repo/actions/workflows/deploy.yml/runs", request.uri.path)
+            assertEquals("main", request.query("branch"))
+            assertEquals(">=${java.time.Instant.EPOCH}", request.query("created"))
+            assertEquals("100", request.query("per_page"))
+            val runs = (1..100).map { workflowRunJson(it.toLong()) }
+            jsonResponse(runs.joinToString(prefix = "{\"workflow_runs\":[", postfix = "]}"))
+        }
+
+        val runs = client.appWorkflowRuns("navikt/repo", "deploy.yml", java.time.Instant.EPOCH)
+
+        assertEquals(100, runs.size)
+        assertEquals(1, requests)
+    }
+
+    private fun githubClient(handler: (Request) -> Response): GithubClient {
         val config = GithubConfig(
             apiUrl = URI("https://api.github.test").toURL(),
             appId = "1",
             installationId = "2",
             privateKeyPem = privateKeyPem(),
         )
-        val engine = MockEngine { request ->
-            if (request.url.encodedPath == "/app/installations/2/access_tokens") {
+        val http: HttpHandler = { request ->
+            if (request.uri.path == "/app/installations/2/access_tokens") {
                 jsonResponse("""{"token":"installation-token","expires_at":"2099-01-01T00:00:00Z"}""")
             } else {
                 handler(request)
             }
         }
-        val http = HttpClient(engine) {
-            install(ContentNegotiation) { json(libs.kotlinx.KotlinxJson) }
-        }
         return GithubClient(config, http, GithubApp(config, http))
     }
 
-    private fun MockRequestHandleScope.jsonResponse(body: String, status: HttpStatusCode = HttpStatusCode.OK) = respond(
-        content = body,
-        status = status,
-        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-    )
+    private fun jsonResponse(body: String, status: Status = Status.OK): Response =
+        Response(status).header("Content-Type", "application/json").body(body)
 
     private fun commitJson(sha: String) = """{"sha":"$sha","commit":{"author":{"date":"2026-09-01T00:00:00Z"}}}"""
+
+    private fun workflowRunJson(id: Long) = """
+        {
+          "id":$id,
+          "name":"deploy",
+          "head_sha":"sha-$id",
+          "head_branch":"main",
+          "event":"push",
+          "status":"completed",
+          "conclusion":"success",
+          "created_at":"2026-09-01T00:00:00Z",
+          "updated_at":"2026-09-01T00:01:00Z",
+          "html_url":"https://github.test/runs/$id"
+        }
+    """.trimIndent()
 
     private fun privateKeyPem(): String {
         val key = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair().private.encoded

@@ -2,6 +2,7 @@
 
 package speiderhytta.slo
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.coroutines.withContext
@@ -55,6 +56,8 @@ class SloService(
                     }
                 }
                 metrics.sloSnapshotted(status.app, status.name, status.errorBudgetRemaining)
+            } catch (e: CancellationException) {
+                throw e
             } catch (t: Throwable) {
                 appLog.warn("failed to snapshot SLO {}/{}", def.service, def.name, t)
             }

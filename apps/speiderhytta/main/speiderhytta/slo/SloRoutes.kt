@@ -1,15 +1,19 @@
 package speiderhytta.slo
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
+import org.http4k.core.Method
+import org.http4k.core.Response
+import org.http4k.core.Status
+import org.http4k.core.with
+import org.http4k.routing.RoutingHttpHandler
+import org.http4k.routing.bind
+import org.http4k.routing.path
+import org.http4k.routing.routes
 import speiderhytta.HELVED_APPS
+import speiderhytta.KotlinxJson
 import java.time.Instant
 
 /**
@@ -18,39 +22,59 @@ import java.time.Instant
  *   GET /slo/{app}/{slo_name}      → live status, single named SLO
  *   GET /slo/{app}/history         → snapshot history for trend charts
  */
-fun Route.sloRoutes(service: SloService, jdbcCtx: CoroutineDatasource, apps: List<String> = HELVED_APPS) {
-    route("/slo") {
-        get { call.respond(service.statusAll()) }
+private val statusListLens = KotlinxJson.autoBody<List<SloStatus>>().toLens()
+private val statusLens = KotlinxJson.autoBody<SloStatus>().toLens()
+private val snapshotListLens = KotlinxJson.autoBody<List<SloSnapshot>>().toLens()
 
-        route("/{app}") {
-            get {
-                val app = call.parameters["app"] ?: return@get call.respond(HttpStatusCode.BadRequest, "missing app")
-                if (app !in apps) return@get call.respond(HttpStatusCode.NotFound, "unknown app")
-                call.respond(service.status(app))
-            }
+fun sloRoutes(
+    service: SloService,
+    jdbcCtx: CoroutineDatasource,
+    apps: List<String> = HELVED_APPS,
+): RoutingHttpHandler = routes(
+    "/slo" bind Method.GET to {
+        Response(Status.OK).with(statusListLens of runBlocking { service.statusAll() })
+    },
 
-            get("/history") {
-                val app = call.parameters["app"] ?: return@get call.respond(HttpStatusCode.BadRequest, "missing app")
-                if (app !in apps) return@get call.respond(HttpStatusCode.NotFound, "unknown app")
-                val since = call.request.queryParameters["since"]
+    "/slo/{app}" bind Method.GET to { req ->
+        val app = req.path("app")
+        when {
+            app.isNullOrBlank() -> Response(Status.BAD_REQUEST).body("missing app")
+            app !in apps -> Response(Status.NOT_FOUND).body("unknown app")
+            else -> Response(Status.OK).with(statusListLens of runBlocking { service.status(app) })
+        }
+    },
+
+    // Must precede the `{slo_name}` route so "history" is matched specifically.
+    "/slo/{app}/history" bind Method.GET to { req ->
+        val app = req.path("app")
+        when {
+            app.isNullOrBlank() -> Response(Status.BAD_REQUEST).body("missing app")
+            app !in apps -> Response(Status.NOT_FOUND).body("unknown app")
+            else -> {
+                val since = req.query("since")
                     ?.let { runCatching { Instant.parse(it) }.getOrNull() }
                     ?: Instant.now().minusSeconds(60L * 60 * 24 * 7)
-                val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 1000
-                val rows = withContext(jdbcCtx + Dispatchers.IO) {
+                val limit = req.query("limit")?.toIntOrNull() ?: 1000
+                val rows = runBlocking(jdbcCtx + Dispatchers.IO) {
                     transaction { SloSnapshot.selectFor(app, since, limit) }
                 }
-                call.respond(rows)
-            }
-
-            get("/{slo_name}") {
-                val app = call.parameters["app"] ?: return@get call.respond(HttpStatusCode.BadRequest, "missing app")
-                if (app !in apps) return@get call.respond(HttpStatusCode.NotFound, "unknown app")
-                val sloName = call.parameters["slo_name"]
-                    ?: return@get call.respond(HttpStatusCode.BadRequest, "missing slo_name")
-                val match = service.status(app).firstOrNull { it.name == sloName }
-                    ?: return@get call.respond(HttpStatusCode.NotFound, "unknown slo")
-                call.respond(match)
+                Response(Status.OK).with(snapshotListLens of rows)
             }
         }
-    }
-}
+    },
+
+    "/slo/{app}/{slo_name}" bind Method.GET to { req ->
+        val app = req.path("app")
+        val sloName = req.path("slo_name")
+        when {
+            app.isNullOrBlank() -> Response(Status.BAD_REQUEST).body("missing app")
+            app !in apps -> Response(Status.NOT_FOUND).body("unknown app")
+            sloName.isNullOrBlank() -> Response(Status.BAD_REQUEST).body("missing slo_name")
+            else -> {
+                val match = runBlocking { service.status(app) }.firstOrNull { it.name == sloName }
+                if (match == null) Response(Status.NOT_FOUND).body("unknown slo")
+                else Response(Status.OK).with(statusLens of match)
+            }
+        }
+    },
+)

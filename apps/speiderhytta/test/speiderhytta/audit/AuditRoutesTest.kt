@@ -1,14 +1,15 @@
 package speiderhytta.audit
 
-import io.ktor.client.request.get
-import io.ktor.client.call.body
-import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import libs.jdbc.concurrency.transaction
+import org.http4k.core.Method
+import org.http4k.core.Request
+import org.http4k.core.Status
+import speiderhytta.KotlinxJson
 import speiderhytta.TestRuntime
 import speiderhytta.github.FetchStatus
 import java.time.Instant
@@ -16,6 +17,8 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+
+private val summaryListLens = KotlinxJson.autoBody<List<WorkflowRunSummary>>().toLens()
 
 class AuditRoutesTest {
     @AfterTest fun reset() = TestRuntime.reset()
@@ -93,12 +96,15 @@ class AuditRoutesTest {
             AuditWorkflowExecutionCommit(latestId, AuditCommit.find(repository, "abc123")!!.id!!).insert()
         }
 
-        val response = TestRuntime.httpClient.get(
-            "/audit/workflows/navikt/helved-utbetaling?app=utsjekk&from=2026-09-21T11:00:00Z&to=2026-09-21T13:00:00Z&limit=10",
+        val response = TestRuntime.http(
+            Request(
+                Method.GET,
+                "/audit/workflows/navikt/helved-utbetaling?app=utsjekk&from=2026-09-21T11:00:00Z&to=2026-09-21T13:00:00Z&limit=10",
+            ),
         )
 
-        assertEquals(HttpStatusCode.OK, response.status)
-        val rows = response.body<List<WorkflowRunSummary>>()
+        assertEquals(Status.OK, response.status)
+        val rows = summaryListLens(response)
         assertEquals(1, rows.size)
         rows.single().let { row ->
             assertEquals(99, row.runId)
@@ -128,10 +134,8 @@ class AuditRoutesTest {
             ).insert()
         }
 
-        val all = TestRuntime.httpClient.get("/audit/workflows/navikt/helved-utbetaling")
-            .body<List<WorkflowRunSummary>>()
-        val filtered = TestRuntime.httpClient.get("/audit/workflows/navikt/helved-utbetaling?app=utsjekk")
-            .body<List<WorkflowRunSummary>>()
+        val all = summaryListLens(TestRuntime.http(Request(Method.GET, "/audit/workflows/navikt/helved-utbetaling")))
+        val filtered = summaryListLens(TestRuntime.http(Request(Method.GET, "/audit/workflows/navikt/helved-utbetaling?app=utsjekk")))
 
         assertEquals(listOf(100L, 99L), all.map { it.runId })
         assertEquals(listOf(99L), filtered.map { it.runId })
@@ -139,15 +143,15 @@ class AuditRoutesTest {
 
     @Test
     fun `workflow-listen avviser ugyldig tidsintervall`() = runTest {
-        val invalidTimestamp = TestRuntime.httpClient.get(
-            "/audit/workflows/navikt/helved-utbetaling?from=ikke-et-tidspunkt",
+        val invalidTimestamp = TestRuntime.http(
+            Request(Method.GET, "/audit/workflows/navikt/helved-utbetaling?from=ikke-et-tidspunkt"),
         )
-        val reversed = TestRuntime.httpClient.get(
-            "/audit/workflows/navikt/helved-utbetaling?from=2026-09-22T00:00:00Z&to=2026-09-21T00:00:00Z",
+        val reversed = TestRuntime.http(
+            Request(Method.GET, "/audit/workflows/navikt/helved-utbetaling?from=2026-09-22T00:00:00Z&to=2026-09-21T00:00:00Z"),
         )
 
-        assertEquals(HttpStatusCode.BadRequest, invalidTimestamp.status)
-        assertEquals(HttpStatusCode.BadRequest, reversed.status)
+        assertEquals(Status.BAD_REQUEST, invalidTimestamp.status)
+        assertEquals(Status.BAD_REQUEST, reversed.status)
     }
 
     private fun workflow(repository: String, attempt: Int, updatedAt: Instant) = AuditWorkflowExecution(
