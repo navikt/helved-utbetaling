@@ -1,24 +1,20 @@
 package speiderhytta.github
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.headers
-import io.ktor.client.request.post
-import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.runInterruptible
 import kotlinx.serialization.Serializable
 import libs.utils.appLog
+import org.http4k.core.HttpHandler
+import org.http4k.core.Method
+import org.http4k.core.Request
 import speiderhytta.GithubConfig
 import java.security.KeyFactory
-import java.security.PrivateKey
 import java.security.Signature
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.time.Instant
 import java.util.Base64
-import java.util.Date
 
 /**
  * GitHub App authentication.
@@ -30,7 +26,7 @@ import java.util.Date
  */
 class GithubApp(
     private val config: GithubConfig,
-    private val client: HttpClient,
+    private val client: HttpHandler,
 ) {
     private val mutex = Mutex()
     private var cached: InstallationToken? = null
@@ -51,16 +47,18 @@ class GithubApp(
         val jwt = signJwt()
         val url = "${config.apiUrl}/app/installations/${config.installationId}/access_tokens"
         appLog.debug("requesting GitHub installation token from {}", url)
-        val response: InstallationTokenResponse = client.post(url) {
-            bearerAuth(jwt)
-            headers {
-                append(HttpHeaders.Accept, "application/vnd.github+json")
-                append("X-GitHub-Api-Version", "2022-11-28")
-            }
-        }.body()
+        val request = Request(Method.POST, url)
+            .header("Authorization", "Bearer $jwt")
+            .header("Accept", "application/vnd.github+json")
+            .header("X-GitHub-Api-Version", "2022-11-28")
+        val response = runInterruptible { client(request) }
+        if (!response.status.successful) {
+            error("Failed to get GitHub installation token, got HTTP ${response.status.code} from $url")
+        }
+        val body = libs.kotlinx.KotlinxJson.decodeFromString<InstallationTokenResponse>(response.bodyString())
         return InstallationToken(
-            token = response.token,
-            expiresAt = Instant.parse(response.expires_at),
+            token = body.token,
+            expiresAt = Instant.parse(body.expires_at),
         )
     }
 
@@ -99,4 +97,3 @@ class GithubApp(
         val expires_at: String,
     )
 }
-
