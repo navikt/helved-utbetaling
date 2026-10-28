@@ -20,6 +20,25 @@ import kotlin.test.*
 internal class DpTest : ConsumerTestBase() {
 
     @Test
+    fun `simulation - tom liste for ny sak med dryrun returnerer OK_UTEN_ENDRING`() {
+        val tid = UUID.randomUUID().toString()
+
+        TestRuntime.topics.dp.produce(tid) { Dp.utbetaling(dryrun = true) { }.asBytes() }
+
+        TestRuntime.topics.dryrunDp.assertThat()
+            .hasTotal(1)
+            .has(tid)
+            .with(tid) { simulering ->
+                assertTrue(simulering is Info)
+                assertEquals(Info.Status.OK_UTEN_ENDRING, simulering.status)
+                assertEquals(Fagsystem.DAGPENGER, simulering.fagsystem)
+            }
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.simulering.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+    }
+
+    @Test
     fun `can serialize and deserialize`() {
         val original = Dp.utbetaling("123", "123") {
             meldekort("blablabla", 1.jun, 1.jun, 0u, 0u, Utbetalingstype.DagpengerFerietillegg)
