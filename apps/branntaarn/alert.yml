@@ -26,7 +26,7 @@ spec:
           for: 10m
           annotations:
             summary: "Høy sårbarhet (CVSS 7.0-8.9)"
-            action: "NAIS Console: https://console.nav.cloud.nais.io/team/helved/prod-gcp"
+            action: "NAIS Console: https://console.nav.cloud.nais.io/team/helved"
           labels:
             namespace: helved
             severity: high
