@@ -348,6 +348,7 @@ fun Topology.valpStream(
 /**
  * Dagpenger har ikke alltid meldeperioder, 
  * da avbryter vi og svarer med OK med en gang.
+ * Dryrun svarer med Info.OkUtenEndring på dryrun-topicet, ellers StatusReply.ok() på status.
  **/
 private object Guard {
     // Dagpenger
@@ -359,10 +360,18 @@ private object Guard {
 
     fun replyOk(branch: MappedStream<SakKey, StreamsPair<DpTuple, Set<UtbetalingId>?>>) {
         branch.rekey { (dpTuple, _) -> dpTuple.key }
-            .map {
-                appLog.info("idempotens guard (DP) - will reply OK for sakId=${it.left.value.sakId}")
-                StatusReply.ok()
-            }.produce(Topics.status)
+            .branch({ it.left.value.dryrun }) {
+                map {
+                    appLog.info("idempotens guard (DP) - will reply OK uten endring (dryrun) for sakId=${it.left.value.sakId}")
+                    Info.OkUtenEndring(Fagsystem.DAGPENGER)
+                }.produce(Topics.dryrunDp)
+            }
+            .default {
+                map {
+                    appLog.info("idempotens guard (DP) - will reply OK for sakId=${it.left.value.sakId}")
+                    StatusReply.ok()
+                }.produce(Topics.status)
+            }
     }
 
     fun ifNoAapUtbetalinger(pair: StreamsPair<AapTuple, Set<UtbetalingId>?>): Boolean {
@@ -372,10 +381,18 @@ private object Guard {
 
     fun replyOkAap(branch: MappedStream<SakKey, StreamsPair<AapTuple, Set<UtbetalingId>?>>) {
         branch.rekey { (aapTuple, _) -> aapTuple.key }
-            .map {
-                appLog.info("idempotens guard (AAP) - will reply OK for sakId=${it.left.value.sakId}")
-                StatusReply.ok()
-            }.produce(Topics.status)
+            .branch({ it.left.value.dryrun }) {
+                map {
+                    appLog.info("idempotens guard (AAP) - will reply OK uten endring (dryrun) for sakId=${it.left.value.sakId}")
+                    Info.OkUtenEndring(Fagsystem.AAP)
+                }.produce(Topics.dryrunAap)
+            }
+            .default {
+                map {
+                    appLog.info("idempotens guard (AAP) - will reply OK for sakId=${it.left.value.sakId}")
+                    StatusReply.ok()
+                }.produce(Topics.status)
+            }
     }
 
     // Tiltakspenger
@@ -386,10 +403,18 @@ private object Guard {
 
     fun replyOkTp(branch: MappedStream<SakKey, StreamsPair<TpTuple, Set<UtbetalingId>?>>) {
         branch.rekey { (tpTuple, _) -> tpTuple.key }
-            .map {
-                appLog.info("idempotens guard (TP) - will reply OK for sakId=${it.left.value.sakId}")
-                StatusReply.ok()
-            }.produce(Topics.status)
+            .branch({ it.left.value.dryrun }) {
+                map {
+                    appLog.info("idempotens guard (TP) - will reply OK uten endring (dryrun) for sakId=${it.left.value.sakId}")
+                    Info.OkUtenEndring(Fagsystem.TILTAKSPENGER)
+                }.produce(Topics.dryrunTp)
+            }
+            .default {
+                map {
+                    appLog.info("idempotens guard (TP) - will reply OK for sakId=${it.left.value.sakId}")
+                    StatusReply.ok()
+                }.produce(Topics.status)
+            }
     }
 
     // Tilleggsstønader
@@ -402,10 +427,19 @@ private object Guard {
     }
 
     fun replyOkTs(branch: MappedStream<String, StreamsPair<TsTuple, Set<UtbetalingId>?>>) {
-        branch.map {
-            appLog.info("idempotens guard (TS) - will reply OK for sakId=${it.left.value?.sakId}")
-            StatusReply.ok()
-        }.produce(Topics.status)
+        branch
+            .branch({ (it.left.value ?: it.left.dto)?.dryrun == true }) {
+                map {
+                    appLog.info("idempotens guard (TS) - will reply OK uten endring (dryrun) for sakId=${it.left.value?.sakId}")
+                    Info.OkUtenEndring(Fagsystem.TILLEGGSSTØNADER)
+                }.produce(Topics.dryrunTs)
+            }
+            .default {
+                map {
+                    appLog.info("idempotens guard (TS) - will reply OK for sakId=${it.left.value?.sakId}")
+                    StatusReply.ok()
+                }.produce(Topics.status)
+            }
     }
 }
 
