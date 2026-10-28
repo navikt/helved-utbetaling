@@ -63,24 +63,6 @@ jobs:
 
       - run: ./gradlew apps:${{ github.workflow }}:buildFatJar --parallel
 
-      - id: deps_hash
-        run: echo "sha=$(sha256sum apps/${{ github.workflow }}/build/split-jars/deps.jar | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-
-      - id: deps_cache
-        uses: actions/cache/restore@v6.1.0
-        with:
-          path: .deps-attested-marker
-          key: deps-attested-${{ github.workflow }}-${{ steps.deps_hash.outputs.sha }}
-
-      - id: salsa
-        run: |
-          if [ "${{ steps.deps_cache.outputs.cache-hit }}" = "true" ]; then
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::deps.jar unchanged since last attested build (${{ steps.deps_hash.outputs.sha }}); skipping SLSA attestation"
-          else
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: nais/docker-build-push@v0
         with:
           team: helved
@@ -89,17 +71,9 @@ jobs:
           dockerfile: apps/${{ github.workflow }}/Dockerfile
           image_suffix: ${{ github.workflow }}
           tag: ${{ github.sha }}
-          salsa: ${{ steps.salsa.outputs.enabled }}
+          salsa: true
           cache_to: ""
 
-      - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
-        run: echo "${{ steps.deps_hash.outputs.sha }}" > .deps-attested-marker
-
-      - if: success() && steps.deps_cache.outputs.cache-hit != 'true' && steps.salsa.outputs.enabled == 'true'
-        uses: actions/cache/save@v6.1.0
-        with:
-          path: .deps-attested-marker
-          key: deps-attested-${{ github.workflow }}-${{ steps.deps_hash.outputs.sha }}
 
   deploy-dev:
     if: github.event.pull_request.merged || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
