@@ -17,6 +17,25 @@ import kotlin.test.assertTrue
 internal class TpTest : ConsumerTestBase() {
 
     @Test
+    fun `simulation - tom liste for ny sak med dryrun returnerer OK_UTEN_ENDRING`() {
+        val tid = UUID.randomUUID().toString()
+
+        TestRuntime.topics.tp.produce(tid) { Tp.utbetaling(dryrun = true) { emptyList() } }
+
+        TestRuntime.topics.dryrunTp.assertThat()
+            .hasTotal(1)
+            .has(tid)
+            .with(tid) { simulering ->
+                assertTrue(simulering is Info)
+                assertEquals(Info.Status.OK_UTEN_ENDRING, simulering.status)
+                assertEquals(Fagsystem.TILTAKSPENGER, simulering.fagsystem)
+            }
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.simulering.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+    }
+
+    @Test
     fun `can serialize and deserialize`() {
         val original = Tp.utbetaling("123", "123") {
             Tp.periode("123", 7.jun21, 18.jun21, 553u, stønad = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, barnetillegg = true)
