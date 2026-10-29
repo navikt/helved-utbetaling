@@ -35,6 +35,7 @@ class KafkaTest {
                 Channel.DpIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                 Channel.TsIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                 Channel.TpIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
+                Channel.Tp -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                 Channel.Ts -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                 Channel.AapIntern -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
                 Channel.Historisk -> TestCase(it, TestRuntime.kafka.testTopic(it.topic))
@@ -74,7 +75,29 @@ class KafkaTest {
             assertNotNull(dao.stream_time_ms)
             assertNotNull(dao.system_time_ms)
             assertEquals("test", dao.commit)
+            if (case.channel == Channel.Tp) {
+                assertEquals("123", dao.sakId)
+                assertEquals("TILTPENG", dao.fagsystem)
+            }
         }
+    }
+
+    @Test
+    fun `lagrer ugyldig JSON fra tiltakspenger`() = runTest(TestRuntime.context) {
+        val topic = TestRuntime.kafka.testTopic(Topics.tp)
+        val key = UUID.randomUUID().toString()
+        val value = """{ ikke gyldig json }"""
+
+        topic.produce(key) { value.toByteArray() }
+
+        val dao = TestRuntime.jdbc.await {
+            Daos.find(key, Table.tp).singleOrNull()
+        }
+
+        assertNotNull(dao)
+        assertEquals(Topics.tp.name, dao.topic_name)
+        assertEquals(value, dao.value)
+        assertEquals("TILTPENG", dao.fagsystem)
     }
 
     @Test
