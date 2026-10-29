@@ -13,8 +13,28 @@ import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class AapTest : ConsumerTestBase() {
+
+    @Test
+    fun `simulation - tom liste for ny sak med dryrun returnerer OK_UTEN_ENDRING`() {
+        val tid = UUID.randomUUID().toString()
+
+        TestRuntime.topics.aap.produce(tid) { Aap.utbetaling(dryrun = true) { }.asBytes() }
+
+        TestRuntime.topics.dryrunAap.assertThat()
+            .hasTotal(1)
+            .has(tid)
+            .with(tid) { simulering ->
+                assertTrue(simulering is Info)
+                assertEquals(Info.Status.OK_UTEN_ENDRING, simulering.status)
+                assertEquals(Fagsystem.AAP, simulering.fagsystem)
+            }
+        TestRuntime.topics.status.assertThat().isEmpty()
+        TestRuntime.topics.simulering.assertThat().isEmpty()
+        TestRuntime.topics.oppdrag.assertThat().isEmpty()
+    }
 
     @Test
     fun `can serialize and deserialize`() {

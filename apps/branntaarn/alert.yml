@@ -13,8 +13,8 @@ spec:
           expr: sum by (workload_name, workload_namespace) (nais_workload_vulnerabilities{severity="CRITICAL", workload_namespace="helved", workload_type!="platform", workload_cluster="prod"}) > 0
           for: 10m
           annotations:
-            summary: "Kritisk sårbarhet (CVSS >= 9.0) i {{ $labels.workload_name }}"
-            action: "NAIS Console: https://console.nav.cloud.nais.io/team/helved/prod-gcp/app/{{ $labels.workload_name }}/vulnerabilities"
+            summary: "Kritisk sårbarhet (CVSS >= 9.0)"
+            action: "NAIS Console: https://console.nav.cloud.nais.io/team/helved"
           labels:
             namespace: helved
             severity: critical
@@ -25,8 +25,8 @@ spec:
           expr: sum by (workload_name, workload_namespace) (nais_workload_vulnerabilities{severity="HIGH", workload_namespace="helved", workload_type!="platform", workload_cluster="prod"}) > 0
           for: 10m
           annotations:
-            summary: "Høy sårbarhet (CVSS 7.0-8.9) i {{ $labels.workload_name }}"
-            action: "NAIS Console: https://console.nav.cloud.nais.io/team/helved/prod-gcp/app/{{ $labels.workload_name }}/vulnerabilities"
+            summary: "Høy sårbarhet (CVSS 7.0-8.9)"
+            action: "NAIS Console: https://console.nav.cloud.nais.io/team/helved"
           labels:
             namespace: helved
             severity: high

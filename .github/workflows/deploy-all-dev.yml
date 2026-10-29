@@ -60,7 +60,7 @@ jobs:
           image_suffix: ${{ matrix.app }}
           tag: ${{ github.sha }}
           dockerfile: ${{ matrix.dockerfile }}
-          salsa: false
+          salsa: true
           cache_to: ""
 
       - uses: nais/login@v0

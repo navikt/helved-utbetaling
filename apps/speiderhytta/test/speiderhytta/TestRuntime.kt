@@ -1,28 +1,26 @@
 package speiderhytta
 
-import io.ktor.client.HttpClient
 import libs.jdbc.Jdbc
 import libs.jdbc.PostgresContainer
 import libs.jdbc.migrateTemplate
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.truncate
-import libs.ktor.KtorRuntime
 import libs.utils.logger
+import org.http4k.core.HttpHandler
 import java.io.File
 import javax.sql.DataSource
 
 val testLog = logger("test")
 
 /**
- * Test harness for speiderhytta. PostgreSQL via Testcontainers, Ktor test
- * server with the full app wired in. External clients (NAIS Deploy, GitHub,
- * Prometheus) are NOT spun up here — service-level tests instantiate the
- * services directly with fakes.
+ * Test harness for speiderhytta. PostgreSQL via Testcontainers, the full
+ * http4k app wired in. External clients (NAIS Deploy, GitHub, Prometheus) are
+ * NOT spun up here — service-level tests instantiate the services directly
+ * with fakes, and route tests call [http] directly.
  *
- * Migrations run as a side effect of [KtorRuntime] starting the [speiderhytta]
- * module — same pattern as `apps/urskog`. The cloudsqliamuser role required
- * by V1 only exists on NAIS, so a `test/premigrations/V0_*` is prepended to
- * the migration path for tests.
+ * Migrations run as a side effect of [speiderhytta] starting. The
+ * cloudsqliamuser role required by V1 only exists on NAIS, so a
+ * `test/premigrations/V0_*` is prepended to the migration path for tests.
  */
 object TestRuntime {
     private val migrationDirs = listOf(File("test/premigrations"), File("migrations"))
@@ -45,19 +43,8 @@ object TestRuntime {
     val jdbc: DataSource by lazy { Jdbc.initialize(config.jdbc) }
     val context: CoroutineDatasource by lazy { CoroutineDatasource(jdbc) }
 
-    val ktor: KtorRuntime<Config> by lazy {
-        KtorRuntime<Config>(
-            appName = "speiderhytta",
-            jsonConfig = libs.kotlinx.KotlinxJson,
-            module = { speiderhytta(config) },
-            onClose = {
-                reset()
-                postgres.close()
-            },
-        )
-    }
-
-    val httpClient: HttpClient get() = ktor.httpClient
+    val app: Speiderhytta by lazy { speiderhytta(config) }
+    val http: HttpHandler get() = app.handler
 
     fun reset() {
         jdbc.truncate(
