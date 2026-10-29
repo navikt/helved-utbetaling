@@ -75,7 +75,7 @@ fun Fagsystem.tables(): Triple<Table?, Table, Table?> =
     when (this) {
         Fagsystem.AAP -> Triple(Table.aap, Table.aapIntern, Table.dryrun_aap)
         Fagsystem.DAGPENGER -> Triple(Table.dp, Table.dpIntern, Table.dryrun_dp)
-        Fagsystem.TILTAKSPENGER -> Triple(null, Table.tpIntern, Table.dryrun_tp)
+        Fagsystem.TILTAKSPENGER -> Triple(Table.tp, Table.tpIntern, Table.dryrun_tp)
         Fagsystem.TILLSTPB,
         Fagsystem.TILLSTLM,
         Fagsystem.TILLSTBO,
