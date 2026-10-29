@@ -526,6 +526,7 @@ sealed class Channel(
     data object Valp : Channel(Topics.valp, Table.valp, 24)
     data object DryrunValp : Channel(Topics.dryrunValp, Table.dryrun_valp, 25)
     data object DryrunHistorisk : Channel(Topics.dryrunHistorisk, Table.dryrun_historisk, 26)
+    data object Tp : Channel(Topics.tp, Table.tp, 27)
 
     companion object {
         fun all(): List<Channel> = Channel::class.sealedSubclasses.map { it.objectInstance as Channel }

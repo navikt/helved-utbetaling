@@ -10,6 +10,7 @@ class TestTopics(kafka: StreamsMock) {
     val dp = kafka.testTopic(Topics.dp)
     val ts = kafka.testTopic(Topics.ts)
     val tp = kafka.testTopic(Topics.tp)
+    val tpIntern = kafka.testTopic(Topics.tpIntern)
     val historisk = kafka.testTopic(Topics.historisk)
     val valp = kafka.testTopic(Topics.valp)
 

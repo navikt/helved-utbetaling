@@ -53,7 +53,7 @@ internal class TpParameterizedTest : ConsumerParameterizedTestBase<TpUtbetaling>
     }
     
     override fun produceMessage(transactionId: String, message: TpUtbetaling) {
-        TestRuntime.topics.tp.produce(transactionId) { message }
+        TestRuntime.topics.tp.produce(transactionId) { message.asBytes() }
     }
     
     override fun createUtbetalingId(sakId: String, uniqueKey: String, stønad: Stønadstype): UtbetalingId {
