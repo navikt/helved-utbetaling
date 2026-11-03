@@ -16,8 +16,7 @@ import models.Utbetalingsperiode
 
 @Serializable
 data class MigrationRequest(
-    val sakId: String,
-    val behandlingId: String
+    val sakId: String
 )
 
 class IverksettingMigrator(
