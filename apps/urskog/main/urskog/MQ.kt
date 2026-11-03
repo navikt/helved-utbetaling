@@ -2,21 +2,15 @@ package urskog
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
 import libs.kafka.Streams
-import libs.mq.DefaultMQConsumer
-import libs.mq.DefaultMQProducer
-import libs.mq.MQ
+import libs.mq.*
 import libs.utils.Log
 import libs.utils.sha256
 import libs.xml.XMLMapper
-import models.BehandlingId
-import models.Fagsystem
-import models.PeriodeId
+import models.*
 import no.nav.virksomhet.tjenester.avstemming.meldinger.v1.Avstemmingsdata
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 import javax.jms.TextMessage
@@ -25,6 +19,7 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
     private val kvitteringQueue = config.oppdrag.kvitteringsKø
     private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
     private val darePocAapProducer = DefaultMQProducer(mq, config.oppdrag.darePocAapKø)
+    private val beregningsplattformProducer = DefaultMQProducer(mq, config.oppdrag.beregningsplattformKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
     fun send(oppdrag: Oppdrag): Oppdrag {
@@ -42,6 +37,8 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
             )).increment()
             Log.info("Sender oppdrag $info")
             sendDarePocAapKopi(oppdrag.fagsystem(), xml, info)
+            sendOppdragskopiTilBeregningsplattform(xml, info)
+
             return oppdrag
         }.onFailure {
             meters.counter("helved_oppdrag_mq", listOf(
@@ -53,12 +50,22 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
     }
 
     private fun sendDarePocAapKopi(fagsystem: String, xml: String, info: String) {
-        if (config.cluster  != "dev-gcp") return
-        if (fagsystem != Fagsystem.AAP.name) return
+        if (config.cluster  != "dev-gcp" || fagsystem != Fagsystem.AAP.name) return
+
         runCatching {
             darePocAapProducer.produce(xml)
         }.onFailure {
             Log.error("Feilet sending av AAP-kopi til DARE POC-kø $info", it)
+        }
+    }
+
+    private fun sendOppdragskopiTilBeregningsplattform(xml: String, info: String) {
+        if (config.cluster != "dev-gcp") return
+
+        runCatching {
+            beregningsplattformProducer.produce(xml)
+        }.onFailure {
+            Log.error("Feilet sending av oppdragskopi til beregningsplattformkø $info", it)
         }
     }
 }
@@ -82,15 +89,16 @@ class AvstemmingMQProducer(config: Config, mq: MQ) {
 private fun info(
     oppdrag: Oppdrag,
     hashKey: String,
-) : String {
+): String {
     val sid = oppdrag.oppdrag110.fagsystemId
     val bid = oppdrag.oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId)
-    val lastDelytelsesId = oppdrag.lastDelytelseId() 
-    val pid = lastDelytelsesId?.let{ PeriodeId.decode(it) }
+    val lastDelytelsesId = oppdrag.lastDelytelseId()
+    val pid = lastDelytelsesId?.let { PeriodeId.decode(it) }
     return "sak:$sid, behandling:$bid, lastDelytelsesId/periodeId:$lastDelytelsesId/$pid hash:$hashKey"
 }
 
-class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams, private val jdbcCtx: CoroutineDatasource): AutoCloseable {
+class KvitteringMQConsumer(config: Config, mq: MQ, kafka: Streams, private val jdbcCtx: CoroutineDatasource) :
+    AutoCloseable {
     private val oppdragProducer = kafka.createProducer(config.kafka, Topics.oppdrag)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
     private val consumer = DefaultMQConsumer(mq, config.oppdrag.kvitteringsKø, ::onMessage)

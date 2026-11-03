@@ -1,15 +1,16 @@
 package urskog.oppdrag
 
+import XmlAssert
 import models.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import urskog.*
-import java.util.*
+import java.util.UUID
 import kotlin.test.assertEquals
 
 class OppdragTest {
 
-    @AfterEach 
+    @AfterEach
     fun cleanup() {
         TestRuntime.mq.reset()
         TestRuntime.topics.status.assertThat().isEmpty()
@@ -44,9 +45,15 @@ class OppdragTest {
         TestRuntime.topics.status.assertThat()
             .has(transaction, size = 1)
             .hasHeader(transaction, FS_KEY to "AAP")
-            .has(transaction, value = StatusReply(Status.HOS_OPPDRAG, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
-                DetaljerLinje(bid, 1.nov, 14.nov, null, 1000u, "AAPOR"),
-            ))))
+            .has(
+                transaction, value = StatusReply(
+                    Status.HOS_OPPDRAG, Detaljer(
+                        ytelse = Fagsystem.AAP, linjer = listOf(
+                            DetaljerLinje(bid, 1.nov, 14.nov, null, 1000u, "AAPOR"),
+                        )
+                    )
+                )
+            )
 
         assertEquals(1, TestRuntime.mq.sentOppdrag().size)
         XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sentOppdrag().first())
@@ -88,9 +95,15 @@ class OppdragTest {
         TestRuntime.topics.status.assertThat()
             .has(transaction, size = 1)
             .hasHeader(transaction, FS_KEY to "AAP")
-            .has(transaction, value = StatusReply(Status.HOS_OPPDRAG, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
-                DetaljerLinje(bid, 1.nov, 14.nov, null, 1000u, "AAPOR"),
-            ))))
+            .has(
+                transaction, value = StatusReply(
+                    Status.HOS_OPPDRAG, Detaljer(
+                        ytelse = Fagsystem.AAP, linjer = listOf(
+                            DetaljerLinje(bid, 1.nov, 14.nov, null, 1000u, "AAPOR"),
+                        )
+                    )
+                )
+            )
 
         assertEquals(1, TestRuntime.mq.sentOppdrag().size)
         XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sentOppdrag().first())
@@ -129,13 +142,19 @@ class OppdragTest {
         TestRuntime.topics.oppdrag.produce(transaction, mapOf("uids" to uid.toString())) {
             oppdrag
         }
-        
+
         TestRuntime.topics.status.assertThat()
             .has(transaction, size = 1)
             .hasHeader(transaction, FS_KEY to "AAP")
-            .has(transaction, value = StatusReply(Status.HOS_OPPDRAG, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
-                DetaljerLinje(bid, 1.nov, 14.nov, null, 1000u, "AAPOR"),
-            ))))
+            .has(
+                transaction, value = StatusReply(
+                    Status.HOS_OPPDRAG, Detaljer(
+                        ytelse = Fagsystem.AAP, linjer = listOf(
+                            DetaljerLinje(bid, 1.nov, 14.nov, null, 1000u, "AAPOR"),
+                        )
+                    )
+                )
+            )
 
         assertEquals(1, TestRuntime.mq.sentOppdrag().size)
         XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sentOppdrag().first())
@@ -213,9 +232,15 @@ class OppdragTest {
         TestRuntime.topics.status.assertThat()
             .has(uid, size = 1)
             .hasHeader(uid, FS_KEY to "AAP")
-            .has(uid, value = StatusReply(Status.OK, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
-                DetaljerLinje(bid, 1.nov, 3.nov, null, 0u, "AAPOR"),
-            ))))
+            .has(
+                uid, value = StatusReply(
+                    Status.OK, Detaljer(
+                        ytelse = Fagsystem.AAP, linjer = listOf(
+                            DetaljerLinje(bid, 1.nov, 3.nov, null, 0u, "AAPOR"),
+                        )
+                    )
+                )
+            )
 
         TestRuntime.topics.retryKvittering.assertThat()
     }
@@ -247,9 +272,15 @@ class OppdragTest {
         TestRuntime.topics.status.assertThat()
             .has(transaction, size = 1)
             .hasHeader(transaction, FS_KEY to "AAP")
-            .has(transaction, value = StatusReply(Status.HOS_OPPDRAG, Detaljer(ytelse = Fagsystem.AAP, linjer = listOf(
-                DetaljerLinje(bid, 3.nov, 7.nov, null, 700u, "AAPOR"),
-            ))))
+            .has(
+                transaction, value = StatusReply(
+                    Status.HOS_OPPDRAG, Detaljer(
+                        ytelse = Fagsystem.AAP, linjer = listOf(
+                            DetaljerLinje(bid, 3.nov, 7.nov, null, 700u, "AAPOR"),
+                        )
+                    )
+                )
+            )
 
         assertEquals(1, TestRuntime.mq.sentOppdrag().size)
         XmlAssert.assertEquals(oppdrag, TestRuntime.mq.sentOppdrag().first())
