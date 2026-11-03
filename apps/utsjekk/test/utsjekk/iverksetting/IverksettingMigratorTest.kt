@@ -24,12 +24,11 @@ class IverksettingMigratorTest {
     @Test
     fun `iverksetting not found`() = runTest(TestRuntime.context) {
         val sid = "s1"
-        val bid = "b1"
 
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken("tiltakspenger-saksbehandling-api"))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid))
+            setBody(MigrationRequest(sid))
         }
 
         assertEquals(HttpStatusCode.NotFound, res.status)
@@ -56,7 +55,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid))
+            setBody(MigrationRequest(sid))
         }
 
         assertEquals(HttpStatusCode.NotFound, res.status)
@@ -87,7 +86,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid))
+            setBody(MigrationRequest(sid))
         }
 
         assertEquals(HttpStatusCode.Locked, res.status)
@@ -142,7 +141,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid))
+            setBody(MigrationRequest(sid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
@@ -234,7 +233,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid))
+            setBody(MigrationRequest(sid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
@@ -330,7 +329,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid))
+            setBody(MigrationRequest(sid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
@@ -424,7 +423,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid))
+            setBody(MigrationRequest(sid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
@@ -523,7 +522,7 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid))
+            setBody(MigrationRequest(sid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
@@ -622,7 +621,7 @@ class IverksettingMigratorTest {
             val res = httpClient.post("/api/iverksetting/v2/migrate") {
                 bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
                 contentType(ContentType.Application.Json)
-                setBody(MigrationRequest(sid, bid))
+                setBody(MigrationRequest(sid))
             }
             assertEquals(HttpStatusCode.OK, res.status)
         }
