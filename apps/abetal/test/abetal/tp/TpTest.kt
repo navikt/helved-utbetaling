@@ -375,6 +375,55 @@ internal class TpTest : ConsumerTestBase() {
     }
 
     @Test
+    fun `create - perioder adskilt av kun helg i samme meldeperiode merges ikke`() {
+
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val meldeperiode = "132460781"
+        val uid = tpUId(sid.id, meldeperiode, StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING)
+
+        TestRuntime.topics.tp.produce(transactionId) {
+            Tp.utbetaling(sid.id, bid.id) {
+                Tp.periode(meldeperiode, 7.jun21, 11.jun21, 553u) +
+                Tp.periode(meldeperiode, 14.jun21, 18.jun21, 553u)
+            }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId)
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId, size = 1)
+            .with(transactionId, index = 0) { oppdrag ->
+                oppdrag.assertBasics("NY", "TILTPENG", sid.id, expectedLines = 2)
+                val linje0 = oppdrag.oppdrag110.oppdragsLinje150s[0]
+                val linje1 = oppdrag.oppdrag110.oppdragsLinje150s[1]
+                linje0.assertLine(
+                    kodeEndringLinje = "NY",
+                    behandlingId = bid,
+                    kodeKlassifik = "TPTPAFT",
+                    sats = 553,
+                    refDelytelseId = null,
+                )
+                linje1.assertLine(
+                    kodeEndringLinje = "NY",
+                    behandlingId = bid,
+                    kodeKlassifik = "TPTPAFT",
+                    sats = 553,
+                    refDelytelseId = linje0.delytelseId,
+                )
+                assertEquals(7, linje0.datoVedtakFom.day)
+                assertEquals(11, linje0.datoVedtakTom.day)
+                assertEquals(14, linje1.datoVedtakFom.day)
+                assertEquals(18, linje1.datoVedtakTom.day)
+            }
+            .get(transactionId)
+
+        TestRuntime.topics.pendingUtbetalinger.assertThat().has(uid.toString())
+        kvitterOk(transactionId, oppdrag, listOf(uid))
+        TestRuntime.topics.utbetalinger.assertThat().has(uid.toString())
+    }
+
+    @Test
     fun `create - three meldekort create three utbetalinger with single oppdrag`() {
         val sid = SakId("$nextInt")
         val bid = BehandlingId("$nextInt")
