@@ -83,6 +83,41 @@ data class IverksettingDao(
                 limit?.let { stmt.setInt(position, it) } // position++ if more where parameters is added
             }
         }
+
+        /**
+         * Markerer alle iverksettinger på saken som migrert. Låser radene, så samtidige kall venter.
+         * @return false om saken allerede er migrert
+         */
+        suspend fun markMigrated(sakId: SakId, fagsystem: Fagsystem): Boolean {
+            val sql = """
+                UPDATE $table
+                SET migrated_at = ?
+                WHERE data -> 'fagsak' ->> 'fagsakId' = ? 
+                  AND data -> 'fagsak' ->> 'fagsystem' = ?
+                  AND migrated_at IS NULL
+            """.trimIndent()
+
+            return update(sql) { stmt ->
+                stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()))
+                stmt.setString(2, sakId.id)
+                stmt.setString(3, fagsystem.name)
+            } > 0
+        }
+
+        suspend fun isMigrated(sakId: SakId, fagsystem: Fagsystem): Boolean {
+            val sql = """
+                SELECT 1 FROM $table
+                WHERE data -> 'fagsak' ->> 'fagsakId' = ? 
+                  AND data -> 'fagsak' ->> 'fagsystem' = ?
+                  AND migrated_at IS NOT NULL
+                LIMIT 1
+            """.trimIndent()
+
+            return query(sql, mapper = { true }) { stmt ->
+                stmt.setString(1, sakId.id)
+                stmt.setString(2, fagsystem.name)
+            }.isNotEmpty()
+        }
     }
 
     suspend fun insert(uid: UtbetalingId): Int {
