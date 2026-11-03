@@ -71,6 +71,7 @@ object TestConfig {
         jdbc: JdbcConfig,
     ): Config {
         val oppdrag = OppdragConfig(
+            beregningsplattformKø = MQQueue("DEV.QUEUE.5"),
             darePocAapKø = MQQueue("DEV.QUEUE.4"),
             avstemmingKø = MQQueue("DEV.QUEUE.3"),
             kvitteringsKø = MQQueue("DEV.QUEUE.2"),
