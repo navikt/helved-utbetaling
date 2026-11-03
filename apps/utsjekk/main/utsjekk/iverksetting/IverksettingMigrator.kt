@@ -25,9 +25,24 @@ class IverksettingMigrator(
     val utbetalingProducer: KafkaProducer<String, Utbetaling>,
     private val jdbcCtx: CoroutineDatasource,
 ) {
-    fun migrate(req: MigrationRequest, utbetaling: Utbetaling) {
-        val key = utbetaling.uid.id.toString()
-        utbetalingProducer.send(key, utbetaling, mapOf("migrated" to req.toString()))
+    /**
+     * Idempotent: a sak is migrated at most once. Mark and send happen in one transaction,
+     * so a failed send rolls back the mark and the request can be retried.
+     */
+    suspend fun migrate(fs: models.kontrakter.Fagsystem, req: MigrationRequest) {
+        withContext(jdbcCtx) {
+            transaction {
+                val utbetalinger = mapUtbetalinger(fs, req)
+                if (!IverksettingDao.markMigrated(SakId(req.sakId), fs)) {
+                    appLog.info("sak ${req.sakId} for $fs er allerede migrert")
+                    return@transaction
+                }
+                utbetalinger.forEach { utbetaling ->
+                    val key = utbetaling.uid.id.toString()
+                    utbetalingProducer.send(key, utbetaling, mapOf("migrated" to req.toString()))
+                }
+            }
+        }
     }
 
     suspend fun mapUtbetalinger(fs: models.kontrakter.Fagsystem, req: MigrationRequest): List<Utbetaling> {

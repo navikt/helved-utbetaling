@@ -577,5 +577,85 @@ class IverksettingMigratorTest {
         assertEquals(14.feb, actual2.perioder[0].tom)
         assertEquals(NavEnhet("1234"), actual2.perioder[0].betalendeEnhet)
     }
-}
 
+    @Test
+    fun `migrating same sak twice only sends once`() = runTest(TestRuntime.context) {
+        val sid = RandomOSURId.generate()
+        val bid = RandomOSURId.generate()
+        val uid = uid(sakId = sid, "meldeperiode", models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
+
+        transaction {
+            TestData.dao.iverksetting(
+                mottattTidspunkt = LocalDateTime.now().minusDays(2),
+                iverksetting = TestData.domain.iverksetting(
+                    fagsystem = Fagsystem.TILTAKSPENGER,
+                    sakId = SakId(sid),
+                    behandlingId = BehandlingId(bid),
+                ),
+            ).also { it.insert(utsjekk.utbetaling.UtbetalingId(uid.id)) }
+
+            TestData.dao.iverksettingResultat(
+                fagsystem = Fagsystem.TILTAKSPENGER,
+                sakId = SakId(sid),
+                behandlingId = BehandlingId(bid),
+                tilkjentYtelse = TestData.domain.enTilkjentYtelse(
+                    listOf(
+                        TestData.domain.enAndelTilkjentYtelse(
+                            beløp = 500,
+                            fom = 4.feb,
+                            tom = 4.feb,
+                            periodeId = 4L,
+                            stønadsdata = StønadsdataTiltakspenger(
+                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
+                                barnetillegg = false,
+                                brukersNavKontor = BrukersNavKontor("1234"),
+                                meldekortId = "meldeperiode",
+                            )
+                        ),
+                    )
+                ),
+                resultat = OppdragResultat(OppdragStatus.KVITTERT_OK),
+            ).insert(utsjekk.utbetaling.UtbetalingId(uid.id))
+        }
+
+        repeat(2) {
+            val res = httpClient.post("/api/iverksetting/v2/migrate") {
+                bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
+                contentType(ContentType.Application.Json)
+                setBody(MigrationRequest(sid, bid))
+            }
+            assertEquals(HttpStatusCode.OK, res.status)
+        }
+
+        val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
+        assertEquals(1, utbetaling.history().count { (key, _) -> key == uid.toString() })
+    }
+
+    @Test
+    fun `iverksetting on migrated sak is locked`() = runTest(TestRuntime.context) {
+        val sid = RandomOSURId.generate()
+        transaction {
+            TestData.dao.iverksetting(
+                iverksetting = TestData.domain.iverksetting(
+                    fagsystem = Fagsystem.TILLEGGSSTØNADER,
+                    sakId = SakId(sid),
+                ),
+            ).insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID()))
+            IverksettingDao.markMigrated(SakId(sid), Fagsystem.TILLEGGSSTØNADER)
+        }
+
+        val dto = TestData.dto.iverksetting(
+            sakId = sid,
+            vedtak = TestData.dto.vedtaksdetaljer(
+                utbetalinger = listOf(TestData.dto.utbetaling(stønadsdata = TestData.dto.tilleggstønad())),
+            ),
+        )
+        val res = httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(dto)
+        }
+
+        assertEquals(HttpStatusCode.Locked, res.status)
+    }
+}

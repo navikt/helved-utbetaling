@@ -21,6 +21,7 @@ class IverksettingService(
         withContext(jdbcCtx) {
             transaction {
                 validerAtIverksettingIkkeAlleredeErMottatt(iverksetting)
+                validerAtSakIkkeErMigrert(iverksetting)
                 validerAtIverksettingGjelderSammeSakSomForrigeIverksetting(iverksetting)
                 validerAtForrigeIverksettingErLikSisteMottatteIverksetting(iverksetting)
                 validerAtForrigeIverksettingErFerdigIverksattMotOppdrag(iverksetting)
@@ -261,6 +262,12 @@ class IverksettingService(
 
             if (!kvittertOk) {
                 locked("Forrige iverksetting er ikke ferdig iverksatt mot Oppdragssystemet")
+            }
+        }
+
+        suspend fun validerAtSakIkkeErMigrert(iverksetting: Iverksetting) {
+            if (IverksettingDao.isMigrated(iverksetting.sakId, iverksetting.fagsak.fagsystem)) {
+                locked("Saken er migrert til kafka, og kan kun endres derfra")
             }
         }
 

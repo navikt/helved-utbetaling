@@ -24,8 +24,7 @@ fun Route.iverksetting(
         post("/v2/migrate") {
             val fagsystem = call.fagsystem()
             val request = call.receive<MigrationRequest>()
-            val utbetalinger = migrator.mapUtbetalinger(fagsystem, request)
-            utbetalinger.forEach { migrator.migrate(request, it) }
+            migrator.migrate(fagsystem, request)
             call.respond(HttpStatusCode.OK)
         }
 
