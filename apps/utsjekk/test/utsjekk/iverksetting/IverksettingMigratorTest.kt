@@ -4,13 +4,10 @@ import TestData
 import TestRuntime
 import httpClient
 import io.ktor.client.request.*
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import libs.jdbc.concurrency.transaction
 import models.kontrakter.BrukersNavKontor
-import models.kontrakter.StønadTypeTilleggsstønader
 import models.kontrakter.StønadTypeTiltakspenger
 import org.junit.jupiter.api.Test
 import utsjekk.Topics
@@ -18,6 +15,8 @@ import utsjekk.utbetaling.feb
 import utsjekk.utbetaling.mar
 import java.time.LocalDateTime
 import java.util.*
+import models.NavEnhet
+import models.kontrakter.Fagsystem
 import kotlin.test.assertEquals
 
 class IverksettingMigratorTest {
@@ -26,31 +25,14 @@ class IverksettingMigratorTest {
     fun `iverksetting not found`() = runTest(TestRuntime.context) {
         val sid = "s1"
         val bid = "b1"
-        val iid = "i1"
-        val meldeperiode = "123"
 
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
-            bearerAuth(TestRuntime.azure.generateToken())
+            bearerAuth(TestRuntime.azure.generateToken("tiltakspenger-saksbehandling-api"))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode, null))
+            setBody(MigrationRequest(sid, bid))
         }
 
         assertEquals(HttpStatusCode.NotFound, res.status)
-    }
-
-    @Test
-    fun `kan ikke migrere når både meldeperiode og uid mangler`() = runTest(TestRuntime.context) {
-        val sid = "s1"
-        val bid = "b1"
-        val iid = "i1"
-
-        val res = httpClient.post("/api/iverksetting/v2/migrate") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, null, null))
-        }
-
-        assertEquals(HttpStatusCode.BadRequest, res.status)
     }
 
     @Test
@@ -58,13 +40,12 @@ class IverksettingMigratorTest {
         val sid = RandomOSURId.generate()
         val bid = RandomOSURId.generate()
         val iid = RandomOSURId.generate()
-        val uid = UUID.randomUUID()
 
         transaction {
             TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -73,9 +54,9 @@ class IverksettingMigratorTest {
         }
 
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
-            bearerAuth(TestRuntime.azure.generateToken())
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, null, uid to models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP))
+            setBody(MigrationRequest(sid, bid))
         }
 
         assertEquals(HttpStatusCode.NotFound, res.status)
@@ -85,32 +66,28 @@ class IverksettingMigratorTest {
     fun `pågående iverksetting er locked`() = runTest(TestRuntime.context) {
         val sid = RandomOSURId.generate()
         val bid = RandomOSURId.generate()
-        val iid = RandomOSURId.generate()
-        val uid = UUID.randomUUID()
 
         transaction {
             TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
-                    iverksettingId = IverksettingId(iid),
                 ),
             ).also { it.insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID())) }
 
             TestData.dao.iverksettingResultat(
-                fagsystem =models.kontrakter.Fagsystem.TILLEGGSSTØNADER, 
+                fagsystem = Fagsystem.TILTAKSPENGER,
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
-                iverksettingId = IverksettingId(iid),
             ).insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID()))
         }
 
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
-            bearerAuth(TestRuntime.azure.generateToken())
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, null, uid to models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP))
+            setBody(MigrationRequest(sid, bid))
         }
 
         assertEquals(HttpStatusCode.Locked, res.status)
@@ -121,28 +98,25 @@ class IverksettingMigratorTest {
     fun `can migrate iverksetting for tilleggsstønader`() = runTest(TestRuntime.context) {
         val sid = RandomOSURId.generate()
         val bid = RandomOSURId.generate()
-        val iid = RandomOSURId.generate()
         val pid = 4L
-        val uid = UUID.randomUUID()
+        val uid = uid(sakId = sid, "meldeperiode", models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
+
 
         val personident = transaction {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
-                    iverksettingId = IverksettingId(iid),
                     vedtakstidspunkt = 1.mar.atStartOfDay(),
                 ),
-            ).also { it.insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID())) }
-
+            ).also { it.insert(utsjekk.utbetaling.UtbetalingId(uid.id)) }
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER, 
+                fagsystem = Fagsystem.TILTAKSPENGER,
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
-                iverksettingId = IverksettingId(iid),
                 tilkjentYtelse = TestData.domain.enTilkjentYtelse(
                     listOf(
                         TestData.domain.enAndelTilkjentYtelse(
@@ -150,31 +124,34 @@ class IverksettingMigratorTest {
                             fom = 4.feb,
                             tom = 4.feb,
                             periodeId = pid,
-                            stønadsdata = StønadsdataTilleggsstønader(StønadTypeTilleggsstønader.TILSYN_BARN_AAP)
-                        )
+                            stønadsdata = StønadsdataTiltakspenger(
+                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
+                                barnetillegg = false,
+                                brukersNavKontor = BrukersNavKontor("1234"),
+                                meldekortId = "meldeperiode",
+                            )
+                        ),
                     )
                 ),
                 resultat = OppdragResultat(OppdragStatus.KVITTERT_OK),
-            ).insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID()))
+            ).insert(utsjekk.utbetaling.UtbetalingId(uid.id))
 
             iv.data.personident
         }
 
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
-            bearerAuth(TestRuntime.azure.generateToken())
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, null, uid to models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP))
+            setBody(MigrationRequest(sid, bid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
         val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
         assertEquals(0, utbetaling.uncommitted().size)
-        val new_uid = models.UtbetalingId(uid)
-        val actual = utbetaling.history() .single { (key, _) -> key == new_uid.toString() }.second
+        val actual = utbetaling.history().single { (key, _) -> key == uid.toString() }.second
         assertEquals(false, actual.dryrun)
-        assertEquals(iid, actual.originalKey)
-        assertEquals(models.Fagsystem.TILLEGGSSTØNADER, actual.fagsystem)
-        assertEquals(new_uid, actual.uid)
+        assertEquals(models.Fagsystem.TILTAKSPENGER, actual.fagsystem)
+        assertEquals(uid, actual.uid)
         assertEquals(models.Action.CREATE, actual.action)
         assertEquals(false, actual.førsteUtbetalingPåSak)
         assertEquals(models.SakId(sid), actual.sakId)
@@ -182,7 +159,7 @@ class IverksettingMigratorTest {
         assertEquals(models.PeriodeId("$sid#$pid"), actual.lastPeriodeId)
         assertEquals(models.Personident(personident), actual.personident)
         assertEquals(1.mar.atStartOfDay(), actual.vedtakstidspunkt)
-        assertEquals(models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP, actual.stønad)
+        assertEquals(models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, actual.stønad)
         assertEquals(TestData.DEFAULT_BESLUTTER, actual.beslutterId.ident)
         assertEquals(TestData.DEFAULT_SAKSBEHANDLER, actual.saksbehandlerId.ident)
         assertEquals(models.Periodetype.UKEDAG, actual.periodetype)
@@ -192,35 +169,34 @@ class IverksettingMigratorTest {
         assertEquals(null, actual.perioder[0].vedtakssats)
         assertEquals(4.feb, actual.perioder[0].fom)
         assertEquals(4.feb, actual.perioder[0].tom)
-        assertEquals(null, actual.perioder[0].betalendeEnhet)
+        assertEquals(NavEnhet("1234"), actual.perioder[0].betalendeEnhet)
     }
 
     @Test
-    fun `can migrate iverksetting with multiple klassekoder for tilleggsstønader`() = runTest(TestRuntime.context) {
+    fun `can migrate iverksetting with multiple klassekoder for tiltakspenger`() = runTest(TestRuntime.context) {
         val sid = RandomOSURId.generate()
         val bid = RandomOSURId.generate()
-        val iid = RandomOSURId.generate()
         val pid = 4L
-        val uid = UUID.randomUUID()
+        val uid1 = uid(sakId = sid, "meldeperiode", models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
+        val uid2 = uid(sakId = sid, "meldeperiode-2", models.StønadTypeTiltakspenger.ARBEIDSMARKEDSOPPLÆRING_AMO, models.Fagsystem.TILTAKSPENGER)
+
 
         val personident = transaction {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER,
+                    fagsystem = Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
-                    iverksettingId = IverksettingId(iid),
                     vedtakstidspunkt = 1.mar.atStartOfDay(),
                 ),
-            ).also { it.insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID())) }
+            ).also { it.insert(utsjekk.utbetaling.UtbetalingId(uid1.id)) }
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.Fagsystem.TILLEGGSSTØNADER, 
+                fagsystem = Fagsystem.TILTAKSPENGER,
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
-                iverksettingId = IverksettingId(iid),
                 tilkjentYtelse = TestData.domain.enTilkjentYtelse(
                     listOf(
                         TestData.domain.enAndelTilkjentYtelse(
@@ -228,41 +204,49 @@ class IverksettingMigratorTest {
                             fom = 4.feb,
                             tom = 4.feb,
                             periodeId = pid,
-                            stønadsdata = StønadsdataTilleggsstønader(StønadTypeTilleggsstønader.TILSYN_BARN_AAP)
+                            stønadsdata = StønadsdataTiltakspenger(
+                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
+                                barnetillegg = false,
+                                brukersNavKontor = BrukersNavKontor("1234"),
+                                meldekortId = "meldeperiode",
+                            )
                         ),
                         TestData.domain.enAndelTilkjentYtelse(
                             beløp = 800,
                             fom = 1.mar,
                             tom = 1.mar,
                             periodeId = pid + 1,
-                            stønadsdata = StønadsdataTilleggsstønader(StønadTypeTilleggsstønader.TILSYN_BARN_ETTERLATTE)
-                        )
+                            stønadsdata = StønadsdataTiltakspenger(
+                                stønadstype = StønadTypeTiltakspenger.ARBEIDSMARKEDSOPPLÆRING_AMO,
+                                barnetillegg = false,
+                                brukersNavKontor = BrukersNavKontor("1234"),
+                                meldekortId = "meldeperiode-2",
+                            )
+                        ),
                     )
                 ),
                 resultat = OppdragResultat(OppdragStatus.KVITTERT_OK),
-            ).insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID()))
+            ).insert(utsjekk.utbetaling.UtbetalingId(uid2.id))
 
             iv.data.personident
         }
 
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
-            bearerAuth(TestRuntime.azure.generateToken())
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, null, uid to models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP))
+            setBody(MigrationRequest(sid, bid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
         assertEquals(personident, personident) // unused
         val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
         assertEquals(0, utbetaling.uncommitted().size)
-        val new_uid = models.UtbetalingId(uid)
-        val actuals = utbetaling.history().filter { (key, _) -> key == new_uid.toString() }.map { it.second }// .second
+        val actuals = utbetaling.history().filter { (key, _) -> key == uid1.toString() }.map { it.second }// .second
         assertEquals(1, actuals.size)
         val actual = actuals.first()
         assertEquals(false, actual.dryrun)
-        assertEquals(iid, actual.originalKey)
-        assertEquals(models.Fagsystem.TILLEGGSSTØNADER, actual.fagsystem)
-        assertEquals(new_uid, actual.uid)
+        assertEquals(models.Fagsystem.TILTAKSPENGER, actual.fagsystem)
+        assertEquals(uid1, actual.uid)
         assertEquals(models.Action.CREATE, actual.action)
         assertEquals(false, actual.førsteUtbetalingPåSak)
         assertEquals(models.SakId(sid), actual.sakId)
@@ -270,7 +254,7 @@ class IverksettingMigratorTest {
         assertEquals(models.PeriodeId("$sid#$pid"), actual.lastPeriodeId)
         assertEquals(models.Personident(personident), actual.personident)
         assertEquals(1.mar.atStartOfDay(), actual.vedtakstidspunkt)
-        assertEquals(models.StønadTypeTilleggsstønader.TILSYN_BARN_AAP, actual.stønad)
+        assertEquals(models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, actual.stønad)
         assertEquals(TestData.DEFAULT_BESLUTTER, actual.beslutterId.ident)
         assertEquals(TestData.DEFAULT_SAKSBEHANDLER, actual.saksbehandlerId.ident)
         assertEquals(models.Periodetype.UKEDAG, actual.periodetype)
@@ -280,7 +264,7 @@ class IverksettingMigratorTest {
         assertEquals(null, actual.perioder[0].vedtakssats)
         assertEquals(4.feb, actual.perioder[0].fom)
         assertEquals(4.feb, actual.perioder[0].tom)
-        assertEquals(null, actual.perioder[0].betalendeEnhet)
+        assertEquals(NavEnhet("1234"), actual.perioder[0].betalendeEnhet)
     }
 
     @Test
@@ -295,7 +279,7 @@ class IverksettingMigratorTest {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER,
+                    fagsystem = Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -305,7 +289,7 @@ class IverksettingMigratorTest {
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER, 
+                fagsystem = Fagsystem.TILTAKSPENGER,
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),
@@ -317,7 +301,7 @@ class IverksettingMigratorTest {
                             tom = 14.feb,
                             periodeId = pid,
                             stønadsdata = StønadsdataTiltakspenger(
-                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, 
+                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
                                 barnetillegg = false,
                                 brukersNavKontor = BrukersNavKontor("1234"),
                                 meldekortId = meldeperiode,
@@ -329,7 +313,7 @@ class IverksettingMigratorTest {
                             tom = 28.feb,
                             periodeId = pid,
                             stønadsdata = StønadsdataTiltakspenger(
-                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, 
+                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
                                 barnetillegg = false,
                                 brukersNavKontor = BrukersNavKontor("1234"),
                                 meldekortId = "en-annen-meldekortId"
@@ -346,16 +330,15 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode, null))
+            setBody(MigrationRequest(sid, bid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
         val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
         assertEquals(0, utbetaling.uncommitted().size)
         val new_uid = uid(sid, meldeperiode, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
-        val actual = utbetaling.history() .single { (key, _) -> key == new_uid.toString() }.second
+        val actual = utbetaling.history().single { (key, _) -> key == new_uid.toString() }.second
         assertEquals(false, actual.dryrun)
-        assertEquals(iid, actual.originalKey)
         assertEquals(models.Fagsystem.TILTAKSPENGER, actual.fagsystem)
         assertEquals(new_uid, actual.uid)
         assertEquals(models.Action.CREATE, actual.action)
@@ -375,7 +358,7 @@ class IverksettingMigratorTest {
         assertEquals(null, actual.perioder[0].vedtakssats)
         assertEquals(1.feb, actual.perioder[0].fom)
         assertEquals(14.feb, actual.perioder[0].tom)
-        assertEquals(models.NavEnhet("1234"), actual.perioder[0].betalendeEnhet)
+        assertEquals(NavEnhet("1234"), actual.perioder[0].betalendeEnhet)
     }
 
     @Test
@@ -390,7 +373,7 @@ class IverksettingMigratorTest {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER,
+                    fagsystem = Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -400,7 +383,7 @@ class IverksettingMigratorTest {
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER, 
+                fagsystem = Fagsystem.TILTAKSPENGER,
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),
@@ -412,7 +395,7 @@ class IverksettingMigratorTest {
                             tom = 14.feb,
                             periodeId = pid,
                             stønadsdata = StønadsdataTiltakspenger(
-                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, 
+                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
                                 barnetillegg = false,
                                 brukersNavKontor = BrukersNavKontor("1234"),
                                 meldekortId = meldeperiode,
@@ -424,7 +407,7 @@ class IverksettingMigratorTest {
                             tom = 28.feb,
                             periodeId = pid,
                             stønadsdata = StønadsdataTiltakspenger(
-                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, 
+                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
                                 barnetillegg = false,
                                 brukersNavKontor = BrukersNavKontor("1234"),
                                 meldekortId = meldeperiode,
@@ -441,16 +424,15 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode, null))
+            setBody(MigrationRequest(sid, bid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
         val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
         assertEquals(0, utbetaling.uncommitted().size)
         val new_uid = uid(sid, meldeperiode, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
-        val actual = utbetaling.history() .single { (key, _) -> key == new_uid.toString() }.second
+        val actual = utbetaling.history().single { (key, _) -> key == new_uid.toString() }.second
         assertEquals(false, actual.dryrun)
-        assertEquals(iid, actual.originalKey)
         assertEquals(models.Fagsystem.TILTAKSPENGER, actual.fagsystem)
         assertEquals(new_uid, actual.uid)
         assertEquals(models.Action.CREATE, actual.action)
@@ -470,12 +452,12 @@ class IverksettingMigratorTest {
         assertEquals(null, actual.perioder[0].vedtakssats)
         assertEquals(1.feb, actual.perioder[0].fom)
         assertEquals(14.feb, actual.perioder[0].tom)
-        assertEquals(models.NavEnhet("1234"), actual.perioder[0].betalendeEnhet)
+        assertEquals(NavEnhet("1234"), actual.perioder[0].betalendeEnhet)
         assertEquals(500u, actual.perioder[1].beløp)
         assertEquals(null, actual.perioder[1].vedtakssats)
         assertEquals(15.feb, actual.perioder[1].fom)
         assertEquals(28.feb, actual.perioder[1].tom)
-        assertEquals(models.NavEnhet("1234"), actual.perioder[1].betalendeEnhet)
+        assertEquals(NavEnhet("1234"), actual.perioder[1].betalendeEnhet)
     }
 
     @Test
@@ -490,7 +472,7 @@ class IverksettingMigratorTest {
             val iv = TestData.dao.iverksetting(
                 mottattTidspunkt = LocalDateTime.now().minusDays(2),
                 iverksetting = TestData.domain.iverksetting(
-                    fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER,
+                    fagsystem = Fagsystem.TILTAKSPENGER,
                     sakId = SakId(sid),
                     behandlingId = BehandlingId(bid),
                     iverksettingId = IverksettingId(iid),
@@ -500,7 +482,7 @@ class IverksettingMigratorTest {
 
 
             TestData.dao.iverksettingResultat(
-                fagsystem = models.kontrakter.Fagsystem.TILTAKSPENGER, 
+                fagsystem = Fagsystem.TILTAKSPENGER,
                 sakId = SakId(sid),
                 behandlingId = BehandlingId(bid),
                 iverksettingId = IverksettingId(iid),
@@ -512,7 +494,7 @@ class IverksettingMigratorTest {
                             tom = 14.feb,
                             periodeId = pid,
                             stønadsdata = StønadsdataTiltakspenger(
-                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, 
+                                stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
                                 barnetillegg = false,
                                 brukersNavKontor = BrukersNavKontor("1234"),
                                 meldekortId = meldeperiode,
@@ -524,7 +506,7 @@ class IverksettingMigratorTest {
                             tom = 14.feb,
                             periodeId = pid,
                             stønadsdata = StønadsdataTiltakspenger(
-                                stønadstype = StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB, 
+                                stønadstype = StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB,
                                 barnetillegg = false,
                                 brukersNavKontor = BrukersNavKontor("1234"),
                                 meldekortId = meldeperiode,
@@ -541,16 +523,15 @@ class IverksettingMigratorTest {
         val res = httpClient.post("/api/iverksetting/v2/migrate") {
             bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
             contentType(ContentType.Application.Json)
-            setBody(MigrationRequest(sid, bid, iid, meldeperiode, null))
+            setBody(MigrationRequest(sid, bid))
         }
 
         assertEquals(HttpStatusCode.OK, res.status)
         val utbetaling = TestRuntime.kafka.getProducer(Topics.utbetaling)
         assertEquals(0, utbetaling.uncommitted().size)
         val uid1 = uid(sid, meldeperiode, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
-        val actual1 = utbetaling.history() .single { (key, _) -> key == uid1.toString() }.second
+        val actual1 = utbetaling.history().single { (key, _) -> key == uid1.toString() }.second
         assertEquals(false, actual1.dryrun)
-        assertEquals(iid, actual1.originalKey)
         assertEquals(models.Fagsystem.TILTAKSPENGER, actual1.fagsystem)
         assertEquals(uid1, actual1.uid)
         assertEquals(models.Action.CREATE, actual1.action)
@@ -570,12 +551,11 @@ class IverksettingMigratorTest {
         assertEquals(null, actual1.perioder[0].vedtakssats)
         assertEquals(1.feb, actual1.perioder[0].fom)
         assertEquals(14.feb, actual1.perioder[0].tom)
-        assertEquals(models.NavEnhet("1234"), actual1.perioder[0].betalendeEnhet)
+        assertEquals(NavEnhet("1234"), actual1.perioder[0].betalendeEnhet)
 
         val uid2 = uid(sid, meldeperiode, models.StønadTypeTiltakspenger.DIGITAL_JOBBKLUBB, models.Fagsystem.TILTAKSPENGER)
-        val actual2 = utbetaling.history() .single { (key, _) -> key == uid2.toString() }.second
+        val actual2 = utbetaling.history().single { (key, _) -> key == uid2.toString() }.second
         assertEquals(false, actual2.dryrun)
-        assertEquals(iid, actual2.originalKey)
         assertEquals(models.Fagsystem.TILTAKSPENGER, actual2.fagsystem)
         assertEquals(uid2, actual2.uid)
         assertEquals(models.Action.CREATE, actual2.action)
@@ -595,7 +575,7 @@ class IverksettingMigratorTest {
         assertEquals(null, actual2.perioder[0].vedtakssats)
         assertEquals(1.feb, actual2.perioder[0].fom)
         assertEquals(14.feb, actual2.perioder[0].tom)
-        assertEquals(models.NavEnhet("1234"), actual2.perioder[0].betalendeEnhet)
+        assertEquals(NavEnhet("1234"), actual2.perioder[0].betalendeEnhet)
     }
 }
 
