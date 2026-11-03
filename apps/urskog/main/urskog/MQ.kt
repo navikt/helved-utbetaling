@@ -18,7 +18,6 @@ import javax.jms.TextMessage
 class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: MeterRegistry) {
     private val kvitteringQueue = config.oppdrag.kvitteringsKø
     private val producer = DefaultMQProducer(mq, config.oppdrag.sendKø)
-    private val darePocAapProducer = DefaultMQProducer(mq, config.oppdrag.darePocAapKø)
     private val beregningsplattformProducer = DefaultMQProducer(mq, config.oppdrag.beregningsplattformKø)
     private val mapper: XMLMapper<Oppdrag> = XMLMapper()
 
@@ -36,7 +35,6 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
                 Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
             Log.info("Sender oppdrag $info")
-            sendDarePocAapKopi(oppdrag.fagsystem(), xml, info)
             sendOppdragskopiTilBeregningsplattform(xml, info)
 
             return oppdrag
@@ -47,16 +45,6 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
             )).increment()
             Log.error("Feilet sending av oppdrag $info", it)
         }.getOrThrow()
-    }
-
-    private fun sendDarePocAapKopi(fagsystem: String, xml: String, info: String) {
-        if (config.cluster  != "dev-gcp" || fagsystem != Fagsystem.AAP.name) return
-
-        runCatching {
-            darePocAapProducer.produce(xml)
-        }.onFailure {
-            Log.error("Feilet sending av AAP-kopi til DARE POC-kø $info", it)
-        }
     }
 
     private fun sendOppdragskopiTilBeregningsplattform(xml: String, info: String) {
@@ -145,9 +133,4 @@ private fun Oppdrag.fagsystem(): String {
     return Fagsystem.fromFagområde(oppdrag110.kodeFagomraade).name
 }
 
-private fun Oppdrag.sakId(): String = oppdrag110.fagsystemId.trimEnd()
 private fun Oppdrag.alvorlighetsgrad(): String? = mmel?.alvorlighetsgrad?.trimEnd()
-
-private fun Oppdrag.behandlingId(): BehandlingId? {
-    return oppdrag110.oppdragsLinje150s?.lastOrNull()?.henvisning?.trimEnd()?.let(::BehandlingId)
-}

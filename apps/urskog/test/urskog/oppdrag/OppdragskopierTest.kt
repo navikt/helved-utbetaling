@@ -18,26 +18,6 @@ class OppdragskopierTest {
     }
 
     @Test
-    fun `sender DARE POC-kopi i dev`() {
-        produserOppdrag("dev-gcp", Fagsystem.AAP.oppdrag())
-        assertAntallProduserteKopier(TestRuntime.config.oppdrag.darePocAapKø, 1)
-    }
-
-    @Test
-    fun `sender ikke DARE POC-kopi i prod`() {
-        produserOppdrag("prod-gcp", Fagsystem.AAP.oppdrag())
-        assertAntallProduserteKopier(TestRuntime.config.oppdrag.darePocAapKø, 0)
-    }
-
-    @Test
-    fun `sender ikke DARE POC-kopi for andre fagsystemer enn AAP`() {
-        Fagsystem.entries.filter { it.name != "AAP" }.forEach {
-            produserOppdrag("dev-gcp", it.oppdrag())
-        }
-        assertAntallProduserteKopier(TestRuntime.config.oppdrag.darePocAapKø, 0)
-    }
-
-    @Test
     fun `sender oppdragskopi til beregningsplattform i dev`() {
         produserOppdrag("dev-gcp", Fagsystem.AAP.oppdrag())
         produserOppdrag("dev-gcp", Fagsystem.DAGPENGER.oppdrag())
