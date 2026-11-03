@@ -5,7 +5,6 @@ package models
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import libs.utils.appLog
-import libs.utils.nesteUkedag
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -41,22 +40,7 @@ data class TpPeriode(
 
 fun perioder(perioder: List<TpPeriode>): List<Utbetalingsperiode> {
     return perioder
-        .groupBy { it.beløp }
-        .map { (_, perioder) ->
-            perioder.splitWhen { cur, next ->
-                val harSammenhengendeDager = cur.tom.plusDays(1).equals(next.fom)
-                val harSammenhengendeUker = cur.tom.nesteUkedag().equals(next.fom)
-                !harSammenhengendeUker && !harSammenhengendeDager
-            }.map {
-                Utbetalingsperiode(
-                    fom = it.first().fom,
-                    tom = it.last().tom,
-                    betalendeEnhet = it.last().betalendeEnhet,
-                    beløp = it.first().beløp,
-                )
-            }
-        }
-        .flatten()
+        .map { it.into() }
         .sortedBy { it.fom }
 }
 
