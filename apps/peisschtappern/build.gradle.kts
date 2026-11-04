@@ -12,6 +12,16 @@ tasks.register("buildFatJar") {
     dependsOn(tasks.shadowJar)
 }
 
+tasks.shadowJar {
+    // Uten sammenslåing av servicefiler beholdes kun Unix-resolverens registrering i fat-JAR-en.
+    // DNS-resolveren blir da ikke oppdaget, og gRPC-klienten for Cloud Logging feiler ved opprettelse:
+    // java.lang.IllegalArgumentException: Address types of NameResolver 'unix' for 'unix:///logging.googleapis.com:443' not supported by transport
+    filesMatching("META-INF/services/**") {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
+    mergeServiceFiles()
+}
+
 val http4kVersion = "6.61.0.0"
 val ktorVersion = "3.6.0"
 val libVersion = "3.1.252"
