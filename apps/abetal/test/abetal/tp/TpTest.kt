@@ -9,6 +9,7 @@ import models.*
 import no.trygdeetaten.skjema.oppdrag.Mmel
 import no.trygdeetaten.skjema.oppdrag.TkodeStatusLinje
 import org.junit.jupiter.api.Test
+import java.time.LocalDate
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -775,6 +776,70 @@ internal class TpTest : ConsumerTestBase() {
             .with(uid.toString()) {
                 assertUtbetaling(expected, it)
             }
+    }
+
+    @Test
+    fun `opphør - hel delt meldeperiode med gruppe AMO og barnetillegg`() {
+        val sid = SakId("$nextInt")
+        val bid = BehandlingId("$nextInt")
+        val transactionId = UUID.randomUUID().toString()
+        val fom = LocalDate.of(2026, 7, 6)
+        val stønader = listOf(StønadTypeTiltakspenger.GRUPPE_AMO, StønadTypeTiltakspenger.GRUPPE_AMO_BARN)
+        val utbetalinger = stønader.map { stønad ->
+            utbetaling(
+                action = Action.CREATE,
+                uid = tpUId(sid.id, "periode-2", stønad),
+                sakId = sid,
+                stønad = stønad,
+                personident = Personident("12345678910"),
+                beslutterId = Navident("tp"),
+                saksbehandlerId = Navident("tp"),
+                fagsystem = Fagsystem.TILTAKSPENGER
+            ) {
+                periode(fom, fom.plusDays(4), 1000u, betalendeEnhet = NavEnhet("0220"))
+                periode(fom.plusDays(7), fom.plusDays(11), 1000u, betalendeEnhet = NavEnhet("0220"))
+            }
+        }
+        val uids = utbetalinger.map { it.uid }
+        utbetalinger.forEach { TestRuntime.topics.utbetalinger.produce(it.uid.toString(), it) }
+        TestRuntime.topics.saker.produce(SakKey(sid, Fagsystem.TILTAKSPENGER), uids.toSet())
+
+        TestRuntime.topics.tp.produce(transactionId) {
+            Tp.utbetaling(sid.id, bid.id) { emptyList() }.asBytes()
+        }
+
+        TestRuntime.topics.status.assertThat().has(transactionId) {
+            Tp.mottatt {
+                stønader.forEach { linje(bid, fom, fom.plusDays(11), 0u, it.klassekode) }
+            }
+        }
+        val oppdrag = TestRuntime.topics.oppdrag.assertThat()
+            .has(transactionId)
+            .with(transactionId) { oppdrag ->
+                oppdrag.assertBasics("ENDR", "TILTPENG", sid.id, expectedLines = 2)
+                assertEquals(stønader.map { it.klassekode }, oppdrag.oppdrag110.oppdragsLinje150s.map { it.kodeKlassifik })
+                oppdrag.oppdrag110.oppdragsLinje150s.forEach {
+                    assertEquals(TkodeStatusLinje.OPPH, it.kodeStatusLinje)
+                    assertEquals(fom, it.datoStatusFom.toLocalDate())
+                    assertEquals(bid.id, it.henvisning)
+                }
+            }
+            .get(transactionId)
+        val pending = TestRuntime.topics.pendingUtbetalinger.assertThat().hasTotal(2)
+        utbetalinger.forEach { previous ->
+            pending.has(previous.uid.toString()).with(previous.uid.toString()) {
+                assertUtbetaling(previous.copy(action = Action.DELETE, behandlingId = bid), it)
+            }
+        }
+
+        kvitterOk(transactionId, oppdrag, uids)
+
+        val opphørte = TestRuntime.topics.utbetalinger.assertThat().hasTotal(2)
+        utbetalinger.forEach { previous ->
+            opphørte.has(previous.uid.toString()).with(previous.uid.toString()) {
+                assertUtbetaling(previous.copy(action = Action.DELETE, behandlingId = bid), it)
+            }
+        }
     }
 
     @Test
