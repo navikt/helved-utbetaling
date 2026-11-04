@@ -36,6 +36,9 @@ spec:
     - team: tilleggsstonader
       application: tilleggsstonader-sak
       access: read
+    - team: tpts
+      application: tiltakspenger-saksbehandling-api
+      access: read
     - team: historisk
       application: superhelt
       access: read
