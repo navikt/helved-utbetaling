@@ -88,9 +88,8 @@ class StatistikkernTest {
 
     @Test
     fun `dryrun utbetaling lagres ikke i bigquery`() {
-        val key = "test-key-dryrun"
         val utbetaling = utbetaling(dryrun = true)
-        TestRuntime.topics.utbetalinger.populate(key, utbetaling, partition = 0, offset = offset.getAndIncrement())
+        TestRuntime.bq.upsertUtbetaling(utbetaling, null)
 
         assertTrue(TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).isEmpty())
     }
