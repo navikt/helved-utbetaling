@@ -5,8 +5,6 @@ import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.*
 import io.opentelemetry.context.*
 import io.opentelemetry.context.propagation.TextMapGetter
-import io.opentelemetry.context.propagation.TextMapSetter
-import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
@@ -86,10 +84,7 @@ object Tracing {
         return traceId
     }
 
-    private val traceContextGetter = object : TextMapGetter<String> {
-        override fun keys(carrier: String): Iterable<String> = Collections.singletonList("traceparent")
-        override fun get(carrier: String?, key: String): String? = if ("traceparent" == key) carrier else null
-    }
+    private val traceContextGetter = TextMapGetter<String> { carrier, key -> if ("traceparent" == key) carrier else null }
 
     fun contextFromTraceparent(traceparent: String): Context {
         return GlobalOpenTelemetry
