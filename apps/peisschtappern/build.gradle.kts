@@ -42,7 +42,7 @@ dependencies {
     implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
 
     implementation("org.apache.kafka:kafka-clients:4.3.0")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 
     testImplementation(kotlin("test"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")

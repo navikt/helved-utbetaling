@@ -16,6 +16,7 @@ on:
       - 'libs/utils/**'
       - '.github/workflows/abetal.yml'
       - 'build.gradle.kts'
+      - 'dependency-platform/**'
       - 'models/**'
 
 jobs:

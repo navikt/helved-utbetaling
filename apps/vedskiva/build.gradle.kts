@@ -27,7 +27,7 @@ dependencies {
     implementation("org.http4k:http4k-format-kotlinx-serialization:$http4kVersion")
     implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.16.2")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))

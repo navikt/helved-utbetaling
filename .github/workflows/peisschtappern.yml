@@ -16,6 +16,7 @@ on:
       - 'libs/utils/**'
       - '.github/workflows/peisschtappern.yml'
       - 'build.gradle.kts'
+      - 'dependency-platform/**'
 
 jobs:
   test:

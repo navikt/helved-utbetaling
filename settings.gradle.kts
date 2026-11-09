@@ -4,6 +4,8 @@ plugins {
 
 rootProject.name = "helved-utbetaling"
 
+include("dependency-platform")
+
 include(
     "apps:abetal",
     "apps:branntaarn",

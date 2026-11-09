@@ -20,7 +20,7 @@ dependencies {
     implementation(project(":libs:kotlinx"))
     implementation("no.nav.helved:xml:3.1.252")
 
-    implementation("io.micrometer:micrometer-registry-prometheus:1.16.0")
+    implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.http4k:http4k-core:$http4kVersion")
     implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")

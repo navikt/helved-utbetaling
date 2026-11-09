@@ -16,6 +16,7 @@ on:
       - 'libs/utils/**'
       - '.github/workflows/speiderhytta.yml'
       - 'build.gradle.kts'
+      - 'dependency-platform/**'
       - 'Dockerfile'
 
 jobs:
