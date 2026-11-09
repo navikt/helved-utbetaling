@@ -22,12 +22,12 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation("no.nav.helved:xml:3.1.252")
 
-    implementation("org.apache.kafka:kafka-streams:4.3.1")
+    implementation("org.apache.kafka:kafka-streams")
     implementation("org.http4k:http4k-core:$http4kVersion")
     implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
-    implementation("org.apache.kafka:kafka-clients:4.3.1")
+    implementation("org.apache.kafka:kafka-clients")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))

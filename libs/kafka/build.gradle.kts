@@ -9,11 +9,11 @@ dependencies {
     implementation("no.nav.helved:xml:3.1.252")
 
     implementation("io.micrometer:micrometer-registry-prometheus")
-    api("org.apache.kafka:kafka-streams:4.3.1")
+    api("org.apache.kafka:kafka-streams")
     implementation("ch.qos.logback:logback-classic:1.5.22")
 
     testImplementation(kotlin("test"))
-    testImplementation("org.apache.kafka:kafka-streams-test-utils:4.3.1")
+    testImplementation("org.apache.kafka:kafka-streams-test-utils")
 }
 
 // Kafka topology tests share Kafka Streams test driver state (verified
