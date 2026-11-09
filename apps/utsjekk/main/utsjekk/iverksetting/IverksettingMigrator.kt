@@ -78,8 +78,10 @@ class IverksettingMigrator(
                     ?.mapValues { it.value.tilAndelData() }
                     ?: badRequest("Fant ikke siste andeler for (sak=${req.sakId} fagsystem=$fs)")
 
-                if (andelerByKlassekode.isEmpty()) {
-                    sisteAndeler.map {(kjedenøkkel, andelData) ->
+                // Fully terminated chains are absent from the active andeler, but still needed for later changes.
+                val opphørteUtbetalinger = sisteAndeler
+                    .filterKeys { it !in andelerByKlassekode }
+                    .map { (kjedenøkkel, andelData) ->
                         appLog.info("forsøker å migrere ${kjedenøkkel.klassifiseringskode}} uten andeler")
                         val kjedenøkkel = kjedenøkkel as? KjedenøkkelMeldeplikt ?: unprocessable("forventet meldekortId")
                         utbetaling(
@@ -93,23 +95,22 @@ class IverksettingMigrator(
                             action = Action.DELETE,
                         )
                     }
-                } else {
-                    andelerByKlassekode.map { (kjedenøkkel, andeler) ->
-                        appLog.info("forsøker å migrere $kjedenøkkel}")
-                        val kjedenøkkel = kjedenøkkel as? KjedenøkkelMeldeplikt ?: unprocessable("forventet meldekortId")
-                        utbetaling(
-                            meldeperiode = kjedenøkkel.meldekortId,
-                            iverksetting = iverksetting,
-                            andeler = andeler,
-                            sisteAndel = sisteAndeler[kjedenøkkel]
-                                ?: badRequest("Fant ikke siste andeler for (sak=${req.sakId} fagsystem=$fs) kjedenøkkel=$kjedenøkkel"),
-                            klassekode = kjedenøkkel.klassifiseringskode,
-                            fagsystem = Fagsystem.from(fs.kode),
-                            betalendeEnhet = andeler.last().stønadsdata.betalendeEnhet(), 
-                            action = Action.CREATE,
-                        )
-                    }
+                val aktiveUtbetalinger = andelerByKlassekode.map { (kjedenøkkel, andeler) ->
+                    appLog.info("forsøker å migrere $kjedenøkkel}")
+                    val kjedenøkkel = kjedenøkkel as? KjedenøkkelMeldeplikt ?: unprocessable("forventet meldekortId")
+                    utbetaling(
+                        meldeperiode = kjedenøkkel.meldekortId,
+                        iverksetting = iverksetting,
+                        andeler = andeler,
+                        sisteAndel = sisteAndeler[kjedenøkkel]
+                            ?: badRequest("Fant ikke siste andeler for (sak=${req.sakId} fagsystem=$fs) kjedenøkkel=$kjedenøkkel"),
+                        klassekode = kjedenøkkel.klassifiseringskode,
+                        fagsystem = Fagsystem.from(fs.kode),
+                        betalendeEnhet = andeler.last().stønadsdata.betalendeEnhet(),
+                        action = Action.CREATE,
+                    )
                 }
+                aktiveUtbetalinger + opphørteUtbetalinger
             }
         }
     }
