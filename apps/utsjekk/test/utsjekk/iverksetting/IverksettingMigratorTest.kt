@@ -6,6 +6,7 @@ import httpClient
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
+import libs.jdbc.await
 import libs.jdbc.concurrency.transaction
 import models.kontrakter.BrukersNavKontor
 import models.kontrakter.StønadTypeTiltakspenger
@@ -14,12 +15,193 @@ import utsjekk.Topics
 import utsjekk.utbetaling.feb
 import utsjekk.utbetaling.mar
 import java.time.LocalDateTime
+import java.time.LocalDate
 import java.util.*
 import models.NavEnhet
 import models.kontrakter.Fagsystem
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class IverksettingMigratorTest {
+
+    @Test
+    fun `migrerer to aktive meldekort og ett helt opphørt etter to iverksettinger`() = runTest(TestRuntime.context) {
+        val sid = RandomOSURId.generate()
+        val perioder = listOf(
+            "p1" to (LocalDate.of(2026, 6, 1) to LocalDate.of(2026, 6, 5)),
+            "p1" to (LocalDate.of(2026, 6, 8) to LocalDate.of(2026, 6, 12)),
+            "p2" to (LocalDate.of(2026, 7, 6) to LocalDate.of(2026, 7, 10)),
+            "p2" to (LocalDate.of(2026, 7, 13) to LocalDate.of(2026, 7, 17)),
+            "p3" to (LocalDate.of(2026, 8, 3) to LocalDate.of(2026, 8, 7)),
+            "p3" to (LocalDate.of(2026, 8, 10) to LocalDate.of(2026, 8, 14))
+        )
+        val første = TestData.dto.iverksetting(
+            sakId = sid,
+            behandlingId = "1",
+            vedtak = TestData.dto.vedtaksdetaljer(
+                vedtakstidspunkt = LocalDate.of(2026, 10, 26).atStartOfDay(),
+                utbetalinger = perioder.map { (meldekortId, periode) ->
+                    TestData.dto.utbetaling(
+                        beløp = 1000u,
+                        fom = periode.first,
+                        tom = periode.second,
+                        stønadsdata = StønadsdataTiltakspengerV2Dto(
+                            stønadstype = StønadTypeTiltakspenger.GRUPPE_AMO,
+                            brukersNavKontor = "0220",
+                            meldekortId = meldekortId
+                        )
+                    )
+                }
+            )
+        )
+        iverksettOgKvitter(første)
+
+        val andre = første.copy(
+            behandlingId = "2",
+            forrigeIverksetting = ForrigeIverksettingV2Dto(behandlingId = "1"),
+            vedtak = første.vedtak.copy(
+                utbetalinger = første.vedtak.utbetalinger.filter {
+                    (it.stønadsdata as StønadsdataTiltakspengerV2Dto).meldekortId != "p2"
+                }
+            )
+        )
+        iverksettOgKvitter(andre)
+
+        val res = httpClient.post("/api/iverksetting/v2/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
+            contentType(ContentType.Application.Json)
+            setBody(MigrationRequest(sid))
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        val migrerte = TestRuntime.kafka.getProducer(Topics.utbetaling).history()
+            .map { it.second }
+            .filter { it.sakId == models.SakId(sid) }
+        assertEquals(3, migrerte.size)
+        listOf("p1" to 1L, "p2" to 3L, "p3" to 5L).forEach { (meldekortId, periodeId) ->
+            val expectedUid = uid(sid, meldekortId, models.StønadTypeTiltakspenger.GRUPPE_AMO, models.Fagsystem.TILTAKSPENGER)
+            val actual = migrerte.single { it.uid == expectedUid }
+            assertEquals(if (meldekortId == "p2") models.Action.DELETE else models.Action.CREATE, actual.action)
+            assertEquals(models.PeriodeId("$sid#$periodeId"), actual.lastPeriodeId)
+            assertEquals(models.BehandlingId("2"), actual.behandlingId)
+            val expectedPerioder = if (meldekortId == "p2") emptyList() else {
+                perioder.filter { it.first == meldekortId }.map { (_, periode) ->
+                    models.Utbetalingsperiode(periode.first, periode.second, 1000u, NavEnhet("0220"))
+                }
+            }
+            assertEquals(expectedPerioder, actual.perioder)
+        }
+    }
+
+    private suspend fun iverksettOgKvitter(dto: IverksettV2Dto) {
+        val res = httpClient.post("/api/iverksetting/v2") {
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
+            contentType(ContentType.Application.Json)
+            setBody(dto)
+        }
+        assertEquals(HttpStatusCode.Accepted, res.status)
+        assertNotNull(TestRuntime.jdbc.await {
+            IverksettingResultatDao.select {
+                fagsystem = Fagsystem.TILTAKSPENGER
+                sakId = SakId(dto.sakId)
+                behandlingId = BehandlingId(dto.behandlingId)
+            }.firstOrNull { it.tilkjentYtelseForUtbetaling != null }
+        })
+        val utbetalingId = transaction {
+            IverksettingDao.uid {
+                fagsystem = Fagsystem.TILTAKSPENGER
+                sakId = SakId(dto.sakId)
+                behandlingId = BehandlingId(dto.behandlingId)
+            }
+        }
+        assertNotNull(utbetalingId)
+        TestRuntime.topics.status.produce(utbetalingId.id.toString()) {
+            models.StatusReply(models.Status.OK)
+        }
+        assertNotNull(TestRuntime.jdbc.await {
+            IverksettingResultatDao.select {
+                fagsystem = Fagsystem.TILTAKSPENGER
+                sakId = SakId(dto.sakId)
+                behandlingId = BehandlingId(dto.behandlingId)
+            }.firstOrNull { it.oppdragResultat?.oppdragStatus == OppdragStatus.KVITTERT_OK }
+        })
+    }
+
+    @Test
+    fun `migrerer helt opphørte kjeder sammen med aktive kjeder`() = verifiserOpphørteKjeder(harAktiveKjeder = true)
+
+    @Test
+    fun `migrerer helt opphørte kjeder uten aktive kjeder`() = verifiserOpphørteKjeder(harAktiveKjeder = false)
+
+    private fun verifiserOpphørteKjeder(harAktiveKjeder: Boolean) = runTest(TestRuntime.context) {
+        val sid = RandomOSURId.generate()
+        val bid = RandomOSURId.generate()
+        val iid = RandomOSURId.generate()
+        val andeler = listOf("p1", "p2", "p3").mapIndexed { index, meldekortId ->
+            TestData.domain.enAndelTilkjentYtelse(
+                beløp = 1000,
+                fom = 1.feb,
+                tom = 14.feb,
+                periodeId = index.toLong() + 1,
+                stønadsdata = StønadsdataTiltakspenger(
+                    stønadstype = StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING,
+                    barnetillegg = false,
+                    brukersNavKontor = BrukersNavKontor("1234"),
+                    meldekortId = meldekortId
+                )
+            )
+        }
+        val aktiveAndeler = if (harAktiveKjeder) listOf(andeler[0], andeler[2]) else emptyList()
+        // Last period reference can outlive the active tail of a chain.
+        val sisteAndeler = listOf(andeler[0].copy(periodeId = 4L), andeler[1], andeler[2])
+        val tilkjentYtelse = TestData.domain.enTilkjentYtelse(sisteAndeler).copy(
+            andelerTilkjentYtelse = aktiveAndeler
+        )
+
+        transaction {
+            TestData.dao.iverksetting(
+                iverksetting = TestData.domain.iverksetting(
+                    fagsystem = Fagsystem.TILTAKSPENGER,
+                    sakId = SakId(sid),
+                    behandlingId = BehandlingId(bid),
+                    iverksettingId = IverksettingId(iid)
+                )
+            ).insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID()))
+            TestData.dao.iverksettingResultat(
+                fagsystem = Fagsystem.TILTAKSPENGER,
+                sakId = SakId(sid),
+                behandlingId = BehandlingId(bid),
+                iverksettingId = IverksettingId(iid),
+                tilkjentYtelse = tilkjentYtelse,
+                resultat = OppdragResultat(OppdragStatus.KVITTERT_OK)
+            ).insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID()))
+        }
+
+        val res = httpClient.post("/api/iverksetting/v2/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.TILTAKSPENGER))
+            contentType(ContentType.Application.Json)
+            setBody(MigrationRequest(sid))
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        val migrerte = TestRuntime.kafka.getProducer(Topics.utbetaling).history()
+            .map { it.second }
+            .filter { it.sakId == models.SakId(sid) }
+        assertEquals(3, migrerte.size)
+        sisteAndeler.forEach { sisteAndel ->
+            val meldekortId = (sisteAndel.stønadsdata as StønadsdataTiltakspenger).meldekortId
+            val expectedUid = uid(sid, meldekortId, models.StønadTypeTiltakspenger.ARBEIDSFORBEREDENDE_TRENING, models.Fagsystem.TILTAKSPENGER)
+            val actual = migrerte.single { it.uid == expectedUid }
+            val aktiv = harAktiveKjeder && meldekortId != "p2"
+            assertEquals(if (aktiv) models.Action.CREATE else models.Action.DELETE, actual.action)
+            assertEquals(models.PeriodeId("$sid#${sisteAndel.periodeId}"), actual.lastPeriodeId)
+            assertEquals(models.BehandlingId(bid), actual.behandlingId)
+            val expectedPerioder = if (aktiv) {
+                listOf(models.Utbetalingsperiode(1.feb, 14.feb, 1000u, NavEnhet("1234")))
+            } else emptyList()
+            assertEquals(expectedPerioder, actual.perioder)
+        }
+    }
 
     @Test
     fun `iverksetting not found`() = runTest(TestRuntime.context) {
