@@ -1,6 +1,6 @@
 dependencies {
     api("ch.qos.logback:logback-classic")
-    runtimeOnly("net.logstash.logback:logstash-logback-encoder")
+    api("net.logstash.logback:logstash-logback-encoder")
     api(kotlin("reflect"))
     testImplementation(kotlin("test"))
 }

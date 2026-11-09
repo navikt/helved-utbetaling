@@ -9,6 +9,9 @@ javaPlatform {
 dependencies {
     api(platform("io.micrometer:micrometer-bom:1.17.1"))
     api(platform("tools.jackson:jackson-bom:3.1.7"))
+    api(platform("io.netty:netty-bom:4.1.140.Final"))
+    api(platform("io.opentelemetry:opentelemetry-bom:1.67.0"))
+    api(platform("org.testcontainers:testcontainers-bom:2.0.5"))
 
     constraints {
         val logbackVersion = "1.6.6"

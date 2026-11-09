@@ -24,10 +24,10 @@ dependencies {
     implementation("org.http4k:http4k-core:$http4kVersion")
     implementation("org.http4k:http4k-ops-micrometer:$http4kVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    implementation("com.google.cloud:google-cloud-bigquery:2.73.0")
+    implementation("com.google.cloud:google-cloud-bigquery:2.76.0")
     implementation("org.apache.kafka:kafka-clients")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:kafka-test"))
-    testImplementation("org.testcontainers:gcloud:1.21.4")
+    testImplementation("org.testcontainers:testcontainers-gcloud")
 }

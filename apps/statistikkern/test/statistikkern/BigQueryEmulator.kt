@@ -3,7 +3,7 @@ package statistikkern
 import com.google.cloud.NoCredentials
 import com.google.cloud.bigquery.BigQueryOptions
 import com.google.cloud.bigquery.DatasetInfo
-import org.testcontainers.containers.BigQueryEmulatorContainer
+import org.testcontainers.gcloud.BigQueryEmulatorContainer
 
 object BigQueryEmulator {
     private val container = BigQueryEmulatorContainer("ghcr.io/goccy/bigquery-emulator:0.6.6")
