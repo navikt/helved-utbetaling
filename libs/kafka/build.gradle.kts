@@ -10,7 +10,7 @@ dependencies {
 
     implementation("io.micrometer:micrometer-registry-prometheus")
     api("org.apache.kafka:kafka-streams")
-    implementation("ch.qos.logback:logback-classic:1.5.22")
+    implementation("ch.qos.logback:logback-classic")
 
     testImplementation(kotlin("test"))
     testImplementation("org.apache.kafka:kafka-streams-test-utils")

@@ -8,8 +8,14 @@ javaPlatform {
 
 dependencies {
     api(platform("io.micrometer:micrometer-bom:1.17.1"))
+    api(platform("tools.jackson:jackson-bom:3.1.7"))
 
     constraints {
+        val logbackVersion = "1.6.6"
+        api("ch.qos.logback:logback-classic:$logbackVersion")
+        api("ch.qos.logback:logback-core:$logbackVersion")
+        api("net.logstash.logback:logstash-logback-encoder:9.0")
+
         val kafkaVersion = "4.3.1"
         api("org.apache.kafka:kafka-streams:$kafkaVersion")
         api("org.apache.kafka:kafka-clients:$kafkaVersion")
