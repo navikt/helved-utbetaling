@@ -10,6 +10,7 @@ on:
       - 'libs/utils/**'
       - '.github/workflows/snickerboa.yml'
       - 'build.gradle.kts'
+      - 'dependency-platform/**'
       - 'Dockerfile'
 
 jobs:

@@ -16,6 +16,7 @@ on:
       - 'libs/utils/**'
       - '.github/workflows/vedskiva.yml'
       - 'build.gradle.kts'
+      - 'dependency-platform/**'
       - 'Dockerfile'
       - 'models/**'
 

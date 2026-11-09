@@ -5,8 +5,14 @@ plugins {
 }
 
 subprojects {
+    if (path == ":dependency-platform") return@subprojects
+
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "helved.fatjar")
+
+    dependencies {
+        add("implementation", platform(project(":dependency-platform")))
+    }
 
     tasks {
         withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
@@ -64,10 +70,12 @@ allprojects {
         maven("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
     }
 
-    kotlin {
-        jvmToolchain(25)
-        compilerOptions {
-            extraWarnings.set(true)
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        kotlin {
+            jvmToolchain(25)
+            compilerOptions {
+                extraWarnings.set(true)
+            }
         }
     }
 }

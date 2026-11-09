@@ -17,6 +17,7 @@ on:
       - 'libs/utils/**'
       - '.github/workflows/urskog.yml'
       - 'build.gradle.kts'
+      - 'dependency-platform/**'
       - 'models/**'
 
 jobs:
