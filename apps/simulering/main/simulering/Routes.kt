@@ -1,6 +1,7 @@
 package simulering
 
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import libs.kafka.Streams
 import org.http4k.core.*
 import org.http4k.lens.BiDiBodyLens
 import org.http4k.routing.bind
@@ -19,14 +20,14 @@ fun simuleringRoutes(service: SimuleringServiceV1) = routes(
     },
 )
 
-fun actuatorRoutes(prometheus: PrometheusMeterRegistry) = routes(
+fun actuatorRoutes(prometheus: PrometheusMeterRegistry, kafka: Streams) = routes(
     "/actuator/metrics" bind Method.GET to {
         Response(Status.OK).body(prometheus.scrape())
     },
     "/actuator/live" bind Method.GET to {
-        Response(Status.OK).body("live")
+        if (kafka.live()) Response(Status.OK).body("live") else Response(Status.SERVICE_UNAVAILABLE)
     },
     "/actuator/ready" bind Method.GET to {
-        Response(Status.OK).body("ready")
+        if (kafka.ready()) Response(Status.OK).body("ready") else Response(Status.SERVICE_UNAVAILABLE)
     },
 )

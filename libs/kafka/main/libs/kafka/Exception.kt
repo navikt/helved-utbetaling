@@ -59,7 +59,7 @@ class ProcessAgainHandler : ProcessingExceptionHandler {
 
     override fun handleError(
         c: ErrorHandlerContext,
-        r: org.apache.kafka.streams.processor.api.Record<*, *>,
+        r: org.apache.kafka.streams.processor.api.Record<*, *>?,
         e: java.lang.Exception
     ): ProcessingExceptionHandler.Response {
         Log.error("Feil ved prosessering i topologien, forsøker igjen.", e, kafkaLog)
@@ -72,7 +72,7 @@ class ProcessNextHandler : ProcessingExceptionHandler {
 
     override fun handleError(
         c: ErrorHandlerContext,
-        r: org.apache.kafka.streams.processor.api.Record<*, *>,
+        r: org.apache.kafka.streams.processor.api.Record<*, *>?,
         e: java.lang.Exception
     ): ProcessingExceptionHandler.Response {
         Log.error("Feil ved prosessering i topologien, fortsetter med neste record.", e, kafkaLog)

@@ -5,9 +5,11 @@ import libs.kafka.*
 import libs.kafka.processor.StateScheduleProcessor
 import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
+import org.apache.kafka.common.header.internals.RecordHeaders
 import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext
 import org.apache.kafka.streams.state.TimestampedKeyValueStoreWithHeaders
 import org.apache.kafka.streams.state.ValueAndTimestamp
+import org.apache.kafka.streams.state.ValueTimestampHeaders
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -99,15 +101,17 @@ class SimuleringScheduler(
 
     override fun schedule(wallClockTime: Long, store: StateStore<String, ValueAndTimestamp<SimulerBeregningRequest>>) {
         store.forEach { entry -> 
+            val metadata = headersStore?.get(entry.key)
+            val headers = metadata?.headers()?.associate { it.key() to String(it.value(), Charsets.UTF_8) } ?: emptyMap()
+            // Punctuation has no record context. Supply metadata explicitly when writing the tombstone.
+            headersStore?.put(entry.key, ValueTimestampHeaders.makeAllowNullable(
+                null, metadata?.timestamp() ?: entry.value.timestamp(), metadata?.headers() ?: RecordHeaders()
+            ))
+            store.delete(entry.key)
             val age = wallClockTime - entry.value.timestamp()
             if (age > evictionTtl.inWholeMilliseconds) {
-                store.delete(entry.key)
-                headersStore?.delete(entry.key)
-                backpressure(entry.key, entry.value.value(), headersStore?.get(entry.key)?.headers()?.toMap() ?: emptyMap())
+                backpressure(entry.key, entry.value.value(), headers)
             } else {
-                store.delete(entry.key)
-                val headers = headersStore?.get(entry.key)?.headers()?.associate { it.key() to String(it.value(), Charsets.UTF_8) } ?: emptyMap()
-                headersStore?.delete(entry.key)
                 if (!channel.trySend(SimuleringRequest(entry.key, entry.value.value(), headers)).isSuccess) {
                     backpressure(entry.key, entry.value.value(), headers)
                 }
