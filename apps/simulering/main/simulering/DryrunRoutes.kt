@@ -6,6 +6,7 @@ import libs.auth.Jwt
 import libs.kafka.StateStore
 import libs.kafka.Streams
 import models.*
+import org.apache.kafka.streams.errors.InvalidStateStoreException
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response
@@ -123,7 +124,11 @@ private fun fagsystem(fs: String): Fagsystem =
     }
 
 private fun respondFromStore(store: StateStore<String, Simulering>, key: String): Response {
-    val result = pollStore(store, key)
+    val result = try {
+        pollStore(store, key)
+    } catch (_: InvalidStateStoreException) {
+        return Response(Status.SERVICE_UNAVAILABLE)
+    }
     return when (result) {
         is Info -> respondSimulering(result, result.httpStatus())
         is Simulering -> respondSimulering(result, Status.OK)

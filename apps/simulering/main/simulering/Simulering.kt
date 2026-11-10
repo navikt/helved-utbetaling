@@ -102,7 +102,7 @@ fun app(
         .then(ServerFilters.MicrometerMetrics.RequestTimer(prometheus))
         .then(ServerFilters.MicrometerMetrics.RequestCounter(prometheus))
         .then(routes(
-            actuatorRoutes(prometheus),
+            actuatorRoutes(prometheus, kafka),
             simuleringRoutes(serviceV1),
             authenticatedRoutes,
         ))
