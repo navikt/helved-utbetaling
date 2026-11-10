@@ -7,9 +7,10 @@ import models.*
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext
+import org.apache.kafka.streams.processor.internals.InternalProcessorContext
+import org.apache.kafka.streams.processor.internals.ProcessorRecordContext
 import org.apache.kafka.streams.state.TimestampedKeyValueStoreWithHeaders
 import org.apache.kafka.streams.state.ValueAndTimestamp
-import org.apache.kafka.streams.state.ValueTimestampHeaders
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -92,10 +93,12 @@ class SimuleringScheduler(
     interval = interval,
 ) {
     private var headersStore: TimestampedKeyValueStoreWithHeaders<String, SimulerBeregningRequest>? = null
+    private lateinit var context: InternalProcessorContext<*, *>
 
     override fun additionalStateStores() = listOfNotNull(headersStoreDefinition?.name)
 
     override fun init(context: FixedKeyProcessorContext<String, SimulerBeregningRequest>) {
+        this.context = context as InternalProcessorContext<*, *>
         headersStore = headersStoreDefinition?.let { context.getStateStore(it.name) as TimestampedKeyValueStoreWithHeaders<String, SimulerBeregningRequest> }
     }
 
@@ -103,11 +106,10 @@ class SimuleringScheduler(
         store.forEach { entry -> 
             val metadata = headersStore?.get(entry.key)
             val headers = metadata?.headers()?.associate { it.key() to String(it.value(), Charsets.UTF_8) } ?: emptyMap()
-            // Punctuation has no record context. Supply metadata explicitly when writing the tombstone.
-            headersStore?.put(entry.key, ValueTimestampHeaders.makeAllowNullable(
-                null, metadata?.timestamp() ?: entry.value.timestamp(), metadata?.headers() ?: RecordHeaders()
-            ))
-            store.delete(entry.key)
+            withPunctuationRecordContext(context, metadata?.timestamp() ?: entry.value.timestamp(), metadata?.headers() ?: RecordHeaders()) {
+                headersStore?.delete(entry.key)
+                store.delete(entry.key)
+            }
             val age = wallClockTime - entry.value.timestamp()
             if (age > evictionTtl.inWholeMilliseconds) {
                 backpressure(entry.key, entry.value.value(), headers)
@@ -122,6 +124,22 @@ class SimuleringScheduler(
     private fun backpressure(key: String, sim: SimulerBeregningRequest, headers: Map<String, String>) {
         val fagsystem = Fagsystem.from(sim.request.oppdrag.kodeFagomraade.trimEnd())
         backpressureChannel.trySend(SimuleringBackpressure(key, fagsystem, headers))
+    }
+}
+
+internal fun <T> withPunctuationRecordContext(
+    context: InternalProcessorContext<*, *>,
+    timestamp: Long,
+    headers: org.apache.kafka.common.header.Headers,
+    block: () -> T
+): T {
+    val previous = context.recordContext()
+    // Kafka 4.3.1 headers-store deletion and changelog tombstones require record context even in punctuation.
+    context.setRecordContext(ProcessorRecordContext(timestamp, -1L, -1, null, RecordHeaders(headers)))
+    return try {
+        block()
+    } finally {
+        context.setRecordContext(previous)
     }
 }
 
