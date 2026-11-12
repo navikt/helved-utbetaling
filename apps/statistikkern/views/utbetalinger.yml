@@ -12,7 +12,7 @@ spec:
   resourceID: utbetalinger_analytics
   description: "View for utbetalingsstatistikk"
   datasetRef:
-    external: "projects/helved-prod-119e/datasets/helved_stats"
+    external: helved_stats
   view:
     useLegacySql: false
     query: |
