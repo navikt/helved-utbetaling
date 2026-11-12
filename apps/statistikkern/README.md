@@ -7,7 +7,10 @@ Statistikkern leser fra Kafka topics og skriver til BigQuery for analyseformål.
 - `helved.status.v1` — statusoppdateringer (OK/FEILET)
 
 ## BigQuery
-Data skrives til datasettet `helved_stats` med tabellene `utbetalinger` og `status`.
+Data skrives til datasettet `helved_stats` med tabellene `utbetalinger_v2`, `status` og `oppdrag`.
+
+### Stabilt view
+`views/utbetalinger.yml` definerer `helved_stats.utbetalinger_analytics` med Config Connector. Viewet eksponerer rådata fra `utbetalinger_v2`. Koble datasettet i Datamarkedsplassen til viewet for å beholde samme referanse ved senere tabellbytter.
 
 ## Referanser
 - [Flytte data fra Kafka til BigQuery (NADA-docs)](https://docs.knada.io/dataprodukter/dele/dataoverf%C3%B8ring/#flytte-data-fra-kafka-til-bigquery)

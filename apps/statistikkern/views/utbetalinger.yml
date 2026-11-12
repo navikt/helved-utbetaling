@@ -1,0 +1,27 @@
+apiVersion: bigquery.cnrm.cloud.google.com/v1beta1
+kind: BigQueryTable
+metadata:
+  name: statistikkern-utbetalinger-analytics
+  namespace: helved
+  labels:
+    team: helved
+  annotations:
+    cnrm.cloud.google.com/project-id: "helved-prod-119e"
+    cnrm.cloud.google.com/deletion-policy: abandon
+spec:
+  resourceID: utbetalinger_analytics
+  description: "View for utbetalingsstatistikk"
+  datasetRef:
+    external: "projects/helved-prod-119e/datasets/helved_stats"
+  view:
+    useLegacySql: false
+    query: |
+      SELECT
+        key,
+        fagsystem,
+        stonad,
+        belop,
+        sendt,
+        utbetaling_id,
+        siste_delytelses_id
+      FROM `helved-prod-119e.helved_stats.utbetalinger_v2`

@@ -103,5 +103,5 @@ jobs:
         env:
           PRINT_PAYLOAD: true
           CLUSTER: prod-gcp
-          RESOURCE: apps/${{ github.workflow }}/prod.yml,apps/${{ github.workflow }}/alerts.yml
+          RESOURCE: apps/${{ github.workflow }}/prod.yml,apps/${{ github.workflow }}/alerts.yml,apps/${{ github.workflow }}/views/utbetalinger.yml
           VAR: image=${{ steps.login.outputs.registry }}/${{ github.event.repository.name }}-${{ github.workflow }}:${{ github.sha }}
