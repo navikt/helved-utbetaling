@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import models.Periodetype
 import models.StatusReply
 import models.Utbetalingsperiode
 import org.junit.jupiter.api.AfterEach
@@ -52,7 +53,7 @@ class StatistikkernTest {
         assertEquals(utbetaling.originalKey, row["key"].toString())
         assertEquals("AAP", row["fagsystem"].toString())
         assertEquals("AAP_UNDER_ARBEIDSAVKLARING", row["stonad"].toString())
-        assertEquals("800", row["belop"].toString())
+        assertEquals("1600", row["belop"].toString())
         assertTrue(row["sendt"].toString().isNotBlank())
         assertEquals(utbetaling.uid.toString(), row["utbetaling_id"].toString())
         assertEquals(utbetaling.lastPeriodeId.toString(), row["siste_delytelses_id"].toString())
@@ -75,14 +76,69 @@ class StatistikkernTest {
         val rows = TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey)
         assertEquals(3, rows.size)
 
-        assertEquals("800", rows[0]["belop"].toString())
-        assertEquals("900", rows[1]["belop"].toString())
-        assertEquals("1000", rows[2]["belop"].toString())
+        assertEquals("1600", rows[0]["belop"].toString())
+        assertEquals("1800", rows[1]["belop"].toString())
+        assertEquals("2000", rows[2]["belop"].toString())
 
         rows.forEach { row ->
             assertEquals(utbetaling.uid.toString(), row["utbetaling_id"].toString())
             assertEquals(utbetaling.lastPeriodeId.toString(), row["siste_delytelses_id"].toString())
             assertTrue(row["siste_delytelses_id"].toString().length <= 30, "siste_delytelses_id må være ≤30 tegn (OS-format)")
+        }
+    }
+
+    @Test
+    fun `dagsats ganges med ukedager inkludert helligdager`() {
+        val perioder = listOf(
+            Utbetalingsperiode(fom = LocalDate.of(2025, 1, 3), tom = LocalDate.of(2025, 1, 6), beløp = 800u),
+            Utbetalingsperiode(fom = LocalDate.of(2025, 1, 7), tom = LocalDate.of(2025, 1, 7), beløp = 900u),
+            Utbetalingsperiode(fom = LocalDate.of(2025, 1, 11), tom = LocalDate.of(2025, 1, 12), beløp = 1000u),
+            Utbetalingsperiode(fom = LocalDate.of(2025, 12, 22), tom = LocalDate.of(2025, 12, 28), beløp = 1100u)
+        )
+        val forventedeBeløp = listOf(1600L, 900L, 0L, 5500L)
+
+        perioder.zip(forventedeBeløp).forEach { (periode, forventetBeløp) ->
+            val utbetaling = utbetaling(perioder = listOf(periode))
+            TestRuntime.bq.upsertUtbetaling(utbetaling, null)
+
+            val row = TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).single()
+            assertEquals(forventetBeløp.toString(), row["belop"].toString())
+        }
+    }
+
+    @Test
+    fun `dagsats for alle dager ganges med alle dager inkludert helg`() {
+        val periode = Utbetalingsperiode(fom = LocalDate.of(2025, 1, 3), tom = LocalDate.of(2025, 1, 6), beløp = 800u)
+        val utbetaling = utbetaling(perioder = listOf(periode)).copy(periodetype = Periodetype.DAG)
+        TestRuntime.bq.upsertUtbetaling(utbetaling, null)
+
+        val row = TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).single()
+        assertEquals("3200", row["belop"].toString())
+    }
+
+    @Test
+    fun `engangsbeløp lagres uendret`() {
+        val utbetaling = utbetaling().copy(periodetype = Periodetype.EN_GANG)
+        TestRuntime.bq.upsertUtbetaling(utbetaling, null)
+
+        val row = TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).single()
+        assertEquals("800", row["belop"].toString())
+    }
+
+    @Test
+    fun `månedsbeløp ganges med antall måneder i perioden`() {
+        val perioder = listOf(
+            Utbetalingsperiode(fom = LocalDate.of(2025, 1, 1), tom = LocalDate.of(2025, 1, 31), beløp = 5000u),
+            Utbetalingsperiode(fom = LocalDate.of(2025, 11, 1), tom = LocalDate.of(2026, 2, 28), beløp = 5000u)
+        )
+        val forventedeBeløp = listOf(5000L, 20_000L)
+
+        perioder.zip(forventedeBeløp).forEach { (periode, forventetBeløp) ->
+            val utbetaling = utbetaling(perioder = listOf(periode)).copy(periodetype = Periodetype.MND)
+            TestRuntime.bq.upsertUtbetaling(utbetaling, null)
+
+            val row = TestRuntime.bq.queryUtbetalinger(utbetaling.originalKey).single()
+            assertEquals(forventetBeløp.toString(), row["belop"].toString())
         }
     }
 

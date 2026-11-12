@@ -10,10 +10,15 @@ import com.google.cloud.bigquery.StandardTableDefinition
 import com.google.cloud.bigquery.TableId
 import com.google.cloud.bigquery.TableInfo
 import java.time.Instant
+import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 import libs.utils.appLog
 import libs.utils.env
+import libs.utils.erHelg
+import models.Periodetype
 import models.StatusReply
 import models.Utbetaling
+import models.Utbetalingsperiode
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
 
 class BigQueryService(
@@ -22,7 +27,7 @@ class BigQueryService(
     val bigQuery: BigQuery = BigQueryOptions.getDefaultInstance().service,
 ) {
     val perioderTableId = getOrCreateTable(
-        name = "utbetalinger",
+        name = "utbetalinger_v2",
         schema = Schema.of(
             Field.of("key", StandardSQLTypeName.STRING),
             Field.of("fagsystem", StandardSQLTypeName.STRING),
@@ -46,7 +51,7 @@ class BigQueryService(
                     "key"             to utbetaling.originalKey,
                     "fagsystem"       to utbetaling.fagsystem.toName(),
                     "stonad"          to utbetaling.stønad.name,
-                    "belop"           to periode.beløp.toLong(),
+                    "belop"           to periode.totalBeløp(utbetaling.periodetype),
                     "sendt"           to systemTimeMs?.let { Instant.ofEpochMilli(it).toString() },
                     "utbetaling_id"   to utbetaling.uid.toString(),
                     "siste_delytelses_id" to utbetaling.lastPeriodeId.toString(), // siste delytelses id på sak
@@ -112,6 +117,16 @@ class BigQueryService(
             "kvittert"       to tidspktMelding,
             "fagområde"      to fagsystem,
         ))
+    }
+
+    private fun Utbetalingsperiode.totalBeløp(periodetype: Periodetype): Long {
+        val dager = fom.datesUntil(tom.plusDays(1))
+        return when (periodetype) {
+            Periodetype.UKEDAG -> beløp.toLong() * dager.filter { !it.erHelg() }.count()
+            Periodetype.DAG -> beløp.toLong() * dager.count()
+            Periodetype.MND -> beløp.toLong() * (ChronoUnit.MONTHS.between(YearMonth.from(fom), YearMonth.from(tom)) + 1)
+            Periodetype.EN_GANG -> beløp.toLong()
+        }
     }
 
     private fun getOrCreateTable(name: String, schema: Schema): TableId {

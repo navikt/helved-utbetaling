@@ -12,6 +12,7 @@ import libs.utils.appLog
 import models.StatusReply
 import models.Utbetaling
 import no.trygdeetaten.skjema.oppdrag.Oppdrag
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 object Topics {
@@ -37,7 +38,7 @@ suspend fun utbetalingConsumer(
                     appLog.warn("Feil ved prosessering av utbetaling, key=${record.key}: ${e.message}", e)
                 }
             }
-            delay(1)
+            delay(1.milliseconds)
         }
     }
 }
@@ -59,7 +60,7 @@ suspend fun oppdragConsumer(
                     appLog.warn("Feil ved prosessering av oppdrag, key=${record.key}: ${e.message}", e)
                 }
             }
-            delay(1)
+            delay(1.milliseconds)
         }
     }
 }
@@ -82,7 +83,7 @@ suspend fun statusConsumer(
                     appLog.warn("Feil ved prosessering av status, key=${record.key}: ${e.message}", e)
                 }
             }
-            delay(1)
+            delay(1.milliseconds)
         }
     }
 }

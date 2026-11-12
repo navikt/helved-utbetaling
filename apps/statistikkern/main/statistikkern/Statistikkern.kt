@@ -56,7 +56,7 @@ fun statistikkern(
     val prometheus = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     LogbackMetrics().bindTo(prometheus)
 
-    val utbetalingConsumer = factory.createConsumer(config.kafka, Topics.utbetalinger, resetPolicy = OffsetResetPolicy.latest)
+    val utbetalingConsumer = factory.createConsumer(config.kafka, Topics.utbetalinger, resetPolicy = OffsetResetPolicy.earliest, groupId = 2)
     val statusConsumer = factory.createConsumer(config.kafka, Topics.status, resetPolicy = OffsetResetPolicy.latest)
     val oppdragConsumer = factory.createConsumer(config.kafka, Topics.oppdrag, resetPolicy = OffsetResetPolicy.latest)
 

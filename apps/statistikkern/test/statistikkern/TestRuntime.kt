@@ -54,7 +54,7 @@ object TestRuntime {
 }
 
 
-fun BigQueryService.queryUtbetalinger(key: String) = query("key", key, "utbetalinger")
+fun BigQueryService.queryUtbetalinger(key: String) = query("key", key, "utbetalinger_v2")
 fun BigQueryService.queryStatus(key: String) = query("key", key, "status")
 fun BigQueryService.queryOppdrag(sakId: String) = query("sak", sakId, "oppdrag")
 
