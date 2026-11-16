@@ -214,6 +214,14 @@ fun TsUtbetaling.fagsystem(): Fagsystem {
             StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_JOBBKLUBB -> Fagsystem.TILLSTRS
             StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_OPPFØLGING -> Fagsystem.TILLSTRS
             StønadTypeTilleggsstønader.REISE_TIL_SAMLING_TILTAK_UTVIDET_OPPFØLGING_I_OPPLÆRING -> Fagsystem.TILLSTRS
+
+            StønadTypeTilleggsstønader.TILSYN_BARN_AKTIVITETSPENGER -> Fagsystem.TILLSTPB
+            StønadTypeTilleggsstønader.LÆREMIDLER_AKTIVITETSPENGER -> Fagsystem.TILLSTLM
+            StønadTypeTilleggsstønader.BOUTGIFTER_AKTIVITETSPENGER -> Fagsystem.TILLSTBO
+            StønadTypeTilleggsstønader.DAGLIG_REISE_AKTIVITETSPENGER -> Fagsystem.TILLSTDR
+            StønadTypeTilleggsstønader.REISE_OPPSTART_AKTIVITETSPENGER -> Fagsystem.TILLSTRO
+            StønadTypeTilleggsstønader.REISE_TIL_SAMLING_AKTIVITETSPENGER -> Fagsystem.TILLSTRS
+            StønadTypeTilleggsstønader.FLYTTING_AKTIVITETSPENGER -> Fagsystem.TILLSTFL
         }
     }
 }
