@@ -24,12 +24,12 @@ class OppdragskopierTest {
         assertAntallProduserteKopier(TestRuntime.config.oppdrag.beregningsplattformKø, 2)
     }
 
-    @Test
-    fun `sender oppdragskopi til beregningsplattform i prod`() {
-        produserOppdrag("prod-gcp", Fagsystem.AAP.oppdrag())
-        produserOppdrag("prod-gcp", Fagsystem.DAGPENGER.oppdrag())
-        assertAntallProduserteKopier(TestRuntime.config.oppdrag.beregningsplattformKø, 2)
-    }
+//    @Test
+//    fun `sender oppdragskopi til beregningsplattform i prod`() {
+//        produserOppdrag("prod-gcp", Fagsystem.AAP.oppdrag())
+//        produserOppdrag("prod-gcp", Fagsystem.DAGPENGER.oppdrag())
+//        assertAntallProduserteKopier(TestRuntime.config.oppdrag.beregningsplattformKø, 2)
+//    }
 
     private fun Fagsystem.oppdrag(): Oppdrag {
         return TestData.oppdrag(fagområde = fagområde, oppdragslinjer = emptyList())

@@ -48,6 +48,8 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
     }
 
     private fun sendOppdragskopiTilBeregningsplattform(xml: String, info: String) {
+        if (config.cluster != "dev-gcp") return
+
         runCatching {
             beregningsplattformProducer.produce(xml)
         }.onFailure {
