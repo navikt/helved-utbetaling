@@ -50,7 +50,7 @@ fun app(
     azure : AzureTokenProvider = AzureTokenProvider(config.azure, http),
     proxyAuth: () -> String = { "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}" },
     sts: Sts = StsClient(config.simulering.sts, http, proxyAuth = proxyAuth),
-    soap: Soap = SoapClient(config.simulering, sts, SecureLogFilter.then(http), proxyAuth = proxyAuth),
+    soap: Soap = SoapClient(config.simulering, sts, SoapLogFilter.then(http), proxyAuth = proxyAuth),
     jwtVerifier: JwtVerifier? = null,
 ): HttpHandler {
     val service = SimuleringService(soap, sts)

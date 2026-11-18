@@ -10,13 +10,12 @@ import java.util.*
 
 val wsLog = logger("ws")
 
-val SecureLogFilter = Filter { next ->
+val SoapLogFilter = Filter { next ->
     { request ->
-        Log.info("REQUEST: ${request.method} ${request.uri} headers=${request.headers}", "body=${request.bodyString()}")
+        Log.info("REQUEST: ${request.method} ${request.uri}")
         val response = next(request)
-        val body = response.bodyString()
-        Log.info("RESPONSE: ${response.status} headers=${response.headers}", "body=$body")
-        response.body(body)
+        Log.info("RESPONSE: ${response.status.code}")
+        response
     }
 }
 
