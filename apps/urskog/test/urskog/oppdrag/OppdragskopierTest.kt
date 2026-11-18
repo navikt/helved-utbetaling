@@ -25,10 +25,10 @@ class OppdragskopierTest {
     }
 
     @Test
-    fun `sender bare oppdragskopi til beregningsplattform i dev`() {
+    fun `sender oppdragskopi til beregningsplattform i prod`() {
         produserOppdrag("prod-gcp", Fagsystem.AAP.oppdrag())
         produserOppdrag("prod-gcp", Fagsystem.DAGPENGER.oppdrag())
-        assertAntallProduserteKopier(TestRuntime.config.oppdrag.beregningsplattformKø, 0)
+        assertAntallProduserteKopier(TestRuntime.config.oppdrag.beregningsplattformKø, 2)
     }
 
     private fun Fagsystem.oppdrag(): Oppdrag {
