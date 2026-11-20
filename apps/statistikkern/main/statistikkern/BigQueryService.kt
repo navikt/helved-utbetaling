@@ -7,8 +7,10 @@ import com.google.cloud.bigquery.InsertAllRequest
 import com.google.cloud.bigquery.Schema
 import com.google.cloud.bigquery.StandardSQLTypeName
 import com.google.cloud.bigquery.StandardTableDefinition
+import com.google.cloud.bigquery.TableDefinition
 import com.google.cloud.bigquery.TableId
 import com.google.cloud.bigquery.TableInfo
+import com.google.cloud.bigquery.ViewDefinition
 import java.time.Instant
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
@@ -37,6 +39,22 @@ class BigQueryService(
             Field.of("utbetaling_id", StandardSQLTypeName.STRING),
             Field.of("siste_delytelses_id", StandardSQLTypeName.STRING),
         )
+    )
+
+    // Stabilt view for Metabase/Datamarkedsplassen, slik at underliggende tabell kan byttes uten å endre konsumentene.
+    val utbetalingerViewId = createOrReplaceView(
+        name = "utbetaling_view",
+        query = """
+            SELECT
+              key,
+              fagsystem,
+              stonad,
+              belop,
+              sendt,
+              utbetaling_id,
+              siste_delytelses_id
+            FROM `$projectId.$datasetName.${perioderTableId.table}`
+        """.trimIndent()
     )
 
     fun upsertUtbetaling(utbetaling: Utbetaling, systemTimeMs: Long?) {
@@ -150,6 +168,25 @@ class BigQueryService(
         }
 
         return tableId
+    }
+
+    private fun createOrReplaceView(name: String, query: String): TableId {
+        val viewId = TableId.of(projectId, datasetName, name)
+        val definition = ViewDefinition.newBuilder(query).setUseLegacySql(false).build()
+        val existingView = bigQuery.getTable(viewId)
+
+        when {
+            existingView == null -> {
+                appLog.info("Oppretter BQ-view: $name")
+                bigQuery.create(TableInfo.of(viewId, definition))
+            }
+            existingView.getDefinition<TableDefinition>().let { it !is ViewDefinition || it.query != query } -> {
+                appLog.info("Oppdaterer BQ-view: $name")
+                existingView.toBuilder().setDefinition(definition).build().update()
+            }
+        }
+
+        return viewId
     }
 
     private fun insert(tableId: TableId, uid: String, row: Map<String, Any?>) {

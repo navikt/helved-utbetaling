@@ -61,6 +61,25 @@ class StatistikkernTest {
     }
 
     @Test
+    fun `utbetaling kan leses fra view`() {
+        val utbetaling = utbetaling()
+        TestRuntime.topics.utbetalinger.populate(
+            UUID.randomUUID().toString(),
+            utbetaling,
+            partition = 0,
+            offset = offset.getAndIncrement(),
+            timestamp = 1_700_000_000_000L,
+            headers = mapOf("x-sy" to "1700000000000")
+        )
+
+        awaitCondition { TestRuntime.bq.queryUtbetalingerView(utbetaling.originalKey).isNotEmpty() }
+
+        val row = TestRuntime.bq.queryUtbetalingerView(utbetaling.originalKey).single()
+        assertEquals("1600", row["belop"].toString())
+        assertEquals(utbetaling.uid.toString(), row["utbetaling_id"].toString())
+    }
+
+    @Test
     fun `utbetaling med flere perioder lagres i bigquery`() {
         val key = "test-key-flere-perioder"
         val perioder = listOf(
