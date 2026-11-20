@@ -2209,7 +2209,7 @@ internal class DpTest : ConsumerTestBase() {
         val firstKey = "019f3725-34ae-7d2a-a82f-43c4dd58347a"
         TestRuntime.topics.dp.produce(firstKey) {
             KotlinxJson.decodeFromString<DpUtbetaling>(
-                """{"sakId":"AZ6M2KLZfmOCyWnleGOMzg==","behandlingId":"AZ83JTSufSqoL0PE3Vg0eg==","ident":"01410000284","vedtakstidspunktet":"2026-07-06T13:16:53.305852","utbetalinger":[]}""".trimIndent()
+                """{"sakId":"AZ6M2KLZfmOCyWnleGOMzg==","behandlingId":"AZ83JTSufSqoL0PE3Vg0eg==","ident":"12345678901","vedtakstidspunktet":"2026-07-06T13:16:53.305852","utbetalinger":[]}""".trimIndent()
             ).asBytes()
         }
         TestRuntime.topics.status.assertThat()
@@ -2223,7 +2223,7 @@ internal class DpTest : ConsumerTestBase() {
                   {
                       "sakId": "AZ6M2KLZfmOCyWnleGOMzg==",
                       "behandlingId": "AZ9fmWy6emq2B2CgZ6483A==",
-                      "ident": "01410000284",
+                      "ident": "12345678901",
                       "vedtakstidspunktet": "2026-07-14T10:07:38.614673",
                       "utbetalinger": [
                         {
