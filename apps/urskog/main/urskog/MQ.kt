@@ -35,7 +35,7 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
                 Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
             Log.info("Sender oppdrag $info")
-            sendOppdragskopiTilBeregningsplattform(xml, info)
+            sendOppdragskopiTilBeregningsplattform(xml, info, oppdrag.fagsystem())
 
             return oppdrag
         }.onFailure {
@@ -43,17 +43,17 @@ class OppdragMQProducer(private val config: Config, mq: MQ, private val meters: 
                 Tag.of("status", "Feilet"),
                 Tag.of("fagsystem", oppdrag.fagsystem()),
             )).increment()
-            Log.error("Feilet sending av oppdrag $info", it)
+            Log.error("Feilet sending av oppdrag $info for fagsystem ${oppdrag.fagsystem()}", it)
         }.getOrThrow()
     }
 
-    private fun sendOppdragskopiTilBeregningsplattform(xml: String, info: String) {
+    private fun sendOppdragskopiTilBeregningsplattform(xml: String, info: String, fagsystem: String) {
         if (config.cluster != "dev-gcp") return
 
         runCatching {
             beregningsplattformProducer.produce(xml)
         }.onFailure {
-            Log.error("Feilet sending av oppdragskopi til beregningsplattformkø $info", it)
+            Log.error("Feilet sending av oppdragskopi til beregningsplattformkø $info for fagsystem $fagsystem", it)
         }
     }
 }
