@@ -49,6 +49,14 @@ Spec for utsjekk sitt rest-api.
 
 ## Development
 
+### Setup
+
+Install and run `fnr-guard`:
+```sh
+npm install --global @navikt/fnr-guard
+fnr-guard install
+```
+
 ### Logging
 
 Secure and audit logs use `LogstashTcpSocketAppender` to send JSON to
