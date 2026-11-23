@@ -17,12 +17,12 @@ spec:
       memory: 512Mi
       cpu: 50m
   liveness:
-    path: /actuator/health
+    path: /actuator/live
     initialDelay: 5
     periodSeconds: 2
     failureThreshold: 10
   readiness:
-    path: /actuator/health
+    path: /actuator/ready
     initialDelay: 5
     periodSeconds: 2
     failureThreshold: 10

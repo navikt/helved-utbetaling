@@ -72,7 +72,7 @@ fun vedskiva(
         .then(ServerFilters.MicrometerMetrics.RequestTimer(metrics))
         .then(ServerFilters.MicrometerMetrics.RequestCounter(metrics))
         .then(routes(
-            actuatorRoutes(metrics),
+            actuatorRoutes(metrics, streams),
             "/api" bind auth.then(avstem(service, jdbcCtx))
         ))
 }

@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
+import libs.kafka.Streams
 import libs.utils.appLog
 import libs.utils.erHelligdag
 import libs.utils.forrigeVirkedag
@@ -77,11 +78,17 @@ fun avstem(service: AvstemmingService, jdbcCtx: CoroutineDatasource) = routes(
     }
 )
 
-fun actuatorRoutes(metrics: PrometheusMeterRegistry) = routes(
+fun actuatorRoutes(metrics: PrometheusMeterRegistry, streams: Streams) = routes(
     "/actuator/metric" bind Method.GET to {
         Response(Status.OK).body(metrics.scrape())
     },
     "/actuator/health" bind Method.GET to {
-        Response(Status.OK)
+        Response(if (streams.live()) Status.OK else Status.LOCKED)
+    },
+    "/actuator/live" bind Method.GET to {
+        Response(if (streams.live()) Status.OK else Status.LOCKED)
+    },
+    "/actuator/ready" bind Method.GET to {
+        Response(if (streams.ready()) Status.OK else Status.LOCKED)
     }
 )
