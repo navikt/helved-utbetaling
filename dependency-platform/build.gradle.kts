@@ -19,7 +19,7 @@ dependencies {
         api("ch.qos.logback:logback-core:$logbackVersion")
         api("net.logstash.logback:logstash-logback-encoder:9.0")
 
-        val kafkaVersion = "4.3.1"
+        val kafkaVersion = "4.4.0"
         api("org.apache.kafka:kafka-streams:$kafkaVersion")
         api("org.apache.kafka:kafka-clients:$kafkaVersion")
         api("org.apache.kafka:kafka-streams-test-utils:$kafkaVersion")
