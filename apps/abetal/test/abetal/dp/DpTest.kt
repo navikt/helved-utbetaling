@@ -1415,7 +1415,7 @@ internal class DpTest : ConsumerTestBase() {
             uid = uid,
             sakId = sid,
             behandlingId = bid2,
-            originalKey = tid1,  // egentlig tid2
+            originalKey = tid2,
             fagsystem = Fagsystem.DAGPENGER,
             lastPeriodeId = PeriodeId(),
             stønad = StønadTypeDagpenger.DAGPENGER,

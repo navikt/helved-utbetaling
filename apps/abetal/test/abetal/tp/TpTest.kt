@@ -828,7 +828,7 @@ internal class TpTest : ConsumerTestBase() {
         val pending = TestRuntime.topics.pendingUtbetalinger.assertThat().hasTotal(2)
         utbetalinger.forEach { previous ->
             pending.has(previous.uid.toString()).with(previous.uid.toString()) {
-                assertUtbetaling(previous.copy(action = Action.DELETE, behandlingId = bid), it)
+                assertUtbetaling(previous.copy(action = Action.DELETE, originalKey = transactionId, behandlingId = bid), it)
             }
         }
 
@@ -837,7 +837,7 @@ internal class TpTest : ConsumerTestBase() {
         val opphørte = TestRuntime.topics.utbetalinger.assertThat().hasTotal(2)
         utbetalinger.forEach { previous ->
             opphørte.has(previous.uid.toString()).with(previous.uid.toString()) {
-                assertUtbetaling(previous.copy(action = Action.DELETE, behandlingId = bid), it)
+                assertUtbetaling(previous.copy(action = Action.DELETE, originalKey = transactionId, behandlingId = bid), it)
             }
         }
     }

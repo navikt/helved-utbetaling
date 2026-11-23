@@ -36,6 +36,7 @@ object AggregateService {
                         val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
                         val utbetaling = prev.copy(
                             action = Action.DELETE,
+                            originalKey = new.originalKey,
                             behandlingId = new.behandlingId,
                             lastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId),
                             sistePeriode = Utbetalingsperiode(
@@ -51,11 +52,12 @@ object AggregateService {
 
                     new.action == Action.FAKE_DELETE -> {
                         val prev = prev ?: notFound("previous utbetaling for ${new.uid.id}")
-                        val new = prev.copy(behandlingId = new.behandlingId)
+                        val new = prev.copy(originalKey = new.originalKey, behandlingId = new.behandlingId)
                         val oppdrag = OppdragService.delete(new, prev)
                         val sisteLinje = oppdrag.oppdrag110.oppdragsLinje150s.last()
                         val utbetaling = prev.copy(
                             action = Action.DELETE,
+                            originalKey = new.originalKey,
                             behandlingId = new.behandlingId,
                             lastPeriodeId = PeriodeId.decode(sisteLinje.delytelseId),
                             sistePeriode = Utbetalingsperiode(
