@@ -41,6 +41,43 @@ class GithubClientTest {
     }
 
     @Test
+    fun `sammenligning henter commits fra objektet`() = runTest {
+        val client = githubClient { request ->
+            assertEquals("/repos/navikt/repo/compare/old...new", request.uri.path)
+            jsonResponse("""{"commits":[${commitJson("new")}]}""")
+        }
+
+        assertEquals(listOf("new"), client.compareCommits("navikt/repo", "old", "new").map { it.value.sha })
+    }
+
+    @Test
+    fun `sammenligning propagerer HTTP-status før parsing av feilrespons`() = runTest {
+        listOf(Status.NOT_FOUND, Status.FORBIDDEN, Status.INTERNAL_SERVER_ERROR).forEach { status ->
+            val client = githubClient { jsonResponse("""{"message":"GitHub error"}""", status) }
+
+            val error = assertFailsWith<GithubHttpException> {
+                client.compareCommits("navikt/repo", "old", "new")
+            }
+
+            assertEquals(status, error.status)
+        }
+    }
+
+    @Test
+    fun `sammenligning med manglende commits gir tydelig feil`() = runTest {
+        val client = githubClient { jsonResponse("{}") }
+
+        val error = assertFailsWith<IllegalStateException> {
+            client.compareCommits("navikt/repo", "old", "new")
+        }
+
+        assertEquals(
+            "Missing array field in github response=commits url=https://api.github.test/repos/navikt/repo/compare/old...new page=1",
+            error.message,
+        )
+    }
+
+    @Test
     fun `rulesets kombinerer liste og detaljer`() = runTest {
         val client = githubClient { request ->
             when (request.uri.path) {

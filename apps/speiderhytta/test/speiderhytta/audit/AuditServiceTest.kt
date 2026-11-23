@@ -6,6 +6,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.encodeToJsonElement
 import libs.jdbc.concurrency.transaction
+import org.http4k.core.Status
 import speiderhytta.CodeRepoConfig
 import speiderhytta.TestRuntime
 import speiderhytta.github.CommitAuthor
@@ -17,6 +18,7 @@ import speiderhytta.github.CapturedWorkflowJobs
 import speiderhytta.github.CapturedControl
 import speiderhytta.github.FetchStatus
 import speiderhytta.github.GithubCommit
+import speiderhytta.github.GithubHttpException
 import speiderhytta.github.GithubUser
 import speiderhytta.github.WorkflowJob
 import speiderhytta.github.WorkflowJobsPage
@@ -28,6 +30,7 @@ import java.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -135,6 +138,58 @@ class AuditServiceTest {
         assertEquals(listOf("aaa"), transaction { AuditWorkflowExecutionCommit.commitsForExecution(first.id!!) }.map { it.sha })
         assertEquals(listOf("bbb", "ccc"), transaction { AuditWorkflowExecutionCommit.commitsForExecution(second.id!!) }.map { it.sha })
         assertEquals(listOf("aaa" to "ccc"), fetcher.comparisons)
+    }
+
+    @Test
+    fun `historikkbrudd lagrer head og bruker den som neste deploy-baseline`() = runTest(TestRuntime.context) {
+        val fetcher = DeploymentRangeAuditFetcher()
+        val service = AuditService(
+            fetcher = fetcher,
+            codeRepos = emptyList(),
+            jdbcCtx = TestRuntime.context,
+            taskRepository = "navikt/team-helved",
+        )
+        service.ingestWorkflow("navikt/helved-utbetaling", "utsjekk", "utsjekk.yml", Instant.EPOCH)
+        fetcher.currentRun = 2
+        fetcher.comparisonStatus = Status.NOT_FOUND
+
+        service.ingestWorkflow("navikt/helved-utbetaling", "utsjekk", "utsjekk.yml", Instant.EPOCH)
+
+        val second = assertNotNull(transaction { AuditWorkflowExecution.find("navikt/helved-utbetaling", 2) })
+        assertEquals(listOf("ccc"), transaction { AuditWorkflowExecutionCommit.commitsForExecution(assertNotNull(second.id)) }.map { it.sha })
+        val first = assertNotNull(transaction { AuditWorkflowExecution.find("navikt/helved-utbetaling", 1) })
+        assertEquals("aaa", first.headSha)
+
+        fetcher.currentRun = 3
+        fetcher.comparisonStatus = null
+        service.ingestWorkflow("navikt/helved-utbetaling", "utsjekk", "utsjekk.yml", Instant.EPOCH)
+
+        assertEquals(listOf("aaa" to "ccc", "ccc" to "ddd"), fetcher.comparisons)
+    }
+
+    @Test
+    fun `andre sammenligningsfeil og utilgjengelig head stopper auditlagring`() = runTest(TestRuntime.context) {
+        val fetcher = DeploymentRangeAuditFetcher()
+        val service = AuditService(
+            fetcher = fetcher,
+            codeRepos = emptyList(),
+            jdbcCtx = TestRuntime.context,
+            taskRepository = "navikt/team-helved",
+        )
+        service.ingestWorkflow("navikt/helved-utbetaling", "utsjekk", "utsjekk.yml", Instant.EPOCH)
+        fetcher.currentRun = 2
+
+        listOf(Status.FORBIDDEN, Status.INTERNAL_SERVER_ERROR, Status.NOT_FOUND).forEach { status ->
+            fetcher.comparisonStatus = status
+            fetcher.commitStatus = Status.NOT_FOUND
+
+            val error = assertFailsWith<GithubHttpException> {
+                service.ingestWorkflow("navikt/helved-utbetaling", "utsjekk", "utsjekk.yml", Instant.EPOCH)
+            }
+
+            assertEquals(status, error.status)
+            assertEquals(null, transaction { AuditWorkflowExecution.find("navikt/helved-utbetaling", 2) })
+        }
     }
 
     @Test
@@ -409,14 +464,20 @@ private class FakeAuditFetcher(private val now: Instant) : AuditFetcher {
 private class DeploymentRangeAuditFetcher : AuditFetcher {
     private val base = Instant.parse("2026-09-21T12:00:00Z")
     var currentRun = 1
+    var comparisonStatus: Status? = null
+    var commitStatus: Status? = null
     val comparisons = mutableListOf<Pair<String, String>>()
 
     override suspend fun commits(repo: String, since: Instant) = emptyList<CapturedCommit>()
-    override suspend fun commit(repo: String, sha: String) = commit(sha, base.plusSeconds(currentRun.toLong()))
+    override suspend fun commit(repo: String, sha: String): CapturedCommit {
+        commitStatus?.let { throw GithubHttpException(it) }
+        return commit(sha, base.plusSeconds(currentRun.toLong()))
+    }
     override suspend fun runs(repo: String, workflowFile: String, since: Instant) = listOf(run(currentRun))
     override suspend fun runAttempt(repo: String, runId: Long, attempt: Int) = run(runId.toInt())
     override suspend fun compareCommits(repo: String, base: String, head: String): List<CapturedCommit> {
         comparisons.add(base to head)
+        comparisonStatus?.let { throw GithubHttpException(it) }
         return listOf(commit("bbb", this.base.plusSeconds(2)), commit(head, this.base.plusSeconds(3)))
     }
     override suspend fun jobs(repo: String, runId: Long, attempt: Int) = CapturedWorkflowJobs(
@@ -441,7 +502,11 @@ private class DeploymentRangeAuditFetcher : AuditFetcher {
     override suspend fun rulesets(repo: String) = CapturedControl(FetchStatus.PRESENT, JsonObject(emptyMap()))
 
     private fun run(number: Int): CapturedWorkflowRun {
-        val sha = if (number == 1) "aaa" else "ccc"
+        val sha = when (number) {
+            1 -> "aaa"
+            2 -> "ccc"
+            else -> "ddd"
+        }
         val run = WorkflowRun(
             id = number.toLong(),
             name = "CI",

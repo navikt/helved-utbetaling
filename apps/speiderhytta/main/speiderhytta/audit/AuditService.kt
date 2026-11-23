@@ -13,6 +13,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import libs.jdbc.concurrency.CoroutineDatasource
 import libs.jdbc.concurrency.transaction
+import libs.utils.appLog
+import org.http4k.core.Status
 import speiderhytta.CodeRepoConfig
 import speiderhytta.github.CapturedCommit
 import speiderhytta.github.CapturedControl
@@ -20,6 +22,7 @@ import speiderhytta.github.CapturedWorkflowJobs
 import speiderhytta.github.CapturedWorkflowRun
 import speiderhytta.github.FetchStatus
 import speiderhytta.github.GithubClient
+import speiderhytta.github.GithubHttpException
 import speiderhytta.github.WorkflowSource
 import java.security.MessageDigest
 import java.time.Instant
@@ -184,7 +187,21 @@ class AuditService(
         if (previousHead == null || previousHead == run.headSha) {
             return listOf(fetcher.commit(repository, run.headSha))
         }
-        return fetcher.compareCommits(repository, previousHead, run.headSha)
+        return try {
+            fetcher.compareCommits(repository, previousHead, run.headSha)
+        } catch (e: GithubHttpException) {
+            if (e.status != Status.NOT_FOUND) {
+                throw e
+            }
+            // Nye SHAs i historikken gjør at vi må ha en ny baseline
+            // Kan fjernes når alle appene er blitt pollet
+            val head = fetcher.commit(repository, run.headSha)
+            appLog.warn(
+                "Storing only head commit for Git audit, repo=$repository app=$app base=$previousHead head=${run.headSha} " +
+                    "runId=${run.id}",
+            )
+            listOf(head)
+        }
     }
 
     private suspend fun linkDeploymentCommits(run: AuditWorkflowExecution, commits: List<CapturedCommit>) {

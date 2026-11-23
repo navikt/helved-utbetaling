@@ -293,8 +293,15 @@ class GithubClient(
         var page = 1
         while (true) {
             val request = build(authRequest(Method.GET, url).query("per_page", "100"), page)
-            val response = execute(request).decodeJson<JsonElement>()
-            val entries = arrayField?.let { response.jsonObject[it]?.jsonArray } ?: response.jsonArray
+            val httpResponse = execute(request)
+            if (!httpResponse.status.successful) {
+                throw GithubHttpException(httpResponse.status)
+            }
+            val response = httpResponse.decodeJson<JsonElement>()
+            val entries = arrayField?.let { field ->
+                response.jsonObject[field]?.jsonArray
+                    ?: error("Missing array field in github response=$field url=$url page=$page")
+            } ?: response.jsonArray
             result.addAll(entries)
             if (entries.size < 100) break
             page++
