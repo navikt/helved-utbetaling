@@ -52,7 +52,7 @@ object Stores {
     val simuleringHeaders = Store("simulering-headers-store", Topics.simuleringer.serdes)
 }
 
-data class SimuleringRequest(
+data class SimuleringRequestWrapper(
     val key: String,
     val request: SimulerBeregningRequest,
     val headers: Map<String, String> = emptyMap(),
@@ -65,7 +65,7 @@ data class SimuleringBackpressure(
 )
 
 fun Topology.simuleringer(
-    channel: Channel<SimuleringRequest>,
+    channel: Channel<SimuleringRequestWrapper>,
     backpressureChannel: Channel<SimuleringBackpressure>,
 ) {
     globalKTable(Tables.dryrunAap, retention = 1.hours)
@@ -83,7 +83,7 @@ fun Topology.simuleringer(
 class SimuleringScheduler(
     ktable: KTable<String, SimulerBeregningRequest>,
     interval: Duration,
-    private val channel: Channel<SimuleringRequest>,
+    private val channel: Channel<SimuleringRequestWrapper>,
     private val backpressureChannel: Channel<SimuleringBackpressure>,
     private val evictionTtl: Duration = 2.minutes,
     private val headersStoreDefinition: Store<String, SimulerBeregningRequest>? = Stores.simuleringHeaders,
@@ -114,7 +114,7 @@ class SimuleringScheduler(
             if (age > evictionTtl.inWholeMilliseconds) {
                 backpressure(entry.key, entry.value.value(), headers)
             } else {
-                if (!channel.trySend(SimuleringRequest(entry.key, entry.value.value(), headers)).isSuccess) {
+                if (!channel.trySend(SimuleringRequestWrapper(entry.key, entry.value.value(), headers)).isSuccess) {
                     backpressure(entry.key, entry.value.value(), headers)
                 }
             }

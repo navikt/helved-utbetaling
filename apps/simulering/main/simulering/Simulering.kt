@@ -48,10 +48,14 @@ fun app(
     kafka: Streams = KafkaStreams(),
     http: HttpHandler = JavaHttpClient(requestModifier = { it.timeout(Duration.ofMinutes(2))}),
     azure : AzureTokenProvider = AzureTokenProvider(config.azure, http),
-    proxyAuth: () -> String = { "Bearer ${azure.getClientCredentialsToken(config.proxy.scope).access_token}" },
-    sts: Sts = StsClient(config.simulering.sts, http, proxyAuth = proxyAuth),
-    soap: Soap = SoapClient(config.simulering, sts, SoapLogFilter.then(http), proxyAuth = proxyAuth),
+    proxyAuth: () -> String = { "Bearer ${azure.getClientCredentialsToken(config.simulering.proxy.scope).access_token}" },
+    sts: Sts = StsClient(config.simulering.soap.sts, http, proxyAuth = proxyAuth),
+    soap: Soap = SoapClient(config.simulering.soap, sts, SecureLogFilter.then(http), proxyAuth = proxyAuth),
     jwtVerifier: JwtVerifier? = null,
+    shadowHttp: HttpHandler = JavaHttpClient(requestModifier = { it.timeout(Duration.ofMinutes(2)) }),
+    shadowAuthorization: () -> String = AzureTokenProvider(config.azure, shadowHttp).let { provider ->
+        { "Bearer ${provider.getClientCredentialsToken(config.simulering.sokos.scope).access_token}" }
+    },
 ): HttpHandler {
     val service = SimuleringService(soap, sts)
     val serviceV1 = SimuleringServiceV1(soap, sts)
@@ -59,7 +63,7 @@ fun app(
     // Hvis OS timer ut/treg responstid og denne bygger seg opp, trenger vi ikke
     // fullføre alle simuleringer fordi de vil nok time ut av konsumenten sine timeouts uansett.
     // capacity = 16 sørger for at simuleringer fungerer så lenge OS er performant.
-    val channel = Channel<SimuleringRequest>(capacity = 16)
+    val channel = Channel<SimuleringRequestWrapper>(capacity = 16)
 
     val backpressureChannel = Channel<SimuleringBackpressure>(Channel.UNLIMITED)
 
@@ -80,7 +84,11 @@ fun app(
         }
     )
 
-    val worker = SimuleringWorker(channel, backpressureChannel, service, dryrunProducers)
+    val sokosClient = SokosClient(config.simulering.sokos, shadowHttp, shadowAuthorization)
+    val shadow = SimuleringShadow(sokosClient, config.simulering.sokos).also {
+        Runtime.getRuntime().addShutdownHook(Thread({ it.close() }, "simulering-shadow-shutdown"))
+    }
+    val worker = SimuleringWorker(channel, backpressureChannel, service, dryrunProducers, shadow)
     thread(isDaemon = true, name = "simulering-workers") {
         runBlocking(Dispatchers.IO) {
             repeat(4) { launch { worker.run() } }

@@ -1,0 +1,32 @@
+{
+  "OsSimulerBeregningOperationResponse": {
+    "ZS1OCont": {
+      "responsSimulering": {
+        "statusKode": 0,
+        "statusMelding": "OK",
+        "beregning": {
+          "gjelderId": "12345678910",
+          "gjelderNavn": "Test Testesen",
+          "datoBeregnet": "2026-01-20",
+          "kodeFaggruppe": "ARBTIL",
+          "belopTotalt": 600.05,
+          "periodeStoppnivaa": [
+            {
+              "beregningsPeriode": { "periodeFom": "2026-01-01", "periodeTom": "2026-01-31" },
+              "beregningStoppnivaa": {
+                "kodeFagomraade": "FAGOMRADE",
+                "fagsystemId": "1",
+                "utbetalesTilId": "12345678910",
+                "stoppnivaaDetaljer": [
+                  { "faktiskFom": "2026-01-01", "faktiskTom": "2026-01-31", "belop": 700.15, "klassekode": "AAPOR", "typeKlasse": "YTEL" },
+                  { "faktiskFom": "2026-01-01", "faktiskTom": "2026-01-31", "belop": -100.10, "klassekode": "AAPOR", "typeKlasse": "YTEL" }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+

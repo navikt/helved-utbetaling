@@ -1,0 +1,33 @@
+<simulerBeregningResponse xmlns="http://nav.no/system/os/tjenester/simulerFpService/simulerFpServiceGrensesnitt" xmlns:b="http://nav.no/system/os/entiteter/beregningSkjema">
+    <response xmlns="">
+        <simulering>
+            <gjelderId>12345678910</gjelderId>
+            <datoBeregnet>2026-01-20</datoBeregnet>
+            <belop>600.05</belop>
+            <b:beregningsPeriode>
+                <periodeFom>2026-01-01</periodeFom>
+                <periodeTom>2026-01-31</periodeTom>
+                <b:beregningStoppnivaa>
+                    <kodeFagomraade>FAGOMRADE</kodeFagomraade>
+                    <fagsystemId>1</fagsystemId>
+                    <utbetalesTilId>12345678910</utbetalesTilId>
+                    <b:beregningStoppnivaaDetaljer>
+                        <faktiskFom>2026-01-01</faktiskFom>
+                        <faktiskTom>2026-01-31</faktiskTom>
+                        <belop>700.15</belop>
+                        <klassekode>AAPOR</klassekode>
+                        <typeKlasse>YTEL</typeKlasse>
+                    </b:beregningStoppnivaaDetaljer>
+                    <b:beregningStoppnivaaDetaljer>
+                        <faktiskFom>2026-01-01</faktiskFom>
+                        <faktiskTom>2026-01-31</faktiskTom>
+                        <belop>-100.10</belop>
+                        <klassekode>AAPOR</klassekode>
+                        <typeKlasse>YTEL</typeKlasse>
+                    </b:beregningStoppnivaaDetaljer>
+                </b:beregningStoppnivaa>
+            </b:beregningsPeriode>
+        </simulering>
+    </response>
+</simulerBeregningResponse>
+

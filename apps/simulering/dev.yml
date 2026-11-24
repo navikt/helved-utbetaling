@@ -30,6 +30,9 @@ spec:
           namespace: teamdagpenger
         - namespace: team-mulighetsrommet
           application: mulighetsrommet-api
+        - application: sokos-oppdrag-proxy-q1
+          namespace: beregningsplattform
+          cluster: dev-fss
     outbound:
       external:
         - host: helved-ws-proxy.dev-fss-pub.nais.io
@@ -84,3 +87,7 @@ spec:
       value: api://dev-fss.helved.ws-proxy/.default
     - name: SIMULERING_PATH
       value: cics/oppdrag/simulerFpServiceWSBinding
+    - name: SOKOS_OPPDRAG_PROXY
+      value: https://sokos-oppdrag-proxy-q1.dev-fss-pub.nais.io
+    - name: SOKOS_OPPDRAG_SCOPE
+      value: api://dev-fss.beregningsplattform.sokos-oppdrag-proxy-q1/.default

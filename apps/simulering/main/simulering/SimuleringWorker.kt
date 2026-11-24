@@ -11,15 +11,13 @@ import models.ApiError
 import models.Fagsystem
 import models.Info
 import models.Simulering
-import models.v2
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningResponse
 
 class SimuleringWorker(
-    private val channel: Channel<SimuleringRequest>,
+    private val channel: Channel<SimuleringRequestWrapper>,
     private val backpressureChannel: Channel<SimuleringBackpressure>,
     private val service: SimuleringService,
     private val producers: Map<Fagsystem, KafkaProducer<String, Simulering>>,
+    private val shadow: SimuleringShadow? = null,
 ) {
     suspend fun run() {
         for ((key, request, headers) in channel) {
@@ -27,13 +25,14 @@ class SimuleringWorker(
                 val fagsystem = Fagsystem.from(request.request.oppdrag.kodeFagomraade.trimEnd())
                 val simulering = try {
                     val response = service.simulerJaxb(request)
-                    mapSuccess(response, fagsystem)
+                    response.toSimulering(fagsystem)
                 } catch (e: Exception) {
                     mapAndLogError(e, key, fagsystem)
                 }
                 withTraceparent(headers) {
                     producerFor(fagsystem).send(key, simulering, headers)
                 }
+                shadow?.submit(key, request, fagsystem, simulering)
             } catch (e: Exception) {
                 Log.error("Feil i simulering-worker for key=$key", e)
             }
@@ -83,13 +82,6 @@ class SimuleringWorker(
             else -> feilet()
         }
     }
-
-    private fun mapSuccess(response: SimulerBeregningResponse, fagsystem: Fagsystem): Simulering =
-        when {
-            fagsystem.isTilleggsstønader() -> simulering.v1.from(response) ?: Info.OkUtenEndring(fagsystem)
-            fagsystem == Fagsystem.TILTAKSPENGER -> simulering.v1.from(response) ?: Info.OkUtenEndring(fagsystem)
-            else -> v2.Simulering.from(response)
-        }
 
     private fun isInvalidRequest(error: Exception, msg: String) =
         (error is ApiError && error.statusCode in 400..499)
