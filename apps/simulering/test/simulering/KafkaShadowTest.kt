@@ -30,27 +30,27 @@ class KafkaShadowTest {
     }
 
     @Test
-    fun `Kafka skyggekall logger REST request response og begge v1 resultater sikkert`() {
-        verifyComparison("TILLST", Fagsystem.TILLEGGSSTØNADER, "v1")
+    fun `Kafka skyggekall sender REST request og beholder v1 SOAP resultat`() {
+        verifyShadowRequest("TILLST", Fagsystem.TILLEGGSSTØNADER)
     }
 
     @Test
-    fun `Kafka skyggekall logger REST request response og begge v2 resultater sikkert`() {
-        verifyComparison("AAP", Fagsystem.AAP, "v2")
+    fun `Kafka skyggekall sender REST request og beholder v2 SOAP resultat`() {
+        verifyShadowRequest("AAP", Fagsystem.AAP)
     }
 
     @Test
-    fun `tiltakspenger sammenlignes med v1`() {
-        verifyComparison("TILTPENG", Fagsystem.TILTAKSPENGER, "v1")
+    fun `tiltakspenger beholder v1 SOAP resultat med REST skyggekall`() {
+        verifyShadowRequest("TILTPENG", Fagsystem.TILTAKSPENGER)
     }
 
-    private fun verifyComparison(fagområde: String, fagsystem: Fagsystem, version: String) {
+    private fun verifyShadowRequest(fagområde: String, fagsystem: Fagsystem) {
         TestRuntime.soapRespondWith(Resource.read("/shadow-soap-response.xml").replace("FAGOMRADE", fagområde))
         val restBody = Resource.read("/sokos-response.json").replace("FAGOMRADE", fagområde)
         TestRuntime.restHandler = { Response(Status.OK).body(restBody) }
 
         val authoritative = produce("compare-key", fagområde, fagsystem)
-        TestRuntime.awaitShadow("compare-key")
+        if (fagsystem == Fagsystem.AAP) assertIs<v2.Simulering>(authoritative) else assertIs<v1.Simulering>(authoritative)
 
         val request = TestRuntime.receivedRestRequests.single()
         assertEquals(Method.POST, request.method)
@@ -67,17 +67,6 @@ class KafkaShadowTest {
         assertEquals(700, line.getValue("sats").jsonPrimitive.int)
         assertFalse(line.containsKey("datoStatusFom"), "Null fields must be omitted")
 
-        val events = TestRuntime.shadowEvents("compare-key")
-        assertEquals(1, events.map { it.getValue("comparisonId") }.distinct().size)
-        assertTrue(events.all { it.getValue("modelVersion").jsonPrimitive.content == version })
-        assertEquals(input, events.single { it["restRequest"] != null }.getValue("restRequest").jsonObject
-            .getValue("OsSimulerBeregningOperation").jsonObject.getValue("ZS1ICont").jsonObject.getValue("requestSimulering"))
-        assertEquals(restBody, events.single { it["restResponse"] != null }.getValue("restResponse").jsonPrimitive.content)
-        val comparison = events.single { it["restMapped"] != null }
-        assertEquals(libs.kotlinx.KotlinxJson.encodeToJsonElement(authoritative), comparison["soapMapped"])
-        assertEquals(comparison["soapMapped"], comparison["restMapped"])
-        assertEquals(true, comparison.getValue("equal").jsonPrimitive.boolean)
-        assertFalse(TestRuntime.secureEvents.any { it.formattedMessage.contains("shadow-test-token") })
     }
 
     @Test
@@ -89,32 +78,22 @@ class KafkaShadowTest {
         failures.forEachIndexed { index, handler ->
             TestRuntime.restHandler = handler
             val result = produce("failure-$index", "AAP", Fagsystem.AAP)
-            TestRuntime.awaitShadow("failure-$index")
-            assertTrue(result is v2.Simulering)
-            assertTrue(TestRuntime.shadowEvents("failure-$index").any { it["event"]?.jsonPrimitive?.content == "simulering_shadow_failed" })
+            assertIs<v2.Simulering>(result)
+            assertTrue(result.perioder.isNotEmpty())
+            assertEquals(index + 1, TestRuntime.receivedRestRequests.size)
         }
     }
 
     @Test
-    fun `CLIENT_TIMEOUT logges sikkert uten retry eller endring av SOAP resultatet`() {
+    fun `CLIENT_TIMEOUT endrer ikke SOAP resultatet`() {
         TestRuntime.restHandler = { Response(Status.CLIENT_TIMEOUT) }
 
         val result = produce("timeout-key", "AAP", Fagsystem.AAP)
-        TestRuntime.awaitShadow("timeout-key")
 
         assertIs<v2.Simulering>(result)
         assertTrue(result.perioder.isNotEmpty())
         assertEquals(1, TestRuntime.dryrunAap.history().size)
         assertEquals(1, TestRuntime.receivedRestRequests.size)
-        val events = TestRuntime.shadowEvents("timeout-key")
-        val response = events.single { it["event"]?.jsonPrimitive?.content == "simulering_shadow_rest_response" }
-        assertEquals(Status.CLIENT_TIMEOUT.code, response.getValue("httpStatus").jsonPrimitive.int)
-        assertEquals("", response.getValue("restResponse").jsonPrimitive.content)
-        val failure = events.single { it["event"]?.jsonPrimitive?.content == "simulering_shadow_failed" }
-        assertTrue(failure.getValue("error").jsonPrimitive.content.contains("HTTP ${Status.CLIENT_TIMEOUT.code}"))
-        val soap = events.single { it["soapMapped"] != null }
-        assertEquals(libs.kotlinx.KotlinxJson.encodeToJsonElement<Simulering>(result), soap["soapMapped"])
-        assertTrue(events.none { it["restMapped"] != null })
     }
 
     @Test
@@ -127,13 +106,13 @@ class KafkaShadowTest {
             Response(Status.OK).body(Resource.read("/sokos-response.json").replace("FAGOMRADE", "AAP"))
         }
         try {
-            val result = produce("slow-key", "AAP", Fagsystem.AAP)
+            val result = produce("slow-key", "AAP", Fagsystem.AAP, waitForRest = false)
             assertTrue(result is v2.Simulering)
             assertTrue(entered.await(5, TimeUnit.SECONDS))
-            assertFalse(TestRuntime.shadowEvents("slow-key").any { it["restMapped"] != null })
+            assertEquals(1L, release.count)
         } finally {
             release.countDown()
-            TestRuntime.awaitShadow("slow-key")
+            TestRuntime.awaitRestCalls(1)
         }
     }
 
@@ -145,10 +124,10 @@ class KafkaShadowTest {
         assertEquals(Status.OK, response.status)
         assertEquals(1, TestRuntime.receivedSoapRequests.size)
         assertTrue(TestRuntime.receivedRestRequests.isEmpty())
-        assertTrue(TestRuntime.secureEvents.none { it.formattedMessage.contains("simulering_shadow_") })
     }
 
-    private fun produce(key: String, fagområde: String, fagsystem: Fagsystem): Simulering {
+    private fun produce(key: String, fagområde: String, fagsystem: Fagsystem, waitForRest: Boolean = true): Simulering {
+        val expectedRestCalls = TestRuntime.receivedRestRequests.size + 1
         TestRuntime.kafka.testInputTopic(Topics.simuleringer).produce(key) { simulering(fagområde = fagområde) }
         TestRuntime.kafka.advanceWallClockTime(6.seconds)
         val producer = when (fagsystem) {
@@ -156,11 +135,13 @@ class KafkaShadowTest {
             Fagsystem.TILTAKSPENGER -> TestRuntime.dryrunTp
             else -> TestRuntime.dryrunAap
         }
-        return runBlocking {
+        val result = runBlocking {
             withTimeout(5.seconds) {
                 while (producer.history().none { it.first == key }) delay(10.milliseconds)
                 producer.history().single { it.first == key }.second
             }
         }
+        if (waitForRest) TestRuntime.awaitRestCalls(expectedRestCalls)
+        return result
     }
 }

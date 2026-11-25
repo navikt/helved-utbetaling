@@ -4,7 +4,8 @@ import java.time.LocalTime
 import java.time.LocalDateTime
 import kotlinx.coroutines.channels.Channel
 import libs.kafka.KafkaProducer
-import libs.tracing.Tracing
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
 import libs.utils.Log
 import libs.utils.erHelligdag
 import models.ApiError
@@ -21,33 +22,36 @@ class SimuleringWorker(
 ) {
     suspend fun run() {
         for ((key, request, headers) in channel) {
-            try {
-                val fagsystem = Fagsystem.from(request.request.oppdrag.kodeFagomraade.trimEnd())
-                val simulering = try {
-                    val response = service.simulerJaxb(request)
-                    response.toSimulering(fagsystem)
-                } catch (e: Exception) {
-                    mapAndLogError(e, key, fagsystem)
-                }
-                withTraceparent(headers) {
+            SimuleringTracing.kafka(headers) {
+                try {
+                    val fagsystem = Fagsystem.from(request.request.oppdrag.kodeFagomraade.trimEnd())
+                    val simulering = try {
+                        val response = service.simulerJaxb(request)
+                        response.toSimulering(fagsystem)
+                    } catch (e: Exception) {
+                        Span.current().setStatus(StatusCode.ERROR)
+                        mapAndLogError(e, key, fagsystem)
+                    }
                     producerFor(fagsystem).send(key, simulering, headers)
+                    shadow?.submit(key, request, fagsystem, simulering)
+                } catch (e: Exception) {
+                    Span.current().setStatus(StatusCode.ERROR)
+                    Log.error("Feil i simulering-worker for key=$key", e)
                 }
-                shadow?.submit(key, request, fagsystem, simulering)
-            } catch (e: Exception) {
-                Log.error("Feil i simulering-worker for key=$key", e)
             }
         }
     }
 
     suspend fun drainBackpressure() {
         for ((key, fagsystem, headers) in backpressureChannel) {
-            try {
-                Log.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
-                withTraceparent(headers) {
+            SimuleringTracing.kafka(headers) {
+                try {
+                    Log.warn("Simulering har for lang kø, prøv igjen senere (${fagsystem} key=${key})")
                     producerFor(fagsystem).send(key, Info.Utilgjengelig(fagsystem, "Simulering har for lang kø, prøv igjen senere"), headers)
+                } catch(e: Exception) {
+                    Span.current().setStatus(StatusCode.ERROR)
+                    Log.error("Feil ved sending av backpressure-svar for $fagsystem key=$key", e)
                 }
-            } catch(e: Exception) {
-                Log.error("Feil ved sending av backpressure-svar for $fagsystem key=$key", e)
             }
         }
     }
@@ -103,13 +107,4 @@ class SimuleringWorker(
         return producers[key] ?: error("Ingen producer for fagsystem $fagsystem")
     }
 
-    private fun <T> withTraceparent(
-        headers: Map<String, String>,
-        block: () -> T,
-    ): T {
-        val traceparent = headers["traceparent"] ?: return block()
-        return Tracing.contextFromTraceparent(traceparent)
-            .makeCurrent()
-            .use { block() }
-    }
 }

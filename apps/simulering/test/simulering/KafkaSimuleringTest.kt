@@ -137,7 +137,7 @@ class KafkaSimuleringTest {
         }
         val (actualKey, result) = producer.history().single()
         assertEquals(key, actualKey)
-        TestRuntime.awaitShadow(key)
+        TestRuntime.awaitRestCalls(1)
         return result
     }
 

@@ -12,11 +12,13 @@ val wsLog = logger("ws")
 
 val SecureLogFilter = Filter { next ->
     { request ->
-        secureLog.info("REQUEST: ${request.method} ${request.uri} body=${request.bodyString()}")
-        val response = next(request)
-        val body = response.bodyString()
-        secureLog.info("RESPONSE: ${response.status} body=$body")
-        response.body(body)
+        SimuleringTracing.withLogContext {
+            secureLog.info("REQUEST: ${request.method} ${request.uri} body=${request.bodyString()}")
+            val response = next(request)
+            val body = response.bodyString()
+            secureLog.info("RESPONSE: ${response.status} body=$body")
+            response.body(body)
+        }
     }
 }
 

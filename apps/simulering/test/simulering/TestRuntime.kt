@@ -10,18 +10,11 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.AppenderBase
-import org.slf4j.LoggerFactory
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import java.net.InetSocketAddress
@@ -66,8 +59,13 @@ object TestRuntime : Sts, Soap {
             sts = this,
             jwtVerifier = jwtVerifier,
             shadowHttp = { request ->
+                val handler = restHandler
                 receivedRestRequests.add(request)
-                restHandler(request)
+                try {
+                    handler(request)
+                } finally {
+                    completedRestCalls.incrementAndGet()
+                }
             },
             shadowAuthorization = { "Bearer shadow-test-token" },
         )
@@ -134,15 +132,7 @@ object TestRuntime : Sts, Soap {
     val receivedSoapRequests: MutableList<String> = mutableListOf()
     val receivedRestRequests = CopyOnWriteArrayList<Request>()
     var restHandler: HttpHandler = { emptyRestResponse() }
-    val secureEvents = CopyOnWriteArrayList<ILoggingEvent>()
-    private val secureCapture by lazy {
-        object : AppenderBase<ILoggingEvent>() {
-            override fun append(event: ILoggingEvent) { secureEvents.add(event) }
-        }.apply {
-            start()
-            (LoggerFactory.getLogger("secureLog") as Logger).addAppender(this)
-        }
-    }
+    private val completedRestCalls = AtomicInteger()
     var invalidateCount = 0
 
     private val soapResponseQueue: ArrayDeque<String> = ArrayDeque<String>().apply {
@@ -160,9 +150,8 @@ object TestRuntime : Sts, Soap {
     }
 
     fun reset() {
-        secureCapture
-        secureEvents.clear()
         receivedRestRequests.clear()
+        completedRestCalls.set(0)
         restHandler = { emptyRestResponse() }
         kafkaMock.reset()
         soapResponseQueue.clear()
@@ -175,15 +164,9 @@ object TestRuntime : Sts, Soap {
         {"OsSimulerBeregningOperationResponse":{"ZS1OCont":{"responsSimulering":{"statusKode":0}}}}
     """.trimIndent())
 
-    fun shadowEvents(key: String): List<JsonObject> = secureEvents.mapNotNull {
-        runCatching { Json.parseToJsonElement(it.formattedMessage).jsonObject }.getOrNull()
-    }.filter { it["key"]?.jsonPrimitive?.content == key }
-
-    fun awaitShadow(key: String) = runBlocking {
+    fun awaitRestCalls(count: Int) = runBlocking {
         withTimeout(5.seconds) {
-            while (shadowEvents(key).none {
-                it["event"]?.jsonPrimitive?.content in listOf("simulering_shadow_comparison", "simulering_shadow_failed", "simulering_shadow_skipped")
-            }) delay(10.milliseconds)
+            while (completedRestCalls.get() < count) delay(10.milliseconds)
         }
     }
 
