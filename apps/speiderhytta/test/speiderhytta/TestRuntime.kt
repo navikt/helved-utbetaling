@@ -54,6 +54,7 @@ object TestRuntime {
             "poller_cursor",
             "slo_snapshot",
             "audit_task_comment",
+            "audit_task_snapshot",
             "audit_workflow_step",
             "audit_workflow_job",
             "audit_workflow_source",

@@ -23,11 +23,13 @@ import speiderhytta.github.CapturedWorkflowRun
 import speiderhytta.github.FetchStatus
 import speiderhytta.github.GithubClient
 import speiderhytta.github.GithubHttpException
+import speiderhytta.github.GithubTask
 import speiderhytta.github.WorkflowSource
 import java.security.MessageDigest
 import java.time.Instant
 
 interface AuditFetcher {
+    suspend fun task(repo: String, number: Long): GithubTask?
     suspend fun commits(repo: String, since: Instant): List<CapturedCommit>
     suspend fun commit(repo: String, sha: String): CapturedCommit
     suspend fun runs(repo: String, workflowFile: String, since: Instant): List<CapturedWorkflowRun>
@@ -40,6 +42,7 @@ interface AuditFetcher {
 }
 
 fun GithubClient.asAuditFetcher(): AuditFetcher = object : AuditFetcher {
+    override suspend fun task(repo: String, number: Long) = auditTask(repo, number)
     override suspend fun commits(repo: String, since: Instant) = auditCommits(repo, "main", since)
     override suspend fun commit(repo: String, sha: String) = auditCommit(repo, sha)
     override suspend fun runs(repo: String, workflowFile: String, since: Instant) = auditWorkflowRuns(repo, workflowFile, since)
@@ -65,7 +68,17 @@ class AuditService(
     suspend fun ingestCommits(repository: String, since: Instant): Instant {
         val commits = fetcher.commits(repository, since)
         storeCommits(repository, commits)
-        taskComments?.update(commits.mapNotNull { it.taskReference() }.toSet())
+        taskComments?.let { projector ->
+            val tasks = withContext(jdbcCtx) {
+                transaction {
+                    commits.mapNotNull { AuditCommit.find(repository, it.value.sha)?.id }
+                        .mapNotNull { AuditTaskSnapshot.forCommit(it) }
+                        .filter { it.fetchStatus == "PRESENT" }
+                        .map { TaskReference(it.taskRepository, it.taskNumber) }.toSet()
+                }
+            }
+            projector.update(tasks)
+        }
         return commits.maxOfOrNull { it.value.commit.committer.date }
             ?.takeIf { it.isAfter(since) }
             ?: since
@@ -89,10 +102,55 @@ class AuditService(
         }
     }
 
-    private suspend fun storeCommits(repository: String, commits: List<CapturedCommit>) = withContext(jdbcCtx) {
-        transaction {
-            commits.forEach { captured -> captured.toAuditCommit(repository).insert() }
+    // Kan fjernes etter etterfylling
+    suspend fun backfillTaskSnapshots() {
+        val pending = withContext(jdbcCtx) { transaction { AuditTaskSnapshot.commitsWithoutTaskSnapshot() } }
+        fetchAndStoreTaskSnapshots(pending)
+    }
+
+    private suspend fun storeCommits(repository: String, commits: List<CapturedCommit>) {
+        withContext(jdbcCtx) {
+            transaction { storeCommitsInCurrentTransaction(repository, commits) }
         }
+        captureTasksForCommits(repository, commits)
+    }
+
+    private suspend fun captureTasksForCommits(repository: String, commits: List<CapturedCommit>) {
+        val stored = withContext(jdbcCtx) {
+            transaction { commits.mapNotNull { AuditCommit.find(repository, it.value.sha) } }
+        }
+        fetchAndStoreTaskSnapshots(stored)
+    }
+
+    private suspend fun fetchAndStoreTaskSnapshots(commits: List<AuditCommit>) {
+        val pending = withContext(jdbcCtx) {
+            transaction {
+                commits.filter { it.taskRepository != null && it.taskNumber != null }
+                    .filter { AuditTaskSnapshot.forCommit(requireNotNull(it.id)) == null }
+            }
+        }
+        pending.groupBy { TaskReference(requireNotNull(it.taskRepository), requireNotNull(it.taskNumber)) }
+            .forEach { (reference, linkedCommits) ->
+                val task = fetcher.task(reference.repository, reference.number)
+                val capturedAt = now()
+                withContext(jdbcCtx) {
+                    transaction {
+                        linkedCommits.forEach { commit ->
+                            AuditTaskSnapshot(
+                                commitId = requireNotNull(commit.id),
+                                taskRepository = reference.repository,
+                                taskNumber = reference.number,
+                                fetchStatus = task?.let { "PRESENT" } ?: "NOT_FOUND",
+                                title = task?.title,
+                                body = task?.body,
+                                state = task?.state,
+                                labels = task?.labels?.map { it.name }.orEmpty(),
+                                capturedAt = capturedAt
+                            ).insert()
+                        }
+                    }
+                }
+            }
     }
 
     private suspend fun storeRun(
@@ -125,6 +183,7 @@ class AuditService(
                 }
             }
         }
+        captureTasksForCommits(repository, deploymentCommits)
     }
 
     private suspend fun storeSource(workflowExecutionId: Long, source: WorkflowSource) {
@@ -237,8 +296,8 @@ class AuditService(
         return AuditCommit(
             repository = repository,
             sha = commit.sha,
-            taskRepository = task?.repository,
-            taskNumber = task?.number,
+            taskRepository = task.repository,
+            taskNumber = task.number,
             message = commit.commit.message,
             authorLogin = commit.author?.login,
             committerLogin = commit.committer?.login,

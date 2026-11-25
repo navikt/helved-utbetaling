@@ -76,6 +76,7 @@ data class AuditReport(
     val attempts: List<AuditAttemptReport>,
     val commits: List<AuditCommit>,
     val controls: List<AuditControlSnapshot>,
+    val tasks: List<AuditTaskSnapshot> = emptyList(),
 )
 
 @Serializable
@@ -198,10 +199,12 @@ internal suspend fun report(repository: String, runId: Long): AuditReport? {
     }
     val reportWorkflow = deploymentAttempt?.workflow ?: latest
     val reportWorkflowId = reportWorkflow.id ?: error("audit workflow id is missing")
+    val commits = AuditWorkflowExecutionCommit.commitsForExecution(reportWorkflowId)
     return AuditReport(
         attempts = attempts,
-        commits = AuditWorkflowExecutionCommit.commitsForExecution(reportWorkflowId),
+        commits = commits,
         controls = AuditControlSnapshot.at(repository, "main", reportWorkflow.updatedAt),
+        tasks = commits.mapNotNull { AuditTaskSnapshot.forCommit(requireNotNull(it.id)) },
     )
 }
 

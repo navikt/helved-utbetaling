@@ -3,6 +3,9 @@ package speiderhytta.audit
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import libs.jdbc.concurrency.transaction
@@ -22,6 +25,59 @@ private val summaryListLens = KotlinxJson.autoBody<List<WorkflowRunSummary>>().t
 
 class AuditRoutesTest {
     @AfterTest fun reset() = TestRuntime.reset()
+
+    @Test
+    fun `rapportens JSON inkluderer body og not found men utelater manglende snapshots`() = runTest(TestRuntime.context) {
+        val now = Instant.parse("2026-11-18T12:00:00Z")
+        val repository = "navikt/helved-utbetaling"
+        transaction {
+            workflow(repository, attempt = 1, updatedAt = now).insert()
+            val executionId = AuditWorkflowExecution.find(repository, 99, 1)!!.id!!
+            job(executionId, 1, "success").insert()
+            (1..3).forEach { number ->
+                AuditCommit(
+                    repository = repository,
+                    sha = "report-$number",
+                    taskRepository = "navikt/team-helved",
+                    taskNumber = 42,
+                    message = "#42",
+                    authoredAt = now,
+                    committedAt = now,
+                    parents = JsonArray(emptyList()),
+                    rawMetadata = JsonObject(emptyMap())
+                ).insert()
+                val commitId = AuditCommit.find(repository, "report-$number")!!.id!!
+                AuditWorkflowExecutionCommit(executionId, commitId).insert()
+                if (number < 3) {
+                    AuditTaskSnapshot(
+                        commitId = commitId,
+                        taskRepository = "navikt/team-helved",
+                        taskNumber = 42,
+                        fetchStatus = if (number == 1) "PRESENT" else "NOT_FOUND",
+                        title = if (number == 1) "Task" else null,
+                        state = if (number == 1) "open" else null,
+                        labels = emptyList(),
+                        capturedAt = now,
+                        body = if (number == 1) "## Formål\nBeskrivelse med \"anførselstegn\"" else null
+                    ).insert()
+                }
+            }
+        }
+
+        val handler = auditRoutes(TestRuntime.context, setOf(repository))
+        val response = handler(Request(Method.GET, "/audit/report/$repository/workflows/99"))
+        assertEquals(Status.OK, response.status)
+        val json = libs.kotlinx.KotlinxJson.parseToJsonElement(response.bodyString()).jsonObject
+        assertEquals(3, json.getValue("commits").jsonArray.size)
+        val tasks = json.getValue("tasks").jsonArray.map { it.jsonObject }
+        assertEquals(2, tasks.size)
+        val present = tasks.single { it.getValue("fetchStatus").jsonPrimitive.content == "PRESENT" }
+        assertEquals("## Formål\nBeskrivelse med \"anførselstegn\"", present.getValue("body").jsonPrimitive.content)
+        val missing = tasks.single { it.getValue("fetchStatus").jsonPrimitive.content == "NOT_FOUND" }
+        assertEquals(JsonNull, missing["body"] ?: JsonNull)
+        assertEquals(setOf("42"), tasks.map { it.getValue("taskNumber").jsonPrimitive.content }.toSet())
+        assertEquals(2, tasks.map { it.getValue("commitId").jsonPrimitive.content }.toSet().size)
+    }
 
     @Test
     fun `report bruker commits og kontroller fra attemptet som deployet`() = runTest(TestRuntime.context) {

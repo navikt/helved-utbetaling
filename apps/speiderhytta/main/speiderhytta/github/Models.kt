@@ -29,6 +29,15 @@ data class GithubIssue(
 data class GithubLabel(val name: String)
 
 @Serializable
+data class GithubTask(
+    val number: Long,
+    val title: String,
+    val state: String,
+    val labels: List<GithubLabel> = emptyList(),
+    val body: String? = null
+)
+
+@Serializable
 data class GithubIssueComment(
     val id: Long,
     val body: String? = null,

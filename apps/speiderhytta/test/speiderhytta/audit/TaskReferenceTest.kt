@@ -2,27 +2,27 @@ package speiderhytta.audit
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class TaskReferenceTest {
     @Test
-    fun `leser entydig task-trailer`() {
+    fun `leser task-nummer først i commit-meldingen`() {
         assertEquals(
             TaskReference("navikt/team-helved", 123),
-            taskReference("Legg til audit\n\nTask: navikt/team-helved#123"),
+            taskReference("#123 fjerner unødvendig logglinje", "navikt/team-helved"),
         )
     }
 
     @Test
-    fun `leser github issue-url`() {
-        assertEquals(
-            TaskReference("navikt/team-helved", 456),
-            taskReference("Task: https://github.com/navikt/team-helved/issues/456"),
-        )
+    fun `bruker BAU når meldingen ikke har task-nummer med hash`() {
+        val bau = TaskReference("navikt/team-helved", 511)
+        assertEquals(bau, taskReference("Fjerner unødvendig logglinje", "navikt/team-helved"))
+        assertEquals(bau, taskReference("https://github.com/navikt/team-helved/issues/456", "navikt/team-helved"))
+        assertEquals(bau, taskReference("", "navikt/team-helved"))
+        assertEquals(bau, taskReference("Merge pull request #342 from navikt/dependabot", "navikt/team-helved"))
     }
 
     @Test
-    fun `leser entydig issue-nummer med standardrepo`() {
+    fun `leser task-nummer senere i commit-meldingen`() {
         assertEquals(
             TaskReference("navikt/team-helved", 123),
             taskReference("Fix #123", "navikt/team-helved"),
@@ -30,8 +30,9 @@ class TaskReferenceTest {
     }
 
     @Test
-    fun `ignorerer flere issue-numre uten entydig kobling`() {
-        assertNull(taskReference("Fix #123 og #456", "navikt/team-helved"))
+    fun `tar første referanse og ignorerer resten`() {
+        assertEquals(TaskReference("navikt/team-helved", 123), taskReference("Fix #123 og #456", "navikt/team-helved"))
+        assertEquals(TaskReference("navikt/team-helved", 123), taskReference("Fjerner logging\n\nSe #123 og #456", "navikt/team-helved"))
     }
 
     @Test

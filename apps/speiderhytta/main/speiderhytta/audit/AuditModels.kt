@@ -4,6 +4,7 @@ package speiderhytta.audit
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import libs.jdbc.Dao
@@ -11,6 +12,67 @@ import speiderhytta.github.FetchStatus
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.Instant
+
+@Serializable
+data class AuditTaskSnapshot(
+    val commitId: Long,
+    val taskRepository: String,
+    val taskNumber: Long,
+    val fetchStatus: String,
+    val title: String?,
+    val state: String?,
+    val labels: List<String>,
+    val capturedAt: Instant,
+    val body: String? = null
+) {
+    companion object : Dao<AuditTaskSnapshot> {
+        override val table = "audit_task_snapshot"
+
+        override fun from(rs: ResultSet) = AuditTaskSnapshot(
+            commitId = rs.getLong("commit_id"),
+            taskRepository = rs.getString("task_repository"),
+            taskNumber = rs.getLong("task_number"),
+            fetchStatus = rs.getString("fetch_status"),
+            title = rs.getString("title"),
+            state = rs.getString("state"),
+            labels = libs.kotlinx.KotlinxJson.decodeFromString(rs.getString("labels")),
+            capturedAt = rs.getTimestamp("captured_at").toInstant(),
+            body = rs.getString("body")
+        )
+
+        suspend fun forCommit(commitId: Long): AuditTaskSnapshot? = query(
+            "SELECT * FROM $table WHERE commit_id = ?"
+        ) { it.setLong(1, commitId) }.singleOrNull()
+
+        // Fjern etter etterfylling av tasks
+        suspend fun commitsWithoutTaskSnapshot(limit: Int = 100): List<AuditCommit> = AuditCommit.query(
+            """
+            SELECT c.* FROM audit_commit c
+            WHERE c.task_repository IS NOT NULL AND c.task_number IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM $table s WHERE s.commit_id = c.id)
+            ORDER BY c.id LIMIT ?
+            """.trimIndent()
+        ) { it.setInt(1, limit) }
+    }
+
+    suspend fun insert() = update(
+        """
+        INSERT INTO $table (commit_id, task_repository, task_number, fetch_status, title, state, labels, captured_at, body)
+        VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?)
+        ON CONFLICT (commit_id) DO NOTHING
+        """.trimIndent()
+    ) { stmt ->
+        stmt.setLong(1, commitId)
+        stmt.setString(2, taskRepository)
+        stmt.setLong(3, taskNumber)
+        stmt.setString(4, fetchStatus)
+        stmt.setString(5, title)
+        stmt.setString(6, state)
+        stmt.setString(7, libs.kotlinx.KotlinxJson.encodeToString(labels))
+        stmt.setTimestamp(8, Timestamp.from(capturedAt))
+        stmt.setString(9, body)
+    }
+}
 
 @Serializable
 data class AuditCommit(

@@ -20,6 +20,8 @@ import speiderhytta.github.FetchStatus
 import speiderhytta.github.GithubCommit
 import speiderhytta.github.GithubHttpException
 import speiderhytta.github.GithubUser
+import speiderhytta.github.GithubTask
+import speiderhytta.github.GithubLabel
 import speiderhytta.github.WorkflowJob
 import speiderhytta.github.WorkflowJobsPage
 import speiderhytta.github.WorkflowRun
@@ -27,15 +29,191 @@ import speiderhytta.github.WorkflowRunsPage
 import speiderhytta.github.WorkflowSource
 import speiderhytta.github.WorkflowStep
 import java.time.Instant
+import java.io.File
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
 class AuditServiceTest {
     @AfterTest fun reset() = TestRuntime.reset()
+
+    @Test
+    fun `etterfyller maksimalt hundre commits og fortsetter til alle er behandlet`() = runTest(TestRuntime.context) {
+        val now = Instant.parse("2026-11-18T12:00:00Z")
+        val fetcher = FakeAuditFetcher(now)
+        val service = AuditService(fetcher, emptyList(), TestRuntime.context, "navikt/team-helved")
+        transaction {
+            (1..201).forEach { number ->
+                AuditCommit(
+                    repository = "navikt/helved-utbetaling",
+                    sha = "batch-$number",
+                    taskRepository = "navikt/team-helved",
+                    taskNumber = 42,
+                    message = "#42",
+                    authoredAt = now,
+                    committedAt = now,
+                    parents = JsonArray(emptyList()),
+                    rawMetadata = JsonObject(emptyMap())
+                ).insert()
+            }
+        }
+
+        listOf(100, 200, 201, 201).forEach { expected ->
+            service.backfillTaskSnapshots()
+            val stored = transaction { AuditTaskSnapshot.query("SELECT * FROM audit_task_snapshot") }
+            assertEquals(expected, stored.size)
+            val linked = transaction {
+                AuditCommit.query(
+                    "SELECT c.* FROM audit_commit c JOIN audit_task_snapshot s ON s.commit_id = c.id"
+                )
+            }
+            assertEquals((1..expected).map { "batch-$it" }.toSet(), linked.map { it.sha }.toSet())
+        }
+        assertEquals(3, fetcher.taskCalls)
+        assertEquals(emptyList(), transaction { AuditTaskSnapshot.commitsWithoutTaskSnapshot() })
+    }
+
+    @Test
+    fun `V4 setter bare manglende task-numre til BAU og oppretter body-kolonnen`() {
+        TestRuntime.jdbc.connection.use { connection ->
+            connection.autoCommit = false
+            try {
+                connection.createStatement().use { statement ->
+                    statement.execute("CREATE SCHEMA task_migration_test")
+                    statement.execute("SET LOCAL search_path TO task_migration_test")
+                    statement.execute(
+                        "CREATE TABLE audit_commit (id BIGINT PRIMARY KEY, task_repository TEXT, task_number BIGINT)"
+                    )
+                    statement.execute(
+                        """
+                        INSERT INTO audit_commit VALUES
+                            (1, NULL, NULL),
+                            (2, 'navikt/team-helved', 42),
+                            (3, 'navikt/other', NULL)
+                        """.trimIndent()
+                    )
+                    statement.execute(File("migrations/V4__audit_task_snapshot.sql").readText())
+                    statement.executeQuery("SELECT * FROM audit_commit ORDER BY id").use { rows ->
+                        listOf(511L, 42L, 511L).forEach { number ->
+                            assertTrue(rows.next())
+                            assertEquals("navikt/team-helved", rows.getString("task_repository"))
+                            assertEquals(number, rows.getLong("task_number"))
+                        }
+                        assertEquals(false, rows.next())
+                    }
+                    statement.execute(
+                        """
+                        INSERT INTO audit_task_snapshot
+                            (commit_id, task_repository, task_number, fetch_status, title, state, labels, captured_at, body)
+                        VALUES (1, 'navikt/team-helved', 511, 'PRESENT', 'BAU', 'open', '[]', NOW(), 'Formålet')
+                        """.trimIndent()
+                    )
+                    statement.executeQuery("SELECT body FROM audit_task_snapshot").use { rows ->
+                        assertTrue(rows.next())
+                        assertEquals("Formålet", rows.getString("body"))
+                    }
+                }
+            } finally {
+                connection.rollback()
+            }
+        }
+    }
+
+    @Test
+    fun `bevarer task-snapshot per commit og henter ikke på nytt ved overlapp`() = runTest(TestRuntime.context) {
+        val fetchedAt = Instant.parse("2026-11-18T12:00:00Z")
+        val fetcher = FakeAuditFetcher(fetchedAt)
+        var observedAt = fetchedAt
+        val service = AuditService(fetcher, emptyList(), TestRuntime.context, "navikt/team-helved", now = { observedAt })
+
+        service.ingestCommits("navikt/helved-utbetaling", Instant.EPOCH)
+        fetcher.taskValue = GithubTask(42, "Ny tittel", "closed", listOf(GithubLabel("ferdig")))
+        observedAt = fetchedAt.plusSeconds(60)
+        service.ingestCommits("navikt/helved-utbetaling", Instant.EPOCH)
+        service.backfillTaskSnapshots()
+        assertEquals(1, fetcher.taskCalls)
+
+        fetcher.sha = "next-commit"
+        service.ingestCommits("navikt/helved-utbetaling", Instant.EPOCH)
+
+        val snapshots = transaction { AuditTaskSnapshot.query("SELECT * FROM audit_task_snapshot ORDER BY captured_at") }
+        assertEquals(listOf("Task", "Ny tittel"), snapshots.map { it.title })
+        assertEquals(listOf("Opprinnelig formål", null), snapshots.map { it.body })
+        assertEquals(listOf("open", "closed"), snapshots.map { it.state })
+        assertEquals(listOf(listOf("backend"), listOf("ferdig")), snapshots.map { it.labels })
+        assertEquals(listOf(fetchedAt, observedAt), snapshots.map { it.capturedAt })
+        assertEquals(2, fetcher.taskCalls)
+    }
+
+    @Test
+    fun `etterfyller eksisterende koblinger med faktisk hentetid og ett oppslag per task`() = runTest(TestRuntime.context) {
+        val commitTime = Instant.parse("2026-09-21T12:00:00Z")
+        val fetchedAt = commitTime.plusSeconds(86400)
+        val fetcher = FakeAuditFetcher(commitTime)
+        transaction {
+            listOf("old-one", "old-two").forEach { sha ->
+                AuditCommit(
+                    repository = "navikt/helved-utbetaling", sha = sha,
+                    taskRepository = "navikt/team-helved", taskNumber = 42,
+                    message = "#42", authoredAt = commitTime, committedAt = commitTime,
+                    parents = JsonArray(emptyList()), rawMetadata = JsonObject(emptyMap()), capturedAt = commitTime
+                ).insert()
+            }
+        }
+        val service = AuditService(fetcher, emptyList(), TestRuntime.context, "navikt/team-helved", now = { fetchedAt })
+
+        service.backfillTaskSnapshots()
+        service.backfillTaskSnapshots()
+
+        val snapshots = transaction { AuditTaskSnapshot.query("SELECT * FROM audit_task_snapshot") }
+        assertEquals(2, snapshots.size)
+        assertTrue(snapshots.all { it.capturedAt == fetchedAt && it.title == "Task" })
+        assertEquals(1, fetcher.taskCalls)
+    }
+
+    @Test
+    fun `prøver task-henting på nytt etter feil men bevarer not found`() = runTest(TestRuntime.context) {
+        val now = Instant.parse("2026-11-18T12:00:00Z")
+        val fetcher = FakeAuditFetcher(now).apply { failTask = true }
+        val comments = TaskCommentClientFake()
+        val service = AuditService(
+            fetcher, emptyList(), TestRuntime.context, "navikt/team-helved",
+            TaskCommentProjector(comments, TestRuntime.context)
+        )
+
+        assertFailsWith<IllegalStateException> { service.ingestCommits("navikt/helved-utbetaling", Instant.EPOCH) }
+        assertEquals(emptyList(), transaction { AuditTaskSnapshot.query("SELECT * FROM audit_task_snapshot") })
+        fetcher.failTask = false
+        fetcher.taskValue = null
+        service.backfillTaskSnapshots()
+        service.backfillTaskSnapshots()
+        service.ingestCommits("navikt/helved-utbetaling", Instant.EPOCH)
+
+        val snapshot = transaction { AuditTaskSnapshot.query("SELECT * FROM audit_task_snapshot") }.single()
+        assertEquals("NOT_FOUND", snapshot.fetchStatus)
+        assertEquals(null, snapshot.title)
+        assertEquals(null, snapshot.body)
+        assertEquals(2, fetcher.taskCalls)
+        assertEquals(emptyList(), comments.created)
+    }
+
+    @Test
+    fun `lagrer task-snapshot når commit oppdages via workflow`() = runTest(TestRuntime.context) {
+        val now = Instant.parse("2026-11-18T12:00:00Z")
+        val fetcher = FakeAuditFetcher(now)
+        val service = AuditService(fetcher, emptyList(), TestRuntime.context, "navikt/team-helved")
+
+        service.ingestWorkflow("navikt/helved-utbetaling", "utsjekk", "utsjekk.yml", Instant.EPOCH)
+
+        val snapshot = transaction { AuditTaskSnapshot.query("SELECT * FROM audit_task_snapshot") }.single()
+        assertEquals(42L, snapshot.taskNumber)
+        assertEquals("Task", snapshot.title)
+        assertEquals(1, fetcher.taskCalls)
+    }
 
     @Test
     fun `lagrer commit med task-kobling og komplett workflow-run`() = runTest(TestRuntime.context) {
@@ -57,6 +235,8 @@ class AuditServiceTest {
         assertEquals(true, commit.signatureVerified)
         assertEquals("bot", commit.committerLogin)
         assertEquals(now.plusSeconds(1), commit.committedAt)
+        val snapshot = transaction { AuditTaskSnapshot.forCommit(assertNotNull(commit.id)) }
+        assertEquals("Task", assertNotNull(snapshot).title)
 
         val run = transaction { AuditWorkflowExecution.find("navikt/helved-utbetaling", 99) }
         assertNotNull(run)
@@ -71,6 +251,7 @@ class AuditServiceTest {
         assertEquals(setOf("name: utsjekk"), definitions.map { it.content }.toSet())
         val linkedCommits = transaction { AuditWorkflowExecutionCommit.forExecution(run.id!!) }
         assertEquals(1, linkedCommits.size)
+        assertEquals(listOf(snapshot), transaction { report("navikt/helved-utbetaling", 99) }?.tasks)
     }
 
     @Test
@@ -138,6 +319,9 @@ class AuditServiceTest {
         assertEquals(listOf("aaa"), transaction { AuditWorkflowExecutionCommit.commitsForExecution(first.id!!) }.map { it.sha })
         assertEquals(listOf("bbb", "ccc"), transaction { AuditWorkflowExecutionCommit.commitsForExecution(second.id!!) }.map { it.sha })
         assertEquals(listOf("aaa" to "ccc"), fetcher.comparisons)
+        val snapshots = transaction { AuditTaskSnapshot.query("SELECT * FROM audit_task_snapshot") }
+        assertEquals(3, snapshots.size)
+        assertTrue(snapshots.all { it.taskRepository == "navikt/team-helved" && it.taskNumber == 511L })
     }
 
     @Test
@@ -339,6 +523,7 @@ class AuditServiceTest {
 }
 
 private class RealPayloadAuditFetcher : AuditFetcher {
+    override suspend fun task(repo: String, number: Long) = GithubTask(number, "Task", "open")
     private val json = libs.kotlinx.KotlinxJson
     private val commits = json.decodeFromString<List<GithubCommit>>(GithubPayloads.commitsResponse)
         .map { CapturedCommit(it, json.encodeToJsonElement(it)) }
@@ -372,6 +557,16 @@ private class RealPayloadAuditFetcher : AuditFetcher {
 }
 
 private class FakeAuditFetcher(private val now: Instant) : AuditFetcher {
+    var sha = "abc123"
+    var taskValue: GithubTask? = GithubTask(42, "Task", "open", listOf(GithubLabel("backend")), body = "Opprinnelig formål")
+    var taskCalls = 0
+    var failTask = false
+
+    override suspend fun task(repo: String, number: Long): GithubTask? {
+        taskCalls++
+        check(!failTask) { "GitHub unavailable" }
+        return taskValue
+    }
     var protection = JsonObject(mapOf("required_reviews" to JsonPrimitive(1)))
     var protectionStatus = FetchStatus.PRESENT
     var deployConclusion = "success"
@@ -380,7 +575,7 @@ private class FakeAuditFetcher(private val now: Instant) : AuditFetcher {
 
     override suspend fun commits(repo: String, since: Instant) = listOf(
         CapturedCommit(GithubCommit(
-            sha = "abc123",
+            sha = sha,
             commit = CommitDetail(
                 author = CommitAuthor(now),
                 committer = CommitAuthor(now.plusSeconds(1)),
@@ -462,6 +657,7 @@ private class FakeAuditFetcher(private val now: Instant) : AuditFetcher {
 }
 
 private class DeploymentRangeAuditFetcher : AuditFetcher {
+    override suspend fun task(repo: String, number: Long) = GithubTask(number, "BAU", "open")
     private val base = Instant.parse("2026-09-21T12:00:00Z")
     var currentRun = 1
     var comparisonStatus: Status? = null
@@ -530,6 +726,7 @@ private class DeploymentRangeAuditFetcher : AuditFetcher {
 }
 
 private class LongRunningWorkflowFetcher(private val createdAt: Instant) : AuditFetcher {
+    override suspend fun task(repo: String, number: Long) = error("No task expected")
     var completed = false
     val requestedSince = mutableListOf<Instant>()
 

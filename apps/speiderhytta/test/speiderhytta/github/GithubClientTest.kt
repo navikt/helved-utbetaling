@@ -20,6 +20,33 @@ import kotlin.test.assertFailsWith
 
 class GithubClientTest {
     @Test
+    fun `henter task-metadata og håndterer ukjente issues`() = runTest {
+        val client = githubClient { request ->
+            when (request.uri.path) {
+                "/repos/navikt/team-helved/issues/42" -> jsonResponse(
+                    """{"number":42,"title":"Task","state":"closed","labels":[{"name":"backend"}],"body":"Formålet med tasken"}"""
+                )
+                "/repos/navikt/team-helved/issues/44" -> jsonResponse("{}", Status.NOT_FOUND)
+                else -> jsonResponse("{}", Status.FORBIDDEN)
+            }
+        }
+
+        assertEquals(GithubTask(42, "Task", "closed", listOf(GithubLabel("backend")), body = "Formålet med tasken"), client.auditTask("navikt/team-helved", 42))
+        assertEquals(null, client.auditTask("navikt/team-helved", 44))
+        assertFailsWith<GithubHttpException> { client.auditTask("navikt/team-helved", 45) }
+    }
+
+    @Test
+    fun `task uten beskrivelse tillater null og manglende body`() = runTest {
+        listOf("", ",\"body\":null").forEach { bodyField ->
+            val client = githubClient {
+                jsonResponse("""{"number":42,"title":"Task","state":"open"$bodyField}""")
+            }
+            assertEquals(null, client.auditTask("navikt/team-helved", 42)?.body)
+        }
+    }
+
+    @Test
     fun `paginering henter alle commits med riktige parametere`() = runTest {
         val requestedPages = mutableListOf<String?>()
         val client = githubClient { request ->

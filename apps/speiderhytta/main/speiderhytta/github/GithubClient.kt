@@ -14,6 +14,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runInterruptible
 import libs.utils.appLog
+import libs.utils.Log
 import org.http4k.client.JavaHttpClient
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method
@@ -81,6 +82,19 @@ class GithubClient(
             appLog.warn("failed to fetch github commit repo=$repo sha=$sha", t)
             null
         }
+    }
+
+    suspend fun auditTask(repo: String, number: Long): GithubTask? {
+        val response = execute(authRequest(Method.GET, "${config.apiUrl}/repos/$repo/issues/$number"))
+        if (response.status == Status.NOT_FOUND) {
+            Log.warn("Couldn't find issues for $number")
+            return null
+        }
+        if (!response.status.successful) {
+            throw GithubHttpException(response.status)
+        }
+        val raw = response.decodeJson<JsonElement>()
+        return libs.kotlinx.KotlinxJson.decodeFromJsonElement(raw)
     }
 
     suspend fun auditCommits(repo: String, branch: String, since: Instant): List<CapturedCommit> {

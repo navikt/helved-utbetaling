@@ -111,6 +111,19 @@ fun speiderhytta(config: Config = Config()): Speiderhytta {
         val sloService = SloService(sloDefs, prom, metrics, jdbcCtx)
 
         val scope = CoroutineScope(appJob + Dispatchers.IO)
+        // Fjernes når etterfyllingen er ferdig
+        scope.launch {
+            while (true) {
+                try {
+                    auditService.backfillTaskSnapshots()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (t: Throwable) {
+                    Log.warn("GitHub task snapshot backfill failed", t)
+                }
+                delay(config.pollIntervals.audit)
+            }
+        }
         Poller("deploy", config.pollIntervals.deploy, metrics, jdbcCtx) { since ->
             deployService.ingest(since)
         }.launchIn(scope)
