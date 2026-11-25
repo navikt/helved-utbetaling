@@ -4,6 +4,7 @@ import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
+import libs.utils.Log
 import libs.utils.secureLog
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
@@ -50,6 +51,9 @@ class SimuleringShadow(private val client: SokosClient, private val config: Soko
                 put("restMapped", libs.kotlinx.KotlinxJson.encodeToJsonElement(restMapped))
                 put("soapMapped", libs.kotlinx.KotlinxJson.encodeToJsonElement(soapMapped))
                 put("equal", soapMapped == restMapped)
+            }
+            if (soapMapped != restMapped) {
+                Log.error("Simulation mismatch between SOAP and REST results. Check secureLog for details.")
             }
         } catch (e: Exception) {
             Span.current().setStatus(StatusCode.ERROR)
