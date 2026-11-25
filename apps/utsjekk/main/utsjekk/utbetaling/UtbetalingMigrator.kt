@@ -45,9 +45,9 @@ class UtbetalingMigrator(
     suspend fun transfer(uid: UtbetalingId, request: MigrationRequest) {
         withContext(jdbcCtx) {
             transaction {
-                val dao = UtbetalingDao.findOrNull(uid) ?: notFound("Utbetaling $uid")
+                val dao = UtbetalingDao.findOrNull(uid, history = true) ?: notFound("Utbetaling $uid")
                 val lastAvvent = lastAvventOnSak(utsjekk.utbetaling.SakId(dao.data.sakId.id))
-                val utbet = utbetaling(uid, request, dao.data, lastAvvent)
+                val utbet = utbetaling(uid, request, dao.data, lastAvvent, opphørt = dao.deleted_at != null)
                 val key = utbet.uid.id.toString()
                 utbetalingProducer.send(key, utbet, mapOf("migrated" to request.toString()))
                 UtbetalingDao.markMigrated(uid)
@@ -63,7 +63,7 @@ class UtbetalingMigrator(
                 // Look up all items and validate they belong to the same sak
                 val daos = request.items.map { item ->
                     val uid = UtbetalingId(item.uid)
-                    uid to (UtbetalingDao.findOrNull(uid) ?: notFound("Utbetaling ${item.uid}"))
+                    uid to (UtbetalingDao.findOrNull(uid, history = true) ?: notFound("Utbetaling ${item.uid}"))
                 }
                 val sakIds = daos.map { (_, dao) -> dao.data.sakId.id }.distinct()
                 if (sakIds.size > 1) {
@@ -76,7 +76,7 @@ class UtbetalingMigrator(
                 for ((index, item) in request.items.withIndex()) {
                     val (uid, dao) = daos[index]
                     val migrationReq = MigrationRequest(id = item.id)
-                    val utbet = utbetaling(uid, migrationReq, dao.data, lastAvvent)
+                    val utbet = utbetaling(uid, migrationReq, dao.data, lastAvvent, opphørt = dao.deleted_at != null)
                     val key = utbet.uid.id.toString()
                     utbetalingProducer.send(key, utbet, mapOf("migrated" to request.toString()))
                     UtbetalingDao.markMigrated(uid)
@@ -97,13 +97,14 @@ class UtbetalingMigrator(
         req: MigrationRequest,
         from: Utbetaling,
         lastAvvent: models.Avvent?,
-    ): models.Utbetaling { 
+        opphørt: Boolean,
+    ): models.Utbetaling {
        return models.Utbetaling(
             dryrun = false,
             originalKey = transactionId.id.toString(),
             fagsystem = Fagsystem.AAP,
             uid = models.UtbetalingId(req.id),
-            action = Action.CREATE,
+            action = if (opphørt) Action.DELETE else Action.CREATE,
             førsteUtbetalingPåSak = from.erFørsteUtbetaling ?: false,
             sakId = SakId(from.sakId.id),
             behandlingId = BehandlingId(from.behandlingId.id),
@@ -115,14 +116,14 @@ class UtbetalingMigrator(
             saksbehandlerId = Navident(from.saksbehandlerId.ident),
             periodetype = Periodetype.UKEDAG,
             avvent = lastAvvent,
-            perioder = utbetalingsperioder(from.perioder),
+            perioder = if (opphørt) emptyList() else utbetalingsperioder(from.perioder),
         )
     }
 
     private fun utbetalingsperioder(
         perioder: List<Utbetalingsperiode>
-    ): List<models.Utbetalingsperiode> = perioder.map { 
-        models.Utbetalingsperiode(
+    ): List<models.Utbetalingsperiode> = perioder.map {
+        Utbetalingsperiode(
             fom = it.fom,
             tom = it.tom,
             beløp = it.beløp,
@@ -131,8 +132,8 @@ class UtbetalingMigrator(
         )
     }
 
-    private fun avvent(from: Avvent) = 
-        models.Avvent(
+    private fun avvent(from: Avvent) =
+        Avvent(
             fom = from.fom,
             tom = from.tom,
             overføres = from.overføres,

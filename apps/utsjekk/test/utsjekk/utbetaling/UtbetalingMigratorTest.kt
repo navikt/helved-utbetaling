@@ -78,6 +78,98 @@ class UtbetalingMigratorTest {
     }
 
     @Test
+    fun `can migrate deleted uid`() = runTest(TestRuntime.context) {
+        val uid = UtbetalingId.random()
+        val newUid = UUID.randomUUID()
+        val data = Utbetaling.aap(
+            vedtakstidspunkt = 1.mar,
+            perioder = listOf(Utbetalingsperiode.dagpenger(4.feb, 4.feb, 500u))
+        )
+
+        transaction {
+            val dao = UtbetalingDao(data, Status.OK)
+            dao.insert(uid)
+            dao.delete(uid)
+        }
+
+        val res = httpClient.post("/utbetalinger/${uid.id}/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(MigrationRequest(newUid))
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        val actual = TestRuntime.kafka.getProducer(Topics.utbetaling)
+            .history().single { (key, _) -> key == newUid.toString() }.second
+        assertEquals(models.Action.DELETE, actual.action)
+        assertEquals(emptyList(), actual.perioder)
+        transaction {
+            assertNotNull(UtbetalingDao.findOrNull(uid, history = true)?.migrated_at)
+        }
+    }
+
+    @Test
+    fun `testsak HV2611241216 migrerer alle tre utbetalinger selv om den tredje er opphørt`() = runTest(TestRuntime.context) {
+        val sakId = SakId("HV2611241216")
+        val uids = listOf(
+            "78332e98-c489-415c-b472-87df3c1a2759",
+            "dab9713f-1ad8-4095-94a1-8717f4c3760c",
+            "6f3237dc-f677-4312-957b-5219a6f64551"
+        ).map { UtbetalingId(UUID.fromString(it)) }
+        val perioder = listOf(
+            Utbetalingsperiode.dagpenger(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 5), 1000u),
+            Utbetalingsperiode.dagpenger(LocalDate.of(2026, 6, 8), LocalDate.of(2026, 6, 19), 1000u),
+            Utbetalingsperiode.dagpenger(LocalDate.of(2026, 6, 22), LocalDate.of(2026, 7, 3), 1000u)
+        )
+        val data = perioder.mapIndexed { index, periode ->
+            Utbetaling.aap(
+                sakId = sakId,
+                behandlingId = BehandlingId("${index + 1}"),
+                vedtakstidspunkt = if (index == 0) LocalDate.of(2025, 10, 20) else LocalDate.of(2026, 9, 29),
+                perioder = listOf(periode)
+            )
+        }
+        val items = uids.map { MigrationBatchItem(it.id, UUID.randomUUID()) }
+
+        transaction {
+            data.zip(uids).forEach { (utbetaling, uid) ->
+                UtbetalingDao(utbetaling, Status.OK).insert(uid)
+            }
+            UtbetalingDao(data.last(), Status.OK).delete(uids.last())
+        }
+
+        val res = httpClient.post("/utbetalinger/migrate") {
+            bearerAuth(TestRuntime.azure.generateToken())
+            contentType(ContentType.Application.Json)
+            setBody(MigrationBatchRequest(items))
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        val producer = TestRuntime.kafka.getProducer(Topics.utbetaling)
+        assertEquals(0, producer.uncommitted().size)
+        val history = producer.history()
+        for ((index, item) in items.withIndex()) {
+            val actual = history.single { (key, _) -> key == item.id.toString() }.second
+            assertEquals(uids[index].id.toString(), actual.originalKey)
+            assertEquals(models.UtbetalingId(item.id), actual.uid)
+            assertEquals(models.SakId(sakId.id), actual.sakId)
+            if (index == 2) {
+                assertEquals(models.Action.DELETE, actual.action)
+                assertEquals(emptyList(), actual.perioder)
+            } else {
+                assertEquals(models.Action.CREATE, actual.action)
+                val periode = actual.perioder.single()
+                assertEquals(perioder[index].fom, periode.fom)
+                assertEquals(perioder[index].tom, periode.tom)
+                assertEquals(1000u, periode.beløp)
+            }
+            transaction {
+                assertNotNull(UtbetalingDao.findOrNull(uids[index], history = true)?.migrated_at)
+            }
+        }
+    }
+
+    @Test
     fun `migrate uid uses sak-level avvent`() = runTest(TestRuntime.context) {
         val sakId = SakId("sak-avvent-${UUID.randomUUID()}")
         val uid1 = UUID.randomUUID()
