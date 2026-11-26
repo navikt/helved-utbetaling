@@ -10,6 +10,7 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
 import models.Fagsystem
+import models.Info
 import models.Simulering
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import java.util.UUID
@@ -52,7 +53,7 @@ class SimuleringShadow(private val client: SokosClient, private val config: Soko
                 put("soapMapped", libs.kotlinx.KotlinxJson.encodeToJsonElement(soapMapped))
                 put("equal", soapMapped == restMapped)
             }
-            if (soapMapped != restMapped) {
+            if (soapMapped != restMapped && !isMissingTestPersonMismatch(config.cluster, soapMapped, response)) {
                 Log.error("Simulation mismatch between SOAP and REST results. Check secureLog for details.")
             }
         } catch (e: Exception) {
@@ -65,6 +66,15 @@ class SimuleringShadow(private val client: SokosClient, private val config: Soko
     override fun close() {
         executor.shutdownNow()
     }
+}
+
+internal fun isMissingTestPersonMismatch(cluster: String, soapMapped: Simulering, response: ResponsSimulering): Boolean {
+    if (cluster != "dev-gcp") return false
+    if (soapMapped !is Info || soapMapped.status != Info.Status.UGYLDIG_REQUEST || soapMapped.message != "Personen finnes ikke i PDL") return false
+    if (response.statusKode != 4 || response.statusMelding != "Navn er ikke funnet ved oppslag") return false
+    val calculation = response.beregning ?: return true
+    return calculation.gjelderId.isBlank() && calculation.datoBeregnet.isBlank()
+        && calculation.belopTotalt.signum() == 0 && calculation.periodeStoppnivaa.isEmpty()
 }
 
 class ShadowComparison(private val key: String, private val fagsystem: Fagsystem) {
