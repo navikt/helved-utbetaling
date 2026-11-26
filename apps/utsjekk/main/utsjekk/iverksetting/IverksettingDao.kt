@@ -118,6 +118,21 @@ data class IverksettingDao(
                 stmt.setString(2, fagsystem.name)
             }.isNotEmpty()
         }
+
+        suspend fun allMigrated(sakId: SakId, fagsystem: Fagsystem): Boolean {
+            val sql = """
+                SELECT 1 FROM $table
+                WHERE data -> 'fagsak' ->> 'fagsakId' = ? 
+                  AND data -> 'fagsak' ->> 'fagsystem' = ?
+                  AND migrated_at IS NULL
+                LIMIT 1
+            """.trimIndent()
+
+            return query(sql, mapper = { true }) { stmt ->
+                stmt.setString(1, sakId.id)
+                stmt.setString(2, fagsystem.name)
+            }.isEmpty()
+        }
     }
 
     suspend fun insert(uid: UtbetalingId): Int {

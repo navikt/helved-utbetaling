@@ -7,7 +7,6 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.jdbc.await
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import utsjekk.iverksetting.*
 import java.time.LocalDate
+import java.util.UUID
 import io.ktor.http.content.TextContent
 
 class IverksettingRouteTest {
@@ -265,5 +265,44 @@ class IverksettingRouteTest {
         }.body<IverksettStatus>()
 
         assertEquals(IverksettStatus.SENDT_TIL_OPPDRAG, status)
+    }
+
+    @Test
+    fun `migrated er true for ukjent sak`() = runTest(TestRuntime.context) {
+        val sid = SakId(RandomOSURId.generate())
+
+        val res = httpClient.get("/api/iverksetting/v2/${sid.id}/migrated") {
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.ABETAL))
+            accept(ContentType.Application.Json)
+        }
+
+        assertEquals(HttpStatusCode.OK, res.status)
+        assertEquals(true, res.body<Boolean>())
+    }
+
+    @Test
+    fun `migrated er false for tiltakspenger-sak som ikke er migrert, og true etter migrering`() = runTest(TestRuntime.context) {
+        val sid = SakId(RandomOSURId.generate())
+        transaction {
+            TestData.dao.iverksetting(
+                iverksetting = TestData.domain.iverksetting(fagsystem = Fagsystem.TILTAKSPENGER, sakId = sid),
+            ).insert(utsjekk.utbetaling.UtbetalingId(UUID.randomUUID()))
+        }
+
+        val before = httpClient.get("/api/iverksetting/v2/${sid.id}/migrated") {
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.ABETAL))
+            accept(ContentType.Application.Json)
+        }
+        assertEquals(HttpStatusCode.OK, before.status)
+        assertEquals(false, before.body<Boolean>())
+
+        transaction { IverksettingDao.markMigrated(sid, Fagsystem.TILTAKSPENGER) }
+
+        val after = httpClient.get("/api/iverksetting/v2/${sid.id}/migrated") {
+            bearerAuth(TestRuntime.azure.generateToken(fakes.Azp.ABETAL))
+            accept(ContentType.Application.Json)
+        }
+        assertEquals(HttpStatusCode.OK, after.status)
+        assertEquals(true, after.body<Boolean>())
     }
 }

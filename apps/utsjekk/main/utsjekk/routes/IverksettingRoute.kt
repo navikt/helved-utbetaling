@@ -6,11 +6,13 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.ktor.server.util.getOrFail
 import kotlinx.coroutines.withContext
+import libs.jdbc.concurrency.transaction
 import libs.jdbc.concurrency.withLock
 import libs.utils.appLog
 import models.ApiError
 import models.DocumentedErrors
 import models.badRequest
+import models.kontrakter.Fagsystem
 import models.notFound
 import utsjekk.*
 import utsjekk.iverksetting.*
@@ -35,10 +37,19 @@ fun Route.iverksetting(
             call.respond(HttpStatusCode.OK, utbetalinger)
         }
 
+        // Midlertidig: sjekk om en sak er fullstendig migrert for TP
+        get("/v2/{sakId}/migrated") {
+            val sakId = call.parameters.getOrFail<String>("sakId").let(::SakId)
+            val migrated = withContext(service.jdbcCtx) {
+                transaction { IverksettingDao.allMigrated(sakId, Fagsystem.TILTAKSPENGER) }
+            }
+            call.respond(HttpStatusCode.OK, migrated)
+        }
+
         post("/v2") {
             val dto = try {
                 call.receive<IverksettV2Dto>()
-            } catch (ex: Exception) {
+            } catch (_: Exception) {
                 badRequest(
                     "Klarte ikke lese request body. Sjekk at du ikke mangler noen felter",
                     "${DocumentedErrors.BASE}/async/kom_i_gang/opprett_utbetaling"
