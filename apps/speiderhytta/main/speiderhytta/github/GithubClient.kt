@@ -272,8 +272,11 @@ class GithubClient(
         url: String,
         build: (Request) -> Request = { it },
     ): JsonElement {
-        val response = execute(build(authRequest(Method.GET, url)))
-        if (!response.status.successful) throw GithubHttpException(response.status)
+        val request = build(authRequest(Method.GET, url))
+        val response = execute(request)
+        if (!response.status.successful) {
+            throw GithubHttpException(response.status, " method=${request.method} url=${request.uri}")
+        }
         return response.decodeJson()
     }
 
@@ -309,7 +312,7 @@ class GithubClient(
             val request = build(authRequest(Method.GET, url).query("per_page", "100"), page)
             val httpResponse = execute(request)
             if (!httpResponse.status.successful) {
-                throw GithubHttpException(httpResponse.status)
+                throw GithubHttpException(httpResponse.status, " method=${request.method} url=${request.uri}")
             }
             val response = httpResponse.decodeJson<JsonElement>()
             val entries = arrayField?.let { field ->
@@ -332,8 +335,8 @@ class GithubClient(
 }
 
 /** Non-2xx response from the GitHub REST API, used for status-code mapping. */
-internal class GithubHttpException(val status: Status) :
-    RuntimeException("GitHub returned HTTP ${status.code}")
+internal class GithubHttpException(val status: Status, details: String = "") :
+    RuntimeException("GitHub returned HTTP ${status.code}$details")
 
 private inline fun <reified T> Response.decodeJson(): T =
     libs.kotlinx.KotlinxJson.decodeFromString(bodyString())

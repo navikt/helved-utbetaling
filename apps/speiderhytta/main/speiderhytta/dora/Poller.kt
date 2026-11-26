@@ -39,7 +39,7 @@ class Poller(
             } catch (e: CancellationException) {
                 throw e
             } catch (t: Throwable) {
-                appLog.error("poller {} failed", name, t)
+                appLog.warn("poller {} failed: {}", name, t.message)
                 metrics.pollerError(name)
             } finally {
                 metrics.pollerDuration(name, System.currentTimeMillis() - started)
