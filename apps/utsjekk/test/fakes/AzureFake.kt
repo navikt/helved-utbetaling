@@ -19,6 +19,7 @@ object Azp {
     const val TILTAKSPENGER = "test:helved:tiltakspenger-saksbehandling-api"
     const val TILLEGGSSTØNADER = "test:helved:tilleggsstonader-sak"
     const val AZURE_TOKEN_GENERATOR = "test:helved:azure-token-generator"
+    const val ABETAL = "test:helved:abetal"
 }
 
 class AzureFake : AutoCloseable {
