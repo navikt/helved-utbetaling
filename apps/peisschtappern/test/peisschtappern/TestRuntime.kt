@@ -13,11 +13,11 @@ import libs.kafka.OffsetResetPolicy
 import libs.kafka.StreamsConfig
 import libs.kafka.StreamsMock
 import libs.kafka.Topic
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.serialization.kotlinx.json.json
+import org.http4k.client.JavaHttpClient
+import org.http4k.core.HttpHandler
+import org.http4k.core.Uri
+import org.http4k.core.then
+import org.http4k.filter.ClientFilters
 import org.http4k.server.SunHttpLoom
 import org.http4k.server.asServer
 import java.io.File
@@ -69,11 +69,8 @@ object TestRuntime {
         }
     }
 
-    val httpClient by lazy {
-        HttpClient(CIO) {
-            install(ContentNegotiation) { json(libs.kotlinx.KotlinxJson) }
-            defaultRequest { url("http://localhost:${server.port()}") }
-        }
+    val httpClient: HttpHandler by lazy {
+        ClientFilters.SetBaseUriFrom(Uri.of("http://localhost:${server.port()}")).then(JavaHttpClient())
     }
 }
 

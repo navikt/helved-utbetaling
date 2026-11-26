@@ -23,7 +23,6 @@ tasks.shadowJar {
 }
 
 val http4kVersion = "6.61.0.0"
-val ktorVersion = "3.6.0"
 val libVersion = "3.1.252"
 
 dependencies {
@@ -49,9 +48,6 @@ dependencies {
     testImplementation(project(":libs:kafka-test"))
     testImplementation(project(":libs:jdbc-test"))
     testImplementation(project(":libs:auth-test"))
-    testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
-    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    testImplementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
 }
 
 // peisschtappern tests share a single TestRuntime (Kafka topology that consumes

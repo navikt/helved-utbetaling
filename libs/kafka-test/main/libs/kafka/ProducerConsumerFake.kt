@@ -64,7 +64,16 @@ class KafkaConsumerFake<K: Any, V>(
         } else {
             ConsumerRecord(topic.name, partition, offset, timestamp ?: -1L, TimestampType.NO_TIMESTAMP_TYPE, -1, -1, key, value, recordHeaders, java.util.Optional.empty())
         }
+        awaitAssignment(TopicPartition(topic.name, partition))
         consumer.addRecord(record)
+    }
+
+    // Apps subscribe from a background coroutine, so tests may populate before the partition is assigned.
+    private fun awaitAssignment(partition: TopicPartition, timeoutMs: Long = 5_000) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (partition !in consumer.assignment() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(1)
+        }
     }
 
     fun assign(vararg partition: Int) {

@@ -1,9 +1,9 @@
 package peisschtappern
 
-import io.ktor.client.call.body
-import io.ktor.client.request.*
-import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
+import org.http4k.core.Method
+import org.http4k.core.Request
+import org.http4k.core.Status as HttpStatus
 import libs.jdbc.concurrency.transaction
 import libs.jdbc.truncate
 import libs.kotlinx.KotlinxJson
@@ -30,10 +30,11 @@ class DobbeltutbetalingApiTest {
         saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
         saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
 
-        val result = TestRuntime.httpClient.get("/api/brann/dobbeltutbetalinger") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Suspect>>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/brann/dobbeltutbetalinger")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<Suspect>>()
 
         assertEquals(1, result.size)
         assertEquals(2, result.single().kilder.size)
@@ -54,25 +55,27 @@ class DobbeltutbetalingApiTest {
             ).slukk()
         }
 
-        val result = TestRuntime.httpClient.get("/api/brann/dobbeltutbetalinger") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Suspect>>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/brann/dobbeltutbetalinger")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<Suspect>>()
 
         assertTrue(result.isEmpty())
     }
 
     @Test
     fun `POST dobbeltutbetalinger lagrer håndtert`() = runTest(TestRuntime.context) {
-        val response = TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            parameter("behandlingId", "beh-1")
-            parameter("klassekode", "DAGP")
-            parameter("fom", "2026-01-01")
-            parameter("tom", "2026-01-31")
-        }
+        val response = TestRuntime.httpClient(
+            Request(Method.POST, "/api/brann/dobbeltutbetalinger")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .query("behandlingId", "beh-1")
+                .query("klassekode", "DAGP")
+                .query("fom", "2026-01-01")
+                .query("tom", "2026-01-31")
+        )
 
-        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(HttpStatus.OK, response.status)
 
         val kjente = transaction { KjentDobbeltutbetaling.findAll() }
         assertEquals(1, kjente.size)
@@ -88,14 +91,15 @@ class DobbeltutbetalingApiTest {
     @Test
     fun `POST dobbeltutbetalinger er idempotent`() = runTest(TestRuntime.context) {
         repeat(3) {
-            val response = TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger") {
-                bearerAuth(TestRuntime.azure.generateToken())
-                parameter("behandlingId", "beh-1")
-                parameter("klassekode", "DAGP")
-                parameter("fom", "2026-01-01")
-                parameter("tom", "2026-01-31")
-            }
-            assertEquals(HttpStatusCode.OK, response.status)
+            val response = TestRuntime.httpClient(
+                Request(Method.POST, "/api/brann/dobbeltutbetalinger")
+                    .bearerAuth(TestRuntime.azure.generateToken())
+                    .query("behandlingId", "beh-1")
+                    .query("klassekode", "DAGP")
+                    .query("fom", "2026-01-01")
+                    .query("tom", "2026-01-31")
+            )
+            assertEquals(HttpStatus.OK, response.status)
         }
 
         val kjente = transaction { KjentDobbeltutbetaling.findAll() }
@@ -108,18 +112,20 @@ class DobbeltutbetalingApiTest {
         saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
         saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
 
-        TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            parameter("behandlingId", "beh-1")
-            parameter("klassekode", "DAGP")
-            parameter("fom", "2026-01-01")
-            parameter("tom", "2026-01-31")
-        }
+        TestRuntime.httpClient(
+            Request(Method.POST, "/api/brann/dobbeltutbetalinger")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .query("behandlingId", "beh-1")
+                .query("klassekode", "DAGP")
+                .query("fom", "2026-01-01")
+                .query("tom", "2026-01-31")
+        )
 
-        val uslukkede = TestRuntime.httpClient.get("/api/brann/dobbeltutbetalinger") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Suspect>>()
+        val uslukkede = TestRuntime.httpClient(
+            Request(Method.GET, "/api/brann/dobbeltutbetalinger")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<Suspect>>()
 
         assertTrue(uslukkede.isEmpty())
     }
@@ -129,13 +135,14 @@ class DobbeltutbetalingApiTest {
         saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
         saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
 
-        TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            parameter("behandlingId", "beh-1")
-            parameter("klassekode", "DAGP")
-            parameter("fom", "2026-01-01")
-            parameter("tom", "2026-01-31")
-        }
+        TestRuntime.httpClient(
+            Request(Method.POST, "/api/brann/dobbeltutbetalinger")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .query("behandlingId", "beh-1")
+                .query("klassekode", "DAGP")
+                .query("fom", "2026-01-01")
+                .query("tom", "2026-01-31")
+        )
 
         val now = Instant.now().toEpochMilli()
         val uhåndterte = transaction {
@@ -147,14 +154,15 @@ class DobbeltutbetalingApiTest {
     @Test
     fun `POST dobbeltutbetalinger slukk er idempotent`() = runTest(TestRuntime.context) {
         repeat(3) {
-            val response = TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger/slukk") {
-                bearerAuth(TestRuntime.azure.generateToken())
-                parameter("behandlingId", "beh-1")
-                parameter("klassekode", "DAGP")
-                parameter("fom", "2026-01-01")
-                parameter("tom", "2026-01-31")
-            }
-            assertEquals(HttpStatusCode.OK, response.status)
+            val response = TestRuntime.httpClient(
+                Request(Method.POST, "/api/brann/dobbeltutbetalinger/slukk")
+                    .bearerAuth(TestRuntime.azure.generateToken())
+                    .query("behandlingId", "beh-1")
+                    .query("klassekode", "DAGP")
+                    .query("fom", "2026-01-01")
+                    .query("tom", "2026-01-31")
+            )
+            assertEquals(HttpStatus.OK, response.status)
         }
 
         val kjente = transaction { KjentDobbeltutbetaling.findAll() }
@@ -167,21 +175,23 @@ class DobbeltutbetalingApiTest {
         saveStatus(key = "k1", offset = offset, linjer = listOf(linje()))
         saveStatus(key = "k2", offset = offset, linjer = listOf(linje()))
 
-        val response = TestRuntime.httpClient.post("/api/brann/dobbeltutbetalinger/slukk") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            parameter("behandlingId", "beh-1")
-            parameter("klassekode", "DAGP")
-            parameter("fom", "2026-01-01")
-            parameter("tom", "2026-01-31")
-        }
+        val response = TestRuntime.httpClient(
+            Request(Method.POST, "/api/brann/dobbeltutbetalinger/slukk")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .query("behandlingId", "beh-1")
+                .query("klassekode", "DAGP")
+                .query("fom", "2026-01-01")
+                .query("tom", "2026-01-31")
+        )
 
-        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(HttpStatus.OK, response.status)
         val kjente = transaction { KjentDobbeltutbetaling.findAll() }
         assertTrue(kjente.single().slukketAt != null)
 
-        val uvarslede = TestRuntime.httpClient.get("/api/brann/dobbeltutbetalinger") {
-            bearerAuth(TestRuntime.azure.generateToken())
-        }.body<List<Suspect>>()
+        val uvarslede = TestRuntime.httpClient(
+            Request(Method.GET, "/api/brann/dobbeltutbetalinger")
+                .bearerAuth(TestRuntime.azure.generateToken())
+        ).bodyAs<List<Suspect>>()
         assertTrue(uvarslede.isEmpty())
 
         val now = Instant.now().toEpochMilli()

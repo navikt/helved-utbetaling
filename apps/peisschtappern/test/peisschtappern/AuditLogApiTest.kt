@@ -1,8 +1,5 @@
 package peisschtappern
 
-import io.ktor.client.call.body
-import io.ktor.client.request.*
-import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
 import org.http4k.core.Request
 import org.http4k.core.Method
@@ -16,19 +13,18 @@ class AuditLogApiTest {
         val entry = AuditLogEntry("2026-09-29T08:00:00Z", "INFO", "projects/p/logs/audit", "{}")
         TestRuntime.auditLogs.entries[TestRuntime.auditLogResource] = mutableListOf(entry)
 
-        val res = TestRuntime.httpClient.get("/api/audit-logs") {
-            url {
-                parameters.append("fom", "2026-09-29T00:00:00Z")
-                parameters.append("tom", "2026-09-30T00:00:00Z")
-                parameters.append("filter", "severity>=INFO")
-                parameters.append("pageSize", "10")
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }
+        val res = TestRuntime.httpClient(
+            Request(Method.GET, "/api/audit-logs")
+                .query("fom", "2026-09-29T00:00:00Z")
+                .query("tom", "2026-09-30T00:00:00Z")
+                .query("filter", "severity>=INFO")
+                .query("pageSize", "10")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        )
 
-        assertEquals(HttpStatusCode.OK, res.status)
-        assertEquals(listOf(entry), res.body<AuditLogPage>().entries)
+        assertEquals(Status.OK, res.status)
+        assertEquals(listOf(entry), res.bodyAs<AuditLogPage>().entries)
         assertEquals(TestRuntime.auditLogResource, TestRuntime.auditLogs.lastResourceName)
         assertEquals(Instant.parse("2026-09-29T00:00:00Z"), TestRuntime.auditLogs.lastFom)
         assertEquals(Instant.parse("2026-09-30T00:00:00Z"), TestRuntime.auditLogs.lastTom)
@@ -38,8 +34,8 @@ class AuditLogApiTest {
 
     @Test
     fun `requires token`() = runTest(TestRuntime.context) {
-        val res = TestRuntime.httpClient.get("/api/audit-logs")
-        assertEquals(HttpStatusCode.Unauthorized, res.status)
+        val res = TestRuntime.httpClient(Request(Method.GET, "/api/audit-logs"))
+        assertEquals(Status.UNAUTHORIZED, res.status)
     }
 
     @Test
@@ -47,19 +43,18 @@ class AuditLogApiTest {
         val entry = AuditLogEntry("2026-06-16T12:45:13.031Z", "INFO", "projects/p/logs/audit", "{}")
         TestRuntime.auditLogs.entries[TestRuntime.databaseAuditLogResource] = mutableListOf(entry)
 
-        val res = TestRuntime.httpClient.get("/api/audit-logs/database") {
-            url {
-                parameters.append("fom", "2026-06-16T00:00:00Z")
-                parameters.append("tom", "2026-06-17T00:00:00Z")
-                parameters.append("pageSize", "10")
-                parameters.append("pageToken", "next")
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }
+        val res = TestRuntime.httpClient(
+            Request(Method.GET, "/api/audit-logs/database")
+                .query("fom", "2026-06-16T00:00:00Z")
+                .query("tom", "2026-06-17T00:00:00Z")
+                .query("pageSize", "10")
+                .query("pageToken", "next")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        )
 
-        assertEquals(HttpStatusCode.OK, res.status)
-        assertEquals(listOf(entry), res.body<AuditLogPage>().entries)
+        assertEquals(Status.OK, res.status)
+        assertEquals(listOf(entry), res.bodyAs<AuditLogPage>().entries)
         assertEquals(TestRuntime.databaseAuditLogResource, TestRuntime.auditLogs.lastResourceName)
         assertEquals(
             """resource.type="cloudsql_database" AND protoPayload.methodName="cloudsql.instances.query" AND protoPayload.request.user=~"(?i)@nav[.]no$" """.trim(),
@@ -73,11 +68,12 @@ class AuditLogApiTest {
 
     @Test
     fun `developer audit logs enforce filter without optional query`() = runTest(TestRuntime.context) {
-        val res = TestRuntime.httpClient.get("/api/audit-logs/database") {
-            bearerAuth(TestRuntime.azure.generateToken())
-        }
+        val res = TestRuntime.httpClient(
+            Request(Method.GET, "/api/audit-logs/database")
+                .bearerAuth(TestRuntime.azure.generateToken())
+        )
 
-        assertEquals(HttpStatusCode.OK, res.status)
+        assertEquals(Status.OK, res.status)
         assertEquals(TestRuntime.databaseAuditLogResource, TestRuntime.auditLogs.lastResourceName)
         assertEquals(
             """resource.type="cloudsql_database" AND protoPayload.methodName="cloudsql.instances.query" AND protoPayload.request.user=~"(?i)@nav[.]no$" """.trim(),
@@ -87,8 +83,8 @@ class AuditLogApiTest {
 
     @Test
     fun `developer audit logs require token`() = runTest(TestRuntime.context) {
-        val res = TestRuntime.httpClient.get("/api/audit-logs/database")
-        assertEquals(HttpStatusCode.Unauthorized, res.status)
+        val res = TestRuntime.httpClient(Request(Method.GET, "/api/audit-logs/database"))
+        assertEquals(Status.UNAUTHORIZED, res.status)
     }
 
     @Test

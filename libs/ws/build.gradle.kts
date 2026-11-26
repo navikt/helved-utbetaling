@@ -1,4 +1,4 @@
-val ktorVersion = "3.6.0"
+val ktorVersion = "3.6.1"
 
 dependencies {
     api(project(":models"))
@@ -7,7 +7,7 @@ dependencies {
     api(project(":libs:kotlinx"))
     api(project(":libs:utils"))
 
-    implementation("io.github.pdvrieze.xmlutil:serialization-jvm:1.0.0-rc2")
+    implementation("io.github.pdvrieze.xmlutil:serialization-jvm:1.0.2.1")
 
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-core:$ktorVersion")

@@ -1,9 +1,9 @@
 package peisschtappern
 
-import io.ktor.client.call.body
-import io.ktor.client.request.*
-import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
+import org.http4k.core.Method
+import org.http4k.core.Request
+import org.http4k.core.Status as HttpStatus
 import libs.jdbc.concurrency.transaction
 import libs.jdbc.truncate
 import libs.kafka.*
@@ -40,10 +40,11 @@ class ApiTest {
 
     @Test
     fun `lists topics registered in peisschtappern`() = runTest(TestRuntime.context) {
-        val topics = TestRuntime.httpClient.get("/api/topics") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<String>>()
+        val topics = TestRuntime.httpClient(
+            Request(Method.GET, "/api/topics")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<String>>()
 
         assertEquals(Channel.all().sortedBy(Channel::revision).map { it.topic.name }, topics)
     }
@@ -54,10 +55,11 @@ class ApiTest {
         save(Channel.Utbetalinger, "testkey", offset = offset)
         save(Channel.Simuleringer, offset = offset)
 
-        val result = TestRuntime.httpClient.get("/api/messages?key=testkey") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?key=testkey")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(2, result.total)
         assertTrue(result.items.map { it.topic_name }.containsAll(listOf(Topics.utbetalinger.name, Topics.aap.name)))
@@ -69,10 +71,11 @@ class ApiTest {
         val key = UUID.randomUUID().toString()
         save(Channel.Dp, key = key, offset = offset)
 
-        val result = TestRuntime.httpClient.get("/api/messages/${Channel.Dp.topic.name}/0/$offset") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Daos>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages/${Channel.Dp.topic.name}/0/$offset")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Daos>()
 
         assertEquals(key, result.key)
     }
@@ -83,10 +86,11 @@ class ApiTest {
         save(Channel.Utbetalinger, offset = offset)
         save(Channel.Simuleringer, offset = offset)
 
-        val result = TestRuntime.httpClient.get("/api/messages?topics=helved.utbetalinger-aap.v1,helved.simuleringer.v1") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?topics=helved.utbetalinger-aap.v1,helved.simuleringer.v1")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertTrue(
             result.items
@@ -102,10 +106,11 @@ class ApiTest {
         save(Channel.Utbetalinger, offset = offset)
         save(Channel.Simuleringer, offset = offset)
 
-        val result = TestRuntime.httpClient.get("/api/messages?value=$sakId") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?value=$sakId")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(1, result.total)
         assertTrue(result.items.first().value!!.contains(sakId))
@@ -121,10 +126,11 @@ class ApiTest {
         save(Channel.Aap, value = "{\"sakId\":\"$b\"}", key = key, offset = offset)
         save(Channel.Oppdrag, value = TestData.oppdragXml(c), key = key, offset = offset)
 
-        val result = TestRuntime.httpClient.get("/api/messages?key=${key}&topics=${Channel.Aap.topic.name},${Channel.Oppdrag.topic.name}&value=!$c") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?key=${key}&topics=${Channel.Aap.topic.name},${Channel.Oppdrag.topic.name}&value=!$c")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(2, result.total)
         assertTrue(result.items.none { it.value?.contains(c) ?: false })
@@ -139,10 +145,11 @@ class ApiTest {
         save(Channel.Utbetalinger, offset = offset)
         save(Channel.Simuleringer, offset = offset)
 
-        val result = TestRuntime.httpClient.get("/api/messages?value=$sakId,$behandlingId") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?value=$sakId,$behandlingId")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(2, result.total)
         assertNotNull(result.items.find { it.value!!.contains(sakId) })
@@ -152,12 +159,13 @@ class ApiTest {
     @Test
     fun `can query for fom, tom and value`() = runTest(TestRuntime.context) {
         val result =
-            TestRuntime.httpClient.get("/api/messages?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4") {
-                bearerAuth(TestRuntime.azure.generateToken())
-                accept(ContentType.Application.Json)
-            }
+            TestRuntime.httpClient(
+                Request(Method.GET, "/api/messages?fom=2025-05-21T10:48:29.336Z&tom=2025-05-28T10:48:29.336Z&value=4NiJMF4")
+                    .bearerAuth(TestRuntime.azure.generateToken())
+                    .acceptJson()
+            )
 
-        assertEquals(HttpStatusCode.OK, result.status)
+        assertEquals(HttpStatus.OK, result.status)
     }
 
     @Test
@@ -174,10 +182,11 @@ class ApiTest {
         val fom = now.minusSeconds(5L).toString()
         val tom = now.plusSeconds(5L).toString()
 
-        val result = TestRuntime.httpClient.get("/api/messages?fom=$fom&tom=$tom&key=$key") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?fom=$fom&tom=$tom&key=$key")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(1, result.total)
         assertEquals(Topics.utbetalinger.name, result.items.first().topic_name)
@@ -194,10 +203,11 @@ class ApiTest {
         val fom = now.minusSeconds(5L).toString()
         val tom = now.plusSeconds(5L).toString()
 
-        val result = TestRuntime.httpClient.get("/api/messages/aap.utbetaling.v1?fom=$fom&tom=$tom") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages/aap.utbetaling.v1?fom=$fom&tom=$tom")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<Daos>>()
 
         assertEquals(5, result.size)
     }
@@ -223,12 +233,12 @@ class ApiTest {
             reason = "en grunn"
         )
 
-        TestRuntime.httpClient.post("/manuell-kvittering") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(kvitteringRequest)
-        }.let {
-            assertEquals(HttpStatusCode.OK, it.status)
+        TestRuntime.httpClient(
+            Request(Method.POST, "/manuell-kvittering")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .json(kvitteringRequest)
+        ).let {
+            assertEquals(HttpStatus.OK, it.status)
         }
 
         assertEquals(2, oppdragProducer.history().size)
@@ -243,10 +253,11 @@ class ApiTest {
 
     @Test
     fun `get timers`() = runTest(TestRuntime.context) {
-        TestRuntime.httpClient.get("/api/brann") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<TimerDao>>()
+        TestRuntime.httpClient(
+            Request(Method.GET, "/api/brann")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<TimerDao>>()
     }
 
     @Test
@@ -261,10 +272,11 @@ class ApiTest {
         save(Channel.Oppdrag, key = key, value = TestData.oppdragXml(sakId, fagsystem = fagsystem), offset = offset)
         save(Channel.Status, key = key, value = value, offset = offset)
 
-        val daos = TestRuntime.httpClient.get("/api/saker/$sakId/$fagsystem") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        val daos = TestRuntime.httpClient(
+            Request(Method.GET, "/api/saker/$sakId/$fagsystem")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<Daos>>()
 
         assertEquals(5, daos.size)
     }
@@ -285,10 +297,11 @@ class ApiTest {
         save(Channel.Status, key = key, value = tomStatus, offset = offset)
         save(Channel.Aap, key = key, value = """{"sakId":"$sakId"}""", offset = offset)
 
-        val daos = TestRuntime.httpClient.get("/api/saker/$sakId/$fagsystem") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        val daos = TestRuntime.httpClient(
+            Request(Method.GET, "/api/saker/$sakId/$fagsystem")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<Daos>>()
 
         assertEquals(2, daos.size)
     }
@@ -310,12 +323,12 @@ class ApiTest {
             "some reason"
         )
 
-        TestRuntime.httpClient.post("/pending-til-utbetaling") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(requestBody)
-        }.apply {
-            assertEquals(HttpStatusCode.OK, status)
+        TestRuntime.httpClient(
+            Request(Method.POST, "/pending-til-utbetaling")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .json(requestBody)
+        ).apply {
+            assertEquals(HttpStatus.OK, status)
         }
 
         val producer = TestRuntime.kafka.getProducer(Topic("helved.utbetalinger.v1", json<Utbetaling>()))
@@ -339,12 +352,12 @@ class ApiTest {
             reason = "satt inn manglende sistePeriode",
         )
 
-        TestRuntime.httpClient.post("/endre-utbetaling") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(requestBody)
-        }.apply {
-            assertEquals(HttpStatusCode.OK, status)
+        TestRuntime.httpClient(
+            Request(Method.POST, "/endre-utbetaling")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .json(requestBody)
+        ).apply {
+            assertEquals(HttpStatus.OK, status)
         }
 
         val producer = TestRuntime.kafka.getProducer(Topic("helved.utbetalinger.v1", json<Utbetaling>()))
@@ -368,12 +381,12 @@ class ApiTest {
             reason = "en grunn",
         )
 
-        TestRuntime.httpClient.post("/endre-utbetaling") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(requestBody)
-        }.apply {
-            assertEquals(HttpStatusCode.BadRequest, status)
+        TestRuntime.httpClient(
+            Request(Method.POST, "/endre-utbetaling")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .json(requestBody)
+        ).apply {
+            assertEquals(HttpStatus.BAD_REQUEST, status)
         }
 
         val producer = TestRuntime.kafka.getProducer(Topic("helved.utbetalinger.v1", json<Utbetaling>()))
@@ -386,12 +399,12 @@ class ApiTest {
         save(Channel.Oppdrag, value = TestData.oppdragXml(), offset = offset)
         val request = MessageRequest(Channel.Oppdrag.topic.name, "0", "$offset", "some reason")
 
-        TestRuntime.httpClient.post("/api/resend") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.apply {
-            assertEquals(HttpStatusCode.OK, status)
+        TestRuntime.httpClient(
+            Request(Method.POST, "/api/resend")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .json(request)
+        ).apply {
+            assertEquals(HttpStatus.OK, status)
         }
 
         val producer = TestRuntime.kafka.getProducer(Channel.Oppdrag.topic)
@@ -407,12 +420,12 @@ class ApiTest {
 
         val request = MessageRequest(Channel.DpIntern.topic.name, "0", "$offset", "some reason")
 
-        TestRuntime.httpClient.post("/api/resend") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.apply {
-            assertEquals(HttpStatusCode.OK, status)
+        TestRuntime.httpClient(
+            Request(Method.POST, "/api/resend")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .json(request)
+        ).apply {
+            assertEquals(HttpStatus.OK, status)
         }
 
         val producer = TestRuntime.kafka.getProducer(Channel.DpIntern.topic)
@@ -428,12 +441,12 @@ class ApiTest {
 
         val request = MessageRequest(Channel.TsIntern.topic.name, "0", "$offset", "some reason")
 
-        TestRuntime.httpClient.post("/api/resend") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.apply {
-            assertEquals(HttpStatusCode.OK, status)
+        TestRuntime.httpClient(
+            Request(Method.POST, "/api/resend")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .json(request)
+        ).apply {
+            assertEquals(HttpStatus.OK, status)
         }
 
         val producer = TestRuntime.kafka.getProducer(Channel.TsIntern.topic)
@@ -451,18 +464,20 @@ class ApiTest {
 
         val pageSize = 2
 
-        val firstPage = TestRuntime.httpClient.get("/api/messages?page=1&pageSize=$pageSize&key=$key") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val firstPage = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?page=1&pageSize=$pageSize&key=$key")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(2, firstPage.items.size)
         assertEquals(4, firstPage.total)
 
-        val secondPage = TestRuntime.httpClient.get("/api/messages?page=2&pageSize=$pageSize&key=$key") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val secondPage = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?page=2&pageSize=$pageSize&key=$key")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(2, secondPage.items.size)
         assertEquals(4, secondPage.total)
@@ -482,10 +497,11 @@ class ApiTest {
 
         val pageSize = 2
 
-        val firstPage = TestRuntime.httpClient.get("/api/messages?page=1&pageSize=$pageSize&key=$key&orderBy=offset&direction=ASC") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val firstPage = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?page=1&pageSize=$pageSize&key=$key&orderBy=offset&direction=ASC")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(1, firstPage.items.first().offset)
         assertEquals(34, firstPage.items.last().offset)
@@ -493,10 +509,11 @@ class ApiTest {
         assertEquals(2, firstPage.items.size)
         assertEquals(4, firstPage.total)
 
-        val secondPage = TestRuntime.httpClient.get("/api/messages?page=2&pageSize=$pageSize&key=$key&orderBy=offset&direction=ASC") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val secondPage = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?page=2&pageSize=$pageSize&key=$key&orderBy=offset&direction=ASC")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(56, secondPage.items.first().offset)
         assertEquals(999, secondPage.items.last().offset)
@@ -518,10 +535,11 @@ class ApiTest {
         save(Channel.Simuleringer, key = key, offset = offset)
         save(Channel.Oppdrag, key = key, offset = offset, value = TestData.oppdragXml(alvorlighetsgrad = "00"))
 
-        val result = TestRuntime.httpClient.get("/api/messages?page=1&key=$key&status=OK") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Page>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?page=1&key=$key&status=OK")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Page>()
 
         assertEquals(1, result.total)
     }
@@ -539,20 +557,22 @@ class ApiTest {
             value = TestData.oppdragXml(alvorlighetsgrad = "00", fagsystem = "TILLEGGSSTØNADER")
         )
 
-        TestRuntime.httpClient.get("/api/messages?page=1&key=$key&fagsystem=TILLSTDR") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }
-            .body<Page>()
+        TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?page=1&key=$key&fagsystem=TILLSTDR")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        )
+            .bodyAs<Page>()
             .also {
                 assertEquals(3, it.total)
             }
 
-        TestRuntime.httpClient.get("/api/messages?page=1&key=$key&fagsystem=AAP") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }
-            .body<Page>()
+        TestRuntime.httpClient(
+            Request(Method.GET, "/api/messages?page=1&key=$key&fagsystem=AAP")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        )
+            .bodyAs<Page>()
             .also {
                 assertEquals(0, it.total)
             }
@@ -572,10 +592,11 @@ class ApiTest {
         val fom = now.minusSeconds(5L)
         val tom = now.plusSeconds(5L)
 
-        val result = TestRuntime.httpClient.get("/api/avstemminger?fom=$fom&tom=$tom") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/avstemminger?fom=$fom&tom=$tom")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<Daos>>()
 
         assertEquals(1, result.size)
         assertEquals("match", result.first().key)
@@ -588,10 +609,11 @@ class ApiTest {
         save(Channel.Dp, key = key, value = """{"sakId":"$sakId"}""", offset = offset)
         save(Channel.DryrunDp, key = key, offset = offset)
 
-        val daos = TestRuntime.httpClient.get("/api/saker/$sakId/DP") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<Daos>>()
+        val daos = TestRuntime.httpClient(
+            Request(Method.GET, "/api/saker/$sakId/DP")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<Daos>>()
 
         assertEquals(2, daos.size)
     }
@@ -601,12 +623,12 @@ class ApiTest {
         val key = UUID.randomUUID().toString()
         val request = OkStatusRequest(key = key, reason = "testingtesting", fagsystem = "TILLEGGSSTØNADER")
 
-        TestRuntime.httpClient.post("/ok-status") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.apply {
-            assertEquals(HttpStatusCode.OK, status)
+        TestRuntime.httpClient(
+            Request(Method.POST, "/ok-status")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .json(request)
+        ).apply {
+            assertEquals(HttpStatus.OK, status)
         }
 
         val producer = TestRuntime.kafka.getProducer(Channel.Status.topic)

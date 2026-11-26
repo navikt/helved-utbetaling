@@ -1,9 +1,9 @@
 package peisschtappern
 
-import io.ktor.client.call.body
-import io.ktor.client.request.*
-import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
+import org.http4k.core.Method
+import org.http4k.core.Request
+import org.http4k.core.Status as HttpStatus
 import libs.jdbc.concurrency.transaction
 import libs.jdbc.truncate
 import libs.kotlinx.KotlinxJson
@@ -49,14 +49,13 @@ class DashboardApiTest {
         val queryFom = fom.atStartOfDay().toInstant(ZoneOffset.UTC).toString()
         val queryTom = tom.atStartOfDay().toInstant(ZoneOffset.UTC).toString()
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", queryFom)
-                parameters.append("tom", queryTom)
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", queryFom)
+                .query("tom", queryTom)
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertEquals(Fagsystem.entries.size, dashboard.avstemming.size)
         val historisk = dashboard.avstemming.single { it.fagsystem == Fagsystem.HISTORISK }
@@ -94,13 +93,12 @@ class DashboardApiTest {
             timestamp = registrert - 1,
             offset = offset
         )
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", fom.toInstant(ZoneOffset.UTC).toString())
-                parameters.append("tom", Instant.ofEpochMilli(registrert).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", fom.toInstant(ZoneOffset.UTC).toString())
+                .query("tom", Instant.ofEpochMilli(registrert).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+        ).bodyAs<Dashboard>()
         val statuser = dashboard.avstemming.associateBy { it.fagsystem }
         assertEquals(Avstemmingsstatus.MISSING, statuser.getValue(Fagsystem.DAGPENGER).status)
         assertEquals(Avstemmingsstatus.COMPLETED, statuser.getValue(Fagsystem.AAP).status)
@@ -179,7 +177,7 @@ class DashboardApiTest {
         )
 
         ugyldige.forEach { ugyldig ->
-            korrigerUtbetalinger(listOf(gyldig, ugyldig), HttpStatusCode.BadRequest)
+            korrigerUtbetalinger(listOf(gyldig, ugyldig), HttpStatus.BAD_REQUEST)
             assertTrue(korrigeringer(now.minusSeconds(60)).isEmpty())
         }
     }
@@ -202,10 +200,11 @@ class DashboardApiTest {
         save(Channel.Status, key = key3, timestamp = timestamp, offset = offset)
         save(Channel.Status, key = key5, timestamp = timestamp, offset = offset)
 
-        val result = TestRuntime.httpClient.get("/api/dashboard/oppdrag_uten_status") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<List<OppdragUtenKvittering>>()
+        val result = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard/oppdrag_uten_status")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<List<OppdragUtenKvittering>>()
 
         assertEquals(2, result.size)
         assertEquals(setOf(key2, key4), result.map { it.key }.toSet())
@@ -216,14 +215,13 @@ class DashboardApiTest {
     fun `dashboard har ingen pending mismatch når tabellene er tomme`() = runTest(TestRuntime.context) {
         val now = nextPendingMismatchTimestamp()
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 1_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 1_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertTrue(dashboard.pendingMismatch.isEmpty())
     }
@@ -252,14 +250,13 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = value, timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = value, timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 2_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertTrue(dashboard.pendingMismatch.isEmpty())
     }
@@ -273,14 +270,13 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 2_000u))), timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 2_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
         val result = dashboard.pendingMismatch.single()
 
         assertEquals(uid, result.uid)
@@ -298,14 +294,13 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, perioder.take(1)), timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, perioder), timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 2_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertEquals(1, dashboard.pendingMismatch.size)
     }
@@ -319,14 +314,13 @@ class DashboardApiTest {
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now, offset = offset)
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 2_000u))), timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 2_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertTrue(dashboard.pendingMismatch.isEmpty())
     }
@@ -339,14 +333,13 @@ class DashboardApiTest {
 
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode())), timestamp = now, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 1_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 1_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertTrue(dashboard.pendingMismatch.isEmpty())
     }
@@ -359,14 +352,13 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 2_000u))), timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now + 2_000, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 1_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 1_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertTrue(dashboard.pendingMismatch.isEmpty())
     }
@@ -381,14 +373,13 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now + 1_000, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode(beløp = 1_000u))), timestamp = now + 2_000, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 3_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 3_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertTrue(dashboard.pendingMismatch.isEmpty())
     }
@@ -402,14 +393,13 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode()), "11363#0"), timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = utbetalingJson(uid, listOf(periode()), "11363#1"), timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 2_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertEquals(uid, dashboard.pendingMismatch.single().uid)
     }
@@ -424,14 +414,13 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = uid, value = value, timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = uid, value = value, timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 2_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertTrue(dashboard.pendingMismatch.isEmpty())
     }
@@ -449,14 +438,13 @@ class DashboardApiTest {
         save(Channel.PendingUtbetalinger, key = matchingUid, value = matchingValue, timestamp = now, offset = offset)
         save(Channel.Utbetalinger, key = matchingUid, value = matchingValue, timestamp = now + 1_000, offset = offset)
 
-        val dashboard = TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", Instant.ofEpochMilli(now - 1_000).toString())
-                parameters.append("tom", Instant.ofEpochMilli(now + 2_000).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>()
+        val dashboard = TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", Instant.ofEpochMilli(now - 1_000).toString())
+                .query("tom", Instant.ofEpochMilli(now + 2_000).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>()
 
         assertEquals(mismatchUid, dashboard.pendingMismatch.single().uid)
     }
@@ -464,25 +452,24 @@ class DashboardApiTest {
 
     private suspend fun korrigerUtbetalinger(
         utbetalinger: List<KorrigerUtbetalingerRequest.FeiletUtbetaling>,
-        expectedStatus: HttpStatusCode = HttpStatusCode.OK
+        expectedStatus: HttpStatus = HttpStatus.OK
     ) {
-        val response = TestRuntime.httpClient.post("/api/korriger_utbetalinger") {
-            bearerAuth(TestRuntime.azure.generateToken())
-            contentType(ContentType.Application.Json)
-            setBody(KorrigerUtbetalingerRequest(utbetalinger))
-        }
+        val response = TestRuntime.httpClient(
+            Request(Method.POST, "/api/korriger_utbetalinger")
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .json(KorrigerUtbetalingerRequest(utbetalinger))
+        )
         assertEquals(expectedStatus, response.status)
     }
 
     private suspend fun korrigeringer(fom: Instant): List<Dashboard.KorrigertFeiletUtbetaling> =
-        TestRuntime.httpClient.get("/api/dashboard") {
-            url {
-                parameters.append("fom", fom.toString())
-                parameters.append("tom", Instant.now().plusSeconds(60).toString())
-            }
-            bearerAuth(TestRuntime.azure.generateToken())
-            accept(ContentType.Application.Json)
-        }.body<Dashboard>().korrigerteFeiletUtbetalinger
+        TestRuntime.httpClient(
+            Request(Method.GET, "/api/dashboard")
+                .query("fom", fom.toString())
+                .query("tom", Instant.now().plusSeconds(60).toString())
+                .bearerAuth(TestRuntime.azure.generateToken())
+                .acceptJson()
+        ).bodyAs<Dashboard>().korrigerteFeiletUtbetalinger
 
 
     private fun periode(
