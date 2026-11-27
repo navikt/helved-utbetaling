@@ -6,22 +6,17 @@ import models.Utbetaling
 
 object PendingMismatchService {
     suspend fun detectMismatches(fom: Long, tom: Long): List<PendingMismatch> {
-        val entries = Daos.messages(listOf(Channel.Utbetalinger), fom, tom)
-            .mapNotNull { dao -> decode<Utbetaling>(dao.value)?.let { dao to it } }
-        val uids = entries.map { it.second.uid.toString() }.distinct()
-        val pendingByUid = if (uids.isEmpty()) emptyMap() else
-            Daos.findPendingByUids(uids, tom)
-                .mapNotNull { dao -> decode<Utbetaling>(dao.value)?.let { dao to it } }
-                .groupBy { it.second.uid }
-
-        return entries.mapNotNull { (dao, utbetaling) ->
-            val latestPrecedingPending = pendingByUid[utbetaling.uid]
-                ?.lastOrNull { it.first.system_time_ms < dao.system_time_ms }
-
-            latestPrecedingPending
-                ?.takeIf { utbetaling.perioder != it.second.perioder || utbetaling.lastPeriodeId != it.second.lastPeriodeId }
-                ?.let { PendingMismatch(utbetaling.uid.toString(), dao.sakId, dao.fagsystem) }
+        val mismatches = mutableListOf<PendingMismatch>()
+        Daos.forEachUtbetalingMedForrigePending(fom, tom) { row ->
+            val utbetaling = decode<Utbetaling>(row.utbetaling)
+            val pending = decode<Utbetaling>(row.pending)
+            if (utbetaling != null && pending != null &&
+                (utbetaling.perioder != pending.perioder || utbetaling.lastPeriodeId != pending.lastPeriodeId)
+            ) {
+                mismatches += PendingMismatch(utbetaling.uid.toString(), row.sakId, row.fagsystem)
+            }
         }
+        return mismatches
     }
 
     private inline fun <reified T> decode(value: String?): T? {
@@ -35,4 +30,11 @@ data class PendingMismatch(
     val uid: String,
     val sakId: String?,
     val fagsystem: String?,
+)
+
+data class UtbetalingMedPending(
+    val sakId: String?,
+    val fagsystem: String?,
+    val utbetaling: String?,
+    val pending: String?,
 )

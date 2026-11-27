@@ -7,12 +7,14 @@ import libs.jdbc.concurrency.connection
 import libs.jdbc.map
 import libs.utils.logger
 import libs.utils.Log
+import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.Types
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 private val daoLog = logger("dao")
+private const val STREAM_FETCH_SIZE = 100
 
 enum class Table {
     avstemming,
@@ -259,24 +261,9 @@ data class Daos(
             }
         }
 
-        suspend fun findStatuses(status: String, fom: Long, tom: Long): List<Daos> {
+        suspend fun forEachStatus(status: String, fom: Long, tom: Long, block: (Daos) -> Unit) {
             val sql = """
-                SELECT
-                    version,
-                    topic_name,
-                    record_key,
-                    record_value,
-                    record_partition,
-                    record_offset,
-                    timestamp_ms,
-                    stream_time_ms,
-                    system_time_ms,
-                    trace_id,
-                    commit,
-                    sak_id,
-                    fagsystem,
-                    status,
-                    headers
+                SELECT *
                 FROM status
                 WHERE status = ?
                     AND system_time_ms > ?
@@ -284,10 +271,68 @@ data class Daos(
                 ORDER BY system_time_ms
             """.trimIndent()
 
-            return query(sql) { stmt ->
+            stream(sql, bind = { stmt ->
                 stmt.setString(1, status)
                 stmt.setLong(2, fom)
                 stmt.setLong(3, tom)
+            }) { rs -> block(from(rs)) }
+        }
+
+        suspend fun forEachUtbetalingMedForrigePending(fom: Long, tom: Long, block: (UtbetalingMedPending) -> Unit) {
+            val sql = """
+                SELECT u.sak_id, u.fagsystem, u.record_value AS utbetaling, p.record_value AS pending
+                FROM utbetalinger u
+                JOIN LATERAL (
+                    SELECT record_value
+                    FROM pending_utbetalinger
+                    WHERE try_jsonb_get_text(record_value, 'uid') = try_jsonb_get_text(u.record_value, 'uid')
+                        AND system_time_ms < u.system_time_ms
+                    ORDER BY system_time_ms DESC
+                    LIMIT 1
+                ) p ON true
+                WHERE u.system_time_ms > ?
+                    AND u.system_time_ms < ?
+                ORDER BY u.system_time_ms
+            """.trimIndent()
+
+            stream(sql, bind = { stmt ->
+                stmt.setLong(1, fom)
+                stmt.setLong(2, tom)
+            }) { rs ->
+                block(
+                    UtbetalingMedPending(
+                        sakId = rs.getString("sak_id"),
+                        fagsystem = rs.getString("fagsystem"),
+                        utbetaling = rs.getString("utbetaling"),
+                        pending = rs.getString("pending"),
+                    )
+                )
+            }
+        }
+
+        suspend fun forEachAvstemming(fom: Long, tom: Long, block: (String) -> Unit) {
+            val sql = """
+                SELECT record_value
+                FROM avstemming
+                WHERE system_time_ms >= ? AND system_time_ms <= ?
+                    AND record_value IS NOT NULL
+                ORDER BY system_time_ms DESC
+            """.trimIndent()
+
+            stream(sql, bind = { stmt ->
+                stmt.setLong(1, fom)
+                stmt.setLong(2, tom)
+            }) { rs -> block(rs.getString("record_value")) }
+        }
+
+        private suspend fun stream(sql: String, bind: (PreparedStatement) -> Unit, block: (ResultSet) -> Unit) {
+            currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                stmt.fetchSize = STREAM_FETCH_SIZE
+                bind(stmt)
+                Log.debug(sql, stmt.toString(), daoLog)
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) block(rs)
+                }
             }
         }
 
@@ -356,6 +401,8 @@ data class Daos(
             val sql = """
                 WITH unified AS (${channels.joinToString(" UNION ALL ") { channel -> """
                     SELECT 
+                        '${channel.table.name}'::text AS source_table,
+                        id,
                         version,
                         topic_name, 
                         record_key, 
@@ -373,8 +420,8 @@ data class Daos(
                         headers
                     FROM ${channel.table.name}
                 """.trimIndent() }})
-                SELECT *, count(*) OVER () AS total FROM unified
-                WHERE record_key ILIKE COALESCE(?, record_key)
+                SELECT source_table, id, count(*) OVER () AS total FROM unified
+                WHERE (?::text IS NULL OR record_key ILIKE ?)
                     AND ( ?::text[] IS NULL OR EXISTS (
                         SELECT 1 FROM unnest(?::text[]) v
                         WHERE unified.record_value ILIKE '%' || v || '%'
@@ -406,6 +453,7 @@ data class Daos(
                 val statusArray = status?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
                 val fagsystemArray = fagsystem?.let { currentCoroutineContext().connection.createArrayOf("text", it.toTypedArray()) }
                 stmt.setObject(i++, key, Types.VARCHAR)
+                stmt.setObject(i++, key, Types.VARCHAR)
                 stmt.setObject(i++, includeArray, Types.ARRAY)
                 stmt.setObject(i++, includeArray, Types.ARRAY)
                 stmt.setObject(i++, excludeArray, Types.ARRAY)
@@ -428,14 +476,27 @@ data class Daos(
                 stmt.executeQuery().use { rs ->
                     var total: Int? = null
 
-                    val rows = rs.map { r ->
+                    val refs = rs.map { r ->
                         if (total == null) total = r.getInt("total")
-                        from(r)
+                        r.getString("source_table") to r.getLong("id")
                     }
 
-                    Page(items = rows, total = total ?: 0)
+                    Page(items = findByIds(refs), total = total ?: 0)
                 }
             }
+        }
+
+        private suspend fun findByIds(refs: List<Pair<String, Long>>): List<Daos> {
+            val rows = refs.groupBy({ it.first }, { it.second }).flatMap { (table, ids) ->
+                val sql = "SELECT * FROM $table WHERE id = ANY (?)"
+                currentCoroutineContext().connection.prepareStatement(sql).use { stmt ->
+                    stmt.setArray(1, stmt.connection.createArrayOf("bigint", ids.toTypedArray()))
+                    Log.debug(sql, stmt.toString(), daoLog)
+                    stmt.executeQuery().use { rs -> rs.map { (table to it.getLong("id")) to from(it) } }
+                }
+            }.toMap()
+
+            return refs.mapNotNull(rows::get)
         }
 
         suspend fun findOppdrag(sakId: String, fagsystem: String): List<Daos> {
@@ -542,21 +603,6 @@ data class Daos(
             return query(sql) { stmt ->
                 stmt.setString(1, sakId)
                 stmt.setString(2, fagsystem)
-            }
-        }
-
-        suspend fun findPendingByUids(uids: List<String>, tom: Long): List<Daos> {
-            val sql = """
-                SELECT * FROM pending_utbetalinger
-                WHERE try_jsonb_get_text(record_value, 'uid') = ANY(?)
-                    AND system_time_ms < ?
-                ORDER BY try_jsonb_get_text(record_value, 'uid'), system_time_ms
-            """.trimIndent()
-
-            return query(sql) { stmt ->
-                val array = stmt.connection.createArrayOf("text", uids.toTypedArray())
-                stmt.setArray(1, array)
-                stmt.setLong(2, tom)
             }
         }
 

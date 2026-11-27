@@ -43,8 +43,10 @@ object DashboardService {
         val periode = avstemmingsperiode(dato)
         val oppdrag = Daos.findAvstemmingsgrunnlag(periode.first, periode.second, tom)
         val periodeStart = periode.first.atZone(ZoneId.of("Europe/Oslo")).toInstant().toEpochMilli()
-        val meldinger = Daos.findAvstemminger(minOf(fom, periodeStart).minus(14.days.inWholeMilliseconds), tom)
-            .map { avstemmingXml.decodeFromString(AvstemmingXML.serializer(), it.value!!) }
+        val meldinger = mutableListOf<AvstemmingXML>()
+        Daos.forEachAvstemming(minOf(fom, periodeStart).minus(14.days.inWholeMilliseconds), tom) { xml ->
+            meldinger += avstemmingXml.decodeFromString(AvstemmingXML.serializer(), xml)
+        }
         return avstemmingsstatus(periode.first, periode.second, oppdrag, meldinger)
     }
 }
