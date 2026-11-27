@@ -4,8 +4,8 @@ import models.Fagsystem
 import models.Info
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 class MissingTestPersonTest {
     private val soap = Info.UgyldigRequest(Fagsystem.AAP, "Personen finnes ikke i PDL")
@@ -16,26 +16,35 @@ class MissingTestPersonTest {
     )
 
     @Test
-    fun `kjent manglende testperson gir ikke mismatch alert i dev`() {
-        assertTrue(isMissingTestPersonMismatch("dev-gcp", soap, rest))
-        assertTrue(isMissingTestPersonMismatch("dev-gcp", soap, rest.copy(beregning = null)))
-        assertFalse(isMissingTestPersonMismatch("prod-gcp", soap, rest))
-        assertFalse(isMissingTestPersonMismatch("test-cluster", soap, rest))
+    fun `kjent manglende person mapper til samme resultat som SOAP`() {
+        listOf(Fagsystem.AAP, Fagsystem.TILLEGGSSTØNADER).forEach { fagsystem ->
+            val expected = Info.UgyldigRequest(fagsystem, "Personen finnes ikke i PDL")
+            assertEquals(expected, rest.toSimulering(fagsystem))
+            assertEquals(expected, rest.copy(beregning = null).toSimulering(fagsystem))
+        }
     }
 
     @Test
-    fun `andre feil og advarsler beholder mismatch alert`() {
-        assertFalse(isMissingTestPersonMismatch("dev-gcp", Info.UgyldigRequest(Fagsystem.AAP, "Annen feil"), rest))
-        assertFalse(isMissingTestPersonMismatch("dev-gcp", Info.Feilet(Fagsystem.AAP, "Personen finnes ikke i PDL"), rest))
-        assertFalse(isMissingTestPersonMismatch("dev-gcp", soap, rest.copy(statusKode = 8)))
-        assertFalse(isMissingTestPersonMismatch("dev-gcp", soap, rest.copy(statusMelding = "Annen advarsel")))
+    fun `andre feil og advarsler normaliseres ikke`() {
+        listOf(0, 8, 12).forEach { status ->
+            assertNotEquals(soap, rest.copy(statusKode = status).toSimulering(Fagsystem.AAP))
+        }
+        assertNotEquals(soap, rest.copy(statusMelding = "Annen advarsel").toSimulering(Fagsystem.AAP))
+        assertNotEquals(soap, rest.copy(statusMelding = "Navn er ikke funnet ved oppslag ekstra").toSimulering(Fagsystem.AAP))
     }
 
     @Test
-    fun `beregning med innhold skjules ikke som manglende testperson`() {
+    fun `beregning med innhold skjules ikke som manglende person`() {
         val calculation = requireNotNull(rest.beregning)
-        assertFalse(isMissingTestPersonMismatch("dev-gcp", soap, rest.copy(beregning = calculation.copy(gjelderId = "12345678910"))))
-        assertFalse(isMissingTestPersonMismatch("dev-gcp", soap, rest.copy(beregning = calculation.copy(datoBeregnet = "2026-01-20"))))
-        assertFalse(isMissingTestPersonMismatch("dev-gcp", soap, rest.copy(beregning = calculation.copy(belopTotalt = BigDecimal.ONE))))
+        val period = PeriodeStoppnivaa(RestBeregningsperiode("2026-01-01", "2026-01-31"), RestStoppnivaa("AAP", "sak", "12345678910"))
+        listOf(
+            calculation.copy(gjelderId = "12345678910"),
+            calculation.copy(datoBeregnet = "2026-01-20"),
+            calculation.copy(belopTotalt = BigDecimal.ONE),
+            calculation.copy(periodeStoppnivaa = listOf(period))
+        ).forEach { populated ->
+            val response = rest.copy(beregning = populated)
+            assertEquals(response.copy(statusMelding = null).toSimulering(Fagsystem.AAP), response.toSimulering(Fagsystem.AAP))
+        }
     }
 }

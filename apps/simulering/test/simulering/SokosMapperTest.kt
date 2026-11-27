@@ -74,6 +74,61 @@ class SokosMapperTest {
     }
 
     @Test
+    fun `eksisterende oppdrag fra REST mapper til samme ugyldige request som SOAP`() {
+        val response = libs.kotlinx.KotlinxJson.decodeFromString<SimuleringResponse>("""
+            {"OsSimulerBeregningOperationResponse":{"ZS1OCont":{"responsSimulering":{"statusKode":8,"statusMelding":"B110008F - Oppdraget finnes fra før","beregning":{"gjelderId":"","gjelderNavn":"","datoBeregnet":"","kodeFaggruppe":"","belopTotalt":0.0}}}}}
+        """).operation.output.responsSimulering
+
+        assertEquals(
+            Info.UgyldigRequest(Fagsystem.AAP, "Utbetaling med SakId/BehandlingId finnes fra før"),
+            response.toSimulering(Fagsystem.AAP)
+        )
+    }
+
+    @Test
+    fun `observert REST feil normaliseres for baade v1 og v2`() {
+        listOf(Fagsystem.AAP, Fagsystem.TILLEGGSSTØNADER).forEach { fagsystem ->
+            val response = ResponsSimulering(8, "B110008F - Oppdraget finnes fra før")
+            assertEquals(Info.UgyldigRequest(fagsystem, "Utbetaling med SakId/BehandlingId finnes fra før"), response.toSimulering(fagsystem))
+        }
+    }
+
+    @Test
+    fun `uobserverte forretningsfeil normaliseres ikke`() {
+        val messages = listOf(
+            "OPPDRAGET/FAGSYSTEM-ID finnes ikke fra før",
+            "Oppdraget finnes fra før",
+            "Referert vedtak/linje ikke funnet",
+            "Navn på person ikke funnet i PDL",
+            "Personen finnes ikke i PDL",
+            "DELYTELSE-ID finnes i oppdragsbasen fra før"
+        )
+        messages.forEach { message ->
+            assertEquals(Info.Feilet(Fagsystem.AAP, "Sokos status 8: $message"), ResponsSimulering(8, message).toSimulering(Fagsystem.AAP))
+        }
+        val response = ResponsSimulering(12, "B110008F - Oppdraget finnes fra før")
+        assertEquals(Info.Feilet(Fagsystem.AAP, "Sokos status 12: ${response.statusMelding}"), response.toSimulering(Fagsystem.AAP))
+    }
+
+    @Test
+    fun `ukjente REST feil beholder status og melding`() {
+        listOf(null, "", "Annen feil", "Navn er ikke funnet ved oppslag").forEach { message ->
+            val response = ResponsSimulering(8, message)
+            assertEquals(Info.Feilet(Fagsystem.AAP, "Sokos status 8: ${message.orEmpty()}"), response.toSimulering(Fagsystem.AAP))
+        }
+    }
+
+    @Test
+    fun `kjente feilmeldinger overstyrer ikke vellykket beregning eller advarsel`() {
+        listOf(0, 4).forEach { status ->
+            val response = restResponse().copy(statusKode = status)
+            listOf("B110008F - Oppdraget finnes fra før", "Navn er ikke funnet ved oppslag").forEach { message ->
+                assertEquals(response.toSimulering(Fagsystem.AAP), response.copy(statusMelding = message).toSimulering(Fagsystem.AAP))
+            }
+        }
+    }
+
+    @Test
     fun `tom beregning bevarer eksisterende v1 og v2 semantikk`() {
         val response = ResponsSimulering(0)
         val v1 = response.toSimulering(Fagsystem.TILLEGGSSTØNADER)
@@ -88,4 +143,3 @@ class SokosMapperTest {
         Resource.read("/sokos-response.json").replace("FAGOMRADE", "AAP")
     ).operation.output.responsSimulering
 }
-

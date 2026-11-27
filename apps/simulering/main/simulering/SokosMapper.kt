@@ -89,9 +89,27 @@ private fun String?.toRestBoolean(): Boolean? = when (this?.trim()?.uppercase())
 
 // Reuse existing domain mappings so comparison does not introduce different arithmetic.
 fun ResponsSimulering.toSimulering(fagsystem: Fagsystem): Simulering {
-    if (statusKode !in listOf(0, 4)) return Info.Feilet(fagsystem, "Sokos status $statusKode: ${statusMelding.orEmpty()}")
+    val message = toBusinessErrorMessage()
+    if (message != null) return Info.UgyldigRequest(fagsystem, message)
+    if (statusKode !in listOf(0, 4)) {
+        return Info.Feilet(fagsystem, "Sokos status $statusKode: ${statusMelding.orEmpty()}")
+    }
     return beregning.toSoapResponse().toSimulering(fagsystem)
 }
+
+// Temporary normalization of observed REST/SOAP differences while SOAP remains authoritative.
+private fun ResponsSimulering.toBusinessErrorMessage(): String? = when {
+    statusKode == 8 && statusMelding == "B110008F - Oppdraget finnes fra før" ->
+        "Utbetaling med SakId/BehandlingId finnes fra før"
+    statusKode == 4 && statusMelding == "Navn er ikke funnet ved oppslag" && beregning.isEmpty() ->
+        "Personen finnes ikke i PDL"
+    else -> null
+}
+
+private fun RestBeregning?.isEmpty(): Boolean = this == null || (
+    gjelderId.isBlank() && datoBeregnet.isBlank()
+        && belopTotalt.signum() == 0 && periodeStoppnivaa.isEmpty()
+    )
 
 fun SimulerBeregningResponse.toSimulering(fagsystem: Fagsystem): Simulering = when {
     fagsystem.isTilleggsstønader() || fagsystem == Fagsystem.TILTAKSPENGER ->
@@ -130,4 +148,3 @@ private fun RestStoppnivaa.toSoap() = BeregningStoppnivaa().also { stop ->
         }
     })
 }
-
