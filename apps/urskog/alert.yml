@@ -22,7 +22,7 @@ spec:
     - name: kafka
       rules:
         - alert: lag
-          expr: sum(kafka_consumer_records_lag{app="urskog", namespace="helved"}) by(topic) > 5
+          expr: sum(kafka_consumer_fetch_manager_records_lag{app="urskog", namespace="helved"}) by(topic) > 5
           for: 10m
           annotations:
             summary: topic {{ labels.topic }} har uleste records.
